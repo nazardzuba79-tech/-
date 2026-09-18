@@ -33,3 +33,30 @@ row no longer restarts its depth-bar transition from zero on every shift.
 
 **No data was smoothed to produce this.** The same frames are applied in the
 same order at the same time; only the DOM they land in is reused.
+
+## Second pass — one book everywhere, measured tokens
+
+Same harness, same seed, now also driving **/trade** (Spot). The Spot REST book is
+served as "the snapshot with every delta up to now applied", so a polling page
+sees the ladder move exactly as the socket page does. `before-all-books.json`
+is `main` after PR #121; `after-all-books.json` is this change.
+
+| 15 s window | before | after |
+|---|---|---|
+| **Spot** rows remounted | **136 (9.1/s)** | **0** |
+| **Spot** row flash toggles (class on/off = the pulse) | **198** | **0** |
+| Spot depth-bar writes | 104 | 235 |
+| Spot rows shown | 30 | 34 (ladder now fills its panel) |
+| Futures desktop / mobile rows remounted | 0 / 0 | 0 / 0 |
+| Distinct row counts, all three | one value | one value |
+
+Spot's remounts had the same cause as Futures' (rows keyed by price) plus a
+second one of its own: a 32 %-alpha pulse on every changed row on every
+publish. Both gone. Depth-bar writes went up because the bar is now a
+transform on an element that stays, instead of a width on an element that
+was being replaced.
+
+**Tokens, measured from the video (`f_050`, text-free pixels, alpha solved
+against the row background):** row bg `#16181e`, text `#eaecef`, headers
+`#848e9c`, sell `#F6465D`, buy `#0ECB81`, depth tint alpha **0.09** on both
+sides. Applied to Futures, Private and Spot from one CSS block.

@@ -1892,30 +1892,1229 @@ a:hover > .nav-card-icon {
   }
 }
 
+.ticker-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 26px;
+  padding: 0 28px;
+  white-space: nowrap;
+  /* A full loop in ~62s (the Markets page keeps its marquee; the trade
+     terminal holds its strip still instead). Slow enough to read a symbol
+     without tracking it, and paused on hover — see .ticker-track:hover.
+     will-change keeps the transform on its own compositor layer so the
+     movement stays smooth instead of relayouting the strip each frame. */
+  animation-duration: 62s !important;
+  will-change: transform;
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0;
+  color: inherit;
+  /* The reference sets no face here, so the strip inherits the header's DM
+     Sans. (The trade terminal already overrode the monospace this used to
+     force — see .trade-terminal .ticker-bar .ticker-item — so dropping it
+     changes the header strip only.) */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Interactive ticker symbols (a <button> that switches pair in place, or a
+   <Link> to that pair's terminal — see TopGainersTicker). Deliberately
+   restrained: a pointer cursor and a barely-there wash, so the strip still
+   reads as a market ticker rather than a row of buttons. The marquee
+   already pauses on hover (.ticker-track:hover), which is what actually
+   makes a moving symbol clickable. */
+.ticker-item-button {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+.ticker-item-button:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.ticker-item-button:focus-visible {
+  outline: 1px solid var(--h-accent, #f0c43f);
+  outline-offset: 1px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.ticker-item strong {
+  color: #c8d0dc;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.ticker-item b {
+  font-size: 11px;
+  font-weight: 500;
+}
+.ticker-item .positive {
+  color: var(--h-positive, #4cae7e);
+}
+.ticker-item .negative {
+  color: var(--h-negative, #e0747b);
+}
+.ticker-hot {
+  padding: 1px 4px;
+  color: #1a1410;
+  background: #f0c43f;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Responsive tiers are the reference's own: 1200 / 1050 / 860 / 720. The
+   VOLTEX-specific lines in each are the drawer and the extras the Bolt demo
+   has no equivalent for (its mobile nav is the same <nav> re-flowed; ours is
+   a separate drawer carrying deposit, language and logout). */
+@media (max-width: 1200px) {
+  .nav-item {
+    padding: 0 8px;
+    font-size: 12.5px;
+  }
+  .brand-separator {
+    margin: 0 12px;
+  }
+  .global-header {
+    padding: 0 20px;
+  }
+}
+@media (max-width: 1050px) {
+  .global-header {
+    padding: 0 16px;
+  }
+  .nav-item {
+    padding: 0 6px;
+  }
+  .nav-item.nav-secondary {
+    display: none;
+  }
+  .nav-item.nav-admin {
+    display: inline-flex;
+  }
+  .brand-separator {
+    margin: 0 10px;
+  }
+}
+@media (max-width: 860px) {
+  .main-nav,
+  .brand-separator {
+    display: none;
+  }
+  .mobile-menu {
+    display: grid;
+  }
+  .language-control span:not(.language-chevron),
+  .profile-control > span:not(.top-nav-profile-avatar) {
+    display: none;
+  }
+  .nav-mobile-menu.open {
+    display: flex;
+  }
+  .header-extra-action {
+    display: none;
+  }
+  .nav-mobile-menu a:hover {
+    color: var(--h-text);
+    background: var(--h-hover);
+  }
+}
+@media (max-width: 720px) {
+  .global-header {
+    height: 56px;
+    padding: 0 14px;
+  }
+  .nav-mobile-menu {
+    top: 56px;
+    max-height: calc(100vh - 56px);
+  }
+  .market-ticker {
+    top: 56px;
+    height: 30px;
+  }
+  .ticker-track {
+    gap: 20px;
+    padding: 0 16px;
+  }
+  /* Carries .global-header so it still outranks the (0,2,0) reset guard
+     above — otherwise this tier's smaller type would never apply. */
+  .global-header .deposit-button {
+    padding: 7px 11px;
+    font-size: 12px;
+  }
+  .header-icon {
+    padding: 0 7px;
+  }
+}
+/* The balance is the last of the four to go, and only on a phone. Above
+   this the language control has already shrunk to its globe, which is the
+   compacting that buys the room; below it there is no width left for a
+   ~110px figure beside the deposit CTA and the profile control, which
+   outrank it. The balance stays one tap away on the wallet page. */
+@media (max-width: 560px) {
+  .wallet-balance-wrap {
+    display: none;
+  }
+}
+@media (max-width: 420px) {
+  .global-header {
+    padding: 0 10px;
+  }
+  .header-actions {
+    gap: 6px;
+  }
+  .mobile-menu {
+    margin-right: 4px;
+  }
+  .language-chevron,
+  .profile-control > .nav-chevron {
+    display: none;
+  }
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  /* A hair of tracking on button labels reads as considered/premium rather
+     than a raw browser default — same move used on page titles/logo. */
+  letter-spacing: 0.01em;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+/* Safari/iOS applies its own system chrome to text-like form controls
+   unless explicitly opted out, and can ignore a plain `color` on an
+   <input> in favor of that system text color — on a dark background that
+   reads as "gray text I can barely see" even though the same input looks
+   perfectly fine in Chromium. -webkit-text-fill-color is the property
+   Safari actually honors for the typed text color.
+   Deliberately excludes checkbox/radio: stripping THEIR native appearance
+   with nothing drawn back in makes them render with zero visible size —
+   an invisible, unclickable-looking control (caught via a Playwright
+   screenshot of the futures risk-disclaimer checkbox never rendering a
+   box at all). */
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+input:not([type='checkbox']):not([type='radio']),
+textarea {
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Chrome/Edge paint autofilled inputs with their OWN light background +
+   text color (that pale blue box with barely-readable text on a saved
+   login) and ignore a plain `background`/`color` entirely — the only way
+   to override it is this box-shadow-as-fake-background trick, plus a
+   absurdly long transition delay so Chrome's own autofill style never
+   gets a chance to paint first. Applies to every text input across the
+   app (login/register email+password included), not just one page. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--panel-alt) inset !important;
+  box-shadow: 0 0 0 1000px var(--panel-alt) inset !important;
+  caret-color: var(--text-primary);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* appearance: none above strips the native dropdown arrow along with the
+   system chrome we don't want — draw a plain chevron back in so a
+   <select> still visually reads as "click to choose" rather than a
+   dead-looking text field. */
+select {
+  color: var(--text-primary);
+  /* !important because components set their own inline `background`
+     shorthand for the panel color — that wins over a plain background-image
+     here (inline beats stylesheet), silently dropping the chevron. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a3adba' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  padding-right: 32px !important;
+}
+
+/* Native <select> dropdowns render their OPEN option list using the OS/
+   browser's own popup styling, which often ignores the `color` set on the
+   closed <select> itself — on some platforms that leaves near-white text
+   sitting on a near-white system popup background, i.e. invisible until
+   you select something blind. Force both explicitly so the option list is
+   always legible regardless of platform. */
+select option {
+  background: var(--panel-alt);
+  color: var(--text-primary);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--accent);
+  color: #0b0e11;
+}
+
+/* Numeric/tabular data always uses the mono face — this is the one signature
+   move that reads as "real trading terminal" rather than a generic dashboard:
+   every price, quantity, and balance locks to a fixed-width grid so digits
+   don't jitter as values tick. */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.text-buy {
+  color: var(--buy);
+}
+.text-sell {
+  color: var(--sell);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Plain text/number/password inputs and <select>s (order form, deposit
+   modal, auth, settings) get a proper focus treatment instead of the
+   generic outline above: an accent border plus a soft glow, which is what
+   actually reads as "designed" rather than a browser default ring sitting
+   awkwardly outside an already-bordered box. */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+select,
+textarea {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+input[type='text']:focus-visible,
+input[type='email']:focus-visible,
+input[type='password']:focus-visible,
+input[type='number']:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+/* Placeholder text had no color rule anywhere, so it fell back to the
+   browser default — nearly invisible against our dark background. This is
+   the actual cause of search boxes looking empty/gray. */
+::placeholder {
+  color: var(--text-tertiary);
+  -webkit-text-fill-color: var(--text-tertiary);
+  opacity: 1;
+}
+
+/* Shared "bright" search box look (icon + input) used anywhere someone can
+   filter a list — deliberately higher-contrast than a plain input so it
+   doesn't blend into the panel background. */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.search-box:hover {
+  border-color: #3a4050;
+}
+.search-box:focus-within {
+  border-color: var(--accent);
+  background: var(--panel-alt-hover);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.search-box svg {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+.search-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 10px 0;
+  width: 100%;
+}
+
+/* Row hover for clickable lists (pair picker, markets table, order book,
+   etc.) — inline styles can't express :hover, hence the shared class. */
+.row-hover {
+  transition: background-color 0.12s ease;
+}
+.row-hover:hover {
+  background-color: var(--panel-alt) !important;
+}
+
+/* Same idea as .row-hover, one shade darker — for elements that already
+   sit on a --panel-alt surface themselves (the admin sidebar), where
+   .row-hover's hover color would be invisible against its own background. */
+.row-hover-alt {
+  transition: background-color 0.12s ease;
+}
+.row-hover-alt:hover {
+  background-color: var(--panel-alt-hover) !important;
+}
+
+/* Market dashboard — the dimensions below intentionally follow the supplied
+   1064px reference: a 1000px outer shell, 25–28px gutters, 430px top cards
+   and a 458px list card. Data remains live; this layer controls visuals. */
+.market-dashboard {
+  position: relative;
+  padding: 72px 32px 88px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 2% 70%, rgba(255, 167, 32, 0.08), transparent 22%),
+    #030303;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.market-dashboard__pattern {
+  position: absolute;
+  right: -110px;
+  bottom: -170px;
+  width: 620px;
+  height: 620px;
+  opacity: 0.075;
+  background: repeating-linear-gradient(162deg, transparent 0 37px, #697079 38px 45px, transparent 46px 72px);
+  transform: rotate(-1deg);
+  mask-image: radial-gradient(circle at 70% 55%, #000 0 42%, transparent 73%);
+  pointer-events: none;
+}
+.market-dashboard__shell {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 27px 25px 28px;
+  display: grid;
+  gap: 27px;
+  overflow: hidden;
+  border-radius: 29px;
+  background:
+    radial-gradient(circle at 3% 49%, rgba(115, 104, 98, 0.22), transparent 27%),
+    linear-gradient(145deg, #211f20 0%, #0b0a0b 43%, #171617 100%);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.62),
+    inset 0 1px rgba(255, 255, 255, 0.025);
+}
+.market-dashboard__top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 25px;
+}
+.market-dashboard__card {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 0;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 0 0, rgba(72, 76, 82, 0.18), transparent 42%),
+    linear-gradient(145deg, #1b1c1f 0%, #151618 58%, #18191b 100%);
+  box-shadow:
+    0 17px 30px rgba(0, 0, 0, 0.34),
+    inset 0 1px rgba(255, 255, 255, 0.018);
+}
+.market-dashboard__trending-card,
+.market-dashboard__cfd-card {
+  min-height: 430px;
+  padding: 40px;
+}
+.market-dashboard__heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 4px 0 34px;
+  color: #f7f7f7;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+.market-dashboard__heading svg {
+  flex: none;
+}
+.market-dashboard__featured-link {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: inherit;
+  text-decoration: none;
+}
+.market-dashboard__featured-asset {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 12px;
+}
+.market-dashboard__featured-asset strong {
+  color: #f4f4f5;
+  font-size: 25px;
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.market-dashboard__featured-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.market-dashboard__featured-price > strong {
+  color: #fafafa;
+  font-size: 49px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+.market-dashboard__featured-price > span {
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+}
+.market-dashboard__chart {
+  display: block;
+  width: 100%;
+  height: 104px;
+  overflow: visible;
+}
+.market-dashboard__chart-glow,
+.market-dashboard__chart-line {
+  fill: none;
+  stroke: #f5a300;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.market-dashboard__chart-glow {
+  opacity: 0.24;
+  stroke-width: 8px;
+  filter: url(#market-chart-glow);
+}
+.market-dashboard__chart-line {
+  stroke-width: 2.4px;
+}
+.market-dashboard__months {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 9px;
+  color: #ededee;
+}
+.market-dashboard__months span {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+.market-dashboard__cfd-badge {
+  display: inline-flex;
+  min-width: 61px;
+  height: 43px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-bottom: 22px;
+  padding: 0 2px;
+  color: #fff;
+  background: #113d9e;
+  border-radius: 0;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+.market-dashboard__cfd-list {
+  display: grid;
+  gap: 4px;
+}
+.market-dashboard__row {
+  color: #f4f4f5;
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+.market-dashboard__row:hover {
+  background: rgba(255, 255, 255, 0.027);
+}
+.market-dashboard__cfd-row {
+  min-height: 91px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 128px;
+  align-items: center;
+  gap: 13px;
+  margin: 0 -7px;
+  padding: 5px 7px;
+  border-radius: 12px;
+}
+.market-dashboard__coin {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+  color: #fff;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+.market-dashboard__row-label {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+.market-dashboard__row-label strong {
+  overflow: hidden;
+  color: #f4f4f5;
+  font-size: 24px;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.market-dashboard__row-label small {
+  overflow: hidden;
+  color: #74777d;
+  font-size: 16px;
+  font-weight: 450;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.market-dashboard__cfd-value {
+  display: grid;
+  justify-items: end;
+  gap: 15px;
+  min-width: 0;
+}
+.market-dashboard__cfd-value > strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #f4f4f5;
+  font-family: inherit;
+  font-size: 23px;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.market-dashboard__cfd-value > small {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+.market-dashboard__positive {
+  color: #1dbf73;
+  text-align: right;
+}
+.market-dashboard__negative {
+  color: #ff3850;
+  text-align: right;
+}
+.market-dashboard__popular-card {
+  min-height: 458px;
+  padding: 40px 40px 38px;
+  background:
+    radial-gradient(circle at 0 0, rgba(92, 82, 78, 0.18), transparent 35%),
+    linear-gradient(145deg, #191819 0%, #0c0b0c 54%, #181719 100%);
+}
+.market-dashboard__tabs-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 19px;
+}
+.market-dashboard__tab {
+  position: relative;
+  flex: none;
+  padding: 0 0 9px;
+  color: #77797e;
+  background: none;
+  border: 0;
+  font-size: 27px;
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+.market-dashboard__tab.is-active {
+  color: #f7f7f7;
+}
+.market-dashboard__tab.is-active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: #f5a300;
+}
+.market-dashboard__view-all {
+  margin-left: auto;
+  padding-bottom: 9px;
+  color: #96969a;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.market-dashboard__view-all:hover {
+  color: #f2f2f3;
+}
+.market-dashboard__popular-list {
+  display: grid;
+}
+.market-dashboard__popular-row {
+  min-height: 79px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 144px 88px;
+  align-items: center;
+  gap: 16px;
+  margin: 0 -8px;
+  padding: 5px 8px;
+  border-radius: 12px;
+}
+.market-dashboard__popular-label {
+  gap: 3px;
+}
+.market-dashboard__popular-label strong {
+  font-size: 22px;
+}
+.market-dashboard__popular-label small {
+  display: none;
+}
+.market-dashboard__row-price {
+  color: #f1f1f2;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-align: right;
+  white-space: nowrap;
+}
+.market-dashboard__popular-row > .market-dashboard__positive,
+.market-dashboard__popular-row > .market-dashboard__negative {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .market-dashboard {
+    padding: 56px 20px 72px;
+  }
+  .market-dashboard__shell {
+    max-width: 620px;
+  }
+  .market-dashboard__top-grid {
+    grid-template-columns: 1fr;
+  }
+  .market-dashboard__trending-card,
+  .market-dashboard__cfd-card {
+    min-height: 430px;
+  }
+}
+
+@media (max-width: 760px) {
+  .market-dashboard {
+    padding: 38px 12px 54px;
+  }
+  .market-dashboard__shell {
+    gap: 14px;
+    padding: 12px;
+    border-radius: 23px;
+  }
+  .market-dashboard__top-grid {
+    gap: 14px;
+  }
+  .market-dashboard__card {
+    border-radius: 21px;
+  }
+  .market-dashboard__trending-card,
+  .market-dashboard__cfd-card,
+  .market-dashboard__popular-card {
+    min-height: 0;
+    padding: 26px 22px;
+  }
+  .market-dashboard__heading {
+    margin: 1px 0 26px;
+    font-size: 25px;
+  }
+  .market-dashboard__featured-asset {
+    gap: 12px;
+  }
+  .market-dashboard__featured-asset img {
+    width: 42px;
+    height: 42px;
+  }
+  .market-dashboard__featured-asset strong {
+    font-size: 21px;
+  }
+  .market-dashboard__featured-price > strong {
+    font-size: clamp(36px, 11vw, 46px);
+  }
+  .market-dashboard__featured-price > span {
+    font-size: 18px;
+  }
+  .market-dashboard__chart {
+    height: 92px;
+  }
+  .market-dashboard__months span {
+    font-size: 14px;
+  }
+  .market-dashboard__cfd-badge {
+    width: 56px;
+    height: 39px;
+    font-size: 25px;
+  }
+  .market-dashboard__cfd-row {
+    min-height: 80px;
+    grid-template-columns: 38px minmax(0, 1fr) 106px;
+    gap: 10px;
+  }
+  .market-dashboard__coin {
+    width: 38px;
+    height: 38px;
+    font-size: 19px;
+  }
+  .market-dashboard__row-label {
+    gap: 9px;
+  }
+  .market-dashboard__row-label strong {
+    font-size: 19px;
+  }
+  .market-dashboard__row-label small {
+    font-size: 13px;
+  }
+  .market-dashboard__cfd-value {
+    gap: 12px;
+  }
+  .market-dashboard__cfd-value > strong {
+    font-size: 18px;
+  }
+  .market-dashboard__cfd-value > small {
+    font-size: 14px;
+  }
+  .market-dashboard__tabs-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px 18px;
+  }
+  .market-dashboard__tab {
+    justify-self: start;
+    font-size: clamp(17px, 4.8vw, 22px);
+  }
+  .market-dashboard__tab:nth-child(2) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .market-dashboard__view-all {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: end;
+    margin-left: 0;
+    padding-bottom: 0;
+    font-size: 17px;
+  }
+  .market-dashboard__popular-row {
+    min-height: 68px;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+  }
+  .market-dashboard__popular-row > img,
+  .market-dashboard__popular-row > .market-dashboard__coin,
+  .market-dashboard__popular-row > .market-dashboard__popular-label {
+    grid-row: 1 / 3;
+  }
+  .market-dashboard__popular-label strong,
+  .market-dashboard__row-price {
+    font-size: 17px;
+  }
+  .market-dashboard__row-price {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: end;
+  }
+  .market-dashboard__popular-row > .market-dashboard__positive,
+  .market-dashboard__popular-row > .market-dashboard__negative {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: start;
+    font-size: 15px;
+  }
+}
+
+/* Card hover-lift for clickable/tappable cards (products, card-page
+   features, settings tabs) — subtle, not a gimmick: a soft rise + glow
+   instead of a flat rectangle with zero feedback. */
+.card-hover {
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: #3a4050 !important;
+  box-shadow: var(--shadow-md);
+}
+
+/* Static (non-interactive) elevated surface — tables, list panels, form
+   cards that don't lift on hover but still need to read as raised above
+   the page instead of blending into it. */
+.surface-raised {
+  box-shadow: var(--shadow-sm);
+}
+
+/* Buttons get a small interactive nudge everywhere by default — flat,
+   static buttons are a big part of why the UI read as lifeless. */
+button:not(:disabled) {
+  transition: filter 0.12s ease, transform 0.08s ease, box-shadow 0.12s ease;
+}
+button:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+/* Thin, dark, accent-on-hover scrollbars instead of the browser's chunky
+   light-gray default — small detail, but it's everywhere on a trading
+   screen (order book, dropdowns, tables) so it reads immediately. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Thin gradient accent along a card's top edge — used on a handful of
+   "hero" cards (wallet total, profile) so they read as a highlighted
+   surface rather than the exact same flat panel as everything else. */
+.accent-edge {
+  position: relative;
+}
+.accent-edge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--buy) 60%, transparent 100%);
+}
+
+/* Pill status badge — replaces plain colored text for KYC/order/key
+   status everywhere so state reads as a distinct chip, not just a color. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Settings profile-hub reskin: sidebar nav links, avatar circle, quick-
+   action cards, verification progress bar — built from the site's own
+   tokens (not a pixel-fidelity port), needed because inline styles can't
+   express :hover/::after states. */
+.settings-nav-link {
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.settings-nav-link:hover {
+  background-color: var(--panel-alt) !important;
+  color: var(--text-primary) !important;
+}
+.settings-nav-link.active {
+  background: linear-gradient(90deg, var(--accent-dim), transparent);
+  box-shadow: inset 2px 0 var(--accent);
+}
+.settings-nav-link.active svg {
+  color: var(--accent) !important;
+}
+.settings-nav-pip {
+  position: absolute;
+  right: 12px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.settings-avatar {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 0 0 4px var(--accent-dim);
+}
+.settings-avatar-shine {
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(120deg, transparent 40%, rgba(255, 255, 255, 0.35), transparent 62%);
+  transform: translateX(-80%) rotate(10deg);
+  animation: settings-shine 5s ease-in-out infinite;
+}
+@keyframes settings-shine {
+  0%, 65% { transform: translateX(-80%) rotate(10deg); }
+  85%, 100% { transform: translateX(100%) rotate(10deg); }
+}
+.settings-quick-card {
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.settings-quick-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent) !important;
+  background-color: var(--panel-alt) !important;
+}
+.settings-quick-card:hover .settings-quick-arrow {
+  color: var(--accent) !important;
+  transform: translateX(3px);
+}
+.settings-quick-arrow {
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.settings-progress-track {
+  height: 4px;
+  border-radius: 5px;
+  background: var(--buy-dim);
+  overflow: hidden;
+}
+.settings-progress-value {
+  height: 100%;
+  background: linear-gradient(90deg, var(--buy), #6ed19c);
+  box-shadow: 0 0 12px var(--buy-dim);
+  transition: width 0.3s ease;
+}
+@media (max-width: 860px) {
+  .settings-layout {
+    display: flex !important;
+    flex-direction: column;
+  }
+  .settings-sidebar {
+    position: static !important;
+    width: 100%;
+  }
+  .settings-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .settings-quick-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 520px) {
+  .settings-quick-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Skeleton loading placeholder — a softly shimmering block standing in for
+   content that hasn't arrived yet, instead of bare "Загрузка..." text that
+   reads as an empty/broken panel while a request is in flight. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-alt);
+  border-radius: 6px;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.nav-card-icon {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+a:hover > .nav-card-icon {
+  transform: scale(1.15) rotate(-4deg);
+  filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.75)) !important;
+}
+
+.card-tilt-wrap,
+.card-tilt-wrap-photo {
+  /* 1100px matches the reference's reconstructed perspective distance —
+     less aggressive than the earlier 700px guess, since rotateZ below
+     now does a lot of the "clearly tilted" work on its own. */
+  perspective: 1100px;
+  position: relative;
+}
+/* A dimmer duplicate card sitting behind-below the real one, at the same
+   resting tilt — the "stacked cards" depth cue from the reference design.
+   Pure decoration: no content, never intercepts clicks. Only for the
+   CSS-built card face — the real photo (card-tilt-wrap-photo) already has
+   its own stacked-card duplicate baked into the image, so adding this
+   would double it up. */
+.card-tilt-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 19px;
+  background: #2e323b;
+  opacity: 0.72;
+  transform: rotateX(5deg) rotateY(-12deg) rotateZ(-15deg) translate(45px, 45px) translateZ(-60px);
+  transform-style: preserve-3d;
+  pointer-events: none;
+  z-index: -1;
+}
+.card-tilt {
+  transform: rotateX(5deg) rotateY(-12deg) rotateZ(-15deg);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.card-tilt-wrap:hover .card-tilt,
+.card-tilt-wrap-photo:hover .card-tilt {
+  transform: rotateX(3deg) rotateY(-7deg) rotateZ(-10deg) scale(1.05);
+  box-shadow: -24px 28px 60px rgba(0, 0, 0, 0.45);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* A static resting tilt isn't motion — only the animated transition on
+     hover is, so that's the only thing reduced-motion needs to drop. The
+     card and its ghost stay visible at their normal tilted rest state. */
+  .card-tilt {
+    transition: none;
+  }
+  .card-tilt-wrap:hover .card-tilt,
+  .card-tilt-wrap-photo:hover .card-tilt {
+    transform: rotateX(5deg) rotateY(-12deg) rotateZ(-15deg);
+  }
+}
+
+/* The login page's Crypto Card banner.
+   The artwork is a fixed 440px-wide image carrying a 3D tilt, so its
+   bounding box measures ~510px — wider than a phone viewport. Below 560px
+   that was pushing the whole /login page into horizontal scroll (~159px at
+   390, ~174px at 375). Clipping the banner leaves the approved artwork at
+   exactly its designed size, position and tilt; it only stops the part that
+   already sat outside the screen from dragging the page sideways with it.
+   `clip` rather than `hidden` so this never becomes a nested scroll
+   container — same choice the page-level resets in home.css, register.css
+   and wallet-v3/wallet.css already make. */
+@media (max-width: 560px) {
+  .auth-perks-banner {
+    overflow-x: clip;
+  }
+}
+
+.toast-item {
+  animation: toast-slide-in 0.2s ease-out;
+}
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Binance-style flash on a live-polled price cell — pulses a tinted
+   background then fades, giving a "live" cue without redrawing the row. */
+.price-flash-up {
+  border-radius: 3px;
+  animation: price-flash-up 0.6s ease-out;
+}
+.price-flash-down {
+  border-radius: 3px;
+  animation: price-flash-down 0.6s ease-out;
+}
+@keyframes price-flash-up {
+  0% {
+    background: var(--buy-dim);
+    color: var(--buy);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@keyframes price-flash-down {
+  0% {
+    background: var(--sell-dim);
+    color: var(--sell);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 /* Order-book row pulse on any quantity update — deliberately symmetric
    for both bid and ask rows (see OrderBookPanel's useRowFlash). */
-.book-row-flash-up {
-  animation: book-row-flash-up 0.45s ease-out;
-}
-.book-row-flash-down {
-  animation: book-row-flash-down 0.45s ease-out;
-}
-@keyframes book-row-flash-up {
-  0% {
-    background: rgba(0, 214, 143, 0.32);
-  }
-  100% {
-    background: transparent;
-  }
-}
-@keyframes book-row-flash-down {
-  0% {
-    background: rgba(255, 77, 106, 0.32);
-  }
-  100% {
-    background: transparent;
-  }
-}
+
+
+
+
 
 .ticker-track {
   animation: ticker-scroll 60s linear infinite;

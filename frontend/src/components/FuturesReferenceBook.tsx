@@ -7,8 +7,10 @@ import { aggregateSpotBook, formatSpotBookNumber, spotBookMetrics, spotGroupStep
 import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_ROW_HEIGHT, REFERENCE_CENTER_HEIGHT } from '../lib/referenceBook';
 
 /** Exact-contract Futures presentation; price picking never submits an order. */
-export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice = null, trades = [], status = 'live' }: {
+export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice = null, markPrice = null, trades = [], status = 'live' }: {
   bids: SpotBookLevel[]; asks: SpotBookLevel[]; pair: string; lastPrice?:number|null; trades?:FuturesTrade[];
+  /** The contract's mark, drawn small beside the last price as the reference does. Null = not shown, never zero. */
+  markPrice?: number | null;
   /** What the feed says these levels currently are. See futuresDepth. */
   status?: FuturesDepthStatus;
   onPickPrice: (price: string) => void;
@@ -137,7 +139,12 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
             <span className="rb-arrow" aria-hidden="true">{direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''}</span>
           </strong>
           {last === null && metrics.mid !== null && <small className="rb-mid-label" title="(best bid + best ask) / 2">Mid</small>}
-          <span title={t('trade.spread')}>{t('trade.spread')} {metrics.spread !== null ? formatSpotBookNumber(metrics.spread) : '—'}</span>
+          {/* The reference puts the MARK beside the last, small and grey; the
+              spread is still real and still here, on hover, rather than as a
+              second line of text competing with the price. */}
+          {markPrice !== null && Number.isFinite(markPrice) && markPrice > 0
+            ? <span className="rb-mark" title={`${t('futures.markPrice')} · ${t('trade.spread')} ${metrics.spread !== null ? formatSpotBookNumber(metrics.spread) : '—'}`}>{referencePrice(markPrice)}</span>
+            : <span title={t('trade.spread')}>{t('trade.spread')} {metrics.spread !== null ? formatSpotBookNumber(metrics.spread) : '—'}</span>}
         </div>
         {mode !== 'asks' && <div className="rb-stack rb-bids">{rows(buy, 'bid')}</div>}
       </div>

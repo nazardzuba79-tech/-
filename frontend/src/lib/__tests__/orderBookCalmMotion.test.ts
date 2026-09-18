@@ -75,7 +75,7 @@ describe('depth bars are muted and settle between publishes', () => {
   const rule = css.slice(css.indexOf('.repaired-futures-book .rb-depth {', css.indexOf('Order-book calm')));
 
   it('draws the bars well under the old 30% alpha', () => {
-    const alphas = [...css.matchAll(/rgba\((?:20,160,115|200,64,74),\.(\d+)\)/g)].map((m) => Number('0.' + m[1]));
+    const alphas = [...css.matchAll(/rgba\((?:14,203,129|246,70,93),\.(\d+)\)/g)].map((m) => Number('0.' + m[1]));
     expect(alphas.length).toBeGreaterThan(0);
     expect(Math.max(...alphas)).toBeLessThanOrEqual(0.15);
   });
@@ -114,5 +114,79 @@ describe('the data contract is untouched', () => {
     // Depth still comes from the aggregator, not from a locally held copy.
     expect(code).toContain("aggregateSpotBook(bids, step, 'BUY')");
     expect(code).toContain("aggregateSpotBook(asks, step, 'SELL')");
+  });
+});
+
+/**
+ * The same book everywhere. The Spot panel had the three things the
+ * reference does not: rows keyed by price, a 32%-alpha pulse on every
+ * changed row, and a depth bar driven by `width`, which lays the row out
+ * again on every tick.
+ */
+describe('the Spot book follows the same rules as the Futures book', () => {
+  const spot = read('frontend/src/components/OrderBookPanel.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const index = read('frontend/src/index.css');
+
+  it('keys its rows by depth slot on both sides', () => {
+    expect(spot).toContain('key={`sell-${index}`}');
+    expect(spot).toContain('key={`buy-${index}`}');
+    expect(spot).not.toMatch(/key=\{spotPrecision \? spotLevelPrice/);
+  });
+
+  it('no longer pulses a row when its size changes', () => {
+    expect(spot).not.toContain('useRowFlash');
+    expect(spot).not.toMatch(/book-row-flash/);
+    expect(index).not.toMatch(/book-row-flash/);
+  });
+
+  it('drives its depth bar with a transform, not a width', () => {
+    expect(spot).toContain('transform: `scaleX(${share})`');
+    expect(spot).not.toMatch(/style=\{\{\s*width:\s*`\$\{pct\}%`/);
+    const rule = css.slice(css.indexOf('.spot-terminal.market-reference.terminal-studio .ob-depth-bar {'));
+    expect(rule).toContain('transform-origin:100% 50%');
+    expect(rule).toContain('width:100%');
+  });
+
+  it('still shows the level it was given and still submits the exact price', () => {
+    expect(spot).toContain('level.cumulative / maxDepth');
+    expect(spot).toContain('onPick?.(spotStep === undefined ? level.price.toFixed(2) : priceText)');
+  });
+});
+
+/**
+ * Tokens are the MEASURED ones, shared by both panels: the reference's row
+ * background, its sell/buy, and a depth tint solved to alpha 0.09.
+ */
+describe('both panels draw the measured reference tokens', () => {
+  const block = css.slice(css.indexOf('ONE book, every terminal'));
+  it('uses one depth tint for Futures and Spot, at the measured alpha', () => {
+    const tints = [...css.matchAll(/rgba\((246,70,93|14,203,129),\.(\d+)\)/g)].map((m) => m[2]);
+    expect(tints.length).toBeGreaterThanOrEqual(4);
+    expect(new Set(tints)).toEqual(new Set(['09']));
+    // The pre-#121 30% and #121's own .13 are both gone.
+    expect(css).not.toMatch(/rgba\((?:20,160,115|200,64,74),\.(?:30|13)\)/);
+  });
+  it('colours prices with the reference sell/buy and text with its grey scale, on both panels', () => {
+    for (const panel of ['.repaired-futures-book', '.spot-terminal.market-reference.terminal-studio']) {
+      const part = block.slice(block.indexOf(panel));
+      expect(part).toMatch(/#f6465d/);
+      expect(part).toMatch(/#0ecb81/);
+      expect(part).toMatch(/#eaecef/);
+      expect(part).toMatch(/#848e9c/);
+    }
+  });
+});
+
+/** The Futures centre draws the mark beside the last, as the reference does. */
+describe('futures centre shows the mark price beside the last', () => {
+  it('renders the mark in its own muted slot when the feed has one, and falls back to the spread when it does not', () => {
+    expect(code).toContain('className="rb-mark"');
+    expect(code).toContain('markPrice !== null && Number.isFinite(markPrice) && markPrice > 0');
+    expect(code).toContain("t('trade.spread')");
+  });
+  it('is fed from the shared quote the page already holds, never a second request', () => {
+    const page = read('frontend/src/pages/FuturesPage.tsx');
+    expect(page).toContain('markPrice={reference.get(symbol)?.markPrice ?? null}');
+    expect(page).not.toMatch(/getFuturesMarkPrice/);
   });
 });

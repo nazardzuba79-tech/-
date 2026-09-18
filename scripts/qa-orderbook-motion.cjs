@@ -46,6 +46,7 @@ const arg = (name, fallback) => { const i = args.indexOf('--' + name); return i 
 const LABEL = arg('label', 'run');
 const OUT = path.resolve(arg('out', path.join(__dirname, '../docs/qa/orderbook')));
 const WINDOW_MS = Number(arg('window', 15000));
+const EVENT_NAME = 'message';
 
 /** Seeded PRNG — the whole point of this harness is that this is the only
  *  source of randomness and it starts from a fixed seed. */
@@ -141,6 +142,43 @@ app.get('/api/v1/futures/mark-price/:symbol', (_q, r) => r.json({ symbol: SYMBOL
 app.get('/api/v1/futures/funding-rate/:symbol', (_q, r) => r.json({ history: [{ rate: '0.0001', markPrice: '1', indexPrice: '1', appliedAt: new Date().toISOString() }] }));
 app.get('/api/v1/market/derivatives/:asset', (_q, r) => r.json({ available: true, source: 'qa', fetchedAt: Date.now(), stale: false, value: { turnover24hUsd: 1.2e9, openInterestBase: 12345.5, openInterestUsd: 9.2e8 } }));
 app.get('/api/v1/market/external/symbols', (_q, r) => r.json({ symbols: PAIRS }));
+/** The book as of `elapsed` ms into the sequence — same frames the socket replays. */
+let spotStartedAt = null;
+function bookAt(elapsedMs) {
+  const bids = new Map(SEQUENCE[0].b), asks = new Map(SEQUENCE[0].a);
+  const upto = Math.min(SEQUENCE.length - 1, Math.floor(elapsedMs / FRAME_MS));
+  for (let i = 1; i <= upto; i++) {
+    for (const [p, q] of SEQUENCE[i].b) { if (q === '0') bids.delete(p); else bids.set(p, q); }
+    for (const [p, q] of SEQUENCE[i].a) { if (q === '0') asks.delete(p); else asks.set(p, q); }
+  }
+  const sortNum = (dir) => (a, b) => (Number(a[0]) - Number(b[0])) * dir;
+  return { bids: [...bids].sort(sortNum(-1)).slice(0, 50).map(([price, quantity]) => ({ price, quantity })),
+           asks: [...asks].sort(sortNum(1)).slice(0, 50).map(([price, quantity]) => ({ price, quantity })) };
+}
+app.get('/api/v1/market/external/orderbook/:pair', (_q, r) => {
+  if (spotStartedAt === null) spotStartedAt = Date.now();
+  r.json({ source: 'qa', pair: 'BTC/USDT', ...bookAt(Date.now() - spotStartedAt) });
+});
+app.get('/api/v1/market/external/trades/:pair', (_q, r) => r.json({ source: 'qa', pair: 'BTC/USDT', trades: Array.from({ length: 30 }, (_, i) => ({ id: `qa-${i}`, price: round(START_MID), quantity: '0.125', side: i % 2 ? 'BUY' : 'SELL', time: Date.now() - i * 900 })) }));
+app.get('/api/v1/market/external/tickers/:pair', (_q, r) => r.json({ source: 'qa', ticker: { pair: 'BTC/USDT', lastPrice: START_MID, high24h: START_MID * 1.02, low24h: START_MID * 0.98, changePercent: 1.18, quoteVolume24h: 1.2e9, volume24h: 15000 } }));
+/** The shared reference stream (SSE). One live BTC/USDT row that passes
+ *  futuresReferenceRows' identity filter, carrying the MARK PRICE, so the
+ *  centre's mark slot is exercised by the same fixture. */
+app.get('/api/v1/market/live', (req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  const now = Date.now();
+  const row = { id: 'linear_perpetual:BTCUSDT', pair: 'BTC/USDT', symbol: 'BTC/USDT', providerSymbol: 'BTCUSDT', provider: 'bybit',
+    marketType: 'linear_perpetual', baseAsset: 'BTC', quoteAsset: 'USDT', settleAsset: 'USDT',
+    lastPrice: START_MID, bidPrice: START_MID - TICK, askPrice: START_MID + TICK, high24h: START_MID * 1.02, low24h: START_MID * 0.98,
+    volume24h: 15000, quoteVolume24h: 1.2e9, changePercent24h: 1.18, indexPrice: START_MID, markPrice: START_MID * 1.00004,
+    fundingRate: 0.0001, fundingIntervalMinutes: 480, openInterest: 12345.5, openInterestValue: 9.2e8,
+    providerEventAt: now, sequence: 1, receivedAt: now, fetchedAt: now, stale: false };
+  const frame = { version: 1, type: 'snapshot', status: 'live', rows: [row], revision: 1, epoch: 'qa' };
+  const write = () => res.write((EVENT_NAME === 'message' ? '' : `event: ${EVENT_NAME}\n`) + `data: ${JSON.stringify(frame)}\n\n`);
+  write();
+  const keep = setInterval(() => res.write(': keep-alive\n\n'), 5000);
+  req.on('close', () => clearInterval(keep));
+});
 app.get('/api/v1/*', (_q, r) => r.json([]));
 
 const dist = path.join(__dirname, '../frontend/dist');
@@ -169,18 +207,23 @@ async function measure() {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
   const results = {};
-  for (const [device, viewport] of [['desktop', { width: 1920, height: 1080 }], ['mobile', { width: 390, height: 844 }]]) {
+  const targets = [
+    ['futures-desktop', '/futures', { width: 1920, height: 1080 }, '.rb-body', '.rb-row', '.rb-depth'],
+    ['futures-mobile',  '/futures', { width: 390, height: 844 },   '.rb-body', '.rb-row', '.rb-depth'],
+    ['spot-desktop',    '/trade',   { width: 1920, height: 1080 }, '.orderbook-area', '.ob-row', '.ob-depth-bar'],
+  ];
+  for (const [device, route, viewport, bodySel, rowSel, barSel] of targets) {
     const page = await browser.newPage({ viewport });
-    await page.goto(`http://127.0.0.1:${HTTP_PORT}/futures`, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('.rb-row', { timeout: 30000 }).catch(() => {});
+    await page.goto(`http://127.0.0.1:${HTTP_PORT}${route}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector(rowSel, { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(3000); // let the snapshot settle before counting
 
-    await page.evaluate(() => {
-      const target = document.querySelector('.rb-body');
-      const stats = { rowsAdded: 0, rowsRemoved: 0, textChanges: 0, depthStyleWrites: 0, otherAttr: 0 };
+    await page.evaluate(([bodySel, rowClass, barClass]) => {
+      const target = document.querySelector(bodySel);
+      const stats = { rowsAdded: 0, rowsRemoved: 0, textChanges: 0, depthStyleWrites: 0, otherAttr: 0, flashClassWrites: 0 };
       window.__motion = stats;
       if (!target) return;
-      const isRow = (n) => n.nodeType === 1 && n.classList && n.classList.contains('rb-row');
+      const isRow = (n) => n.nodeType === 1 && n.classList && n.classList.contains(rowClass);
       const observer = new MutationObserver((records) => {
         for (const r of records) {
           if (r.type === 'childList') {
@@ -188,7 +231,8 @@ async function measure() {
             r.removedNodes.forEach((n) => { if (isRow(n)) stats.rowsRemoved++; });
           } else if (r.type === 'characterData') stats.textChanges++;
           else if (r.type === 'attributes') {
-            if (r.target.classList && r.target.classList.contains('rb-depth')) stats.depthStyleWrites++;
+            if (r.target.classList && r.target.classList.contains(barClass)) stats.depthStyleWrites++;
+            else if (r.attributeName === 'class' && isRow(r.target)) stats.flashClassWrites++; // a row pulsing on/off
             else stats.otherAttr++;
           }
         }
@@ -198,19 +242,19 @@ async function measure() {
       // Layout stability: sample the rendered row count and panel height.
       window.__layout = [];
       window.__layoutTimer = setInterval(() => {
-        const body = document.querySelector('.rb-body');
-        window.__layout.push({ rows: document.querySelectorAll('.rb-row').length, h: Math.round(body ? body.getBoundingClientRect().height : 0) });
+        const body = document.querySelector(bodySel);
+        window.__layout.push({ rows: document.querySelectorAll('.' + rowClass).length, h: Math.round(body ? body.getBoundingClientRect().height : 0) });
       }, 250);
-    });
+    }, [bodySel, rowSel.slice(1), barSel.slice(1)]);
 
     const shots = [];
     const started = Date.now();
     let shotIndex = 0;
     while (Date.now() - started < WINDOW_MS) {
       await page.waitForTimeout(WINDOW_MS / 5);
-      if (device === 'desktop' && shotIndex < 3) {
-        const book = await page.$('.reference-book');
-        const file = path.join(OUT, `${LABEL}-book-${shotIndex}.png`);
+      if (device.endsWith('desktop') && shotIndex < 3) {
+        const book = await page.$(route === '/trade' ? '.orderbook-area' : '.reference-book');
+        const file = path.join(OUT, `${LABEL}-${device}-${shotIndex}.png`);
         if (book) await book.screenshot({ path: file });
         shots.push(file);
         shotIndex++;
@@ -237,6 +281,7 @@ async function measure() {
     console.log(`    rows remounted      ${String(r.rowsAdded).padStart(6)} added / ${String(r.rowsRemoved).padStart(6)} removed   (${(r.rowsAdded / seconds).toFixed(1)}/s)`);
     console.log(`    text rewrites       ${String(r.textChanges).padStart(6)}   (${(r.textChanges / seconds).toFixed(1)}/s)`);
     console.log(`    depth bar writes    ${String(r.depthStyleWrites).padStart(6)}   (${(r.depthStyleWrites / seconds).toFixed(1)}/s)`);
+    console.log(`    row flash toggles   ${String(r.flashClassWrites).padStart(6)}   (class writes on a row: a pulse on/off)`);
     console.log(`    other attr writes   ${String(r.otherAttr).padStart(6)}`);
     console.log(`    row counts seen     ${JSON.stringify(r.rowCounts)}   (one value = no layout jump)`);
     console.log(`    body heights seen   ${JSON.stringify(r.heights)}`);

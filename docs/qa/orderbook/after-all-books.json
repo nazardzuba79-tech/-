@@ -1,0 +1,64 @@
+{
+  "label": "after2",
+  "seed": 20260918,
+  "frameMs": 100,
+  "windowMs": 15000,
+  "results": {
+    "futures-desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 4462,
+      "depthStyleWrites": 1531,
+      "otherAttr": 15,
+      "flashClassWrites": 0,
+      "samples": 61,
+      "rowCounts": [
+        38
+      ],
+      "heights": [
+        831
+      ],
+      "shots": [
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-futures-desktop-0.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-futures-desktop-1.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-futures-desktop-2.png"
+      ]
+    },
+    "futures-mobile": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 1460,
+      "depthStyleWrites": 448,
+      "otherAttr": 14,
+      "flashClassWrites": 0,
+      "samples": 60,
+      "rowCounts": [
+        12
+      ],
+      "heights": [
+        306
+      ],
+      "shots": []
+    },
+    "spot-desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 838,
+      "depthStyleWrites": 267,
+      "otherAttr": 0,
+      "flashClassWrites": 0,
+      "samples": 61,
+      "rowCounts": [
+        34
+      ],
+      "heights": [
+        889
+      ],
+      "shots": [
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-spot-desktop-0.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-spot-desktop-1.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-spot-desktop-2.png"
+      ]
+    }
+  }
+}

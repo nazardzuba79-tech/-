@@ -257,11 +257,11 @@
    every bar was permanently mid-animation, so the ladder never sat still.
    140ms lands each bar well before the next publish. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
-  background:rgba(20,160,115,.13);
+  background:rgba(14,203,129,.09);
   transition:transform 140ms linear;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
-  background:rgba(200,64,74,.13);
+  background:rgba(246,70,93,.09);
 }
 
 /* CENTRE PRICE. The number sits in its own slot and the direction arrow in a
@@ -274,3 +274,54 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center .rb-arrow {
   display:inline-block; width:0.72em; text-align:center; font-size:0.8em; font-weight:600;
 }
+
+/* ---------------------------------------------------------------------------
+   ONE book, every terminal — measured from the owner's Binance reference
+   (video frame, text-free pixels, then alpha solved against the row
+   background): row bg #16181e, size/total text #eaecef, headers #848e9c,
+   sell #F6465D, buy #0ECB81, and the depth tint at alpha 0.09 on both sides.
+   Everything below is tokens and weight; geometry, row height, row count and
+   the data path are untouched. */
+
+/* ---- Futures / Private (FuturesReferenceBook) ---- */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row {
+  font-size:12px; font-weight:400; color:#eaecef;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask > span:first-of-type,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center .down { color:#f6465d; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.bid > span:first-of-type,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center .up { color:#0ecb81; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-columns {
+  font-size:11px; font-weight:400; color:#848e9c;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book :is(.rb-body,.rb-row) { background:#16181e; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book button.rb-row:hover { background:#1e2129; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center {
+  background:#16181e; border-block:0; gap:0 8px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center strong { font-size:18px; font-weight:500; color:#eaecef; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center .rb-mark,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center > span { color:#848e9c; font-size:12px; font-weight:400; }
+
+/* ---- Spot (OrderBookPanel) — the same tokens, the same bar mechanics ---- */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-row {
+  font-size:12px; font-weight:400; color:#eaecef; background:#16181e; transition:none;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-row:hover { background:#1e2129; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-row .cell { color:#eaecef; font-weight:400; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-row .cell:last-child { color:#eaecef; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-row .cell.ask-price { color:#f6465d; font-weight:400; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-row .cell.bid-price { color:#0ecb81; font-weight:400; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-col-headers .ob-col { color:#848e9c; font-weight:400; }
+/* The bar is a full-width strip scaled from its right edge, so a size change
+   is a transform (composited), never a width (layout). The old `opacity`
+   layers are collapsed into one measured tint. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-depth-bar {
+  left:0; width:100%; opacity:1; transform-origin:100% 50%; will-change:transform;
+  transition:transform 140ms linear;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-depth-bar.ask { background:rgba(246,70,93,.09); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-depth-bar.bid { background:rgba(14,203,129,.09); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-spread { background:#16181e; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price { font-weight:500; color:#eaecef; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio :is(.ob-spread-detail,.orderbook-spread .usd) { color:#848e9c; }

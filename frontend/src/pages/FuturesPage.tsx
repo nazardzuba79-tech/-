@@ -415,6 +415,8 @@ export function FuturesPage() {
                 tree for a panel that already handles a pair change itself. */}
             <FuturesReferenceBook
               lastPrice={reference.get(symbol)?.lastPrice ?? null}
+              /* Same shared quote the market list reads; no second request. */
+              markPrice={reference.get(symbol)?.markPrice ?? null}
               trades={tape.symbol===symbol?tape.rows:[]}
               status={book.symbol === symbol ? book.status : 'connecting'}
               bids={book.symbol === symbol ? book.bids : []}
