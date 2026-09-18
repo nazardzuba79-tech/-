@@ -80,3 +80,31 @@ dropdown shows.
 
 Deliberately NOT copied: the `…` overflow menu (it would open nothing), and
 the global font stack, which is the whole product's, not the book's.
+
+## Fourth pass — the header and the type, both measured
+
+**Header.** The reference gives the book a title row with one action on the
+right, then a control row beneath. Spot had the title, the three modes, the
+grouping and the collapse all on one line — which is why the panel still read
+as busier than the reference after the colours matched. Split into the two
+rows, at the reference's proportions (a 462px panel gives ~44px and ~40px;
+scaled to our 250px column, 32px and 28px). The collapse button now occupies
+the slot the reference gives its `…`. The overflow glyph itself is still not
+copied: it would open nothing, and a dead control is worse than no control.
+
+**Type.** Measured on the reference frame and on our render, both normalised
+by row pitch so panel width cancels out:
+
+| | reference | ours |
+|---|---|---|
+| glyph height / row pitch | 0.412 | **0.409** |
+| advance per digit / row pitch | 0.289 | **0.312** |
+
+The **size was already right** — 0.7 % apart. The remaining gap is width: our
+digits carry 8 % more advance, because Inter's tabular figures are wider than
+the reference's typeface. We self-host Inter under `/fonts/inter` and ship no
+other family, so matching the typeface exactly means adding a second webfont
+for the whole terminal — a product decision, not an order-book one, and the
+font files are not available in this environment. A -0.01em tightening closes
+part of it. **Residual: roughly 5 % wider digits than the reference.** Stated,
+not hidden.

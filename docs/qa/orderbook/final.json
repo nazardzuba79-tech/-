@@ -1,0 +1,64 @@
+{
+  "label": "final",
+  "seed": 20260918,
+  "frameMs": 100,
+  "windowMs": 10000,
+  "results": {
+    "futures-desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 3062,
+      "depthStyleWrites": 1010,
+      "otherAttr": 13,
+      "flashClassWrites": 0,
+      "samples": 41,
+      "rowCounts": [
+        38
+      ],
+      "heights": [
+        831
+      ],
+      "shots": [
+        "/home/user/-/docs/qa/orderbook/final-futures-desktop-0.png",
+        "/home/user/-/docs/qa/orderbook/final-futures-desktop-1.png",
+        "/home/user/-/docs/qa/orderbook/final-futures-desktop-2.png"
+      ]
+    },
+    "futures-mobile": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 990,
+      "depthStyleWrites": 311,
+      "otherAttr": 9,
+      "flashClassWrites": 0,
+      "samples": 40,
+      "rowCounts": [
+        12
+      ],
+      "heights": [
+        306
+      ],
+      "shots": []
+    },
+    "spot-desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 518,
+      "depthStyleWrites": 167,
+      "otherAttr": 2,
+      "flashClassWrites": 0,
+      "samples": 40,
+      "rowCounts": [
+        34
+      ],
+      "heights": [
+        889
+      ],
+      "shots": [
+        "/home/user/-/docs/qa/orderbook/final-spot-desktop-0.png",
+        "/home/user/-/docs/qa/orderbook/final-spot-desktop-1.png",
+        "/home/user/-/docs/qa/orderbook/final-spot-desktop-2.png"
+      ]
+    }
+  }
+}

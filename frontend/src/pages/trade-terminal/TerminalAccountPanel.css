@@ -353,3 +353,42 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .ob-arrow,
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .ob-mid-label { color:#848e9c; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .usd { margin-left:auto; }
+
+/* The reference's two-row header, at the reference's proportions. Measured on
+   the video frame: a 462px-wide panel gives its title row ~44px and its
+   control row ~40px; scaled to our 250px column that is ~24px and ~22px, so
+   the rows below carry the same share of the panel as they do there. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-header {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  height:32px; min-height:32px; padding:0 10px; box-sizing:border-box;
+  background:#16181e; border-bottom:0;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-title {
+  font-size:13px; font-weight:500; color:#eaecef;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-collapse {
+  appearance:none; border:0; background:transparent; color:#848e9c; padding:2px; line-height:0; cursor:pointer; border-radius:3px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-collapse:hover { color:#eaecef; background:#22262f; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-controls {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  height:28px; min-height:28px; padding:0 10px; box-sizing:border-box; background:#16181e;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-group-select {
+  background:#16181e; border:0; color:#eaecef; font-size:12px; padding:2px 4px; cursor:pointer;
+}
+
+/* TYPOGRAPHY, measured rather than argued.
+   Reference frame vs our render, both normalised by row pitch:
+     glyph height / pitch   0.412  vs  0.409   — the SIZE is already right
+     advance per digit / pitch 0.289 vs 0.312  — ours is 8% wider
+   The size needed nothing. The width is the typeface: Inter's tabular figures
+   are wider than the reference's. We self-host Inter under /fonts/inter and
+   ship no other family, so matching the typeface exactly would mean adding a
+   second webfont for the whole terminal — a product decision, not a book one.
+   A small tightening closes part of the gap without cramping the column;
+   the residual is recorded in docs/qa/orderbook/README.md rather than hidden. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book :is(.rb-row,.rb-columns),
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio :is(.ob-row,.orderbook-col-headers,.ob-spread-price) {
+  letter-spacing:-0.01em;
+}

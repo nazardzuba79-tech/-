@@ -247,3 +247,48 @@ describe('grouping steps follow the reference ladder', () => {
     expect(lib).not.toMatch(/\binterpolate\b|\bsynthesize\(/i);
   });
 });
+
+/**
+ * The panel header, to the reference's two-row shape.
+ *
+ * The reference gives the book a title row with one action on the right, then
+ * a control row beneath. Ours crushed the title, the modes, the grouping and
+ * the collapse onto a single line, which is why the panel read as busier than
+ * the reference even once the colours matched.
+ */
+describe('the Spot header has the reference two-row shape', () => {
+  const spot = read('frontend/src/components/OrderBookPanel.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  it('puts the title and its single action on one row, the controls on the next', () => {
+    const header = spot.slice(spot.indexOf('<div className="orderbook-header">'), spot.indexOf('<div className="orderbook-col-headers">'));
+    expect(header).toContain('orderbook-title');
+    expect(header).toContain('orderbook-collapse');
+    expect(header).toContain('<div className="orderbook-controls">');
+    // The controls must have moved OUT of the title row.
+    const titleRow = header.slice(0, header.indexOf('orderbook-controls'));
+    expect(titleRow).not.toContain('ob-modes');
+    expect(titleRow).not.toContain('ob-group-select');
+  });
+
+  it('gives the two rows the reference proportions', () => {
+    const block = css.slice(css.indexOf('two-row header'));
+    expect(block).toMatch(/\.orderbook-header \{[^}]*height:32px/);
+    expect(block).toMatch(/\.orderbook-controls \{[^}]*height:28px/);
+  });
+
+  it('fills the overflow slot with a control that does something, not a copied glyph', () => {
+    // A `…` that opens nothing would be worse than no control at all.
+    expect(spot).not.toMatch(/['"`]…['"`]/);
+    expect(spot).toContain('onClick={onCollapse}');
+  });
+});
+
+/** Typography: the measurement, pinned so a later change has to re-justify it. */
+describe('book typography is sized to the reference', () => {
+  it('records the measured comparison beside the rule rather than asserting a vibe', () => {
+    const block = css.slice(css.indexOf('TYPOGRAPHY, measured'));
+    expect(block).toContain('0.412');
+    expect(block).toContain('0.409');
+    expect(block).toMatch(/letter-spacing:-0\.01em/);
+  });
+});

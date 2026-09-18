@@ -204,12 +204,24 @@ export function OrderBookPanel({
 
   return (
     <>
+      {/* The reference's header is TWO rows: the panel's name with its one
+          action on the right, then the display controls beneath. Ours had the
+          title, the modes, the grouping and the collapse all crushed onto one
+          line, which is why the panel read as busier than the reference even
+          with identical colours. The collapse button occupies the slot the
+          reference gives its overflow menu — a control that does something,
+          rather than a `…` copied for its shape that would open nothing. */}
       <div className="orderbook-header">
         <span className="orderbook-title">{t('trade.orderBook')}</span>
-        <div className="orderbook-header-actions">
-          {/* The reference's three display modes. Same glyphs as the Futures
-              book so the two panels read as one component. */}
-          <div className="ob-modes" role="group" aria-label={t('trade.orderBook')}>
+        {onCollapse && (
+          <button className="orderbook-collapse" type="button" onClick={onCollapse} title="Свернуть стакан" aria-label="Свернуть стакан">
+            <PanelRightClose size={16} />
+          </button>
+        )}
+      </div>
+
+      <div className="orderbook-controls">
+        <div className="ob-modes" role="group" aria-label={t('trade.orderBook')}>
             {(['both', 'bids', 'asks'] as const).map(value => <button type="button" key={value}
               aria-label={value === 'both' ? `${t('trade.buy')} / ${t('trade.sell')}` : t(value === 'bids' ? 'trade.buy' : 'trade.sell')}
               aria-pressed={mode === value} onClick={() => setMode(value)}>
@@ -218,25 +230,19 @@ export function OrderBookPanel({
                 <path d={`M12 ${3 + i * 4}h10`} stroke="currentColor" strokeWidth="2" /></g>)}</svg>
             </button>)}
           </div>
-          <select
-            className="ob-group-select"
-            value={groupStep}
-            onChange={(e) => { const value = Number(e.target.value); if (groupSteps.includes(value)) setGroupStep(value); }}
-            title={t('trade.groupBy')}
-            aria-label={t('trade.groupBy')}
-          >
-            {groupSteps.map((step) => (
-              <option key={step} value={step}>
-                {spotPrecision ? spotLevelPrice(step, step) : step}
-              </option>
-            ))}
-          </select>
-          {onCollapse && (
-            <button className="orderbook-collapse" type="button" onClick={onCollapse} title="Свернуть стакан" aria-label="Свернуть стакан">
-              <PanelRightClose size={16} />
-            </button>
-          )}
-        </div>
+        <select
+          className="ob-group-select"
+          value={groupStep}
+          onChange={(e) => { const value = Number(e.target.value); if (groupSteps.includes(value)) setGroupStep(value); }}
+          title={t('trade.groupBy')}
+          aria-label={t('trade.groupBy')}
+        >
+          {groupSteps.map((step) => (
+            <option key={step} value={step}>
+              {spotPrecision ? spotLevelPrice(step, step) : step}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="orderbook-col-headers">
