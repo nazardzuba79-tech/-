@@ -142,7 +142,15 @@ export class ContractRuleError extends Error {
   }
 }
 
-export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile }): void {
+/**
+ * `reduceOnly`: the order only reduces an existing position. Every contract
+ * rule still applies to it — quantity and price steps, order size limits,
+ * minimum notional, the leverage range — but the RISK-TIER leverage cap does
+ * not: that cap admits new exposure, and a reducing order adds none. A
+ * position whose tier has tightened since it was opened (the market moved
+ * its notional up the ladder) must still be closable at its own leverage.
+ */
+export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile; reduceOnly?: boolean }): void {
   const { rules } = input, q = decimal(input.quantity, 'quantity', true), p = decimal(input.price, 'price', true), l = decimal(input.leverage, 'leverage', true);
   if (!q.mod(decimal(rules.qtyStep, 'quantity_step', true)).isZero()) {
     throw new ContractRuleError('INVALID_QUANTITY_STEP', { limit: 'qtyStep', allowed: rules.qtyStep, actual: input.quantity });
@@ -173,6 +181,7 @@ export function validateContractOrder(input: { rules: ContractRules; quantity: s
     });
   }
   validateProfile(input.profile);
+  if (input.reduceOnly) return;
   const tier = selectRiskTier(amount(q.times(p)), input.profile);
   if (tier.maxLeverage && l.gt(tier.maxLeverage)) {
     throw new ContractRuleError('TIER_LEVERAGE_EXCEEDED', { limit: 'tierMaxLeverage', allowed: tier.maxLeverage, actual: input.leverage });

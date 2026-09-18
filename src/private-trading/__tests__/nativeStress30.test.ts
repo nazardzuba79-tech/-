@@ -234,7 +234,9 @@ describe('30+ live positions through the real service, with every invariant afte
     tierPos = openPosition(v, 'TIERUSDT', 'LONG');
     expect(positionRisk(repo.row!.snapshot, repo.row!.snapshot.positions.find(p => p.id === tierPos.id)!, '3000').maintenance.toFixed()).toBe(bn(150000).times(0.01).minus(500).plus(bn(150000).times(0.00055)).toFixed());
 
-    // 15. Liquidation of the isolated long past its bankruptcy: the account loses the post and nothing more.
+    // 15. Liquidation of the isolated long past its bankruptcy: the venue takes the position over at the bankruptcy
+    //     price, the fee of that settlement is what the post cannot cover, and it is a SHORTFALL line the insurance
+    //     model pays — the shared wallet does not move by one unit.
     const walletBefore = bn(repo.row!.snapshot.walletBalance);
     const isoBefore = repo.row!.snapshot.positions.find(p => p.id === isoLong.id)!;
     market.prices.set(symbolAt(30), '100');
@@ -243,7 +245,10 @@ describe('30+ live positions through the real service, with every invariant afte
     expect(liquidated.status).toBe('LIQUIDATED');
     const liq = v.events.find(e => e.positionId === isoLong.id && e.kind === 'LIQUIDATION')!;
     expect(bn(liq.price!).toFixed()).toBe(bn(isoBefore.entryPrice).minus(bn(isoBefore.isolatedMargin!).div(isoBefore.quantity)).toFixed());
-    expect(bn(repo.row!.snapshot.walletBalance).minus(walletBefore).plus(liq.fee).toFixed()).toBe('0');
+    const cover = v.events.find(e => e.positionId === isoLong.id && e.kind === 'SHORTFALL')!;
+    expect(bn(cover.cashflow).toFixed()).toBe(bn(liq.fee).toFixed());
+    expect(bn(repo.row!.snapshot.walletBalance).minus(walletBefore).toFixed()).toBe('0');
+    expect(liquidated.shortfallCovered).toBe(cover.cashflow);
 
     // 16. Cancel the resting limit; the reserve is released.
     v = await run('cancel', { kind: 'CANCEL', orderId: resting.id, idempotencyKey: key() });

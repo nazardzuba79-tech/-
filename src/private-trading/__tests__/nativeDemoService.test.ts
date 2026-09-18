@@ -44,12 +44,14 @@ const instrument=(symbol:string):PrivateInstrument=>({provider:'bybit',symbol,ba
 class FakeMarket{
   price:(t:number)=>string=()=>'50000';
   quote={bid:'49999.9',ask:'50000.1',last:'50000',mark:'50000',depth:'10',age:0};
+  /** Age of the provider snapshot per contract, when a test needs ONE contract's quote to be old. */
+  ageBySymbol:Record<string,number>={};
   candles=new Map<number,{open:string;high:string;low:string;close:string}>();
   historyRequests:PrivateHistoryRequest[]=[];
   constructor(private clock:Clock){}
   async instrument(symbol:string){return instrument(symbol);}
   async freshQuote(symbol:string):Promise<PrivateFreshQuote>{
-    const t=this.clock.now()-this.quote.age;
+    const t=this.clock.now()-(this.ageBySymbol[symbol]??this.quote.age);
     return{provider:'bybit',symbol,bids:[{price:this.quote.bid,quantity:this.quote.depth},{price:new BigNumber(this.quote.bid).minus(1000).toFixed(),quantity:'1000'}],asks:[{price:this.quote.ask,quantity:this.quote.depth},{price:new BigNumber(this.quote.ask).plus(1000).toFixed(),quantity:'1000'}],
       markPrice:this.quote.mark,lastPrice:this.quote.last,fundingRate:'0.0001',nextFundingTime:t+H,providerTimestamp:t,bookGeneratedAt:t,markProviderTimestamp:t,fetchedAt:t};
   }
@@ -240,6 +242,57 @@ describe('the Cross collateral base is the whole wallet, priced or named',()=>{
     expect(v.priced).toBe('900');
     expect(v.unpriced).toEqual(['BTC']);
     expect(v.complete).toBe(false);
+  });
+});
+
+describe('freshness is checked at the moment a quote is USED, not only when it was fetched',()=>{
+  /** Little settle cash, plenty of wallet ETH: a new order needs the ETH to be priced, and priced FRESH. */
+  function poor(){
+    const f=setup();
+    f.repo.initialize=async function(this:typeof f.repo,_a:OwnerSession,key:string){
+      if(this.row)return structuredClone(this.row);const t=f.clock.now();
+      this.row={revision:1,deposit:'1000',commands:[],snapshot:emptyDemoState('1000',t),createdAt:t,source:'DEMO_BALANCE'};
+      this.revisions.set(1,revisionPayload(this.row));this.keys.set(key,{hash:commandHash({kind:'INITIALIZE'}),row:revisionPayload(this.row)});return structuredClone(this.row);
+    } as typeof f.repo.initialize;
+    f.repo.wallet=[{asset:'ETH',available:'2',locked:'0'}];
+    const asked:string[]=[];const answer=f.market.freshQuote.bind(f.market);
+    f.market.freshQuote=(async(symbol:string)=>{asked.push(symbol);return answer(symbol);}) as typeof f.market.freshQuote;
+    return{...f,asked};
+  }
+  test('a collateral quote that was 4.5 s old when taken is not reused 1.5 s later as if it were fresh: it is fetched again, and a stale answer leaves the asset UNPRICED so no new risk is admitted on it',async()=>{
+    const f=poor();
+    // The provider's snapshot is 4.5 s old when it is taken (by the read that initialize answers with): inside the
+    // 5 s window, so the wallet is priced, and the command right after reuses that snapshot from the cache …
+    f.market.quote.age=4500;
+    await f.service.initialize(actor,'fresh-init');
+    f.asked.length=0;
+    const first=await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    expect(first.positions).toHaveLength(1);
+    expect(f.asked).toEqual(['BTCUSDT']);                          // ETH served from the 4.5-second-old, still-fresh snapshot
+    expect(f.repo.row!.snapshot.collateral).toMatchObject({priced:'100000',complete:true});
+    // … 1.5 s later that quote is still inside the service's 2 s reuse window, but the observation it carries is 6 s old.
+    f.clock.t+=1500;f.asked.length=0;
+    f.market.quote.age=0;f.market.ageBySymbol.ETHUSDT=6000;    // the executed contract quotes fresh; the collateral's provider snapshot is 6 s old
+    await expect(f.service.command(actor,long({margin:'5000',leverage:'20'}))).rejects.toMatchObject({code:'INSUFFICIENT_DEMO_MARGIN'});
+    // ETH was asked again (the 1.5-second-old cached snapshot was NOT trusted), and the refetch failed the check:
+    // the wallet is unpriced, and 1 000 of cash cannot admit a 5 000 order.
+    expect(f.asked.filter(s=>s==='ETHUSDT').length).toBeGreaterThanOrEqual(1);
+    // A read says so instead of pricing the wallet on the old snapshot.
+    f.clock.t+=100;
+    const read=await f.service.state(actor);
+    expect(read.account!.collateralComplete).toBe(false);
+    expect(read.account!.walletCollateral).toBe('0');
+    expect(f.repo.row!.snapshot.collateral).toMatchObject({priced:'100000',complete:true}); // the journal keeps what the FIRST command was decided on
+  });
+  test('the same 1.5-second-old cache entry IS reused when the observation inside it is still fresh',async()=>{
+    const f=poor();
+    f.market.quote.age=1000;
+    await f.service.initialize(actor,'fresh-init-2');
+    await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    f.clock.t+=1500;f.asked.length=0;
+    const v=await f.service.command(actor,long({symbol:'BTCUSDT',margin:'1000',leverage:'20'}));
+    expect(v.positions[0].quantity).toBe('2.4');
+    expect(f.asked).toEqual(['BTCUSDT']);                       // the executed contract, fresh; ETH served from the still-fresh snapshot
   });
 });
 

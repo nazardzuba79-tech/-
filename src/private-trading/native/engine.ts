@@ -11,7 +11,7 @@ const active = (o: DemoOrder) => o.status === 'OPEN' || o.status === 'PARTIALLY_
 export type DemoMarginType = 'CROSS' | 'ISOLATED';
 /** Stored states written before margin mode existed are all Cross. */
 export const DEFAULT_MARGIN_TYPE: DemoMarginType = 'CROSS';
-export const DEMO_STATE_VERSION = 2;
+export const DEMO_STATE_VERSION = 3;
 export const NATIVE_DEMO_MODEL = Object.freeze({
   version: 'VOLTEX_NATIVE_MARGIN_V3',
   /** Both are real here: see `demoAccount` for the split and `positionRisk` for the per-bucket tier. */
@@ -36,11 +36,18 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
    */
   executionOrdering: 'OBSERVED_MARK_RISK_PASS_BEFORE_EXECUTION',
   /**
-   * Every settlement of an isolated position — manual close, TP/SL, funding,
-   * liquidation — is bounded by the position's bankruptcy price: the post is
-   * all it can lose, and a loss past it is the venue's, never the account's.
+   * An isolated settlement is booked at the price it actually happened at:
+   * the observed book level of a close, the trigger price of a stop, the
+   * bankruptcy price of a liquidation (the venue's own takeover price, never
+   * a fill). Its fees are paid out of the slice's settlement — gross P&L plus
+   * the share of the post that comes home with the slice — and the shared
+   * wallet is credited what is left, never debited. When that settlement is
+   * negative (loss and fees beyond the post), the difference is a separate
+   * SHORTFALL line covered by the simulation's insurance model, so the
+   * journal keeps the real fill, the real fee and the real realized P&L,
+   * and says exactly what the account did not pay.
    */
-  isolatedSettlement: 'BOUNDED_BY_BANKRUPTCY_PRICE_ON_EVERY_PATH',
+  isolatedSettlement: 'ACTUAL_PRICE_FEES_FROM_POST_SHORTFALL_LINE_COVERED_BY_INSURANCE_MODEL',
   /**
    * Exposure that has grown past the last published risk tier (a rally on a
    * position opened inside it) keeps the LAST tier's maintenance parameters
@@ -74,9 +81,17 @@ export interface DemoPosition {
    * lose. Always '0' on a CROSS position, which is backed by the account.
    */
   isolatedMargin: string;
+  /**
+   * ISOLATED only: the sum of the SHORTFALL lines booked for this position —
+   * loss (fees included) that its settlements realised beyond what was
+   * posted and that the simulation's insurance model covered so the shared
+   * wallet never paid it. '0' on a CROSS position and on every isolated
+   * position that never settled past its post.
+   */
+  shortfallCovered: string;
 }
 export interface DemoEvent {
-  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION';
+  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION' | 'SHORTFALL';
   time: number; positionId: string | null; orderId: string | null; symbol: string;
   quantity: string; price: string | null; fee: string; cashflow: string;
   pricing: 'OBSERVED_BOOK' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
@@ -151,7 +166,7 @@ export function consumeObservedBook(s: DemoState, symbol: string, book: Observed
  */
 export interface ExternalCollateral { priced: string; complete: boolean; asOf: number | null }
 export interface DemoState {
-  version: 2; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
+  version: 3; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
   /** Absent/null on states written before it existed: the engine then acts on the settle row alone, as it always did. */
   collateral?: ExternalCollateral | null;
   orders: DemoOrder[]; events: DemoEvent[]; instruments: Record<string, DemoInstrument>;
@@ -212,6 +227,7 @@ export function migrateDemoState(state: StoredDemoState | DemoState): DemoState 
       ...p,
       marginType: p.marginType ?? DEFAULT_MARGIN_TYPE,
       isolatedMargin: p.isolatedMargin ?? '0',
+      shortfallCovered: (p as Partial<DemoPosition>).shortfallCovered ?? '0',
     })),
     orders: stored.orders.map((o) => ({ ...o, marginType: o.marginType ?? DEFAULT_MARGIN_TYPE })),
   };
@@ -339,19 +355,15 @@ export function isolatedBankruptcyPrice(p: DemoPosition): BigNumber {
   return D.maximum(0, bankruptcy);
 }
 /**
- * The price an isolated settlement is booked at: the observed price, unless
- * it lies past the position's bankruptcy price — then the bankruptcy price.
- * Applied on EVERY settlement path (see `settleClose`), so a manual close
- * into a gap, a stop that fires on a gapped last, or a liquidation all cost
- * the account the post and nothing beyond it. Inside the post the observed
- * price is used as it is: the bound never improves an ordinary loss.
+ * Where a LIQUIDATION of an isolated position settles: the last price, unless
+ * it lies past the bankruptcy price — then the bankruptcy price, which is the
+ * level at which the venue takes the position over. Used for liquidations
+ * only; a close, a stop or a take-profit settles at its actual price.
  */
-export function boundIsolatedSettlement(p: DemoPosition, price: string): string {
-  if (p.marginType !== 'ISOLATED') return price;
+export function isolatedBankruptcyBound(p: DemoPosition): string {
   const bankruptcy = isolatedBankruptcyPrice(p);
-  return out(p.side === 'LONG' ? D.maximum(price, bankruptcy) : D.minimum(price, bankruptcy));
+  return out(p.side === 'LONG' ? D.maximum(p.lastPrice, bankruptcy) : D.minimum(p.lastPrice, bankruptcy));
 }
-export function isolatedBankruptcyBound(p: DemoPosition): string { return boundIsolatedSettlement(p, p.lastPrice); }
 /**
  * THE SHARED ACCOUNT — and what has been taken out of it.
  *
@@ -447,7 +459,9 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   const rules = instrument(s,input.symbol), quote = s.marks[input.symbol]; if (!quote) throw new DemoEngineError('MARK_MISSING');
   const price = input.type === 'LIMIT' ? input.price : quote.last;
   if (!price) throw new DemoEngineError('LIMIT_PRICE_REQUIRED');
-  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET'});
+  // A reducing order is held to every contract rule but the tier cap (see `validateContractOrder`); its own
+  // checks — the named position, the side, the bucket, the size — follow right below.
+  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET',reduceOnly:!!input.reduceOnly});
   if (input.reduceOnly) {
     if (!input.positionId) throw new DemoEngineError('POSITION_ID_REQUIRED');
     const p=getPosition(s,input.positionId);
@@ -477,29 +491,35 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   }
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
-function settleClose(s: DemoState,p:DemoPosition,quantity:string,rawPrice:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false,actionId?:string) {
+function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false,actionId?:string) {
   const qty=positive(quantity);if(qty.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
-  // An isolated position cannot realise a loss larger than its post on ANY
-  // path. The venue would have liquidated it at bankruptcy before a close
-  // could settle past it; the slice beyond is not the account's.
-  const price=boundIsolatedSettlement(p,rawPrice);
+  // The fill is booked at the price it happened at, for the quantity it
+  // happened for: the journal is the record of what the book did.
   const profile=instrument(s,p.symbol).profile,fee=qty.times(price).times(maker?profile.makerFeeRate:profile.takerFeeRate);
   const gross=n(linearPnl(p.side,quantity,p.entryPrice,price));
-  s.walletBalance=out(n(s.walletBalance).plus(gross).minus(fee));
   p.realizedGross=out(n(p.realizedGross).plus(gross));p.closingFees=out(n(p.closingFees).plus(fee));
   const releasedBasis=n(p.roiBasis).times(qty).div(p.quantity);
   p.roiBasis=out(n(p.roiBasis).minus(releasedBasis));p.closedRoiBasis=out(n(p.closedRoiBasis).plus(releasedBasis));
-  // The isolated post comes home in the same proportion as the quantity
-  // that is leaving. On a liquidation the loss debited just above has
-  // already consumed most of it, which is exactly why an isolated position
-  // cannot cost the account more than it posted.
+  const action=actionId?{actionId}:orderId?{actionId:orderId}:{};
+  let shortfall=new D(0),bankruptcy:string|null=null;
   if(p.marginType==='ISOLATED'){
+    // The slice's share of the post comes home with the slice, and the
+    // slice's settlement — gross P&L less its fee — is paid out of it. The
+    // shared wallet is credited what is left and is never debited: a loss
+    // (fees included) beyond the post is not the account's. The difference
+    // is booked as a SHORTFALL line the simulation's insurance model covers,
+    // so the wallet, the post and the journal agree to the unit.
+    bankruptcy=out(isolatedBankruptcyPrice(p));
     const releasedMargin=n(p.isolatedMargin).times(qty).div(p.quantity);
+    const settlement=gross.minus(fee).plus(releasedMargin);
+    shortfall=settlement.lt(0)?settlement.negated():new D(0);
     p.isolatedMargin=out(n(p.isolatedMargin).minus(releasedMargin));
-    s.walletBalance=out(n(s.walletBalance).plus(releasedMargin));
-  }
+    s.walletBalance=out(n(s.walletBalance).plus(D.maximum(settlement,0)));
+    p.shortfallCovered=out(n(p.shortfallCovered??'0').plus(shortfall));
+  } else s.walletBalance=out(n(s.walletBalance).plus(gross).minus(fee));
   p.quantity=out(n(p.quantity).minus(qty));p.markPrice=price;p.lastPrice=price;
-  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing,...(actionId?{actionId}:orderId?{actionId:orderId}:{})});
+  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing,...action});
+  if(shortfall.gt(0))emit(s,{kind:'SHORTFALL',time,positionId:p.id,orderId,symbol:p.symbol,quantity,price:bankruptcy,fee:'0',cashflow:out(shortfall),pricing:'MARK_SETTLEMENT',...action});
   if(n(p.quantity).isZero()) {
     p.status=kind==='LIQUIDATION'?'LIQUIDATED':'CLOSED';p.closedAt=time;p.protection=noProtection();
     for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id&&o.id!==orderId))cancelDemoOrder(s,o.id,time);
@@ -526,7 +546,7 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
       p={id:o.id,symbol:o.symbol,side:o.side,quantity:'0',entryPrice:price,leverage:o.leverage,status:'OPEN',openedAt:time,closedAt:null,
         markPrice:s.marks[o.symbol].mark,lastPrice:s.marks[o.symbol].last,entryNotional:'0',realizedGross:'0',openingFees:'0',closingFees:'0',
         fundingNet:'0',roiBasis:'0',closedRoiBasis:'0',protection:structuredClone(o.protection),historical:o.historical,lastFundingAt:time,
-        marginType:o.marginType,isolatedMargin:'0'};s.positions.push(p);
+        marginType:o.marginType,isolatedMargin:'0',shortfallCovered:'0'};s.positions.push(p);
     }
     p.entryPrice=weightedEntry([{quantity:p.quantity,price:p.entryPrice},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
     p.quantity=out(n(p.quantity).plus(quantity));p.entryNotional=out(n(p.entryNotional).plus(n(quantity).times(price)));

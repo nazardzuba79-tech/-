@@ -189,7 +189,7 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(a.ledger?.openingBalance).toBe('10000000');
     expect(a.ledger?.closingBalance).toBe('10000000');
     expect(a.ledger?.reconciled).toBe(true);
-    expect(a.ledger?.totals).toEqual({ realizedPnl: '0', fees: '0', funding: '0', net: '0' });
+    expect(a.ledger?.totals).toEqual({ realizedPnl: '0', fees: '0', funding: '0', shortfallCovered: '0', net: '0' });
 
     // The concurrency assertion is unchanged: the balance moved ONCE, and
     // the two tabs produced one revision between them.

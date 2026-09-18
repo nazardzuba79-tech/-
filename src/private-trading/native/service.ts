@@ -167,8 +167,16 @@ export class NativeDemoService {
           // Inside a command the valuation may share the command's own fresh
           // quotes (the same observation, once). A plain read always prices
           // the wallet now: a reader asking for the account gets the market
-          // as it is, not a two-second-old snapshot.
-          const quote=await this.quote(`${h.asset}${settle}`,!options.reuse);
+          // as it is, not a two-second-old snapshot. EITHER WAY the quote is
+          // checked for freshness at the moment it is used — a snapshot that
+          // was 4.5 s old when it was taken is 6 s old 1.5 s later, and the
+          // service's own reuse window says nothing about the provider's
+          // timestamp — and a quote that fails is fetched again, then
+          // refused as unpriced rather than used. A new order is admitted
+          // only on a valuation that passed this check; what the terminal
+          // keeps on screen from an earlier reading is its own display.
+          const symbol=`${h.asset}${settle}`;
+          const quote=options.reuse?await this.valuationQuote(symbol):assertPrivateFreshQuote(await this.quote(symbol,true),symbol,this.now());
           // Mark, not last: the collateral is valued the way the positions
           // it backs are valued, so the two cannot drift apart.
           return{asset:h.asset,price:quote.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quote.markProviderTimestamp??quote.fetchedAt};
@@ -424,7 +432,7 @@ export class NativeDemoService {
     if(request.kind==='OPEN'){
       const symbol=request.symbol.replace(/[^A-Z0-9]/g,''),instrument=await this.market.instrument(symbol),rules=contractRules(instrument),profile=simulationProfile(instrument);
       profile.riskModelVersion='NATIVE_MARGIN_V3:'+instrument.parameterVersion;
-      profile.assumptions=['USDT-only demo, Cross or Isolated per order; gross hedge maintenance; not Bybit matching.','An isolated position is backed by its posted margin alone and its loss is bounded by it.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
+      profile.assumptions=['USDT-only demo, Cross or Isolated per order; gross hedge maintenance; not Bybit matching.','An isolated position is backed by its posted margin alone: its settlements are booked at their actual price and fee, and a loss beyond the post is a separate SHORTFALL line covered by the simulation insurance model, never by the shared wallet.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
       const sizePrice=request.type==='LIMIT'?request.price:undefined;
       const size=(price:string)=>request.quantity??new BigNumber(request.margin!).times(request.leverage).div(price).div(rules.qtyStep).integerValue(BigNumber.ROUND_FLOOR).times(rules.qtyStep).toFixed();
       // The named position IS the identity of a reducing order. It is checked

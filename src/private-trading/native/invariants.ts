@@ -81,35 +81,85 @@ export function nativeInvariants(s: DemoState, valuation?: CollateralValuation):
     const opens = events.filter(e => e.kind === 'OPEN');
     const reducing = events.filter(e => (REDUCING as readonly string[]).includes(e.kind));
     const funding = events.filter(e => e.kind === 'FUNDING');
+    const shortfalls = events.filter(e => e.kind === 'SHORTFALL');
     const openingFees = opens.reduce((v, e) => v.plus(e.fee), new D(0));
     const closingFees = reducing.reduce((v, e) => v.plus(e.fee), new D(0));
     const realized = reducing.reduce((v, e) => v.plus(n(e.cashflow).plus(e.fee)), new D(0));
     const fundingNet = funding.reduce((v, e) => v.plus(e.cashflow), new D(0));
+    const shortfallCovered = shortfalls.reduce((v, e) => v.plus(e.cashflow), new D(0));
     if (!eq(p.openingFees, openingFees)) fail('OPENING_FEES_ONCE', `${p.id} ${p.openingFees} vs ${openingFees}`);
     if (!eq(p.closingFees, closingFees)) fail('CLOSING_FEES_ONCE', `${p.id} ${p.closingFees} vs ${closingFees}`);
     if (!eq(p.realizedGross, realized)) fail('REALIZED_ONCE', `${p.id} ${p.realizedGross} vs ${realized}`);
     if (!eq(p.fundingNet, fundingNet)) fail('FUNDING_ONCE', `${p.id} ${p.fundingNet} vs ${fundingNet}`);
-    const openedQty = opens.reduce((v, e) => v.plus(e.quantity), new D(0));
-    const closedQty = reducing.reduce((v, e) => v.plus(e.quantity), new D(0));
-    if (!eq(p.quantity, openedQty.minus(closedQty), '0.000000001')) fail('QUANTITY_FROM_FILLS', `${p.id} ${p.quantity} vs ${openedQty.minus(closedQty)}`);
+    if (!eq(p.shortfallCovered ?? '0', shortfallCovered)) fail('SHORTFALL_ONCE', `${p.id} ${p.shortfallCovered} vs ${shortfallCovered}`);
+    if (p.marginType === 'CROSS' && shortfalls.length) fail('CROSS_HAS_SHORTFALL', p.id);
     if (n(p.quantity).lt(0)) fail('NEGATIVE_QUANTITY', p.id);
     if (p.status === 'OPEN' && n(p.quantity).isZero()) fail('OPEN_WITH_ZERO_QUANTITY', p.id);
     if (p.status !== 'OPEN' && !n(p.quantity).isZero()) fail('CLOSED_WITH_QUANTITY', p.id);
-    // Average entry is the quantity-weighted average of the fills; a partial close never moves it.
-    if (openedQty.gt(0)) {
-      const weighted = opens.reduce((v, e) => v.plus(n(e.quantity).times(e.price!)), new D(0)).div(openedQty);
-      if (!eq(p.entryPrice, weighted, '0.000000000001')) fail('WEIGHTED_ENTRY', `${p.id} ${p.entryPrice} vs ${weighted}`);
+
+    // THE POSITION, REPLAYED FROM ITS OWN JOURNAL, IN ORDER. An OPEN fill
+    // re-averages the quantity that REMAINS with the new fill; a close leaves
+    // the entry alone and takes its share of the post home; funding moves an
+    // isolated post; a leverage change re-posts the requirement. Averaging
+    // every OPEN of the position's life would call 2 @ 100, close 1, add
+    // 1 @ 200 an entry of 133.33 — it is 150, on 2. Each reducing slice of an
+    // isolated position must also carry exactly the SHORTFALL line its
+    // settlement (gross − fee + released post) leaves uncovered, and none
+    // otherwise.
+    let qty = new D(0), entry = new D(0), post = new D(0);
+    const leverageAfter = (index: number) => {
+      const next = events.slice(index + 1).find(e => e.kind === 'OPEN');
+      const order = next ? s.orders.find(o => o.id === next.orderId) : undefined;
+      return order ? order.leverage : p.leverage;
+    };
+    for (let i = 0; i < events.length; i++) {
+      const e = events[i];
+      if (e.kind === 'OPEN') {
+        const q = n(e.quantity), price = n(e.price!);
+        entry = qty.plus(q).isZero() ? entry : qty.times(entry).plus(q.times(price)).div(qty.plus(q));
+        qty = qty.plus(q);
+        const order = s.orders.find(o => o.id === e.orderId);
+        if (p.marginType === 'ISOLATED') post = post.plus(q.times(price).div(order ? order.leverage : p.leverage));
+      } else if ((REDUCING as readonly string[]).includes(e.kind)) {
+        const q = n(e.quantity);
+        if (q.gt(qty.plus('0.000000001'))) { fail('CLOSE_EXCEEDS_FOLD', `${p.id} ${e.id}`); break; }
+        let expectedShortfall = new D(0);
+        if (p.marginType === 'ISOLATED') {
+          const released = qty.isZero() ? new D(0) : post.times(q).div(qty);
+          const settlement = n(e.cashflow).plus(released);
+          expectedShortfall = settlement.lt(0) ? settlement.negated() : new D(0);
+          post = post.minus(released);
+        }
+        const next = events[i + 1];
+        const covered = next && next.kind === 'SHORTFALL' && next.time === e.time && next.quantity === e.quantity ? n(next.cashflow) : new D(0);
+        if (!eq(covered, expectedShortfall, '0.000000001')) fail('SHORTFALL_SLICE', `${p.id} ${e.id}: ${covered} vs ${expectedShortfall}`);
+        if (covered.gt(0)) i += 1;
+        qty = qty.minus(q);
+      } else if (e.kind === 'SHORTFALL') {
+        fail('SHORTFALL_UNPAIRED', `${p.id} ${e.id}`);
+      } else if (e.kind === 'FUNDING') {
+        if (p.marginType === 'ISOLATED') post = post.plus(e.cashflow);
+      } else if (e.kind === 'LEVERAGE') {
+        if (p.marginType === 'ISOLATED') post = qty.times(entry).div(leverageAfter(i));
+      }
+      if (post.lt('-0.000000001')) fail('POST_FOLD_NEGATIVE', `${p.id} after ${e.id}: ${post}`);
     }
+    if (!eq(p.quantity, qty, '0.000000001')) fail('QUANTITY_FROM_FILLS', `${p.id} ${p.quantity} vs ${qty}`);
+    if (opens.length && !eq(p.entryPrice, entry, '0.000000000001')) fail('WEIGHTED_ENTRY', `${p.id} ${p.entryPrice} vs ${entry}`);
+    if (p.marginType === 'ISOLATED' && p.status === 'OPEN' && !eq(p.isolatedMargin, post, '0.000001')) fail('POST_FROM_JOURNAL', `${p.id} ${p.isolatedMargin} vs ${post}`);
+    if (p.marginType === 'ISOLATED' && p.status !== 'OPEN' && !post.abs().lt('0.000001')) fail('POST_NOT_RETURNED', `${p.id} ${post}`);
     // ROI basis follows leverage, not P&L: quantity x entry / leverage.
     if (p.status === 'OPEN' && !eq(p.roiBasis, n(p.quantity).times(p.entryPrice).div(p.leverage), '0.000000001')) fail('ROI_BASIS_LEVERAGE', p.id);
     const view = demoPositionView(s, p);
     const basis = p.status === 'OPEN' ? p.roiBasis : p.closedRoiBasis;
     if ((view.roiPercent === null) !== n(basis).lte(0)) fail('ROI_NULL_RULE', p.id);
     if (!eq(view.realizedPnl, realized.minus(openingFees).minus(closingFees).plus(fundingNet))) fail('REALIZED_VIEW', p.id);
-    // An isolated position's realized loss, funding included, never exceeds what was posted for it.
+    // What the shared wallet paid for an isolated position is what it posted (and the opening fees), never more:
+    // realized loss, closing fees and funding beyond the post are exactly the SHORTFALL lines.
     if (p.marginType === 'ISOLATED' && p.status !== 'OPEN') {
-      const posted = opens.reduce((v, e) => v.plus(n(e.quantity).times(e.price!).div(p.leverage)), new D(0));
-      if (realized.plus(fundingNet).lt(posted.negated().minus('0.000001'))) fail('ISOLATED_LOSS_BEYOND_POST', `${p.id} ${realized.plus(fundingNet)} < -${posted}`);
+      const postedTotal = opens.reduce((v, e) => { const o = s.orders.find(x => x.id === e.orderId); return v.plus(n(e.quantity).times(e.price!).div(o ? o.leverage : p.leverage)); }, new D(0));
+      const walletEffect = realized.minus(closingFees).plus(fundingNet).plus(shortfallCovered);
+      if (walletEffect.lt(postedTotal.negated().minus('0.000001'))) fail('ISOLATED_LOSS_BEYOND_POST', `${p.id} ${walletEffect} < -${postedTotal}`);
     }
   }
 
