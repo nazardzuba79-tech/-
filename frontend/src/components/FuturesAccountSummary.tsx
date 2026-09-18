@@ -140,9 +140,14 @@ export function FuturesAccountSummary({
    * standing as a block of technical prose above the numbers.
    */
   const collateralIncomplete = aggregate ? !aggregate.collateralComplete && aggregate.unpricedAssets.length > 0 : false;
-  const incompleteNote = aggregate && collateralIncomplete
-    ? t('futures.collateralIncomplete', { assets: aggregate.unpricedAssets.join(', ') })
-    : '';
+  /**
+   * The message names no assets and no internal reason on purpose. Which
+   * ticker is unpriced is a fact about our providers, not about this
+   * trader's account; what they need to know is that the total in front of
+   * them is incomplete. `unpricedAssets` still DECIDES whether the mark
+   * appears, so the warning cannot be shown without one.
+   */
+  const incompleteNote = collateralIncomplete ? t('futures.collateralPartial') : '';
 
   /**
    * Label + amount + unit on the card's one right axis.

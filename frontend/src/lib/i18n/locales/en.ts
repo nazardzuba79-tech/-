@@ -327,6 +327,7 @@ export const EN: Record<Key, string> = {
   'deposit.copy': 'Copy',
   'deposit.copied': 'Copied',
   'deposit.warning': '⚠ Only send {assets} on the {chain} network. Funds sent on a different network or as a different asset will be lost permanently.',
+  'deposit.warningAll': '⚠ Send only the assets listed above an address, and only on the network that address belongs to. Funds sent on a different network or as a different asset will be lost permanently.',
   'deposit.supportedAssets': 'supported assets',
   'deposit.asset': 'Asset',
   'deposit.minAmountHint': 'Minimum deposit is {amount} USD equivalent.',
@@ -1056,8 +1057,10 @@ export const EN: Record<Key, string> = {
   'futures.loadPositionsError': 'Could not load positions',
   'futures.long': 'Long',
   'futures.short': 'Short',
-  'futures.buyLong': 'Buy / Long',
-  'futures.sellShort': 'Sell / Short',
+  'futures.buyLong': 'Open Long',
+  'futures.sellShort': 'Open Short',
+  'futures.closeShort': 'Close Short',
+  'futures.closeLong': 'Close Long',
   'futures.reduceOnly': 'Reduce only',
   'futures.leverageWarningTitle': 'High leverage — high risk',
   'futures.leverageWarningBody':
@@ -1074,6 +1077,7 @@ export const EN: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': 'No price for {assets}. The balance shown is a lower bound.',
+  'futures.collateralPartial': 'Some assets are not included in this total: their valuation is temporarily unavailable.',
   'wallet.futuresAccount': 'Futures account',
   'futures.settleBalance': 'Settle-asset balance',
   'futures.walletCollateral': 'Wallet collateral',

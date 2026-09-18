@@ -19,6 +19,57 @@ async function getDepositConfig(): Promise<DepositConfig> {
   return res.json();
 }
 
+export interface DepositWallet {
+  chain: string;
+  address: string;
+  /** Exactly the assets the backend will credit on this chain. Never widened. */
+  assets: string[];
+}
+
+/** Every configured deposit wallet at once, for a UI that lists them all
+ * instead of making the user pick a network first.
+ *
+ * The addresses normally arrive inside the config envelope, so the whole
+ * list costs ONE request. An API that has not shipped that field yet omits
+ * it, and those chains are resolved individually through the original
+ * /deposit-address/:chain — the same validation either way. A chain whose
+ * address cannot be resolved is DROPPED and flagged, never rendered blank:
+ * an empty address in a funds-receiving field is how deposits get lost.
+ */
+export function useDepositWallets(active: boolean) {
+  const empty = { loaded: false, wallets: [] as DepositWallet[], minDepositUsd: null as number | null, error: null as 'chains' | 'address' | null };
+  const [state, setState] = useState(empty);
+
+  useEffect(() => {
+    if (!active) { setState(empty); return; }
+    let cancelled = false;
+    setState(empty);
+    getDepositConfig().then(async value => {
+      if (cancelled) return;
+      if (!validDepositConfig(value)) throw new Error('Invalid deposit configuration');
+      const resolved = await Promise.all(value.chains.map(async (chain): Promise<DepositWallet | null> => {
+        if (chain.address) return { chain: chain.chain, address: chain.address, assets: chain.supportedAssets };
+        try {
+          const destination = await api.getDepositAddress(chain.chain);
+          if (destination.chain !== chain.chain || typeof destination.address !== 'string' || !destination.address
+            || !Array.isArray(destination.supportedAssets)
+            || !destination.supportedAssets.every(item => typeof item === 'string' && chain.supportedAssets.includes(item)))
+            return null;
+          return { chain: chain.chain, address: destination.address, assets: destination.supportedAssets };
+        } catch { return null; }
+      }));
+      if (cancelled) return;
+      const wallets = resolved.filter((wallet): wallet is DepositWallet => wallet !== null);
+      setState({ loaded: true, wallets, minDepositUsd: value.minDepositUsd,
+        error: wallets.length < value.chains.length ? 'address' : null });
+    }).catch(() => { if (!cancelled) setState({ loaded: true, wallets: [], minDepositUsd: null, error: 'chains' }); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  return state;
+}
+
 /** Shared by the nav and Wallet deposit forms. Configuration is read on each
  * opening; no guessed minimum, address, supported asset or conversion. */
 export function useDepositOptions(active: boolean) {

@@ -324,6 +324,7 @@ export const HI: Record<Key, string> = {
   'deposit.copy': 'कॉपी करें',
   'deposit.copied': 'कॉपी हो गया',
   'deposit.warning': '⚠ केवल {chain} नेटवर्क पर {assets} भेजें। किसी अन्य नेटवर्क या अन्य एसेट के रूप में भेजे गए फंड हमेशा के लिए खो जाएंगे।',
+  'deposit.warningAll': '⚠ किसी पते के ऊपर सूचीबद्ध एसेट ही, और केवल उसी पते के नेटवर्क पर भेजें। किसी अन्य नेटवर्क या अन्य एसेट के रूप में भेजे गए फंड हमेशा के लिए खो जाएंगे।',
   'deposit.supportedAssets': 'समर्थित एसेट्स',
   'deposit.asset': 'एसेट',
   'deposit.minAmountHint': 'न्यूनतम डिपॉज़िट {amount} USD के बराबर है।',
@@ -1029,8 +1030,10 @@ export const HI: Record<Key, string> = {
   'futures.loadPositionsError': 'पोज़ीशन लोड नहीं की जा सकीं',
   'futures.long': 'लॉन्ग',
   'futures.short': 'शॉर्ट',
-  'futures.buyLong': 'खरीदें / लॉन्ग',
-  'futures.sellShort': 'बेचें / शॉर्ट',
+  'futures.buyLong': 'लॉन्ग खोलें',
+  'futures.sellShort': 'शॉर्ट खोलें',
+  'futures.closeShort': 'शॉर्ट बंद करें',
+  'futures.closeLong': 'लॉन्ग बंद करें',
   'futures.reduceOnly': 'केवल घटाएं',
   'futures.leverageWarningTitle': 'उच्च लीवरेज — उच्च जोखिम',
   'futures.leverageWarningBody': 'आपने {leverage}x लीवरेज चुना है। इस लीवरेज पर, कीमत में एक छोटा सा बदलाव आपकी पोज़ीशन को पूरी तरह लिक्विडेट कर सकता है। जारी रखने से पहले सुनिश्चित करें कि आप जोखिमों को समझते हैं।',
@@ -1045,6 +1048,7 @@ export const HI: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets} के लिए कीमत उपलब्ध नहीं है। दिखाया गया बैलेंस न्यूनतम सीमा है।',
+  'futures.collateralPartial': 'कुछ एसेट इस कुल में शामिल नहीं हैं: उनका मूल्यांकन फ़िलहाल उपलब्ध नहीं है।',
   'wallet.futuresAccount': 'फ्यूचर्स खाता',
   'futures.settleBalance': 'सेटल एसेट बैलेंस',
   'futures.walletCollateral': 'वॉलेट कोलैटरल',

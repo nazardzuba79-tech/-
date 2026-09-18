@@ -60,8 +60,16 @@ describe('the account has a single authoritative source', () => {
   it('an incomplete collateral valuation is shown, not rounded away', () => {
     const summary = src('components/FuturesAccountSummary.tsx');
     expect(summary).toContain('!aggregate.collateralComplete');
-    expect(summary).toContain("t('futures.collateralIncomplete'");
-    expect(summary).toContain('aggregate.unpricedAssets.join');
+    // The ticket shows a mark with a tooltip rather than a paragraph, and the
+    // tooltip names no assets — which ticker is unpriced is a fact about our
+    // providers, not about this trader's account. `unpricedAssets` still
+    // DECIDES whether the warning appears, so it cannot be shown without one,
+    // and it cannot be suppressed while one exists.
+    expect(summary).toContain("t('futures.collateralPartial')");
+    expect(summary).toContain('aggregate.unpricedAssets.length > 0');
+    // The Wallet page keeps the longer sentence, assets and all.
+    expect(src('pages/wallet-v3/PortfolioStrip.tsx')).toContain("t('futures.collateralIncomplete'");
+    expect(src('pages/wallet-v3/PortfolioStrip.tsx')).toContain('unpricedAssets.join');
   });
 
   it('the liquidation verdict can be unknown, and the type says so', () => {

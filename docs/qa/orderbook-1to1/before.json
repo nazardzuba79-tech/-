@@ -1,0 +1,42 @@
+{
+  "label": "before",
+  "seed": 20260918,
+  "frameMs": 100,
+  "windowMs": 15000,
+  "results": {
+    "desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 4530,
+      "depthStyleWrites": 1527,
+      "otherAttr": 22,
+      "samples": 61,
+      "rowCounts": [
+        38
+      ],
+      "heights": [
+        831
+      ],
+      "shots": [
+        "/home/user/-/docs/qa/orderbook-1to1/before-book-0.png",
+        "/home/user/-/docs/qa/orderbook-1to1/before-book-1.png",
+        "/home/user/-/docs/qa/orderbook-1to1/before-book-2.png"
+      ]
+    },
+    "mobile": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 1480,
+      "depthStyleWrites": 460,
+      "otherAttr": 14,
+      "samples": 60,
+      "rowCounts": [
+        12
+      ],
+      "heights": [
+        306
+      ],
+      "shots": []
+    }
+  }
+}

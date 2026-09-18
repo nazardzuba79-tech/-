@@ -324,6 +324,7 @@ export const ES: Record<Key, string> = {
   'deposit.copy': 'Copiar',
   'deposit.copied': 'Copiado',
   'deposit.warning': '⚠ Envía solo {assets} en la red {chain}. Los fondos enviados en otra red o como otro activo se perderán permanentemente.',
+  'deposit.warningAll': '⚠ Envía solo los activos indicados sobre una dirección y solo en la red de esa dirección. Los fondos enviados en otra red o como otro activo se perderán permanentemente.',
   'deposit.supportedAssets': 'activos admitidos',
   'deposit.asset': 'Activo',
   'deposit.minAmountHint': 'El depósito mínimo es el equivalente a {amount} USD.',
@@ -1029,8 +1030,10 @@ export const ES: Record<Key, string> = {
   'futures.loadPositionsError': 'No se pudieron cargar las posiciones',
   'futures.long': 'Largo',
   'futures.short': 'Corto',
-  'futures.buyLong': 'Comprar / Largo',
-  'futures.sellShort': 'Vender / Corto',
+  'futures.buyLong': 'Abrir largo',
+  'futures.sellShort': 'Abrir corto',
+  'futures.closeShort': 'Cerrar corto',
+  'futures.closeLong': 'Cerrar largo',
   'futures.reduceOnly': 'Solo reducir',
   'futures.leverageWarningTitle': 'Apalancamiento alto — riesgo alto',
   'futures.leverageWarningBody': 'Seleccionaste un apalancamiento de {leverage}x. Con este apalancamiento, un pequeño movimiento de precio puede liquidar completamente tu posición. Asegúrate de entender los riesgos antes de continuar.',
@@ -1045,6 +1048,7 @@ export const ES: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': 'Sin precio para {assets}. El saldo mostrado es un límite inferior.',
+  'futures.collateralPartial': 'Algunos activos no están incluidos en este total: su valoración no está disponible temporalmente.',
   'wallet.futuresAccount': 'Cuenta de futuros',
   'futures.settleBalance': 'Saldo del activo de liquidación',
   'futures.walletCollateral': 'Garantía de la cartera',

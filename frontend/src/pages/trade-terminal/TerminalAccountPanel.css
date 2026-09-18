@@ -140,7 +140,13 @@
      studio rule. This last-loaded rule owns the real desktop track: a compact
      70px ticker, flexible workspace, and a visibly useful account table. */
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
-    grid-template-columns:212px minmax(0,1fr) 250px 278px;
+    /* v4: the order column goes 278 -> 312 (+12.2%). Measured from the
+       owner's two full-terminal references, which were captured in one
+       browser at one scale: the marked control row there is ~1.18x wider
+       than ours, and the leverage select ~1.36x. The extra 34px comes out
+       of the flexible chart track, so the pair list and the depth column
+       keep their exact widths. */
+    grid-template-columns:212px minmax(0,1fr) 250px 312px;
     grid-template-rows:70px minmax(0,1fr) clamp(208px,25vh,272px);
   }
   /* The old shared .bottom-panel rule hard-coded 145px. Let the grid own the
@@ -154,7 +160,7 @@
 }
 @media(min-width:1025px) and (max-width:1279px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
-    grid-template-columns:184px minmax(0,1fr) 220px 252px;
+    grid-template-columns:184px minmax(0,1fr) 220px 280px;
     grid-template-rows:70px minmax(0,1fr) clamp(190px,23vh,236px);
   }
 }
@@ -273,4 +279,229 @@
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center .rb-arrow {
   display:inline-block; width:0.72em; text-align:center; font-size:0.8em; font-weight:600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v4 — the order ticket reads as controls on a dark panel, not as outlines
+   on a haze.
+
+   THE MEASURED COMPLAINT. The owner put our terminal beside a reference and
+   said ours looks like it ran out of paint. Sampling both screenshots — one
+   browser, one scale, so the two are comparable — says why:
+
+     surface          ours (before)      reference sample
+     panel            #111922            #101014
+     control fill     #192632            #222227
+     panel->control   1.15 contrast      1.20 contrast
+     control border   #304050, visible   none; the fill alone separates it
+
+   Our panel was 75% brighter than the reference's and strongly blue, so
+   every layer sat in the same narrow band; and because each field also drew
+   a lighter 1px outline, the eye read borders instead of surfaces.
+
+   THE FIX, as tokens rather than scattered overrides. The panel drops to a
+   near-reference luminance while KEEPING a navy cast (blue channel stays
+   +12 over red, so this is still VOLTEX and not a transplanted card), and
+   the control steps up far enough to clear the reference's separation. The
+   border becomes a hairline that is almost the fill, so the shape is drawn
+   by the fill.
+
+   Those hex values are pixels sampled from the owner's PNGs. They are a
+   reference for OUR eyes, not published design tokens of another exchange.
+
+   Deliberately NOT touched: --buy/--sell and the global text colour, the
+   order book, the chart, the positions table and every other page. Those
+   are global and this brief is the ticket. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-panel {
+  --fo-surface:#0c1118;
+  --fo-control:#1d2531;
+  --fo-control-hover:#252f3d;
+  --fo-hairline:#232c39;
+  --fo-text:#ffffff;
+  --fo-text-2:#8b96a5;
+  --fo-text-3:#78838f;
+  --fo-field-height:44px;
+  background:var(--fo-surface);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-summary {
+  background:var(--fo-surface) !important;
+}
+
+/* ── Controls: one fill, one radius, one hairline ─────────────────────── */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input,.fo-mlTrigger) {
+  background:var(--fo-control);
+  border:1px solid var(--fo-hairline);
+  border-radius:8px;
+}
+/* Hover and focus change colour only. A control that grows on hover pushes
+   the rest of the ticket around, which is exactly the jumpiness this panel
+   was supposed to lose. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-mlTrigger:hover,.fo-priceInputRow:hover,.fo-qtyInputRow:hover) {
+  background:var(--fo-control-hover);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-priceInputRow:focus-within,.fo-qtyInputRow:focus-within,.fo-mlTrigger:focus-visible,.fo-mlTrigger[aria-expanded="true"]) {
+  border-color:var(--accent-yellow);
+}
+
+/* ── Margin mode and leverage: two wide controls, one line ────────────── */
+/* 1.18fr/1fr is the reference's own split (171px : 145px in its screenshot).
+   Ours was 1.55/1, which is what made the leverage control look squeezed. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-mlRow {
+  grid-template-columns:minmax(0,1.18fr) minmax(0,1fr);
+  gap:10px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-mlTrigger {
+  height:40px;
+  min-height:40px;
+  padding:0 12px;
+  font-size:13px;
+  font-weight:500;
+  color:var(--fo-text);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-mlChevron {
+  color:var(--fo-text-2);
+}
+
+/* ── Price and quantity: longer soft rectangles ───────────────────────── */
+/* `.fo-field` re-declares this variable at 40px and is a closer ancestor
+   than `.fo-panel`, so the token has to be restated here or the taller
+   field never reaches the input. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-field {
+  --fo-field-height:44px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-priceInputRow,.fo-qtyInputRow) {
+  min-height:var(--fo-field-height);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-priceField,.fo-qtyInputRow) .fo-input {
+  height:var(--fo-field-height);
+  min-height:var(--fo-field-height);
+  background:transparent;
+  border-color:transparent;
+  color:var(--fo-text);
+  font-size:15px;
+  font-weight:500;
+  font-variant-numeric:tabular-nums;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-input::placeholder {
+  color:var(--fo-text-3);
+  font-weight:400;
+  opacity:1;
+}
+/* The caption inside the field and the unit beside it are context, not the
+   figure. They step back one size and one tone so the number carries. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-fieldCaption,.fo-inputCaption,.fo-priceField > label,.fo-qtyUnit,.fo-inputUnit) {
+  color:var(--fo-text-2);
+  font-size:11.5px;
+  font-weight:400;
+}
+
+/* ── Submit pair: two wide capsules ───────────────────────────────────── */
+/* A pill needs a radius of at least half its height; 999px states the
+   intent so a later height change cannot quietly un-round it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair {
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn {
+  height:44px;
+  min-height:44px;
+  border-radius:999px;
+  padding:0 6px;
+  font-size:13.5px;
+  font-weight:600;
+  letter-spacing:0;
+  white-space:nowrap;
+  color:#ffffff;
+  box-shadow:none;
+}
+/* ENABLED colours are unchanged from before this pass — #00b879 / #f33451
+   already sit within a point or two of the reference's own fill. The owner's
+   screenshot shows these buttons dim because its quantity field is EMPTY,
+   which is the disabled state, not the palette. Nothing here brightens an
+   enabled button to chase that frame. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.buy { background:#00b879; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.sell { background:#f33451; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.buy:hover:not(:disabled) { background:#0ac98a; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.sell:hover:not(:disabled) { background:#ff4a64; }
+/* Disabled is a SEPARATE style, not a dimmer on the whole element. Blanket
+   opacity took the label down with the fill and left a button whose text
+   could not be read — so a trader could not tell what the control they were
+   refused even was. The fill goes quiet; the label stays legible. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn:disabled {
+  opacity:1;
+  cursor:not-allowed;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.buy:disabled {
+  background:#12362c;
+  color:#a9c3ba;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.sell:disabled {
+  background:#412129;
+  color:#d0a8b1;
+}
+
+/* ── Account card: values in front, labels behind ─────────────────────── */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-stat .fa-value {
+  color:var(--fo-text);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-stat .fa-label {
+  color:var(--fo-text-2);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-stat .fa-unit {
+  color:var(--fo-text-3);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-heading > span {
+  color:var(--fo-text);
+  font-weight:600;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-actions button {
+  height:36px;
+  border-radius:8px !important;
+  border-color:var(--fo-hairline) !important;
+  color:var(--fo-text) !important;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-actions button:hover {
+  background:var(--fo-control) !important;
+}
+/* The order-type tabs and the info rows follow the same two-tone rule. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoRow > span:first-child {
+  color:var(--fo-text-2);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoBox {
+  border-color:var(--fo-hairline);
+}
+
+/* The submit pair is sticky, and it masked the content scrolling underneath
+   with `box-shadow: 0 -8px 0 var(--workspace-bg)`. That variable is the
+   workspace colour, which is no longer the panel colour — so the mask
+   painted a visible lighter strip right above the buttons. It has to be the
+   panel's own surface for the trick to stay invisible. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-form .fo-submitPair {
+  box-shadow:0 -8px 0 var(--fo-surface);
+}
+
+/* TWO focus indicators on one field, and the inner one showed as a stray
+   gold divider. The row already turns its border to the accent on
+   `:focus-within`; the input inside ALSO drew its own outline and a soft
+   glow, and because the row clips its children the only part of that inner
+   outline that survived was its right edge — a vertical gold line between
+   the number and its unit. The row keeps the one crisp indicator; the inner
+   ring and both glows go, which also drops the soft halo this panel is not
+   supposed to have. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-priceInputRow,.fo-qtyInputRow,.fo-fieldRow) .fo-input:focus,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-priceInputRow,.fo-qtyInputRow,.fo-fieldRow) .fo-input:focus-visible {
+  outline:none;
+  box-shadow:none;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
+  :is(.fo-priceInputRow,.fo-qtyInputRow):focus-within {
+  box-shadow:none;
 }

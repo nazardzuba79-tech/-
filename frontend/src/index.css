@@ -2414,3 +2414,16 @@ a:hover > .nav-card-icon {
   justify-content: flex-end;
   margin-left: 0;
 }
+
+/* Below 860px the product sections collapse into the drawer and the burger
+   appears — and the wallet link in the right block has to go with them.
+   Measured on /futures at 390: leaving it there pushed the money cluster
+   left until it sat ON the VOLTEX wordmark, a 24px overlap, with /markets
+   clearing it by exactly 0. The wallet is not lost: it is still in the
+   drawer's own link list and in the bottom mobile navigation, which is
+   where a phone reaches for it. */
+@media (max-width: 860px) {
+  .global-header .header-actions > .nav-wallet-link {
+    display: none;
+  }
+}

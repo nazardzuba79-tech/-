@@ -54,21 +54,29 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
   // send something the backend has no way to credit.
   router.get('/deposit-chains', requireAuth(prisma), async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    const chains: { chain: string; nativeAsset: string; tokens: string[]; supportedAssets: string[] }[] = [];
+    const chains: { chain: string; nativeAsset: string; tokens: string[]; supportedAssets: string[]; address: string }[] = [];
     for (const chain of KNOWN_CHAINS) {
       try {
         const config = await resolveChainConfig(treasuryWallets, chain);
         const tokens = Object.keys(config.tokens);
         chains.push({ chain: config.chain, nativeAsset: config.nativeAsset, tokens,
-          supportedAssets: config.type === 'tron' ? tokens : [config.nativeAsset, ...tokens] });
+          supportedAssets: config.type === 'tron' ? tokens : [config.nativeAsset, ...tokens],
+          // The same treasury address /deposit-address/:chain would hand back
+          // for this chain, to the same authenticated caller — carried here so
+          // a client that shows every wallet at once needs ONE request rather
+          // than one per chain. Not a new disclosure: same auth, same value,
+          // and a chain only reaches this array once its address resolved.
+          address: config.treasuryAddress });
       } catch {
         // not configured on this deployment — omit it
       }
     }
-    // Opt-in envelope preserves the original array contract for older clients.
+    // Opt-in envelope preserves the original array contract for older clients:
+    // the bare list carries neither supportedAssets nor address, exactly as
+    // before, so nothing reading it sees a changed shape.
     res.json(req.query.includeConfig === 'true'
       ? { chains, minDepositUsd: MIN_DEPOSIT_USD, usdPeggedAssets: DEPOSIT_USD_PEGGED_ASSETS }
-      : chains.map(({ supportedAssets: _supported, ...chain }) => chain));
+      : chains.map(({ supportedAssets: _supported, address: _address, ...chain }) => chain));
   });
 
   // Shows YOUR treasury wallet address (e.g. Trust Wallet) — same address
