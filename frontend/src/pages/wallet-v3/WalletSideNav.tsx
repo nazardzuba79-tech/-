@@ -1,4 +1,4 @@
-import { BarChart3Icon, CreditCardIcon, LayoutGridIcon, ListOrderedIcon, MoonIcon, PiggyBankIcon, SunIcon, WalletIcon, ArrowRightIcon } from 'lucide-react';
+import { BarChart3Icon, CircleDollarSignIcon, CreditCardIcon, LayoutGridIcon, ListOrderedIcon, MoonIcon, SunIcon, WalletIcon, ArrowRightIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Key, useLanguage } from '../../lib/i18n';
 import { WalletTheme } from './useWalletTheme';
@@ -30,7 +30,11 @@ interface Item {
 
 const ACCOUNT_ITEMS: Item[] = [
   { id: 'overview', label: 'wallet.navOverview', icon: LayoutGridIcon },
-  { id: 'funding', label: 'wallet.navFunding', icon: PiggyBankIcon },
+  // The same circled dollar the Обзор account row already uses for this
+  // account. A piggy bank read as savings; Финансирование is the spot
+  // ledger deposits land on, and the rail and the row naming one account
+  // two different ways is how a user ends up thinking they are two.
+  { id: 'funding', label: 'wallet.navFunding', icon: CircleDollarSignIcon },
   { id: 'unified', label: 'wallet.navUnified', icon: WalletIcon },
 ];
 const ANALYSIS_ITEMS: Item[] = [{ id: 'pnl', label: 'wallet.navPnl', icon: BarChart3Icon }];
