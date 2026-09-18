@@ -407,6 +407,24 @@ describe('8. mobile access', () => {
     expect(text(nav_mobile())).toContain('wallet.deposit');
   });
 
+  test('the right-block wallet link steps aside below the header breakpoint', () => {
+    // Found by looking at the real build at 390: the wallet link in the
+    // right cluster pushed it left until it sat ON the VOLTEX wordmark, a
+    // measured 24px overlap on /futures and exactly 0 clearance on
+    // /markets. Below 860 the product sections are already in the drawer,
+    // and so is the wallet, so the header link goes with them.
+    const css = readFileSync(resolve(frontend, 'src/index.css'), 'utf8');
+    const block = /@media \(max-width: 860px\) \{\s*\.global-header \.header-actions > \.nav-wallet-link \{\s*display: none;/;
+    expect(css).toMatch(block);
+    // And ONLY there. The unconditional rule that styles the desktop link
+    // must still be present and must not hide it — the desktop link is the
+    // whole point of the header change.
+    const desktopRule = /\n\.global-header \.header-actions > \.nav-wallet-link \{([^}]*)\}/.exec(css);
+    expect(desktopRule).not.toBeNull();
+    expect(desktopRule![1]).not.toMatch(/display:\s*none/);
+    expect(desktopRule![1]).toMatch(/padding/);
+  });
+
   test('the bottom mobile navigation was not rebuilt', () => {
     expect(NAV_SOURCE).toContain('<BottomNav/>');
     expect(source('components/BottomNav.tsx')).toContain('/wallet');
