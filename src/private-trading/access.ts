@@ -1,6 +1,7 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
 import type { OwnerSession } from './serviceTypes';
 import { PrivateTradingError } from './serviceTypes';
+import { isNativeTestAccount } from './native/testAccounts';
 
 export interface PrivateTradingConfig { enabled: boolean; ownerId: string }
 export const privateTradingConfig = (): PrivateTradingConfig => ({
@@ -37,27 +38,20 @@ export async function assertOwner(
 }
 
 /**
- * SIMULATION-ONLY ACCOUNTS.
+ * SERVER policy: the primary owner and explicitly configured native testers
+ * cannot enter the real Futures engine. A tester stays fenced when the
+ * native feature is temporarily disabled; disabling testing is not consent
+ * to route their next order into the real ledger. No client flag or role
+ * claim can opt an account into or out of this policy.
  *
- * The pinned owner trades against the NativeDemo engine and nothing else.
- * That is a SERVER policy, not a UI mode: the account has no Real/Demo
- * switch to flip and no query parameter to drop, so the only place the
- * distinction can live is here. Editing the frontend or hand-crafting a
- * request must not let this account reach the real matching engine, touch
- * a real wallet or futures balance, or rest an order in the public book.
- *
- * It reads the SAME pinned configuration `assertOwner` does — one source,
- * so the account that is allowed into the simulation is exactly the
- * account refused by the real trading routes. Deliberately synchronous and
- * database-free: it is a policy lookup, so it can guard a route before any
- * work happens, and it cannot fail open on a database error.
- *
- * Every other user is unaffected; this returns false for them.
+ * The original primary-owner policy is preserved. Every unlisted ordinary
+ * user is unaffected. Native tester access itself is separately authenticated
+ * by assertNativeTrader and never grants ADMIN or legacy-owner permissions.
  */
 export function isSimulationOnlyUser(
   userId: string | undefined | null,
   config: () => PrivateTradingConfig = privateTradingConfig,
 ): boolean {
   const current = config();
-  return Boolean(current.enabled && current.ownerId && userId && userId === current.ownerId);
+  return isNativeTestAccount(userId) || Boolean(current.enabled && current.ownerId && userId && userId === current.ownerId);
 }

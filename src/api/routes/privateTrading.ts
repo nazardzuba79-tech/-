@@ -1,3 +1,4 @@
+import { nativeTestAccountRoutes } from '../../private-trading/native/testRoutes';
 import { NativeDemoService } from '../../private-trading/native/service';
 import { PrismaNativeRepository } from '../../private-trading/native/store';
 import { nativeDemoRoutes } from '../../private-trading/native/routes';
@@ -51,6 +52,9 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
   const router = Router();
   const authenticate = requireAuth(prisma);
   router.use('/private-trading', (req, res, next) => { res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('Vary', 'Authorization'); void Promise.resolve(authenticate(req, res, next)).catch(next); });
+  // An explicitly approved test USER receives native-only access after the
+  // SAME authentication, without broadening the legacy owner/admin gate below.
+  router.use('/private-trading', nativeTestAccountRoutes(prisma, service));
   router.use('/private-trading', async (req: AuthedRequest, res, next) => {
     try {
       // requireAuth has verified this same bearer token. Decode only its already-verified expiry.

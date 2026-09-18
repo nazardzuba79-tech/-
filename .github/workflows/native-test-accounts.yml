@@ -1,0 +1,31 @@
+name: Native test account access
+on:
+  pull_request:
+    paths:
+      - 'src/private-trading/**'
+      - 'src/api/routes/privateTrading.ts'
+      - '.github/workflows/native-test-accounts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-account-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript
+        run: npm run build
+      - name: Actual native tester access, ledger and isolation regressions
+        run: npm test -- --runInBand --json --outputFile=native-test-accounts.json --runTestsByPath src/private-trading/__tests__/nativeTestAccounts.test.ts src/api/routes/__tests__/nativeDemoAccess.test.ts src/private-trading/__tests__/simulationOnlyIsolation.test.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-test-account-results
+          path: native-test-accounts.json
