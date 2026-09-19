@@ -327,7 +327,11 @@
   --fo-hairline:#252c36;
   --fo-text:#ffffff;
   --fo-text-2:#98a2b3;
-  --fo-text-3:#808a9a;
+  /* Lifted with the terminal's own scale — 5.6:1 on the ticket's surface
+     against 5.0 before, so the units beside the figures read as clearly as
+     the column headings beside them. The ticket keeps its own token; only
+     its value moves, and it moves to the same step. */
+  --fo-text-3:#8b95a5;
   --fo-field-height:44px;
   background:var(--fo-surface);
 }

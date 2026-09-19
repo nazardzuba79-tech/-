@@ -1019,7 +1019,7 @@ export const ZH: Record<Key, string> = {
   'futures.headerHigh24h': '24小时最高',
   'futures.headerLow24h': '24小时最低',
   'futures.headerTurnover24h': '24小时成交额',
-  'futures.headerFunding': '资金费率 / 结算倒计时',
+  'futures.headerFunding': '资金费率',
   'futures.positions': '持仓',
   'futures.positionHistory': '持仓历史',
   'futures.noPositions': '暂无持仓',

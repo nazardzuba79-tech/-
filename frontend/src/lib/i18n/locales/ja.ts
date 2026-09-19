@@ -995,7 +995,7 @@ export const JA: Record<Key, string> = {
   'futures.headerHigh24h': '24時間高値',
   'futures.headerLow24h': '24時間安値',
   'futures.headerTurnover24h': '24時間取引高',
-  'futures.headerFunding': '資金調達率 / カウントダウン',
+  'futures.headerFunding': '資金調達率',
   'futures.positions': 'ポジション',
   'futures.positionHistory': 'ポジション履歴',
   'futures.noPositions': '保有ポジションはありません',

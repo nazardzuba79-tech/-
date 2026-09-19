@@ -1,0 +1,113 @@
+{
+  "status": "MEASURED",
+  "label": "before",
+  "sampled": 94,
+  "nonMarket": 86,
+  "smallText": 66,
+  "medianRatio": 7.51,
+  "minRatio": 3.98,
+  "belowAA_4_5": 4,
+  "belowAA_smallText": 3,
+  "distinctColours": [
+    "rgb(11, 14, 17)",
+    "rgb(111, 118, 132)",
+    "rgb(128, 138, 154)",
+    "rgb(139, 147, 161)",
+    "rgb(152, 162, 179)",
+    "rgb(167, 182, 197)",
+    "rgb(197, 205, 215)",
+    "rgb(227, 232, 237)",
+    "rgb(229, 233, 239)",
+    "rgb(234, 236, 239)",
+    "rgb(234, 238, 243)",
+    "rgb(243, 206, 113)",
+    "rgb(255, 255, 255)"
+  ],
+  "worst": [
+    {
+      "text": "(USDT)",
+      "colour": "rgb(111, 118, 132)",
+      "fontSize": 11,
+      "ratio": 3.98,
+      "className": ""
+    },
+    {
+      "text": "(BTC)",
+      "colour": "rgb(111, 118, 132)",
+      "fontSize": 11,
+      "ratio": 3.98,
+      "className": ""
+    },
+    {
+      "text": "(BTC)",
+      "colour": "rgb(111, 118, 132)",
+      "fontSize": 11,
+      "ratio": 3.98,
+      "className": ""
+    },
+    {
+      "text": "Открыть Шорт",
+      "colour": "rgb(255, 255, 255)",
+      "fontSize": 13.5,
+      "ratio": 4.13,
+      "className": "submit-btn sell"
+    },
+    {
+      "text": "Нет данных графика для BTC/U",
+      "colour": "rgb(128, 138, 154)",
+      "fontSize": 12,
+      "ratio": 5.2,
+      "className": ""
+    },
+    {
+      "text": "Подключение к стакану…",
+      "colour": "rgb(139, 147, 161)",
+      "fontSize": 10.5,
+      "ratio": 5.44,
+      "className": "rb-feed"
+    },
+    {
+      "text": "USDT",
+      "colour": "rgb(128, 138, 154)",
+      "fontSize": 11,
+      "ratio": 5.55,
+      "className": "fa-unit"
+    },
+    {
+      "text": "USDT",
+      "colour": "rgb(128, 138, 154)",
+      "fontSize": 11,
+      "ratio": 5.55,
+      "className": "fa-unit"
+    },
+    {
+      "text": "USDT",
+      "colour": "rgb(128, 138, 154)",
+      "fontSize": 11,
+      "ratio": 5.55,
+      "className": "fa-unit"
+    },
+    {
+      "text": "BTC",
+      "colour": "rgb(152, 162, 179)",
+      "fontSize": 12,
+      "ratio": 5.99,
+      "className": "fo-unit"
+    },
+    {
+      "text": "Открыть Лонг",
+      "colour": "rgb(11, 14, 17)",
+      "fontSize": 13.5,
+      "ratio": 6.42,
+      "className": "submit-btn buy"
+    },
+    {
+      "text": "Изменение за 24ч",
+      "colour": "rgb(152, 162, 179)",
+      "fontSize": 10,
+      "ratio": 7.05,
+      "className": "label"
+    }
+  ],
+  "pageErrors": []
+}

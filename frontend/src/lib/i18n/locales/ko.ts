@@ -995,7 +995,7 @@ export const KO: Record<Key, string> = {
   'futures.headerHigh24h': '24시간 최고',
   'futures.headerLow24h': '24시간 최저',
   'futures.headerTurnover24h': '24시간 거래대금',
-  'futures.headerFunding': '펀딩 비율 / 카운트다운',
+  'futures.headerFunding': '펀딩 비율',
   'futures.positions': '포지션',
   'futures.positionHistory': '포지션 내역',
   'futures.noPositions': '보유 포지션이 없습니다',
