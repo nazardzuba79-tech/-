@@ -4,34 +4,47 @@ on:
   pull_request:
     paths:
       - 'src/services/copyTrading/**'
-      - 'frontend/src/lib/copyMarketplaceStore.ts'
-      - 'frontend/src/lib/copyMarketplaceCache.ts'
+      - 'src/api/routes/copyPerformance.ts'
+      - 'src/api/routes/syntheticCopyTrading.ts'
+      - 'frontend/src/lib/copyMarketplace*.ts'
+      - 'frontend/src/lib/__tests__/copyMarketplace*.test.ts'
       - 'frontend/src/lib/kseniaCopyTrading.ts'
+      - 'frontend/src/lib/syntheticCopyTrading.ts'
       - 'frontend/src/lib/useCopyMarketplace.ts'
       - 'frontend/src/pages/CopyTradingPage.tsx'
       - 'frontend/src/pages/copy-trading-bolt/**'
-      - 'scripts/qa-copy-last-good-browser.cjs'
+      - 'scripts/qa-copy-*.cjs'
       - '.github/workflows/copy-trading-card-regression.yml'
   push:
+    branches: [main]
     paths:
       - 'src/services/copyTrading/**'
-      - 'frontend/src/lib/copyMarketplaceStore.ts'
-      - 'frontend/src/lib/copyMarketplaceCache.ts'
+      - 'src/api/routes/copyPerformance.ts'
+      - 'src/api/routes/syntheticCopyTrading.ts'
+      - 'frontend/src/lib/copyMarketplace*.ts'
+      - 'frontend/src/lib/__tests__/copyMarketplace*.test.ts'
       - 'frontend/src/lib/kseniaCopyTrading.ts'
+      - 'frontend/src/lib/syntheticCopyTrading.ts'
       - 'frontend/src/lib/useCopyMarketplace.ts'
       - 'frontend/src/pages/CopyTradingPage.tsx'
       - 'frontend/src/pages/copy-trading-bolt/**'
-      - 'scripts/qa-copy-last-good-browser.cjs'
+      - 'scripts/qa-copy-*.cjs'
       - '.github/workflows/copy-trading-card-regression.yml'
 
 permissions:
   contents: read
+concurrency:
+  group: copy-trading-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   card-and-profile:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -39,10 +52,19 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Prisma client
         run: npx prisma generate
-      - name: Ksenia daily-rollover regression
-        run: npm test -- --runInBand --runTestsByPath src/services/copyTrading/__tests__/kseniaReportedTrade.test.ts
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Ksenia daily-rollover regression
+        run: npm test -- --runInBand --runTestsByPath src/services/copyTrading/__tests__/kseniaReportedTrade.test.ts
+      - name: Copy privacy, retry and period regressions
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/copyTrading/__tests__/tradeHistoryVisibility.test.ts
+          src/services/copyTrading/__tests__/kseniaReportedWeek.test.ts
+          frontend/src/lib/__tests__/copyMarketplaceReview.test.ts
+          frontend/src/lib/__tests__/copyMarketplaceRetry.test.ts
+          frontend/src/lib/__tests__/copyMarketplaceCache.test.ts
+          frontend/src/lib/__tests__/copyMarketplacePayload.test.ts
       - name: Production frontend build
         run: npm run build --prefix frontend
       - name: Backend build (real marketplace router and service for the browser QA)
@@ -51,14 +73,20 @@ jobs:
         run: |
           npm install --prefix /tmp/voltex-copy-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-copy-qa/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Browser QA — last-good snapshot paints before the marketplace API answers
+      - name: Browser QA - last-good snapshot paints before the marketplace API answers
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-last-good-browser.cjs
+      - name: Browser QA - cards, hidden trades and avatar ring
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
+        run: node scripts/qa-copy-cards-trades-avatar.cjs
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: copy-last-good-browser
-          path: docs/qa/copy-last-good-browser/
+          path: |
+            docs/qa/copy-last-good-browser/
+            docs/qa/copy-cards-trades-avatar/
           retention-days: 7

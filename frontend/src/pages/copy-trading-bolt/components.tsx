@@ -17,6 +17,7 @@ import {
   Star,
   Users,
   Zap,
+  EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -43,6 +44,7 @@ import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
 import { VISIBLE_TRADE_ROWS } from '../../lib/copyMarketplaceStore';
+import { useCopyMarketplace } from '../../lib/useCopyMarketplace';
 import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
 import { dailyReturnChart } from '../../lib/dailyReturnChart';
 import { publicSignedUsdt, publicUsdtNumber } from '../../lib/copyTradingMoney';
@@ -156,11 +158,23 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
 function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boolean }) {
   const { eligible } = useCopyEligibility();
   const { following, toggleFollowing } = useFollowing();
+  const marketplace = useCopyMarketplace();
   const [showDepositRequirement, setShowDepositRequirement] = useState(false);
   const isFollowing = following.has(trader.id);
 
   if ((trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && !Number.isFinite(trader.performanceFee) && !isFollowing) {
-    return <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled title="Условия стратегии недоступны">Данные недоступны</button>;
+    // «Данные недоступны» is a VERDICT, and it was being shown before there
+    // was anything to base one on: on a cold open the terms are absent
+    // simply because the first request has not come back yet, and the card
+    // announced them missing while it was still in flight. Say which of the
+    // two it is — the answer is on its way, or it is not coming.
+    const section = trader.id === nazarTrader.id ? 'nazar' : 'ksenia';
+    const waiting = !marketplace.settled && !marketplace[section];
+    return waiting
+      ? <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled
+          aria-busy="true" title="Загружаем условия стратегии">Загрузка…</button>
+      : <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled
+          title="Условия стратегии недоступны">Данные недоступны</button>;
   }
 
   return (
@@ -528,6 +542,28 @@ function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: Synt
   // hiding data the browser holds.
   const visibleTrades = periodData?.trades.slice(0, VISIBLE_TRADE_ROWS);
   const cashflowHistory = periodData?.economics !== undefined;
+
+  // The executions were withheld by the server, so there is nothing to
+  // render and nothing in the payload to render it from. This block is what
+  // the visitor gets instead — a statement, not a teaser: it does not say
+  // the rows are available to anyone, because no server rule makes that
+  // true. The COUNT stays on screen, because a hidden history is still a
+  // real history and «скрыто» is not «ноль сделок».
+  if (periodData?.tradesHidden) {
+    return (
+      <section className="profile-panel profile-trades-panel">
+        <div className="profile-panel-heading">
+          <div><span>Исполнено стратегией</span><h2>История сделок</h2></div>
+          <strong>{`${periodData.totalTrades} закрытых`}</strong>
+        </div>
+        <div className="trades-hidden-note" role="note">
+          <EyeOff size={22} aria-hidden="true" />
+          <p>Информация о сделках скрыта</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="profile-panel profile-trades-panel">
       <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>{simpleReturn ? 'Последние закрытые сделки' : 'История сделок'}</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.totalTrades}` : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
