@@ -1,18 +1,19 @@
 import { useMemo } from 'react';
 import type { FuturesExecution } from './futuresExecution';
 import { REAL_FUTURES_EXECUTION } from './futuresExecution';
-import {
-  nativeAccountState, terminalOrderToNativeDraft, pairToNativeSymbol,
-} from './nativeFuturesAdapter';
+import { nativeAccountState } from './nativeFuturesAdapter';
+import { nativeOrderDraft } from './nativeReduceTarget';
 import { PrivateTradingError } from './privateTradingError';
 import type { NativeDemoController } from '../pages/private-trading/useNativeDemo';
 import type { FuturesContractRules } from './futuresMath';
 
 const wait=(ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
-const nativeFailure=(native:NativeDemoController,fallback:string)=>
-  new PrivateTradingError(native.getError()||native.error||fallback,409);
-function retryableCloseMessage(message:string){
-  return /устар|временно недоступ|котиров|стакан|market_data|provider|повторите/i.test(message);
+/** The failure a native command raised, as the structured error it was — never re-flattened into prose. */
+const failureOf=(e:unknown,fallback:string)=>e instanceof PrivateTradingError?e:new PrivateTradingError(fallback,409);
+function retryableCloseFailure(e:unknown){
+  const code=e instanceof PrivateTradingError?e.code??'':'';
+  if(['STALE_BOOK','LATEST_MARK_STALE','INCONSISTENT_BOOK','quote_stale','native_queue_full','client_queue_full'].includes(code))return true;
+  return false;
 }
 
 /**
@@ -36,6 +37,7 @@ export function useNativeFuturesExecution(
   const candle = native.candle;
   const exitId = native.exitId;
   const run = native.run;
+  const execute = native.execute;
   const fetchedAt = state?.asOf ?? 0;
 
   return useMemo(() => {
@@ -98,33 +100,18 @@ export function useNativeFuturesExecution(
       account_aggregate: aggregate,
       activation,
       async placeOrder(params) {
-        const reducing = params.reduceOnly || Boolean(exitId);
-        const targetPosition = !reducing ? undefined : state.positions.find(
-          (p) => (exitId ? p.id === exitId : true)
-            && p.symbol === pairToNativeSymbol(params.symbol)
-            && p.side === (params.side === 'SELL' ? 'LONG' : 'SHORT'),
-        );
-        const target = !reducing ? undefined : exitId ?? targetPosition?.id;
-        if (reducing && !target) throw new Error('Нет позиции для сокращения');
-        const reduceMarginType = targetPosition?.marginMode;
-
-        if (reducing && params.type === 'MARKET') {
-          const ok = await run({
-            kind: 'CLOSE', positionId: target!, quantity: params.quantity,
-            ...(pickedCandle ? { candle: pickedCandle } : {}),
-          });
-          if (!ok) throw nativeFailure(native,'Операция не подтверждена');
-          return;
-        }
-        const ok = await run(terminalOrderToNativeDraft({
-          ...params,
-          ...(reducing ? { reduceOnly: true, positionId: target, marginType: reduceMarginType } : {}),
-          candle: pickedCandle,
-        }));
-        if (!ok) throw nativeFailure(native,'Операция не подтверждена');
+        // A position may close/change between the form's render and submit.
+        // Resolve against the controller's current authoritative transcript,
+        // never the older state captured when this execution object rendered.
+        const current = native.getState();
+        if (!current?.initialized) throw new PrivateTradingError('Торговый счёт ещё не загружен', 409);
+        const draft = nativeOrderDraft(current.positions, params, exitId, pickedCandle);
+        // The server's refusal travels as the structured error it is (code,
+        // status, contract limit), so the terminal localizes the real reason.
+        try { await execute(draft); } catch (e) { throw failureOf(e, 'Операция не подтверждена'); }
       },
       async cancelOrder(orderId) {
-        if (!(await run({ kind: 'CANCEL', orderId }))) throw nativeFailure(native,'Ордер не отменён');
+        try { await execute({ kind: 'CANCEL', orderId }); } catch (e) { throw failureOf(e, 'Ордер не отменён'); }
       },
       async closePosition(positionId) {
         const first=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
@@ -140,15 +127,14 @@ export function useNativeFuturesExecution(
         for(let pass=0;pass<30;pass++){
           const before=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
           if(!before)return;
-          const ok=await run({kind:'CLOSE',positionId});
-          if(!ok){
-            const message=native.getError()||native.error||'Позиция не закрыта';
-            if(transientFailures<4&&retryableCloseMessage(message)){
+          try{await execute({kind:'CLOSE',positionId});}
+          catch(e){
+            if(transientFailures<4&&retryableCloseFailure(e)){
               transientFailures+=1;
               await wait(350*transientFailures);
               continue;
             }
-            throw new PrivateTradingError(message,409);
+            throw failureOf(e,'Позиция не закрыта');
           }
           transientFailures=0;
           const after=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
@@ -168,15 +154,15 @@ export function useNativeFuturesExecution(
         throw new PrivateTradingError('Позиция закрыта частично. Повторите закрытие оставшегося объёма.',409);
       },
       async setProtection(positionId, body) {
-        const ok = await run({ kind: 'PROTECTION', positionId, protection: { takeProfit: body.takeProfit, stopLoss: body.stopLoss } });
-        if (!ok) throw nativeFailure(native,'TP/SL не сохранены');
+        try { await execute({ kind: 'PROTECTION', positionId, protection: { takeProfit: body.takeProfit, stopLoss: body.stopLoss } }); }
+        catch (e) { throw failureOf(e, 'TP/SL не сохранены'); }
       },
       async clearProtection(positionId) {
-        const ok = await run({ kind: 'PROTECTION', positionId, protection: { takeProfit: null, stopLoss: null } });
-        if (!ok) throw nativeFailure(native,'TP/SL не сняты');
+        try { await execute({ kind: 'PROTECTION', positionId, protection: { takeProfit: null, stopLoss: null } }); }
+        catch (e) { throw failureOf(e, 'TP/SL не сняты'); }
       },
       showPnlCard: (positionId: string) => { void native.showCard(positionId); },
       refresh: () => { void run({ kind: 'REFRESH' }); },
     };
-  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, native.error, native.stateLoaded, native.getState, native.getError, contract, native.showCard, native.busy, native.initialize]);
+  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, execute, native.stateLoaded, native.getState, contract, native.showCard, native.busy, native.initialize]);
 }

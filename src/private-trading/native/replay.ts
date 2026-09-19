@@ -1,27 +1,81 @@
 import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
-import { amount, consumeBook, decimal } from '../math';
+import { amount, decimal } from '../math';
 import type { Candle } from '../types';
-import { closeDemoPosition, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState,
-  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, fillDemoOrder, markDemoAccount,
+import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState, ExternalCollateral,
+  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, executeObservedBook, fillDemoOrder, markDemoAccount, setDemoCollateral,
   NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder } from './engine';
 const D=BigNumber.clone({DECIMAL_PLACES:36,ROUNDING_MODE:BigNumber.ROUND_HALF_EVEN,EXPONENTIAL_AT:100});
 const n=(v:string)=>decimal(v), f=(v:BigNumber)=>amount(v);
 const MINUTE=60_000, DAY=86_400_000;
-export const NATIVE_COMMAND_LIMIT=2000;
-/** Distinct contracts that may carry exposure (positions or resting orders) at the same time. */
-export const NATIVE_MAX_CONCURRENT_CONTRACTS=6;
+/**
+ * ADMISSION LIMITS — enforced by the service BEFORE an instruction is
+ * journaled, never by the replay of a journal that already exists. A cap
+ * that a replay enforced could turn an accepted history into an account
+ * that can no longer be read or closed; these bound what NEW risk may be
+ * added, and a risk-reducing command (CLOSE, CANCEL, reduce-only order,
+ * REFRESH) is never refused by either of them.
+ *
+ * `NATIVE_MAX_CONCURRENT_CONTRACTS`: distinct contracts that may carry
+ * exposure at once. Its cost is quote fan-out per command (bounded by the
+ * service's short-lived quote snapshot and wider batches) and one history
+ * window per contract per replayed minute.
+ * `NATIVE_COMMAND_LIMIT`: journal length beyond which a NEW opening order is
+ * refused. Its cost is the persisted payload and the full-scenario replay.
+ * Both read the environment on each call so a deployment can tune them.
+ */
+export const NATIVE_DEFAULT_MAX_CONCURRENT_CONTRACTS=30;
+export const NATIVE_DEFAULT_COMMAND_LIMIT=5000;
+/** A memory bound on what one replay will load, far above the admission limit; not a product rule. */
+export const NATIVE_JOURNAL_HARD_LIMIT=50000;
+const envBounded=(name:string,fallback:number,min:number,max:number)=>{const v=Number(process.env[name]);return Number.isFinite(v)&&v>=min&&v<=max?Math.floor(v):fallback;};
+export function nativeAdmissionLimits(){
+  return{contracts:envBounded('NATIVE_MAX_CONCURRENT_CONTRACTS',NATIVE_DEFAULT_MAX_CONCURRENT_CONTRACTS,1,200),commands:envBounded('NATIVE_COMMAND_LIMIT',NATIVE_DEFAULT_COMMAND_LIMIT,10,NATIVE_JOURNAL_HARD_LIMIT)};
+}
+/** @deprecated the cap is applied at admission; kept for callers that display it. */
+export const NATIVE_MAX_CONCURRENT_CONTRACTS=NATIVE_DEFAULT_MAX_CONCURRENT_CONTRACTS;
+export const NATIVE_COMMAND_LIMIT=NATIVE_DEFAULT_COMMAND_LIMIT;
 export interface ReplayBar { time:number; intervalMs:number; trade:Candle; mark:Candle }
 export type NativeBook={bids:{price:string;quantity:string}[];asks:{price:string;quantity:string}[];timestamp:number};
 export type NativeCandleRef={source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE'};
-export type NativeInstruction = {id:string;at:number} & (
+/**
+ * `seq` is the per-account journal order, assigned by the service when the
+ * instruction is written. It breaks ties between instructions with the same
+ * `at`. Instructions journaled before it existed have none and keep their
+ * historical id order among themselves, so every stored checkpoint replays
+ * exactly as it did.
+ */
+export type NativeInstruction = {id:string;at:number;seq?:number;
+  /** Freeze historical resolution for the scenario instead of changing it as the journal ages. */
+  recordedAt?:number;
+  /** Portfolio observation BEFORE a live execution, not only the order's contract. */
+  context?:{marks:Record<string,{mark:string;last:string}>;observedAt:Record<string,number>};
+  /** The wallet valuation this command was decided against; applied to the state before the instruction. Absent on older journals. */
+  collateral?:ExternalCollateral} & (
   | {kind:'OPEN';order:DemoOrderInput;instrument:DemoInstrument;mark:string;last:string;point?:string;maker?:boolean;book?:NativeBook;candle?:NativeCandleRef}
-  | {kind:'CLOSE';positionId:string;quantity?:string;price:string;book?:NativeBook;candle?:NativeCandleRef}
+  /** A live CLOSE journals the observed mark/last it was decided on; the risk pass runs on them BEFORE the book is consumed. */
+  | {kind:'CLOSE';positionId:string;quantity?:string;price:string;book?:NativeBook;candle?:NativeCandleRef;mark?:string;last?:string}
   | {kind:'CANCEL';orderId:string}
   | {kind:'PROTECTION';positionId:string;protection:Partial<DemoProtection>}
   | {kind:'LEVERAGE';positionId:string;leverage:string}
-  /** A live quote that actually triggered TP/SL/liquidation. Journaled so a later replay can never undo it. */
-  | {kind:'OBSERVE';marks:Record<string,{mark:string;last:string}>}
+  /**
+   * The marks a live pass valued the account on — journaled whenever that
+   * pass changed anything (a trigger, a liquidation) AND whenever a BOOK
+   * follows it, so a replay of the BOOK decides fill admission and the
+   * post-fill risk on the same marks and the same collateral (the base
+   * `collateral` field) the pass did, never on whatever an older entry
+   * left behind. `observedAt` keeps each mark's provider timestamp for
+   * the audit; the engine time of the observation is the instruction's.
+   */
+  | {kind:'OBSERVE';marks:Record<string,{mark:string;last:string}>;observedAt?:Record<string,number>}
+  /**
+   * An observed book that a live pass executed on one contract: the
+   * triggered protection closes and the resting live limit orders it
+   * filled, cancelled or partially filled (block R5, R10–R12). Journaled
+   * whenever it changed anything — a cancellation without a fill included —
+   * so a later replay does exactly the same from the same snapshot.
+   */
+  | {kind:'BOOK';symbol:string;book:NativeBook}
 );
 /** Canonical state after every event strictly before `time`; `digest` pins which instructions it contains. */
 export interface NativeCheckpoint { time:number; digest:string; state:DemoState }
@@ -69,9 +123,10 @@ const activeOrder=(o:{status:string})=>o.status==='OPEN'||o.status==='PARTIALLY_
 const bounded=(side:'LONG'|'SHORT',price:string,limit:string)=>f(side==='LONG'?D.minimum(price,limit):D.maximum(price,limit));
 /** Interpolate ONLY inside the declared hypothetical path; do not publish these as actual market ticks. */
 function segment(s:DemoState,group:Tick[]) {
+  group=group.filter(t=>historicalSymbols(s).has(t.symbol));
   const time=group[0]?.time;if(time===undefined)return;
   const start=s.time;
-  const points=group.filter(t=>!!s.marks[t.symbol]).map(to=>({to,from:{...s.marks[to.symbol]}}));
+  const points=group.filter(t=>!!s.marks[t.symbol]).map(to=>({to,from:{...(s.historicalMarks?.[to.symbol]??s.marks[to.symbol])}}));
   const lerp=(a:string,b:string,r:BigNumber)=>f(n(a).plus(n(b).minus(a).times(r)).decimalPlaces(18,BigNumber.ROUND_HALF_EVEN));
   const values=(r:BigNumber)=>Object.fromEntries(points.map(({to,from})=>[to.symbol,{mark:lerp(from.mark,to.mark,r),last:lerp(from.last,to.last,r)}]));
   let previous=new D(0),initial=true,iterations=0;
@@ -82,47 +137,62 @@ function segment(s:DemoState,group:Tick[]) {
     const candidates:BigNumber[]=[new D(1)];
     const include=(a:string,b:string,target:string)=>{if(crossed(a,b,target)){const r=ratio(a,b,target);if(r.gt(previous)||(initial&&r.eq(previous)))candidates.push(r);}};
     for(const {to,from} of points){
-      for(const o of s.orders.filter(o=>o.symbol===to.symbol&&o.type==='LIMIT'&&activeOrder(o)))if(o.price)include(from.last,to.last,o.price);
-      for(const p of s.positions.filter(p=>p.symbol===to.symbol&&p.status==='OPEN')){
+      for(const o of s.orders.filter(o=>o.symbol===to.symbol&&o.historical&&o.type==='LIMIT'&&activeOrder(o)))if(o.price)include(from.last,to.last,o.price);
+      for(const p of s.positions.filter(p=>p.symbol===to.symbol&&p.historical&&p.status==='OPEN')){
         const a=p.protection.triggerBy==='MARK'?from.mark:from.last,b=p.protection.triggerBy==='MARK'?to.mark:to.last;
         for(const trigger of [p.protection.takeProfit,p.protection.stopLoss])if(trigger!==null)include(a,b,trigger);
       }
     }
     const r=candidates.sort((a,b)=>a.comparedTo(b)??0)[0];initial=false;
     // Whole-portfolio risk is evaluated with simultaneous marks, independent of symbol insertion order.
-    const probe={...s,positions:s.positions.map(p=>({...p})),marks:{...s.marks}};markDemoAccount(probe,values(r),time);
+    const probe={...s,positions:s.positions.map(p=>({...p})),marks:{...s.marks},historicalMarks:{...s.historicalMarks}};markDemoAccount(probe,values(r),time,true);
     if(!demoAccount(s).liquidatable&&demoAccount(probe).liquidatable){
       let lo=previous,hi=r;
       for(let i=0;i<80;i++){
-        const mid=lo.plus(hi).div(2),candidate={...s,positions:s.positions.map(p=>({...p})),marks:{...s.marks}};markDemoAccount(candidate,values(mid),time);
+        const mid=lo.plus(hi).div(2),candidate={...s,positions:s.positions.map(p=>({...p})),marks:{...s.marks},historicalMarks:{...s.historicalMarks}};markDemoAccount(candidate,values(mid),time,true);
         if(demoAccount(candidate).liquidatable)hi=mid;else lo=mid;
       }
       const at=Math.max(s.time,Math.round(start+(time-start)*hi.toNumber()));
-      markDemoAccount(s,values(hi),at);evaluateDemoRiskAndProtection(s,at);
+      markDemoAccount(s,values(hi),at,true);evaluateDemoRiskAndProtection(s,at,'OHLC_PATH_MODEL',true);
     }
     const at=Math.max(s.time,Math.round(start+(time-start)*r.toNumber()));
-    markDemoAccount(s,values(r),at);evaluateDemoRiskAndProtection(s,at);
-    for(const o of s.orders.filter(o=>points.some(p=>p.to.symbol===o.symbol)&&o.type==='LIMIT'&&activeOrder(o))){
-      const last=s.marks[o.symbol].last;
+    markDemoAccount(s,values(r),at,true);evaluateDemoRiskAndProtection(s,at,'OHLC_PATH_MODEL',true);
+    // The assumed path fills only orders that BELONG to it: historical
+    // orders, placed on the declared OHLC model. A live resting order is
+    // filled by an observed book (a BOOK instruction), never by a path that
+    // proves a price and no volume.
+    for(const o of s.orders.filter(o=>points.some(p=>p.to.symbol===o.symbol)&&o.type==='LIMIT'&&o.historical&&activeOrder(o))){
+      const last=(s.historicalMarks?.[o.symbol]??s.marks[o.symbol]).last;
       if(o.price&&(o.side==='LONG'?n(last).lte(o.price):n(last).gte(o.price))){
         try {fillDemoOrder(s,o.id,o.remaining,bounded(o.side,last,o.price),at,'OHLC_PATH_MODEL',true);}
         catch(e){if(e instanceof DemoEngineError&&['INSUFFICIENT_FILL_MARGIN','POSITION_NOT_OPEN'].includes(e.code))cancelDemoOrder(s,o.id,at);else throw e;}
       }
     }
-    evaluateDemoRiskAndProtection(s,at);previous=r;
+    evaluateDemoRiskAndProtection(s,at,'OHLC_PATH_MODEL',true);previous=r;
   }
 }
-const idsDigest=(ids:string[])=>createHash('sha256').update(JSON.stringify([...ids].sort())).digest('hex');
-export function instructionDigest(instructions:NativeInstruction[],before:number){return idsDigest(instructions.filter(c=>c.at<before).map(c=>c.id));}
-function exposedSymbols(s:DemoState){
+/** Pin order AND decision inputs, not just ids: an amended price/book must invalidate the checkpoint. */
+export function instructionDigest(instructions:NativeInstruction[],before:number){return createHash('sha256').update(JSON.stringify(instructions.filter(c=>c.at<before).sort(compareInstructions))).digest('hex');}
+export function exposedSymbols(s:DemoState){
   return new Set([...s.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol),...s.orders.filter(activeOrder).map(o=>o.symbol)]);
 }
+function historicalSymbols(s:DemoState){
+  return new Set([...s.positions.filter(p=>p.status==='OPEN'&&p.historical).map(p=>p.symbol),...s.orders.filter(o=>activeOrder(o)&&o.historical).map(o=>o.symbol)]);
+}
 function sortInstructions(input:NativeInstruction[]){
-  if(input.length>NATIVE_COMMAND_LIMIT)throw new DemoEngineError('COMMAND_LIMIT');
+  if(input.length>NATIVE_JOURNAL_HARD_LIMIT)throw new DemoEngineError('JOURNAL_LIMIT');
   const ids=new Set<string>();
   for(const c of input){if(!c.id||ids.has(c.id)||!Number.isSafeInteger(c.at)||c.at<0)throw new DemoEngineError('INVALID_COMMAND_ID_OR_TIME');ids.add(c.id);}
-  return [...input].sort((a,b)=>a.at-b.at||a.id.localeCompare(b.id));
+  return [...input].sort(compareInstructions);
 }
+/** Time first; then journal sequence, with pre-sequence instructions before sequenced ones at the same time, ordered by id as before. */
+export function compareInstructions(a:{at:number;seq?:number;id:string},b:{at:number;seq?:number;id:string}){
+  if(a.at!==b.at)return a.at-b.at;
+  if(a.seq===undefined&&b.seq===undefined)return a.id.localeCompare(b.id);
+  return (a.seq??-1)-(b.seq??-1);
+}
+/** The next journal sequence for an account: one past the largest already written. */
+export function nextInstructionSeq(commands:{seq?:number}[]){return commands.reduce((m,c)=>Math.max(m,c.seq??0),0)+1;}
 /**
  * CLOSE is a risk-reducing action, not a fresh exposure admission. It may
  * have to unwind a position accumulated across many valid orders, and the
@@ -131,43 +201,53 @@ function sortInstructions(input:NativeInstruction[]){
  * accounting as normal market orders, and never invent a fill. This avoids
  * trapping an existing position behind max-order/leverage admission rules.
  */
-function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefined,book:NativeBook,time:number){
+function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefined,book:NativeBook,time:number,actionId?:string){
   const p=s.positions.find(p=>p.id===positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
   if(time<book.timestamp||time-book.timestamp>5000)throw new DemoEngineError('STALE_BOOK');
   const rules=s.instruments[p.symbol]?.rules;if(!rules)throw new DemoEngineError('INSTRUMENT_MISSING');
   const requested=quantity??p.quantity,q=decimal(requested,'quantity',true);
   if(!q.mod(decimal(rules.qtyStep,'quantity_step',true)).isZero())throw new DemoEngineError('INVALID_QUANTITY_STEP');
   if(q.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
-  const fingerprint=JSON.stringify([book.bids,book.asks]),key=`${p.symbol}:${book.timestamp}:${createHash('sha256').update(fingerprint).digest('hex').slice(0,16)}`;
-  let used=s.bookConsumption[key];if(used&&used.fingerprint!==fingerprint)throw new DemoEngineError('INCONSISTENT_BOOK');
-  used??={fingerprint,bids:{},asks:{}};s.bookConsumption[key]=used;
-  const levels=(side:'bids'|'asks')=>book[side].map(x=>({price:x.price,quantity:f(D.maximum(0,n(x.quantity).minus(used[side][f(n(x.price))]??'0')))})).filter(x=>n(x.quantity).gt(0));
-  const direction=p.side==='LONG'?'SELL':'BUY',result=consumeBook(direction,requested,{bids:levels('bids'),asks:levels('asks')});
-  for(const fill of result.fills){
-    closeDemoPosition(s,positionId,fill.quantity,fill.price,time,'OBSERVED_BOOK');
-    const side=direction==='BUY'?'asks':'bids',price=f(n(fill.price));
-    used[side][price]=f(n(used[side][price]??'0').plus(fill.quantity));
-  }
-  for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
+  // One consumption ledger per provider snapshot, shared with market OPEN:
+  // a slice of the same snapshot cannot buy liquidity another command took.
+  const consumed=consumeObservedBook(s,p.symbol,book,p.side==='LONG'?'SELL':'BUY',requested,time);
+  for(const fill of consumed.fills){closeDemoPosition(s,positionId,fill.quantity,fill.price,time,'OBSERVED_BOOK',actionId);consumed.record(fill);}
+  consumed.prune();
 }
 function apply(s:DemoState,c:NativeInstruction,time:number){
+  if(c.collateral!==undefined)setDemoCollateral(s,c.collateral);
+  if(c.context)markDemoAccount(s,c.context.marks,time);
   if(c.kind==='OPEN'){
     registerDemoInstrument(s,c.instrument);
-    const exposed=exposedSymbols(s);exposed.add(c.order.symbol);
-    if(exposed.size>NATIVE_MAX_CONCURRENT_CONTRACTS)throw new DemoEngineError('CONTRACT_LIMIT');
     markDemoAccount(s,{[c.order.symbol]:{mark:c.mark,last:c.last}},time);
+    // RISK BEFORE EXECUTION: the observation this command was decided on is
+    // applied to the account first. A position it has already carried past
+    // its boundary is liquidated there, before any order can settle at a
+    // gapped book (see NATIVE_DEMO_MODEL.executionOrdering).
+    if(!c.order.historical)evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');
     const o=placeDemoOrder(s,c.order,time);
     if(c.point!==undefined)fillDemoOrder(s,o.id,o.remaining,c.point,time,'SELECTED_POINT',c.maker===true);
     else if(c.book)executeDemoBook(s,o.id,c.book,time);
     else if(o.type==='MARKET')throw new DemoEngineError('EXECUTION_PRICE_MISSING');
   }else if(c.kind==='CLOSE'){
-    if(c.book)executeCloseBook(s,c.positionId,c.quantity,c.book,time);
-    else closeDemoPosition(s,c.positionId,c.quantity,c.price,time);
+    if(c.book){
+      if(c.mark!==undefined&&c.last!==undefined){
+        const p=s.positions.find(p=>p.id===c.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
+        markDemoAccount(s,{[p.symbol]:{mark:c.mark,last:c.last}},time);
+        evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');
+        // The observation liquidated it (or a stop/target on it fired): the
+        // trader's intent — be flat — is met, and nothing settles at the gap.
+        if(p.status!=='OPEN')return;
+      }
+      executeCloseBook(s,c.positionId,c.quantity,c.book,time,c.id);
+    }
+    else closeDemoPosition(s,c.positionId,c.quantity,c.price,time,'SELECTED_POINT',c.id);
   }
   else if(c.kind==='CANCEL')cancelDemoOrder(s,c.orderId,time);
   else if(c.kind==='PROTECTION')protectDemoPosition(s,c.positionId,c.protection,time);
   else if(c.kind==='LEVERAGE')setDemoLeverage(s,c.positionId,c.leverage,time);
   else if(c.kind==='OBSERVE'){markDemoAccount(s,c.marks,time);evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');}
+  else if(c.kind==='BOOK')executeObservedBook(s,c.symbol,c.book,time);
 }
 function checkCoverage(bars:ReplayBar[],request:BarRequest){
   if(bars.length>50000)throw new DemoEngineError('HISTORY_LIMIT');
@@ -185,13 +265,25 @@ function processGroups(s:DemoState,ticks:Tick[],commands:NativeInstruction[]){
     // Funding uses the simultaneous marks at this boundary, not a mixture of old/new symbols.
     const boundary=group.some(t=>t.boundary);
     if(boundary){
-      markDemoAccount(s,Object.fromEntries(group.map(t=>[t.symbol,{mark:t.mark,last:t.last}])),time);
-      if(time%NATIVE_DEMO_MODEL.funding.intervalMs===0)settleDemoFunding(s,time);
-      evaluateDemoRiskAndProtection(s,time);
+      const historical=historicalSymbols(s);
+      // Live execution/risk observations belong to the journal. A candle
+      // completed later cannot replace them with an invented intrabar path.
+      // Funding retains its explicit boundary-mark model for both families.
+      const liveMarks={...s.marks};
+      const livePositions=s.positions.filter(p=>p.status==='OPEN'&&!p.historical).map(p=>({p,mark:p.markPrice,last:p.lastPrice}));
+      const funding=time%NATIVE_DEMO_MODEL.funding.intervalMs===0;
+      const selected=funding?group:group.filter(t=>historical.has(t.symbol));
+      markDemoAccount(s,Object.fromEntries(selected.map(t=>[t.symbol,{mark:t.mark,last:t.last}])),time,!funding);
+      if(funding){
+        settleDemoFunding(s,time);
+        s.marks=liveMarks;
+        for(const {p,mark,last} of livePositions){p.markPrice=mark;p.lastPrice=last;}
+      }
+      evaluateDemoRiskAndProtection(s,time,'OHLC_PATH_MODEL',true);
     }else segment(s,group);
     while(cursor<commands.length&&commands[cursor].at===time)apply(s,commands[cursor++],time);
     if(boundary)for(const t of group){
-      for(const o of s.orders.filter(o=>o.symbol===t.symbol&&o.type==='LIMIT'&&activeOrder(o))){
+      for(const o of s.orders.filter(o=>o.symbol===t.symbol&&o.type==='LIMIT'&&o.historical&&activeOrder(o))){
         // Marketable at its own placement moment = taker; resting until this boundary = maker.
         if(o.price&&(o.side==='LONG'?n(t.last).lte(o.price):n(t.last).gte(o.price)))fillDemoOrder(s,o.id,o.remaining,t.last,time,'OHLC_PATH_MODEL',o.createdAt!==time);
       }
@@ -208,7 +300,9 @@ export function* nativeReplay(input:ReplayInput):Generator<BarRequest,ReplayResu
   if(!Number.isSafeInteger(input.asOf)||commands.some(c=>c.at>input.asOf))throw new DemoEngineError('INVALID_AS_OF');
   const until=input.until??Math.floor(input.asOf/MINUTE)*MINUTE;
   if(!Number.isSafeInteger(until)||until>input.asOf||until%MINUTE!==0)throw new DemoEngineError('INVALID_AS_OF');
-  const resolution=input.resolution??defaultResolution;
+  const recorded=commands.flatMap(c=>c.recordedAt===undefined?[]:[c.recordedAt]);
+  const anchor=recorded.length?Math.min(...recorded):input.asOf;
+  const resolution=input.resolution??((cursor:number)=>defaultResolution(cursor,anchor));
   let s:DemoState,cursor:number;
   if(input.checkpoint){
     const cp=input.checkpoint;

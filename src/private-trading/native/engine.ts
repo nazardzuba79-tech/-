@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
-import { amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
-import type { ContractRules, ModelProfile, Side } from '../types';
+import { validateLeverageRange, amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
+import type { ContractRules, ModelProfile, RiskTier, Side } from '../types';
 
 const D = BigNumber.clone({ DECIMAL_PLACES: 36, ROUNDING_MODE: BigNumber.ROUND_HALF_EVEN, EXPONENTIAL_AT: 100 });
 const n = (x: string) => decimal(x);
@@ -11,7 +11,7 @@ const active = (o: DemoOrder) => o.status === 'OPEN' || o.status === 'PARTIALLY_
 export type DemoMarginType = 'CROSS' | 'ISOLATED';
 /** Stored states written before margin mode existed are all Cross. */
 export const DEFAULT_MARGIN_TYPE: DemoMarginType = 'CROSS';
-export const DEMO_STATE_VERSION = 2;
+export const DEMO_STATE_VERSION = 3;
 export const NATIVE_DEMO_MODEL = Object.freeze({
   version: 'VOLTEX_NATIVE_MARGIN_V3',
   /** Both are real here: see `demoAccount` for the split and `positionRisk` for the per-bucket tier. */
@@ -26,10 +26,68 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
   historyResolution: Object.freeze(['1m<=7d', '15m<=45d', '1h']),
   /** Cross is answered on the shared account; Isolated is answered on the position's own posted margin. */
   liquidation: 'CROSS_ACCOUNT_EQUITY_LTE_MAINTENANCE | ISOLATED_POSITION_MARGIN_PLUS_PNL_LTE_MAINTENANCE',
+  /** Cross positions of one contract share a tier; every isolated position is its own tier bucket. */
+  riskBuckets: 'CROSS_PER_CONTRACT | ISOLATED_PER_POSITION',
+  /**
+   * A live OPEN or CLOSE first applies the observed mark it was decided on
+   * and runs the risk pass, THEN executes. A position that the observation
+   * has already put past its boundary is liquidated at that boundary before
+   * any order can settle at the gapped book.
+   */
+  executionOrdering: 'OBSERVED_MARK_RISK_PASS_BEFORE_EXECUTION',
+  /**
+   * An isolated settlement is booked at the price it actually happened at:
+   * the observed book level of a close, the trigger price of a stop, the
+   * bankruptcy price of a liquidation (the venue's own takeover price, never
+   * a fill). Its fees are paid out of the slice's settlement — gross P&L plus
+   * the share of the post that comes home with the slice — and the shared
+   * wallet is credited what is left, never debited. When that settlement is
+   * negative (loss and fees beyond the post), the difference is a separate
+   * SHORTFALL line covered by the simulation's insurance model, so the
+   * journal keeps the real fill, the real fee and the real realized P&L,
+   * and says exactly what the account did not pay.
+   */
+  isolatedSettlement: 'ACTUAL_PRICE_FEES_FROM_POST_SHORTFALL_LINE_COVERED_BY_INSURANCE_MODEL',
+  /**
+   * Exposure that has grown past the last published risk tier (a rally on a
+   * position opened inside it) keeps the LAST tier's maintenance parameters
+   * so the account stays readable and the position stays closable. New
+   * risk beyond the last tier is refused at admission, as before. No lower
+   * maintenance rate is ever invented for it.
+   */
+  riskBeyondLastTier: 'LAST_TIER_PARAMETERS_FOR_EXISTING_EXPOSURE_NEW_RISK_REFUSED',
+  /**
+   * A resting LIVE limit order is filled from an observed book for the depth
+   * the opposite side has at prices no worse than the order's — and booked
+   * at the ORDER'S OWN PRICE as maker (`pricing: 'MAKER_MODEL'`): the order
+   * was resting, so the incoming volume pays its price. That is a declared
+   * model price, not the level the book showed; the level is kept on the
+   * fill as `sourcePrice`, and the liquidity consumed is the level's.
+   */
+  restingLimitExecution: 'OWN_PRICE_AS_MAKER_FOR_OBSERVED_DEPTH_AT_OR_BETTER_SOURCE_PRICE_KEPT',
+  /**
+   * A LIVE take-profit or stop-loss is two facts. The TRIGGER is decided on
+   * the observed mark or last (journaled as a `TRIGGER` event, no cash
+   * moves); the CLOSE is decided on an observed book, as taker, at the
+   * level prices, for the depth there is — a remainder keeps working until
+   * the next book. Nothing closes at a trigger price the book did not show.
+   * The explicitly historical mode (positions on the declared OHLC path)
+   * keeps closing on the path. A liquidation is a declared settlement at
+   * the model price (bankruptcy for isolated, the observed last for cross),
+   * never presented as an observed fill.
+   */
+  liveProtection: 'TRIGGER_ON_OBSERVED_MARK_OR_LAST_CLOSE_ON_OBSERVED_BOOK_AS_TAKER_REMAINDER_KEEPS_WORKING',
+  liquidationSettlement: 'DECLARED_MODEL_PRICE_NOT_AN_OBSERVED_FILL',
 });
 export class DemoEngineError extends Error { constructor(public code: string) { super(code); } }
 export interface DemoInstrument { rules: ContractRules; profile: ModelProfile }
 export interface DemoProtection { takeProfit: string | null; stopLoss: string | null; triggerBy: 'MARK' | 'LAST'; quantity: string | null }
+/**
+ * A LIVE take-profit or stop-loss that has TRIGGERED and is being closed on
+ * observed books: what is still to close, the trigger it came from, and the
+ * one action id every fill of it carries. Cleared when nothing is left.
+ */
+export interface PendingClose { reason: 'STOP_LOSS' | 'TAKE_PROFIT'; quantity: string; triggerPrice: string; triggeredAt: number; actionId: string }
 export interface DemoOrder {
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; remaining: string;
   filled: string; averagePrice: string | null; price: string | null; leverage: string; reserved: string;
@@ -51,18 +109,130 @@ export interface DemoPosition {
    * lose. Always '0' on a CROSS position, which is backed by the account.
    */
   isolatedMargin: string;
+  /**
+   * ISOLATED only: the sum of the SHORTFALL lines booked for this position —
+   * loss (fees included) that its settlements realised beyond what was
+   * posted and that the simulation's insurance model covered so the shared
+   * wallet never paid it. '0' on a CROSS position and on every isolated
+   * position that never settled past its post.
+   */
+  shortfallCovered: string;
+  /** A triggered live TP/SL still being closed on observed books; absent or null otherwise. */
+  pendingClose?: PendingClose | null;
 }
 export interface DemoEvent {
-  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION';
+  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION' | 'SHORTFALL' | 'TRIGGER';
   time: number; positionId: string | null; orderId: string | null; symbol: string;
   quantity: string; price: string | null; fee: string; cashflow: string;
-  pricing: 'OBSERVED_BOOK' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
+  /**
+   * How the price of this event was decided. OBSERVED_BOOK: a level of a
+   * book the service observed, taken as taker. MAKER_MODEL: a resting live
+   * limit order's OWN price, the declared maker model, with the observed
+   * level kept as `sourcePrice`. LIVE_QUOTE_MODEL / OHLC_PATH_MODEL /
+   * MARK_SETTLEMENT: declared model prices (a trigger, a path point, a
+   * settlement), never an observed fill. SELECTED_POINT / COMMAND: the
+   * trader's own input.
+   */
+  pricing: 'OBSERVED_BOOK' | 'MAKER_MODEL' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
+  /** MAKER_MODEL fills: the observed book level the liquidity came from. */
+  sourcePrice?: string;
+  /**
+   * The ONE user action (the journaled instruction) that produced this
+   * settlement. A market close that consumed several book levels is several
+   * fill events — exact in the ledger — but one action: the chart draws one
+   * marker per `actionId`, not one per level. Absent on older journals.
+   */
+  actionId?: string;
+  /** LEVERAGE only: the leverage the position was set to. Absent on events written before it was recorded. */
+  leverage?: string;
+  /**
+   * LEVERAGE only: the margin MOVED into (+) or out of (−) an isolated post by
+   * the change, so the journal itself says what the wallet contributed and
+   * took back. '0' for a cross position. Absent on older events.
+   */
+  marginDelta?: string;
 }
+export interface BookConsumption {
+  /** Legacy field kept for states persisted before the identity change; unused. */
+  fingerprint: string;
+  bids: Record<string, string>; asks: Record<string, string>;
+  seen?: { bids: Record<string, string>; asks: Record<string, string> };
+}
+export interface ObservedBook { bids: { price: string; quantity: string }[]; asks: { price: string; quantity: string }[]; timestamp: number }
+/** How long an observed snapshot may be consumed against, and how long its ledger is kept. */
+export const OBSERVED_BOOK_MAX_AGE_MS = 5000;
+/**
+ * THE IDENTITY OF AN OBSERVED BOOK IS THE PROVIDER SNAPSHOT, NOT THE SLICE.
+ *
+ * Every command stores only the depth it needed (`truncateBook`), so the
+ * same provider snapshot reaches the engine as different arrays: a close of
+ * 1 keeps `[1 @ 100]`, the next close of 2 keeps `[1 @ 100, 1 @ 99]`. Keying
+ * the consumption ledger by a hash of those arrays gave each slice its own
+ * ledger, and the second command bought the `1 @ 100` the first had already
+ * taken. The key is therefore `symbol:bookGeneratedAt` — the provider's own
+ * snapshot time — and OPEN and CLOSE share it. A level that two slices
+ * report with different quantities cannot come from one snapshot and is
+ * refused as INCONSISTENT_BOOK. A new provider timestamp is a new snapshot
+ * and new liquidity: that is the versioned replenishment rule of this model.
+ */
+export function bookConsumptionKey(symbol: string, book: { timestamp: number }) { return `${symbol}:${book.timestamp}`; }
+export function consumeObservedBook(s: DemoState, symbol: string, book: ObservedBook, direction: 'BUY' | 'SELL', quantity: string, time: number, limitPrice?: string) {
+  if (time < book.timestamp || time - book.timestamp > OBSERVED_BOOK_MAX_AGE_MS) throw new DemoEngineError('STALE_BOOK');
+  const key = bookConsumptionKey(symbol, book);
+  const used: BookConsumption = s.bookConsumption[key] ??= { fingerprint: key, bids: {}, asks: {} };
+  used.seen ??= { bids: {}, asks: {} };
+  for (const side of ['bids', 'asks'] as const) {
+    for (const level of book[side]) {
+      const price = out(n(level.price)), observed = out(positive(level.quantity));
+      const before = used.seen[side][price];
+      if (before !== undefined && before !== observed) throw new DemoEngineError('INCONSISTENT_BOOK');
+      used.seen[side][price] = observed;
+    }
+  }
+  const levels = (side: 'bids' | 'asks') => book[side]
+    .map(x => ({ price: x.price, quantity: out(D.maximum(0, n(x.quantity).minus(used[side][out(n(x.price))] ?? '0'))) }))
+    .filter(x => n(x.quantity).gt(0));
+  const result = consumeBook(direction, quantity, { bids: levels('bids'), asks: levels('asks') }, limitPrice);
+  const side = direction === 'BUY' ? 'asks' : 'bids';
+  const record = (fill: { price: string; quantity: string }) => { const p = out(n(fill.price)); used[side][p] = out(n(used[side][p] ?? '0').plus(fill.quantity)); };
+  const prune = () => { for (const k of Object.keys(s.bookConsumption)) if (Number(k.split(':')[1]) < time - OBSERVED_BOOK_MAX_AGE_MS) delete s.bookConsumption[k]; };
+  return { fills: result.fills, record, prune };
+}
+/**
+ * THE REST OF THE WALLET, AS THE ENGINE WAS TOLD IT.
+ *
+ * The engine is denominated in the settle asset and cannot price BTC or ETH
+ * itself; the service values them from the same market data the positions
+ * are marked at and JOURNALS the result with the command that used it. So
+ * order admission, the fill margin check, the cross liquidation verdict and
+ * the liquidation reference all read one figure — the one the account
+ * response is built from — instead of the engine deciding on the settle row
+ * alone while the response added the wallet afterwards.
+ *
+ * `complete: false` means some held asset had no price: `priced` is then a
+ * FLOOR. New risk is admitted only against that floor (never optimistic),
+ * and the account is not liquidated on it (never on an understated figure).
+ */
+export interface ExternalCollateral { priced: string; complete: boolean; asOf: number | null }
 export interface DemoState {
-  version: 2; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
+  version: 3; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
+  /** Absent/null on states written before it existed: the engine then acts on the settle row alone, as it always did. */
+  collateral?: ExternalCollateral | null;
   orders: DemoOrder[]; events: DemoEvent[]; instruments: Record<string, DemoInstrument>;
   marks: Record<string, { mark: string; last: string; time: number }>;
-  applied: Record<string, string>; bookConsumption: Record<string, { fingerprint: string; bids: Record<string, string>; asks: Record<string, string> }>;
+  /** OHLC observations never overwrite the live book/risk observation. */
+  historicalMarks?: Record<string, { mark: string; last: string; time: number }>;
+  applied: Record<string, string>;
+  /** JSON fingerprint of each registered instrument, so a replay that re-registers an identical one skips its validation and copy. */
+  instrumentFingerprints?: Record<string, string>;
+  /**
+   * Observed liquidity already consumed from a provider snapshot, keyed by
+   * the SOURCE snapshot identity (`symbol:bookGeneratedAt`) — never by the
+   * levels a command happened to keep. `bids`/`asks` are quantity consumed
+   * per price; `seen` is the quantity each price level was OBSERVED to hold,
+   * so two slices of one snapshot that disagree about a level are refused.
+   */
+  bookConsumption: Record<string, BookConsumption>;
   time: number; nextEvent: number;
 }
 export interface DemoOrderInput {
@@ -75,7 +245,12 @@ export const noProtection = (): DemoProtection => ({ takeProfit: null, stopLoss:
 export function emptyDemoState(balance: string, time: number): DemoState {
   if (n(balance).lt(0) || !Number.isSafeInteger(time) || time < 0) throw new DemoEngineError('INVALID_INITIAL_STATE');
   return { version: DEMO_STATE_VERSION, walletBalance: out(n(balance)), initialDeposit: out(n(balance)), positions: [], orders: [], events: [],
-    instruments: {}, marks: {}, applied: {}, bookConsumption: {}, time, nextEvent: 1 };
+    instruments: {}, marks: {}, applied: {}, bookConsumption: {}, time, nextEvent: 1, collateral: null };
+}
+/** Record the wallet valuation every later decision on this state is taken against. */
+export function setDemoCollateral(s: DemoState, collateral: ExternalCollateral | null) {
+  if (collateral) { decimal(collateral.priced, 'collateral'); if (n(collateral.priced).lt(0)) throw new DemoEngineError('INVALID_COLLATERAL'); }
+  s.collateral = collateral ? { priced: out(n(collateral.priced)), complete: collateral.complete, asOf: collateral.asOf } : null;
 }
 /**
  * READ A STORED STATE FORWARD.
@@ -103,6 +278,7 @@ export function migrateDemoState(state: StoredDemoState | DemoState): DemoState 
       ...p,
       marginType: p.marginType ?? DEFAULT_MARGIN_TYPE,
       isolatedMargin: p.isolatedMargin ?? '0',
+      shortfallCovered: (p as Partial<DemoPosition>).shortfallCovered ?? '0',
     })),
     orders: stored.orders.map((o) => ({ ...o, marginType: o.marginType ?? DEFAULT_MARGIN_TYPE })),
   };
@@ -115,23 +291,68 @@ function instrument(s: DemoState, symbol: string): DemoInstrument {
   const value = s.instruments[symbol]; if (!value) throw new DemoEngineError('INSTRUMENT_MISSING'); return value;
 }
 export function registerDemoInstrument(s: DemoState, i: DemoInstrument) {
-  validateProfile(i.profile); s.instruments[i.rules.symbol] = structuredClone(i);
+  // Every replayed OPEN carries its instrument. Validating a 20-tier ladder
+  // and copying it again for the same contract, on every replay of every
+  // command, was a measurable share of a command's compute; an identical
+  // instrument is recognised by its fingerprint and left in place.
+  const fingerprint = JSON.stringify(i);
+  s.instrumentFingerprints ??= {};
+  if (s.instrumentFingerprints[i.rules.symbol] === fingerprint && s.instruments[i.rules.symbol]) return;
+  validateProfile(i.profile); s.instruments[i.rules.symbol] = structuredClone(i); s.instrumentFingerprints[i.rules.symbol] = fingerprint;
 }
-function exposure(s: DemoState, symbol: string, mark: string, marginType: DemoMarginType) {
-  // Exposure is read PER BUCKET: an isolated position is its own risk book,
-  // so a cross tier must not be widened by it and vice versa.
-  return s.positions.filter(p => p.status === 'OPEN' && p.symbol === symbol && p.marginType === marginType).reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
-    .plus(s.orders.filter(o => active(o) && !o.reduceOnly && o.symbol === symbol && o.marginType === marginType).reduce((v,o) => v.plus(n(o.remaining).times(D.maximum(mark,o.price ?? mark))), new D(0)));
+/**
+ * The tier a bucket's notional falls in — and, past the last published tier,
+ * the LAST tier rather than an exception. See `NATIVE_DEMO_MODEL.riskBeyondLastTier`:
+ * a position that grew past the table on a rally must remain readable and
+ * closable; only NEW risk is refused (`selectRiskTier` in `placeDemoOrder`).
+ */
+export function riskTierFor(notional: string, profile: ModelProfile): { tier: RiskTier; beyondLastTier: boolean } {
+  try { return { tier: selectRiskTier(notional, profile), beyondLastTier: false }; }
+  catch (e) {
+    if (e instanceof Error && e.message === 'RISK_LIMIT_EXCEEDED' && profile.riskTiers.length) return { tier: profile.riskTiers[profile.riskTiers.length - 1], beyondLastTier: true };
+    throw e;
+  }
+}
+/**
+ * The position an order would FILL INTO, if any: same contract, direction and
+ * bucket, live (historical entries never merge). This is the fill rule in
+ * `fillDemoOrder`, read once here so admission and fill agree on it.
+ */
+function joinedPosition(s: DemoState, o: { symbol: string; side: Side; marginType: DemoMarginType; historical: boolean }) {
+  return o.historical ? undefined : s.positions.find(p => p.status === 'OPEN' && !p.historical && p.symbol === o.symbol && p.side === o.side && p.marginType === o.marginType);
+}
+/**
+ * The notional an order's TIER is chosen on, before the order itself.
+ *
+ * CROSS: every cross position and working cross order on the contract —
+ * they share the account, so the tier is a property of the whole contract
+ * (gross hedge maintenance, as declared).
+ *
+ * ISOLATED: only the position this order would join, plus working isolated
+ * orders that would join the same one. Another isolated position on the
+ * same contract — the other direction, or a historical entry — is its own
+ * risk book and must not widen this one's tier, and vice versa.
+ */
+function exposure(s: DemoState, o: { symbol: string; side: Side; marginType: DemoMarginType; historical: boolean }, mark: string) {
+  const positions = o.marginType === 'CROSS'
+    ? s.positions.filter(p => p.status === 'OPEN' && p.symbol === o.symbol && p.marginType === 'CROSS')
+    : [joinedPosition(s, o)].filter((p): p is DemoPosition => !!p);
+  const orders = s.orders.filter(x => active(x) && !x.reduceOnly && x.symbol === o.symbol && x.marginType === o.marginType
+    && (o.marginType === 'CROSS' || (!o.historical && !x.historical && x.side === o.side)));
+  return positions.reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
+    .plus(orders.reduce((v,x) => v.plus(n(x.remaining).times(D.maximum(mark,x.price ?? mark))), new D(0)));
 }
 /**
  * ONE POSITION'S OWN RISK, at a mark this caller chooses.
  *
  * The tier is selected on the notional of the bucket this position belongs
  * to — for CROSS that is every cross position on the contract sharing the
- * account, for ISOLATED it is this position alone, because that is the
- * whole point of isolating it. The continuous tier deduction is then
- * allocated across the bucket in proportion to notional, exactly as it was
- * before; an isolated bucket of one simply receives all of it.
+ * account, for ISOLATED it is THIS POSITION ALONE, because that is the
+ * whole point of isolating it: two isolated positions on one contract are
+ * two risk books, and opening the second must not move the first one's
+ * maintenance or liquidation price. The continuous tier deduction is
+ * allocated across a cross bucket in proportion to notional; an isolated
+ * bucket of one simply receives all of it.
  *
  * `mark` is a parameter rather than `p.markPrice` so the liquidation search
  * can ask "what would this position's requirement be at that price" without
@@ -139,15 +360,16 @@ function exposure(s: DemoState, symbol: string, mark: string, marginType: DemoMa
  */
 export function positionRisk(s: DemoState, p: DemoPosition, mark: string) {
   const profile = instrument(s,p.symbol).profile, value = n(p.quantity).times(mark);
-  const bucket = s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol && x.marginType === p.marginType);
+  const bucket = p.marginType === 'ISOLATED' ? [p] : s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol && x.marginType === 'CROSS');
   const total = bucket.reduce((v,x) => v.plus(n(x.quantity).times(mark)), new D(0));
-  const tier = selectRiskTier(out(total), profile);
+  const { tier, beyondLastTier } = riskTierFor(out(total), profile);
   const deduction = total.gt(0) ? n(tier.deduction).times(value).div(total) : new D(0);
   return {
     value,
     maintenance: D.maximum(0,value.times(tier.maintenanceRate).minus(deduction)).plus(value.times(profile.takerFeeRate)),
     initial: value.div(p.leverage).plus(value.times(profile.takerFeeRate)),
     unrealized: new D(linearPnl(p.side,p.quantity,p.entryPrice,mark)),
+    beyondLastTier,
   };
 }
 /** An ISOLATED position stands on its posted margin alone: this is what is left of it. */
@@ -175,14 +397,23 @@ export const isolatedLiquidatable = (s: DemoState, p: DemoPosition) =>
  * owner's loss. A price that has NOT reached bankruptcy settles where it
  * actually is, so an ordinary liquidation still realises its real P&L.
  */
-export function isolatedBankruptcyBound(p: DemoPosition): string {
+export function isolatedBankruptcyPrice(p: DemoPosition): BigNumber {
   const bankruptcy = n(p.quantity).gt(0)
     ? (p.side === 'LONG'
         ? n(p.entryPrice).minus(n(p.isolatedMargin).div(p.quantity))
         : n(p.entryPrice).plus(n(p.isolatedMargin).div(p.quantity)))
     : n(p.entryPrice);
-  const floored = D.maximum(0, bankruptcy);
-  return out(p.side === 'LONG' ? D.maximum(p.lastPrice, floored) : D.minimum(p.lastPrice, floored));
+  return D.maximum(0, bankruptcy);
+}
+/**
+ * Where a LIQUIDATION of an isolated position settles: the last price, unless
+ * it lies past the bankruptcy price — then the bankruptcy price, which is the
+ * level at which the venue takes the position over. Used for liquidations
+ * only; a close, a stop or a take-profit settles at its actual price.
+ */
+export function isolatedBankruptcyBound(p: DemoPosition): string {
+  const bankruptcy = isolatedBankruptcyPrice(p);
+  return out(p.side === 'LONG' ? D.maximum(p.lastPrice, bankruptcy) : D.minimum(p.lastPrice, bankruptcy));
 }
 /**
  * THE SHARED ACCOUNT — and what has been taken out of it.
@@ -204,7 +435,7 @@ export function demoAccount(s: DemoState) {
   let upl = new D(0), mm = new D(0), im = new D(0), reserve = new D(0);
   let isolatedMargin = new D(0), isolatedUpl = new D(0), isolatedMaintenance = new D(0);
   for (const p of s.positions.filter(p => p.status === 'OPEN')) {
-    const mark = s.marks[p.symbol]?.mark; if (!mark) throw new DemoEngineError('MARK_MISSING');
+    const mark = (p.historical ? s.historicalMarks?.[p.symbol] ?? s.marks[p.symbol] : s.marks[p.symbol])?.mark; if (!mark) throw new DemoEngineError('MARK_MISSING');
     const risk = positionRisk(s,p,mark);
     if (p.marginType === 'ISOLATED') {
       isolatedMargin = isolatedMargin.plus(p.isolatedMargin);
@@ -217,14 +448,24 @@ export function demoAccount(s: DemoState) {
     upl = upl.plus(risk.unrealized);
   }
   for (const o of s.orders.filter(active)) reserve = reserve.plus(o.reserved);
-  const equity = n(s.walletBalance).plus(upl);
-  return { walletBalance: s.walletBalance, initialDeposit: s.initialDeposit, unrealizedPnl: out(upl), equity: out(equity),
+  // The wallet's other assets, as journaled. Null = never told: settle only.
+  const external = s.collateral ? n(s.collateral.priced) : new D(0);
+  const complete = s.collateral ? s.collateral.complete : true;
+  const settleEquity = n(s.walletBalance).plus(upl);
+  const equity = settleEquity.plus(external);
+  const hasCross = s.positions.some(p => p.status === 'OPEN' && p.marginType === 'CROSS');
+  const underMaintenance = hasCross && equity.lte(mm);
+  return { walletBalance: s.walletBalance, initialDeposit: s.initialDeposit, unrealizedPnl: out(upl), equity: out(equity), settleEquity: out(settleEquity),
     usedMargin: out(im), orderReserve: out(reserve), available: out(D.maximum(0,equity.minus(im).minus(reserve))),
     maintenanceMargin: out(mm), maintenanceRatio: equity.gt(0) ? out(mm.div(equity)) : null,
     isolatedMargin: out(isolatedMargin), isolatedUnrealizedPnl: out(isolatedUpl), isolatedMaintenanceMargin: out(isolatedMaintenance),
+    externalCollateral: s.collateral ? out(external) : null, collateralComplete: s.collateral ? complete : null,
     // Only CROSS positions can be liquidated by the account. An isolated
-    // one answers for itself, so it must not make this true.
-    liquidatable: s.positions.some(p => p.status === 'OPEN' && p.marginType === 'CROSS') && equity.lte(mm),
+    // one answers for itself, so it must not make this true. And an account
+    // whose collateral is only a floor is never liquidated on that floor:
+    // the verdict is withheld (`liquidationUnknown`), not guessed.
+    liquidatable: underMaintenance && complete,
+    liquidationUnknown: underMaintenance && !complete,
     deficit: out(D.maximum(0,n(s.walletBalance).negated())) };
 }
 export function demoPositionView(s: DemoState,p: DemoPosition) {
@@ -238,7 +479,7 @@ export function demoPositionView(s: DemoState,p: DemoPosition) {
     // answered against the whole account, the other against this position's
     // own posted margin.
     liquidationStatus: (p.marginType === 'ISOLATED' ? 'ISOLATED_POSITION_ESTIMATE' : 'ACCOUNT_CROSS_ESTIMATE') as 'ISOLATED_POSITION_ESTIMATE' | 'ACCOUNT_CROSS_ESTIMATE',
-    marginMode: p.marginType };
+    marginMode: p.marginType, pendingClose: p.pendingClose ?? null };
 }
 function validateProtection(s: DemoState, p: {symbol:string;side:Side;quantity:string}, protection: DemoProtection, price: string) {
   if (!['MARK','LAST'].includes(protection.triggerBy)) throw new DemoEngineError('INVALID_TRIGGER_SOURCE');
@@ -258,15 +499,20 @@ function reserveFor(s: DemoState,o: DemoOrder,price: string) {
   const profile = instrument(s,o.symbol).profile;
   return o.reduceOnly ? '0' : out(n(o.remaining).times(price).times(new D(1).div(o.leverage).plus(n(profile.takerFeeRate).times(2))));
 }
+/** The idempotency record of an order input: a digest, not the input itself, which was copied into every persisted snapshot. */
+const orderFingerprint = (input: DemoOrderInput) => createHash('sha256').update(JSON.stringify(input)).digest('hex').slice(0, 32);
 export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) {
-  const fingerprint = JSON.stringify(input);
-  if (s.applied[input.id]) { if (s.applied[input.id] !== fingerprint) throw new DemoEngineError('IDEMPOTENCY_CONFLICT'); return s.orders.find(o => o.id === input.id)!; }
+  const fingerprint = orderFingerprint(input), applied = s.applied[input.id];
+  // States written before the digest existed hold the raw JSON; either form of the same input is the same order.
+  if (applied !== undefined) { if (applied !== fingerprint && applied !== JSON.stringify(input)) throw new DemoEngineError('IDEMPOTENCY_CONFLICT'); return s.orders.find(o => o.id === input.id)!; }
   requireTime(s,time);
   if (!input.id || !['LONG','SHORT'].includes(input.side) || !['MARKET','LIMIT'].includes(input.type)) throw new DemoEngineError('INVALID_ORDER');
-  const rules = instrument(s,input.symbol), quote = s.marks[input.symbol]; if (!quote) throw new DemoEngineError('MARK_MISSING');
+  const rules = instrument(s,input.symbol), quote = input.historical ? s.historicalMarks?.[input.symbol] ?? s.marks[input.symbol] : s.marks[input.symbol]; if (!quote) throw new DemoEngineError('MARK_MISSING');
   const price = input.type === 'LIMIT' ? input.price : quote.last;
   if (!price) throw new DemoEngineError('LIMIT_PRICE_REQUIRED');
-  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET'});
+  // A reducing order is held to every contract rule but the tier cap (see `validateContractOrder`); its own
+  // checks — the named position, the side, the bucket, the size — follow right below.
+  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET',reduceOnly:!!input.reduceOnly});
   if (input.reduceOnly) {
     if (!input.positionId) throw new DemoEngineError('POSITION_ID_REQUIRED');
     const p=getPosition(s,input.positionId);
@@ -287,42 +533,63 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   // Margin for an isolated position is still FUNDED from the shared wallet —
   // what isolation changes is that once posted it stops backing anything
   // else. So the affordability question at placement is the same one.
-  if (!o.reduceOnly && (demoAccount(s).liquidatable || n(o.reserved).gt(demoAccount(s).available))) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');
-  const tier=selectRiskTier(out(exposure(s,o.symbol,quote.mark,marginType).plus(o.reduceOnly?'0':n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
-  if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
+  if (!o.reduceOnly) { const a = demoAccount(s); if (a.liquidatable || n(o.reserved).gt(a.available)) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN'); }
+  // A reducing order adds no exposure and is never refused by a tier: a
+  // position that has outgrown the table must still be closable at a price.
+  if (!o.reduceOnly) {
+    const tier=selectRiskTier(out(exposure(s,o,quote.mark).plus(n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
+    if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
+  }
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
-function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false) {
+function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false,actionId?:string,sourcePrice?:string) {
   const qty=positive(quantity);if(qty.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
+  // The fill is booked at the price it happened at, for the quantity it
+  // happened for: the journal is the record of what the book did.
   const profile=instrument(s,p.symbol).profile,fee=qty.times(price).times(maker?profile.makerFeeRate:profile.takerFeeRate);
   const gross=n(linearPnl(p.side,quantity,p.entryPrice,price));
-  s.walletBalance=out(n(s.walletBalance).plus(gross).minus(fee));
   p.realizedGross=out(n(p.realizedGross).plus(gross));p.closingFees=out(n(p.closingFees).plus(fee));
   const releasedBasis=n(p.roiBasis).times(qty).div(p.quantity);
   p.roiBasis=out(n(p.roiBasis).minus(releasedBasis));p.closedRoiBasis=out(n(p.closedRoiBasis).plus(releasedBasis));
-  // The isolated post comes home in the same proportion as the quantity
-  // that is leaving. On a liquidation the loss debited just above has
-  // already consumed most of it, which is exactly why an isolated position
-  // cannot cost the account more than it posted.
+  const action=actionId?{actionId}:orderId?{actionId:orderId}:{};
+  let shortfall=new D(0),bankruptcy:string|null=null;
   if(p.marginType==='ISOLATED'){
+    // The slice's share of the post comes home with the slice, and the
+    // slice's settlement — gross P&L less its fee — is paid out of it. The
+    // shared wallet is credited what is left and is never debited: a loss
+    // (fees included) beyond the post is not the account's. The difference
+    // is booked as a SHORTFALL line the simulation's insurance model covers,
+    // so the wallet, the post and the journal agree to the unit.
+    bankruptcy=out(isolatedBankruptcyPrice(p));
     const releasedMargin=n(p.isolatedMargin).times(qty).div(p.quantity);
+    const settlement=gross.minus(fee).plus(releasedMargin);
+    shortfall=settlement.lt(0)?settlement.negated():new D(0);
     p.isolatedMargin=out(n(p.isolatedMargin).minus(releasedMargin));
-    s.walletBalance=out(n(s.walletBalance).plus(releasedMargin));
-  }
+    s.walletBalance=out(n(s.walletBalance).plus(D.maximum(settlement,0)));
+    p.shortfallCovered=out(n(p.shortfallCovered??'0').plus(shortfall));
+  } else s.walletBalance=out(n(s.walletBalance).plus(gross).minus(fee));
   p.quantity=out(n(p.quantity).minus(qty));p.markPrice=price;p.lastPrice=price;
-  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing});
+  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing,...action,...(sourcePrice!==undefined?{sourcePrice}:{})});
+  if(shortfall.gt(0))emit(s,{kind:'SHORTFALL',time,positionId:p.id,orderId,symbol:p.symbol,quantity,price:bankruptcy,fee:'0',cashflow:out(shortfall),pricing:'MARK_SETTLEMENT',...action});
   if(n(p.quantity).isZero()) {
-    p.status=kind==='LIQUIDATION'?'LIQUIDATED':'CLOSED';p.closedAt=time;p.protection=noProtection();
+    p.status=kind==='LIQUIDATION'?'LIQUIDATED':'CLOSED';p.closedAt=time;p.protection=noProtection();p.pendingClose=null;
     for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id&&o.id!==orderId))cancelDemoOrder(s,o.id,time);
   }else if(p.protection.quantity!==null && n(p.protection.quantity).gt(p.quantity))p.protection.quantity=p.quantity;
 }
-export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string,time:number,pricing:DemoEvent['pricing'],maker=false) {
+/**
+ * Fills `quantity` of an order at `price` and RETURNS THE QUANTITY IT ACTUALLY
+ * FILLED: a reducing order can never take more than its position still has,
+ * so the caller records exactly that in the liquidity ledger, never the
+ * quantity it asked for. `sourcePrice` is the observed book level a
+ * MAKER_MODEL fill drew its liquidity from, kept on the event.
+ */
+export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string,time:number,pricing:DemoEvent['pricing'],maker=false,sourcePrice?:string):string {
   requireTime(s,time);const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
   if(positive(quantity).gt(o.remaining))throw new DemoEngineError('FILL_EXCEEDS_ORDER');positive(price);
   if(o.price && (o.side==='LONG'?n(price).gt(o.price):n(price).lt(o.price)))throw new DemoEngineError('FILL_OUTSIDE_LIMIT');
   if(o.reduceOnly) {
     const p=getPosition(s,o.positionId!);quantity=out(D.minimum(quantity,p.quantity));
-    settleClose(s,p,quantity,price,time,'CLOSE',pricing,o.id,maker);
+    settleClose(s,p,quantity,price,time,'CLOSE',pricing,o.id,maker,undefined,sourcePrice);
   } else {
     // Same symbol+direction increases one LIVE position, opposite direction remains a hedge.
     // Each historical test entry stays its own position (own entry marker, P&L and card).
@@ -332,12 +599,16 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
     const prof=instrument(s,o.symbol).profile,fee=n(quantity).times(price).times(maker?prof.makerFeeRate:prof.takerFeeRate);
     const nextReserve=out(n(o.remaining).minus(quantity).times(o.price??price).times(new D(1).div(o.leverage).plus(n(prof.takerFeeRate).times(2))));
     const need=n(quantity).times(price).div(o.leverage).plus(fee).plus(n(quantity).times(price).times(prof.takerFeeRate));
-    if(need.plus(nextReserve).gt(n(demoAccount(s).available).plus(o.reserved)))throw new DemoEngineError('INSUFFICIENT_FILL_MARGIN');
+    // Display availability is floored at zero; adding this order's reserve
+    // to that floor would invent collateral when existing exposure lost value.
+    const account=demoAccount(s);
+    const capacity=n(account.equity).minus(account.usedMargin).minus(account.orderReserve).plus(o.reserved);
+    if(need.plus(nextReserve).gt(capacity))throw new DemoEngineError('INSUFFICIENT_FILL_MARGIN');
     if(!p) {
       p={id:o.id,symbol:o.symbol,side:o.side,quantity:'0',entryPrice:price,leverage:o.leverage,status:'OPEN',openedAt:time,closedAt:null,
-        markPrice:s.marks[o.symbol].mark,lastPrice:s.marks[o.symbol].last,entryNotional:'0',realizedGross:'0',openingFees:'0',closingFees:'0',
+        markPrice:(o.historical?s.historicalMarks?.[o.symbol]??s.marks[o.symbol]:s.marks[o.symbol]).mark,lastPrice:(o.historical?s.historicalMarks?.[o.symbol]??s.marks[o.symbol]:s.marks[o.symbol]).last,entryNotional:'0',realizedGross:'0',openingFees:'0',closingFees:'0',
         fundingNet:'0',roiBasis:'0',closedRoiBasis:'0',protection:structuredClone(o.protection),historical:o.historical,lastFundingAt:time,
-        marginType:o.marginType,isolatedMargin:'0'};s.positions.push(p);
+        marginType:o.marginType,isolatedMargin:'0',shortfallCovered:'0'};s.positions.push(p);
     }
     p.entryPrice=weightedEntry([{quantity:p.quantity,price:p.entryPrice},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
     p.quantity=out(n(p.quantity).plus(quantity));p.entryNotional=out(n(p.entryNotional).plus(n(quantity).times(price)));
@@ -353,51 +624,73 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
       p.isolatedMargin=out(n(p.isolatedMargin).plus(posted));
       s.walletBalance=out(n(s.walletBalance).minus(posted));
     }
-    emit(s,{kind:'OPEN',time,positionId:p.id,orderId:o.id,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(fee.negated()),pricing});
+    emit(s,{kind:'OPEN',time,positionId:p.id,orderId:o.id,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(fee.negated()),pricing,actionId:o.id,...(sourcePrice!==undefined?{sourcePrice}:{})});
   }
   o.averagePrice=weightedEntry([{quantity:o.filled,price:o.averagePrice??price},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
   o.filled=out(n(o.filled).plus(quantity));o.remaining=out(n(o.remaining).minus(quantity));o.reserved=reserveFor(s,o,o.price??price);
   o.status=n(o.remaining).isZero()?'FILLED':'PARTIALLY_FILLED';s.time=time;
   if(o.reduceOnly&&active(o)&&!s.positions.some(p=>p.id===o.positionId&&p.status==='OPEN'))cancelDemoOrder(s,o.id,time);
+  return quantity;
 }
 export function cancelDemoOrder(s:DemoState,id:string,time:number) {
   requireTime(s,time);const o=s.orders.find(o=>o.id===id);if(!o)throw new DemoEngineError('ORDER_NOT_FOUND');if(!active(o))return;
   o.status='CANCELLED';o.reserved='0';s.time=time;emit(s,{kind:'CANCEL',time,positionId:o.positionId,orderId:id,symbol:o.symbol,quantity:o.remaining,price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
 }
-export function closeDemoPosition(s:DemoState,id:string,quantity:string|undefined,price:string,time:number,pricing:DemoEvent['pricing']='SELECTED_POINT') {
+export function closeDemoPosition(s:DemoState,id:string,quantity:string|undefined,price:string,time:number,pricing:DemoEvent['pricing']='SELECTED_POINT',actionId?:string) {
   requireTime(s,time);const p=getPosition(s,id),q=quantity??p.quantity;
   if(!positive(q).mod(instrument(s,p.symbol).rules.qtyStep).isZero())throw new DemoEngineError('INVALID_QUANTITY_STEP');
-  settleClose(s,p,q,price,time,'CLOSE',pricing,null);s.time=time;
+  settleClose(s,p,q,price,time,'CLOSE',pricing,null,false,actionId);s.time=time;
 }
 export function protectDemoPosition(s:DemoState,id:string,change:Partial<DemoProtection>,time:number) {
   requireTime(s,time);const p=getPosition(s,id),next={...p.protection,...change};
+  if(p.pendingClose&&(next.takeProfit!==null||next.stopLoss!==null))throw new DemoEngineError('PROTECTION_CLOSE_PENDING');
   validateProtection(s,p,next,next.triggerBy==='MARK'?p.markPrice:p.lastPrice);p.protection=next;s.time=time;
   emit(s,{kind:'PROTECTION',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
 }
+/**
+ * A LEVERAGE CHANGE IS NOT AN ORDER. It is validated as what it is: the
+ * leverage itself (range and step of the contract), the risk tier of the
+ * bucket the position is in NOW, at the current mark — not a fictitious
+ * market order for the whole accumulated position, which the generic order
+ * validator would refuse the moment the position exceeded
+ * `maxMarketOrderQty` or landed in a tier at its entry notional — then the
+ * margin the account can actually put behind it, and for an isolated
+ * position that the re-sized post still keeps it solvent.
+ */
 export function setDemoLeverage(s:DemoState,id:string,leverage:string,time:number) {
   requireTime(s,time);const p=getPosition(s,id),i=instrument(s,p.symbol);
-  validateContractOrder({rules:i.rules,profile:i.profile,quantity:p.quantity,price:p.entryPrice,leverage,market:true});
+  validateLeverageRange(i.rules,leverage);
+  const mark=s.marks[p.symbol]?.mark??p.markPrice;
+  const tier=selectRiskTier(out(exposure(s,p,mark)),i.profile);
+  if(tier.maxLeverage&&n(leverage).gt(tier.maxLeverage))throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
   if(s.orders.some(o=>active(o)&&o.positionId===id))throw new DemoEngineError('CANCEL_ORDERS_BEFORE_LEVERAGE');
   const before=p.leverage,postedBefore=p.isolatedMargin,walletBefore=s.walletBalance;p.leverage=leverage;
   // An isolated position's posted margin IS its leverage. Re-sizing it to
   // the new requirement moves the difference to or from the wallet, so
   // lowering leverage funds the position and raising it releases cash —
   // rather than leaving a post that no longer means anything.
+  let marginDelta=new D(0);
   if(p.marginType==='ISOLATED'){
     const required=n(p.quantity).times(p.entryPrice).div(leverage);
-    const delta=required.minus(p.isolatedMargin);
-    p.isolatedMargin=out(required);s.walletBalance=out(n(s.walletBalance).minus(delta));
+    marginDelta=required.minus(p.isolatedMargin);
+    p.isolatedMargin=out(required);s.walletBalance=out(n(s.walletBalance).minus(marginDelta));
   }
   const a=demoAccount(s);
   const short=n(a.equity).lt(n(a.usedMargin).plus(a.orderReserve))||n(s.walletBalance).lt(0)||isolatedLiquidatable(s,p);
   if(short){p.leverage=before;p.isolatedMargin=postedBefore;s.walletBalance=walletBefore;throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');}
   // Leverage changes margin requirements, NEVER quantity, entry or absolute P&L.
   p.roiBasis=out(n(p.quantity).times(p.entryPrice).div(leverage));s.time=time;
-  emit(s,{kind:'LEVERAGE',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
+  emit(s,{kind:'LEVERAGE',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND',leverage,marginDelta:out(marginDelta)});
 }
-export function markDemoAccount(s:DemoState,marks:Record<string,{mark:string;last:string}>,time:number) {
-  requireTime(s,time);for(const[symbol,v]of Object.entries(marks)){positive(v.mark);positive(v.last);s.marks[symbol]={...v,time};}
-  for(const p of s.positions.filter(p=>p.status==='OPEN')){const v=s.marks[p.symbol];if(!v)throw new DemoEngineError('MARK_MISSING');p.markPrice=v.mark;p.lastPrice=v.last;}
+export function markDemoAccount(s:DemoState,marks:Record<string,{mark:string;last:string}>,time:number,historicalOnly=false) {
+  requireTime(s,time);
+  if(historicalOnly)s.historicalMarks??={};
+  for(const[symbol,v]of Object.entries(marks)){
+    positive(v.mark);positive(v.last);
+    if(historicalOnly)s.historicalMarks![symbol]={...v,time};
+    else {s.marks[symbol]={...v,time};if(s.historicalMarks?.[symbol])s.historicalMarks[symbol]={...v,time};}
+  }
+  for(const p of s.positions.filter(p=>p.status==='OPEN'&&(!historicalOnly||p.historical))){const v=p.historical?s.historicalMarks?.[p.symbol]??s.marks[p.symbol]:s.marks[p.symbol];if(!v)throw new DemoEngineError('MARK_MISSING');p.markPrice=v.mark;p.lastPrice=v.last;}
   s.time=time;
 }
 export function settleDemoFunding(s:DemoState,time:number) {
@@ -406,57 +699,137 @@ export function settleDemoFunding(s:DemoState,time:number) {
     if(s.marks[p.symbol]?.time!==time)throw new DemoEngineError('FUNDING_MARK_NOT_AT_SETTLEMENT');
     const rate=p.side==='LONG'?NATIVE_DEMO_MODEL.funding.longCashflow:NATIVE_DEMO_MODEL.funding.shortCashflow;
     const flow=n(p.quantity).times(p.markPrice).times(rate);
+    let charged=flow;
     if(p.marginType==='ISOLATED'){
       // Into and out of the post, so funding can actually walk an isolated
       // position into liquidation instead of silently draining the account
       // that is supposed to be shielded from it. A flow larger than what is
-      // posted cannot leave a negative post: the remainder falls to the
-      // account, which is the only place left for it, and the next risk
-      // pass closes the position.
-      const next=n(p.isolatedMargin).plus(flow);
-      p.isolatedMargin=out(D.maximum(0,next));
-      if(next.lt(0))s.walletBalance=out(n(s.walletBalance).plus(next));
+      // posted is charged only up to the post — the shared wallet never pays
+      // for an isolated position — and the next risk pass closes it.
+      charged=D.maximum(flow,n(p.isolatedMargin).negated());
+      p.isolatedMargin=out(n(p.isolatedMargin).plus(charged));
     } else s.walletBalance=out(n(s.walletBalance).plus(flow));
-    p.fundingNet=out(n(p.fundingNet).plus(flow));p.lastFundingAt=time;
-    emit(s,{kind:'FUNDING',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:p.quantity,price:p.markPrice,fee:'0',cashflow:out(flow),pricing:'MARK_SETTLEMENT'});
+    p.fundingNet=out(n(p.fundingNet).plus(charged));p.lastFundingAt=time;
+    emit(s,{kind:'FUNDING',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:p.quantity,price:p.markPrice,fee:'0',cashflow:out(charged),pricing:'MARK_SETTLEMENT'});
   }s.time=time;
 }
-export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:DemoEvent['pricing']='OHLC_PATH_MODEL') {
+export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:DemoEvent['pricing']='OHLC_PATH_MODEL',historicalOnly=false) {
   requireTime(s,time);
+  const eligible=(p:DemoPosition)=>!historicalOnly||p.historical;
   // Isolated first, and one at a time: a position whose own post is gone is
   // closed on its own, and the rest of the account — including every other
   // isolated position — is untouched by it.
-  for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='ISOLATED')){
+  for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='ISOLATED'&&eligible(p))){
     if(!isolatedLiquidatable(s,p))continue;
     for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id))cancelDemoOrder(s,o.id,time);
-    settleClose(s,p,p.quantity,isolatedBankruptcyBound(p),time,'LIQUIDATION',pricing,null);
+    settleClose(s,p,p.quantity,isolatedBankruptcyBound(p),time,'LIQUIDATION','MARK_SETTLEMENT',null);
   }
   if(demoAccount(s).liquidatable){
-    for(const o of s.orders.filter(o=>active(o)&&o.marginType==='CROSS'))cancelDemoOrder(s,o.id,time);
+    for(const o of s.orders.filter(o=>active(o)&&o.marginType==='CROSS'&&(!historicalOnly||o.historical)))cancelDemoOrder(s,o.id,time);
     // Only the shared book is swept. An isolated position is not collateral
     // for the account and is not seized to save it.
-    for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='CROSS'))settleClose(s,p,p.quantity,p.lastPrice,time,'LIQUIDATION',pricing,null);
+    for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='CROSS'&&eligible(p)))settleClose(s,p,p.quantity,p.markPrice,time,'LIQUIDATION','MARK_SETTLEMENT',null);
   }
-  for(const p of s.positions.filter(p=>p.status==='OPEN')) {
-    const v=n(p.protection.triggerBy==='MARK'?p.markPrice:p.lastPrice),{takeProfit:tp,stopLoss:sl}=p.protection;
-    const stop=sl!==null&&(p.side==='LONG'?v.lte(sl):v.gte(sl));
-    const profit=tp!==null&&(p.side==='LONG'?v.gte(tp):v.lte(tp));
-    if(stop||profit){const q=p.protection.quantity??p.quantity;settleClose(s,p,q,p.lastPrice,time,stop?'STOP_LOSS':'TAKE_PROFIT',pricing,null);p.protection=noProtection();}
+  for(const p of s.positions.filter(p=>p.status==='OPEN'&&eligible(p))) {
+    const reason=protectionTrigger(p,p.markPrice,p.lastPrice);if(!reason)continue;
+    const q=p.protection.quantity??p.quantity,reference=p.protection.triggerBy==='MARK'?p.markPrice:p.lastPrice;
+    if(pricing==='LIVE_QUOTE_MODEL'&&!p.historical){
+      // LIVE: the trigger is a fact about the price and is journaled as one;
+      // the close is a fact about a book and waits for one
+      // (`executeObservedBook`). A trigger that lands on a position already
+      // closing adds to what is still to close, never past the position.
+      const existing=p.pendingClose??null;
+      const actionId=existing?.actionId??`e${s.nextEvent}`;
+      const quantity=out(D.minimum(p.quantity,n(q).plus(existing?.quantity??'0')));
+      p.pendingClose={reason:existing?.reason??reason,quantity,triggerPrice:reference,triggeredAt:existing?.triggeredAt??time,actionId};
+      p.protection=noProtection();
+      emit(s,{kind:'TRIGGER',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:q,price:reference,fee:'0',cashflow:'0',pricing,actionId});
+    }else{
+      // The declared OHLC path (and a historical position under any quote): the path point is the close.
+      settleClose(s,p,q,p.lastPrice,time,reason,pricing,null);p.protection=noProtection();
+    }
   }s.time=time;
 }
+/** Which protection a position's own trigger price has reached at these marks, if any (stop first, as before). */
+export function protectionTrigger(p:Pick<DemoPosition,'side'|'protection'>,mark:string,last:string):'STOP_LOSS'|'TAKE_PROFIT'|null{
+  const v=n(p.protection.triggerBy==='MARK'?mark:last),{takeProfit:tp,stopLoss:sl}=p.protection;
+  if(sl!==null&&(p.side==='LONG'?v.lte(sl):v.gte(sl)))return 'STOP_LOSS';
+  if(tp!==null&&(p.side==='LONG'?v.gte(tp):v.lte(tp)))return 'TAKE_PROFIT';
+  return null;
+}
+/**
+ * ONE OBSERVED BOOK EXECUTES WHAT IS WORKING ON A CONTRACT.
+ *
+ * First the closes that a live take-profit or stop-loss has TRIGGERED: as
+ * taker, at the book's own level prices, for the depth the opposite side
+ * has — a stop on 1 contract that meets a single bid of 0.2 closes 0.2 at
+ * that bid and keeps 0.8 working for the next book; nothing closes at the
+ * trigger price. Then the resting live LIMIT orders: the depth of the
+ * opposite side at prices no worse than the order's, booked at the ORDER'S
+ * OWN price as maker (`MAKER_MODEL`, the observed level kept as
+ * `sourcePrice`). Every fill goes through the same consumption ledger,
+ * keyed by the provider snapshot, so the same snapshot presented again
+ * brings nothing; every recorded consumption is the quantity that was
+ * actually filled, never the quantity that was asked for; and every order
+ * is read again at each step, because a close in this pass may have
+ * cancelled it (a full close cancels the position's other orders) or left
+ * its position smaller than the order. An opening order whose margin no
+ * longer suffices is cancelled here (the declared rule), and that
+ * cancellation counts as a change the caller journals. Any other refusal
+ * is a fault and is thrown. Historical orders never take this path.
+ * Returns the number of events this book produced.
+ */
+export function executeObservedBook(s:DemoState,symbol:string,book:ObservedBook,time:number):number{
+  requireTime(s,time);const before=s.events.length;
+  for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.symbol===symbol&&!p.historical&&p.pendingClose)){
+    const pending=p.pendingClose!,want=out(D.minimum(pending.quantity,p.quantity));
+    if(n(want).lte(0)){p.pendingClose=null;continue;}
+    const consumed=consumeObservedBook(s,symbol,book,p.side==='LONG'?'SELL':'BUY',want,time);
+    let filled=new D(0);
+    for(const f of consumed.fills){settleClose(s,p,f.quantity,f.price,time,pending.reason,'OBSERVED_BOOK',null,false,pending.actionId);consumed.record(f);filled=filled.plus(f.quantity);}
+    consumed.prune();
+    if(p.status!=='OPEN'||n(pending.quantity).minus(filled).lte(0))p.pendingClose=null;
+    else pending.quantity=out(n(pending.quantity).minus(filled));
+  }
+  for(const id of s.orders.filter(o=>o.symbol===symbol&&o.type==='LIMIT'&&!o.historical&&o.price&&active(o)).map(o=>o.id)){
+    const o=s.orders.find(x=>x.id===id)!;if(!active(o))continue;
+    const position=()=>s.positions.find(x=>x.id===o.positionId&&x.status==='OPEN');
+    if(o.reduceOnly&&!position()){cancelDemoOrder(s,o.id,time);continue;}
+    const want=o.reduceOnly?out(D.minimum(o.remaining,position()!.quantity)):o.remaining;
+    if(n(want).lte(0))continue;
+    const consumed=consumeObservedBook(s,symbol,book,o.side==='LONG'?'BUY':'SELL',want,time,o.price!);
+    for(const f of consumed.fills){
+      if(!active(o))break;
+      const p=o.reduceOnly?position():undefined;if(o.reduceOnly&&!p)break;
+      const take=p?out(D.minimum(f.quantity,p.quantity)):f.quantity;if(n(take).lte(0))break;
+      let filled:string;
+      try{filled=fillDemoOrder(s,o.id,take,o.price!,time,'MAKER_MODEL',true,f.price);}
+      catch(e){if(e instanceof DemoEngineError&&e.code==='INSUFFICIENT_FILL_MARGIN'){cancelDemoOrder(s,o.id,time);break;}throw e;}
+      consumed.record({price:f.price,quantity:filled});
+    }
+    consumed.prune();
+  }
+  if(s.events.length>before){
+    // A fill books the position's mark at the fill price (the path's
+    // convention); this pass already observed the market, and the positions
+    // carry THAT observation. Then the risk pass, on the observed mark.
+    const observed=s.marks[symbol];
+    if(observed)markDemoAccount(s,{[symbol]:{mark:observed.mark,last:observed.last}},time);
+    evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');
+  }
+  s.time=time;return s.events.length-before;
+}
 /** Observable depth is consumed only inside this private state; NEVER written to any public book. */
-export function executeDemoBook(s:DemoState,id:string,book:{bids:{price:string;quantity:string}[];asks:{price:string;quantity:string}[];timestamp:number},time:number){
+export function executeDemoBook(s:DemoState,id:string,book:ObservedBook,time:number){
   const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
-  if(time<book.timestamp||time-book.timestamp>5000)throw new DemoEngineError('STALE_BOOK');
-  // Stored books are truncated to the depth each command needs, so the snapshot identity includes its content.
-  const fingerprint=JSON.stringify([book.bids,book.asks]),key=`${o.symbol}:${book.timestamp}:${createHash('sha256').update(fingerprint).digest('hex').slice(0,16)}`;
-  let used=s.bookConsumption[key];if(used&&used.fingerprint!==fingerprint)throw new DemoEngineError('INCONSISTENT_BOOK');
-  used??={fingerprint,bids:{},asks:{}};s.bookConsumption[key]=used;
-  const levels=(side:'bids'|'asks')=>book[side].map(x=>({price:x.price,quantity:out(D.maximum(0,n(x.quantity).minus(used[side][out(n(x.price))]??'0')))})).filter(x=>n(x.quantity).gt(0));
-  const direction=o.side==='LONG'?'BUY':'SELL',result=consumeBook(direction,o.remaining,{bids:levels('bids'),asks:levels('asks')},o.price??undefined);
-  for(const f of result.fills){fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');const side=direction==='BUY'?'asks':'bids',p=out(n(f.price));used[side][p]=out(n(used[side][p]??'0').plus(f.quantity));}
+  const direction=o.side==='LONG'?'BUY':'SELL';
+  const consumed=consumeObservedBook(s,o.symbol,book,direction,o.remaining,time,o.price??undefined);
+  for(const f of consumed.fills){
+    if(!active(o))break;
+    const filled=fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');consumed.record({price:f.price,quantity:filled});
+  }
   if(o.type==='MARKET'&&active(o))cancelDemoOrder(s,id,time);
-  for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
+  consumed.prune();
 }
 /**
  * THE LIQUIDATION REFERENCE FOR ONE POSITION — on the basis that actually applies to it.
@@ -476,6 +849,10 @@ export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):stri
   const p=s.positions.find(x=>x.id===positionId&&x.status==='OPEN');if(!p)return null;
   const current=s.marks[p.symbol];if(!current)return null;
   const isolated=p.marginType==='ISOLATED';
+  // A cross reference is a statement about the whole account. On a wallet
+  // that is only partly priced the account is a floor, and a price solved
+  // on a floor is not a liquidation price: unknown is null, never the mark.
+  if(!isolated&&s.collateral&&!s.collateral.complete)return null;
   // The direction the search walks. Cross nets same-contract hedges because
   // they share the collateral; an isolated position is alone by definition.
   const same=s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol&&x.marginType==='CROSS');
@@ -483,10 +860,19 @@ export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):stri
     ? (p.side==='LONG'?new D(p.quantity):new D(p.quantity).negated())
     : same.reduce((v,x)=>x.side==='LONG'?v.plus(x.quantity):v.minus(x.quantity),new D(0));
   if(net.isZero())return null;
+  // Only THIS contract's cross positions move with the probed price; every
+  // other contract's contribution to equity and maintenance is a constant,
+  // taken once from the account at the current marks. The search therefore
+  // re-evaluates the same-contract bucket per step instead of the whole
+  // account — the difference between a thirty-position account answering
+  // thirty liquidation references in a few milliseconds and in a few hundred.
+  const contribution=(mark:string)=>same.reduce((v,x)=>{const r=positionRisk(s,x,mark);return v.plus(r.unrealized).minus(r.maintenance);},new D(0));
+  const account=isolated?null:demoAccount(s);
+  const base=account?n(account.equity).minus(account.maintenanceMargin).minus(contribution(current.mark)):new D(0);
   const health=(price:BigNumber)=>{
-    const mark=out(price),probe:DemoState={...s,positions:s.positions.map(x=>x.status==='OPEN'&&x.symbol===p.symbol?{...x,markPrice:mark}:x),marks:{...s.marks,[p.symbol]:{...current,mark}}};
-    if(isolated)return isolatedHealth(probe,probe.positions.find(x=>x.id===p.id)!,mark);
-    const a=demoAccount(probe);return n(a.equity).minus(a.maintenanceMargin);
+    const mark=out(price);
+    if(isolated)return isolatedHealth(s,p,mark);
+    return base.plus(contribution(mark));
   };
   const m0=n(current.mark);if(health(m0).lte(0))return current.mark;
   const tick=n(instrument(s,p.symbol).rules.tickSize);

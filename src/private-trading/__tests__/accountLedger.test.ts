@@ -55,7 +55,7 @@ describe('the simulation ledger explains every change to equity', () => {
       ['INITIAL_COLLATERAL', '10000000'],
       ['OPENING_FEE', '-55'],
     ]);
-    expect(ledger.totals).toEqual({ realizedPnl: '0', fees: '55', funding: '0', net: '-55' });
+    expect(ledger.totals).toEqual({ realizedPnl: '0', fees: '55', funding: '0', shortfallCovered: '0', net: '-55' });
   });
 
   test('a profitable partial close books gross P&L and its own closing fee as SEPARATE lines', () => {
@@ -145,7 +145,7 @@ describe('the simulation ledger explains every change to equity', () => {
 
     expect(s.walletBalance).toBe('9989895.5');
     const ledger = accountLedger(s);
-    expect(ledger.totals).toEqual({ realizedPnl: '-10000', fees: '104.5', funding: '0', net: '-10104.5' });
+    expect(ledger.totals).toEqual({ realizedPnl: '-10000', fees: '104.5', funding: '0', shortfallCovered: '0', net: '-10104.5' });
     expect(ledger.reconciled).toBe(true);
   });
 

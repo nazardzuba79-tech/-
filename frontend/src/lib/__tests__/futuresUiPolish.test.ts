@@ -281,7 +281,8 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  // would refuse is misleading in a trading interface. `submitting` is still
  // one of the conditions, so "disabled while sending" stays pinned, and the
  // button and the guard are pinned to ONE expression rather than two copies.
- expect(source).toContain('disabled={!canSubmit}');
+ expect(source).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}");
+ expect(source).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}");
  expect(source).toContain('if (!canSubmit) return;');
  expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });

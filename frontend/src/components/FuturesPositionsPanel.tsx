@@ -29,7 +29,7 @@ export function FuturesPositionsPanel({
   /** Hand this position to the order form as a reduce-only LIMIT ticket.
    *  Absent means the terminal offers no limit close, and the button is
    *  not rendered rather than rendered dead. */
-  onLimitClose?: (position: { id: string; symbol: string; side: 'LONG' | 'SHORT'; size: string }) => void;
+  onLimitClose?: (position: { id: string; symbol: string; side: 'LONG' | 'SHORT'; size: string; marginType: 'ISOLATED' | 'CROSS' }) => void;
   /** When the page owns the tab row (the futures terminal does, so there is
    *  one row of tabs rather than two stacked), pass the active tab here and
    *  this panel renders content only. Left out, it keeps its own tabs and
@@ -193,14 +193,15 @@ export function FuturesPositionsPanel({
                   const realized = parseFloat(p.realizedPnl);
                   /**
                    * A native Cross liquidation reference is only meaningful
-                   * when the deterministic engine and the account header use
-                   * the same collateral pool. The engine cannot replay live
-                   * external wallet marks, while the authoritative account
-                   * deliberately adds that wallet as Cross collateral. If
-                   * such collateral exists (or is partly unpriced), showing
-                   * the engine-only price beside the larger account is a
-                   * false precision. Unknown is a dash; never a smaller-pool
-                   * liquidation price pretending to be account-authoritative.
+                   * when the engine and the account header use the same
+                   * collateral pool. They now do: the wallet valuation is
+                   * journaled into the engine state with every command, so
+                   * the engine's estimate and `aggregate.walletCollateral`
+                   * come from one figure. What still cannot be answered is
+                   * an account whose collateral is only partly priced — a
+                   * price computed on a floor is not a liquidation price —
+                   * so that stays a dash, never a smaller-pool number
+                   * pretending to be account-authoritative.
                    *
                    * Isolated is self-contained, and the real engine stores
                    * its own liquidation price, so neither path is changed.
@@ -208,9 +209,7 @@ export function FuturesPositionsPanel({
                   const aggregate = execution.account_aggregate;
                   const nativeCrossLiquidationUnknown = execution.engine === 'NATIVE'
                     && p.marginType === 'CROSS'
-                    && (aggregate === null
-                      || !aggregate.collateralComplete
-                      || Number(aggregate.walletCollateral) !== 0);
+                    && (aggregate === null || !aggregate.collateralComplete);
                   const liquidationPrice = nativeCrossLiquidationUnknown ? null : p.liquidationPrice;
                   return (
                     <tr key={p.id} className="futures-position-row" data-side={p.side}>
