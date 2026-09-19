@@ -3025,3 +3025,9 @@ withdrawal was placed.
 ### Codex — current-main sync after #151
 
 - Synced this fix branch with main `faf58f8e25ab7d5df1c70885ac12a91adf57f56f`. Only conflict: both agents appended AI_HANDOFF; retained both complete entries. All #151 Copy Trading and logout changes are unchanged from main. This is a merge into the draft working branch only, not a PR merge or deployment. Previous tests remain attributed to 78a5a04; post-sync current-main validation is recorded in the final PR #152 acceptance summary; the first acceptance artifact stays attributed to its tested SHA.
+# Codex — 2026-09-19 16:53 UTC — PR #152 production transaction evidence
+
+- Parent `0ab84a4a0154b21ec32e900a6f7fdfb870456672`; main `faf58f8e25ab7d5df1c70885ac12a91adf57f56f`, zero behind. Owner authorized exact candidate deployment and the existing native production account, which settles its isolated demo balance.
+- First browser MARKET LONG BTCUSDT 0.001, Cross 10x was refused `quote_stale`, HTTP 503, in 13601ms. Request `923737bd-4374-4e36-8fad-85411f612bda`; account revision 74, wallet 11045208.67351093, journal and command counts unchanged; zero open positions/orders. No automatic or manual retry. Old MarkPriceService timeout is not proven as the cause.
+- `native/store.ts`: transaction substage timing; serialize immutable payloads before taking the row lock; select only revision from the newly inserted receipt rather than returning its full JSON. Auth/session rechecks, CAS, receipt semantics, freshness guards and rollback preserved. Exact slow query still requires candidate traces; no claim that production acceptance passed.
+- Validation: backend TypeScript, 143 focused tests and 11 real local PostgreSQL integration tests PASS, including final-write freshness rollback. Preserved all terminal design, Copy Trading, R11/R12 and financial formulas. Commit SHA is the commit containing this entry. No merge.
