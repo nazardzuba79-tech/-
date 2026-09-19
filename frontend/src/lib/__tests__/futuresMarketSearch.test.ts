@@ -52,15 +52,27 @@ describe('the rail carries no search row at all', () => {
     expect(code).not.toMatch(/visibility:\s*hidden|display:\s*none/);
   });
 
-  it('starts the rail at the favourites row, and the page passes no field to it', () => {
+  it('starts the list at the favourites row, and the page keeps no permanent rail', () => {
     // The first thing the list renders after the optional field is the
     // favourites/count row.
     const body = code.slice(code.indexOf('return ('));
     expect(body.indexOf('className="pairs-tabs"')).toBeGreaterThan(-1);
-    // The rail's own instance is rendered WITHOUT `searchable`.
-    const rail = pageCode.slice(pageCode.indexOf('reference-market-sidebar'), pageCode.indexOf('futures-market-chooser'));
-    expect(rail).toContain('<FuturesPairList symbols={symbols}');
-    expect(rail).not.toContain('searchable');
+    // THE PERMANENT RAIL IS GONE. It used to render a second, non-searchable
+    // instance of this list in a column of its own; the owner had it removed
+    // and the width given to the chart. This is a stronger check than the
+    // one it replaces: there is no rail markup at all, so a list without a
+    // field cannot come back beside the one that has one.
+    expect(pageCode).not.toContain('reference-market-sidebar');
+    expect(pageCode).not.toContain('<FuturesPairList symbols={symbols}');
+    // Every remaining instance on this page is a searchable one. The
+    // boundary matters: `<FuturesPairListHandle>` appears in a useRef
+    // generic and is not an element.
+    const instances = [...pageCode.matchAll(/<FuturesPairList(?![A-Za-z])/g)]
+      .map((m) => pageCode.slice(m.index, pageCode.indexOf('/>', m.index)));
+    expect(instances.length).toBeGreaterThan(0);
+    for (const instance of instances) {
+      expect(instance).toContain('searchable');
+    }
   });
 
   it('gates the field behind the prop, so only a chooser can show one', () => {
@@ -182,12 +194,19 @@ describe('Escape in the field asks the container to close, exactly once', () => 
 });
 
 describe('the instrument row starts at the far-left edge', () => {
-  it('spans the rail column, and the rail begins under it', () => {
+  it('spans the workspace, and no rail column is declared under it', () => {
     const grid = studio.slice(studio.indexOf('@media(min-width:1025px)'));
-    expect(grid).toMatch(/\.ticker-bar \{ grid-column:1 \/ 4; grid-row:1;/);
-    expect(grid).toMatch(/\.reference-market-sidebar \{ grid-column:1; grid-row:2 \/ 4; \}/);
-    // The order book and the order ticket keep the columns they had.
-    expect(grid).toMatch(/\.order-form-area \{ grid-row:1 \/ 4; \}/);
+    // Three columns now: chart, depth, ticket. The instrument row spans the
+    // first two and stops before order entry, exactly as it did when there
+    // were four and it spanned the first three.
+    expect(grid).toMatch(/\.ticker-bar \{ grid-column:1 \/ 3; grid-row:1;/);
+    // The rail's track is not merely unused — it is not declared. A sheet
+    // that still names it would leave the chart in an empty column, which
+    // is the failure this file exists to prevent.
+    expect(grid).not.toContain('.reference-market-sidebar');
+    expect(grid).not.toMatch(/grid-template-columns:\s*\d+px\s+minmax\(0,1fr\)/);
+    // The order ticket still owns the last column, full height.
+    expect(grid).toMatch(/\.order-form-area \{ grid-column:3; grid-row:1 \/ 4; \}/);
   });
 });
 

@@ -367,21 +367,23 @@ export function FuturesPage() {
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} />
 
         <div className="main-grid">
-          {/* No visible heading above the market list. The rail is already
-              labelled for assistive tech by this aside's aria-label, and the
-              word "Рынки" over a market list was a second title for a panel
-              the global nav already names — it only pushed the search and
-              the favourites filter down. */}
-          {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
-            {/* No search row: the rail starts at the favourites filter. */}
-            <FuturesPairList symbols={symbols} symbol={symbol} onChange={setSymbol} />
-          </aside>}
+          {/* NO PERMANENT MARKET RAIL.
 
-          {/* A LAYER, not a panel. It is placed in the rail's own grid cell,
-              so it sits directly under the instrument row at the far-left
-              edge of the workspace and overlaps the chart rather than
-              displacing it — the chart, the book and the ticket keep every
-              pixel they had, and nothing below it moves. */}
+              There were two ways to reach the same market list on this page:
+              a 212px column standing open all day, and the chooser the two
+              entry points in the instrument row open on demand. The column
+              was the worse of the two — it showed a dozen of 771 markets,
+              truncated their names to fit, and charged the chart 212px for
+              the privilege — so it is gone and the chart has the width.
+
+              The list glyph and the pair caret are now the only way in,
+              which is why they are drawn to be seen (see .pair-markets-btn
+              and .pair-arrow); losing the rail must not mean losing search.
+
+              A LAYER, not a panel. The chooser keeps the far-left cell the
+              rail used to hold, so it still opens directly under the
+              instrument row and overlaps the chart rather than displacing
+              it — nothing below it moves while it is open. */}
           {desktopMarkets && chooserOpen && (
             <div className="futures-market-chooser" ref={chooserRef} role="dialog" aria-modal="false" aria-label={t('nav.markets')}>
               <FuturesPairList
