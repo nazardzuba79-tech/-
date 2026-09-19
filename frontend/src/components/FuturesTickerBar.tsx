@@ -44,7 +44,8 @@ import { CryptoIcon } from './CryptoIcon';
  * Futures-only styles reflow these blocks on narrow screens without
  * hiding metrics or changing the shared Spot ticker styles.
  */
-export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; onSelectSymbol?: () => void }) {
+export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }:
+  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
   const [markPrice, setMarkPrice] = useState<number | null>(null);
@@ -199,8 +200,15 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
         <button
           type="button"
           className="pair-markets-btn"
+          /* `data-market-entry` is how the page's outside-click handler
+             recognises the two entry points. Without it, pressing the
+             button that opened the chooser closed it on pointerdown and
+             re-opened it on click, so it could never be shut from the
+             control that opened it. */
+          data-market-entry
           aria-label={t('nav.markets')}
           title={t('nav.markets')}
+          aria-expanded={marketsOpen}
           onClick={onSelectSymbol}
         >
           <ListIcon size={16} />
@@ -208,8 +216,10 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
       )}
       <div
         className="pair-selector"
+        data-market-entry={onSelectSymbol ? '' : undefined}
         role={onSelectSymbol ? 'button' : undefined}
         tabIndex={onSelectSymbol ? 0 : undefined}
+        aria-expanded={onSelectSymbol ? marketsOpen : undefined}
         onClick={onSelectSymbol}
         onKeyDown={(e) => {
           if (onSelectSymbol && (e.key === 'Enter' || e.key === ' ')) {
