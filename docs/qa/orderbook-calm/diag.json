@@ -1,0 +1,77 @@
+{
+  "label": "diag",
+  "seed": 20260919,
+  "feedFrameMs": 100,
+  "recordMs": 6000,
+  "box": {
+    "x": 1356,
+    "y": 167,
+    "width": 250,
+    "height": 605
+  },
+  "feedChip": null,
+  "placeholderRows": 0,
+  "binanceReference": {
+    "source": "owner video, Binance Futures BTCUSDT, 2.0s @30fps",
+    "repaintsPerSecond": 2.5,
+    "meanGapMs": 425,
+    "maxFrameChangePct": 2.82
+  },
+  "measured": {
+    "framesCaptured": 129,
+    "windowSeconds": 5.95,
+    "bookChanges": 35,
+    "repaintsPerSecond": 5.88,
+    "meanGapMs": 168,
+    "framesUnchanged": 93,
+    "stillShare": 72.7,
+    "maxFrameChangePct": 12.29,
+    "medianMovedChangePct": 8.35
+  },
+  "byRegion": {
+    "asks": {
+      "framesCaptured": 129,
+      "windowSeconds": 5.95,
+      "bookChanges": 25,
+      "repaintsPerSecond": 4.2,
+      "meanGapMs": 238,
+      "framesUnchanged": 103,
+      "stillShare": 80.5,
+      "maxFrameChangePct": 14.56,
+      "medianMovedChangePct": 13.51
+    },
+    "centre": {
+      "framesCaptured": 129,
+      "windowSeconds": 5.95,
+      "bookChanges": 20,
+      "repaintsPerSecond": 3.36,
+      "meanGapMs": 301,
+      "framesUnchanged": 108,
+      "stillShare": 84.4,
+      "maxFrameChangePct": 9.87,
+      "medianMovedChangePct": 0.97
+    },
+    "bids": {
+      "framesCaptured": 129,
+      "windowSeconds": 5.95,
+      "bookChanges": 25,
+      "repaintsPerSecond": 4.2,
+      "meanGapMs": 238,
+      "framesUnchanged": 103,
+      "stillShare": 80.5,
+      "maxFrameChangePct": 11.95,
+      "medianMovedChangePct": 10.33
+    }
+  },
+  "control": {
+    "framesCaptured": 129,
+    "windowSeconds": 5.95,
+    "bookChanges": 0,
+    "repaintsPerSecond": 0,
+    "meanGapMs": null,
+    "framesUnchanged": 128,
+    "stillShare": 100,
+    "maxFrameChangePct": 0,
+    "medianMovedChangePct": 0
+  }
+}

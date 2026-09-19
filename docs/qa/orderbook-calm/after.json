@@ -1,0 +1,89 @@
+{
+  "label": "after",
+  "seed": 20260919,
+  "feedFrameMs": 100,
+  "recordMs": 6000,
+  "box": {
+    "x": 1356,
+    "y": 167,
+    "width": 250,
+    "height": 605
+  },
+  "feedChip": null,
+  "placeholderRows": 0,
+  "binanceReference": {
+    "source": "owner video, Binance Futures BTCUSDT, 2.0s @30fps",
+    "repaintsPerSecond": 2.5,
+    "meanGapMs": 425,
+    "maxFrameChangePct": 2.82
+  },
+  "measured": {
+    "framesCaptured": 28,
+    "framesSampled30fps": 166,
+    "windowSeconds": 5.52,
+    "bookChanges": 20,
+    "repaintsPerSecond": 3.62,
+    "meanGapMs": 263,
+    "framesUnchanged": 145,
+    "stillShare": 87.9,
+    "maxFrameChangePct": 8.67,
+    "medianMovedChangePct": 7.54
+  },
+  "byRegion": {
+    "asks": {
+      "framesCaptured": 28,
+      "framesSampled30fps": 166,
+      "windowSeconds": 5.52,
+      "bookChanges": 12,
+      "repaintsPerSecond": 2.17,
+      "meanGapMs": 452,
+      "framesUnchanged": 153,
+      "stillShare": 92.7,
+      "maxFrameChangePct": 9.3,
+      "medianMovedChangePct": 8.8
+    },
+    "centre": {
+      "framesCaptured": 28,
+      "framesSampled30fps": 166,
+      "windowSeconds": 5.52,
+      "bookChanges": 17,
+      "repaintsPerSecond": 3.08,
+      "meanGapMs": 312,
+      "framesUnchanged": 148,
+      "stillShare": 89.7,
+      "maxFrameChangePct": 10.19,
+      "medianMovedChangePct": 1.07
+    },
+    "bids": {
+      "framesCaptured": 28,
+      "framesSampled30fps": 166,
+      "windowSeconds": 5.52,
+      "bookChanges": 12,
+      "repaintsPerSecond": 2.17,
+      "meanGapMs": 452,
+      "framesUnchanged": 153,
+      "stillShare": 92.7,
+      "maxFrameChangePct": 9.64,
+      "medianMovedChangePct": 8.64
+    }
+  },
+  "ladderContent": {
+    "rafFrames": 320,
+    "textUpdates": 14,
+    "barUpdates": 14,
+    "textUpdatesPerSecond": 2.33,
+    "barUpdatesPerSecond": 2.33
+  },
+  "control": {
+    "framesCaptured": 28,
+    "framesSampled30fps": 166,
+    "windowSeconds": 5.52,
+    "bookChanges": 0,
+    "repaintsPerSecond": 0,
+    "meanGapMs": null,
+    "framesUnchanged": 165,
+    "stillShare": 100,
+    "maxFrameChangePct": 0,
+    "medianMovedChangePct": 0
+  }
+}

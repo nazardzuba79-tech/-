@@ -1,0 +1,486 @@
+{
+  "viewports": {
+    "1920x1080": {
+      "coldLoad": {
+        "label": "cold load",
+        "compact": "false",
+        "panelHeight": 270,
+        "contentVisible": true,
+        "contentHeight": 230,
+        "chartHeight": 688
+      },
+      "hardReload": {
+        "label": "hard reload",
+        "compact": "false",
+        "panelHeight": 270,
+        "contentVisible": true,
+        "contentHeight": 230,
+        "chartHeight": 688
+      },
+      "routeReturn": {
+        "label": "route return",
+        "compact": "false",
+        "panelHeight": 270,
+        "contentVisible": true,
+        "contentHeight": 230,
+        "chartHeight": 688
+      },
+      "userFold": {
+        "label": "after user folds",
+        "compact": "true",
+        "panelHeight": 44,
+        "contentVisible": false,
+        "contentHeight": 0,
+        "chartHeight": 914
+      },
+      "railTab": {
+        "tabCentreY": 506,
+        "chartTop": 120,
+        "chartHeight": 688,
+        "percentDownChart": 56.1
+      },
+      "chooser": {
+        "box": {
+          "x": 1,
+          "y": 120,
+          "width": 330,
+          "height": 560,
+          "bottom": 680,
+          "right": 331,
+          "visible": true
+        },
+        "tabs": {
+          "x": 2,
+          "y": 157,
+          "width": 328,
+          "height": 34,
+          "bottom": 191,
+          "right": 330,
+          "visible": true
+        },
+        "headers": {
+          "x": 2,
+          "y": 191,
+          "width": 328,
+          "height": 28,
+          "bottom": 219,
+          "right": 330,
+          "visible": true
+        },
+        "list": {
+          "x": 2,
+          "y": 219,
+          "width": 328,
+          "height": 460,
+          "bottom": 679,
+          "right": 330,
+          "visible": true
+        },
+        "clipped": []
+      },
+      "columns": {
+        "filled": 0,
+        "total": 12,
+        "priceEdges": [
+          238
+        ],
+        "changeEdges": [
+          310
+        ],
+        "headEdges": [
+          238,
+          310
+        ]
+      },
+      "sort7d": {
+        "before": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT",
+          "XRP/USDT",
+          "ADA/USDT",
+          "DOGE/USDT"
+        ],
+        "afterGainers": [
+          "AVAX/USDT",
+          "SOL/USDT",
+          "ATOM/USDT",
+          "DOT/USDT",
+          "ADA/USDT",
+          "BTC/USDT"
+        ],
+        "afterLosers": [
+          "NEAR/USDT",
+          "DOGE/USDT",
+          "XRP/USDT",
+          "UNI/USDT",
+          "ETH/USDT",
+          "LINK/USDT"
+        ],
+        "heading": "7д %⇅"
+      }
+    },
+    "1664x900": {
+      "coldLoad": {
+        "label": "cold load",
+        "compact": "false",
+        "panelHeight": 225,
+        "contentVisible": true,
+        "contentHeight": 185,
+        "chartHeight": 553
+      },
+      "hardReload": {
+        "label": "hard reload",
+        "compact": "false",
+        "panelHeight": 225,
+        "contentVisible": true,
+        "contentHeight": 185,
+        "chartHeight": 553
+      },
+      "routeReturn": {
+        "label": "route return",
+        "compact": "false",
+        "panelHeight": 225,
+        "contentVisible": true,
+        "contentHeight": 185,
+        "chartHeight": 553
+      },
+      "userFold": {
+        "label": "after user folds",
+        "compact": "true",
+        "panelHeight": 44,
+        "contentVisible": false,
+        "contentHeight": 0,
+        "chartHeight": 734
+      },
+      "railTab": {
+        "tabCentreY": 439,
+        "chartTop": 120,
+        "chartHeight": 553,
+        "percentDownChart": 57.7
+      },
+      "chooser": {
+        "box": {
+          "x": 1,
+          "y": 120,
+          "width": 330,
+          "height": 560,
+          "bottom": 680,
+          "right": 331,
+          "visible": true
+        },
+        "tabs": {
+          "x": 2,
+          "y": 157,
+          "width": 328,
+          "height": 34,
+          "bottom": 191,
+          "right": 330,
+          "visible": true
+        },
+        "headers": {
+          "x": 2,
+          "y": 191,
+          "width": 328,
+          "height": 28,
+          "bottom": 219,
+          "right": 330,
+          "visible": true
+        },
+        "list": {
+          "x": 2,
+          "y": 219,
+          "width": 328,
+          "height": 460,
+          "bottom": 679,
+          "right": 330,
+          "visible": true
+        },
+        "clipped": []
+      },
+      "columns": {
+        "filled": 0,
+        "total": 12,
+        "priceEdges": [
+          238
+        ],
+        "changeEdges": [
+          310
+        ],
+        "headEdges": [
+          238,
+          310
+        ]
+      },
+      "sort7d": {
+        "before": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT",
+          "XRP/USDT",
+          "ADA/USDT",
+          "DOGE/USDT"
+        ],
+        "afterGainers": [
+          "AVAX/USDT",
+          "SOL/USDT",
+          "ATOM/USDT",
+          "DOT/USDT",
+          "ADA/USDT",
+          "BTC/USDT"
+        ],
+        "afterLosers": [
+          "NEAR/USDT",
+          "DOGE/USDT",
+          "XRP/USDT",
+          "UNI/USDT",
+          "ETH/USDT",
+          "LINK/USDT"
+        ],
+        "heading": "7д %⇅"
+      }
+    },
+    "1440x900": {
+      "coldLoad": {
+        "label": "cold load",
+        "compact": "false",
+        "panelHeight": 225,
+        "contentVisible": true,
+        "contentHeight": 185,
+        "chartHeight": 553
+      },
+      "hardReload": {
+        "label": "hard reload",
+        "compact": "false",
+        "panelHeight": 225,
+        "contentVisible": true,
+        "contentHeight": 185,
+        "chartHeight": 553
+      },
+      "routeReturn": {
+        "label": "route return",
+        "compact": "false",
+        "panelHeight": 225,
+        "contentVisible": true,
+        "contentHeight": 185,
+        "chartHeight": 553
+      },
+      "userFold": {
+        "label": "after user folds",
+        "compact": "true",
+        "panelHeight": 44,
+        "contentVisible": false,
+        "contentHeight": 0,
+        "chartHeight": 734
+      },
+      "railTab": {
+        "tabCentreY": 439,
+        "chartTop": 120,
+        "chartHeight": 553,
+        "percentDownChart": 57.7
+      },
+      "chooser": {
+        "box": {
+          "x": 1,
+          "y": 120,
+          "width": 330,
+          "height": 560,
+          "bottom": 680,
+          "right": 331,
+          "visible": true
+        },
+        "tabs": {
+          "x": 2,
+          "y": 157,
+          "width": 328,
+          "height": 34,
+          "bottom": 191,
+          "right": 330,
+          "visible": true
+        },
+        "headers": {
+          "x": 2,
+          "y": 191,
+          "width": 328,
+          "height": 28,
+          "bottom": 219,
+          "right": 330,
+          "visible": true
+        },
+        "list": {
+          "x": 2,
+          "y": 219,
+          "width": 328,
+          "height": 460,
+          "bottom": 679,
+          "right": 330,
+          "visible": true
+        },
+        "clipped": []
+      },
+      "columns": {
+        "filled": 0,
+        "total": 12,
+        "priceEdges": [
+          238
+        ],
+        "changeEdges": [
+          310
+        ],
+        "headEdges": [
+          238,
+          310
+        ]
+      },
+      "sort7d": {
+        "before": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT",
+          "XRP/USDT",
+          "ADA/USDT",
+          "DOGE/USDT"
+        ],
+        "afterGainers": [
+          "AVAX/USDT",
+          "SOL/USDT",
+          "ATOM/USDT",
+          "DOT/USDT",
+          "ADA/USDT",
+          "BTC/USDT"
+        ],
+        "afterLosers": [
+          "NEAR/USDT",
+          "DOGE/USDT",
+          "XRP/USDT",
+          "UNI/USDT",
+          "ETH/USDT",
+          "LINK/USDT"
+        ],
+        "heading": "7д %⇅"
+      }
+    },
+    "1366x768": {
+      "coldLoad": {
+        "label": "cold load",
+        "compact": "false",
+        "panelHeight": 208,
+        "contentVisible": true,
+        "contentHeight": 168,
+        "chartHeight": 438
+      },
+      "hardReload": {
+        "label": "hard reload",
+        "compact": "false",
+        "panelHeight": 208,
+        "contentVisible": true,
+        "contentHeight": 168,
+        "chartHeight": 438
+      },
+      "routeReturn": {
+        "label": "route return",
+        "compact": "false",
+        "panelHeight": 208,
+        "contentVisible": true,
+        "contentHeight": 168,
+        "chartHeight": 438
+      },
+      "userFold": {
+        "label": "after user folds",
+        "compact": "true",
+        "panelHeight": 44,
+        "contentVisible": false,
+        "contentHeight": 0,
+        "chartHeight": 602
+      },
+      "railTab": {
+        "tabCentreY": 381,
+        "chartTop": 120,
+        "chartHeight": 438,
+        "percentDownChart": 59.6
+      },
+      "chooser": {
+        "box": {
+          "x": 1,
+          "y": 120,
+          "width": 330,
+          "height": 522,
+          "bottom": 642,
+          "right": 331,
+          "visible": true
+        },
+        "tabs": {
+          "x": 2,
+          "y": 157,
+          "width": 328,
+          "height": 34,
+          "bottom": 191,
+          "right": 330,
+          "visible": true
+        },
+        "headers": {
+          "x": 2,
+          "y": 191,
+          "width": 328,
+          "height": 28,
+          "bottom": 219,
+          "right": 330,
+          "visible": true
+        },
+        "list": {
+          "x": 2,
+          "y": 219,
+          "width": 328,
+          "height": 422,
+          "bottom": 641,
+          "right": 330,
+          "visible": true
+        },
+        "clipped": []
+      },
+      "columns": {
+        "filled": 0,
+        "total": 12,
+        "priceEdges": [
+          238
+        ],
+        "changeEdges": [
+          310
+        ],
+        "headEdges": [
+          238,
+          310
+        ]
+      },
+      "sort7d": {
+        "before": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT",
+          "XRP/USDT",
+          "ADA/USDT",
+          "DOGE/USDT"
+        ],
+        "afterGainers": [
+          "AVAX/USDT",
+          "SOL/USDT",
+          "ATOM/USDT",
+          "DOT/USDT",
+          "ADA/USDT",
+          "BTC/USDT"
+        ],
+        "afterLosers": [
+          "NEAR/USDT",
+          "DOGE/USDT",
+          "XRP/USDT",
+          "UNI/USDT",
+          "ETH/USDT",
+          "LINK/USDT"
+        ],
+        "heading": "7д %⇅"
+      }
+    }
+  },
+  "status": "PASS",
+  "findings": []
+}
