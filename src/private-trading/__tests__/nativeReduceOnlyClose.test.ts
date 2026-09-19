@@ -118,3 +118,73 @@ test('repeated close commands never reuse liquidity from the same observed book 
   expect(state.positions[0]).toMatchObject({status:'OPEN',quantity:'10'});
   expect(state.events.filter(event=>event.kind==='CLOSE')).toHaveLength(1);
 });
+
+describe('book-consumption identity is the provider snapshot, not the stored slice', () => {
+  // The service stores only the depth a command needs (`truncateBook`), so
+  // one provider snapshot reaches the engine as DIFFERENT arrays. The ledger
+  // of what was already taken from it must not depend on the slice.
+  const T2 = T + 59_990;
+  const level = (price: string, quantity: string) => ({ price, quantity });
+
+  test('a second CLOSE sliced deeper from the SAME snapshot cannot buy the level the first CLOSE already took', () => {
+    const opens = openInstructions(2); // 20 ZEC long
+    const first: NativeInstruction = {
+      id: 'close-one', kind: 'CLOSE', at: T2, positionId: 'position-zec-0', quantity: '1', price: '2000',
+      book: { timestamp: T2, bids: [level('2000', '1')], asks: [] },
+    };
+    const second: NativeInstruction = {
+      id: 'close-two', kind: 'CLOSE', at: T2 + 1, positionId: 'position-zec-0', quantity: '2', price: '2000',
+      book: { timestamp: T2, bids: [level('2000', '1'), level('1999', '1')], asks: [] },
+    };
+    const state = replayNativeDemo({ deposit: '1000000', instructions: [...opens, first, second], bars: { ZECUSDT: [bar] }, asOf: T + 60_000 });
+    const closes = state.events.filter((e) => e.kind === 'CLOSE');
+    // 1 @ 2000 once, then only the 1 @ 1999 that was still untouched.
+    expect(closes.map((e) => [e.quantity, e.price])).toEqual([['1', '2000'], ['1', '1999']]);
+    expect(state.positions[0]).toMatchObject({ status: 'OPEN', quantity: '18' });
+  });
+
+  test('a market OPEN and a CLOSE on the same snapshot share one ledger', () => {
+    const opens = openInstructions(2);
+    const shortOpen: NativeInstruction = {
+      id: 'open-short', kind: 'OPEN', at: T2, mark: '2000', last: '2000', instrument,
+      order: { id: 'position-short', symbol: 'ZECUSDT', side: 'SHORT', type: 'MARKET', quantity: '1', leverage: '10', marginType: 'CROSS' },
+      book: { timestamp: T2, bids: [level('2000', '1')], asks: [] },
+    };
+    const close: NativeInstruction = {
+      id: 'close-long', kind: 'CLOSE', at: T2 + 1, positionId: 'position-zec-0', quantity: '2', price: '2000',
+      book: { timestamp: T2, bids: [level('2000', '1'), level('1999', '1')], asks: [] },
+    };
+    const state = replayNativeDemo({ deposit: '1000000', instructions: [...opens, shortOpen, close], bars: { ZECUSDT: [bar] }, asOf: T + 60_000 });
+    expect(state.events.filter((e) => e.kind === 'OPEN' && e.positionId === 'position-short').map((e) => [e.quantity, e.price])).toEqual([['1', '2000']]);
+    expect(state.events.filter((e) => e.kind === 'CLOSE').map((e) => [e.quantity, e.price])).toEqual([['1', '1999']]);
+  });
+
+  test('two slices that disagree about a level cannot be one snapshot', () => {
+    const opens = openInstructions(2);
+    const first: NativeInstruction = {
+      id: 'close-a', kind: 'CLOSE', at: T2, positionId: 'position-zec-0', quantity: '1', price: '2000',
+      book: { timestamp: T2, bids: [level('2000', '1')], asks: [] },
+    };
+    const second: NativeInstruction = {
+      id: 'close-b', kind: 'CLOSE', at: T2 + 1, positionId: 'position-zec-0', quantity: '1', price: '2000',
+      book: { timestamp: T2, bids: [level('2000', '5')], asks: [] },
+    };
+    expect(() => replayNativeDemo({ deposit: '1000000', instructions: [...opens, first, second], bars: { ZECUSDT: [bar] }, asOf: T + 60_000 }))
+      .toThrow('INCONSISTENT_BOOK');
+  });
+
+  test('a NEW provider snapshot is new liquidity', () => {
+    const opens = openInstructions(2);
+    const first: NativeInstruction = {
+      id: 'close-c', kind: 'CLOSE', at: T2, positionId: 'position-zec-0', quantity: '1', price: '2000',
+      book: { timestamp: T2, bids: [level('2000', '1')], asks: [] },
+    };
+    const second: NativeInstruction = {
+      id: 'close-d', kind: 'CLOSE', at: T2 + 2, positionId: 'position-zec-0', quantity: '1', price: '2000',
+      book: { timestamp: T2 + 2, bids: [level('2000', '1')], asks: [] },
+    };
+    const state = replayNativeDemo({ deposit: '1000000', instructions: [...opens, first, second], bars: { ZECUSDT: [bar] }, asOf: T + 60_000 });
+    expect(state.events.filter((e) => e.kind === 'CLOSE')).toHaveLength(2);
+    expect(state.positions[0]).toMatchObject({ quantity: '18' });
+  });
+});

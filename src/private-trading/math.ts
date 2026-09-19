@@ -16,7 +16,20 @@ const nonnegative = (value: string, name: string) => {
   return n;
 };
 function sideCheck(side: Side): void { if (side !== 'LONG' && side !== 'SHORT') throw new Error('INVALID_SIDE'); }
+/**
+ * A profile object that passed validation once passes again: profiles are
+ * never mutated after registration, and the check walks the whole tier
+ * ladder in decimal arithmetic. Re-running it for every order placed under
+ * the same registered profile — every replayed order, on every command —
+ * was a measurable share of a command's compute at thirty contracts.
+ */
+const validatedProfiles = new WeakSet<ModelProfile>();
 export function validateProfile(profile: ModelProfile): void {
+  if (validatedProfiles.has(profile)) return;
+  validateProfileOnce(profile);
+  validatedProfiles.add(profile);
+}
+function validateProfileOnce(profile: ModelProfile): void {
   for (const key of ['pricingModelVersion', 'feeModelVersion', 'riskModelVersion'] as const) if (!profile[key]) throw new Error('MODEL_VERSION_REQUIRED');
   for (const key of ['takerFeeRate', 'makerFeeRate', 'liquidationFeeRate'] as const) if (nonnegative(profile[key], key).gte(1)) throw new Error('INVALID_FEE_RATE');
   if (nonnegative(profile.slippageBps, 'slippage').gte(10000)) throw new Error('INVALID_SLIPPAGE');
@@ -129,7 +142,26 @@ export class ContractRuleError extends Error {
   }
 }
 
-export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile }): void {
+/** The contract's leverage range and step — the part of order validation that a leverage change is also held to. */
+export function validateLeverageRange(rules: ContractRules, leverage: string): void {
+  const l = decimal(leverage, 'leverage', true);
+  if (l.lt(rules.minLeverage) || l.gt(rules.maxLeverage) || !l.minus(rules.minLeverage).mod(decimal(rules.leverageStep, 'leverage_step', true)).isZero()) {
+    throw new ContractRuleError('INVALID_LEVERAGE', {
+      limit: l.gt(rules.maxLeverage) ? 'maxLeverage' : l.lt(rules.minLeverage) ? 'minLeverage' : 'leverageStep',
+      allowed: l.gt(rules.maxLeverage) ? rules.maxLeverage : l.lt(rules.minLeverage) ? rules.minLeverage : rules.leverageStep,
+      actual: leverage,
+    });
+  }
+}
+/**
+ * `reduceOnly`: the order only reduces an existing position. Every contract
+ * rule still applies to it — quantity and price steps, order size limits,
+ * minimum notional, the leverage range — but the RISK-TIER leverage cap does
+ * not: that cap admits new exposure, and a reducing order adds none. A
+ * position whose tier has tightened since it was opened (the market moved
+ * its notional up the ladder) must still be closable at its own leverage.
+ */
+export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile; reduceOnly?: boolean }): void {
   const { rules } = input, q = decimal(input.quantity, 'quantity', true), p = decimal(input.price, 'price', true), l = decimal(input.leverage, 'leverage', true);
   if (!q.mod(decimal(rules.qtyStep, 'quantity_step', true)).isZero()) {
     throw new ContractRuleError('INVALID_QUANTITY_STEP', { limit: 'qtyStep', allowed: rules.qtyStep, actual: input.quantity });
@@ -152,14 +184,9 @@ export function validateContractOrder(input: { rules: ContractRules; quantity: s
   if (q.times(p).lt(rules.minNotionalValue)) {
     throw new ContractRuleError('INVALID_ORDER_SIZE', { limit: 'minNotionalValue', allowed: rules.minNotionalValue, actual: amount(q.times(p)) });
   }
-  if (l.lt(rules.minLeverage) || l.gt(rules.maxLeverage) || !l.minus(rules.minLeverage).mod(decimal(rules.leverageStep, 'leverage_step', true)).isZero()) {
-    throw new ContractRuleError('INVALID_LEVERAGE', {
-      limit: l.gt(rules.maxLeverage) ? 'maxLeverage' : l.lt(rules.minLeverage) ? 'minLeverage' : 'leverageStep',
-      allowed: l.gt(rules.maxLeverage) ? rules.maxLeverage : l.lt(rules.minLeverage) ? rules.minLeverage : rules.leverageStep,
-      actual: input.leverage,
-    });
-  }
+  validateLeverageRange(rules, input.leverage);
   validateProfile(input.profile);
+  if (input.reduceOnly) return;
   const tier = selectRiskTier(amount(q.times(p)), input.profile);
   if (tier.maxLeverage && l.gt(tier.maxLeverage)) {
     throw new ContractRuleError('TIER_LEVERAGE_EXCEEDED', { limit: 'tierMaxLeverage', allowed: tier.maxLeverage, actual: input.leverage });

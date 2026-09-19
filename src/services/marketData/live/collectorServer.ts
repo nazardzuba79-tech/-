@@ -1,6 +1,6 @@
 import express from 'express';
 import { FuturesChartCandles } from '../../FuturesChartCandles';
-import { CollectorPrivateTradingSource, PrivateMarketDataError, PrivateChartInterval } from '../../../private-trading/marketData';
+import { CollectorPrivateTradingSource, PrivateMarketDataError, PrivateChartInterval, liveMarks } from '../../../private-trading/marketData';
 import { createServer } from 'http';
 import { timingSafeEqual } from 'crypto';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -43,6 +43,18 @@ export function collectorServer(
   // Private replay transport carries public market data only. No owner/account data,
   // database writes, or execution actions exist on the collector.
   const privateTrading = new CollectorPrivateTradingSource();
+  // Marks of many contracts from the live frame the collector already validates: no venue call.
+  // Public market data only, like every private-trading route here.
+  app.get('/internal/v1/private-trading/marks', (req, res) => {
+    try {
+      const raw = typeof req.query.symbols === 'string' ? req.query.symbols : '';
+      const frame = source.snapshot();
+      res.json(liveMarks(frame.rows, raw.split(',').filter(Boolean), Date.now(), frame.status));
+    } catch (error) {
+      res.status(error instanceof PrivateMarketDataError ? error.status : 503)
+        .json({ error: error instanceof PrivateMarketDataError ? error.code : 'private_market_data_unavailable' });
+    }
+  });
   for (const kind of ['instruments', 'quote', 'candles', 'funding', 'chart-candles'] as const) {
     app.get(`/internal/v1/private-trading/${kind}/:symbol`, async (req, res) => {
       const controller = new AbortController();

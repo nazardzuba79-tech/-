@@ -1,0 +1,145 @@
+{
+  "kind": "INDEPENDENT_TEST_FIXTURES_NOT_PRODUCTION",
+  "scope": "USDT-linear scalar arithmetic; policy simplifications must not become production defaults",
+  "vectors": [
+    {
+      "id": "weighted-entry",
+      "fills": [
+        [
+          "2",
+          "100"
+        ],
+        [
+          "3",
+          "110"
+        ]
+      ],
+      "expectedEntry": "106"
+    },
+    {
+      "id": "long-upl",
+      "side": "LONG",
+      "quantity": "5",
+      "entry": "106",
+      "mark": "120",
+      "expected": "70"
+    },
+    {
+      "id": "short-upl",
+      "side": "SHORT",
+      "quantity": "2",
+      "entry": "100",
+      "mark": "90",
+      "expected": "20"
+    },
+    {
+      "id": "partial-close",
+      "side": "LONG",
+      "quantity": "5",
+      "entry": "106",
+      "closeQty": "2",
+      "exit": "120",
+      "feeRate": "0.0005",
+      "expected": {
+        "remaining": "3",
+        "entry": "106",
+        "remaining_cost_basis": "318",
+        "realized_gross": "28",
+        "closing_fee": "0.12",
+        "cash_delta": "27.88"
+      }
+    },
+    {
+      "id": "full-ledger",
+      "initialCash": "1000",
+      "opens": [
+        [
+          "2",
+          "100"
+        ],
+        [
+          "3",
+          "110"
+        ]
+      ],
+      "closes": [
+        [
+          "2",
+          "120"
+        ],
+        [
+          "3",
+          "90"
+        ]
+      ],
+      "feeRateAllFills": "0.0005",
+      "fundingCashflow": "0",
+      "expectedFinalCash": "979.48",
+      "expectedNetPnl": "-20.52"
+    },
+    {
+      "id": "full-ledger-funding",
+      "baseVector": "full-ledger",
+      "fundingCashflow": "1.25",
+      "expectedFinalCash": "980.73",
+      "expectedNetPnl": "-19.27"
+    },
+    {
+      "id": "mm-tier",
+      "notional": "1500",
+      "tiers": [
+        [
+          "1000",
+          "0.02",
+          "0"
+        ],
+        [
+          "2000",
+          "0.025",
+          "5"
+        ],
+        [
+          "3000",
+          "0.03",
+          "15"
+        ]
+      ],
+      "expectedBareMM": "32.5"
+    },
+    {
+      "id": "cross-and-isolated",
+      "freeCash": "900",
+      "eligibleCollateral": "0",
+      "crossUpl": "0",
+      "isolatedPost": "100",
+      "isolatedUpl": "400",
+      "crossIm": "0",
+      "orderReserve": "0",
+      "expectedCrossEquity": "900",
+      "expectedTotalEquity": "1400",
+      "expectedAvailable": "900"
+    },
+    {
+      "id": "long-liq-simplified",
+      "side": "LONG",
+      "quantity": "2",
+      "entry": "100",
+      "posted": "20",
+      "mmRate": "0.01",
+      "feesAndReserves": "0",
+      "expectedExactRational": "1000/11",
+      "decimalApproximation": "90.909090909090909090909090909090909090909090909090909090909090909090909090909091"
+    },
+    {
+      "id": "short-liq-simplified",
+      "side": "SHORT",
+      "quantity": "2",
+      "entry": "100",
+      "posted": "20",
+      "mmRate": "0.01",
+      "feesAndReserves": "0",
+      "expectedExactRational": "11000/101",
+      "decimalApproximation": "108.91089108910891089108910891089108910891089108910891089108910891089108910891089"
+    }
+  ]
+}

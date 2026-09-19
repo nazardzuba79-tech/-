@@ -83,11 +83,12 @@ function nativeTrigger(
   kind: 'TAKE_PROFIT' | 'STOP_LOSS',
   triggerPrice: string | null,
 ): FuturesProtectionTrigger | null {
-  if (triggerPrice === null) return null;
-  const at = new Date(position.openedAt).toISOString();
+  const pending = position.pendingClose?.reason === kind ? position.pendingClose : null;
+  if (triggerPrice === null && !pending) return null;
+  const at = new Date(pending?.triggeredAt ?? position.openedAt).toISOString();
   return {
-    id: `${position.id}:${kind}`, kind, triggerPrice,
-    status: 'PENDING', lastError: null, attempts: 0, revision: 0, createdAt: at, updatedAt: at,
+    id: pending?.actionId ?? `${position.id}:${kind}`, kind, triggerPrice: pending?.triggerPrice ?? triggerPrice!,
+    status: pending ? 'TRIGGERING' : 'PENDING', lastError: null, attempts: 0, revision: 0, createdAt: at, updatedAt: at,
   };
 }
 
@@ -153,7 +154,7 @@ export function nativeOrderToTerminal(order: NativeOrder): FuturesOrder {
     originalQuantity: order.quantity,
     remainingQuantity: order.remaining,
     status: order.status,
-    reduceOnly: false,
+    reduceOnly: order.reduceOnly === true,
     leverage: Number(order.leverage),
     marginType: order.marginType,
     createdAt: new Date(order.createdAt).toISOString(),

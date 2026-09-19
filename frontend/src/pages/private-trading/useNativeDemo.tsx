@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { getToken,onSessionChange } from '../../lib/api';
 import { nativeDemoApi,type NativeState,type NativeDraft,type NativePosition,type NativeEvent } from '../../lib/nativeDemoApi';
 import { PrivateTradingError,privateTradingApi,privateErrorText,type PrivateResultCard } from '../../lib/privateTradingApi';
+import { NativeCommandLane,acceptsRevision } from '../../lib/nativeCommandLane';
+import { chartExits } from '../../lib/nativeChartExits';
 import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCandleLoader } from '../../lib/chartTrading';
 
 const NATIVE_WARM_PREFIX='voltex:native-state:v1:';
@@ -43,30 +45,6 @@ function clearWarmState(){
   try{for(let i=storage.length-1;i>=0;i--){const key=storage.key(i);if(key?.startsWith(NATIVE_WARM_PREFIX))storage.removeItem(key);}}catch{}
 }
 
-/** A market close can consume many depth levels. The engine correctly emits
- * one fill event per level, but the chart is a trade view, not a fill tape:
- * one close action should be one small exit marker. Exact accounting stays
- * in the ledger/events; this aggregation is presentation-only. */
-function chartExits(events:NativeEvent[],positionId:string){
-  type Exit={time:number;price:number;kind:string;quantity:number;lastTime:number};
-  const result:Exit[]=[];
-  const source=events.filter(e=>e.positionId===positionId&&['CLOSE','TAKE_PROFIT','STOP_LOSS','LIQUIDATION'].includes(e.kind))
-    .filter(e=>e.price!==null&&Number.isFinite(Number(e.price))&&Number.isFinite(Number(e.quantity))&&Number(e.quantity)>0)
-    .sort((a,b)=>a.time-b.time||a.id.localeCompare(b.id));
-  for(const event of source){
-    const price=Number(event.price),quantity=Number(event.quantity),previous=result.length?result[result.length-1]:undefined;
-    // One observed-book close may be split both by depth and, for a large
-    // position, into several contract-valid market orders. Commands from the
-    // same click arrive seconds apart, so fold only a short CLOSE burst.
-    if(event.kind==='CLOSE'&&previous?.kind==='CLOSE'&&event.time-previous.lastTime<=15_000){
-      const total=previous.quantity+quantity;
-      previous.price=(previous.price*previous.quantity+price*quantity)/total;
-      previous.quantity=total;previous.time=event.time;previous.lastTime=event.time;
-    }else result.push({time:event.time,price,kind:event.kind,quantity,lastTime:event.time});
-  }
-  return result.map(({lastTime:_,...exit})=>exit);
-}
-
 export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   /** THE SERVER DECIDES, NOT THE URL.
    *  This account has no Real/Demo switch and needs no `?demo=1`: the access
@@ -93,17 +71,28 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   const[selecting,setSelecting]=useState<'entry'|'exit'|null>(null),[candle,setCandle]=useState<ChartTradeCandle|null>(null),[exitId,setExitId]=useState<string|null>(null);
   const[selectedId,setSelectedId]=useState<string|null>(null),[focus,setFocus]=useState<{tradeId:string;time:number;sequence:number}|null>(null);
   const pendingExit=useRef<string|null>(null);
-  const pending=useRef(false),alive=useRef(true),attempt=useRef<{fingerprint:string;key:string}|null>(null);
+  const alive=useRef(true);
+  /** One ordered lane: commands wait their turn, a REFRESH never refuses a CLOSE. See lib/nativeCommandLane. */
+  const lane=useRef(new NativeCommandLane());
+  /** Idempotency key per draft, kept until that draft succeeds so a retry replays rather than trades twice. */
+  const attempts=useRef(new Map<string,string>());
+  /** Bumped at every session boundary: a command queued or answered under an older epoch is discarded. */
+  const epoch=useRef(0);
   const[dialog,setDialog]=useState<{kind:'close'|'protection'|'leverage';position:NativePosition}|null>(null);
   const commitState=useCallback((next:NativeState)=>{
+    // A retried receipt or a slow refresh must not paint an older account
+    // over a newer one. Same revision (a refresh that changed nothing) is
+    // still applied, because its marks are fresher.
+    if(!acceptsRevision(stateRef.current,next))return;
     stateRef.current=next;writeWarmState(getToken(),next);setStateLoaded(true);if(alive.current)setState(next);
   },[]);
   /** A temporary access/control-plane outage makes the cached account
    * read-only; it does not erase true numbers and replace them with dashes. */
   const suspend=useCallback(()=>{setAllowed(false);setCard(null);setDialog(null);setCandle(null);setSelecting(null);},[]);
   /** A real session boundary MUST clear the transcript so another user can
-   * never inherit it. */
-  const resetSession=useCallback(()=>{suspend();stateRef.current=null;setState(null);setStateLoaded(false);clearWarmState();},[suspend]);
+   * never inherit it — and must orphan every command still in the lane, so
+   * a late answer for the previous user is never applied to the next. */
+  const resetSession=useCallback(()=>{suspend();stateRef.current=null;setState(null);setStateLoaded(false);clearWarmState();epoch.current+=1;lane.current.reset();attempts.current.clear();},[suspend]);
   const fail=useCallback((e:unknown)=>{
     if(!alive.current)return;
     if(e instanceof PrivateTradingError&&[401,403].includes(e.status))resetSession();
@@ -131,25 +120,47 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     return()=>{cancelled=true;controller.abort();};
   },[requested,allowed,fail,commitState]);
   useEffect(()=>{setCandle(null);setSelecting(pendingExit.current?'exit':null);setExitId(pendingExit.current);pendingExit.current=null;},[symbol,requested]);
-  const run=useCallback(async(draft:NativeDraft)=>{
-    if(pending.current||!allowed)return false;pending.current=true;setBusy(true);errorRef.current='';setError('');
-    const fingerprint=JSON.stringify(draft);if(attempt.current?.fingerprint!==fingerprint)attempt.current={fingerprint,key:crypto.randomUUID()};
-    try{const next=await nativeDemoApi.command(draft,attempt.current.key);attempt.current=null;commitState(next);return true;}
-    catch(e){fail(e);return false;}finally{pending.current=false;if(alive.current)setBusy(false);}
+  /**
+   * SEND ONE COMMAND, IN TURN, AND ANSWER WITH THE SERVER'S RESULT OR ITS REFUSAL.
+   *
+   * The structured error (code, status, contract limit) travels to the
+   * caller unchanged: the terminal localizes it from the code, and a
+   * refusal is never flattened into a generic "not confirmed". `run` below
+   * is the boolean convenience the older callers use.
+   */
+  const execute=useCallback(async(draft:NativeDraft):Promise<NativeState>=>{
+    if(!allowed)throw new PrivateTradingError('Торговый счёт недоступен',409,'native_unavailable');
+    const started=epoch.current,fingerprint=JSON.stringify(draft),refresh=draft.kind==='REFRESH';
+    const orphaned=()=>epoch.current!==started;
+    const task=async()=>{
+      if(orphaned())throw new PrivateTradingError('Сессия завершена',401,'session_ended');
+      if(!refresh){errorRef.current='';setError('');}
+      let key=attempts.current.get(fingerprint);if(!key){key=crypto.randomUUID();attempts.current.set(fingerprint,key);}
+      const next=await nativeDemoApi.command(draft,key);
+      if(orphaned())throw new PrivateTradingError('Сессия завершена',401,'session_ended');
+      attempts.current.delete(fingerprint);commitState(next);return next;
+    };
+    setBusy(true);
+    try{return await lane.current.enqueue(refresh,task);}
+    catch(e){if(!(e instanceof PrivateTradingError&&e.code==='session_ended'))fail(e);throw e;}
+    finally{if(lane.current.pending===0&&alive.current)setBusy(false);}
   },[allowed,fail,commitState]);
+  const run=useCallback(async(draft:NativeDraft)=>{try{await execute(draft);return true;}catch{return false;}},[execute]);
   // Paint the last verified server state first; then silently revalue it.
   useEffect(()=>{if(refreshOnLoad.current&&state?.initialized&&requested&&allowed){refreshOnLoad.current=false;void run({kind:'REFRESH'});}},[state,requested,allowed,run]);
   useEffect(()=>{if(!requested||!allowed||!state?.initialized)return;
-    const timer=window.setInterval(()=>{if(!document.hidden&&!pending.current&&!dialog&&!candle)void run({kind:'REFRESH'});},30000);
+    // A command in flight answers with fresh state anyway; the timer only fills quiet time.
+    const timer=window.setInterval(()=>{if(!document.hidden&&lane.current.pending===0&&!dialog&&!candle)void run({kind:'REFRESH'});},30000);
     return()=>clearInterval(timer);
   },[requested,allowed,state?.initialized,run,dialog,candle]);
   useEffect(()=>{const id=params.get('nativeCard');if(requested&&allowed&&id)nativeDemoApi.getCard(id).then(setCard).catch(fail);},[params,requested,allowed,fail]);
   const initialize=useCallback(async()=>{
-    if(pending.current||!state||!allowed)return;
-    pending.current=true;setBusy(true);
-    try{const result=await nativeDemoApi.initialize(state.model.version,'initialize-native-account');commitState(result);}
+    if(!state||!allowed)return;
+    const version=state.model.version,started=epoch.current;
+    setBusy(true);
+    try{await lane.current.enqueue(false,async()=>{if(epoch.current!==started)return;const result=await nativeDemoApi.initialize(version,'initialize-native-account');if(epoch.current===started)commitState(result);});}
     catch(e){fail(e);}
-    finally{pending.current=false;if(alive.current)setBusy(false);}
+    finally{if(lane.current.pending===0&&alive.current)setBusy(false);}
   },[state,allowed,fail,commitState]);
   async function showCard(id:string){try{const result=await nativeDemoApi.card(id);if(alive.current)setCard(result);}catch(e){fail(e);}}
   const normalized=symbol.replace(/[^A-Z0-9]/gi,'').toUpperCase();
@@ -170,7 +181,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   function selectEntry(p:NativePosition){onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));setSelectedId(p.id);setFocus(f=>({tradeId:p.id,time:p.openedAt,sequence:(f?.sequence??0)+1}));}
   function exitOnChart(p:NativePosition){if(p.symbol!==normalized){pendingExit.current=p.id;onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));}setSelectedId(p.id);setExitId(p.id);setCandle(null);setSelecting('exit');}
   const getState=useCallback(()=>stateRef.current,[]),getError=useCallback(()=>errorRef.current,[]);
-  return{requested,allowed,checked,binding,state,stateLoaded,getState,getError,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,run,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
+  return{requested,allowed,checked,binding,state,stateLoaded,getState,getError,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,run,execute,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
     pickEntry:()=>{setCandle(null);setExitId(null);setSelecting('entry');}};
 }
 export type NativeDemoController=ReturnType<typeof useNativeDemo>;

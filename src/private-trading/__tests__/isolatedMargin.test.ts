@@ -2,6 +2,7 @@ import {
   emptyDemoState, registerDemoInstrument, markDemoAccount, placeDemoOrder, fillDemoOrder,
   demoAccount, demoPositionView, closeDemoPosition, setDemoLeverage, evaluateDemoRiskAndProtection, executeDemoBook,
   settleDemoFunding, migrateDemoState, DemoInstrument, DemoState, DemoEngineError,
+  DEMO_STATE_VERSION,
 } from '../native/engine';
 import { crossAccount } from '../native/accountModel';
 
@@ -116,11 +117,17 @@ describe('an isolated loss is bounded by what was posted', () => {
     expect(s.positions[0].status).toBe('LIQUIDATED');
 
     // The 500 post is gone — it was consumed by the loss — and the ACCOUNT
-    // paid only the closing fee on top of it. Without the bankruptcy bound
-    // this figure was 1501.65 against a 500 post.
+    // paid NOTHING on top of it: the settlement's fee is what the post could
+    // not cover, and it is a SHORTFALL line paid by the simulation's
+    // insurance model, not by the shared wallet. Before the bankruptcy
+    // bound this figure was 1501.65 against a 500 post; before the shortfall
+    // line it was the closing fee.
     const accountPaid = Number(before) - Number(after);
-    expect(accountPaid).toBeLessThan(5);
-    expect(accountPaid).toBeGreaterThan(0);
+    expect(accountPaid).toBe(0);
+    const liquidation = s.events.find(e => e.kind === 'LIQUIDATION')!;
+    expect(Number(liquidation.fee)).toBeGreaterThan(0);
+    expect(s.events.filter(e => e.kind === 'SHORTFALL').map(e => e.cashflow)).toEqual([liquidation.fee]);
+    expect(s.positions[0].shortfallCovered).toBe(liquidation.fee);
   });
 
   it('the same move on a cross position is absorbed by the account instead', () => {
@@ -198,7 +205,7 @@ describe('funding reaches the post it belongs to', () => {
 });
 
 describe('the Wallet still sees everything the owner owns', () => {
-  const valuation = { priced: '0', unpriced: [] as string[], complete: true, asOf: null, lines: [] } as never;
+  const valuation = { priced: '0', collateralPriced: '0', collateralUnpriced: [], unpriced: [] as string[], complete: true, asOf: null, lines: [] } as never;
 
   it('ring fencing a position does not shrink the account total', () => {
     const cross = stand(); open(cross, 'CROSS');
@@ -296,9 +303,10 @@ describe('a state written before margin mode existed reads forward', () => {
     }));
 
     const forward = migrateDemoState(legacy);
-    expect(forward.version).toBe(2);
+    expect(forward.version).toBe(DEMO_STATE_VERSION);
     expect(forward.positions[0].marginType).toBe('CROSS');
     expect(forward.positions[0].isolatedMargin).toBe('0');
+    expect(forward.positions[0].shortfallCovered).toBe('0');
     expect(forward.orders[0].marginType).toBe('CROSS');
     // And the account it reports is the one it reported before.
     expect(demoAccount(forward)).toEqual(demoAccount(s));
