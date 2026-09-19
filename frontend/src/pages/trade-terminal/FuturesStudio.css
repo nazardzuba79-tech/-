@@ -86,8 +86,19 @@
     /* 156px showed roughly two table rows under the header, which is what
      made the panel read as a narrow strip of empty fields. */
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal { display:grid; grid-template-columns:212px minmax(0,1fr) 218px 278px; grid-template-rows:108px minmax(0,1fr) clamp(208px,25vh,272px); }
-  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .reference-market-sidebar { grid-column:1; grid-row:1 / 4; }
-  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar { grid-column:2 / 4; grid-row:1; display:grid; grid-template-columns:170px repeat(3,minmax(0,1fr)); grid-template-rows:1fr 1fr; gap:8px 14px; overflow:hidden; }
+    /* THE INSTRUMENT ROW STARTS AT THE FAR LEFT.
+
+     This sheet had the rail spanning row 1 as well, which pushed the whole
+     instrument row — glyph, BTC/USDT, caret, last, mark, 24h, high, low,
+     turnover, open interest, funding — to the right of a 212px column and
+     left the rail's own top corner holding a search field nobody needed.
+     Row 1 now belongs to the instrument row across all three left columns,
+     exactly as ReferenceFuturesTerminal.css lays it out, and the rail
+     begins underneath it. No strip is freed and left empty: the row that
+     moved left is what fills it. The order book (column 3) and the order
+     ticket (column 4, still rows 1-4) are untouched. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .reference-market-sidebar { grid-column:1; grid-row:2 / 4; }
+  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar { grid-column:1 / 4; grid-row:1; display:grid; grid-template-columns:170px repeat(3,minmax(0,1fr)); grid-template-rows:1fr 1fr; gap:8px 14px; overflow:hidden; }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar > :nth-child(1) { grid-column:1; grid-row:1; }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar > :nth-child(2) { grid-column:1; grid-row:2; }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar > :nth-child(3) { grid-column:2; grid-row:1; }

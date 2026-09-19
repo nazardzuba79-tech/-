@@ -198,10 +198,60 @@ export function FuturesPage() {
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
-  function openMarkets() {
-    if (!desktopMarkets) marketDialogRef.current?.showModal();
+  /**
+   * The market chooser: one state, one handler, two buttons.
+   *
+   * Both entry points in the instrument row — the list glyph and the caret
+   * on BTC/USDT — call this and nothing else, so there is no second code
+   * path that could drift. On desktop it toggles a chooser anchored under
+   * the pair selector; below 1025px there is no rail to anchor to and the
+   * existing market dialog is used instead.
+   *
+   * Opening does no work. No request is made, nothing is fetched, no timer
+   * or animation frame is waited on: the symbol universe is already in
+   * memory, the chooser mounts with the list and its field, and the field's
+   * `autoFocus` puts the caret there in the SAME React commit. Click and
+   * the search is already typing-ready.
+   */
+  const [chooserOpen, setChooserOpen] = useState(false);
+  const chooserRef = useRef<HTMLDivElement>(null);
+  const openMarkets = useCallback(() => {
+    if (desktopMarkets) { setChooserOpen(open => !open); return; }
+    marketDialogRef.current?.showModal();
+    // The mobile list is mounted with the dialog long before it is shown,
+    // so its autoFocus has already fired and cannot fire again.
     pairListRef.current?.focusSearch();
-  }
+  }, [desktopMarkets]);
+
+  // Crossing the breakpoint with the chooser open would leave a desktop
+  // layer over a mobile layout, and the dialog and the chooser each
+  // thinking they own the same "markets are open". Only one exists at a
+  // time, and the desktop one is dropped the moment desktop is.
+  useEffect(() => { if (!desktopMarkets) setChooserOpen(false); }, [desktopMarkets]);
+
+  useEffect(() => {
+    if (!chooserOpen) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setChooserOpen(false); };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (chooserRef.current?.contains(target as Node)) return;
+      // The entry buttons are their own toggle. Without this the outside
+      // handler closed the chooser on pointerdown and the button's own
+      // click re-opened it a moment later, so it could never be closed
+      // from the control that opened it.
+      if (target?.closest?.('[data-market-entry]')) return;
+      setChooserOpen(false);
+    };
+    // Attached from an effect, which runs after the click that opened the
+    // chooser has finished dispatching — so that click cannot close what it
+    // just opened, and no first click is ever swallowed.
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [chooserOpen]);
 
   // One shared read of /futures/config for the whole tab — this page, the
   // order form and the ticker bar used to fetch it independently on mount,
@@ -307,7 +357,7 @@ export function FuturesPage() {
       <FuturesExecutionProvider value={execution}>
       <FuturesAccountSourceContext.Provider value={execution.account}>
       <div className="terminal" data-account-compact={accountPanel.compact}>
-        <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
+        <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} />
 
         <div className="main-grid">
           {/* No visible heading above the market list. The rail is already
@@ -316,8 +366,26 @@ export function FuturesPage() {
               the global nav already names — it only pushed the search and
               the favourites filter down. */}
           {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
-            <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
+            {/* No search row: the rail starts at the favourites filter. */}
+            <FuturesPairList symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
+
+          {/* A LAYER, not a panel. It is placed in the rail's own grid cell,
+              so it sits directly under the instrument row at the far-left
+              edge of the workspace and overlaps the chart rather than
+              displacing it — the chart, the book and the ticket keep every
+              pixel they had, and nothing below it moves. */}
+          {desktopMarkets && chooserOpen && (
+            <div className="futures-market-chooser" ref={chooserRef} role="dialog" aria-modal="false" aria-label={t('nav.markets')}>
+              <FuturesPairList
+                searchable
+                onDismiss={() => setChooserOpen(false)}
+                symbols={symbols}
+                symbol={symbol}
+                onChange={next => { setSymbol(next); setChooserOpen(false); }}
+              />
+            </div>
+          )}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
             {/* The double click is captured on this wrapper rather than on
                 the chart itself: the chart owns no dblclick handler, so
@@ -509,7 +577,8 @@ export function FuturesPage() {
           <button type="button" aria-label={t('deposit.close')} onClick={() => marketDialogRef.current?.close()}>×</button>
         </div>
         <div className="left-panel">
-          <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
+          <FuturesPairList ref={pairListRef} searchable onDismiss={() => marketDialogRef.current?.close()}
+            symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
         </div>
       </dialog>}
       {nativeExecution&&<NativeDemoDialogs controller={native}/>}

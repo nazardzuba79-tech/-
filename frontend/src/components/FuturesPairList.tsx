@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Search, Star, X } from 'lucide-react';
+import { Search, Star } from 'lucide-react';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { referenceNumber } from '../lib/futuresReference';
 import { useLanguage } from '../lib/i18n';
@@ -49,8 +49,24 @@ export const FuturesPairList = forwardRef<
     symbols: string[];
     symbol: string;
     onChange: (symbol: string) => void;
+    /**
+     * Render the search field above the list.
+     *
+     * OFF for the left rail, which is the whole point: the rail is a
+     * standing panel and a field it does not need costs a row of height for
+     * the entire session. ON inside the market chooser and the mobile
+     * market dialog, both of which exist FOR picking a contract and are
+     * dismissed the moment one is picked.
+     *
+     * One component either way. The rail and the chooser are the same list,
+     * the same rows, the same favourites, the same sorting and the same
+     * windowing — this flag only decides whether the field is above them.
+     */
+    searchable?: boolean;
+    /** Escape in the field asks the container to close. See FuturesPage. */
+    onDismiss?: () => void;
   }
->(function FuturesPairList({ symbols, symbol, onChange }, ref) {
+>(function FuturesPairList({ symbols, symbol, onChange, searchable = false, onDismiss }, ref) {
   const { t } = useLanguage();
   const tickers = useFuturesReference();
   const [search, setSearch] = useState('');
@@ -63,38 +79,24 @@ export const FuturesPairList = forwardRef<
   const listRef = useRef<HTMLElement | null>(null);
 
   /**
-   * Search is a header control, not a permanent field.
+   * There is no open/closed search state here any more, and that is the
+   * fix. The field used to be a thing this list could toggle, which meant
+   * the rail carried a 34px row for it whether or not anyone wanted it, and
+   * opening search was a state flip whose result had to be focused.
    *
-   * A full-width input sat above the list at all times and bought nothing:
-   * on a 500-contract catalogue it is used for a few seconds and then takes
-   * a row's worth of height for the rest of the session. It is now a
-   * magnifier in the «Рынки» header that swaps the header for the field.
-   *
-   * The open is deliberately dumb: one state flip and a focus. No request,
-   * no fetch, no debounce, no spinner — the list is already in memory and
-   * the filter below is a `.filter()` over it, so the first keystroke
-   * paints on the next frame. The trap here would be making the button feel
-   * dead; nothing it does can block.
+   * Now the field simply IS there whenever `searchable` is set, so it
+   * mounts with the chooser, `autoFocus` puts the caret in it in that same
+   * commit, and there is nothing to wait for: no request, no fetch, no
+   * debounce, no spinner, no timer, no frame. The filter below is a
+   * `.filter()` over a list that is already in memory.
    */
-  const [searchOpen, setSearchOpen] = useState(false);
-
-  const openSearch = useCallback(() => {
-    setSearchOpen(true);
-    // The field carries `autoFocus`, so React focuses it in the same commit
-    // that mounts it — no frame of dead input. This call covers the OTHER
-    // path: the ticker bar asking for search while it is already open, where
-    // nothing mounts and autoFocus cannot fire.
-    searchRef.current?.focus();
-  }, []);
-
-  const closeSearch = useCallback(() => {
-    setSearchOpen(false);
-    setSearch('');
-  }, []);
-
-  // The ticker bar's own entry points come through here. Opening from
-  // there must behave exactly like pressing the magnifier.
-  useImperativeHandle(ref, () => ({ focusSearch: openSearch }), [openSearch]);
+  useImperativeHandle(ref, () => ({
+    // For the mobile dialog only. There the list is mounted long before the
+    // dialog is shown, so `autoFocus` has already fired and cannot fire
+    // again; the container asks for the caret explicitly instead. Same
+    // field, same list — just a second way of reaching it.
+    focusSearch: () => searchRef.current?.focus(),
+  }), []);
 
   function toggleFavorite(pair: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -157,46 +159,37 @@ export const FuturesPairList = forwardRef<
 
   return (
     <>
-      {/* «Рынки» and a magnifier, or the field in their place. The row keeps
-          its height either way, so opening search moves nothing below it and
-          the chart, book and ticket never reflow. */}
-      <div className={`pairs-head${searchOpen ? ' searching' : ''}`}>
-        {searchOpen ? (
+      {/* Nothing at all on the left rail — not a collapsed row, not a
+          spacer, not a hidden input holding height open. The rail's first
+          child is the favourites row, so the list starts where the panel
+          starts. */}
+      {searchable && (
+        <div className="market-chooser-search">
+          <Search size={13} aria-hidden="true" />
           <input
             ref={searchRef}
             autoFocus
-            className="pairs-head-input"
+            className="market-chooser-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
               if (e.key !== 'Escape') return;
-              // preventDefault, not just stopPropagation. On mobile this
-              // list lives inside a <dialog>, and Escape is that element's
-              // native cancel — without this, backing out of the field
-              // dismissed the whole market panel. Now the first Escape
-              // closes the field and a second one closes the panel, which
-              // is the order a user expects and matches the desktop rail.
+              // preventDefault, not only stopPropagation. On mobile this
+              // list lives inside a <dialog> and Escape is that element's
+              // native cancel, which would close the panel behind our back
+              // and leave the page's own state thinking it is still open.
+              // The container is told instead, so one Escape does one
+              // thing and both surfaces close the same way.
               e.preventDefault();
               e.stopPropagation();
-              closeSearch();
+              setSearch('');
+              onDismiss?.();
             }}
             placeholder={t('trade.searchPair')}
             aria-label={t('trade.searchPair')}
           />
-        ) : (
-          <span className="pairs-head-title">{t('nav.markets')}</span>
-        )}
-        <button
-          type="button"
-          className="pairs-head-search"
-          aria-label={t('trade.searchPair')}
-          aria-expanded={searchOpen}
-          title={t('trade.searchPair')}
-          onClick={() => (searchOpen ? closeSearch() : openSearch())}
-        >
-          {searchOpen ? <X size={14} /> : <Search size={14} />}
-        </button>
-      </div>
+        </div>
+      )}
 
       <div className="pairs-tabs">
         <span className="pairs-count" aria-label={t('nav.futures')}>{symbols.length}</span>
