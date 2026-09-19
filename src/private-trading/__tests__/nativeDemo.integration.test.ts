@@ -251,12 +251,18 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     // The retried attempt decided on a book quoted AFTER the winner's, never on the book of the refused attempt.
     const instructions = ((await db.nativeDemoAccount.findUnique({ where: { userId: f.user.id } }))!.payload as unknown as NativeAccount).commands;
     // R11 observations participate in the same sequence as financial commands.
-    // Do not mistake the intervening persisted valuation for a missing OPEN.
+    // A projection OBSERVE can follow either command; each OPEN itself must
+    // carry its pre-execution valuation regardless of checkpoint reuse.
     expect(instructions.map(c => c.seq)).toEqual(instructions.map((_, index) => index + 1));
-    expect(instructions.slice(0, 3).map(c => c.kind)).toEqual(['OPEN', 'OBSERVE', 'OPEN']);
     const journal = instructions.filter(c => c.kind === 'OPEN');
     expect(journal).toHaveLength(2);
-    expect(journal.map(c => c.seq)).toEqual([1, 3]);
+    expect(journal[0].seq).toBe(1);
+    expect(journal[1].seq!).toBeGreaterThan(journal[0].seq!);
+    for(const c of journal){
+      expect(c.context?.marks.BTCUSDT).toEqual({mark:'50000',last:'50000'});
+      expect(c.context?.observedAt.BTCUSDT).toBeGreaterThan(0);
+      expect(c.collateral).toBeDefined();
+    }
     expect(journal[1].kind === 'OPEN' && journal[0].kind === 'OPEN' && journal[1].book!.timestamp >= journal[0].book!.timestamp).toBe(true);
     expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id } })).toBe(3);
     const key = randomUUID(), fresh = f.make();
