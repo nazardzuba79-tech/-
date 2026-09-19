@@ -64,6 +64,19 @@
     grid-row: 2 / 4;
     justify-self: start;
     align-self: start;
+    /* IT MUST WIN THE HIT TEST, NOT ONLY THE PAINT.
+       Before the rail was removed this layer sat in a column of its own and
+       never overlapped anything, so its stacking was academic. It now shares
+       a cell with the chart, and a layer the chart paints over is a layer
+       whose rows cannot be clicked — visible, enabled, and inert.
+
+       `z-index` on a grid item does raise it, but only for as long as it
+       stays a grid item; `position:relative` makes the guarantee independent
+       of that, and `isolation:isolate` gives the panel its own stacking
+       context so nothing inside the chart can climb out of its own and land
+       on top. Neither changes where the layer sits or what size it is. */
+    position: relative;
+    isolation: isolate;
     z-index: 40;
     /* Wider than the rail it covers, so it is legible as a layer over the
        chart rather than a repaint of the column underneath. */
@@ -188,12 +201,35 @@
   box-sizing: border-box;
   overflow: visible;
 }
-/* The count belongs at the end of the row, on the same baseline as the
-   filter beside it — not floated into its own band. */
+/* The count sits WITH the filter, at the left. It used to be pushed to the
+   far right, which put a bare "771" over the percent column and the 7-day
+   control — the thing that actually acts on that column — over the ticker
+   names. The two have swapped: the count is a caption for the filter beside
+   it, and the control now stands over the numbers it reorders. */
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-count {
+  order: 1;
+  margin-left: 0;
+  padding: 0;
+}
+/* THE FILTER ROW RESERVES THE SAME GUTTER AS THE LIST.
+   The 7-day control is right-aligned so it lands over the percent column,
+   and "over" has to survive the scrollbar: the list reserves a gutter this
+   row does not, so a plain `padding-right` would sit the control a gutter's
+   width to the right of the numbers it belongs to. Same two properties as
+   the heading row, same reason — the browser reserves the same space in all
+   three and they cannot disagree. Nothing scrolls in a fixed 34px row, so
+   the bar itself is painted out. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-tabs {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-color: transparent transparent;
+}
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-tabs::-webkit-scrollbar-thumb { background: transparent; }
+/* Right-aligned: this is the move the owner asked for — the control belongs
+   where the percentages are, not beside the favourites filter. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-7d {
   order: 3;
   margin-left: auto;
-  padding: 0;
 }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-tab { flex: 0 0 auto; }
 
@@ -284,7 +320,13 @@
   white-space: nowrap;
 }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers > span:first-child { min-width: 0; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers .pch-arrow { flex: 0 0 auto; }
+/* THE HEADING TEXT, NOT THE SORT ARROW, MARKS THE COLUMN'S EDGE.
+   With the arrow last in the flow it took the right edge and pushed
+   "24ч %" and "Цена" a glyph's width to the left of the figures they name,
+   so the heading and its column visibly disagreed. Moving the arrow ahead
+   of the label puts the label flush right, directly over the numbers; the
+   arrow keeps its meaning and simply leads rather than trails. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers .pch-arrow { flex: 0 0 auto; order: -1; }
 
 /* Rows on the chooser's own width: the star and logo keep their slots, the
    ticker gets the space the 330px layer actually has, and the two numeric

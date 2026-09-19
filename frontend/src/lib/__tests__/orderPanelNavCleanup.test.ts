@@ -532,15 +532,20 @@ describe('10. the v4 order ticket', () => {
     // Measured from the owner's two same-scale references: the marked
     // control row there is ~1.18x ours. 278 -> 312 is +12.2%.
     //
-    // The market rail then went 212 -> 226 in the polish pass, and that one
-    // is measured too: at 1440 the rail's row asked for 222px of tracks,
-    // gaps and padding inside 212px, so the price column gave way and the
-    // list rendered `49,404....` — a truncated price in a price list. The
-    // 14px comes from the flexible chart track, never from the order column
-    // or the depth column, which both still hold their exact widths.
-    expect(PANEL_CSS).toContain('grid-template-columns:226px minmax(0,1fr) 250px 312px;');
-    expect(PANEL_CSS).not.toMatch(/grid-template-columns:\d+px minmax\(0,1fr\) 2[0-4]\d px? 312px/);
-    expect(PANEL_CSS).not.toMatch(/grid-template-columns:\d+px minmax\(0,1fr\) 250px (?!312px)/);
+    // The permanent market rail used to hold the first track (212px, then
+    // 226px after a polish pass). The owner had it removed and the width
+    // given to the chart, so the workspace is three columns now and the
+    // flexible chart track comes FIRST. What this test has always been
+    // about is unchanged and is asserted more strictly than before: the
+    // depth column stays exactly 250px and the order ticket exactly 312px,
+    // and every pixel that moves comes out of the flexible track.
+    expect(PANEL_CSS).toContain('grid-template-columns:minmax(0,1fr) 250px 312px;');
+    // No fixed track may reappear ahead of the chart — that is the rail
+    // coming back, and it would take the width straight off the chart.
+    expect(PANEL_CSS).not.toMatch(/grid-template-columns:\s*\d+px\s+minmax\(0,1fr\)/);
+    // The two measured columns keep their exact widths.
+    expect(PANEL_CSS).not.toMatch(/grid-template-columns:minmax\(0,1fr\) 2[0-4]\dpx 312px/);
+    expect(PANEL_CSS).not.toMatch(/grid-template-columns:minmax\(0,1fr\) 250px (?!312px)/);
   });
 
   test('the leverage select is no longer the squeezed one', () => {
