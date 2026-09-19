@@ -421,6 +421,51 @@ async function run() {
           if (Math.abs(align.heading - align.values) > 2) finding(`${vp.name}: the percent heading ends at ${align.heading}px but its figures end at ${align.values}px`);
           else ok(`the percent heading's text lines up with its figures (${align.values}px)`);
         }
+        // ---- THE CHOOSER MUST WIN POINTER HIT-TESTING OVER THE CHART ----
+        // Since the rail was removed the chooser shares a grid cell with the
+        // chart instead of standing in a column of its own. Painting above is
+        // not the same as receiving the click, so this asks the document what
+        // is actually on top at a row's centre, and then clicks it for real.
+        const hit = await page.evaluate(() => {
+          const panel = document.querySelector('.futures-market-chooser');
+          const row = panel && panel.querySelector('.pair-row');
+          if (!panel || !row) return null;
+          const r = row.getBoundingClientRect();
+          const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          const stack = (el) => {
+            const out = [];
+            for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+              const cs = getComputedStyle(n);
+              out.push({ cls: n.className && n.className.toString().slice(0, 40), pos: cs.position, z: cs.zIndex,
+                transform: cs.transform === 'none' ? null : 'yes', isolation: cs.isolation,
+                col: cs.gridColumnStart, pe: cs.pointerEvents });
+            }
+            return out;
+          };
+          return {
+            topAtRowCentre: top ? (top.className || top.tagName).toString().slice(0, 60) : null,
+            insidePanel: !!(top && panel.contains(top)),
+            chooser: stack(panel).slice(0, 3),
+            chart: stack(document.querySelector('.chart-area')).slice(0, 3),
+          };
+        });
+        result.chooserHitTest = hit;
+        if (!hit) finding(`${vp.name}: could not hit-test the chooser`);
+        else if (!hit.insidePanel) finding(`${vp.name}: the chooser does not receive the pointer — ${hit.topAtRowCentre} is on top at a row's centre`);
+        else {
+          ok(`the chooser receives the pointer at a row's centre (${hit.topAtRowCentre})`);
+          // And a real click actually selects that market.
+          const first = page.locator('.futures-market-chooser .pair-row').first();
+          const label = await first.getAttribute('aria-label');
+          try {
+            await first.click({ timeout: 5000 });
+            await page.waitForTimeout(400);
+            ok(`clicking a chooser row works (${label})`);
+          } catch (e) {
+            finding(`${vp.name}: a chooser row could not be clicked — ${String(e).split('\n')[0]}`);
+          }
+        }
+
         const expectG = [...BASES].sort((a, b) => SEVEN_DAY[b] - SEVEN_DAY[a]).slice(0, 3);
         const expectL = [...BASES].sort((a, b) => SEVEN_DAY[a] - SEVEN_DAY[b]).slice(0, 3);
         const gotG = afterGainers.slice(0, 3).map((s) => s.split('/')[0]);

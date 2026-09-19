@@ -143,6 +143,68 @@
         "control": 310,
         "values": 310,
         "heading": 310
+      },
+      "chooserHitTest": {
+        "topAtRowCentre": "p-price",
+        "insidePanel": true,
+        "chooser": [
+          {
+            "cls": "futures-market-chooser",
+            "pos": "relative",
+            "z": "40",
+            "transform": null,
+            "isolation": "isolate",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ],
+        "chart": [
+          {
+            "cls": "chart-area",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ]
       }
     },
     "1664x900": {
@@ -288,6 +350,68 @@
         "control": 310,
         "values": 310,
         "heading": 310
+      },
+      "chooserHitTest": {
+        "topAtRowCentre": "p-price",
+        "insidePanel": true,
+        "chooser": [
+          {
+            "cls": "futures-market-chooser",
+            "pos": "relative",
+            "z": "40",
+            "transform": null,
+            "isolation": "isolate",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ],
+        "chart": [
+          {
+            "cls": "chart-area",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ]
       }
     },
     "1440x900": {
@@ -433,6 +557,68 @@
         "control": 310,
         "values": 310,
         "heading": 310
+      },
+      "chooserHitTest": {
+        "topAtRowCentre": "p-price",
+        "insidePanel": true,
+        "chooser": [
+          {
+            "cls": "futures-market-chooser",
+            "pos": "relative",
+            "z": "40",
+            "transform": null,
+            "isolation": "isolate",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ],
+        "chart": [
+          {
+            "cls": "chart-area",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ]
       }
     },
     "1366x768": {
@@ -578,6 +764,68 @@
         "control": 310,
         "values": 310,
         "heading": 310
+      },
+      "chooserHitTest": {
+        "topAtRowCentre": "p-price",
+        "insidePanel": true,
+        "chooser": [
+          {
+            "cls": "futures-market-chooser",
+            "pos": "relative",
+            "z": "40",
+            "transform": null,
+            "isolation": "isolate",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ],
+        "chart": [
+          {
+            "cls": "chart-area",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "1",
+            "pe": "auto"
+          },
+          {
+            "cls": "main-grid",
+            "pos": "relative",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          },
+          {
+            "cls": "terminal",
+            "pos": "static",
+            "z": "auto",
+            "transform": null,
+            "isolation": "auto",
+            "col": "auto",
+            "pe": "auto"
+          }
+        ]
       }
     }
   },

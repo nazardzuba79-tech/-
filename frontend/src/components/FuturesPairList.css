@@ -64,6 +64,19 @@
     grid-row: 2 / 4;
     justify-self: start;
     align-self: start;
+    /* IT MUST WIN THE HIT TEST, NOT ONLY THE PAINT.
+       Before the rail was removed this layer sat in a column of its own and
+       never overlapped anything, so its stacking was academic. It now shares
+       a cell with the chart, and a layer the chart paints over is a layer
+       whose rows cannot be clicked — visible, enabled, and inert.
+
+       `z-index` on a grid item does raise it, but only for as long as it
+       stays a grid item; `position:relative` makes the guarantee independent
+       of that, and `isolation:isolate` gives the panel its own stacking
+       context so nothing inside the chart can climb out of its own and land
+       on top. Neither changes where the layer sits or what size it is. */
+    position: relative;
+    isolation: isolate;
     z-index: 40;
     /* Wider than the rail it covers, so it is legible as a layer over the
        chart rather than a repaint of the column underneath. */
