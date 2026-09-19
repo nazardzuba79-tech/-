@@ -14,9 +14,12 @@ export interface NativeAccount {
   disabledCollateralAssets?:string[];
   /** Canonical replay state (live row only). Revisions keep the projected snapshot for cards/idempotency. */
   checkpoint?:NativeCheckpoint;
+  /** Private scheduler admission, never sent in the terminal response or card revision. */
+  executionSession?:OwnerSession;
+  executionPending?:boolean;
 }
 /** Immutable revision evidence: everything except the re-derivable canonical checkpoint. */
-export const revisionPayload=(account:NativeAccount):NativeAccount=>{const{checkpoint:_checkpoint,...rest}=account;return rest;};
+export const revisionPayload=(account:NativeAccount):NativeAccount=>{const{checkpoint:_checkpoint,executionSession:_session,executionPending:_pending,...rest}=account;return rest;};
 /**
  * THE STORED SHAPE: one instrument per (contract, parameters), referenced by key.
  *
@@ -26,7 +29,8 @@ export const revisionPayload=(account:NativeAccount):NativeAccount=>{const{check
  * payload and EVERY immutable revision. The engine still receives the full
  * instruction: `inflate` restores it on read, so nothing downstream knows.
  */
-export interface StoredNativeAccount extends Omit<NativeAccount,'commands'>{commands:unknown[];instrumentTable?:Record<string,DemoInstrument>}
+export interface StoredNativeAccount extends Omit<NativeAccount,'commands'|'checkpoint'>{commands:unknown[];instrumentTable?:Record<string,DemoInstrument>;
+  checkpoint?:Omit<NativeCheckpoint,'state'>&{state?:DemoState};checkpointSnapshot?:true}
 const instrumentKey=(i:DemoInstrument)=>`${i.rules.symbol}#${createHash('sha256').update(JSON.stringify(i)).digest('hex').slice(0,16)}`;
 export function compact(account:NativeAccount):StoredNativeAccount{
   const table:Record<string,DemoInstrument>={};
@@ -35,18 +39,22 @@ export function compact(account:NativeAccount):StoredNativeAccount{
     const key=instrumentKey(c.instrument);table[key]??=c.instrument;
     const{instrument:_instrument,...rest}=c;return{...rest,instrumentRef:key};
   });
-  return{...account,commands,...(Object.keys(table).length?{instrumentTable:table}:{})};
+  const same=account.checkpoint&&JSON.stringify(account.checkpoint.state)===JSON.stringify(account.snapshot);
+  const checkpoint=account.checkpoint&&same?{time:account.checkpoint.time,digest:account.checkpoint.digest,commandCount:account.checkpoint.commandCount}:account.checkpoint;
+  return{...account,commands,checkpoint,...(same?{checkpointSnapshot:true as const}:{}),...(Object.keys(table).length?{instrumentTable:table}:{})};
 }
 export function inflate(stored:StoredNativeAccount|NativeAccount):NativeAccount{
   const table=(stored as StoredNativeAccount).instrumentTable;
-  if(!table)return stored as NativeAccount;
-  const{instrumentTable:_table,...rest}=stored as StoredNativeAccount;
+  if(!table&&!(stored as StoredNativeAccount).checkpointSnapshot)return stored as NativeAccount;
+  const{instrumentTable:_table,checkpointSnapshot,...rest}=stored as StoredNativeAccount;
+  const checkpoint=checkpointSnapshot&&rest.checkpoint?{...rest.checkpoint,state:structuredClone(stored.snapshot)}:rest.checkpoint;
   const commands=(stored.commands as Array<Record<string,unknown>>).map(c=>{
     if(c.kind!=='OPEN'||typeof c.instrumentRef!=='string')return c as unknown as NativeInstruction;
-    const instrument=table[c.instrumentRef];if(!instrument)throw new PrivateTradingError('journal_corrupt','Журнал счёта повреждён',500);
+    const instrument=table?.[c.instrumentRef];if(!instrument)throw new PrivateTradingError('journal_corrupt','Журнал счёта повреждён',500);
     const{instrumentRef:_ref,...restOfCommand}=c;return{...restOfCommand,instrument} as unknown as NativeInstruction;
   });
-  return{...rest,commands} as NativeAccount;
+  if(checkpoint&&!checkpoint.state)throw new PrivateTradingError('journal_corrupt','Журнал счёта повреждён',500);
+  return{...rest,commands,checkpoint} as NativeAccount;
 }
 const json=(v:NativeAccount):Prisma.InputJsonValue=>JSON.parse(JSON.stringify(compact(v)));
 /**
@@ -69,6 +77,8 @@ const forward=(stored:NativeAccount):NativeAccount=>{
 };
 export const commandHash=(v:unknown):string=>createHash('sha256').update(JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x)).digest('hex');
 export interface NativeRepository {
+  /** One authorization envelope for the three command reads; commit still rechecks access and CAS. */
+  commandContext?(actor:OwnerSession,key:string,hash:string):Promise<{prior:NativeAccount|null;row:NativeAccount|null;holdings:CollateralHolding[]}>;
   read(actor:OwnerSession):Promise<NativeAccount|null>;
   available(actor:OwnerSession):Promise<string|null>;
   /**
@@ -85,6 +95,18 @@ export interface NativeRepository {
 export class PrismaNativeRepository implements NativeRepository {
   constructor(private readonly db:PrismaClient,private readonly config:()=>PrivateTradingConfig=privateTradingConfig){}
   private owner(db:PrismaClient|Prisma.TransactionClient,actor:OwnerSession){return assertNativeTrader(db,actor,this.config);}
+  async commandContext(actor:OwnerSession,key:string,hash:string){
+    await this.owner(this.db,actor);
+    const [prior,row,holdings]=await Promise.all([
+      this.db.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId:actor.userId,requestKey:key}}}),
+      this.db.nativeDemoAccount.findUnique({where:{userId:actor.userId}}),
+      this.db.demoBalance.findMany({where:{userId:actor.userId},orderBy:{asset:'asc'}}),
+    ]);
+    await this.owner(this.db,actor);
+    if(prior&&prior.requestHash!==hash)throw new PrivateTradingError('idempotency_conflict','Запрос с этим ключом уже содержит другие параметры',409);
+    return{prior:prior?forward(prior.payload as unknown as NativeAccount):null,row:row?forward(row.payload as unknown as NativeAccount):null,
+      holdings:holdings.map(r=>({asset:r.asset,available:r.available.toString(),locked:r.locked.toString()}))};
+  }
   async read(actor:OwnerSession){await this.owner(this.db,actor);const row=await this.db.nativeDemoAccount.findUnique({where:{userId:actor.userId}});await this.owner(this.db,actor);return row?forward(row.payload as unknown as NativeAccount):null;}
   async available(actor:OwnerSession){await this.owner(this.db,actor);const b=await this.db.demoBalance.findUnique({where:{userId_asset:{userId:actor.userId,asset:'USDT'}}});await this.owner(this.db,actor);return b?b.available.toString():null;}
   async holdings(actor:OwnerSession){

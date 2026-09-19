@@ -44,6 +44,12 @@ const { commandHash, revisionPayload } = store;
 // Older builds have no stored-shape compaction; they are measured as they wrote.
 const compact = typeof store.compact === 'function' ? store.compact : (row) => row;
 const { emptyDemoState } = require(path.join(dist, 'native/engine'));
+const engine = require(path.join(dist, 'native/engine'));
+let replayWork = 0;
+for (const name of ['placeDemoOrder', 'markDemoAccount', 'executeDemoBook', 'executeObservedBook', 'settleDemoFunding']) {
+  const original = engine[name];
+  engine[name] = (...args) => { replayWork++; return original(...args); };
+}
 
 const args = process.argv.slice(2);
 const arg = (name, fallback) => { const i = args.indexOf(name); return i === -1 ? fallback : args[i + 1]; };
@@ -81,7 +87,14 @@ class MemoryRepository {
     // in the STORED shape (`compact`, as PrismaNativeRepository writes it).
     const payload = JSON.stringify(compact(row)), revision = JSON.stringify(compact(revisionPayload(row)));
     this.bytes.payload = payload.length; this.bytes.revision = revision.length; this.bytes.last = payload.length + revision.length;
-    this.revisions.set(row.revision, revisionPayload(row)); this.keys.set(key, { hash, row: revisionPayload(row) }); return structuredClone(row);
+    this.revisions.set(row.revision, revisionPayload(row)); this.keys.set(key, { hash, row: revisionPayload(row) });
+    // The DB retains revisions on disk, not in the API heap. Bound fixture retention
+    // equally for before/after; this workload never retries an evicted receipt.
+    if (process.env.BENCH_BOUNDED === '1') {
+      while (this.revisions.size > 8) this.revisions.delete(this.revisions.keys().next().value);
+      while (this.keys.size > 8) this.keys.delete(this.keys.keys().next().value);
+    }
+    return structuredClone(row);
   }
 }
 const instrument = (symbol) => ({
@@ -144,12 +157,15 @@ async function database() {
   const { PrismaClient } = require('@prisma/client');
   const hostname = new URL(process.env.DATABASE_URL ?? '').hostname;
   if (!['localhost', '127.0.0.1'].includes(hostname)) throw new Error('BENCH_DB=1 runs only against a disposable loopback TEST database');
-  const db = new PrismaClient(); await db.$connect();
+  const sql={reads:0,writes:0,other:0};
+  const db = new PrismaClient({log:[{emit:'event',level:'query'}]});
+  db.$on('query',e=>{if(/^SELECT/i.test(e.query))sql.reads++;else if(/^(INSERT|UPDATE|DELETE)/i.test(e.query))sql.writes++;else sql.other++;});
+  await db.$connect();
   const tag = randomUUID().replace(/-/g, '');
   const user = await db.user.create({ data: { email: `bench-native-${tag}@example.test`, passwordHash: 'BENCH_FIXTURE_NO_LOGIN', referralCode: `nb${tag}`, role: 'ADMIN' } });
   const session = await db.session.create({ data: { userId: user.id, userAgent: 'BENCH_NATIVE_ENGINE_ONLY' } });
   await db.demoBalance.create({ data: { userId: user.id, asset: 'USDT', available: '10000000' } });
-  return { db, actor: { userId: user.id, sessionId: session.id, expiresAt: Date.now() + 6 * H }, repository: new store.PrismaNativeRepository(db, () => ({ enabled: true, ownerId: user.id })) };
+  return { db, sql, actor: { userId: user.id, sessionId: session.id, expiresAt: Date.now() + 6 * H }, repository: new store.PrismaNativeRepository(db, () => ({ enabled: true, ownerId: user.id })) };
 }
 
 async function scenario(contracts) {
@@ -159,7 +175,7 @@ async function scenario(contracts) {
   const repo = backend ? backend.repository : new MemoryRepository(clock), market = new FakeMarket(clock);
   const service = new NativeDemoService(repo, market, clock.now);
   const marketT = tracker(market, ['instrument', 'freshQuote', 'marks', 'history']);
-  const repoT = tracker(repo, ['read', 'prior', 'holdings', 'available', 'revision', 'commit']);
+  const repoT = tracker(repo, ['commandContext', 'read', 'prior', 'holdings', 'available', 'revision', 'commit']);
   let seq = 0; const key = () => `bench-${contracts}-${randomUUID()}-${++seq}`;
   const symbols = Array.from({ length: contracts }, (_, i) => `B${String.fromCharCode(65 + (i % 26))}${Math.floor(i / 26)}USDT`);
   const spare = `BZ9USDT`;
@@ -176,6 +192,10 @@ async function scenario(contracts) {
   }
   if (outcome.refused) { if (backend) await backend.db.$disconnect(); return outcome; }
   marketT.take(); repoT.take();
+  if(backend)Object.assign(backend.sql,{reads:0,writes:0,other:0});
+  if (global.gc) global.gc();
+  const heapStart = process.memoryUsage().heapUsed;
+  replayWork = 0;
   const loop = monitorEventLoopDelay({ resolution: 5 }); loop.enable();
   const samples = Object.fromEntries(KINDS.map((k) => [k, { total: [], engine: [], market: [], repository: [], serialize: [] }]));
   const calls = Object.fromEntries(KINDS.map((k) => [k, []])), sizes = { response: [], payload: [] };
@@ -243,6 +263,7 @@ async function scenario(contracts) {
   }
   outcome.statuses = statuses; outcome.failures = failures;
   outcome.conflictsRetried = (service.conflicts ?? 0) - conflictsBefore;
+  if(backend)outcome.sql={...backend.sql};
   const row = DB ? await repo.read(actor) : repo.row;
   outcome.payload = DB ? { bytesLast: JSON.stringify(compact(row)).length + JSON.stringify(compact(revisionPayload(row))).length, note: 'computed from the row read back' }
     : { bytesLast: repo.bytes.last, accountPayload: repo.bytes.payload, revisionPayload: repo.bytes.revision, maxSeen: Math.max(...sizes.payload) };
@@ -251,6 +272,10 @@ async function scenario(contracts) {
   outcome.commits = DB ? row.revision - 1 : repo.commits;
   outcome.loop = { p50ms: round(loop.percentile(50) / 1e6), p99ms: round(loop.percentile(99) / 1e6), maxms: round(loop.max / 1e6) };
   outcome.openPositions = row.snapshot.positions.filter((p) => p.status === 'OPEN').length;
+  if (global.gc) global.gc();
+  outcome.capacity = { replayEngineCalls: replayWork, heapStart, heapEnd: process.memoryUsage().heapUsed,
+    fixtureRevisionRetention: process.env.BENCH_BOUNDED === '1' ? 8 : 'all',
+    callsTotal: Object.fromEntries(['quote','marks','history','repository','commit'].map(name => [name, Object.values(calls).flat().reduce((sum,c) => sum+c[name],0)])) };
   if (backend) await backend.db.$disconnect();
   return outcome;
 }

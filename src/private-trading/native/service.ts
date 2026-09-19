@@ -1,5 +1,8 @@
 import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
+import { nativeHistoryCache } from './historyCache';
+import { liveCheckpoint } from './replay';
+import type { CollateralHolding } from './collateral';
 import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PrivateValuationMark, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote, assertPrivateFreshMark } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
@@ -91,6 +94,7 @@ export class NativeDemoService {
    */
   private lanes=new Map<string,CommandLane>();
   private quotes=new Map<string,{at:number;quote:PrivateFreshQuote}>();
+  private marks=new Map<string,{at:number;mark:PrivateMark}>();
   constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now){}
   /** A reused snapshot that no longer passes the freshness check is replaced by a fresh fetch, not reported as stale. */
   private async valuationQuote(symbol:string):Promise<PrivateFreshQuote>{
@@ -117,8 +121,23 @@ export class NativeDemoService {
    * itself as before; nothing stale is ever used in place of a quote.
    */
   private async frameMarks(symbols:string[]):Promise<Map<string,PrivateMark>>{
-    if(!symbols.length||typeof this.market.marks!=='function')return new Map();
-    try{return await this.market.marks(symbols);}catch{return new Map();}
+    const out=new Map<string,PrivateMark>(),missing:string[]=[];
+    const valid=(m:PrivateMark,symbol:string)=>m.symbol===symbol&&new BigNumber(m.markPrice).isFinite()&&new BigNumber(m.markPrice).gt(0)
+      &&new BigNumber(m.lastPrice).isFinite()&&new BigNumber(m.lastPrice).gt(0)
+      &&[m.markProviderTimestamp,m.receivedAt,m.fetchedAt].every(t=>Number.isSafeInteger(t)&&t>0&&t<=this.now()+1000&&this.now()-t<=NATIVE_FRAME_MARK_MAX_AGE_MS);
+    for(const symbol of new Set(symbols)){
+      const cached=this.marks.get(symbol);
+      if(cached&&this.now()-cached.at<NATIVE_QUOTE_REUSE_MS&&valid(cached.mark,symbol))out.set(symbol,cached.mark);
+      else{this.marks.delete(symbol);missing.push(symbol);}
+    }
+    if(typeof this.market.marks==='function')for(let i=0;i<missing.length;i+=64){
+      const wanted=missing.slice(i,i+64);
+      try{for(const [symbol,mark] of await this.market.marks(wanted))if(wanted.includes(symbol)&&valid(mark,symbol)){
+        this.marks.set(symbol,{at:this.now(),mark});out.set(symbol,mark);
+      }}catch{/* Missing marks take the validated quote fallback. */}
+    }
+    while(this.marks.size>256)this.marks.delete(this.marks.keys().next().value!);
+    return out;
   }
   private youngQuote(symbol:string){const c=this.quotes.get(symbol);return !!c&&this.now()-c.at<NATIVE_QUOTE_REUSE_MS;}
   /** A quote for valuation may be a recent one; a quote to execute on is always fetched now. */
@@ -164,11 +183,14 @@ export class NativeDemoService {
    * No total is written into the code. The figure is whatever the owner's
    * rows and the live quotes make it.
    */
-  async collateral(actor:OwnerSession,row?:NativeAccount|null,options:{reuse?:boolean}={}):Promise<CollateralValuation>{
+  async collateral(actor:OwnerSession,row?:NativeAccount|null,options:{reuse?:boolean;holdings?:CollateralHolding[]}={}):Promise<CollateralValuation>{
     const accountRow=row===undefined?await this.repository.read(actor):row;
-    const holdings=await this.repository.holdings(actor);
+    const holdings=options.holdings??await this.repository.holdings(actor);
     const settle='USDT';
-    const priced=holdings.filter(h=>h.asset!==settle);
+    // Commands need enabled, nonzero collateral. Wallet reads still value
+    // disabled holdings too, so a preference cannot alter economic equity.
+    const priced=holdings.filter(h=>h.asset!==settle&&new BigNumber(h.available).plus(h.locked??'0').gt(0)
+      &&(!options.reuse||!accountRow?.disabledCollateralAssets?.includes(h.asset)));
     // One frame read for every asset that has no quote of this command's own; a mark is all a valuation needs.
     const frame=await this.frameMarks(priced.map(h=>`${h.asset}${settle}`).filter(symbol=>!(options.reuse&&this.youngQuote(symbol))));
     const priceOne=async(h:{asset:string},fresh:boolean):Promise<CollateralPrice>=>{
@@ -388,10 +410,7 @@ export class NativeDemoService {
   }
   async initialize(actor:OwnerSession,key:string){const row=await this.repository.initialize(actor,key);return this.authoritative(actor,this.view(row),row);}
   private async bars(request:BarRequest):Promise<ReplayBar[]>{
-    const history=await this.market.history({symbol:request.symbol,startTime:request.start,endTime:request.end,intervalMinutes:(request.intervalMs/MINUTE) as 1|15|60,omitProviderFunding:true});
-    if(!history.complete)throw new DemoEngineError('HISTORY_GAP');
-    const marks=new Map(history.markCandles.map(c=>[c.timestamp,c]));
-    return history.tradeCandles.map(c=>{const mark=marks.get(c.timestamp);if(!mark)throw new DemoEngineError('MARK_HISTORY_GAP');return{time:c.timestamp,intervalMs:request.intervalMs,trade:c,mark};});
+    return nativeHistoryCache(this.market,this.now).load(request);
   }
   /** Mark price at a minute boundary: the open of the minute starting there, or the close of the minute ending there. */
   private async markAt(symbol:string,time:number,edge:'START'|'END'):Promise<string>{
@@ -456,8 +475,9 @@ export class NativeDemoService {
       // Re-checked INSIDE the lane: a double click queues the same key twice,
       // and the second must answer with the first's receipt rather than find
       // its position already closed and refuse.
-      const prior=await this.repository.prior(actor,request.idempotencyKey,hash);if(prior)return this.authoritative(actor,this.view(prior),prior);
-      const row=await this.repository.read(actor);if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
+      const prepared=this.repository.commandContext?await this.repository.commandContext(actor,request.idempotencyKey,hash):null;
+      const prior=prepared?prepared.prior:await this.repository.prior(actor,request.idempotencyKey,hash);if(prior)return this.authoritative(actor,this.view(prior),prior);
+      const row=prepared?prepared.row:await this.repository.read(actor);if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
       // A monotonic per-account sequence orders instructions journaled in the
       // same millisecond. A burst drained from the lane, or a clock that does
       // not advance, must never replay a reduce before the position it names.
@@ -479,7 +499,7 @@ export class NativeDemoService {
         // ONE valuation per command, taken BEFORE the decision and journaled
         // with it: admission, the fill margin check, the liquidation verdict
         // and the account in the response all read this same figure.
-        valuation=await this.collateral(actor,row,{reuse:true});collateral=externalCollateral(valuation);
+        valuation=await this.collateral(actor,row,{reuse:true,holdings:prepared?.holdings});collateral=externalCollateral(valuation);
         if(instruction){
           instruction.collateral=collateral;instruction.recordedAt=this.now();
           if((instruction.kind==='OPEN'||instruction.kind==='CLOSE')&&instruction.book){
@@ -507,8 +527,11 @@ export class NativeDemoService {
       }
       let seqNext=instruction?seq+1:seq;
       const changed=!!instruction||!!result.observed||result.books.length>0||outcome(result.snapshot)!==outcome(row.snapshot);
-      const stale=!row.checkpoint||result.checkpoint.time-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
-      const persist=request.kind!=='REFRESH'||options.persist||changed||stale;
+      const stale=!row.checkpoint||this.now()-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
+      const executionPending=result.snapshot.orders.some(o=>!o.historical&&o.type==='LIMIT'&&(o.status==='OPEN'||o.status==='PARTIALLY_FILLED'))
+        ||result.snapshot.positions.some(p=>!p.historical&&p.status==='OPEN');
+      const sessionChanged=executionPending&&(!row.executionSession||row.executionSession.sessionId!==actor.sessionId||row.executionSession.expiresAt!==actor.expiresAt);
+      const persist=request.kind!=='REFRESH'||options.persist||changed||stale||sessionChanged;
       if(result.observed||result.books.length||(persist&&result.projectionChanged)){
         // The marks and the collateral this pass decided on, journaled AHEAD
         // of the books it executed: a later replay values, triggers, admits
@@ -522,7 +545,12 @@ export class NativeDemoService {
       // The books this pass executed — a fill, a partial fill, a cancellation without a fill: journaled so a later replay does exactly the same.
       for(const b of result.books)commands.push({id:`book-${randomUUID()}`,kind:'BOOK',at:b.at,seq:seqNext++,symbol:b.symbol,book:b.book});
       const next:NativeAccount={...row,commands,snapshot:result.snapshot,checkpoint:result.checkpoint};
-      if(request.kind==='REFRESH'&&!options.persist&&!changed&&!stale){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged,valuation);}
+      if(!persist){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged,valuation);}
+      // Seal only persisted live decisions AFTER OBSERVE/BOOK were appended.
+      // Historical scenarios keep the minute checkpoint and OHLC replay.
+      next.checkpoint=liveCheckpoint(next.snapshot,commands)??result.checkpoint;
+      next.executionSession={...actor};
+      next.executionPending=executionPending;
       const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash);
       return this.authoritative(actor,this.view(committed),committed,valuation);
     }

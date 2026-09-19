@@ -114,9 +114,8 @@ describe.each([1, 10, 20, 30])('market-data calls per command with %i open contr
     expect(c.reduceLimit).toMatchObject({ instrument: 1, freshQuote: N, marksCalls: 0, history: 0 });
     expect(c.closeFull).toMatchObject({ instrument: 0, freshQuote: N, marksCalls: 0, history: 0 });
     expect(c.refresh).toMatchObject({ instrument: 0, freshQuote: N, marksCalls: 0, history: 0 });
-    // One history window per contract exposed OR traded inside the replayed window: the extra contract opened and
-    // closed earlier in this minute still needs its bar path for that instruction, hence N + 1.
-    expect(c.refreshMinute).toMatchObject({ instrument: 0, freshQuote: N, marksCalls: 0, history: N + 1 });
+    // Live decisions use recorded books; no candle requests outside funding.
+    expect(c.refreshMinute).toMatchObject({ instrument: 0, freshQuote: N, marksCalls: 0, history: 0 });
     expect(c.read).toMatchObject({ instrument: 0, freshQuote: 0, marksCalls: 0, history: 0 });
   });
   test('with the live frame, a command quotes only the contract it executes on and reads the frame once for the rest', async () => {
@@ -127,7 +126,7 @@ describe.each([1, 10, 20, 30])('market-data calls per command with %i open contr
     expect(c.reduceLimit).toMatchObject({ instrument: 1, freshQuote: 1, marksCalls: N > 1 ? 1 : 0, marksSymbols: N - 1, history: 0 });
     expect(c.closeFull).toMatchObject({ instrument: 0, freshQuote: 1, marksCalls: N > 1 ? 1 : 0, marksSymbols: N - 1, history: 0 });
     expect(c.refresh).toMatchObject({ instrument: 0, freshQuote: 0, marksCalls: 1, marksSymbols: N, history: 0 });
-    expect(c.refreshMinute).toMatchObject({ instrument: 0, freshQuote: 0, marksCalls: 1, marksSymbols: N, history: N + 1 });
+    expect(c.refreshMinute).toMatchObject({ instrument: 0, freshQuote: 0, marksCalls: 1, marksSymbols: N, history: 0 });
     expect(c.read).toMatchObject({ instrument: 0, freshQuote: 0, marksCalls: 0, history: 0 });
   });
   test('a frame mark that would be older than the engine window when applied is replaced by a fresh quote, never used', async () => {

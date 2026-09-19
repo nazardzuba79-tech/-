@@ -428,13 +428,12 @@ describe('freshness after waiting on other sources (R8)',()=>{
   test('if the fresh book has expired again by the second decision, the command is refused, nothing is committed',async()=>{
     const f=twoAssets();await f.service.initialize(actor,'r8-init-4');
     f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;
-    // An open position, and a closed minute since it: every decision has to replay a history window for it,
-    // and THIS source is the slow one — 6 s per window, every time. The wallet quotes are cached and fast.
+    // Live replay no longer reads history outside funding. Inject the same six-second delay in each replay attempt.
     const first=await f.service.command(actor,long({margin:'500',leverage:'20'}));
     expect(first.positions).toHaveLength(1);
     f.clock.t=Math.floor(f.clock.t/M)*M+M+1000;
-    const history=f.market.history.bind(f.market);
-    f.market.history=(async(r:PrivateHistoryRequest)=>{f.clock.t+=6000;return history(r);}) as typeof f.market.history;
+    const replay=(f.service as any).replay.bind(f.service);
+    (f.service as any).replay=async(...args:unknown[])=>{const result=await replay(...args);f.clock.t+=6000;return result;};
     const revision=f.repo.row!.revision,commands=f.repo.row!.commands.length;
     await expect(f.service.command(actor,long({margin:'500',leverage:'20'}))).rejects.toMatchObject({code:'quote_stale'});
     expect(f.service.expiredDecisions).toBe(1);

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
 import { NativeDemoService } from '../native/service';
+import { createNativeLimitPass } from '../native/limitPass';
 import { NativeAccount, PrismaNativeRepository } from '../native/store';
 import type { OwnerSession } from '../serviceTypes';
 import type { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateHistoryRequest } from '../marketData';
@@ -269,6 +270,21 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     await f.service.initialize(f.actor, `init-${randomUUID()}`);
     await expect(db.$executeRaw`UPDATE "NativeDemoRevision" SET "revision" = 99 WHERE "userId" = ${f.user.id}`).rejects.toThrow(/immutable/);
     await expect(db.$executeRaw`DELETE FROM "NativeDemoRevision" WHERE "userId" = ${f.user.id}`).rejects.toThrow(/immutable/);
+  });
+
+  test('server LIMIT pass resumes from DB, preserves real balances and stops after session revocation',async()=>{
+    const f=await fixture();const real=await realState(f.user.id);
+    await f.service.initialize(f.actor,`init-${randomUUID()}`);
+    await f.service.command(f.actor,{kind:'OPEN',symbol:'BTCUSDT',type:'LIMIT',side:'LONG',quantity:'0.1',price:'49000',leverage:'10',idempotencyKey:randomUUID()});
+    const pass=createNativeLimitPass(db,f.market as unknown as PrivateTradingMarketData,()=>f.config);
+    f.market.price='48999';await pass.tick();
+    const row=await f.repository.read(f.actor);expect(row!.snapshot.orders[0].status).toBe('FILLED');
+    expect(row!.snapshot.events.find(e=>e.kind==='OPEN')).toMatchObject({price:'49000',sourcePrice:'48999.1',pricing:'MAKER_MODEL'});
+    const before=await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}});
+    await db.session.update({where:{id:f.session.id},data:{revokedAt:new Date()}});
+    f.market.price='100';await pass.tick();expect(pass.failures).toBe(1);
+    expect(await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}})).toEqual(before);
+    expect(await realState(f.user.id)).toEqual(real);await pass.stop();
   });
 
   test('every repository read/write re-checks owner, ADMIN role, live session and the server flag', async () => {

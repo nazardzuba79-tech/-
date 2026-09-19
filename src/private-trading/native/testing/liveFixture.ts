@@ -104,7 +104,7 @@ export function setup(options: { deposit?: string; price?: string; at?: number }
     const row = repo.row!;
     return (await replayNativeDemoAsync({ deposit: row.deposit, instructions: row.commands, asOf: clock.now(), ...(mode === 'CHECKPOINT' ? { checkpoint: row.checkpoint } : {}) }, bars)).snapshot;
   };
-  return { clock, repo, market, service, step, journal, refresh, replay };
+  return { clock, repo, market, service, step, journal, refresh, replay, bars };
 }
 /** What a replay has to reproduce of a persisted snapshot: every event, order, position, the wallet and the liquidity ledger. */
 export function outcome(s: DemoState) {

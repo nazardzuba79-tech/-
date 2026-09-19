@@ -55,6 +55,7 @@ import { PRICE_WATCHER_CHECK_INTERVAL_MS } from './config/limits';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
 import { privateTradingRouter } from './api/routes/privateTrading';
+import { createNativeLimitPass } from './private-trading/native/limitPass';
 import { PrivateTradingService } from './private-trading/service';
 import { PrivateTradingStore } from './private-trading/store';
 import { PrivateTradingMarketData } from './private-trading/marketData';
@@ -127,6 +128,7 @@ const privateTradingService = new PrivateTradingService(new PrivateTradingStore(
   process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
     ? new PrivateTradingMarketData({ collector: { url: process.env.MARKET_DATA_COLLECTOR_URL, token: process.env.MARKET_DATA_COLLECTOR_TOKEN } })
     : null);
+const nativeLimitPass=privateTradingService.market?createNativeLimitPass(prisma,privateTradingService.market):null;
 
 const marketDataGateway = new MarketDataGateway(
   marketDataService,
@@ -265,6 +267,7 @@ async function start() {
   cfdLiquidationEngine.startScheduler();
   priceWatcherService.startScheduler(PRICE_WATCHER_CHECK_INTERVAL_MS);
   privateTradingService.start();
+  nativeLimitPass?.start();
   liquidationStreamService.start();
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
@@ -287,6 +290,7 @@ process.on('SIGTERM', async () => {
   cfdLiquidationEngine.stopScheduler();
   priceWatcherService.stopScheduler();
   privateTradingService.stop();
+  await nativeLimitPass?.stop();
   await prisma.$disconnect();
   process.exit(0);
 });

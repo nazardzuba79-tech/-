@@ -78,7 +78,15 @@ export type NativeInstruction = {id:string;at:number;seq?:number;
   | {kind:'BOOK';symbol:string;book:NativeBook}
 );
 /** Canonical state after every event strictly before `time`; `digest` pins which instructions it contains. */
-export interface NativeCheckpoint { time:number; digest:string; state:DemoState }
+export interface NativeCheckpoint { time:number; digest:string; state:DemoState; /** Sealed live-only journal prefix, including same-millisecond instructions. */ commandCount?:number }
+export function liveCheckpoint(state:DemoState,instructions:NativeInstruction[]):NativeCheckpoint|null{
+  if(instructions.some(c=>c.kind==='OPEN'&&c.order.historical))return null;
+  // Funding uses the completed boundary candle. During that still-forming
+  // minute, keep the pre-minute state: a CLOSE now must not erase the position
+  // that owed funding at the boundary when its bar becomes available later.
+  if(Math.floor(state.time/MINUTE)*MINUTE%NATIVE_DEMO_MODEL.funding.intervalMs===0)return null;
+  return{time:state.time,digest:instructionDigest(instructions,Infinity),commandCount:instructions.length,state:structuredClone(state)};
+}
 export interface BarRequest { symbol:string; start:number; end:number; intervalMs:number }
 export interface ReplayResolution { intervalMs:number; windowMs:number }
 export interface ReplayInput {
@@ -249,7 +257,7 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   else if(c.kind==='OBSERVE'){markDemoAccount(s,c.marks,time);evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');}
   else if(c.kind==='BOOK')executeObservedBook(s,c.symbol,c.book,time);
 }
-function checkCoverage(bars:ReplayBar[],request:BarRequest){
+export function checkCoverage(bars:ReplayBar[],request:BarRequest){
   if(bars.length>50000)throw new DemoEngineError('HISTORY_LIMIT');
   const sorted=[...bars].sort((a,b)=>a.time-b.time);let expected=request.start;
   for(const b of sorted){validateBar(b);if(b.intervalMs!==request.intervalMs||b.time!==expected)throw new DemoEngineError(b.time<expected?'DUPLICATE_BAR':'HISTORY_GAP');expected+=b.intervalMs;}
@@ -306,12 +314,19 @@ export function* nativeReplay(input:ReplayInput):Generator<BarRequest,ReplayResu
   let s:DemoState,cursor:number;
   if(input.checkpoint){
     const cp=input.checkpoint;
-    if(!Number.isSafeInteger(cp.time)||cp.time>until||instructionDigest(commands,cp.time)!==cp.digest)throw new DemoEngineError('CHECKPOINT_MISMATCH');
+    const sealed=cp.commandCount!==undefined;
+    const count=cp.commandCount??0;
+    if(!Number.isSafeInteger(cp.time)||cp.time>(sealed?input.asOf:until)
+      ||(sealed&&(!Number.isSafeInteger(count)||count<0||count>commands.length
+        ||commands.some(c=>c.kind==='OPEN'&&c.order.historical)
+        ||commands.slice(count).some(c=>c.at<cp.time)
+        ||commands.slice(0,count).some(c=>c.at>cp.time)))
+      ||(sealed?instructionDigest(commands.slice(0,count),Infinity):instructionDigest(commands,cp.time))!==cp.digest)throw new DemoEngineError('CHECKPOINT_MISMATCH');
     s=structuredClone(cp.state);cursor=cp.time;
   }else{
     const first=commands[0]?.at??until;cursor=Math.min(first,until);s=emptyDemoState(input.deposit,cursor);
   }
-  const pending=commands.filter(c=>c.at>=cursor);let next=0;
+  const pending=input.checkpoint?.commandCount!==undefined?commands.slice(input.checkpoint.commandCount):commands.filter(c=>c.at>=cursor);let next=0;
   while(cursor<until){
     const exposed=exposedSymbols(s);
     if(!exposed.size){
@@ -327,9 +342,23 @@ export function* nativeReplay(input:ReplayInput):Generator<BarRequest,ReplayResu
     const inWindow:NativeInstruction[]=[];
     while(next<pending.length&&pending[next].at<end)inWindow.push(pending[next++]);
     const symbols=new Set(exposed);
+    const historical=historicalSymbols(s);
     for(const c of inWindow)if(c.kind==='OPEN')symbols.add(c.order.symbol);
+    for(const c of inWindow)if(c.kind==='OPEN'&&c.order.historical)historical.add(c.order.symbol);
     const ticks:Tick[]=[];
     for(const symbol of [...symbols].sort()){
+      if(!historical.has(symbol)){
+        // Live fills/risks are journaled observations, not an OHLC path. Only
+        // funding still needs the original boundary candle's open. Keep its
+        // resolution identical to the historical driver, including old journals.
+        const fundingMs=NATIVE_DEMO_MODEL.funding.intervalMs;
+        for(let time=Math.ceil(cursor/fundingMs)*fundingMs;time<end;time+=fundingMs){
+          const request={symbol,start:time,end:time+tier.intervalMs,intervalMs:tier.intervalMs};
+          const [bar]=checkCoverage(yield request,request);
+          ticks.push(path(bar,symbol)[0]);
+        }
+        continue;
+      }
       const request={symbol,start:Math.floor(cursor/tier.intervalMs)*tier.intervalMs,end,intervalMs:tier.intervalMs};
       const bars=checkCoverage(yield request,request);
       for(const b of bars)ticks.push(...path(b,symbol).filter(t=>t.time>=cursor));
@@ -337,9 +366,10 @@ export function* nativeReplay(input:ReplayInput):Generator<BarRequest,ReplayResu
     processGroups(s,ticks,inWindow);
     cursor=end;
   }
-  const checkpoint:NativeCheckpoint={time:until,digest:instructionDigest(commands,until),state:structuredClone(s)};
+  let checkpoint:NativeCheckpoint={time:until,digest:instructionDigest(commands,until),state:structuredClone(s)};
   // Instructions inside the still-forming minute are re-applied on every replay until their minute closes.
   processGroups(s,[],pending.slice(next));
+  if(input.checkpoint?.commandCount!==undefined)checkpoint=liveCheckpoint(s,commands)??checkpoint;
   const observed=input.latest?applyLatestQuotes(s,input.latest,input.asOf):null;
   demoAccount(s);
   return{snapshot:s,checkpoint,observed};
