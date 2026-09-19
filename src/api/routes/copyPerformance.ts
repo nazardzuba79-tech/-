@@ -6,6 +6,7 @@ import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrad
 import { summarizeStrategy } from '../../services/copyTrading/marketplaceSummary';
 import { withKseniaReportedTrade } from '../../services/copyTrading/kseniaReportedTrade';
 import { redactTradeHistory } from '../../services/copyTrading/tradeHistoryVisibility';
+import { withKseniaReportedWeek } from '../../services/copyTrading/kseniaReportedWeek';
 
 /** Server-side only, and deliberately not exported to the response. */
 function logSectionFailures(results: PromiseSettledResult<unknown>[]) {
@@ -37,7 +38,8 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     // Executions never leave this function. See tradeHistoryVisibility.ts.
     const results = await Promise.allSettled([
       service.get('nazar').then(summarizeStrategy).then(redactTradeHistory),
-      service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade).then(redactTradeHistory),
+      service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade)
+        .then(withKseniaReportedWeek).then(redactTradeHistory),
       Promise.all(PUBLIC_STRATEGIES.map(id => resolveStrategyOwner(prisma, id))),
     ]);
     const [nazar, ksenia, identities] = results.map(result => result.status === 'fulfilled' ? result.value : null);
@@ -61,7 +63,8 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
         const summary = summarizeStrategy(await service.get(strategy));
         // The per-strategy endpoint is a direct link to the same data, so it
         // redacts on exactly the same terms — and last, for the same reason.
-        res.json(redactTradeHistory(strategy === 'ksenia' ? withKseniaReportedTrade(summary) : summary));
+        res.json(redactTradeHistory(strategy === 'ksenia'
+          ? withKseniaReportedWeek(withKseniaReportedTrade(summary)) : summary));
       }
       catch (error) {
         console.error(`[copy-trading] strategy "${strategy}" unavailable: `
