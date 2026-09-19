@@ -45,7 +45,7 @@ This harness supplies synthetic account/chart/valuation fixtures while the uncha
 
 ## Release limitations
 
-- PostgreSQL integration tests require an explicitly opted-in disposable loopback database. No local PostgreSQL/Docker runtime was found; these tests remain skipped, not passed. Transactional concurrency still requires that run before release.
+- PostgreSQL integration tests require an explicitly opted-in disposable loopback database. They were skipped locally; the subsequent PostgreSQL 16 CI run executed them successfully (see CI evidence below).
 - The full baseline is already red. Exact failing test names are compared rather than presenting a red suite as green.
 - Modelled historical outcomes, maker fills, fixed funding and insurance settlement remain distinguishable in the data model. They are not evidence of real executed performance.
 - No merge/deploy is authorized by this integration task.
@@ -67,3 +67,41 @@ Final build, suite comparison and benchmark measurements are recorded in the acc
 Both full-suite checkouts had a production frontend build, so build-dependent tests executed on both sides. `failure-comparison.json` contains the exact normalized failing test names, suite-load failures and two fixed isolated-margin tests. Three `sourcePrice` assertions were subsequently strengthened from string-type checks to exact observed prices; the final focused run above includes these stronger assertions.
 
 Main advanced during validation to `03fc3e6c68fc926ae9eb11e85ba2d8046628cf72` (PR #147, order-book refresh/reconnect UI). The full baseline above is explicitly **87f1d8370f7d529dc2e4b9450abd6f537a5527a7**, not this later commit. The new main changes were inspected and do not overlap the engine files; they were not merged into this reviewed candidate. Revalidate the eventual merged result before release.
+
+### Reproduce the checks
+
+```powershell
+node node_modules/typescript/bin/tsc --noEmit
+node node_modules/typescript/bin/tsc
+node node_modules/typescript/bin/tsc --project tsconfig.collector.json
+npm --prefix frontend run build
+node node_modules/jest/bin/jest.js --runInBand --testPathPattern='src/private-trading|nativeChartExits.test|nativeCommandLane.test|nativeReduceTarget.test|nativeFuturesTerminal.test'
+node node_modules/jest/bin/jest.js --runInBand --json --outputFile=full-suite.json
+```
+
+Use the same installed dependency versions and build the frontend before the full suite in the pristine base checkout as well. Compare normalized repository-relative file path plus the exact Jest `fullName`; also compare failed suites with no assertion results. Do not interpret skipped database suites as transaction/concurrency evidence.
+
+## Performance evidence and limit
+
+`benchmark.md`, `benchmark-pr123.json` and `benchmark-candidate.json` record the same script run sequentially on PR #123 and this candidate: Node 24.21, `BENCH_FRAME=1`, 120 operations at each of 1/10/20/30 contracts, zero simulated upstream latency. No full test suite was running during these measurements. They include compute and an in-memory repository; they exclude PostgreSQL, network and browser latency. The fixture loop does not yield enough for its event-loop monitor to sample usefully, so its reported zero is not responsiveness evidence.
+
+| Contracts | OPEN p95 before → after | CLOSE p95 before → after |
+| --- | --- | --- |
+| 1 | 10.35 → 11.54 ms | 9.07 → 9.86 ms |
+| 10 | 16.05 → 32.37 ms | 15.11 → 31.26 ms |
+| 20 | 82.17 → 84.48 ms | 67.06 → 82.28 ms |
+| 30 | 101.64 → 130.02 ms | 101.79 → 117.49 ms |
+
+All measured OPEN/CLOSE calls filled with zero partial/rejected outcomes in this sufficiently liquid fixture; all command-failure maps were empty. At 30 contracts the candidate writes about 1.95 MiB of account-plus-revision payload per final commit versus 1.18 MiB before. Extra deterministic observations increase journal size and cost: this is not a performance improvement claim.
+
+The initial 1000-operation run completed all four PR #123 scenarios. The candidate completed 1 and 10 contracts (OPEN p95 101.25 / 163.36 ms), then terminated during the 20-contract scenario with `Allocation failed - JavaScript heap out of memory`. Its in-memory repository retains every full immutable revision and receipt, multiplying history storage; this run does **not** establish whether the same failure occurs with PostgreSQL. It also does **not** pass the long-run capacity check. The bounded rerun above is explicitly a replacement measurement, not a claimed 1000-operation pass. Before release, measure retained-history memory/storage and latency with the actual repository and an explicit capacity budget.
+
+## PostgreSQL and merged-result CI
+
+Implementation commit: `086c3833acbf4806f59c3818fe8d62162da2d831`. Follow-up test-only commit: `3b46624076fdd2214dd8411f4b38bb7bdac9ae26`.
+
+The first PostgreSQL run found an outdated race-test assumption that the two OPEN instructions were adjacent sequence numbers. R11 correctly inserts OBSERVE between them. The follow-up keeps the original race, revision, quantity and idempotency assertions, additionally checks the complete journal is contiguous and explicitly checks OPEN → OBSERVE → OPEN with sequence 1/3 for the two OPEN commands. No engine behaviour was changed for this test.
+
+[Private trading and replay run 35445957999](https://github.com/nazardzuba79-tech/-/actions/runs/35445957999) passed: **21 suites / 626 tests, zero failed or skipped**, including both database integration suites on disposable PostgreSQL 16 and the actual P&L dialog/PNG browser step. Backend, collector and frontend builds also passed there. This CI tested GitHub's temporary merge result `90f28872c27fd60c8d5f33326eb76958de56287c` (head `3b46624076fdd2214dd8411f4b38bb7bdac9ae26` + main `03fc3e6c68fc926ae9eb11e85ba2d8046628cf72`). It is a CI merge ref, **not** a merge into main.
+
+All eight PR workflows on that code head passed: private trading/replay, native engine/browser, native account access, customer-error wording, private reference UI, Futures bottom-panel geometry, Futures ticker labels and CFD terminal. This adds relevant coverage of the newer main; it does not turn the local full-suite baseline into a full comparison against that newer main. Long-run capacity remains a draft release gate.
