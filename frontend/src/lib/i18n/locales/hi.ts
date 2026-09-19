@@ -995,7 +995,7 @@ export const HI: Record<Key, string> = {
   'futures.headerHigh24h': '24घं उच्च',
   'futures.headerLow24h': '24घं निम्न',
   'futures.headerTurnover24h': '24घं टर्नओवर',
-  'futures.headerFunding': 'फंडिंग दर / उलटी गिनती',
+  'futures.headerFunding': 'फंडिंग दर',
   'futures.positions': 'पोज़ीशन',
   'futures.positionHistory': 'पोज़ीशन इतिहास',
   'futures.noPositions': 'कोई खुली पोज़ीशन नहीं',

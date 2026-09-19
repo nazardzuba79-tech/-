@@ -2326,21 +2326,47 @@ a:hover > .nav-card-icon {
 .global-header .header-actions > .nav-wallet-link {
   /* A filled chip beside the CTA, as the owner's reference draws the pair:
      the money controls read as one unit, one of them primary and one of them
-     not. The fill is the header's own raised step, not a new colour. */
+     not.
+
+     WARM, AND DARKER THAN THE CTA. The fill used to be `--h-chip`, the
+     header's neutral raised step — a cold graphite that sat next to a gold
+     button and read as unrelated to it. It is now the same hue family as
+     the deposit CTA taken several steps down in value: a dark bronze with a
+     warm hairline and a light gold label. The pair reads as one family,
+     with the deposit button still unmistakably the primary of the two,
+     because this one is dark where that one is bright.
+
+     The hairline is an inset shadow rather than a border, so the chip's
+     padding, height and border radius are byte-for-byte what they were —
+     a border would have added two pixels to both axes.
+
+     Contrast, on the header's own surface: the #ecdcb4 label on this fill
+     is well clear of AA, and rises again on hover rather than washing out,
+     so none of the four states is the dim one. */
   padding: 0 14px;
   margin: 8px 0;
   display: inline-flex;
   align-items: center;
   min-height: 32px;
   border-radius: 6px;
-  background: var(--h-chip);
-  color: var(--h-text);
+  background: linear-gradient(180deg, #37301f, #29231a);
+  box-shadow: inset 0 0 0 1px #4a3f28;
+  color: #ecdcb4;
   font-size: 13px;
   font-weight: 500;
+  transition: background 150ms ease, box-shadow 150ms ease, color 150ms ease;
 }
 .global-header .header-actions > .nav-wallet-link:hover {
-  background: var(--h-chip-hover);
-  color: var(--h-text);
+  background: linear-gradient(180deg, #443a26, #332c20);
+  box-shadow: inset 0 0 0 1px #5e5033;
+  color: #f7ead0;
+}
+/* Pressed reads as pressed: the gradient flips so the chip looks lit from
+   below, which is what the deposit CTA's own translate does for it. */
+.global-header .header-actions > .nav-wallet-link:active {
+  background: linear-gradient(0deg, #443a26, #332c20);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .45), inset 0 0 0 1px #5e5033;
+  color: #f7ead0;
 }
 .global-header .header-actions > .nav-wallet-link:focus-visible {
   outline: 2px solid var(--h-accent);

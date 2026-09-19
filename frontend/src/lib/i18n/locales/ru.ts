@@ -1038,7 +1038,7 @@ export const RU = {
   'futures.headerHigh24h': 'Макс. за 24ч',
   'futures.headerLow24h': 'Мин. за 24ч',
   'futures.headerTurnover24h': 'Оборот за 24ч',
-  'futures.headerFunding': 'Ставка / Отсчет до финансирования',
+  'futures.headerFunding': 'Ставка финансирования',
   'futures.positions': 'Позиции',
   'futures.positionHistory': 'История позиций',
   'futures.noPositions': 'Нет открытых позиций',

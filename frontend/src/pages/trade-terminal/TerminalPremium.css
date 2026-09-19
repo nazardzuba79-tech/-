@@ -24,7 +24,17 @@
   --panel:#12161c; --studio-panel:#12161c; --toolbar-bg:#12161c; --chart-bg:#12161c; --voltex-plot-background:#12161c;
   --panel-alt:#1a1f27; --studio-raised:#1a1f27; --panel-alt-hover:#1f252e;
   --border:#232a34; --border-color:#232a34; --panel-border:#232a34; --layer-border:#232a34;
-  --text-primary:#eaeef3; --text-secondary:#98a2b3; --text-tertiary:#808a9a;
+  /* THREE STEPS, ALL OF THEM READABLE.
+     Measured against this terminal's own panel (#12161c): primary was
+     15.4:1, secondary 7.1:1 and tertiary 5.3:1. The owner's complaint is
+     the middle one — labels, units, column headings and the account
+     summary all sit on secondary, and at 7.1 against a 15.4 primary it
+     read as the dim half of the interface rather than as its second level.
+     Secondary rises to 8.9:1 and tertiary to 5.9:1, which keeps three
+     clearly separated steps (roughly 1.7x and 1.5x apart) instead of
+     flattening them towards white. Nothing here touches the buy/sell
+     colours, which carry meaning rather than rank. */
+  --text-primary:#eaeef3; --text-secondary:#aab4c3; --text-tertiary:#8b95a5;
   --accent:#f0c964; --accent-hover:#f0c964; --accent-dim:rgba(240,201,100,.12); --accent-yellow:#f0c964; --on-accent:#0b0e11;
   --buy:#2ebd85; --color-buy:#2ebd85; --buy-dim:rgba(46,189,133,.14);
   --sell:#f6465d; --color-sell:#f6465d; --sell-dim:rgba(246,70,93,.14);
@@ -52,6 +62,17 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.ticker-item .value,.rb-row,.futures-positions-table td,.fa-value) { color:var(--text-primary); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) input::placeholder { color:var(--text-tertiary); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .fa-unit { color:var(--text-secondary); }
+
+/* THE LITERALS THAT THE SCALE COULD NOT REACH.
+   Measured on the built page: these three are painted from hex values in
+   older sheets, so lifting the tokens above left them where they were. The
+   unit suffixes under the book's column headings were the worst text in
+   the whole terminal at 3.98:1 — below AA, at 11px, on the panel the eye
+   spends most of its time on. They join the scale rather than getting a
+   fourth grey of their own. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.rb-columns small,.rb-feed[data-state=connecting],.futures-state-columns th) {
+  color:var(--text-tertiary);
+}
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.mono,.rb-row,.fa-value,.futures-positions-table td.mono,.ticker-item .value,.rb-center strong) { font-variant-numeric:tabular-nums; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.text-buy,.rb-center strong.up) { color:var(--buy); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.ticker-item .value.price,.ticker-item .value.change) { color:var(--buy); }

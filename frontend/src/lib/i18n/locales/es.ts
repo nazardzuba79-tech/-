@@ -995,7 +995,7 @@ export const ES: Record<Key, string> = {
   'futures.headerHigh24h': 'Máximo 24h',
   'futures.headerLow24h': 'Mínimo 24h',
   'futures.headerTurnover24h': 'Volumen negociado 24h',
-  'futures.headerFunding': 'Tasa / Cuenta atrás de financiación',
+  'futures.headerFunding': 'Tasa de financiación',
   'futures.positions': 'Posiciones',
   'futures.positionHistory': 'Historial de posiciones',
   'futures.noPositions': 'No hay posiciones abiertas',
