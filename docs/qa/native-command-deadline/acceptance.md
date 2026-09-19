@@ -15,7 +15,7 @@ Date: 2026-09-19. This is a targeted correctness fix, not a terminal redesign or
 
 A flat historical account advances its replay checkpoint to the current minute. `applyLatestQuotes` returns early with no symbols and used to leave `snapshot.time` at the last historical instruction. The service then appended an empty OBSERVE at that older time, inside the already sealed checkpoint prefix. This invalidated the checkpoint it had just created.
 
-Exact stored production evidence (redacted account copy inspected locally, not committed):
+Exact stored production evidence (redacted account copy inspected locally, not committed; verification output in [checkpoint-evidence.json](checkpoint-evidence.json)):
 
 - checkpoint.time = `1789829520000`;
 - checkpoint.state.time = snapshot.time = last empty OBSERVE.at = `1789829460000`;
@@ -83,6 +83,7 @@ No real production positions were created in this task. Read-only production bal
 - Disposable PostgreSQL: **2 suites / 11 tests PASS**, including the 20-operation HTTP acceptance and rollback/CAS checks.
 - Actual browser: **30/30 checks PASS**, 0 page errors, desktop 1440×1000 and mobile 390×844. Includes new server-refusal and lost-response cases: pending clears, exactly one submit, no retry, persisted state unchanged. See [browser-checks.json](browser-checks.json).
 - Backend TypeScript, collector TypeScript, frontend TypeScript/production build: PASS.
-- Full-suite exact-name comparison against pristine main: final rerun in progress; this paragraph is updated before review handoff.
+- Full suite after normal frontend builds: candidate **4362 PASS / 130 FAIL / 40 skipped**, 283 suites (248 pass / 31 fail / 4 skipped); pristine exact main **4348 PASS / 130 FAIL / 38 skipped**, 280 suites (246 pass / 31 fail / 3 skipped). All 130 failure names match exactly; **new failures = 0**, new broken suites = 0. See [full-suite-comparison.json](full-suite-comparison.json). The suite is not globally green; existing unrelated failures were not weakened or changed. Candidate completed in 464.428s; baseline in 478.256s.
+- CI at functional head `8f64e9761e9185b072988dd4ea7e7c70fe64ae2a`: **6/6 workflows green** (Native engine/browser; Private trading/replay including SQL acceptance; Native test account access; Customer-facing error wording; Private reference UI evidence; Markets movers).
 
 These results establish **production-like acceptance**, not successful production execution. After review and an explicitly authorized deployment, repeat the small production/native-account acceptance with the new correlation IDs. No merge/deploy was performed here.

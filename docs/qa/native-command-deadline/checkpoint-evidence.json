@@ -1,0 +1,17 @@
+{
+  "revision": 71,
+  "checkpointTime": 1789829520000,
+  "snapshotTime": 1789829460000,
+  "storedDigest": "39bd4437d3a9213f2ccd22b165663ee81909c8bb2647ac4af731e78ee4591d36",
+  "allCommandsDigest": "03b5f2e82b1bb63361a82f8ee243e095de67aacc188bcd162744a87bc9e632f1",
+  "prefixDigest": "39bd4437d3a9213f2ccd22b165663ee81909c8bb2647ac4af731e78ee4591d36",
+  "originalError": "CHECKPOINT_MISMATCH",
+  "firstFallbackHistoryRequest": {
+    "symbol": "ZECUSDT",
+    "start": 1785542400000,
+    "end": 1785888000000,
+    "intervalMs": 3600000
+  },
+  "recoveredHistoryCalls": 0,
+  "financialSnapshotUnchanged": true
+}
