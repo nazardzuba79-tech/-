@@ -132,11 +132,8 @@
      account table. Stop it above row 3, then let the account panel span
      markets + chart + book. That is the Bybit geometry the screenshots ask
      for: almost the whole terminal width, stopping only before order entry. */
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .reference-market-sidebar {
-    grid-column:1; grid-row:1 / 3;
-  }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel {
-    grid-column:1 / 4; grid-row:3;
+    grid-column:1 / 3; grid-row:3;
   }
   /* The old design-variant layer re-pinned row 3 to 156px after Claude's
      studio rule. This last-loaded rule owns the real desktop track: a compact
@@ -148,8 +145,8 @@
        than ours, and the leverage select ~1.36x. The extra 34px comes out
        of the flexible chart track, so the pair list and the depth column
        keep their exact widths. */
-    grid-template-columns:226px minmax(0,1fr) 250px 312px;
-    grid-template-rows:70px minmax(0,1fr) clamp(208px,25vh,272px);
+    grid-template-columns:minmax(0,1fr) 250px 312px;
+    grid-template-rows:70px minmax(0,1fr) clamp(272px,32vh,392px);
   }
   /* The old shared .bottom-panel rule hard-coded 145px. Let the grid own the
      expanded height; compact mode remains pinned to 44. */
@@ -162,8 +159,8 @@
 }
 @media(min-width:1025px) and (max-width:1279px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
-    grid-template-columns:204px minmax(0,1fr) 220px 280px;
-    grid-template-rows:70px minmax(0,1fr) clamp(190px,23vh,236px);
+    grid-template-columns:minmax(0,1fr) 220px 280px;
+    grid-template-rows:70px minmax(0,1fr) clamp(244px,29vh,332px);
   }
 }
 /* ---------------------------------------------------------------------------
@@ -185,10 +182,10 @@
    previous full-span bar, which fits there and overflows nothing. */
 @media(min-width:1500px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
-    grid-column:2 / 4; gap:14px; padding-inline:12px;
+    grid-column:1 / 3; gap:14px; padding-inline:12px;
   }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area {
-    grid-column:4; grid-row:1 / 4;
+    grid-column:3; grid-row:1 / 4;
   }
   /* The ticket now owns the full column height, so it no longer needs the
      nudge the design-variant layer added to clear the bar above it. */
@@ -839,13 +836,10 @@
    not touched at any width, and neither is the book's. */
 @media(min-width:1025px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
-    grid-column:1 / 4;
-  }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .reference-market-sidebar {
-    grid-row:2 / 4;
+    grid-column:1 / 3;
   }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area {
-    grid-column:4; grid-row:1 / 4;
+    grid-column:3; grid-row:1 / 4;
   }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area .fo-panel {
     padding-top:0;
@@ -855,7 +849,7 @@
    the block above), so the row stops at it rather than spanning it. */
 @media(min-width:1760px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
-    grid-column:1 / 3;
+    grid-column:1 / 2;
   }
 }
 
@@ -1216,4 +1210,46 @@
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-selector {
     gap: 8px;
   }
+}
+
+/* ── THE TWO WAYS INTO THE MARKET LIST ───────────────────────────────────
+   The permanent 212px rail is gone, so these two controls are no longer a
+   convenience beside a list that was already on screen — they ARE the
+   market list. A trader who cannot find them cannot change instrument.
+
+   Both were drawn at --text-secondary on a transparent background, which
+   is the weight you give a control that is merely an alternative route.
+   They are now near-white on a tinted, bordered surface: still quiet
+   enough for a terminal header, but unmistakably pressable. The list glyph
+   also takes a heavier stroke — at 16px a 1.5px stroke reads as grey, and
+   the icon is the affordance, not the label beside it.
+
+   Scoped to the Futures header and carrying the root classes the rest of
+   this sheet uses, so nothing on Spot or CFD changes. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-markets-btn {
+  background: var(--panel-alt, rgba(255, 255, 255, .07));
+  border: 1px solid var(--border-color, #2a3340);
+  color: var(--text-primary, #eaeef3);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-markets-btn svg {
+  stroke-width: 2.25;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-markets-btn:hover,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-markets-btn:focus-visible {
+  background: rgba(255, 255, 255, .13);
+  border-color: #3b4757;
+  color: #fff;
+}
+/* The caret is a 6px box drawn from two borders, so "bolder" is literally
+   a thicker border; at 1.4px it disappeared next to a 19px pair name. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-arrow {
+  width: 7px;
+  height: 7px;
+  border-right-width: 2.2px;
+  border-bottom-width: 2.2px;
+  color: var(--text-primary, #eaeef3);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-selector:hover .pair-arrow,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-selector:focus-visible .pair-arrow {
+  color: #fff;
 }
