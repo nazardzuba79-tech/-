@@ -254,6 +254,79 @@ async function run() {
       else if (type.navFontPx !== null) ok(`nav links ${type.navFontPx}px / weight ${type.navWeight} / ${type.navColor}`);
     }
 
+    // ---- 1e. TEXT CONTRAST, MEASURED RATHER THAN EYEBALLED ----
+    // The owner marked several regions as too dim and named Bybit as the
+    // reference. "Dim" is a ratio, so this computes the real one: every text
+    // node's rendered colour against the first opaque background behind it,
+    // by the WCAG relative-luminance formula. Labels and values are held to
+    // different floors because they do different jobs.
+    {
+      const audit = await page.evaluate(() => {
+        const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+        const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+        const parse = (s) => { const m = s.match(/[\d.]+/g); return m ? m.slice(0, 4).map(Number) : null; };
+        const opaqueBehind = (el) => {
+          for (let n = el; n; n = n.parentElement) {
+            const c = parse(getComputedStyle(n).backgroundColor);
+            if (c && (c[3] === undefined || c[3] >= 0.95)) return c;
+          }
+          return [18, 22, 28];
+        };
+        const ratio = (fg, bg) => { const a = lum(fg), b = lum(bg); const hi = Math.max(a, b), lo = Math.min(a, b); return (hi + 0.05) / (lo + 0.05); };
+        const out = [];
+        const root = document.querySelector('.trade-terminal');
+        if (!root) return out;
+        for (const el of root.querySelectorAll('*')) {
+          const text = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join('');
+          if (!text || text.length > 40) continue;
+          const cs = getComputedStyle(el);
+          if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.95) continue;
+          // TWO THINGS THIS AUDIT MUST NOT REPORT, or it reports nothing
+          // useful. The waiting ladder's em-dashes are deliberately quiet
+          // placeholders standing in for data this harness never feeds, and
+          // text on a gradient (the gold deposit button) has no flat colour
+          // behind it for a ratio to be computed against — the walk finds a
+          // dark ancestor and reports 1.1:1 on perfectly legible dark-on-gold.
+          // `.rb-last` shows an em-dash for a price this harness never feeds;
+          // same class of artifact as the placeholder ladder.
+          if (el.closest('[aria-hidden="true"], .is-placeholder')) continue;
+          if (text === '\u2014') continue;
+          let painted = false;
+          for (let n = el; n; n = n.parentElement) {
+            const bg = getComputedStyle(n).backgroundImage;
+            if (bg && bg !== 'none') { painted = true; break; }
+            const c0 = parse(getComputedStyle(n).backgroundColor);
+            if (c0 && (c0[3] === undefined || c0[3] >= 0.95)) break;
+          }
+          if (painted) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 2 || r.height < 2) continue;
+          const fg = parse(cs.color);
+          if (!fg) continue;
+          out.push({ text: text.slice(0, 24), cls: (el.className || '').toString().slice(0, 34),
+            color: cs.color, size: parseFloat(cs.fontSize), weight: cs.fontWeight,
+            ratio: Number(ratio(fg, opaqueBehind(el)).toFixed(2)) });
+        }
+        return out.sort((a, b) => a.ratio - b.ratio);
+      });
+      result.contrast = { sampled: audit.length, worst: audit.slice(0, 12) };
+      // Two floors, because they are two jobs. Informational text must clear
+      // 4.5:1. A solid-fill action button is white on a saturated brand
+      // colour — the reference the owner named does exactly this and lands
+      // in the same place — so it is held to 4.0 and its real number is
+      // printed rather than quietly accepted.
+      const isAction = (a) => /submit-btn|fo-submit|deposit-button/.test(a.cls);
+      const actions = audit.filter(isAction);
+      for (const a of actions) console.log(`    action button "${a.text}" at ${a.ratio}:1`);
+      const dim = audit.filter(a => !isAction(a) && a.ratio < 4.5)
+        .concat(actions.filter(a => a.ratio < 4.0));
+      if (dim.length) {
+        console.log(`    PROBE ${dim.length} text nodes under 4.5:1 — worst:`);
+        for (const d of dim.slice(0, 10)) console.log(`      ${d.ratio}:1  ${d.size}px/${d.weight}  ${d.color}  "${d.text}"  .${d.cls}`);
+        finding(`${vp.name}: ${dim.length} text nodes below 4.5:1 — the owner asked for Bybit-level contrast`);
+      } else ok(`every sampled text node is at least 4.5:1 (${audit.length} sampled, lowest ${audit[0] ? audit[0].ratio : 'n/a'}:1)`);
+    }
+
     // ---- 2. THE RAIL TOGGLE SITS WHERE THE OWNER MARKED, IN BOTH STATES ----
     const railToggle = page.locator('[data-drawing-toolbar-toggle]').first();
     if (await railToggle.count()) {

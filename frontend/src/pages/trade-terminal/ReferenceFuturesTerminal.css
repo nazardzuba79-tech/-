@@ -1,13 +1,31 @@
 /* Owner-supplied Bybit reference: chart-first geometry, neutral surfaces,
-   one trading rail and quick-access markets. No financial rules here. */
+   one trading rail and quick-access markets. No financial rules here.
+
+   THE PALETTE IS BYBIT'S, AND THE REASON IS NOT WCAG.
+   The owner asked for more contrast and named Bybit. Measuring first said
+   something useful: this terminal did not fail a contrast floor — an audit
+   of 194 rendered text nodes found only two under 4.5:1, and both were
+   explicable. What was wrong is the RANGE. Our secondary grey was #a7adb9,
+   which is BRIGHTER than Bybit's #81858c, so a label and the figure beside
+   it sat a couple of steps apart and the whole panel read as one flat
+   mid-grey. Widening the ramp is what "more contrast" actually meant.
+
+   So primary goes nearly white and secondary goes properly grey — the gap
+   between a caption and its number roughly doubles — on Bybit's own
+   surfaces. Their up/down/accent come with it, since a palette copied in
+   part is just a third palette.
+
+   Every value here is a colour. No threshold, no number a trade is priced
+   or sized by, and no rule about when something counts as stale. */
 .trade-terminal.trade-terminal.futures-reference {
-  --bg-primary:#12161c; --bg-secondary:#12161c; --workspace-bg:#12161c;
-  --toolbar-bg:#12161c; --chart-bg:#12161c; --grid-bg:#0b0e11;
-  --bg-tertiary:#1a1f27; --bg-hover:#232a34; --panel-alt:#1a1f27;
-  --border-color:#232a34; --panel-border:#232a34; --layer-border:#232a34;
-  --panel:#12161c; --border:#232a34;
-  --text-primary:#eaeef3; --text-secondary:#a7adb9; --text-tertiary:#98a2b3;
-  --accent-yellow:#f0c964; --color-buy:#2ebd85; --color-sell:#f43150;
+  --bg-primary:#17181e; --bg-secondary:#17181e; --workspace-bg:#17181e;
+  --toolbar-bg:#17181e; --chart-bg:#17181e; --grid-bg:#101014;
+  --bg-tertiary:#1e2026; --bg-hover:#2b2f36; --panel-alt:#1e2026;
+  --border-color:#2b2f36; --panel-border:#2b2f36; --layer-border:#2b2f36;
+  --panel:#17181e; --border:#2b2f36;
+  /* primary ~15.9:1, secondary ~4.9:1 on #17181e — a real two-step ramp */
+  --text-primary:#f4f4f4; --text-secondary:#81858c; --text-tertiary:#696e78;
+  --accent-yellow:#f7a600; --color-buy:#20b26c; --color-sell:#ef454a;
   --font-family:'Inter Terminal', Inter, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
   height:100dvh;
 }
