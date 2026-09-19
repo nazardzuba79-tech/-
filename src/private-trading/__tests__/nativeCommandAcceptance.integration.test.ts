@@ -42,7 +42,7 @@ suite('native HTTP acceptance with independent fill arithmetic',()=>{
     app.use('/private-trading/native',(req,res,next)=>nativeDemoRoutes(new NativeDemoService(repo,market),()=>actor)(req,res,next));
     app.use((e:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>res.status(e instanceof PrivateTradingError?e.status:500).json({error:e instanceof Error?e.message:String(e),code:(e as any).code}));
     let expectedWallet=n(1000),expectedGross=n(0),expectedFees=n(0);const seen=new Set<string>();
-    const lots=new Map<string,{qty:BigNumber;entry:BigNumber;side:string}>();
+    const lots=new Map<string,{qty:BigNumber;entry:BigNumber;side:string;openedNotional:BigNumber}>();
     function audit(v:any){
       for(const e of v.events){if(seen.has(e.id))continue;seen.add(e.id);
         if(e.kind==='OPEN'){
@@ -52,7 +52,7 @@ suite('native HTTP acceptance with independent fill arithmetic',()=>{
           const fee=qty.times(fill).times(e.pricing==='MAKER_MODEL'?'.0002':rate);
           expect(n(e.fee).toFixed()).toBe(fee.toFixed());expectedFees=expectedFees.plus(fee);expectedWallet=expectedWallet.minus(fee);
           const total=(old?.qty??n(0)).plus(qty),entry=(old?.qty.times(old.entry)??n(0)).plus(qty.times(fill)).div(total);
-          lots.set(e.positionId,{qty:total,entry,side:o.side});
+          lots.set(e.positionId,{qty:total,entry,side:o.side,openedNotional:(old?.openedNotional??n(0)).plus(qty.times(fill))});
         }else if(['CLOSE','TAKE_PROFIT','STOP_LOSS'].includes(e.kind)){
           const lot=lots.get(e.positionId)!;expect(lot).toBeDefined();
           const pnl=n(e.price).minus(lot.entry).times(e.quantity).times(lot.side==='LONG'?1:-1);
@@ -62,15 +62,20 @@ suite('native HTTP acceptance with independent fill arithmetic',()=>{
         }else if(['CANCEL','TRIGGER'].includes(e.kind)){expect(n(e.fee).isZero()).toBe(true);expect(n(e.cashflow).isZero()).toBe(true);}
         else throw Error('Unexpected financial event '+e.kind);
       }
-      let initial=n(0),upl=n(0),posts=n(0);
+      let initial=n(0),upl=n(0);const positions:Record<string,unknown>[]=[];
       for(const p of v.positions){const lot=lots.get(p.id)!;expect(n(p.quantity).toFixed()).toBe(lot.qty.toFixed());expect(n(p.entryPrice).toFixed()).toBe(lot.entry.toFixed());
+        expect(p.leverage).toBe('3');expect(p.marginMode).toBe(p.side==='LONG'?'CROSS':'ISOLATED');
+        expect(n(p.markPrice).toFixed()).toBe(n(price).toFixed());expect(n(p.entryNotional).toFixed()).toBe(lot.openedNotional.toFixed());
         const un=n(p.markPrice).minus(lot.entry).times(lot.qty).times(p.side==='LONG'?1:-1);expect(n(p.unrealizedPnl).toFixed()).toBe(un.toFixed());upl=upl.plus(un);
         const im=lot.qty.times(p.marginMode==='ISOLATED'?lot.entry:n(p.markPrice)).div(p.leverage);
-        if(p.marginMode==='ISOLATED'){expect(n(p.isolatedMargin).minus(im).abs().lt('.00000001')).toBe(true);posts=posts.plus(im);initial=initial.plus(im);
+        let liquidationPrice:string|null=null;
+        if(p.marginMode==='ISOLATED'){expect(n(p.isolatedMargin).minus(im).abs().lt('.00000001')).toBe(true);initial=initial.plus(im);
           const signed=p.side==='LONG'?1:-1;const liq=lot.entry.times(lot.qty).times(signed).minus(im).div(lot.qty.times(n(signed).minus(n('.005').plus(rate))));
           const rounded=liq.div('.1').integerValue(p.side==='LONG'?BigNumber.ROUND_CEIL:BigNumber.ROUND_FLOOR).times('.1');
           expect(n(p.liquidationPrice).toFixed()).toBe(rounded.toFixed());
-        }else initial=initial.plus(im).plus(lot.qty.times(p.markPrice).times(rate));
+          liquidationPrice=rounded.toFixed();
+        }else {initial=initial.plus(im).plus(lot.qty.times(p.markPrice).times(rate));expect(p.liquidationPrice).toBeNull();}
+        positions.push({side:lot.side,remainingSize:lot.qty.toFixed(),entry:lot.entry.toFixed(),entryNotional:lot.openedNotional.toFixed(),leverage:'3',marginMode:p.side==='LONG'?'CROSS':'ISOLATED',unrealizedPnl:un.toFixed(),liquidationPrice});
       }
       expect(n(v.account.settleBalance).minus(expectedWallet).abs().lt('.00000002')).toBe(true);
       expect(n(v.account.initialMargin).minus(initial).abs().lt('.00000002')).toBe(true);
@@ -79,12 +84,13 @@ suite('native HTTP acceptance with independent fill arithmetic',()=>{
       expect(n(v.account.collateral).minus(expectedWallet.plus(20)).abs().lt('.00000002')).toBe(true);
       expect(n(v.ledger.totals.realizedPnl).minus(expectedGross).abs().lt('.00000002')).toBe(true);
       expect(v.ledger.reconciled).toBe(true);
+      return {wallet:expectedWallet.toFixed(),fees:expectedFees.toFixed(),realizedGross:expectedGross.toFixed(),initialMargin:initial.toFixed(),unrealizedPnl:upl.toFixed(),collateral:expectedWallet.plus(20).toFixed(),positions};
     }
     const command=async(test:string,input:Omit<NativeCommand,'idempotencyKey'>|Record<string,unknown>,status=200)=>{
       const before=Date.now(),r=await request(app).post('/private-trading/native/commands').send({...input,idempotencyKey:randomUUID()});
       report.push({test,input,server:r.body,expected:{status},status:'FAIL',ms:Date.now()-before});
       expect(r.status).toBe(status);expect(r.headers['x-native-request-id']).toBeTruthy();
-      if(status===200){audit(r.body);report.at(-1)!.expected={wallet:expectedWallet.toFixed(),fees:expectedFees.toFixed(),realizedGross:expectedGross.toFixed()};}
+      if(status===200)report.at(-1)!.expected=audit(r.body);
       report.at(-1)!.status='PASS';return r.body;
     };
     const open=(side:string,marginType='CROSS',extra:Record<string,unknown>={})=>({kind:'OPEN',symbol:'BTCUSDT',side,type:'MARKET',quantity:'0.002',leverage:'3',marginType,...extra});

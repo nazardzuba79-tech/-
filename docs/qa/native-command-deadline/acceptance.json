@@ -1,0 +1,774 @@
+{
+  "environment": "disposable loopback PostgreSQL with deterministic collector transport; NOT production execution",
+  "operations": [
+    {
+      "test": "Wallet collateral OFF",
+      "input": {
+        "asset": "ETH",
+        "quantity": "0.01",
+        "mark": "2000"
+      },
+      "server": {
+        "collateral": "1000"
+      },
+      "expected": {
+        "collateral": "1000",
+        "walletHoldingsUnchanged": true
+      },
+      "status": "PASS",
+      "ms": 0
+    },
+    {
+      "test": "Wallet collateral ON",
+      "input": {
+        "asset": "ETH",
+        "quantity": "0.01",
+        "mark": "2000"
+      },
+      "server": {
+        "collateral": "1020"
+      },
+      "expected": {
+        "collateral": "1020",
+        "walletHoldingsUnchanged": true
+      },
+      "status": "PASS",
+      "ms": 0
+    },
+    {
+      "test": "MARKET LONG Cross",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "LONG",
+        "type": "MARKET",
+        "quantity": "0.002",
+        "leverage": "3",
+        "marginType": "CROSS"
+      },
+      "server": {
+        "settleBalance": "999.94499989",
+        "initialMargin": "33.388333333333333333333333333333333333",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.94499989",
+        "positions": [
+          {
+            "side": "LONG",
+            "quantity": "0.002",
+            "entryPrice": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ],
+        "fees": "0.05500011",
+        "realizedGross": "0"
+      },
+      "expected": {
+        "wallet": "999.94499989",
+        "fees": "0.05500011",
+        "realizedGross": "0",
+        "initialMargin": "33.38833333333333333333",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.94499989",
+        "positions": [
+          {
+            "side": "LONG",
+            "remainingSize": "0.002",
+            "entry": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 51
+    },
+    {
+      "test": "MARKET SHORT Isolated",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "SHORT",
+        "type": "MARKET",
+        "quantity": "0.002",
+        "leverage": "3",
+        "marginType": "ISOLATED"
+      },
+      "server": {
+        "settleBalance": "999.89",
+        "initialMargin": "66.7216",
+        "unrealizedPnl": "-0.0004",
+        "collateral": "1019.89",
+        "positions": [
+          {
+            "side": "LONG",
+            "quantity": "0.002",
+            "entryPrice": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          },
+          {
+            "side": "SHORT",
+            "quantity": "0.002",
+            "entryPrice": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": "66298.5"
+          }
+        ],
+        "fees": "0.11",
+        "realizedGross": "0"
+      },
+      "expected": {
+        "wallet": "999.89",
+        "fees": "0.11",
+        "realizedGross": "0",
+        "initialMargin": "66.7216",
+        "unrealizedPnl": "-0.0004",
+        "collateral": "1019.89",
+        "positions": [
+          {
+            "side": "LONG",
+            "remainingSize": "0.002",
+            "entry": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          },
+          {
+            "side": "SHORT",
+            "remainingSize": "0.002",
+            "entry": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": "66298.5"
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 28
+    },
+    {
+      "test": "reload/server restart",
+      "input": null,
+      "server": {
+        "revision": 5,
+        "positions": 2
+      },
+      "expected": {
+        "revision": 5,
+        "positions": 2
+      },
+      "status": "PASS",
+      "ms": 0
+    },
+    {
+      "test": "partial MARKET close",
+      "input": {
+        "kind": "CLOSE",
+        "quantity": "0.001"
+      },
+      "server": {
+        "settleBalance": "999.962245055",
+        "initialMargin": "50.060821666666666666666666666666666667",
+        "unrealizedPnl": "-0.1003",
+        "collateral": "1019.962245055",
+        "positions": [
+          {
+            "side": "LONG",
+            "quantity": "0.001",
+            "entryPrice": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "0.0999",
+            "liquidationPrice": null
+          },
+          {
+            "side": "SHORT",
+            "quantity": "0.002",
+            "entryPrice": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.2002",
+            "liquidationPrice": "66298.5"
+          }
+        ],
+        "fees": "0.137554945",
+        "realizedGross": "0.0998"
+      },
+      "expected": {
+        "wallet": "999.962245055",
+        "fees": "0.137554945",
+        "realizedGross": "0.0998",
+        "initialMargin": "50.06082166666666666667",
+        "unrealizedPnl": "-0.1003",
+        "collateral": "1019.962245055",
+        "positions": [
+          {
+            "side": "LONG",
+            "remainingSize": "0.001",
+            "entry": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "0.0999",
+            "liquidationPrice": null
+          },
+          {
+            "side": "SHORT",
+            "remainingSize": "0.002",
+            "entry": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.2002",
+            "liquidationPrice": "66298.5"
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 24
+    },
+    {
+      "test": "full MARKET close",
+      "input": {
+        "kind": "CLOSE"
+      },
+      "server": {
+        "settleBalance": "1000.03449011",
+        "initialMargin": "33.333266666666666666666666666666666667",
+        "unrealizedPnl": "-0.2002",
+        "collateral": "1020.03449011",
+        "positions": [
+          {
+            "side": "SHORT",
+            "quantity": "0.002",
+            "entryPrice": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.2002",
+            "liquidationPrice": "66298.5"
+          }
+        ],
+        "fees": "0.16510989",
+        "realizedGross": "0.1996"
+      },
+      "expected": {
+        "wallet": "1000.03449011",
+        "fees": "0.16510989",
+        "realizedGross": "0.1996",
+        "initialMargin": "33.33326666666666666667",
+        "unrealizedPnl": "-0.2002",
+        "collateral": "1020.03449011",
+        "positions": [
+          {
+            "side": "SHORT",
+            "remainingSize": "0.002",
+            "entry": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.2002",
+            "liquidationPrice": "66298.5"
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 30
+    },
+    {
+      "test": "close isolated SHORT",
+      "input": {
+        "kind": "CLOSE"
+      },
+      "server": {
+        "settleBalance": "999.77898",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.77898",
+        "positions": [],
+        "fees": "0.22022",
+        "realizedGross": "-0.0008"
+      },
+      "expected": {
+        "wallet": "999.77898",
+        "fees": "0.22022",
+        "realizedGross": "-0.0008",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.77898",
+        "positions": []
+      },
+      "status": "PASS",
+      "ms": 17
+    },
+    {
+      "test": "LIMIT rests",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "LONG",
+        "type": "LIMIT",
+        "quantity": "0.002",
+        "leverage": "3",
+        "marginType": "CROSS",
+        "price": "49000"
+      },
+      "server": {
+        "settleBalance": "999.77898",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.77898",
+        "positions": [],
+        "fees": "0.22022",
+        "realizedGross": "-0.0008"
+      },
+      "expected": {
+        "wallet": "999.77898",
+        "fees": "0.22022",
+        "realizedGross": "-0.0008",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.77898",
+        "positions": []
+      },
+      "status": "PASS",
+      "ms": 19
+    },
+    {
+      "test": "LIMIT cancel",
+      "input": {
+        "kind": "CANCEL"
+      },
+      "server": {
+        "settleBalance": "999.77898",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.77898",
+        "positions": [],
+        "fees": "0.22022",
+        "realizedGross": "-0.0008"
+      },
+      "expected": {
+        "wallet": "999.77898",
+        "fees": "0.22022",
+        "realizedGross": "-0.0008",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.77898",
+        "positions": []
+      },
+      "status": "PASS",
+      "ms": 21
+    },
+    {
+      "test": "target position",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "LONG",
+        "type": "MARKET",
+        "quantity": "0.002",
+        "leverage": "3",
+        "marginType": "CROSS"
+      },
+      "server": {
+        "settleBalance": "999.72386989",
+        "initialMargin": "33.45511",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.72386989",
+        "positions": [
+          {
+            "side": "LONG",
+            "quantity": "0.002",
+            "entryPrice": "50100.1",
+            "entryNotional": "100.2002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ],
+        "fees": "0.27533011",
+        "realizedGross": "-0.0008"
+      },
+      "expected": {
+        "wallet": "999.72386989",
+        "fees": "0.27533011",
+        "realizedGross": "-0.0008",
+        "initialMargin": "33.45511",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.72386989",
+        "positions": [
+          {
+            "side": "LONG",
+            "remainingSize": "0.002",
+            "entry": "50100.1",
+            "entryNotional": "100.2002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 21
+    },
+    {
+      "test": "reduce-only LIMIT rests",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "SHORT",
+        "type": "LIMIT",
+        "quantity": "0.001",
+        "leverage": "3",
+        "marginType": "CROSS",
+        "price": "50200",
+        "reduceOnly": true
+      },
+      "server": {
+        "settleBalance": "999.72386989",
+        "initialMargin": "33.45511",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.72386989",
+        "positions": [
+          {
+            "side": "LONG",
+            "quantity": "0.002",
+            "entryPrice": "50100.1",
+            "entryNotional": "100.2002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ],
+        "fees": "0.27533011",
+        "realizedGross": "-0.0008"
+      },
+      "expected": {
+        "wallet": "999.72386989",
+        "fees": "0.27533011",
+        "realizedGross": "-0.0008",
+        "initialMargin": "33.45511",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.72386989",
+        "positions": [
+          {
+            "side": "LONG",
+            "remainingSize": "0.002",
+            "entry": "50100.1",
+            "entryNotional": "100.2002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 19
+    },
+    {
+      "test": "reduce-only maker fill",
+      "input": {
+        "kind": "REFRESH"
+      },
+      "server": {
+        "settleBalance": "999.81372989",
+        "initialMargin": "16.761277216666666666666666666666666667",
+        "unrealizedPnl": "0.1009",
+        "collateral": "1019.81372989",
+        "positions": [
+          {
+            "side": "LONG",
+            "quantity": "0.001",
+            "entryPrice": "50100.1",
+            "entryNotional": "100.2002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "0.1009",
+            "liquidationPrice": null
+          }
+        ],
+        "fees": "0.28537011",
+        "realizedGross": "0.0991"
+      },
+      "expected": {
+        "wallet": "999.81372989",
+        "fees": "0.28537011",
+        "realizedGross": "0.0991",
+        "initialMargin": "16.76127721666666666667",
+        "unrealizedPnl": "0.1009",
+        "collateral": "1019.81372989",
+        "positions": [
+          {
+            "side": "LONG",
+            "remainingSize": "0.001",
+            "entry": "50100.1",
+            "entryNotional": "100.2002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "0.1009",
+            "liquidationPrice": null
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 18
+    },
+    {
+      "test": "close remainder",
+      "input": {
+        "kind": "CLOSE"
+      },
+      "server": {
+        "settleBalance": "999.886919395",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.886919395",
+        "positions": [],
+        "fees": "0.312980605",
+        "realizedGross": "0.1999"
+      },
+      "expected": {
+        "wallet": "999.886919395",
+        "fees": "0.312980605",
+        "realizedGross": "0.1999",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.886919395",
+        "positions": []
+      },
+      "status": "PASS",
+      "ms": 19
+    },
+    {
+      "test": "LONG with TP",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "LONG",
+        "type": "MARKET",
+        "quantity": "0.002",
+        "leverage": "3",
+        "marginType": "CROSS",
+        "protection": {
+          "takeProfit": "50100",
+          "triggerBy": "MARK"
+        }
+      },
+      "server": {
+        "settleBalance": "999.831919285",
+        "initialMargin": "33.388333333333333333333333333333333333",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.831919285",
+        "positions": [
+          {
+            "side": "LONG",
+            "quantity": "0.002",
+            "entryPrice": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ],
+        "fees": "0.367980715",
+        "realizedGross": "0.1999"
+      },
+      "expected": {
+        "wallet": "999.831919285",
+        "fees": "0.367980715",
+        "realizedGross": "0.1999",
+        "initialMargin": "33.38833333333333333333",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.831919285",
+        "positions": [
+          {
+            "side": "LONG",
+            "remainingSize": "0.002",
+            "entry": "50000.1",
+            "entryNotional": "100.0002",
+            "leverage": "3",
+            "marginMode": "CROSS",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": null
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 18
+    },
+    {
+      "test": "TP trigger and observed book fill",
+      "input": {
+        "kind": "REFRESH"
+      },
+      "server": {
+        "settleBalance": "999.978408295",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.978408295",
+        "positions": [],
+        "fees": "0.423091705",
+        "realizedGross": "0.4015"
+      },
+      "expected": {
+        "wallet": "999.978408295",
+        "fees": "0.423091705",
+        "realizedGross": "0.4015",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.978408295",
+        "positions": []
+      },
+      "status": "PASS",
+      "ms": 19
+    },
+    {
+      "test": "SHORT with SL",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "SHORT",
+        "type": "MARKET",
+        "quantity": "0.002",
+        "leverage": "3",
+        "marginType": "ISOLATED",
+        "protection": {
+          "stopLoss": "50100",
+          "triggerBy": "MARK"
+        }
+      },
+      "server": {
+        "settleBalance": "999.923408405",
+        "initialMargin": "33.333266666666666666666666666666666667",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.923408405",
+        "positions": [
+          {
+            "side": "SHORT",
+            "quantity": "0.002",
+            "entryPrice": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": "66298.5"
+          }
+        ],
+        "fees": "0.478091595",
+        "realizedGross": "0.4015"
+      },
+      "expected": {
+        "wallet": "999.923408405",
+        "fees": "0.478091595",
+        "realizedGross": "0.4015",
+        "initialMargin": "33.33326666666666666667",
+        "unrealizedPnl": "-0.0002",
+        "collateral": "1019.923408405",
+        "positions": [
+          {
+            "side": "SHORT",
+            "remainingSize": "0.002",
+            "entry": "49999.9",
+            "entryNotional": "99.9998",
+            "leverage": "3",
+            "marginMode": "ISOLATED",
+            "unrealizedPnl": "-0.0002",
+            "liquidationPrice": "66298.5"
+          }
+        ]
+      },
+      "status": "PASS",
+      "ms": 20
+    },
+    {
+      "test": "SL trigger and observed book fill",
+      "input": {
+        "kind": "REFRESH"
+      },
+      "server": {
+        "settleBalance": "999.665897195",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.665897195",
+        "positions": [],
+        "fees": "0.533202805",
+        "realizedGross": "0.1991"
+      },
+      "expected": {
+        "wallet": "999.665897195",
+        "fees": "0.533202805",
+        "realizedGross": "0.1991",
+        "initialMargin": "0",
+        "unrealizedPnl": "0",
+        "collateral": "1019.665897195",
+        "positions": []
+      },
+      "status": "PASS",
+      "ms": 19
+    },
+    {
+      "test": "insufficient funds",
+      "input": {
+        "kind": "OPEN",
+        "symbol": "BTCUSDT",
+        "side": "LONG",
+        "type": "MARKET",
+        "quantity": "1",
+        "leverage": "3",
+        "marginType": "CROSS"
+      },
+      "server": {
+        "code": "INSUFFICIENT_DEMO_MARGIN",
+        "error": "Вам не хватает средств для размещения этого ордера."
+      },
+      "expected": {
+        "status": 409
+      },
+      "status": "PASS",
+      "ms": 7
+    },
+    {
+      "test": "cleanup",
+      "input": {
+        "startBalance": "1000"
+      },
+      "server": {
+        "endBalance": "999.665897195",
+        "openPositions": 0,
+        "openOrders": 0
+      },
+      "expected": {
+        "endBalance": "999.665897195",
+        "openPositions": 0,
+        "openOrders": 0
+      },
+      "status": "PASS",
+      "ms": 0
+    }
+  ]
+}

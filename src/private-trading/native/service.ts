@@ -484,8 +484,26 @@ export class NativeDemoService {
       // Re-checked INSIDE the lane: a double click queues the same key twice,
       // and the second must answer with the first's receipt rather than find
       // its position already closed and refuse.
-      const prepared=this.repository.commandContext?await commandRead('repository.context',()=>this.repository.commandContext!(actor,request.idempotencyKey,hash)):null;
-      const prior=prepared?prepared.prior:await commandRead('repository.prior',()=>this.repository.prior(actor,request.idempotencyKey,hash));if(prior)return this.authoritative(actor,this.view(prior),prior);
+      let prepared:Awaited<ReturnType<NonNullable<NativeRepository['commandContext']>>>|null,prior:NativeAccount|null;
+      try{
+        prepared=this.repository.commandContext?await commandRead('repository.context',()=>this.repository.commandContext!(actor,request.idempotencyKey,hash)):null;
+        prior=prepared?prepared.prior:await commandRead('repository.prior',()=>this.repository.prior(actor,request.idempotencyKey,hash));
+      }catch(e){
+        // Until the receipt lookup completes, a request with this key may
+        // already have committed on another instance. Do not claim refusal.
+        if(e instanceof PrivateTradingError&&e.code==='native_command_timeout')throw new PrivateTradingError('native_confirmation_unknown','Не удалось проверить результат команды. Обновите позиции и ордера перед повторной отправкой.',503);
+        throw e;
+      }
+      if(prior){
+        commandScope()?.trace('receipt.found',{revision:prior.revision});
+        try{return await this.authoritative(actor,this.view(prior),prior);}
+        catch(e){
+          // Failure to refresh today's collateral cannot undo a recorded receipt
+          // or tell the client that its previously committed order was refused.
+          commandScope()?.trace('receipt.projection_unavailable',{revision:prior.revision});
+          throw new PrivateTradingError('native_confirmation_unknown','Команда уже записана. Обновите позиции и ордера перед повторной отправкой.',503);
+        }
+      }
       const row=prepared?prepared.row:await commandRead('repository.read',()=>this.repository.read(actor));if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
       // A monotonic per-account sequence orders instructions journaled in the
       // same millisecond. A burst drained from the lane, or a clock that does

@@ -48,6 +48,22 @@ describe('bounded native command lifecycle',()=>{
     await expect(f.service.command(actor,draft())).rejects.toMatchObject({code:'market_data_timeout'});
     expect(quote).toHaveBeenCalledTimes(1);expect(f.repo.commits).toBe(0);
   });
+  test('a committed receipt is never reported as an unexecuted order when collateral refresh stalls',async()=>{
+    const f=setup();await f.service.initialize(actor,key());const request=draft();
+    const confirmed=await f.service.command(actor,request),before=outcome(f.repo.row!.snapshot);
+    f.repo.wallet=[{asset:'ETH',available:'1',locked:'0'}];
+    const marks=jest.spyOn(f.market,'marks').mockImplementationOnce(never);
+    await expect(f.service.command(actor,request,{scope:scope('OPEN',250)})).rejects.toMatchObject({code:'native_confirmation_unknown'});
+    expect(marks).toHaveBeenCalledTimes(1);
+    expect(f.repo.row!.revision).toBe(confirmed.revision);expect(f.repo.commits).toBe(1);
+    expect(outcome(f.repo.row!.snapshot)).toEqual(before);
+  });
+  test('receipt lookup timeout cannot claim that an earlier execution did not happen',async()=>{
+    const f=setup();await f.service.initialize(actor,key());const request=draft();await f.service.command(actor,request);
+    jest.spyOn(f.repo,'prior').mockImplementationOnce(never);
+    await expect(f.service.command(actor,request,{scope:scope()})).rejects.toMatchObject({code:'native_confirmation_unknown'});
+    expect(f.repo.commits).toBe(1);
+  });
 });
 
 async function closedHistorical(){
