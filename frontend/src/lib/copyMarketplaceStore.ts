@@ -317,7 +317,16 @@ export class CopyMarketplaceStore {
    * snapshot it wrote would stay on disk until the marketplace is next
    * opened. api.ts broadcasts every token change; this is the receiver.
    */
-  syncSession = () => { this.checkSession(); };
+  syncSession = () => {
+    const before = this.session;
+    this.checkSession();
+    // A token can arrive AFTER this page has painted — auth resolving a
+    // moment late is the ordinary case, not an edge one. `checkSession`
+    // only swaps the state; without this the store would sit on an
+    // unsettled empty state with nothing scheduled behind it.
+    if (this.session && this.session !== before && this.listeners.size) void this.refresh();
+    else if (!this.session) this.markSettled();
+  };
   private checkSession() {
     const session = this.getSession();
     if (session === this.session) return;
@@ -380,6 +389,25 @@ export class CopyMarketplaceStore {
     const snapshot: CachedSnapshot = { nazar, ksenia, identities: identities.length ? identities : null, fetchedAt };
     writeSnapshot(this.session, snapshot, this.storage);
   }
+  /**
+   * END THE WAIT, without touching a single figure.
+   *
+   * «Загрузка…» means exactly one thing: this browser has asked and has not
+   * been answered. The moment that stops being true — for ANY reason,
+   * including reasons that are not a response — the viewer is owed a
+   * verdict, and `settled` is what carries it.
+   *
+   * It used to be set on two paths only, the response handler and the catch.
+   * Every other way an attempt could end returned early and left `settled`
+   * false with nothing in flight behind it, so the skeleton stayed until a
+   * sixty-second timer or a window focus happened to come round — and on a
+   * page the viewer is already looking at, neither may ever happen. That is
+   * the hang. This is the one place that closes it.
+   */
+  private markSettled() {
+    if (this.state.settled && !this.state.refreshing) return;
+    this.emit({ ...this.state, refreshing: false, settled: true });
+  }
   private emit(state: CopyMarketplaceState) {
     this.state = state;
     this.listeners.forEach(listener => listener());
@@ -418,7 +446,9 @@ export class CopyMarketplaceStore {
   };
   refresh = (): Promise<void> => {
     this.checkSession();
-    if (!this.session) return Promise.resolve();
+    // No session to ask with. There is nothing in flight and nothing will
+    // start on its own, so say so rather than leaving a skeleton up.
+    if (!this.session) { this.markSettled(); return Promise.resolve(); }
     if (this.pending) return this.pending;
     // Collapse StrictMode mount/focus/prefetch bursts; route returns still
     // revalidate once outside this short window, without clearing any data.
@@ -431,7 +461,14 @@ export class CopyMarketplaceStore {
     const timeout = setTimeout(() => { abandoned = true; controller.abort(); }, 15_000);
     this.emit({ ...this.state, refreshing: true });
     this.pending = Promise.resolve().then(() => this.fetchSnapshot(controller.signal)).then(payload => {
-      if (generation !== this.generation || this.getSession() !== this.session) return;
+      if (generation !== this.generation || this.getSession() !== this.session) {
+        // This answer belongs to a session that has gone. Discarding it is
+        // right; leaving the new session with nothing in flight is not —
+        // `checkSession` has already cleared `lastAttempt`, so this asks
+        // again for whoever is logged in now.
+        queueMicrotask(() => { void this.refresh(); });
+        return;
+      }
       if (!record(payload) || !date(payload.generatedAt)) throw new MarketplaceFailure('malformed_envelope');
       const next = { ...this.state, refreshing: false, settled: true,
         fetchedAt: { ...this.state.fetchedAt }, stale: { ...this.state.stale },

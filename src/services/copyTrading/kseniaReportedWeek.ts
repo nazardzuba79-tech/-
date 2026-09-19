@@ -28,9 +28,42 @@
  * The owner confirmed the basis: 61.9% is reported IN ADDITION to the
  * 2026-09-16 trade already folded in, not inclusive of it.
  *
- * NOTHING DOWNSTREAM MOVES. No balance, no AUM, no follower PnL, no fee,
- * no ROI, no equity point and no daily return is touched by this file. The
- * modeled figures stay modeled and stay labelled `SYNTHETIC_REVIEW`.
+ * WHAT THE OWNER ASKED FOR, AND WHAT THAT COSTS.
+ *
+ * The owner wants 61.9% to be the VISIBLE weekly result on the card and the
+ * profile, not a note filed beside a figure that still reads 20.5094%. So
+ * this file now writes the reported number into the three places the UI
+ * reads a weekly return from — `analytics.roi7`, `economics.periods['7D'].roi`
+ * and the `weekly[]` row for this week — and only those three.
+ *
+ * IT STAYS UNTIL THE OWNER SAYS OTHERWISE. It was first anchored to the
+ * reported week, so it would have quietly reverted to the model on 20
+ * September; the owner has since asked for it to remain the strategy's
+ * shown result indefinitely. It is therefore a PINNED figure rather than a
+ * window that happens to contain it — a new day, a new week, a reload and a
+ * route return all leave it exactly where it is.
+ *
+ * Which makes one thing mandatory: it must not be PRESENTED as a freshly
+ * computed rolling seven days once it is no longer one. The payload carries
+ * `periodStart`/`periodEnd` and `source: 'OWNER_REPORTED'`, and the UI reads
+ * those to label the figure as the manager's reported result for that week
+ * rather than as a rolling window. See `reportedRoi` in
+ * frontend/src/lib/syntheticCopyTrading.ts.
+ *
+ * ONE VALUE, ONE PLACE. `returnPct` below is the only copy of the number in
+ * the codebase. It travels in the response as `reportedWeeks[0]`, is read
+ * once by the period selector, and every surface renders what that selector
+ * returns — no component holds its own copy to drift out of step.
+ *
+ * WHAT STILL DOES NOT MOVE, and this is the honest cost of the above. No
+ * balance, no AUM, no follower PnL, no fee, no equity point, no daily
+ * return, no trade, no price and no P&L figure is touched — the owner
+ * forbade inventing any of them, and deriving a P&L from 61.9% would be
+ * exactly that. The consequence is that the weekly ROI is the owner's
+ * reported figure while the weekly PnL beside it is still the engine's.
+ * They do not reconcile, they are not meant to, and the payload says which
+ * is which: every figure this file writes is listed in `reportedWeeks` with
+ * its provenance, and the modeled response stays labelled `SYNTHETIC_REVIEW`.
  */
 
 export const KSENIA_REPORTED_WEEK = Object.freeze({
@@ -50,9 +83,15 @@ export const KSENIA_REPORTED_WEEK = Object.freeze({
   includesReportedTradeOf20260916: false,
   /** The modeled week this is reported against, for the record. */
   modeledReturnPct: 12.7094,
-  /** Modeled week plus the already-folded-in reported trade. */
+  /** Modeled week plus the already-folded-in reported trade. What the card
+   *  showed before the owner asked for the reported figure to be visible. */
   publishedReturnPct: 20.5094,
 } as const);
+
+/** The figures this overlay writes. Named so the payload declares exactly
+ *  what is the owner's word and what is still the engine's. */
+export const REPORTED_WEEK_FIELDS = Object.freeze(
+  ['analytics.roi7', "economics.periods['7D'].roi", "weekly[period=2026-09-13].roi"] as const);
 
 export interface ReportedWeek {
   traderId: string;
@@ -64,6 +103,12 @@ export interface ReportedWeek {
   includesReportedTradeOf20260916: boolean;
   modeledReturnPct: number;
   publishedReturnPct: number;
+  /** True when the reported figure is the one the weekly ROI now shows.
+   *  Since the owner pinned it, this is always true. */
+  appliedToVisibleWeeklyRoi?: boolean;
+  /** Whether the model is still inside the reported week. Decides how the
+   *  figure is LABELLED, never whether it is shown. */
+  stillInsideReportedWeek?: boolean;
 }
 
 /**
@@ -74,8 +119,43 @@ export interface ReportedWeek {
  * accumulating into anything, so calling it twice cannot double anything —
  * which is the failure mode that matters for a number reported once.
  */
+/**
+ * Is the model still inside the week the figure was reported for?
+ *
+ * No longer decides whether the figure is SHOWN — it is always shown. It
+ * decides how it is DESCRIBED: inside the week it genuinely is the last
+ * seven days, and after it, it is that week's reported result being held.
+ * Truthfulness is the whole reason this survived the pinning.
+ */
+export function reportedWeekIsCurrent(simulatedAt: unknown): boolean {
+  const day = typeof simulatedAt === 'string' ? simulatedAt.slice(0, 10) : null;
+  return !!day && day >= KSENIA_REPORTED_WEEK.periodStart && day <= KSENIA_REPORTED_WEEK.periodEnd;
+}
+
 export function withKseniaReportedWeek<T>(input: T): T {
   const source = input as any;
   if (!source || source.trader?.id !== KSENIA_REPORTED_WEEK.traderId) return input;
-  return { ...source, reportedWeeks: [{ ...KSENIA_REPORTED_WEEK }] as ReportedWeek[] } as T;
+
+  // Always applied. `stillInsideReportedWeek` only changes how the figure is
+  // described, never whether it is there.
+  const record: ReportedWeek = {
+    ...KSENIA_REPORTED_WEEK,
+    appliedToVisibleWeeklyRoi: true,
+    stillInsideReportedWeek: reportedWeekIsCurrent(source.simulation?.simulatedAt),
+  };
+  // A shallow copy per level we touch: nothing else in the response is
+  // cloned, and nothing else is written.
+  const data: any = { ...source, reportedWeeks: [record] };
+
+  const roi = KSENIA_REPORTED_WEEK.returnPct;
+  if (data.analytics) data.analytics = { ...data.analytics, roi7: roi };
+  if (data.economics?.periods?.['7D']) {
+    data.economics = { ...data.economics, periods: { ...data.economics.periods,
+      '7D': { ...data.economics.periods['7D'], roi } } };
+  }
+  if (Array.isArray(data.weekly)) {
+    data.weekly = data.weekly.map((week: any) =>
+      week?.period === KSENIA_REPORTED_WEEK.periodStart ? { ...week, roi } : week);
+  }
+  return data as T;
 }

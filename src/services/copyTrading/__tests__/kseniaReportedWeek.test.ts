@@ -1,7 +1,8 @@
 import { CopyPerformanceService } from '../CopyPerformanceService';
 import { summarizeStrategy } from '../marketplaceSummary';
 import { withKseniaReportedTrade } from '../kseniaReportedTrade';
-import { KSENIA_REPORTED_WEEK, withKseniaReportedWeek } from '../kseniaReportedWeek';
+import { resolve } from 'path';
+import { KSENIA_REPORTED_WEEK, reportedWeekIsCurrent, withKseniaReportedWeek } from '../kseniaReportedWeek';
 import { KSENIA_REVIEW } from '../canonical/kseniaReview';
 
 /**
@@ -152,31 +153,98 @@ describe('nothing is counted twice, and nothing is rewritten', () => {
     expect(cachedDay.realizedPnl).toBeCloseTo(sixteenth[0].realizedPnl - 1754, 4);
   }, 600_000);
 
-  it('records the reported week beside the model without moving a single figure', async () => {
+  it('makes the reported 61.9% the VISIBLE weekly return, and only that', async () => {
     const before = await ksenia();
     const after: any = withKseniaReportedWeek(before);
 
-    expect(after.reportedWeeks).toEqual([{
+    // What the owner asked for: the three places a weekly return is read.
+    expect(after.analytics.roi7).toBe(61.9);
+    expect(after.economics.periods['7D'].roi).toBe(61.9);
+    expect(after.weekly.find((w: any) => w.period === '2026-09-13').roi).toBe(61.9);
+
+    // Declared, with its provenance and the figures it replaced, so the
+    // payload says out loud which number is the owner's word.
+    expect(after.reportedWeeks).toHaveLength(1);
+    expect(after.reportedWeeks[0]).toMatchObject({
       traderId: 'VX-KSENIA', periodStart: '2026-09-13', periodEnd: '2026-09-19', timezone: 'UTC',
       returnPct: 61.9, source: 'OWNER_REPORTED', includesReportedTradeOf20260916: false,
-      modeledReturnPct: 12.7094, publishedReturnPct: 20.5094,
-    }]);
-    // The owner confirmed 61.9% is IN ADDITION to the 16.09 trade, so the
-    // two are recorded separately and can never be merged by accident.
-    expect(after.reportedWeeks[0].includesReportedTradeOf20260916).toBe(false);
-
-    // Not one modeled figure moved. The card still reads 20.5094%.
-    for (const key of ['analytics', 'economics', 'equityHistory', 'dailyResults',
-      'weekly', 'monthly', 'tradeStats', 'followers', 'aumHistory']) {
-      expect(after[key]).toEqual(before[key]);
-    }
-    expect(after.analytics.aum).toBe(before.analytics.aum);
-    expect(after.traderEarnings365).toBe(before.traderEarnings365);
-    // And it is still declared modeled.
+      modeledReturnPct: 12.7094, publishedReturnPct: 20.5094, appliedToVisibleWeeklyRoi: true,
+    });
     expect(after.provenance).toBe('SYNTHETIC_REVIEW');
+  }, 600_000);
 
-    // Applying it twice changes nothing: it assigns, it never accumulates.
-    expect(withKseniaReportedWeek(after)).toEqual(after);
+  it('invents no trade, no price, no curve and no P&L to justify it', async () => {
+    const before = await ksenia();
+    const after: any = withKseniaReportedWeek(before);
+
+    // The engine's history is untouched, byte for byte. A 61.9% week with a
+    // fabricated daily curve behind it would be a lie with a shape; this is
+    // a reported figure that says so.
+    for (const key of ['equityHistory', 'dailyResults', 'aumHistory', 'followers',
+      'tradeStats', 'trades', 'monthly', 'traderEarnings365']) {
+      expect(after[key]).toEqual((before as any)[key]);
+    }
+    // Money did not move with the percentage: the weekly PnL beside the ROI
+    // is still the engine's, and nothing derived a P&L from 61.9%.
+    expect(after.weekly.find((w: any) => w.period === '2026-09-13').pnl)
+      .toBe((before as any).weekly.find((w: any) => w.period === '2026-09-13').pnl);
+    expect(after.economics.periods['7D'].masterPnl).toBe((before as any).economics.periods['7D'].masterPnl);
+    expect(after.analytics.aum).toBe((before as any).analytics.aum);
+    // Other windows keep deriving from the model.
+    expect(after.analytics.roi30).toBe((before as any).analytics.roi30);
+    expect(after.economics.periods['30D'].roi).toBe((before as any).economics.periods['30D'].roi);
+    expect(after.economics.periods.ALL.roi).toBe((before as any).economics.periods.ALL.roi);
+  }, 600_000);
+
+  it('SURVIVES the week changing, and every later day, until the owner says otherwise', async () => {
+    // The owner pinned it. A new day, a new week and a model that has run
+    // on for weeks must all still show the reported figure — this is the
+    // requirement that replaced the original week anchor.
+    for (const day of ['2026-09-19T12:00:00Z', '2026-09-20T12:00:00Z', '2026-09-24T12:00:00Z',
+      '2026-10-05T12:00:00Z', '2026-11-02T12:00:00Z']) {
+      const data: any = withKseniaReportedWeek(await ksenia(day));
+      expect(data.analytics.roi7).toBe(61.9);
+      expect(data.economics.periods['7D'].roi).toBe(61.9);
+      expect(data.weekly.find((w: any) => w.period === '2026-09-13').roi).toBe(61.9);
+      expect(data.reportedWeeks[0].appliedToVisibleWeeklyRoi).toBe(true);
+    }
+  }, 600_000);
+
+  it('stops calling it a rolling week once the week has passed', async () => {
+    // Truthfulness is the condition attached to pinning it: the figure
+    // stays, but it must not be presented as a freshly computed last seven
+    // days when it no longer is. `stillInsideReportedWeek` is what the UI
+    // reads to change the wording.
+    const inside: any = withKseniaReportedWeek(await ksenia('2026-09-19T12:00:00Z'));
+    expect(inside.reportedWeeks[0].stillInsideReportedWeek).toBe(true);
+    const after: any = withKseniaReportedWeek(await ksenia('2026-09-24T12:00:00Z'));
+    expect(after.reportedWeeks[0].stillInsideReportedWeek).toBe(false);
+    // The period it belongs to travels with it, so the label can name it.
+    expect(after.reportedWeeks[0].periodStart).toBe('2026-09-13');
+    expect(after.reportedWeeks[0].periodEnd).toBe('2026-09-19');
+    expect(reportedWeekIsCurrent('2026-09-19T23:59:59.999Z')).toBe(true);
+    expect(reportedWeekIsCurrent('2026-09-20T00:00:00.000Z')).toBe(false);
+  }, 600_000);
+
+  it('is the only copy of the number anywhere in the source', () => {
+    // One canonical value. If a component ever hard-codes 61.9 this fails,
+    // which is what keeps card and profile from drifting apart.
+    const { execSync } = require('child_process');
+    const hits = execSync(
+      "grep -rn --include=*.ts --include=*.tsx '61\\.9' src frontend/src || true",
+      { cwd: resolve(__dirname, '../../../..'), encoding: 'utf8' })
+      .split('\n').filter(Boolean)
+      .filter((line: string) => !line.includes('__tests__'));
+    const files = [...new Set(hits.map((l: string) => l.split(':')[0]))].sort();
+    expect(files).toEqual(['src/services/copyTrading/kseniaReportedWeek.ts']);
+    // And exactly one of those lines is the value itself; the rest explain it.
+    const values = hits.filter((l: string) => /returnPct:\s*61\.9/.test(l));
+    expect(values).toHaveLength(1);
+  });
+
+  it('applying it twice changes nothing', async () => {
+    const once: any = withKseniaReportedWeek(await ksenia());
+    expect(withKseniaReportedWeek(once)).toEqual(once);
   }, 600_000);
 });
 

@@ -65,6 +65,16 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   return getToken() ? children : <Navigate to={loginPathFor(location)} replace />;
 }
 
+/** The token has to be read while this renders, not while the route table is
+ * built. App holds no state, so an element decided at load time never changes:
+ * a visitor who pressed «Выйти» while signed in was still handed the frozen
+ * redirect to the terminal, and the terminal's own guard then sent them to the
+ * sign-in page — instead of the home page `handleLogout` navigates to. Every
+ * other route already defers the read to a component; this one now does too. */
+function RootEntry() {
+  return getToken() ? <Navigate to={defaultTradingPath()} replace /> : <HomePage />;
+}
+
 function RedirectIfAuthed({ children }: { children: JSX.Element }) {
   const location = useLocation();
   if (!getToken()) return children;
@@ -77,7 +87,7 @@ export function App() {
     <BrowserRouter>
       <Suspense fallback={<RouteShell />}>
       <Routes>
-        <Route path="/" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <HomePage />} />
+        <Route path="/" element={<RootEntry />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
         <Route path="/trade" element={<RequireAuth><TradePage /></RequireAuth>} />

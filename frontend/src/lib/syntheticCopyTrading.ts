@@ -120,6 +120,26 @@ export interface SyntheticCopyTradingResponse {
    *
    * See services/copyTrading/tradeHistoryVisibility.ts.
    */
+  /**
+   * Weekly results the strategy's owner reported, rather than the engine
+   * producing them.
+   *
+   * When an entry has `appliedToVisibleWeeklyRoi`, its `returnPct` IS the
+   * 7D return this payload means to show — the server has already written
+   * it into `economics.periods['7D'].roi`, and `selectSyntheticPeriod`
+   * honours it instead of re-deriving that one window from the daily
+   * series. Everything else on the object stays the engine's, including
+   * the PnL beside it; the two do not reconcile, and this field is how the
+   * payload says so out loud.
+   */
+  reportedWeeks?: {
+    traderId: string; periodStart: string; periodEnd: string; timezone: string;
+    returnPct: number; source: 'OWNER_REPORTED';
+    includesReportedTradeOf20260916: boolean;
+    modeledReturnPct: number; publishedReturnPct: number;
+    appliedToVisibleWeeklyRoi?: boolean;
+    stillInsideReportedWeek?: boolean;
+  }[];
   tradeVisibility?: {
     mode: 'HIDDEN';
     reason: 'OWNER_RESTRICTED';
@@ -252,6 +272,12 @@ export interface SyntheticPeriodAnalytics {
   equity: SyntheticCopyTradingResponse['equityHistory'];
   daily: SyntheticCopyTradingResponse['dailyResults'];
   trades: SyntheticCopyTradingResponse['trades'];
+  /** The owner-reported return this window is showing, when it is showing
+   *  one; `null` when `roi` is the engine's own derivation. */
+  reportedRoi: number | null;
+  /** The period that reported figure belongs to, and whether the model is
+   *  still inside it. `null` when `roi` is derived. */
+  reportedPeriod: { start: string; end: string; stillCurrent: boolean } | null;
   /** True when the server withheld the executions. `trades` is then empty
    *  and every aggregate on this object is still the real one. */
   tradesHidden: boolean;
@@ -341,13 +367,43 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
     ...(equity[0] ? [{ date: equity[0].date, pnl: 0 }] : []),
     ...daily.map(day => ({ date: day.date, pnl: accumulatedPnl += day.realizedPnl })),
   ];
+  /**
+   * An owner-reported weekly return REPLACES the derived 7D figure, and
+   * only that one.
+   *
+   * The 7D window is normally re-derived here from the daily series, which
+   * is why writing the reported figure into the payload alone was not
+   * enough — the card read it and the profile quietly recomputed past it.
+   * The payload has to declare the override (`appliedToVisibleWeeklyRoi`),
+   * it applies to `7D` and nothing else, and 30D / 90D / ALL keep deriving
+   * exactly as before.
+   */
+  const reported = period === '7D'
+    ? data.reportedWeeks?.find(week => week.appliedToVisibleWeeklyRoi && week.source === 'OWNER_REPORTED')
+    : undefined;
+  const reportedRoi = reported?.returnPct;
   return {
     period,
     methodology: data.economics?.methodology,
+    reportedRoi: reportedRoi ?? null,
+    /**
+     * How this window must be DESCRIBED, when it is showing a reported
+     * figure rather than a derived one.
+     *
+     * Once the model moves past the reported week, the number is no longer
+     * the last seven days — it is that week's result, held. Calling it a
+     * rolling period then would be untrue, so the surfaces read this
+     * instead of assembling their own wording, and there is exactly one
+     * sentence to change if it ever needs rewording.
+     */
+    reportedPeriod: reported ? {
+      start: reported.periodStart, end: reported.periodEnd,
+      stillCurrent: reported.stillInsideReportedWeek !== false,
+    } : null,
     // v8 is an explicitly simple operating-capital return, NOT geometric TWR.
-    roi: data.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
+    roi: reportedRoi ?? (data.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
       ? returns.reduce((total, value) => total + value, 0) * 100
-      : (returns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100,
+      : (returns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100),
     pnl,
     winRate: resolvedTrades ? winningTrades / resolvedTrades * 100 : 0,
     maximumDrawdown: economics?.maximumDrawdown ?? maxDrawdown(equity),

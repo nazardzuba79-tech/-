@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-19T09:15:32.683Z",
+  "startedAt": "2026-09-19T15:25:06.765Z",
   "date": "2026-09-19",
   "environment": "LOCAL QA ONLY — real compiled router/service, in-memory persistence",
   "widths": {
@@ -391,9 +391,7 @@
         "nazar": null,
         "ksenia": null
       },
-      "otherAccountStoredKeys": [
-        "voltex.copy.marketplace.v1.vw7nxe"
-      ],
+      "otherAccountStoredKeys": [],
       "otherAccountSettled": {
         "nazar": {
           "name": "Nazar",
@@ -463,5 +461,5 @@
     "pageErrors": []
   },
   "status": "PASS",
-  "finishedAt": "2026-09-19T09:15:58.987Z"
+  "finishedAt": "2026-09-19T15:25:33.149Z"
 }
