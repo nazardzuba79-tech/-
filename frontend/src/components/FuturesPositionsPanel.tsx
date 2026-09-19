@@ -396,8 +396,17 @@ const styles: Record<string, React.CSSProperties> = {
   // which is why the terminal's own rules had to carry `!important` to
   // set a column heading at all. With the size left to CSS those can go,
   // and the heading scale lives in one place instead of three.
-  th: { textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 400 },
-  td: { padding: '8px 14px', color: 'var(--text-primary)', borderTop: '1px solid var(--border)' },
+  // Padding is NOT set here on purpose. An inline style outranks every
+  // ORDINARY rule in every sheet, media query or not — only an `!important`
+  // one gets past it. So the terminal's narrow-width cell padding split in
+  // two: the `!important` rules below 1500 applied, the plain ones at 1600
+  // and wider silently did not, and the table kept its widest padding on
+  // exactly the widths that had no room for it. Measured in #148: at 1664
+  // that was 38px of sideways scroll inside the panel, and at 1440/1366 a
+  // contract cell one line taller than its neighbours. The sheet owns cell
+  // padding; the size and colour that belong to the component stay here.
+  th: { textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 400 },
+  td: { color: 'var(--text-primary)', borderTop: '1px solid var(--border)' },
   closeBtn: {
     background: 'transparent',
     border: '1px solid var(--border)',
