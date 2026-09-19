@@ -1,0 +1,266 @@
+{
+  "startedAt": "2026-09-19T15:25:38.332Z",
+  "date": "2026-09-19",
+  "environment": "LOCAL QA ONLY — real compiled router/service, in-memory persistence",
+  "scenarios": {
+    "coldLoad": {
+      "cards": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "+885.6%",
+          "winRate": "92,9%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "+482.3%",
+          "winRate": "89,4%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        }
+      },
+      "errors": []
+    },
+    "kseniaWeekly": {
+      "hero": [
+        [
+          "Followers",
+          "48"
+        ],
+        [
+          "AUM",
+          "5 400 000 USDT"
+        ],
+        [
+          "Max Drawdown",
+          "8,10%"
+        ]
+      ],
+      "roi": null,
+      "pnl": null,
+      "readouts": "ROI · 7D+61.9%Накопленный PnL · USDT+24 631 USDT",
+      "body": " Назад к копитрейдингуKKsenia VIPMulti-Asset Strategy · VX-KSENIAFollowers48AUM5 400 000 USDTMax Drawdown8,10%Копировать трейдераСтатистикаСделки7D30D90DALLALL · SINCE INCEPTIONPerformanceAll-Time ROI+1840.2%All-Time PnL+3 298 540 USDTWin Rate89,4%Max Drawdown8,10%Average P/L+7 094 USDTProfit Factor23,78Average Holding—Volatility64,65%Sharpe Ratio25,40Sortino Ratio149,61Total Trades465Структура стратегииTrading ProfileTrading StyleIntraday / SwingRisk LevelУмеренныйMain MarketsSOL · BTC · DOGE · XRPTrades / Week8,0Динамика стратегииROIROIPnL7D · Скользящий период · 12.09.2026 — 19.09.2026 · 7 календарных днейROI · 7D+61.9%Накопленный PnL · USDT+24 631 USDT23.0%14.5%6.0%-2.5%2026-09-12: 0,0000%2026-09-13: 1,1490%2026-09-14: 2,4776%2026-09-15: 4,8376%2026-09-16: 14,1812%2026-09-17: 16,5249%2026-09-18: 18,8386%2026-09-19: 20,5094%12.0914.0916.0917.0919.09Daily Return · %Дневная доходность7DROI за период+20.5%+9,34%+4,67%0,00%2026-09-13: +1,15% · PnL: +2 068 USDT2026-09-14: +1,33% · PnL: +2 391 USDT2026-09-15: +2,36% · PnL: +4 248 USDT2026-09-16: +9,34% · PnL: +4 533 USDT2026-09-17: +2,34% · PnL: +4 219 USDT2026-09-18: +2,31% · PnL: +4 165 USDT2026-09-19: +1,67% · PnL: +3 007 USDT2026-09-132026-09-162026-09-19 Прибыльный день Убыточный деньОдин столбец = доходность за день в % · линейная шкала. Внешние движения капитала не являются прибылью или убытком. ROI — сумма дневных доходностей, без геометрического реинвестирования. Все дни сохранены; на узком экране график прокручивается.Результаты копированияFollower PerformanceЧистая прибыль подписчиков · 7D+132 632 USDTПрибыльные · с начала копирования48 / 48Активные подписчики сейчас48Gross Followers PnL · 7D+147 369 USDTДоход Ksenia · 7D+14 737 USDTКомиссия за результат10,00%Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход Ksenia рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.Доход Ksenia · последние 365 дней+1 359 677 USDTАктивные подписчики · индивидуальный PnL и ROI с даты начала копированияKK•••01С 07.08.2025 · 464 сделок$15KВыделенный капиталПри старте: 15 000 USDT+48 278 USDT+321.9% · чистый PnL с начала копированияGross: +53 642 USDT · Комиссии: 5 364 USDTKK•••02С 12.08.2025 · 458 сделок$18KВыделенный капиталПри старте: 18 000 USDT+59 832 USDT+332.4% · чистый PnL с начала копированияGross: +66 481 USDT · Комиссии: 6 648 USDTKK•••03С 18.08.2025 · 451 сделок$82KВыделенный капиталПри старте: 82 000 USDT+276 643 USDT+337.4% · чистый PnL с начала копированияGross: +307 381 USDT · Комиссии: 30 738 USDTKK•••04С 24.08.2025 · 444 сделок$125KВыделенный капиталПри старте: 125 000 USDT+426 486 USDT+341.2% · чистый PnL с начала копированияGross: +473 873 USDT · Комиссии: 47 387 USDTKK•••05С 26.08.2025 · 442 сделок$175KВыделенный капиталПри старте: 175 000 USDT+612 525 USDT+350.0% · чистый PnL с начала копированияGross: +680 583 USDT · Комиссии: 68 058 USDTKK•••06С 01.09.2025 · 433 сделок$260KВыделенный капиталПри старте: 260 000 USDT+923 360 USDT+355.1% · чистый PnL с начала копированияGross: +1 025 955 USDT · Комиссии: 102 596 USDTKK•••07С 20.09.2025 · 416 сделок$27KВыделенный капиталПри старте: 27 000 USDT+78 909 USDT+292.3% · чистый PnL с начала копированияGross: +87 676 USDT · Комиссии: 8 768 USDTKK•••08С 25.09.2025 · 412 сделок$43KВыделенный капиталПри старте: 43 000 USDT+129 544 USDT+301.3% · чистый PnL с начала копированияGross: +143 937 USDT · Комиссии: 14 394 USDTПоказать всех подписчиков (48)",
+      "pnlBesideRoi": "+24 631 USDT"
+    },
+    "kseniaCardWeekly": {
+      "nazar": {
+        "name": "Nazar",
+        "roi": "+81.7%",
+        "winRate": "100,0%",
+        "button": "Копировать трейдера",
+        "loading": false,
+        "unavailable": false,
+        "skeletons": 0,
+        "chart": true
+      },
+      "ksenia": {
+        "name": "Ksenia",
+        "roi": "+61.9%",
+        "winRate": "89,4%",
+        "button": "Копировать трейдера",
+        "loading": false,
+        "unavailable": false,
+        "skeletons": 0,
+        "chart": true
+      }
+    },
+    "routeReturn": {
+      "cards": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "+885.6%",
+          "winRate": "92,9%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "+482.3%",
+          "winRate": "89,4%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        }
+      }
+    },
+    "hardReload": {
+      "cards": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "+885.6%",
+          "winRate": "92,9%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "+482.3%",
+          "winRate": "89,4%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        }
+      }
+    },
+    "failedPrefetch": {
+      "callsAfterPrefetch": 1,
+      "callsAfterMount": 2,
+      "cards": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "+885.6%",
+          "winRate": "92,9%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "+482.3%",
+          "winRate": "89,4%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        }
+      },
+      "errors": []
+    },
+    "lateToken": {
+      "beforeToken": {
+        "nazar": null,
+        "ksenia": null
+      },
+      "afterToken": {
+        "nazar": null,
+        "ksenia": null
+      },
+      "errors": []
+    },
+    "failingRefresh": {
+      "before": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "+885.6%",
+          "winRate": "92,9%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "+482.3%",
+          "winRate": "89,4%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        }
+      },
+      "after": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "+885.6%",
+          "winRate": "92,9%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "+482.3%",
+          "winRate": "89,4%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        }
+      },
+      "errors": []
+    },
+    "timeout": {
+      "cards": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "—",
+          "winRate": "—",
+          "button": "Данные недоступны",
+          "loading": false,
+          "unavailable": true,
+          "skeletons": 6,
+          "chart": false
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "—",
+          "winRate": "—",
+          "button": "Данные недоступны",
+          "loading": false,
+          "unavailable": true,
+          "skeletons": 7,
+          "chart": false
+        }
+      },
+      "errors": []
+    },
+    "laterWeek": {
+      "date": "2026-09-26",
+      "cards": {
+        "nazar": {
+          "name": "Nazar",
+          "roi": "+70.7%",
+          "winRate": "83,3%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        },
+        "ksenia": {
+          "name": "Ksenia",
+          "roi": "+61.9%",
+          "winRate": "89,4%",
+          "button": "Копировать трейдера",
+          "loading": false,
+          "unavailable": false,
+          "skeletons": 0,
+          "chart": true
+        }
+      },
+      "cardLabel": "ROI за отчётную неделю",
+      "profile": {
+        "readouts": "ROI · за отчётную неделю+61.9%Накопленный PnL · USDT+67 797 USDT",
+        "range": "Результат за неделю 13.09.2026 — 19.09.2026 · по данным управляющего"
+      },
+      "errors": []
+    }
+  },
+  "findings": [],
+  "status": "PASS"
+}
