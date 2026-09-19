@@ -3,7 +3,18 @@ import { BOOK_STALE_AFTER_MS, BOOK_UNAVAILABLE_AFTER_MS } from '../bookFreshness
 import {
   FuturesDepthBook, subscribeFuturesDepth, parseFuturesTrades,
   setFuturesDepthFallbackBase, closeFuturesDepth, DepthFrameError, DepthDesyncError,
+  FLUSH_MS,
 } from '../futuresDepth';
+
+/**
+ * These tests are about COALESCING — one repaint per window, however long
+ * the window is — so they advance by the window the module actually uses
+ * rather than by a number copied out of it. The literal 300 was here until
+ * the window moved to 400 to match Binance's measured 425ms cadence, and
+ * every one of these went red for a reason that had nothing to do with what
+ * they check.
+ */
+const FLUSH = FLUSH_MS;
 
 const now=1_800_000_000_000;
 const frame=(data:any={},type='snapshot',extra:any={})=>({topic:'orderbook.200.BTCUSDT',type,ts:now,
@@ -82,7 +93,7 @@ describe('selected-contract depth lifecycle',()=>{
     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
     expect(listener.mock.calls[0][0]).toEqual({bids:[],asks:[],status:'connecting',asOf:null,source:null});
     ws.onmessage({data:JSON.stringify(frame())});ws.onmessage({data:JSON.stringify(frame({u:3,seq:3,b:[['100','4']],a:[]},'delta'))});
-    expect(listener).toHaveBeenCalledTimes(1);jest.advanceTimersByTime(300);expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenCalledTimes(1);jest.advanceTimersByTime(FLUSH);expect(listener).toHaveBeenCalledTimes(2);
     expect(listener.mock.calls[1][0].bids[0].quantity).toBe('4');
     expect(listener.mock.calls[1][0].status).toBe('live');
     expect(listener.mock.calls[1][0].source).toBe('socket');
@@ -92,7 +103,7 @@ describe('selected-contract depth lifecycle',()=>{
 
   test('a second subscriber to a live contract is handed the book, never an empty one',()=>{
     const first=jest.fn();const stopFirst=subscribeFuturesDepth('BTC/USDT',first);
-    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     const second=jest.fn();const stopSecond=subscribeFuturesDepth('BTC/USDT',second);
     // This is the flash that React's own remount used to cause.
     expect(second.mock.calls[0][0].bids).toEqual([{price:'100',quantity:'2'}]);
@@ -103,21 +114,21 @@ describe('selected-contract depth lifecycle',()=>{
 
   test('a bad frame is skipped; a desync resubscribes that topic and keeps the last good book',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);const ws=sockets[0];ws.onopen();
-    ws.onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    ws.onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     const good=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(good.bids).toEqual([{price:'100',quantity:'2'}]);
 
     // Unreadable level: dropped, no reconnect, no repaint.
     const calls=listener.mock.calls.length;
     ws.onmessage({data:JSON.stringify(frame({u:5,seq:5,b:[['nope','1']],a:[]},'delta'))});
-    jest.advanceTimersByTime(300);
+    jest.advanceTimersByTime(FLUSH);
     expect(listener).toHaveBeenCalledTimes(calls);
     expect(sockets).toHaveLength(1);
 
     // Crossed book: our copy is wrong, so ask this topic for a new snapshot.
     ws.send.mockClear();
     ws.onmessage({data:JSON.stringify(frame({u:6,seq:6,b:[['102','1']],a:[]},'delta'))});
-    jest.advanceTimersByTime(300);
+    jest.advanceTimersByTime(FLUSH);
     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
     expect(sockets).toHaveLength(1); // the transport was never torn down
@@ -133,7 +144,7 @@ describe('selected-contract depth lifecycle',()=>{
     const execution=(i:string,s='BTCUSDT')=>({topic:'publicTrade.BTCUSDT',data:[{s,i,S:'Buy',p:'100',v:'0.001',T:Date.now()}]});
     ws.onmessage({data:JSON.stringify(execution('wrong','ETHUSDT'))});
     ws.onmessage({data:JSON.stringify(execution('one'))});ws.onmessage({data:JSON.stringify(execution('two'))});
-    expect(trades).not.toHaveBeenCalled();jest.advanceTimersByTime(300);
+    expect(trades).not.toHaveBeenCalled();jest.advanceTimersByTime(FLUSH);
     expect(trades).toHaveBeenCalledTimes(1);expect(trades.mock.calls[0][0].map((t:any)=>t.id).sort()).toEqual(['one','two']);
     const late=ws.onmessage;ws.onclose();
     late({data:JSON.stringify(execution('late'))});jest.advanceTimersByTime(1000);expect(trades).toHaveBeenCalledTimes(1);
@@ -149,12 +160,12 @@ describe('selected-contract depth lifecycle',()=>{
     expect(sockets).toHaveLength(1);
     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
     expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.ETHUSDT','publicTrade.ETHUSDT']}));
-    oldHandler({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    oldHandler({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     expect(btc).toHaveBeenCalledTimes(1);expect(eth).toHaveBeenCalledTimes(1);
     expect(btcTrades).not.toHaveBeenCalled();expect(ethTrades).not.toHaveBeenCalled();
     ws.onmessage({data:JSON.stringify({topic:'publicTrade.ETHUSDT',data:[{s:'ETHUSDT',i:'eth-execution',S:'Sell',p:'200',v:'2',T:now}]})});
     ws.onmessage({data:JSON.stringify(frame({s:'ETHUSDT',b:[['200','1']],a:[['201','2']]},'snapshot',{topic:'orderbook.200.ETHUSDT'}))});
-    jest.advanceTimersByTime(300);
+    jest.advanceTimersByTime(FLUSH);
     expect(eth).toHaveBeenCalledTimes(2);
     expect(eth.mock.calls[1][0].bids).toEqual([{price:'200',quantity:'1'}]);
     expect(eth.mock.calls[1][0].asks).toEqual([{price:'201',quantity:'2'}]);
@@ -167,7 +178,7 @@ describe('selected-contract depth lifecycle',()=>{
    */
   test('a silent feed labels the book, reconnects, and only drops the levels once they are no longer a price',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
-    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     expect(listener.mock.calls[1][0].status).toBe('live');
 
     // Silence past the stale threshold: same levels, labelled, and a
@@ -191,7 +202,7 @@ describe('selected-contract depth lifecycle',()=>{
 
   test('a hidden tab stops the transport but keeps the book, and resumes on return',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
-    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     const opened=sockets.length;
 
     hidden=true;handlers.get('visibilitychange')!();
@@ -223,7 +234,7 @@ describe('selected-contract depth lifecycle',()=>{
     await Promise.resolve();await Promise.resolve();await Promise.resolve();
     expect(respond).toHaveBeenCalledTimes(1);
     expect(respond.mock.calls[0][0]).toBe('/api/v1/market/futures/orderbook/BTCUSDT');
-    jest.advanceTimersByTime(300);
+    jest.advanceTimersByTime(FLUSH);
     const filled=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(filled.bids).toEqual([{price:'100',quantity:'2'}]);
     expect(filled.source).toBe('rest');
@@ -241,7 +252,7 @@ describe('selected-contract depth lifecycle',()=>{
     setFuturesDepthFallbackBase('/api/v1');
     (globalThis as any).fetch=jest.fn().mockResolvedValue({ok:true,json:async()=>({available:false,reason:'provider_unavailable'})});
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
-    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     const good=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(good.bids).toEqual([{price:'100',quantity:'2'}]);
     sockets[0].onclose();
@@ -269,7 +280,7 @@ describe('selected-contract depth lifecycle',()=>{
    */
   test('a reconnect is given time to finish connecting instead of being torn down every second',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
-    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     expect(listener.mock.calls[1][0].status).toBe('live');
 
     // Silence long enough for the heartbeat to give up on this socket, then
@@ -294,7 +305,7 @@ describe('selected-contract depth lifecycle',()=>{
     // comes back rather than staying labelled forever.
     fresh.onopen();
     fresh.onmessage({data:JSON.stringify(frame({u:40,seq:40,b:[['103','5']],a:[['104','6']]}))});
-    jest.advanceTimersByTime(300);
+    jest.advanceTimersByTime(FLUSH);
     const back=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(back.status).toBe('live');
     expect(back.bids).toEqual([{price:'103',quantity:'5'}]);
@@ -304,7 +315,7 @@ describe('selected-contract depth lifecycle',()=>{
   /** A socket that really is mute is still dropped — just not instantly. */
   test('a socket that stays mute past its grace is still replaced',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
-    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     jest.advanceTimersByTime(BOOK_STALE_AFTER_MS + 8_000);
     const opened=sockets.length;
     const mute=sockets[sockets.length-1];

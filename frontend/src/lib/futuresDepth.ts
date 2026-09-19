@@ -55,7 +55,23 @@ const DEPTH = 200;
 const STALE_AFTER_MS = BOOK_STALE_AFTER_MS;
 /** ...and at this point it is dropped, because it is no longer a price. */
 const UNAVAILABLE_AFTER_MS = BOOK_UNAVAILABLE_AFTER_MS;
-const FLUSH_MS = 300;
+/**
+ * How often the visible book is allowed to repaint.
+ *
+ * MEASURED, NOT CHOSEN. The owner supplied a screen recording of Binance
+ * Futures; cropping its order book and diffing consecutive frames gives 5
+ * repaints in 2.0 seconds — 2.5 per second, a mean gap of 425 ms — and
+ * between them the panel is bit-identical. This window is set to match
+ * that cadence rather than to be "fast", because a ladder that redraws ten
+ * times a second is not more informative, it is only harder to read.
+ *
+ * DISPLAY ONLY. Deltas are applied to the book as they arrive; this
+ * coalesces how often subscribers are told. Nothing here can slow, stale
+ * or misprice an order — execution reads the venue's own server-side book
+ * at the moment the order is handled. See
+ * __tests__/orderBookExecutionIndependence.test.ts.
+ */
+export const FLUSH_MS = 400;
 const PING_MS = 20_000;
 const IDLE_CLOSE_MS = 750;
 /**
