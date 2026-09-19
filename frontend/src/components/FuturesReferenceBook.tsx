@@ -83,6 +83,18 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
    * stopped updating, and a book that is gone. Those are facts a trader
    * needs. They are drawn quietly now, not as alarms, but they are drawn.
    */
+  /**
+   * `reconnecting` DELIBERATELY SAYS NOTHING.
+   *
+   * It is the state the transport uses while a handshake it expected — a tab
+   * coming back from the background — is in flight, and the levels on screen
+   * are the last good ones. Warning about that is a false alarm on the most
+   * ordinary thing a person does, and a warning people learn to ignore is
+   * worse than none. If the handshake does not finish inside
+   * RECONNECT_GRACE_MS the transport promotes it to `stale` on its own and
+   * this line speaks then. Note what is NOT done here: the levels are not
+   * hidden, not cleared and not dimmed — only the sentence is withheld.
+   */
   const feed = status === 'stale' && !waiting ? t('trade.bookStale')
     : status === 'unavailable' ? t('trade.bookUnavailable')
     : null;
