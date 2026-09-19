@@ -6,6 +6,16 @@ import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrad
 import { summarizeStrategy } from '../../services/copyTrading/marketplaceSummary';
 import { withKseniaReportedTrade } from '../../services/copyTrading/kseniaReportedTrade';
 
+/** Server-side only, and deliberately not exported to the response. */
+function logSectionFailures(results: PromiseSettledResult<unknown>[]) {
+  results.forEach((result, index) => {
+    if (result.status !== 'rejected') return;
+    const section = ['nazar', 'ksenia', 'identities'][index];
+    const reason = result.reason instanceof Error ? result.reason.message : 'unknown';
+    console.error(`[copy-trading] section "${section}" unavailable: ${reason}`);
+  });
+}
+
 /** Modeled strategy read endpoints; existing production session auth preserved.
  * The normal production backend owns persistence and same-environment identity.
  * The existing legacy synthetic/admin and real account routes remain separate. */
@@ -28,6 +38,14 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     const [nazar, ksenia, identities] = results.map(result => result.status === 'fulfilled' ? result.value : null);
     const errors = Object.fromEntries(results.flatMap((result, index) => result.status === 'rejected'
       ? [[['nazar', 'ksenia', 'identities'][index], 'temporarily_unavailable']] : []));
+    // The wire keeps saying `temporarily_unavailable` and nothing else — the
+    // visitor learns that a section is missing, never why. The REASON is a
+    // developer's, so it is logged here instead: without it, a card that has
+    // gone blank looks identical whether the stored state failed to decode,
+    // the append hit contention, or the database was simply unreachable.
+    // Only the strategy name and the error's own message are logged; no
+    // token, account, request header or payload goes anywhere near this.
+    logSectionFailures(results);
     res.status(results.every(result => result.status === 'rejected') ? 503 : 200)
       .json({ nazar, ksenia, identities, generatedAt: new Date().toISOString(), errors });
   });
@@ -38,7 +56,11 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
         const summary = summarizeStrategy(await service.get(strategy));
         res.json(strategy === 'ksenia' ? withKseniaReportedTrade(summary) : summary);
       }
-      catch { res.status(503).json({ error: 'Strategy performance temporarily unavailable' }); }
+      catch (error) {
+        console.error(`[copy-trading] strategy "${strategy}" unavailable: `
+          + (error instanceof Error ? error.message : 'unknown'));
+        res.status(503).json({ error: 'Strategy performance temporarily unavailable' });
+      }
     });
   }
   router.get('/copy-trading/identities', async (_req, res) => {

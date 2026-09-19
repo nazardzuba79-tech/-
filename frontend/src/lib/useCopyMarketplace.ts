@@ -1,12 +1,14 @@
 import { useSyncExternalStore } from 'react';
 import { clearToken, getToken, onSessionChange } from './api';
-import { CopyMarketplaceStore, type CopyMarketplaceResponse } from './copyMarketplaceStore';
+import { CopyMarketplaceStore, MarketplaceFailure, type CopyMarketplaceResponse } from './copyMarketplaceStore';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 async function fetchCopyMarketplace(signal: AbortSignal): Promise<CopyMarketplaceResponse> {
   const token = getToken();
-  if (!token) throw new Error('Unauthenticated');
+  // Say WHICH failure this is, rather than leaving the store to guess from a
+  // message. See SectionDiagnosis in copyMarketplaceStore.ts.
+  if (!token) throw new MarketplaceFailure('unauthenticated');
   const res = await fetch(`${API_BASE}/copy-trading/marketplace`, {
     signal,
     headers: { Authorization: `Bearer ${token}` },
@@ -14,9 +16,11 @@ async function fetchCopyMarketplace(signal: AbortSignal): Promise<CopyMarketplac
   if (res.status === 401) {
     clearToken();
     if (typeof window !== 'undefined') window.location.href = '/';
-    throw new Error('Unauthorized');
+    throw new MarketplaceFailure('unauthenticated');
   }
-  if (!res.ok) throw new Error(`Request failed (${res.status})`);
+  // The status code stays out of the diagnosis: it is the server's to log,
+  // and a label is all the client needs to tell the cases apart.
+  if (!res.ok) throw new MarketplaceFailure('http_error');
   return res.json();
 }
 

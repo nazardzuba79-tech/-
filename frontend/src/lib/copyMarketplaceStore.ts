@@ -15,6 +15,51 @@ export interface CopyMarketplaceResponse {
 }
 type Section = 'nazar' | 'ksenia' | 'identities';
 type PerformancePeriod = '7D' | '30D' | '90D' | 'ALL';
+
+/**
+ * WHY A SECTION IS NOT ON SCREEN — for whoever has to fix it.
+ *
+ * "Данные недоступны" is all a visitor should ever read, but it is useless
+ * to a developer: the card looks identical whether the session expired, the
+ * request timed out, the server dropped one strategy, or the payload came
+ * back in a shape this build refuses. Each of those needs a different fix,
+ * and until now the only way to tell them apart was to reproduce it.
+ *
+ * These are closed, non-identifying labels. They carry no token, no account,
+ * no URL and no server text — `server_unavailable` is the server's own
+ * generic word for "this section failed", never its exception. Nothing here
+ * is rendered: the UI reads `nazar`/`ksenia`, never this.
+ */
+export type SectionDiagnosis =
+  | 'ok'                  // on screen, from this session's own response
+  | 'loading'             // asked; no answer yet on this visit
+  | 'unauthenticated'     // no session token to ask with
+  | 'network'             // the request never completed
+  | 'timeout'             // it completed by being abandoned at 15s
+  | 'http_error'          // the server answered, but not with a payload
+  | 'malformed_envelope'  // a 200 that is not a marketplace response at all
+  | 'server_unavailable'  // the server itself marked this section failed
+  | 'rejected_by_client'; // the section arrived and this build refuses it
+
+/**
+ * A failure that already knows what it was.
+ *
+ * The fetcher knows things the store cannot infer — that there was no token
+ * to send, that the server answered 503 — so it says so here rather than
+ * throwing a string the store would have to parse. The message carries no
+ * URL, no token and no server text; the label IS the message.
+ */
+export class MarketplaceFailure extends Error {
+  constructor(readonly diagnosis: SectionDiagnosis) {
+    super(diagnosis);
+    this.name = 'MarketplaceFailure';
+  }
+}
+/** Anything that reached us without a label. A rejected `fetch` is the
+ *  network; there is nothing else it can be by the time it gets here. */
+function classifyFetchFailure(error: unknown): SectionDiagnosis {
+  return (error as { name?: string } | null)?.name === 'AbortError' ? 'timeout' : 'network';
+}
 export interface CopyMarketplaceState {
   nazar: SyntheticCopyTradingResponse | null;
   ksenia: KseniaResponse | null;
@@ -23,10 +68,13 @@ export interface CopyMarketplaceState {
   stale: Record<Section, boolean>;
   refreshing: boolean;
   settled: boolean;
+  /** Developer diagnosis per section. Never rendered — see SectionDiagnosis. */
+  diagnosis: Record<Section, SectionDiagnosis>;
 }
 const empty = (): CopyMarketplaceState => ({ nazar: null, ksenia: null, identities: [],
   fetchedAt: { nazar: null, ksenia: null, identities: null },
-  stale: { nazar: false, ksenia: false, identities: false }, refreshing: false, settled: false });
+  stale: { nazar: false, ksenia: false, identities: false }, refreshing: false, settled: false,
+  diagnosis: { nazar: 'loading', ksenia: 'loading', identities: 'loading' } });
 const record = (value: unknown): value is Record<string, any> => !!value && typeof value === 'object' && !Array.isArray(value);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 const date = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
@@ -188,6 +236,22 @@ export class CopyMarketplaceStore {
   private generation = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private lastAttempt = -Infinity;
+  /**
+   * WHETHER THE LAST ATTEMPT ACTUALLY DELIVERED.
+   *
+   * `lastAttempt` is stamped when an attempt STARTS, so on its own it cannot
+   * tell a request that succeeded from one that failed — and `prefetch()`
+   * throttles on it. That is what put «Данные недоступны» on both cards with
+   * nothing in flight behind it: the nav-link hover's request failed, the
+   * user clicked through inside the thirty-second window, the page mounted,
+   * asked for data, and was told it had just asked.
+   *
+   * A SUCCESS is worth reusing for thirty seconds. A FAILURE is worth
+   * nothing, so it is never reused: the next caller that wants data gets a
+   * real request. `refresh()`'s own one-second collapse still applies, which
+   * is what keeps a StrictMode double-mount from becoming two requests.
+   */
+  private lastAttemptFailed = false;
   constructor(private fetchSnapshot: (signal: AbortSignal) => Promise<unknown>, private getSession: () => string | null,
     private now: () => number = Date.now,
     /** Injectable so the cache can be driven without a DOM. Undefined means
@@ -221,6 +285,7 @@ export class CopyMarketplaceStore {
     this.generation++;
     this.controller?.abort(); this.controller = null; this.pending = null;
     this.lastAttempt = -Infinity;
+    this.lastAttemptFailed = false;
     // Leaving a session takes its snapshot with it. A logout must not leave
     // one account's figures readable on a shared machine.
     if (previous !== null && session === null) clearSnapshot(previous, this.storage);
@@ -244,14 +309,17 @@ export class CopyMarketplaceStore {
     if (validStrategy(snapshot.nazar, 'VX-001')) {
       state.nazar = snapshot.nazar as SyntheticCopyTradingResponse;
       state.fetchedAt.nazar = snapshot.fetchedAt.nazar;
+      state.diagnosis.nazar = 'ok';
     }
     if (validStrategy(snapshot.ksenia, 'VX-KSENIA')) {
       state.ksenia = snapshot.ksenia as KseniaResponse;
       state.fetchedAt.ksenia = snapshot.fetchedAt.ksenia;
+      state.diagnosis.ksenia = 'ok';
     }
     if (validIdentities(snapshot.identities)) {
       state.identities = snapshot.identities.filter((i): i is PublicStrategyIdentity => i !== null);
       state.fetchedAt.identities = snapshot.fetchedAt.identities;
+      state.diagnosis.identities = 'ok';
     }
     return state;
   }
@@ -294,7 +362,11 @@ export class CopyMarketplaceStore {
   /** Hover/focus only; no timer or background traffic on unrelated pages. */
   prefetch = () => {
     this.checkSession();
-    if (this.now() - this.lastAttempt < 30_000) return this.pending ?? Promise.resolve();
+    // An attempt already in flight is the one to wait for, whatever it does.
+    if (this.pending) return this.pending;
+    // Only a SUCCESSFUL attempt is worth reusing. A failed one must not
+    // stand in for the data it did not fetch. See `lastAttemptFailed`.
+    if (!this.lastAttemptFailed && this.now() - this.lastAttempt < 30_000) return Promise.resolve();
     return this.refresh();
   };
   refresh = (): Promise<void> => {
@@ -303,21 +375,29 @@ export class CopyMarketplaceStore {
     if (this.pending) return this.pending;
     // Collapse StrictMode mount/focus/prefetch bursts; route returns still
     // revalidate once outside this short window, without clearing any data.
-    if (this.now() - this.lastAttempt < 1000) return Promise.resolve();
+    // A failed attempt is exempt: retrying it is the whole point.
+    if (!this.lastAttemptFailed && this.now() - this.lastAttempt < 1000) return Promise.resolve();
     this.lastAttempt = this.now();
     const generation = this.generation;
     const controller = new AbortController(); this.controller = controller;
-    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let abandoned = false;
+    const timeout = setTimeout(() => { abandoned = true; controller.abort(); }, 15_000);
     this.emit({ ...this.state, refreshing: true });
     this.pending = Promise.resolve().then(() => this.fetchSnapshot(controller.signal)).then(payload => {
       if (generation !== this.generation || this.getSession() !== this.session) return;
-      if (!record(payload) || !date(payload.generatedAt)) throw new Error('Invalid marketplace response');
+      if (!record(payload) || !date(payload.generatedAt)) throw new MarketplaceFailure('malformed_envelope');
       const next = { ...this.state, refreshing: false, settled: true,
-        fetchedAt: { ...this.state.fetchedAt }, stale: { ...this.state.stale } };
+        fetchedAt: { ...this.state.fetchedAt }, stale: { ...this.state.stale },
+        diagnosis: { ...this.state.diagnosis } };
       for (const section of ['nazar','ksenia','identities'] as const) {
         const value = payload[section];
-        const valid = !payload.errors?.[section] && (section === 'identities' ? validIdentities(value)
+        const reported = payload.errors?.[section];
+        const valid = !reported && (section === 'identities' ? validIdentities(value)
           : validStrategy(value, section === 'nazar' ? 'VX-001' : 'VX-KSENIA'));
+        // Which of the two it was matters: the server refusing to produce a
+        // section and this build refusing to accept one are different bugs
+        // in different places, and they look identical on the card.
+        next.diagnosis[section] = valid ? 'ok' : reported ? 'server_unavailable' : 'rejected_by_client';
         if (valid) {
           if (section === 'identities') next.identities = value.filter((i: PublicStrategyIdentity | null) => i !== null);
           else if (section === 'nazar') next.nazar = value;
@@ -326,11 +406,22 @@ export class CopyMarketplaceStore {
         }
         next.stale[section] = !valid;
       }
+      // Delivered. Worth reusing for the prefetch window — but only if at
+      // least one section actually came back usable; a 200 whose every
+      // section was rejected is a failure wearing a success's clothes.
+      this.lastAttemptFailed = !next.nazar && !next.ksenia && !next.identities.length;
       this.emit(next);
       this.persist();
-    }).catch(() => {
+    }).catch((error: unknown) => {
+      this.lastAttemptFailed = true;
+      // `controller.abort()` after fifteen seconds and a connection that
+      // never opened both surface as one rejection; the flag we set when we
+      // fired the timer is what separates them.
+      const cause: SectionDiagnosis = error instanceof MarketplaceFailure ? error.diagnosis
+        : abandoned ? 'timeout' : classifyFetchFailure(error);
       if (generation === this.generation && this.getSession() === this.session) this.emit({ ...this.state,
-        refreshing: false, settled: true, stale: { nazar: true, ksenia: true, identities: true } });
+        refreshing: false, settled: true, stale: { nazar: true, ksenia: true, identities: true },
+        diagnosis: { nazar: cause, ksenia: cause, identities: cause } });
     }).finally(() => {
       clearTimeout(timeout);
       if (generation === this.generation) { this.pending = null; this.controller = null; }

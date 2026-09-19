@@ -43,6 +43,7 @@ import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
 import { VISIBLE_TRADE_ROWS } from '../../lib/copyMarketplaceStore';
+import { useCopyMarketplace } from '../../lib/useCopyMarketplace';
 import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
 import { dailyReturnChart } from '../../lib/dailyReturnChart';
 import { publicSignedUsdt, publicUsdtNumber } from '../../lib/copyTradingMoney';
@@ -156,11 +157,23 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
 function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boolean }) {
   const { eligible } = useCopyEligibility();
   const { following, toggleFollowing } = useFollowing();
+  const marketplace = useCopyMarketplace();
   const [showDepositRequirement, setShowDepositRequirement] = useState(false);
   const isFollowing = following.has(trader.id);
 
   if ((trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && !Number.isFinite(trader.performanceFee) && !isFollowing) {
-    return <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled title="Условия стратегии недоступны">Данные недоступны</button>;
+    // «Данные недоступны» is a VERDICT, and it was being shown before there
+    // was anything to base one on: on a cold open the terms are absent
+    // simply because the first request has not come back yet, and the card
+    // announced them missing while it was still in flight. Say which of the
+    // two it is — the answer is on its way, or it is not coming.
+    const section = trader.id === nazarTrader.id ? 'nazar' : 'ksenia';
+    const waiting = !marketplace.settled && !marketplace[section];
+    return waiting
+      ? <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled
+          aria-busy="true" title="Загружаем условия стратегии">Загрузка…</button>
+      : <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled
+          title="Условия стратегии недоступны">Данные недоступны</button>;
   }
 
   return (
