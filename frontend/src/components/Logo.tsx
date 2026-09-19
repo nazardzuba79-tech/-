@@ -30,15 +30,32 @@ export function LogoMark({ size = 22, variant = 'bolt' }: { size?: number; varia
 }
 
 export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
-  const iconSize = size === 'large' ? 40 : 24;
-  const fontSize = size === 'large' ? 34 : 17;
+  /**
+   * The nav lockup, sized by its INK rather than by its boxes.
+   *
+   * The mark's 40-unit viewBox is mostly air — the planet and its orbit
+   * occupy about half the box's height — so the 24px box was painting a
+   * 13.2px mark, and the 17px wordmark was painting 12.0px of letter. The
+   * navigation links beside it are 14px. The brand was literally smaller
+   * than the menu next to it, which is what reads as "too small" long
+   * before anyone measures it.
+   *
+   * 28 / 20 raises the ink to about 15.4 and 14.1 — roughly a fifth more,
+   * the starting target — and keeps the mark-to-wordmark ratio it already
+   * had (1.10 → 1.09), so nothing needs re-balancing by eye. The header is
+   * 48px and the lockup box grows 25 → 29, so it still centres with room
+   * above and below. Both axes scale together: the SVG is square and the
+   * font is one number, so nothing is stretched or cropped.
+   */
+  const iconSize = size === 'large' ? 40 : 28;
+  const fontSize = size === 'large' ? 34 : 20;
 
   const lockup = (
     <span
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: size === 'large' ? 12 : 8,
+        gap: size === 'large' ? 12 : 9,
         fontFamily: 'var(--font-display)',
         fontWeight: 700,
         fontSize,
