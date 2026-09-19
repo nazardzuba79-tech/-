@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRightIcon, ArrowUpDownIcon } from 'lucide-react';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { refreshFuturesAccount } from '../../lib/useFuturesAccount';
 import { useLanguage } from '../../lib/i18n';
 import { FieldError, FieldLabel, Modal, PrimaryButton, SecondaryButton, Select, SummaryRow, TextInput } from './ui';
 import { decimalsFor, formatAmount } from './format';
+import { customerErrorText } from '../../lib/customerError';
 
 type Side = 'spot' | 'futures';
 
@@ -74,7 +75,7 @@ export function TransferModal({ open, onClose, onSubmitted }: { open: boolean; o
       refreshFuturesAccount(['balances']);
       onSubmitted();
     } catch (err) {
-      setServerError(err instanceof ApiError ? err.message : t('futures.transferError'));
+      setServerError(customerErrorText(err, t, t('futures.transferError')));
     } finally {
       setSubmitting(false);
     }

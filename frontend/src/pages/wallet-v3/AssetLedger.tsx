@@ -8,6 +8,7 @@ import { useToast } from '../../lib/toast';
 import { EmptyState } from './ui';
 import { EM_DASH, MASK, decimalsFor, formatAmount, formatPercent, formatUsd, toneOf } from './format';
 import { LedgerRow } from './useWalletData';
+import { customerErrorText } from '../../lib/customerError';
 
 type SortKey = 'symbol' | 'total' | 'wallet' | 'available' | 'inUse' | 'price' | 'change' | 'value';
 type SortDir = 'asc' | 'desc';
@@ -145,7 +146,7 @@ export function AssetLedger({
       // Wallet object returned by the server mutation.
       await onCollateralChange(row.symbol, !row.collateralEnabled);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('wallet.dataUnavailable'));
+      toast.error(customerErrorText(error, t, t('wallet.dataUnavailable')));
     } finally {
       setCollateralPending((current) => {
         const next = new Set(current);

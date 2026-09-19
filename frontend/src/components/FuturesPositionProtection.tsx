@@ -200,11 +200,8 @@ export function FuturesPositionProtectionCell({
     // The simulation engine answers with its own reason codes rather than
     // an ApiError body, so it is localized here by the same table the
     // order form uses.
-    setError(futuresOrderErrorMessage(
-      err,
-      t,
-      err instanceof ApiError ? err.message : t('futures.protectionError'),
-    ));
+    // Our sentence, not the server's — see futuresOrderErrors.ts.
+    setError(futuresOrderErrorMessage(err, t, t('futures.protectionError')));
   }
 
   const hasAny = Boolean(tp || sl);

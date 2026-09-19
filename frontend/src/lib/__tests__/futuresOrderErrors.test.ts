@@ -103,10 +103,17 @@ describe('futures order error messages', () => {
     expect(say(undefined)).toBe(FALLBACK);
   });
 
-  it('falls back to the engine sentence when a code has no wording yet', () => {
+  it('withholds the engine sentence when a code has no wording yet, and logs it', () => {
+    // This used to assert the opposite — an unmapped code showed the
+    // engine's own text. Issue #144: that text is `data.error` verbatim,
+    // which across these routes is English, a caught exception's message or
+    // an HTML error page, none of it written for a trader. A gap in the
+    // table is now the caller's localized line plus a console warning
+    // naming the code, so the gap is visible to us and not to them.
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      expect(say(engine('NOT_IN_THE_TABLE'))).toBe('серверный текст');
+      expect(say(engine('NOT_IN_THE_TABLE'))).toBe(FALLBACK);
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('unmapped order error code'), 'NOT_IN_THE_TABLE', undefined);
     } finally {
       warn.mockRestore();
     }

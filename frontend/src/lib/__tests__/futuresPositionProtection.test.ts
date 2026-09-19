@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
+import { futuresOrderErrorMessage } from '../futuresOrderErrors';
 
 /**
  * Real TP/SL controls on an open futures position.
@@ -99,13 +100,12 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return { REAL_FUTURES_EXECUTION: real, useFuturesExecution: () => real,
         FuturesExecutionProvider: ({ children }: any) => children };
     }
-    // The real localizer has its own suite (futuresOrderErrors.test.ts).
-    // Here it stands in as the identity on the fallback — exactly what
-    // these components showed before it existed, so what these suites
-    // assert about error text is unchanged.
-    if (name === '../lib/futuresOrderErrors') {
-      return { futuresOrderErrorMessage: (_e: unknown, _t: unknown, fallback: string) => fallback };
-    }
+    // The REAL localizer, not a stand-in. It used to be stubbed as the
+    // identity on the fallback, which meant these suites could not tell a
+    // mapped refusal from an unmapped one — and that is exactly what issue
+    // #144 is about. With the real module in place, a refusal that carries
+    // a code renders that code's own sentence here.
+    if (name === '../lib/futuresOrderErrors') return { futuresOrderErrorMessage };
     if (name === '../lib/futuresAccountSource') {
       return { FuturesAccountSourceContext: { Provider: ({ children }: any) => children } };
     }
@@ -340,7 +340,11 @@ describe('a failed save never looks like a successful one', () => {
     const after = c.render();
 
     expect(byClass(after, 'fut-tpslError')).toHaveLength(1);
-    expect(text(after)).toContain('must be below the current mark price');
+    // The reason is shown, in the trader's language rather than the
+    // server's: `INVALID_PROTECTION` means the level is on the wrong side
+    // of the current price, and that is what the sentence says. See #144.
+    expect(text(after)).toContain('futures.orderError.triggerPrice');
+    expect(text(after)).not.toContain('must be below the current mark price');
     // Editor still open, so the trader can correct the value.
     expect(nodes(after).some((n: any) => n.type === 'form')).toBe(true);
     // Chips unchanged: the stop loss was NOT armed.
@@ -436,7 +440,13 @@ describe('a conflict and a missing mark price are told plainly, never papered ov
     expect(c.onSaved).not.toHaveBeenCalled();
   });
 
-  it('any other failure still shows the server’s own words', async () => {
+  it('answers a wrong-side level in the trader’s language, not the server’s', async () => {
+    // This used to assert the server's own sentence reached the screen.
+    // Issue #144: «stopLoss must be below the current mark price for a LONG
+    // position» is English in a Russian interface and names a request field
+    // the trader never typed. The FACT is kept — the level is on the wrong
+    // side of the current price — through the code the route already sends,
+    // so nothing about the refusal is softened or lost.
     const save = jest.fn().mockRejectedValue(
       new ApiError('stopLoss must be below the current mark price for a LONG position', 400, { code: 'INVALID_PROTECTION' })
     );
@@ -444,7 +454,12 @@ describe('a conflict and a missing mark price are told plainly, never papered ov
     const tree = openEditor(c);
     type(tree, 'sl', '150000');
     await submitForm(c.render());
-    expect(text(c.render())).toContain('must be below the current mark price');
+    const shown = text(c.render());
+    expect(shown).toContain('futures.orderError.triggerPrice');
+    expect(shown).not.toContain('must be below the current mark price');
+    expect(shown).not.toContain('stopLoss must be');
+    // The save failed, so nothing is repainted as though it had worked.
+    expect(c.onSaved).not.toHaveBeenCalled();
   });
 
   it('the component branches on the CODE, not on message text', () => {

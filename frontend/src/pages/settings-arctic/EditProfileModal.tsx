@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { X } from 'lucide-react';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
 import { CountrySelect } from '../../components/CountrySelect';
+import { customerErrorText } from '../../lib/customerError';
 
 // Port of the archive's components/voltex/edit-profile-modal.tsx — a
 // dialog opened by ProfileHeaderCard's "Edit profile" button, not an
@@ -44,7 +45,7 @@ export function EditProfileModal({
       toast.success(t('settings.profileSaved'));
       onClose();
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : t('settings.profileSaveError');
+      const message = customerErrorText(err, t, t('settings.profileSaveError'));
       setError(message);
       toast.error(message);
     } finally {

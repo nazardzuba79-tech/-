@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import { LOCALES, readDictionaries } from '../../../test-utils/i18nSource';
+import { customerErrorText } from '../customerError';
 
 /**
  * Spot action buttons say «Купить» / «Продать». Nothing else.
@@ -35,7 +36,10 @@ const t = (lang: (typeof LOCALES)[number]) => (key: string, params?: Record<stri
 // feeds the button text — which is the point: the labels depend on the
 // side and the dictionary, and on nothing else.
 const stubs = (lang: (typeof LOCALES)[number]) => ({
-  '../lib/api': { api: {}, ApiError: class extends Error {} },
+  '../lib/api': { api: {} },
+  // The real display boundary, not a stub: the form's failure text is
+  // composed there now, and a stub would let the two drift apart.
+  '../lib/customerError': { customerErrorText },
   '../lib/useMarketData': { useMarketTicker: () => ({ ticker: null }) },
   '../lib/i18n': { useLanguage: () => ({ t: t(lang), lang }) },
   '../lib/formatNumber': { formatPrice: String, formatAmount: String, formatCompact: String },

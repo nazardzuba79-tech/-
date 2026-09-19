@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { InfoIcon } from 'lucide-react';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
 import { FieldError, FieldLabel, Modal, PrimaryButton, SecondaryButton, Select, SummaryRow, TextInput } from './ui';
 import { decimalsFor, formatAmount } from './format';
+import { customerErrorText } from '../../lib/customerError';
 
 const NETWORKS = ['TRC20', 'ERC20', 'BEP20', 'native'];
 
@@ -71,7 +72,7 @@ export function WithdrawModal({ open, onClose, onSubmitted }: { open: boolean; o
       setAmount('');
       onSubmitted();
     } catch (err) {
-      setServerError(err instanceof ApiError ? err.message : t('wallet.withdrawError'));
+      setServerError(customerErrorText(err, t, t('wallet.withdrawError')));
     } finally {
       setSubmitting(false);
     }

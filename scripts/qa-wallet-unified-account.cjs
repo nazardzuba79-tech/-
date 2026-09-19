@@ -389,7 +389,8 @@ async function run() {
       if (hasNote) {
         const text = (await note.textContent()).trim();
         check(`${tag}: the note names the unpriced asset`, /XRP|EUR/.test(text), text);
-        check(`${tag}: the note says the total is a lower bound`, /нижняя граница/.test(text), text);
+        check(`${tag}: the note says the estimate is incomplete`, /неполная/.test(text), text);
+        check(`${tag}: the note says the asset is missing from the sum`, /не вошли в сумму/.test(text), text);
       }
 
       const zeroValued = await page.evaluate(() => {

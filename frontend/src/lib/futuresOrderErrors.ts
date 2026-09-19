@@ -63,6 +63,12 @@ const CODE_KEY: Record<string, Key> = {
   SET_EXISTING_POSITION_LEVERAGE_FIRST: 'futures.orderError.leverageExistingPosition',
   CANCEL_ORDERS_BEFORE_LEVERAGE: 'futures.orderError.cancelOrdersFirst',
   INVALID_TRIGGER_PRICE: 'futures.orderError.triggerPrice',
+  // The protection routes refuse a level on the wrong side of the mark with
+  // a sentence written for a developer («stopLoss must be below the current
+  // mark price for a LONG position»). The fact it carries — the level is on
+  // the wrong side of the current price — is what the trader needs, and
+  // this key already says it in all seven languages.
+  INVALID_PROTECTION: 'futures.orderError.triggerPrice',
   INVALID_TRIGGER_STEP: 'futures.orderError.triggerStep',
   INVALID_PROTECTION_QUANTITY: 'futures.orderError.protectionQuantity',
 };
@@ -70,15 +76,37 @@ const CODE_KEY: Record<string, Key> = {
 export type Translate = (key: Key, params?: Record<string, string | number>) => string;
 
 /**
- * `fallback` is the message for anything this module has no wording for —
- * the caller's own generic text, or the real account's `ApiError.message`.
+ * Server text that is NOT safe to show, whatever transport carried it.
  *
- * A code with no entry above is a gap in this table, not something to show:
- * it goes to the console for the logs and the trader gets the generic
- * sentence. Raw codes never reach the interface.
+ * `ApiError.message` is whatever the route put in `body.error`, and the
+ * futures routes put a lot in there: `Order not found or not cancellable`,
+ * `No index price available for BTCUSDT`, a caught exception's own
+ * `err.message`, a flattened Zod report, or the client's own
+ * `Request failed (500)` when the body could not be parsed. The simulation
+ * transport is the same story — it builds its error from `data.error` or
+ * `data.message` verbatim.
+ *
+ * None of that is customer wording. It is English in a Russian interface at
+ * best, and a stack or an HTML error page at worst.
  */
+
+/** A message is shown only if this module composed it. Nothing else is. */
 export function futuresOrderErrorMessage(error: unknown, t: Translate, fallback: string): string {
-  if (!(error instanceof PrivateTradingError)) return fallback;
+  // The real account's transport reports its reason in `body.code`, which is
+  // the same closed vocabulary the simulation engine uses. Reading it here
+  // is what keeps a genuine refusal — not enough margin, a price step, a
+  // leverage tier — saying what it is instead of falling to the generic
+  // line. It reads the CODE only; `body.error` is never displayed.
+  if (!(error instanceof PrivateTradingError)) {
+    const body = (error as { body?: Record<string, unknown> } | null)?.body;
+    const code = body && typeof body.code === 'string' ? body.code : undefined;
+    if (code && CODE_KEY[code]) return t(CODE_KEY[code]);
+    if (code) console.warn('[futures] unmapped order error code', code);
+    else if (error instanceof Error && error.message) {
+      console.warn('[futures] order error without a code', error.message);
+    }
+    return fallback;
+  }
 
   // A named contract limit is the most specific thing we can say, so it
   // wins over the code: `INVALID_ORDER_SIZE` alone cannot tell the trader
@@ -91,8 +119,12 @@ export function futuresOrderErrorMessage(error: unknown, t: Translate, fallback:
   const key = error.code ? CODE_KEY[error.code] : undefined;
   if (key) return t(key);
 
+  // A code with no entry above is a gap in this table, not something to
+  // show. The server's own sentence is not a safe substitute either: it is
+  // written in one language for one audience, and on this transport it is
+  // whatever `data.error` happened to contain. Both go to the console, the
+  // trader gets the caller's localized line.
   if (error.code) console.warn('[futures] unmapped order error code', error.code, error.detail);
-  // The engine's own text is a written sentence, never a code, so it is a
-  // better last resort than a generic line — just in the wrong language.
-  return error.message || fallback;
+  else if (error.message) console.warn('[futures] order error without a code', error.message);
+  return fallback;
 }

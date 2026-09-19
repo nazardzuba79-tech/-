@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { BadgeCheck, CheckCircle2, FileText, MapPin, UserRound, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
 import { CountrySelect } from '../../components/CountrySelect';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
+import { customerErrorText } from '../../lib/customerError';
 
 const inputClass =
   'h-11 rounded-xl border border-border bg-card px-3.5 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand focus:ring-2 focus:ring-brand/20';
@@ -55,7 +56,7 @@ export function VerificationSection() {
       toast.success(t('settings.sendForReview'));
       reload();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('settings.submitKycError'));
+      setError(customerErrorText(err, t, t('settings.submitKycError')));
     } finally {
       setSubmitting(false);
     }

@@ -1,7 +1,8 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { api, ApiError } from '../lib/api';
+import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { customerErrorText } from '../lib/customerError';
 
 /** Moves funds between the spot and futures wallets — the futures wallet
  * is a fully separate balance (see FuturesBalance's schema comment), so
@@ -46,7 +47,7 @@ export function FuturesTransferModal({ onClose }: { onClose: () => void }) {
       // trader seeing the old balance right after moving funds.
       refreshFuturesAccount(['balances']);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('futures.transferError'));
+      setError(customerErrorText(err, t, t('futures.transferError')));
     } finally {
       setSubmitting(false);
     }

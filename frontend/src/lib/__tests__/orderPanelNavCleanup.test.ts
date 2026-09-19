@@ -311,9 +311,16 @@ describe('5. an incomplete valuation', () => {
     const ru = source('lib/i18n/locales/ru.ts');
     expect(ru).toContain("'futures.collateralPartial': 'Часть активов не учтена в сумме: оценка временно недоступна.',");
     expect(SUMMARY_SOURCE).not.toContain('{ assets:');
-    // And the Wallet page, which this brief does not touch, keeps its own
-    // longer note verbatim.
-    expect(ru).toContain("'futures.collateralIncomplete': 'Нет цены для {assets}. Баланс показан как нижняя граница.',");
+    // The Wallet page keeps its own longer note, and #144 rewrote it in the
+    // customer's words. What has to survive is the MEANING, not the phrase:
+    // the estimate is incomplete, the named assets are the reason, and they
+    // are missing from the total rather than counted as zero. "Нижняя
+    // граница" was the jargon that carried it and must not come back.
+    const note = ru.match(/'futures\.collateralIncomplete': '([^']*)'/)![1];
+    expect(note).toContain('{assets}');
+    expect(note).toContain('неполная');
+    expect(note).toMatch(/не вошли|не включ/);
+    expect(note).not.toMatch(/граница|оценка снизу/i);
   });
 });
 
