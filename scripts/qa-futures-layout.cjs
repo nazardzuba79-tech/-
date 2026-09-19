@@ -51,6 +51,10 @@ app.get('/api/v1/market/external/tickers', (_q, r) => r.json({ tickers: PAIRS.ma
   return { pair, lastPrice: PRICE[b], high24h: PRICE[b] * 1.02, low24h: PRICE[b] * 0.98, changePercent: DAY[b], quoteVolume24h: 1e9 - BASES.indexOf(b) * 1e7, volume24h: 15000 };
 }) }));
 app.get('/api/v1/market/external/symbols', (_q, r) => r.json({ symbols: PAIRS }));
+/** The wallet projection the shared header reads. Without it the page threw
+ *  `reading 'totalValueUsd'` and the harness reported its own gap as a
+ *  finding. Empty and priced, which is what a fresh QA account is. */
+app.get('/api/v1/wallet/overview', (_q, r) => r.json({ balances: { spot: [], futures: [], spotValueUsd: 0, futuresValueUsd: 0, totalValueUsd: 0 }, valuationComplete: true, unpricedAssets: [], btcPriceUsd: 81663 }));
 /** The SAME catalogue shape Markets reads, carrying the real 7d field. */
 app.get('/api/v1/market/assets', (_q, r) => r.json({ available: true, source: 'qa', fetchedAt: Date.now(), stale: false, value: {
   assets: BASES.map((b, i) => ({ id: `cg:${b}`, symbol: b, name: b, logoUrl: null,
@@ -186,9 +190,82 @@ async function run() {
       await page.waitForTimeout(400);
     } else finding(`${vp.name}: no collapse control rendered`);
 
-    // ---- 2. THE COLLAPSED RAIL TAB SITS AT THE CHART'S MIDDLE ----
+    // ---- 1b. THE PERMANENT MARKET RAIL IS GONE AND THE CHART HAS THE WIDTH ----
+    {
+      const rail = await page.locator('.reference-market-sidebar').count();
+      const chart = await geom(page, '.chart-area');
+      result.railRemoved = { railNodes: rail, chartWidth: chart ? chart.width : null, chartLeft: chart ? chart.x : null };
+      if (rail) finding(`${vp.name}: the permanent market rail is still rendered (${rail} node(s))`);
+      else ok('no permanent market rail — the chart starts at the workspace edge');
+      if (chart && chart.x > 24) finding(`${vp.name}: chart still starts ${Math.round(chart.x)}px in, so something is holding the old column`);
+      // AND IT ACTUALLY GOT THE WIDTH. Deleting the rail's markup while a
+      // later sheet still declares its 226px track would leave the chart
+      // squeezed into an empty column — the failure this catches.
+      const shareOfViewport = chart ? (chart.width / vp.width) * 100 : 0;
+      if (chart && shareOfViewport < 45) finding(`${vp.name}: chart is only ${Math.round(chart.width)}px (${shareOfViewport.toFixed(0)}% of the window) — the freed column did not reach it`);
+      else if (chart) ok(`chart ${Math.round(chart.width)}px wide (${shareOfViewport.toFixed(0)}% of the window)`);
+    }
+
+    // ---- 1c. THE BOTTOM PANEL HAS ROOM FOR ONE ORDER, WITH HEADROOM ----
+    {
+      const m = await page.evaluate(() => {
+        const panel = document.querySelector('.bottom-panel');
+        const body = document.querySelector('#futures-bottom-content');
+        if (!panel || !body) return null;
+        // A table row's real height, taken from the live sheet rather than
+        // assumed: the empty state has no row to measure, so the header
+        // cell's box is used as the row's stand-in (same padding rule).
+        const probe = document.querySelector('.futures-positions-table td, .futures-positions-table th');
+        return {
+          panel: Math.round(panel.getBoundingClientRect().height),
+          body: Math.round(body.getBoundingClientRect().height),
+          rowHeight: probe ? Math.round(probe.getBoundingClientRect().height) : null,
+        };
+      });
+      result.bottomPanel = m;
+      if (!m) finding(`${vp.name}: could not measure the bottom panel`);
+      else {
+        // The owner asked for "room for one open order, with some to spare".
+        // One row plus its header plus a row of headroom is that, stated as
+        // a number instead of an adjective.
+        const row = m.rowHeight || 44;
+        const need = row * 3;
+        if (m.body < need) finding(`${vp.name}: bottom panel body is ${m.body}px — under ${need}px, so one order would not sit clear of the edges`);
+        else ok(`bottom panel body ${m.body}px — one order row (${row}px) plus header and headroom`);
+      }
+    }
+
+    // ---- 1d. THE NAV AND THE PRICE AXIS ARE LEGIBLE ----
+    {
+      const type = await page.evaluate(() => {
+        const nav = document.querySelector('.nav-item');
+        const navCs = nav && getComputedStyle(nav);
+        return {
+          navFontPx: navCs ? parseFloat(navCs.fontSize) : null,
+          navWeight: navCs ? navCs.fontWeight : null,
+          navColor: navCs ? navCs.color : null,
+        };
+      });
+      result.type = type;
+      if (type.navFontPx !== null && type.navFontPx < 14) finding(`${vp.name}: nav links are ${type.navFontPx}px — the owner asked for larger and sharper`);
+      // Weight is checked because the terminal has its OWN nav rule that
+      // outranks the base one: raising the base alone left this page at 400.
+      else if (Number(type.navWeight) < 500) finding(`${vp.name}: nav links are weight ${type.navWeight} — the terminal's own rule is still winning at 400`);
+      else if (type.navFontPx !== null) ok(`nav links ${type.navFontPx}px / weight ${type.navWeight} / ${type.navColor}`);
+    }
+
+    // ---- 2. THE RAIL TOGGLE SITS WHERE THE OWNER MARKED, IN BOTH STATES ----
     const railToggle = page.locator('[data-drawing-toolbar-toggle]').first();
     if (await railToggle.count()) {
+      {
+        const t = await geom(page, '[data-drawing-toolbar-toggle]');
+        const c = await geom(page, '.chart-area');
+        if (t && c) {
+          const pct = (((t.y + t.height / 2) - c.y) / c.height) * 100;
+          result.railTabExpanded = { tabCentreY: Math.round(t.y + t.height / 2), percentDownChart: Number(pct.toFixed(1)) };
+          console.log(`    PROBE expanded toggle at ${pct.toFixed(1)}% down the chart`);
+        }
+      }
       await railToggle.click();
       await page.waitForTimeout(500);
       const tab = await geom(page, '.drawing-rail-shell.is-collapsed [data-drawing-toolbar-toggle]');
@@ -198,8 +275,21 @@ async function run() {
         const centre = tab.y + tab.height / 2;
         const pct = ((centre - chart.y) / chart.height) * 100;
         result.railTab = { tabCentreY: Math.round(centre), chartTop: chart.y, chartHeight: chart.height, percentDownChart: Number(pct.toFixed(1)) };
-        if (pct < 35 || pct > 65) finding(`${vp.name}: collapsed rail tab sits ${pct.toFixed(1)}% down the chart — wanted the middle, not an edge`);
-        else ok(`collapsed rail tab at ${pct.toFixed(1)}% down the chart (middle, as marked)`);
+        // The owner marked roughly four fifths down on their screenshot, and
+        // the complaint was that it sat at the very bottom (measured at
+        // 96-97.5%). A band, not a point: the chip is 22-30px tall, so an
+        // exact percentage would be a false precision.
+        if (pct < 72 || pct > 88) finding(`${vp.name}: collapsed rail tab sits ${pct.toFixed(1)}% down the chart — wanted the marked height, about 80%`);
+        else ok(`collapsed rail tab at ${pct.toFixed(1)}% down the chart (as marked)`);
+        // AND IT MUST NOT JUMP. A control that moves when you press it is a
+        // defect however well placed each of its two positions is.
+        const exp = result.railTabExpanded;
+        if (exp) {
+          const drift = Math.abs(exp.percentDownChart - pct);
+          result.railTabDrift = Number(drift.toFixed(1));
+          if (drift > 4) finding(`${vp.name}: the rail toggle jumps ${drift.toFixed(1)}% of the chart between its open and shut states`);
+          else ok(`the toggle holds its height across a press (${exp.percentDownChart}% -> ${pct.toFixed(1)}%)`);
+        }
       }
       await page.screenshot({ path: path.join(OUT, `${vp.name}-03-rail-collapsed.png`) });
       await railToggle.click();
@@ -310,6 +400,27 @@ async function run() {
         const afterLosers = await symbolsNow();
         await page.screenshot({ path: path.join(OUT, `${vp.name}-06-sort-7d-losers.png`) });
         result.sort7d = { before, afterGainers, afterLosers, heading: headingG };
+        // THE CONTROL STANDS OVER THE COLUMN IT REORDERS.
+        // The owner moved it there by hand on a screenshot; "over" is the
+        // two right edges agreeing, so that is what is measured.
+        const align = await page.evaluate(() => {
+          const panel = document.querySelector('.futures-market-chooser');
+          if (!panel) return null;
+          const ctl = panel.querySelector('.pairs-7d');
+          const pct = panel.querySelector('.futures-pair-list .pair-row .p-change');
+          const head = panel.querySelectorAll('.pairs-col-headers .pch-sort')[1];
+          if (!ctl || !pct || !head) return null;
+          const r = (el) => Math.round(el.getBoundingClientRect().right);
+          return { control: r(ctl), values: r(pct), heading: r(head) };
+        });
+        result.sevenDayAlignment = align;
+        if (!align) finding(`${vp.name}: could not measure the 7-day control against the percent column`);
+        else {
+          if (Math.abs(align.control - align.values) > 2) finding(`${vp.name}: 7-day control's right edge is ${align.control}px, the percentages' is ${align.values}px — it is not over its column`);
+          else ok(`7-day control sits over the percent column (right edge ${align.control}px)`);
+          if (Math.abs(align.heading - align.values) > 2) finding(`${vp.name}: the percent heading ends at ${align.heading}px but its figures end at ${align.values}px`);
+          else ok(`the percent heading's text lines up with its figures (${align.values}px)`);
+        }
         const expectG = [...BASES].sort((a, b) => SEVEN_DAY[b] - SEVEN_DAY[a]).slice(0, 3);
         const expectL = [...BASES].sort((a, b) => SEVEN_DAY[a] - SEVEN_DAY[b]).slice(0, 3);
         const gotG = afterGainers.slice(0, 3).map((s) => s.split('/')[0]);

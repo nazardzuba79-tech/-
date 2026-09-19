@@ -4,26 +4,26 @@
       "coldLoad": {
         "label": "cold load",
         "compact": "false",
-        "panelHeight": 270,
+        "panelHeight": 346,
         "contentVisible": true,
-        "contentHeight": 230,
-        "chartHeight": 688
+        "contentHeight": 306,
+        "chartHeight": 612
       },
       "hardReload": {
         "label": "hard reload",
         "compact": "false",
-        "panelHeight": 270,
+        "panelHeight": 346,
         "contentVisible": true,
-        "contentHeight": 230,
-        "chartHeight": 688
+        "contentHeight": 306,
+        "chartHeight": 612
       },
       "routeReturn": {
         "label": "route return",
         "compact": "false",
-        "panelHeight": 270,
+        "panelHeight": 346,
         "contentVisible": true,
-        "contentHeight": 230,
-        "chartHeight": 688
+        "contentHeight": 306,
+        "chartHeight": 612
       },
       "userFold": {
         "label": "after user folds",
@@ -33,12 +33,32 @@
         "contentHeight": 0,
         "chartHeight": 914
       },
-      "railTab": {
-        "tabCentreY": 506,
-        "chartTop": 120,
-        "chartHeight": 688,
-        "percentDownChart": 56.1
+      "railRemoved": {
+        "railNodes": 0,
+        "chartWidth": 1354,
+        "chartLeft": 1
       },
+      "bottomPanel": {
+        "panel": 346,
+        "body": 306,
+        "rowHeight": null
+      },
+      "type": {
+        "navFontPx": 14,
+        "navWeight": "550",
+        "navColor": "rgb(255, 255, 255)"
+      },
+      "railTabExpanded": {
+        "tabCentreY": 627,
+        "percentDownChart": 82.8
+      },
+      "railTab": {
+        "tabCentreY": 627,
+        "chartTop": 120,
+        "chartHeight": 612,
+        "percentDownChart": 82.8
+      },
+      "railTabDrift": 0,
       "chooser": {
         "box": {
           "x": 1,
@@ -118,32 +138,37 @@
           "LINK/USDT"
         ],
         "heading": "7д %⇅"
+      },
+      "sevenDayAlignment": {
+        "control": 310,
+        "values": 310,
+        "heading": 310
       }
     },
     "1664x900": {
       "coldLoad": {
         "label": "cold load",
         "compact": "false",
-        "panelHeight": 225,
+        "panelHeight": 288,
         "contentVisible": true,
-        "contentHeight": 185,
-        "chartHeight": 553
+        "contentHeight": 248,
+        "chartHeight": 490
       },
       "hardReload": {
         "label": "hard reload",
         "compact": "false",
-        "panelHeight": 225,
+        "panelHeight": 288,
         "contentVisible": true,
-        "contentHeight": 185,
-        "chartHeight": 553
+        "contentHeight": 248,
+        "chartHeight": 490
       },
       "routeReturn": {
         "label": "route return",
         "compact": "false",
-        "panelHeight": 225,
+        "panelHeight": 288,
         "contentVisible": true,
-        "contentHeight": 185,
-        "chartHeight": 553
+        "contentHeight": 248,
+        "chartHeight": 490
       },
       "userFold": {
         "label": "after user folds",
@@ -153,12 +178,32 @@
         "contentHeight": 0,
         "chartHeight": 734
       },
-      "railTab": {
-        "tabCentreY": 439,
-        "chartTop": 120,
-        "chartHeight": 553,
-        "percentDownChart": 57.7
+      "railRemoved": {
+        "railNodes": 0,
+        "chartWidth": 1098,
+        "chartLeft": 1
       },
+      "bottomPanel": {
+        "panel": 288,
+        "body": 248,
+        "rowHeight": null
+      },
+      "type": {
+        "navFontPx": 14,
+        "navWeight": "550",
+        "navColor": "rgb(255, 255, 255)"
+      },
+      "railTabExpanded": {
+        "tabCentreY": 529,
+        "percentDownChart": 83.5
+      },
+      "railTab": {
+        "tabCentreY": 529,
+        "chartTop": 120,
+        "chartHeight": 490,
+        "percentDownChart": 83.5
+      },
+      "railTabDrift": 0,
       "chooser": {
         "box": {
           "x": 1,
@@ -238,32 +283,37 @@
           "LINK/USDT"
         ],
         "heading": "7д %⇅"
+      },
+      "sevenDayAlignment": {
+        "control": 310,
+        "values": 310,
+        "heading": 310
       }
     },
     "1440x900": {
       "coldLoad": {
         "label": "cold load",
         "compact": "false",
-        "panelHeight": 225,
+        "panelHeight": 288,
         "contentVisible": true,
-        "contentHeight": 185,
-        "chartHeight": 553
+        "contentHeight": 248,
+        "chartHeight": 490
       },
       "hardReload": {
         "label": "hard reload",
         "compact": "false",
-        "panelHeight": 225,
+        "panelHeight": 288,
         "contentVisible": true,
-        "contentHeight": 185,
-        "chartHeight": 553
+        "contentHeight": 248,
+        "chartHeight": 490
       },
       "routeReturn": {
         "label": "route return",
         "compact": "false",
-        "panelHeight": 225,
+        "panelHeight": 288,
         "contentVisible": true,
-        "contentHeight": 185,
-        "chartHeight": 553
+        "contentHeight": 248,
+        "chartHeight": 490
       },
       "userFold": {
         "label": "after user folds",
@@ -273,12 +323,32 @@
         "contentHeight": 0,
         "chartHeight": 734
       },
-      "railTab": {
-        "tabCentreY": 439,
-        "chartTop": 120,
-        "chartHeight": 553,
-        "percentDownChart": 57.7
+      "railRemoved": {
+        "railNodes": 0,
+        "chartWidth": 874,
+        "chartLeft": 1
       },
+      "bottomPanel": {
+        "panel": 288,
+        "body": 248,
+        "rowHeight": null
+      },
+      "type": {
+        "navFontPx": 14,
+        "navWeight": "550",
+        "navColor": "rgb(255, 255, 255)"
+      },
+      "railTabExpanded": {
+        "tabCentreY": 529,
+        "percentDownChart": 83.5
+      },
+      "railTab": {
+        "tabCentreY": 529,
+        "chartTop": 120,
+        "chartHeight": 490,
+        "percentDownChart": 83.5
+      },
+      "railTabDrift": 0,
       "chooser": {
         "box": {
           "x": 1,
@@ -358,32 +428,37 @@
           "LINK/USDT"
         ],
         "heading": "7д %⇅"
+      },
+      "sevenDayAlignment": {
+        "control": 310,
+        "values": 310,
+        "heading": 310
       }
     },
     "1366x768": {
       "coldLoad": {
         "label": "cold load",
         "compact": "false",
-        "panelHeight": 208,
+        "panelHeight": 272,
         "contentVisible": true,
-        "contentHeight": 168,
-        "chartHeight": 438
+        "contentHeight": 232,
+        "chartHeight": 374
       },
       "hardReload": {
         "label": "hard reload",
         "compact": "false",
-        "panelHeight": 208,
+        "panelHeight": 272,
         "contentVisible": true,
-        "contentHeight": 168,
-        "chartHeight": 438
+        "contentHeight": 232,
+        "chartHeight": 374
       },
       "routeReturn": {
         "label": "route return",
         "compact": "false",
-        "panelHeight": 208,
+        "panelHeight": 272,
         "contentVisible": true,
-        "contentHeight": 168,
-        "chartHeight": 438
+        "contentHeight": 232,
+        "chartHeight": 374
       },
       "userFold": {
         "label": "after user folds",
@@ -393,12 +468,32 @@
         "contentHeight": 0,
         "chartHeight": 602
       },
-      "railTab": {
-        "tabCentreY": 381,
-        "chartTop": 120,
-        "chartHeight": 438,
-        "percentDownChart": 59.6
+      "railRemoved": {
+        "railNodes": 0,
+        "chartWidth": 800,
+        "chartLeft": 1
       },
+      "bottomPanel": {
+        "panel": 272,
+        "body": 232,
+        "rowHeight": null
+      },
+      "type": {
+        "navFontPx": 14,
+        "navWeight": "550",
+        "navColor": "rgb(255, 255, 255)"
+      },
+      "railTabExpanded": {
+        "tabCentreY": 436,
+        "percentDownChart": 84.5
+      },
+      "railTab": {
+        "tabCentreY": 436,
+        "chartTop": 120,
+        "chartHeight": 374,
+        "percentDownChart": 84.5
+      },
+      "railTabDrift": 0,
       "chooser": {
         "box": {
           "x": 1,
@@ -478,6 +573,11 @@
           "LINK/USDT"
         ],
         "heading": "7д %⇅"
+      },
+      "sevenDayAlignment": {
+        "control": 310,
+        "values": 310,
+        "heading": 310
       }
     }
   },
