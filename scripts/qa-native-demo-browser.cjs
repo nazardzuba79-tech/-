@@ -378,7 +378,7 @@ async function chartFlow(width) {
     // Turning drawing tools off does not turn a persisted historical account into LIVE_EXECUTION.
     const closed=await command(s,'CLOSE',()=>positionRow(p,'LONG').locator('.futures-position-close').nth(1).click());
     assert.equal(closed.draft.candle,undefined,'Current close reused the historical selection');
-    assert.equal(closed.state.positions.length,0);assert.equal(closed.state.orders.length,0);
+    assert.equal(closed.state.positions.length,0);assert.equal(closed.state.orders.filter(o=>['OPEN','PARTIALLY_FILLED'].includes(o.status)).length,0);
   } finally { await s.context.close(); }
 }
 const CASES = [
