@@ -377,6 +377,42 @@ let server, browser;
     await context.close();
   }
 
+  // ── 3. no session at all ────────────────────────────────────────────
+  // The marketplace endpoint keeps `requireAuth`, which is correct: the data
+  // is not public. What must not happen is the visitor being left on a
+  // spinner forever because the store returns early when there is no token
+  // and never marks itself settled. The guard is the route: /copy-trading is
+  // behind RequireAuth, so a visitor with no token is sent to the login page
+  // instead of mounting the cards. This asserts that outcome rather than the
+  // implementation, so removing the route guard would fail here.
+  {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' });
+    // Deliberately NO token planted.
+    await context.addInitScript(() => { try { localStorage.setItem('exchange_lang', 'ru'); } catch { /* sandboxed */ } });
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', e => errors.push(String(e)));
+    let marketplaceCalls = 0;
+    await page.route('**/api/v1/copy-trading/marketplace', async route => { marketplaceCalls++; await route.continue(); });
+    await page.goto(`${origin}/copy-trading`, { waitUntil: 'domcontentloaded' });
+    await wait(4000);
+    report.noSession = await page.evaluate(() => {
+      const body = document.body.innerText || '';
+      return {
+        path: location.pathname,
+        cards: document.querySelectorAll('.trader-card').length,
+        // Any element still announcing itself as busy after four seconds.
+        busy: document.querySelectorAll('[aria-busy="true"]').length,
+        loadingText: /Загрузка/i.test(body),
+        bodyHead: body.replace(/\s+/g, ' ').trim().slice(0, 120),
+      };
+    });
+    report.noSession.marketplaceCalls = marketplaceCalls;
+    report.noSession.pageErrors = errors;
+    await page.screenshot({ path: path.join(OUT, 'no-session.png') });
+    await context.close();
+  }
+
   // ── assertions ──────────────────────────────────────────────────────
   for (const [width, view] of Object.entries(report.widths)) {
     const tag = `${width}px`;
@@ -446,6 +482,16 @@ let server, browser;
       finding('after a failed prefetch the cards never recovered');
     }
   }
+  const guest = report.noSession;
+  if (!guest) finding('the no-session case was never reached');
+  else {
+    // Either outcome is acceptable as long as it is DEFINITE: sent to login,
+    // or shown a settled page. What fails is a permanent «Загрузка…».
+    const left = guest.path !== '/copy-trading';
+    if (!left && guest.loadingText) finding('a visitor with no session is left on «Загрузка…»');
+    if (!left && guest.busy) finding(`a visitor with no session still has ${guest.busy} busy region(s) after 4s`);
+    if (guest.pageErrors.length) finding(`the no-session visit raised ${guest.pageErrors.length} page error(s)`);
+  }
   if (report.wire.executionsFound.length) {
     finding(`executions reached the browser: ${report.wire.executionsFound.slice(0, 5).join(', ')}`);
   }
@@ -462,6 +508,9 @@ let server, browser;
     ring: Object.fromEntries(Object.entries(report.widths).map(([w, v]) => [w, v.ring])),
     profile: Object.fromEntries(Object.entries(report.widths).map(([w, v]) => [w, v.profile && {
       rows: v.profile.tradeRows, note: v.profile.hiddenNote, count: v.profile.headingCount }])),
+    noSession: report.noSession && { path: report.noSession.path, cards: report.noSession.cards,
+      busy: report.noSession.busy, loadingText: report.noSession.loadingText,
+      marketplaceCalls: report.noSession.marketplaceCalls },
   }, null, 2));
   process.exitCode = report.status === 'PASS' ? 0 : 1;
 })().catch(error => {

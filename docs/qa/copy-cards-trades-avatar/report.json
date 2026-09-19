@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-19T07:21:16.163Z",
+  "startedAt": "2026-09-19T09:15:32.683Z",
   "date": "2026-09-19",
   "environment": "LOCAL QA ONLY — real compiled router/service, in-memory persistence",
   "widths": {
@@ -392,7 +392,7 @@
         "ksenia": null
       },
       "otherAccountStoredKeys": [
-        "voltex.copy.marketplace.v1.hs1lpx"
+        "voltex.copy.marketplace.v1.vw7nxe"
       ],
       "otherAccountSettled": {
         "nazar": {
@@ -453,6 +453,15 @@
       }
     }
   },
+  "noSession": {
+    "path": "/login",
+    "cards": 0,
+    "busy": 0,
+    "loadingText": false,
+    "bodyHead": "VOLTEX Биржа институционального уровня Спотовая торговля, фьючерсы, аналитика и VOLTEX Crypto Card в единой экосистеме. ",
+    "marketplaceCalls": 0,
+    "pageErrors": []
+  },
   "status": "PASS",
-  "finishedAt": "2026-09-19T07:21:38.093Z"
+  "finishedAt": "2026-09-19T09:15:58.987Z"
 }
