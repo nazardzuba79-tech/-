@@ -101,10 +101,26 @@ describe('2. the positions row carries the reference columns', () => {
     expect(PANEL).toContain("{value === null ? '—' :");
   });
 
+  /**
+   * This asserted `futures.entryPrice` / `markPrice` / `liqPrice`, and it was
+   * green for the wrong reason. Since the reference columns landed, the real
+   * table heads are `futures.colEntry` / `colMark` / `colLiq`; the three old
+   * keys survived ONLY in the strip of column headings the empty state used
+   * to paint over no rows at all. Removing that dead strip is what made this
+   * fail — the live columns never moved.
+   *
+   * So it now reads the `<thead>` itself rather than the whole file, which is
+   * the stronger claim: a stray array of labels somewhere else in the module
+   * can no longer satisfy a test about what sits above the rows.
+   */
   test('entry, mark and liquidation prices each have their own column', () => {
-    for (const key of ['futures.entryPrice', 'futures.markPrice', 'futures.liqPrice']) {
-      expect(PANEL).toContain(key);
+    const thead = /<thead>([\s\S]*?)<\/thead>/.exec(PANEL);
+    expect(thead).not.toBeNull();
+    for (const key of ['futures.colEntry', 'futures.colMark', 'futures.colLiq']) {
+      expect(thead![1]).toContain(key);
     }
+    // Three separate cells, not one combined price column.
+    expect(thead![1].match(/<Th>/g)?.length).toBeGreaterThanOrEqual(10);
   });
 
   test('native Cross never presents an engine-only liquidation price as account-authoritative', () => {
