@@ -116,7 +116,16 @@
    created the oversized empty zone highlighted in the production capture. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar {
   justify-content:flex-start;
-  gap:clamp(16px,1.35vw,24px);
+  /* The gap pays for the bigger labels (FuturesStudio.css), so the bar's
+     total width is unchanged rather than one item wider than the panel.
+     Measured at 1440: the old clamp resolved to 19.44px and the row carries
+     seven gaps, while the 12px labels cost ~70px across it — the funding
+     rate, last in the row, was landing outside the bar and could only be
+     reached by scrolling. 0.72vw resolves to 10.4px here, returning 63px of
+     the 70. The remainder comes from the 1440 row having had 25px of slack.
+     Bybit's own row is tighter than ours was, so this reads as closer to
+     the reference, not further from it. */
+  gap:clamp(10px,0.72vw,16px);
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-selector {
   margin-right:0;

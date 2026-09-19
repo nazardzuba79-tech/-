@@ -42,6 +42,50 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item .value.price { font-size:var(--terminal-last-size); line-height:var(--terminal-last-line); font-weight:600; letter-spacing:-.2px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .value:is(.up,.change.up) { color:#34c79d; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .value:is(.down,.change.down) { color:#f16c7b; }
+
+/* THE TOP PANEL'S HIERARCHY, MEASURED OFF THE OWNER'S OWN TWO SCREENSHOTS.
+
+   Bybit's bar reads as contrasty not because everything in it is bright but
+   because the caption and the figure are far apart. Sampled from the two
+   images, same strings, same scale: their labels sit at 2.1:1 and their
+   figures at 18.3:1; ours were 8.7:1 and 15.6:1 — a 1.8x gap where theirs
+   is 8.7x. That is why ours looks flat however bright the numbers are.
+
+   So the figures go to white, at the weight theirs carry. The labels take
+   Bybit's SIZE — 11px of ink against our 9px, measured on “Макс. за 24ч” in
+   both shots — and dim only as far as this repo's own floor allows:
+   `scripts/qa-terminal-text-contrast.cjs` fails any non-market text under
+   4.5:1, so they stop at 4.6:1 rather than copying Bybit's 2.1:1, which
+   would buy a screenshot match with this panel's legibility. Bigger and
+   quieter still opens the gap to 3.9x, which is the effect asked for.
+
+   Seven class selectors, because the premium token layer that currently
+   wins these two colours is six — and it has to keep owning every other
+   surface in the same selector list. The order book headers, the positions
+   table and the account labels are all in there and none of them is being
+   asked to change. */
+.trade-terminal.trade-terminal.futures-reference.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item > .label {
+  font-size:12px; line-height:16px; color:#788192;
+}
+/* The primary-price item is excluded on purpose: it holds the big last
+   price and the mark price under it, and the mark price is grey in Bybit's
+   bar too. `.up`/`.down` are excluded so the change and the funding rate
+   keep the green and red they already carry — this is a contrast pass, not
+   a recolouring of the market signals. */
+.trade-terminal.trade-terminal.futures-reference.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item:not(.futures-primary-price) > .value:not(.up):not(.down) {
+  color:#fff; font-weight:600;
+}
+/* Bybit's 12px where the row can afford it, 11px where it cannot. Below
+   1400 this row was ALREADY past its right edge before any of this — the
+   funding rate sat outside the bar on `main` at 1366 and 1280 — so the
+   narrow layouts are not asked to pay for the bigger label on top of that.
+   Measured: at 12px throughout, 1366 went 53px over to 64px and 1280 131px
+   to 150px; at 11px here both come back under where they started. */
+@media (max-width: 1399px) {
+  .trade-terminal.trade-terminal.futures-reference.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item > .label {
+    font-size:11px;
+  }
+}
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .futures-secondary-price { font-size:10px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .futures-secondary-price :is(.label,.value) { font-size:9px; color:#91a2b4; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .futures-funding-values { flex-wrap:wrap; gap:3px; }

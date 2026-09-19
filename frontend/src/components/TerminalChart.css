@@ -132,32 +132,57 @@
    change if it ever moves again. */
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell {
   --rail-toggle-top: 80%;
-  /* The toggle is positioned against this shell in BOTH states now, so the
-     expanded shell needs the containing block the collapsed one already
-     had. Its `overflow:hidden` still clips the tools, not the chip: the
-     chip is 26px inside a 44px rail. */
+  /* The toggle is positioned against this shell in BOTH states, so the
+     expanded shell is the containing block the collapsed one already had. */
   position: relative;
+  /* ...and it may no longer clip. The chip has moved out of the tool column
+     onto the rail's outer edge, where it straddles the border the way
+     Bybit's does, so `overflow:hidden` here would cut it in half. The rail
+     inside still owns its own scrolling, which is what that hidden was
+     doing any real work for. */
+  overflow: visible;
 }
+/* OUT OF THE TOOL COLUMN, ONTO THE EDGE — AND LIGHT, NOT DARK.
+   Two things were wrong and the owner named both. It sat at `left:5px`,
+   which is the tool buttons' own column, directly under the delete tool:
+   one column, two meanings, and a misfire erases a drawing. And a #1f2732
+   chip on a #12161c rail is a 1.2:1 body — the chevron inside it was bright
+   but the control itself was invisible, so people did not know it was there.
+
+   Bybit solves both with one move, and this now copies it: the control
+   leaves the column entirely and becomes a capsule straddling the rail's
+   outer border, where nothing else can be clicked by mistake. Measured off
+   the owner's screenshot, their pill is 11x34px, filled #b1b2b8 on a
+   #101014 rail — 9.0:1 for the body, 8.9:1 for the chevron inside it. Those
+   are the two numbers reproduced here; the width is a couple of pixels over
+   theirs so the target clears 24px on its long axis rather than sitting
+   under it. */
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
   order: 0;
   flex: 0 0 auto;
   position: absolute;
   top: var(--rail-toggle-top);
-  left: 5px;
+  left: 100%;
+  /* Straddles the rail's border, as Bybit's does. The offset is not free
+     choice: the tool buttons are 34px centred in the 44px rail, so they end
+     at x=40 and the rail's border is at x=45. At -6px the capsule started
+     at 38 and took a 2px bite out of whichever tool sat at its height —
+     re-introducing, in miniature, the very overlap this change exists to
+     remove. -4px cleared them but left the two touching at x=40, and a
+     control you can slip off onto the delete tool is the thing the owner
+     reported. -2px opens a real gap — capsule at 43, tools ending at 40 —
+     while still crossing the border at 45 that it is meant to sit on. */
+  margin-left: -2px;
   transform: translateY(-50%);
   z-index: 3;
-  width: 26px;
-  min-width: 26px;
-  height: 22px;
-  min-height: 22px;
-  margin: 0;
-  border: 1px solid #39434f;
-  border-radius: 5px;
-  /* BRIGHT, NOT DIM. At --text-secondary on --panel-alt this chip was the
-     quietest thing in the chart area while being the only way to get the
-     tools back. Near-white on a lifted surface reads as a control. */
-  background: #1f2732;
-  color: #eef2f7;
+  width: 12px;
+  min-width: 12px;
+  height: 34px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: #b1b2b8;
+  color: #131013;
 }
 /* The hairline that separated the old top bar from the tools now sits on
    the rail's own foot, so the chip reads as below the toolbar rather than
@@ -166,9 +191,8 @@
   border-bottom: 1px solid var(--border, #232a34);
 }
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle:hover {
-  background: #2b3542;
-  border-color: #4a5766;
-  color: #fff;
+  background: #d3d4d9;
+  color: #000;
 }
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle svg {
   width: 13px;
@@ -184,14 +208,17 @@
   bottom: auto;
   left: 0;
   transform: translateY(-50%);
+  /* No rail border to straddle once the rail is gone, so the capsule sits
+     flush on the workspace edge and rounds on the chart side only. It keeps
+     the expanded state's fill, height and `--rail-toggle-top`, so pressing
+     it neither moves it nor changes what it looks like. */
   margin: 0;
-  width: 16px;
-  min-width: 16px;
-  height: 30px;
-  min-height: 30px;
-  border: 1px solid #39434f;
-  border-left: 0;
-  border-radius: 0 5px 5px 0;
+  width: 14px;
+  min-width: 14px;
+  height: 34px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 0 999px 999px 0;
 }
 /* Below 900px the rail is a horizontal strip and the toggle is a column at
    its end — the existing adaptive geometry, which this change leaves alone

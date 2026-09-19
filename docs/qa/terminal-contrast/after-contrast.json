@@ -1,20 +1,19 @@
 {
   "status": "PASS",
   "label": "after",
-  "sampled": 93,
-  "nonMarket": 83,
-  "smallText": 66,
+  "sampled": 88,
+  "nonMarket": 78,
+  "smallText": 55,
   "medianRatio": 8.66,
-  "minRatio": 5.56,
+  "minRatio": 4.63,
   "belowAA_4_5": 0,
   "belowAA_smallText": 0,
   "distinctColours": [
+    "rgb(120, 129, 146)",
     "rgb(139, 149, 165)",
     "rgb(152, 162, 179)",
     "rgb(167, 182, 197)",
     "rgb(170, 180, 195)",
-    "rgb(197, 205, 215)",
-    "rgb(227, 232, 237)",
     "rgb(229, 233, 239)",
     "rgb(234, 236, 239)",
     "rgb(234, 238, 243)",
@@ -23,12 +22,60 @@
   ],
   "worst": [
     {
-      "text": "Подключение к стакану…",
+      "text": "Изменение за 24ч",
+      "colour": "rgb(120, 129, 146)",
+      "fontSize": 12,
+      "backdrop": "rgb(18, 22, 28)",
+      "ratio": 4.63,
+      "className": "label"
+    },
+    {
+      "text": "Макс. за 24ч",
+      "colour": "rgb(120, 129, 146)",
+      "fontSize": 12,
+      "backdrop": "rgb(18, 22, 28)",
+      "ratio": 4.63,
+      "className": "label"
+    },
+    {
+      "text": "Мин. за 24ч",
+      "colour": "rgb(120, 129, 146)",
+      "fontSize": 12,
+      "backdrop": "rgb(18, 22, 28)",
+      "ratio": 4.63,
+      "className": "label"
+    },
+    {
+      "text": "Оборот за 24ч (USDT)",
+      "colour": "rgb(120, 129, 146)",
+      "fontSize": 12,
+      "backdrop": "rgb(18, 22, 28)",
+      "ratio": 4.63,
+      "className": "label"
+    },
+    {
+      "text": "Открытый интерес (USDT)",
+      "colour": "rgb(120, 129, 146)",
+      "fontSize": 12,
+      "backdrop": "rgb(18, 22, 28)",
+      "ratio": 4.63,
+      "className": "label"
+    },
+    {
+      "text": "Ставка финансирования",
+      "colour": "rgb(120, 129, 146)",
+      "fontSize": 12,
+      "backdrop": "rgb(18, 22, 28)",
+      "ratio": 4.63,
+      "className": "label"
+    },
+    {
+      "text": "BTC",
       "colour": "rgb(139, 149, 165)",
-      "fontSize": 10.5,
-      "backdrop": "rgb(27, 29, 36)",
-      "ratio": 5.56,
-      "className": "rb-feed"
+      "fontSize": 11,
+      "backdrop": "rgb(18, 22, 28)",
+      "ratio": 6,
+      "className": "pair-asset"
     },
     {
       "text": "Нет данных графика для BTC/U",
@@ -69,54 +116,6 @@
       "backdrop": "rgb(10, 14, 19)",
       "ratio": 6.4,
       "className": "fa-unit"
-    },
-    {
-      "text": "USDT",
-      "colour": "rgb(139, 149, 165)",
-      "fontSize": 11,
-      "backdrop": "rgb(10, 14, 19)",
-      "ratio": 6.4,
-      "className": "fa-unit"
-    },
-    {
-      "text": "USDT",
-      "colour": "rgb(139, 149, 165)",
-      "fontSize": 11,
-      "backdrop": "rgb(10, 14, 19)",
-      "ratio": 6.4,
-      "className": "fa-unit"
-    },
-    {
-      "text": "Спред —",
-      "colour": "rgb(152, 162, 179)",
-      "fontSize": 9,
-      "backdrop": "rgb(18, 22, 28)",
-      "ratio": 7.05,
-      "className": ""
-    },
-    {
-      "text": "BTC",
-      "colour": "rgb(170, 180, 195)",
-      "fontSize": 12,
-      "backdrop": "rgb(31, 37, 46)",
-      "ratio": 7.36,
-      "className": "fo-unit"
-    },
-    {
-      "text": "Цена",
-      "colour": "rgb(152, 162, 179)",
-      "fontSize": 11.5,
-      "backdrop": "rgb(10, 14, 19)",
-      "ratio": 7.51,
-      "className": "fo-fieldCaption"
-    },
-    {
-      "text": "Количество",
-      "colour": "rgb(152, 162, 179)",
-      "fontSize": 11.5,
-      "backdrop": "rgb(10, 14, 19)",
-      "ratio": 7.51,
-      "className": "fo-fieldCaption"
     }
   ],
   "pageErrors": []
