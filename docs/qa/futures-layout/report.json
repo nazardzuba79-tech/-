@@ -160,6 +160,14 @@
         "percentDownChart": 82.8
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 1079,
+        "rowBottom": 866,
+        "rowHeight": 62,
+        "overflow": -213,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,
@@ -468,6 +476,14 @@
         "percentDownChart": 83.5
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 899,
+        "rowBottom": 744,
+        "rowHeight": 62,
+        "overflow": -155,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,
@@ -776,6 +792,14 @@
         "percentDownChart": 83.5
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 899,
+        "rowBottom": 744,
+        "rowHeight": 62,
+        "overflow": -155,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,
@@ -1084,6 +1108,14 @@
         "percentDownChart": 84.5
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 767,
+        "rowBottom": 628,
+        "rowHeight": 62,
+        "overflow": -139,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,

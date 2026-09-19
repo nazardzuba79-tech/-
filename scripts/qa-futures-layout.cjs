@@ -54,6 +54,25 @@ app.get('/api/v1/market/external/symbols', (_q, r) => r.json({ symbols: PAIRS })
 /** The wallet projection the shared header reads. Without it the page threw
  *  `reading 'totalValueUsd'` and the harness reported its own gap as a
  *  finding. Empty and priced, which is what a fresh QA account is. */
+/**
+ * ONE OPEN POSITION, because "room for one open trade" cannot be measured on
+ * an empty table. The owner's reference is Bybit's panel with a single row:
+ * tabs, the column headings, and one full row of cells — visible together
+ * without scrolling. Figures are plainly synthetic and never leave this
+ * harness; nothing here feeds the product.
+ */
+const QA_POSITION = [{
+  id: 'qa-pos-1', symbol: 'BTC/USDT', side: 'LONG', size: '0.230', entryPrice: '76692.45',
+  leverage: 50, marginType: 'CROSS', initialMargin: '375.09', liquidationPrice: null,
+  markPrice: '81543.75', unrealizedPnl: '1115.18', realizedPnl: '37.02', roe: '284.20',
+  openedAt: new Date().toISOString(), protection: { takeProfit: null, stopLoss: null },
+}];
+// OFF BY DEFAULT. An account holding a live position cannot be folded away
+// — that is the product's rule, not an accident — so leaving the stub on
+// would remove the fold control and invalidate every check above it. It is
+// switched on for the one measurement that needs it, then switched back.
+let qaPositions = [];
+app.get('/api/v1/futures/positions', (_q, r) => r.json(qaPositions));
 app.get('/api/v1/wallet/overview', (_q, r) => r.json({ balances: { spot: [], futures: [], spotValueUsd: 0, futuresValueUsd: 0, totalValueUsd: 0 }, valuationComplete: true, unpricedAssets: [], btcPriceUsd: 81663 }));
 /** The SAME catalogue shape Markets reads, carrying the real 7d field. */
 app.get('/api/v1/market/assets', (_q, r) => r.json({ available: true, source: 'qa', fetchedAt: Date.now(), stale: false, value: {
@@ -225,9 +244,6 @@ async function run() {
       result.bottomPanel = m;
       if (!m) finding(`${vp.name}: could not measure the bottom panel`);
       else {
-        // The owner asked for "room for one open order, with some to spare".
-        // One row plus its header plus a row of headroom is that, stated as
-        // a number instead of an adjective.
         const row = m.rowHeight || 44;
         const need = row * 3;
         if (m.body < need) finding(`${vp.name}: bottom panel body is ${m.body}px — under ${need}px, so one order would not sit clear of the edges`);
@@ -368,6 +384,39 @@ async function run() {
       await railToggle.click();
       await page.waitForTimeout(400);
     } else finding(`${vp.name}: no drawing-rail toggle found`);
+
+      // AND THE REAL THING, not a calculation about it. The Positions tab is
+      // opened with one live position in the stub and the row's own box is
+      // compared against the scroll area's: if any of it is below the fold
+      // the trader has to scroll to see their own trade, which is exactly
+      // what the owner has been asking about.
+      qaPositions = QA_POSITION;
+      await page.reload({ waitUntil: 'networkidle' }).catch(() => {});
+      await page.waitForTimeout(900);
+      const real = await page.evaluate(() => {
+        const tab = [...document.querySelectorAll('.bottom-tabs button, .bottom-tabs [role=tab]')]
+          .find(b => /Позиц/i.test(b.textContent || ''));
+        if (tab) tab.click();
+        return true;
+      });
+      if (real) {
+        await page.waitForTimeout(600);
+        const fit = await page.evaluate(() => {
+          const body = document.querySelector('#futures-bottom-content');
+          const row = document.querySelector('.futures-positions-table tbody tr');
+          if (!body || !row) return { rendered: false };
+          const b = body.getBoundingClientRect(), r = row.getBoundingClientRect();
+          return { rendered: true, bodyBottom: Math.round(b.bottom), rowBottom: Math.round(r.bottom),
+            rowHeight: Math.round(r.height), overflow: Math.round(r.bottom - b.bottom),
+            scrolls: body.scrollHeight > body.clientHeight + 1 };
+        });
+        result.onePosition = fit;
+        if (!fit.rendered) finding(`${vp.name}: the Positions tab rendered no row for the stubbed open position`);
+        else if (fit.overflow > 0) finding(`${vp.name}: the open position's row runs ${fit.overflow}px past the panel — the trader must scroll to see their own trade`);
+        else ok(`one open position fits whole (row ${fit.rowHeight}px, ${Math.abs(fit.overflow)}px clear of the fold, scrolling ${fit.scrolls ? 'needed' : 'not needed'})`);
+        await page.screenshot({ path: path.join(OUT, `${vp.name}-07-one-open-position.png`) });
+      }
+      qaPositions = [];
 
     // ---- 3. THE MARKET CHOOSER OPENS CLEAN ----
     const opener = page.locator('.futures-instrument-trigger, [aria-haspopup="dialog"], .ticker-pair-button').first();
