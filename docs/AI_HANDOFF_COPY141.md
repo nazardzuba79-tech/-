@@ -11,9 +11,11 @@
 
 ## Conflict resolution
 
-The two branches append different sections at the end of the shared 724KB handoff. No application-code path overlaps. Preserve the release `docs/AI_HANDOFF.md` byte-for-byte, including #142, and keep the Copy-specific continuation here instead of replacing that history or duplicating the entire diary.
+The two branches append different sections at the end of the shared 724KB handoff. No application-code path overlaps, so both sections are kept, in the order they were written: #142's Futures cluster entry from the release, then this branch's Copy Trading entry after it. Neither side was taken wholesale and #142 is not reverted.
 
-The full original Copy handoff remains available immutably at:
+The integration sync first kept only the release's copy of `docs/AI_HANDOFF.md` and moved the Copy Trading entry into this file. That left the canonical diary with no record of this work, which is what `CLAUDE.md` asks every agent to append to and what the next agent reads. The entry is now back in `docs/AI_HANDOFF.md`; this file stays as what it is — the integration record, which is different content from the work entry.
+
+The pre-sync original also remains immutably at:
 https://github.com/nazardzuba79-tech/-/blob/68cb6c80ff2984996cce172d10c3e9304af8f621/docs/AI_HANDOFF.md#L2803
 
 All #142 application files, tests, QA script and the QA screenshot directory are copied exactly from fresh main. All Copy application files and Copy evidence stay exactly at reviewed head 68cb6c8. No financial formulas, history, production data, avatar source, orders, balances or engine files change during integration.
