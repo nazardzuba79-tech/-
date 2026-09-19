@@ -31,7 +31,12 @@ const ordinary = marketplaceTraders.find(item => item.id !== nazarTrader.id)!;
 
 // Execute the ACTUAL JSX click handlers, not a reimplementation of the guard.
 // Hook state and Following are isolated local UI fixtures; no account/API calls.
-function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordinary) {
+function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordinary,
+  /** What the marketplace store says. The default is the settled state with
+   *  both strategies on screen, which is what every existing case assumed
+   *  before the button could tell "still loading" from "not coming". */
+  marketplace: { settled: boolean; nazar: unknown; ksenia: unknown } =
+    { settled: true, nazar: {}, ksenia: {} }) {
   const following = new Set<string>(alreadyFollowing ? [trader.id] : []);
   const toggle = jest.fn((id: string) => following.has(id) ? following.delete(id) : following.add(id));
   const toast = { success: jest.fn() };
@@ -41,6 +46,7 @@ function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordi
     useCopyEligibility: () => eligibility.CopyEligibilityProvider({ depositUsd, children: null }).props.value,
     useFollowing: () => ({ following, toggleFollowing: toggle }),
     useState: () => [show, (next: boolean) => { show = next; }],
+    useCopyMarketplace: () => marketplace,
     nazarTrader, CopyDepositDialog: DepositDialog, Check: () => null, toast,
   });
   const render = () => actual.CopyButton({ trader, compact: true });
@@ -104,6 +110,33 @@ test('unavailable Nazar conditions retain the separate disabled-data safety guar
     expect(fixture.button().props.children).toBe('Данные недоступны');
     expect(fixture.button().props.onClick).toBeUndefined();
     expect(fixture.toggle).not.toHaveBeenCalled();
+  }
+});
+
+test('a featured card says «Загрузка…» while the first response is still in flight, never «Данные недоступны»', () => {
+  // Cold open: the store has asked and has not been answered. The terms are
+  // absent because nothing has arrived yet, not because they are missing —
+  // announcing them unavailable here is a verdict passed before there is
+  // anything to base one on.
+  for (const [section, trader] of [['nazar', nazarTrader], ['ksenia', { ...nazarTrader, id: 'VX-KSENIA' }]] as const) {
+    const loading = copyFixture(50_000, false, { ...trader, performanceFee: NaN },
+      { settled: false, nazar: null, ksenia: null });
+    expect(loading.button().props.disabled).toBe(true);
+    expect(loading.button().props.children).toBe('Загрузка…');
+    expect(loading.button().props['aria-busy']).toBe('true');
+    expect(loading.toggle).not.toHaveBeenCalled();
+
+    // Settled with nothing to show: now the verdict is earned.
+    const settled = copyFixture(50_000, false, { ...trader, performanceFee: NaN },
+      { settled: true, nazar: null, ksenia: null });
+    expect(settled.button().props.children).toBe('Данные недоступны');
+    expect(settled.button().props.title).toBe('Условия стратегии недоступны');
+
+    // And a section that DID arrive is never called loading, whatever the
+    // other one is doing.
+    const arrived = copyFixture(50_000, false, { ...trader, performanceFee: NaN },
+      { settled: false, nazar: section === 'nazar' ? {} : null, ksenia: section === 'ksenia' ? {} : null });
+    expect(arrived.button().props.children).toBe('Данные недоступны');
   }
 });
 
@@ -252,7 +285,26 @@ test('every dollar figure quoted to a member matches the one eligibility constan
 
 test('normalization only reverses exact approved UX edits, never hides copy-action or financial drift', () => {
   const hash = (text: string) => createHash('sha256').update(text).digest('hex');
-  const approved = 'cd2ed289d64d986e9355f26557e9428ff19c98b7bf6f5246576cf861e0afa2ce';
+  // RE-PINNED, deliberately, and covering TWO changes — both read first.
+  //
+  // 1. PRE-EXISTING. This pin was already stale before this branch: it read
+  //    cd2ed289…afa2ce while `main` produced 7f6c10d0…778807. The drift is
+  //    exactly one line, introduced when Ksenia became a featured strategy —
+  //    the unavailable guard went from `trader.id === nazarTrader.id` to
+  //    `(trader.id === nazarTrader.id || trader.id === 'VX-KSENIA')`. It was
+  //    never re-pinned. Diffed against c04d930, the commit where this digest
+  //    was last valid, and there is nothing else in it.
+  //
+  // 2. THIS BRANCH. `CopyButton` now reads the marketplace store so it can
+  //    tell "the first response has not arrived" from "there is nothing
+  //    coming", instead of announcing «Данные недоступны» while the request
+  //    was still in flight.
+  //
+  // What this guard exists to protect is untouched and still asserted below:
+  // the copy action is still `toggleFollowing(trader.id)`, and the fee is
+  // still `trader.performanceFee * 100`. Neither the eligibility threshold,
+  // the dialog, nor any financial figure moved.
+  const approved = '14f46f69112895010de1df831cd4fb4fa11e78ccac0852d958eaa0d0156a38ac';
   expect(hash(restoreCopyButtonDepositUx(body('CopyButton')))).toBe(approved);
   const wrongAction = body('CopyButton').replace('toggleFollowing(trader.id)', 'toggleFollowing("wrong-trader")');
   expect(hash(restoreCopyButtonDepositUx(wrongAction))).not.toBe(approved);

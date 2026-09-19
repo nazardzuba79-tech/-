@@ -334,11 +334,15 @@ let server, browser;
   const away = page.locator('a[href="/card"]').first();
   if (await away.count()) await away.click(); else await page.goto(origin + '/card', { waitUntil: 'domcontentloaded' });
   await page.waitForURL('**/card');
-  // URL can change before the lazy route has actually unmounted. Wait for
-  // the old Copy Trading cards to leave before navigating back, otherwise
-  // return locators can match stale DOM and make this regression flaky.
+  // A history URL changes before a lazy route has committed. Without waiting
+  // for departure, the return locators can match the OLD cards and the later
+  // departure removes them between waitFor() and facts(). The failed CI
+  // recorded exactly that: only null events, no remount yet, then correct
+  // cached cards in the next phase. Wait for actual departure, not a sleep
+  // or for a successful marketplace response (that response stays held).
   await page.locator('.trader-card[data-trader-id="VX-001"]').waitFor({ state: 'detached', timeout: 30000 });
   await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor({ state: 'detached', timeout: 30000 });
+  const departed = { url: page.url(), cards: await page.locator('.trader-card[data-trader-id]').count() };
   const backLink = page.locator('a[href="/copy-trading"]').first();
   if (await backLink.count()) await backLink.click(); else await page.goto(origin + '/copy-trading', { waitUntil: 'domcontentloaded' });
   await page.waitForURL('**/copy-trading');
@@ -349,9 +353,11 @@ let server, browser;
   // Every DOM commit of both cards since leaving: after the page came back,
   // a card that is drawn must stay drawn — no blank commit in between.
   const sinceLeaving = (await timeline(page)).slice(navigateFrom);
-  report.navigate = { url: page.url(), cards: await page.evaluate(() => [...document.querySelectorAll('.trader-card[data-trader-id]')].map(el => el.dataset.traderId)),
+  report.navigate = { departed, url: page.url(), cards: await page.evaluate(() => [...document.querySelectorAll('.trader-card[data-trader-id]')].map(el => el.dataset.traderId)),
     facts: back, freshness: await freshness(page), heldRequests: held.length, timeline: sinceLeaving };
   for (const id of ['VX-001', 'VX-KSENIA']) {
+    const first = paintedFromCache(sinceLeaving, id);
+    if (first) finding('Return did not paint from cache at the first commit — ' + first);
     const own = sinceLeaving.filter(event => event.id === id);
     const returned = own.findIndex(event => event.state && event.state.chart);
     if (returned < 0) finding(`${id} was never drawn again after navigating back`);

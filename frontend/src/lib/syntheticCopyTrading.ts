@@ -108,6 +108,24 @@ export interface SyntheticCopyTradingResponse {
    * the bug this field exists to close.
    */
   mainMarkets?: string[];
+  /**
+   * Present when the server withheld this strategy's executions.
+   *
+   * `trades` is then empty — not because there are none, but because none
+   * were sent. Every aggregate is unaffected: `tradeStats`,
+   * `tradeHistoryCount`, `mainMarkets`, the analytics, the economics, the
+   * equity curve and the daily series are all still computed server-side
+   * from the COMPLETE history. A strategy with 465 trades and a hidden
+   * history still reports 465.
+   *
+   * See services/copyTrading/tradeHistoryVisibility.ts.
+   */
+  tradeVisibility?: {
+    mode: 'HIDDEN';
+    reason: 'OWNER_RESTRICTED';
+    /** Periods whose holding-time aggregate is genuinely unknown. */
+    holdingTimeUnknownPeriods: Period[];
+  };
   equityHistory: { date: string; equity: number }[];
   aumHistory: { date: string; aum: number; followerCount?: number }[];
   dailyResults: { date: string; startEquity: number; endEquity: number; realizedPnl: number; dailyReturn: number; drawdown: number }[];
@@ -234,6 +252,9 @@ export interface SyntheticPeriodAnalytics {
   equity: SyntheticCopyTradingResponse['equityHistory'];
   daily: SyntheticCopyTradingResponse['dailyResults'];
   trades: SyntheticCopyTradingResponse['trades'];
+  /** True when the server withheld the executions. `trades` is then empty
+   *  and every aggregate on this object is still the real one. */
+  tradesHidden: boolean;
   /** True when `trades` holds the ten DISPLAY rows rather than the period's
    *  full set, so a caller can tell "these are all of them" from "these are
    *  the latest ten" instead of guessing from the length. */
@@ -333,7 +354,11 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
     averagePnl: totalTrades ? netPnlTotal / totalTrades : 0,
     profitFactor: economics ? economics.profitFactor : grossLoss ? grossProfit / grossLoss : 0,
     averageTradesPerWeek: totalTrades / Math.max(1, daily.length) * 7,
-    averageHoldingTimeMinutes: totalTrades ? holdingTotal / totalTrades : 0,
+    // An unknown holding-time aggregate must stay unknown: dividing
+    // `undefined` would produce NaN, which the formatters already render as
+    // a dash — but saying so explicitly keeps it from reading as a bug.
+    averageHoldingTimeMinutes: holdingTotal === undefined ? Number.NaN
+      : totalTrades ? holdingTotal / totalTrades : 0,
     annualizedVolatility: economics?.annualizedVolatility ?? deviation * Math.sqrt(365) * 100,
     sharpe: economics ? economics.sharpe : deviation ? mean / deviation * Math.sqrt(365) : 0,
     sortino: economics ? economics.sortino : downsideDeviation ? mean / downsideDeviation * Math.sqrt(365) : 0,
@@ -348,6 +373,7 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
     equity,
     daily,
     trades,
+    tradesHidden: data.tradeVisibility?.mode === 'HIDDEN',
     summarized: stats !== undefined,
   };
 }

@@ -1,4 +1,5 @@
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
+import { privateStrategyView } from './copyMarketplacePrivacy';
 
 /** The marketplace transports display rows, not history. Ten is what the
  *  trade table shows; anything longer is a payload regression. */
@@ -15,6 +16,51 @@ export interface CopyMarketplaceResponse {
 }
 type Section = 'nazar' | 'ksenia' | 'identities';
 type PerformancePeriod = '7D' | '30D' | '90D' | 'ALL';
+
+/**
+ * WHY A SECTION IS NOT ON SCREEN — for whoever has to fix it.
+ *
+ * "Данные недоступны" is all a visitor should ever read, but it is useless
+ * to a developer: the card looks identical whether the session expired, the
+ * request timed out, the server dropped one strategy, or the payload came
+ * back in a shape this build refuses. Each of those needs a different fix,
+ * and until now the only way to tell them apart was to reproduce it.
+ *
+ * These are closed, non-identifying labels. They carry no token, no account,
+ * no URL and no server text — `server_unavailable` is the server's own
+ * generic word for "this section failed", never its exception. Nothing here
+ * is rendered: the UI reads `nazar`/`ksenia`, never this.
+ */
+export type SectionDiagnosis =
+  | 'ok'                  // on screen, from this session's own response
+  | 'loading'             // asked; no answer yet on this visit
+  | 'unauthenticated'     // no session token to ask with
+  | 'network'             // the request never completed
+  | 'timeout'             // it completed by being abandoned at 15s
+  | 'http_error'          // the server answered, but not with a payload
+  | 'malformed_envelope'  // a 200 that is not a marketplace response at all
+  | 'server_unavailable'  // the server itself marked this section failed
+  | 'rejected_by_client'; // the section arrived and this build refuses it
+
+/**
+ * A failure that already knows what it was.
+ *
+ * The fetcher knows things the store cannot infer — that there was no token
+ * to send, that the server answered 503 — so it says so here rather than
+ * throwing a string the store would have to parse. The message carries no
+ * URL, no token and no server text; the label IS the message.
+ */
+export class MarketplaceFailure extends Error {
+  constructor(readonly diagnosis: SectionDiagnosis) {
+    super(diagnosis);
+    this.name = 'MarketplaceFailure';
+  }
+}
+/** Anything that reached us without a label. A rejected `fetch` is the
+ *  network; there is nothing else it can be by the time it gets here. */
+function classifyFetchFailure(error: unknown): SectionDiagnosis {
+  return (error as { name?: string } | null)?.name === 'AbortError' ? 'timeout' : 'network';
+}
 export interface CopyMarketplaceState {
   nazar: SyntheticCopyTradingResponse | null;
   ksenia: KseniaResponse | null;
@@ -23,10 +69,13 @@ export interface CopyMarketplaceState {
   stale: Record<Section, boolean>;
   refreshing: boolean;
   settled: boolean;
+  /** Developer diagnosis per section. Never rendered — see SectionDiagnosis. */
+  diagnosis: Record<Section, SectionDiagnosis>;
 }
 const empty = (): CopyMarketplaceState => ({ nazar: null, ksenia: null, identities: [],
   fetchedAt: { nazar: null, ksenia: null, identities: null },
-  stale: { nazar: false, ksenia: false, identities: false }, refreshing: false, settled: false });
+  stale: { nazar: false, ksenia: false, identities: false }, refreshing: false, settled: false,
+  diagnosis: { nazar: 'loading', ksenia: 'loading', identities: 'loading' } });
 const record = (value: unknown): value is Record<string, any> => !!value && typeof value === 'object' && !Array.isArray(value);
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 const date = (value: unknown): value is string => typeof value === 'string' && Number.isFinite(Date.parse(value));
@@ -90,6 +139,36 @@ function reportedKseniaCountsInPeriod(value: Record<string, any>, period: Perfor
   const closeMs = Date.parse(`${KSENIA_REPORTED_CLOSE_DATE}T00:00:00Z`);
   return Number.isFinite(endMs) && closeMs > endMs - PERIOD_DAYS[period] * 86_400_000;
 }
+/**
+ * The server's DECLARATION that it withheld the executions.
+ *
+ * Without this the redacted payload is indistinguishable from a broken one:
+ * `trades: []` on a strategy with 465 trades is exactly what a truncated or
+ * half-built response looks like, and the client would rightly drop the
+ * whole card — which is the failure mode this file already exists to
+ * prevent. So the omission has to be stated, not inferred.
+ *
+ * It is checked strictly. `mode` and `reason` are exact, and the periods it
+ * excuses must be real period names — a declaration cannot be a blanket
+ * permission to omit whatever the payload happens to be missing.
+ *
+ * NOTHING FINANCIAL IS RELAXED BY IT. Every ROI, PnL, gross profit/loss,
+ * net total, trade count, drawdown and volatility is still required to be a
+ * finite number, in every period, exactly as before. The only thing this
+ * can excuse is the HOLDING-TIME aggregate, which is a duration rather than
+ * a financial figure, and only for the periods it names.
+ */
+function hiddenTradeHistory(value: Record<string, any>): boolean {
+  const visibility = value.tradeVisibility;
+  return record(visibility) && visibility.mode === 'HIDDEN' && visibility.reason === 'OWNER_RESTRICTED'
+    && Array.isArray(visibility.holdingTimeUnknownPeriods)
+    && visibility.holdingTimeUnknownPeriods.every((period: unknown) =>
+      typeof period === 'string' && ['7D', '30D', '90D', 'ALL'].includes(period));
+}
+function holdingTimeMayBeUnknown(value: Record<string, any>, period: PerformancePeriod): boolean {
+  return hiddenTradeHistory(value) && value.tradeVisibility.holdingTimeUnknownPeriods.includes(period);
+}
+
 function visibleTrade(value: unknown, strategyId: string): value is Record<string, any> {
   if (reportedKseniaTrade(value, strategyId)) return true;
   return record(value)
@@ -122,10 +201,16 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
   // fully formed. The single owner-reported Ksenia row is intentionally
   // partial only where the operator did not provide the underlying facts.
   // Counted, not necessarily on screen. See reportedKseniaPerformance.
-  const reportedPresent = (Array.isArray(value.trades)
-    && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id)))
+  const hidden = hiddenTradeHistory(value);
+  // With the executions withheld there is no reported ROW and no reported
+  // BLOCK to read — redaction removes both, deliberately, because one
+  // owner-reported execution is still an execution. The declaration takes
+  // over that job for exactly the periods it names.
+  const reportedPresent = hidden
+    || (Array.isArray(value.trades) && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id)))
     || reportedKseniaPerformance(value, id);
   const visibleTrades = Array.isArray(value.trades)
+    && (!hidden || (value.trades.length === 0 && value.reportedPerformance === undefined))
     && value.trades.length <= VISIBLE_TRADE_ROWS
     && value.trades.every((trade: unknown) => visibleTrade(trade, id))
     && value.trades.every((trade: any, index: number) => index === 0
@@ -133,12 +218,16 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
   const tradeStats = record(value.tradeStats)
     && (['7D','30D','90D','ALL'] as PerformancePeriod[]).every(period => {
       const stats = (value.tradeStats as any)[period];
-      const mayOmitHolding = reportedPresent && reportedKseniaCountsInPeriod(value, period);
+      const mayOmitHolding = hidden
+        ? holdingTimeMayBeUnknown(value, period)
+        : reportedPresent && reportedKseniaCountsInPeriod(value, period);
       return numbers(stats, 'totalTrades winningTrades losingTrades grossProfit grossLoss netPnlTotal')
         && (finite(stats.holdingTimeTotalMinutes) || (mayOmitHolding && stats.holdingTimeTotalMinutes === undefined));
     })
     // The real total must be at least what is shown, or the count under the
-    // table would be smaller than the table.
+    // table would be smaller than the table. When the rows are withheld this
+    // still has to be the REAL total — «скрыто» is not «ноль сделок», and a
+    // redacted payload that forgot its count would be a bug, not a policy.
     && finite(value.tradeHistoryCount) && (value.tradeHistoryCount as number) >= value.trades.length
     && (value.tradeStats as any).ALL.totalTrades === value.tradeHistoryCount
     // Main Markets is a FULL-HISTORY aggregate. A summary that omits it
@@ -188,6 +277,22 @@ export class CopyMarketplaceStore {
   private generation = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private lastAttempt = -Infinity;
+  /**
+   * WHETHER THE LAST ATTEMPT ACTUALLY DELIVERED.
+   *
+   * `lastAttempt` is stamped when an attempt STARTS, so on its own it cannot
+   * tell a request that succeeded from one that failed — and `prefetch()`
+   * throttles on it. That is what put «Данные недоступны» on both cards with
+   * nothing in flight behind it: the nav-link hover's request failed, the
+   * user clicked through inside the thirty-second window, the page mounted,
+   * asked for data, and was told it had just asked.
+   *
+   * A SUCCESS is worth reusing for thirty seconds. A FAILURE is worth
+   * nothing, so it is never reused: the next caller that wants data gets a
+   * real request. `refresh()`'s own one-second collapse still applies, which
+   * is what keeps a StrictMode double-mount from becoming two requests.
+   */
+  private lastAttemptFailed = false;
   constructor(private fetchSnapshot: (signal: AbortSignal) => Promise<unknown>, private getSession: () => string | null,
     private now: () => number = Date.now,
     /** Injectable so the cache can be driven without a DOM. Undefined means
@@ -221,6 +326,7 @@ export class CopyMarketplaceStore {
     this.generation++;
     this.controller?.abort(); this.controller = null; this.pending = null;
     this.lastAttempt = -Infinity;
+    this.lastAttemptFailed = false;
     // Leaving a session takes its snapshot with it. A logout must not leave
     // one account's figures readable on a shared machine.
     if (previous !== null && session === null) clearSnapshot(previous, this.storage);
@@ -242,17 +348,26 @@ export class CopyMarketplaceStore {
     if (!snapshot) return empty();
     const state = empty();
     if (validStrategy(snapshot.nazar, 'VX-001')) {
-      state.nazar = snapshot.nazar as SyntheticCopyTradingResponse;
+      state.nazar = privateStrategyView(snapshot.nazar as SyntheticCopyTradingResponse);
       state.fetchedAt.nazar = snapshot.fetchedAt.nazar;
+      state.diagnosis.nazar = 'ok';
     }
     if (validStrategy(snapshot.ksenia, 'VX-KSENIA')) {
-      state.ksenia = snapshot.ksenia as KseniaResponse;
+      state.ksenia = privateStrategyView(snapshot.ksenia as KseniaResponse);
       state.fetchedAt.ksenia = snapshot.fetchedAt.ksenia;
+      state.diagnosis.ksenia = 'ok';
     }
     if (validIdentities(snapshot.identities)) {
       state.identities = snapshot.identities.filter((i): i is PublicStrategyIdentity => i !== null);
       state.fetchedAt.identities = snapshot.fetchedAt.identities;
+      state.diagnosis.identities = 'ok';
     }
+    // Upgrade this session's warm cache without losing confirmed figures.
+    // Never let a previous release re-expose trades while the API is down.
+    if (state.nazar || state.ksenia || state.identities.length) writeSnapshot(session, {
+      nazar: state.nazar, ksenia: state.ksenia,
+      identities: state.identities.length ? state.identities : null, fetchedAt: state.fetchedAt,
+    }, this.storage);
     return state;
   }
 
@@ -294,7 +409,11 @@ export class CopyMarketplaceStore {
   /** Hover/focus only; no timer or background traffic on unrelated pages. */
   prefetch = () => {
     this.checkSession();
-    if (this.now() - this.lastAttempt < 30_000) return this.pending ?? Promise.resolve();
+    // An attempt already in flight is the one to wait for, whatever it does.
+    if (this.pending) return this.pending;
+    // Only a SUCCESSFUL attempt is worth reusing. A failed one must not
+    // stand in for the data it did not fetch. See `lastAttemptFailed`.
+    if (!this.lastAttemptFailed && this.now() - this.lastAttempt < 30_000) return Promise.resolve();
     return this.refresh();
   };
   refresh = (): Promise<void> => {
@@ -303,34 +422,54 @@ export class CopyMarketplaceStore {
     if (this.pending) return this.pending;
     // Collapse StrictMode mount/focus/prefetch bursts; route returns still
     // revalidate once outside this short window, without clearing any data.
-    if (this.now() - this.lastAttempt < 1000) return Promise.resolve();
+    // A failed attempt is exempt: retrying it is the whole point.
+    if (!this.lastAttemptFailed && this.now() - this.lastAttempt < 1000) return Promise.resolve();
     this.lastAttempt = this.now();
     const generation = this.generation;
     const controller = new AbortController(); this.controller = controller;
-    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let abandoned = false;
+    const timeout = setTimeout(() => { abandoned = true; controller.abort(); }, 15_000);
     this.emit({ ...this.state, refreshing: true });
     this.pending = Promise.resolve().then(() => this.fetchSnapshot(controller.signal)).then(payload => {
       if (generation !== this.generation || this.getSession() !== this.session) return;
-      if (!record(payload) || !date(payload.generatedAt)) throw new Error('Invalid marketplace response');
+      if (!record(payload) || !date(payload.generatedAt)) throw new MarketplaceFailure('malformed_envelope');
       const next = { ...this.state, refreshing: false, settled: true,
-        fetchedAt: { ...this.state.fetchedAt }, stale: { ...this.state.stale } };
+        fetchedAt: { ...this.state.fetchedAt }, stale: { ...this.state.stale },
+        diagnosis: { ...this.state.diagnosis } };
       for (const section of ['nazar','ksenia','identities'] as const) {
         const value = payload[section];
-        const valid = !payload.errors?.[section] && (section === 'identities' ? validIdentities(value)
+        const reported = payload.errors?.[section];
+        const valid = !reported && (section === 'identities' ? validIdentities(value)
           : validStrategy(value, section === 'nazar' ? 'VX-001' : 'VX-KSENIA'));
+        // Which of the two it was matters: the server refusing to produce a
+        // section and this build refusing to accept one are different bugs
+        // in different places, and they look identical on the card.
+        next.diagnosis[section] = valid ? 'ok' : reported ? 'server_unavailable' : 'rejected_by_client';
         if (valid) {
           if (section === 'identities') next.identities = value.filter((i: PublicStrategyIdentity | null) => i !== null);
-          else if (section === 'nazar') next.nazar = value;
-          else next.ksenia = value;
+          else if (section === 'nazar') next.nazar = privateStrategyView(value);
+          else next.ksenia = privateStrategyView(value);
           next.fetchedAt[section] = this.now();
         }
         next.stale[section] = !valid;
       }
+      // A successful identity lookup or an old warm value is not a successful
+      // performance refresh. Either missing strategy must remain retryable.
+      this.lastAttemptFailed = next.stale.nazar || next.stale.ksenia;
       this.emit(next);
       this.persist();
-    }).catch(() => {
+    }).catch((error: unknown) => {
+      // A late rejection from an old login may not mutate this login's retry state.
+      if (generation !== this.generation || this.getSession() !== this.session) return;
+      this.lastAttemptFailed = true;
+      // `controller.abort()` after fifteen seconds and a connection that
+      // never opened both surface as one rejection; the flag we set when we
+      // fired the timer is what separates them.
+      const cause: SectionDiagnosis = error instanceof MarketplaceFailure ? error.diagnosis
+        : abandoned ? 'timeout' : classifyFetchFailure(error);
       if (generation === this.generation && this.getSession() === this.session) this.emit({ ...this.state,
-        refreshing: false, settled: true, stale: { nazar: true, ksenia: true, identities: true } });
+        refreshing: false, settled: true, stale: { nazar: true, ksenia: true, identities: true },
+        diagnosis: { nazar: cause, ksenia: cause, identities: cause } });
     }).finally(() => {
       clearTimeout(timeout);
       if (generation === this.generation) { this.pending = null; this.controller = null; }

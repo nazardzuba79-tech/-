@@ -5,6 +5,18 @@ import { CopyPerformanceService } from '../../services/copyTrading/CopyPerforman
 import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrading/strategyOwner';
 import { summarizeStrategy } from '../../services/copyTrading/marketplaceSummary';
 import { withKseniaReportedTrade } from '../../services/copyTrading/kseniaReportedTrade';
+import { redactTradeHistory } from '../../services/copyTrading/tradeHistoryVisibility';
+import { withKseniaReportedWeek } from '../../services/copyTrading/kseniaReportedWeek';
+
+/** Server-side only, and deliberately not exported to the response. */
+function logSectionFailures(results: PromiseSettledResult<unknown>[]) {
+  results.forEach((result, index) => {
+    if (result.status !== 'rejected') return;
+    const section = ['nazar', 'ksenia', 'identities'][index];
+    const reason = result.reason instanceof Error ? result.reason.message : 'unknown';
+    console.error(`[copy-trading] section "${section}" unavailable: ${reason}`);
+  });
+}
 
 /** Modeled strategy read endpoints; existing production session auth preserved.
  * The normal production backend owns persistence and same-environment identity.
@@ -20,14 +32,27 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     // trade rows for the history table and nothing more. `summarizeStrategy`
     // reads every trade to build `tradeStats`, so no figure is derived from
     // the ten. See services/copyTrading/marketplaceSummary.ts.
+    // `redactTradeHistory` is LAST on both strategies, after the Ksenia
+    // overlay has folded its reported trade into the aggregates — otherwise
+    // that overlay would reinsert a row into a response already cleaned.
+    // Executions never leave this function. See tradeHistoryVisibility.ts.
     const results = await Promise.allSettled([
-      service.get('nazar').then(summarizeStrategy),
-      service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade),
+      service.get('nazar').then(summarizeStrategy).then(redactTradeHistory),
+      service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade)
+        .then(withKseniaReportedWeek).then(redactTradeHistory),
       Promise.all(PUBLIC_STRATEGIES.map(id => resolveStrategyOwner(prisma, id))),
     ]);
     const [nazar, ksenia, identities] = results.map(result => result.status === 'fulfilled' ? result.value : null);
     const errors = Object.fromEntries(results.flatMap((result, index) => result.status === 'rejected'
       ? [[['nazar', 'ksenia', 'identities'][index], 'temporarily_unavailable']] : []));
+    // The wire keeps saying `temporarily_unavailable` and nothing else — the
+    // visitor learns that a section is missing, never why. The REASON is a
+    // developer's, so it is logged here instead: without it, a card that has
+    // gone blank looks identical whether the stored state failed to decode,
+    // the append hit contention, or the database was simply unreachable.
+    // Only the strategy name and the error's own message are logged; no
+    // token, account, request header or payload goes anywhere near this.
+    logSectionFailures(results);
     res.status(results.every(result => result.status === 'rejected') ? 503 : 200)
       .json({ nazar, ksenia, identities, generatedAt: new Date().toISOString(), errors });
   });
@@ -36,9 +61,16 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
       res.setHeader('Cache-Control', 'no-store');
       try {
         const summary = summarizeStrategy(await service.get(strategy));
-        res.json(strategy === 'ksenia' ? withKseniaReportedTrade(summary) : summary);
+        // The per-strategy endpoint is a direct link to the same data, so it
+        // redacts on exactly the same terms — and last, for the same reason.
+        res.json(redactTradeHistory(strategy === 'ksenia'
+          ? withKseniaReportedWeek(withKseniaReportedTrade(summary)) : summary));
       }
-      catch { res.status(503).json({ error: 'Strategy performance temporarily unavailable' }); }
+      catch (error) {
+        console.error(`[copy-trading] strategy "${strategy}" unavailable: `
+          + (error instanceof Error ? error.message : 'unknown'));
+        res.status(503).json({ error: 'Strategy performance temporarily unavailable' });
+      }
     });
   }
   router.get('/copy-trading/identities', async (_req, res) => {
