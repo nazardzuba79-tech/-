@@ -1,0 +1,67 @@
+name: Reviewer client label audit
+on:
+  push:
+    branches: [review/client-label-audit]
+    paths: [.github/workflows/reviewer-client-label-audit.yml]
+permissions:
+  contents: write
+jobs:
+  messages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: |
+          cp scripts/reviewer-client-label-fixes.py /tmp/client-label-fixes.py
+          cp scripts/qa-client-messages.cjs /tmp/qa-client-messages.cjs
+      - uses: actions/checkout@v4
+        with:
+          ref: 9bf0e493ed7e3fc42ade8b91bb839ee75600dc1b
+          path: checked
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply customer wording only
+        working-directory: checked
+        run: |
+          test "$(git rev-parse HEAD)" = 9bf0e493ed7e3fc42ade8b91bb839ee75600dc1b
+          python3 /tmp/client-label-fixes.py .
+          cp /tmp/qa-client-messages.cjs scripts/qa-client-messages.cjs
+          git diff --check
+      - name: Build and focused regressions
+        working-directory: checked
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm run build
+          npm run build --prefix frontend
+          npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/clientMessages.test.ts frontend/src/lib/__tests__/futuresOrderErrors.test.ts
+      - name: Disposable browser
+        run: |
+          npm install --prefix /tmp/client-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/client-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Anonymous production versus LOCAL protected-screen failure audit
+        working-directory: checked
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/client-qa/node_modules/playwright
+        run: node scripts/qa-client-messages.cjs
+      - name: Publish only to a separate candidate branch, never main
+        working-directory: checked
+        run: |
+          git config user.name 'VOLTEX reviewer'
+          git config user.email 'reviewer@users.noreply.github.com'
+          git add frontend/src/lib/publicErrorMessage.ts frontend/src/lib/api.ts frontend/src/lib/privateTradingError.ts frontend/src/lib/toast.tsx frontend/src/lib/__tests__/clientMessages.test.ts frontend/src/lib/i18n/locales/ frontend/src/pages/home/SapphireTerminal.tsx scripts/qa-client-messages.cjs docs/qa/client-messages/README.md docs/qa/client-messages/changed-files.json
+          git diff --cached --stat
+          git commit -m 'Replace client operational jargon with clear messages, preserve financial warnings'
+          echo "CANDIDATE_SHA=$(git rev-parse HEAD)"
+          git push origin HEAD:refs/heads/fix/client-technical-messages
+      - name: Keep review evidence (no credentials)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-message-audit
+          path: checked/docs/qa/client-messages/
+          retention-days: 2
