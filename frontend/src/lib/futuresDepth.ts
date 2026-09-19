@@ -1,6 +1,8 @@
 /** Public linear-perpetual depth, for presentation only. No account or order API.
  * Protocol: https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook
  */
+import { BOOK_REFRESH_MS, BOOK_STALE_AFTER_MS, BOOK_UNAVAILABLE_AFTER_MS } from './bookFreshness';
+
 export interface FuturesDepthLevel { price: string; quantity: string }
 
 /**
@@ -40,10 +42,19 @@ export function parseFuturesTrades(frame:any,symbol:string,now:number):FuturesTr
 }
 
 const DEPTH = 200;
-/** No accepted frame for this long and the book is labelled, not cleared. */
-const STALE_AFTER_MS = 12_000;
+/**
+ * No accepted frame for this long and the book is labelled, not cleared.
+ *
+ * These were 12 s and 60 s against a one-second fallback poll. Once the poll
+ * slowed to the shared 30-second cadence those numbers contradicted
+ * themselves: a book refreshed every 30 s would be declared stale at 12 s
+ * and thrown away at 60 s, so a healthy feed would spend most of its life
+ * accusing itself of being broken and then blanking. The rule lives in
+ * bookFreshness — stale is three missed refreshes, not a fraction of one.
+ */
+const STALE_AFTER_MS = BOOK_STALE_AFTER_MS;
 /** ...and at this point it is dropped, because it is no longer a price. */
-const UNAVAILABLE_AFTER_MS = 60_000;
+const UNAVAILABLE_AFTER_MS = BOOK_UNAVAILABLE_AFTER_MS;
 const FLUSH_MS = 300;
 const PING_MS = 20_000;
 const IDLE_CLOSE_MS = 750;
@@ -72,7 +83,15 @@ const SOCKET_GRACE_MS = 6_000;
 /** Give the socket this long to produce a first frame before ALSO asking
  *  our own backend. Long enough that a healthy connection never triggers it. */
 const FALLBACK_AFTER_MS = 6_000;
-const FALLBACK_POLL_MS = 1_000;
+/**
+ * How often the backend fallback re-reads while the socket is not live.
+ *
+ * This was one second — sixty reads a minute, per subscribed contract, for a
+ * display panel. That is the heavy polling this change removes. The shared
+ * cadence is two a minute, and a socket that IS live suppresses the fallback
+ * entirely (see `pollOnce`).
+ */
+const FALLBACK_POLL_MS = BOOK_REFRESH_MS;
 const WS_URL = 'wss://stream.bybit.com/v5/public/linear';
 
 /**

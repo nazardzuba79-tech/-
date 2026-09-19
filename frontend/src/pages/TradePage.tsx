@@ -32,6 +32,7 @@ import './trade-terminal/TerminalPresentationPolish.css';
 import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
 import './trade-terminal/TerminalPremium.css';
+import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -40,7 +41,8 @@ import './trade-terminal/TerminalPremium.css';
 // History/Assets are unaffected.
 type BottomTab = 'open' | 'orderHistory' | 'assets';
 type MarketType = 'spot' | 'cfd';
-const WS_FALLBACK_TIMEOUT_MS = 4000;
+// The book's cadence and its staleness rules live in one place, shared
+// with the futures depth store and the connection banner. See bookFreshness.
 const PAIR_PATTERN = /^[A-Z0-9]+\/[A-Z0-9]+$/;
 
 const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tabOrderHistory' | 'trade.tabAssets' }[] = [
@@ -91,6 +93,9 @@ export function TradePage() {
   const bookRequestRef = useRef(0);
   const bookWsVersionRef = useRef(0);
   const bookPendingRef = useRef<{ generation: number; request: number } | null>(null);
+  /** The pair the ladder on screen belongs to, so a remount can tell a real
+   *  market change from a re-render and keep last-good in the second case. */
+  const bookShownPairRef = useRef<string | null>(null);
   bookPairRef.current = pair;
   const marketResizeStart = useRef({ x: 0, width: 258 });
   // Deep-linked from the nav's Trading hover dropdown (?market=cfd) — see
@@ -156,8 +161,17 @@ export function TradePage() {
   // the old 2s REST poll instead of leaving the book frozen.
   useEffect(() => {
     const generation = ++bookGenerationRef.current;
-    setBook({ pair, bids: [], asks: [] });
-    setPickedPrice(null);
+    // A different market is a different book, so the old ladder has to go —
+    // BTC depth must never sit under an ETH header for even one frame. A
+    // re-run on the SAME pair is not that: emptying the book there is what
+    // made an ordinary reconnect look like the terminal had thrown the
+    // market away and started again. Last-good stays on screen and is
+    // replaced by the next real answer, never by a blank.
+    if (bookShownPairRef.current !== pair) {
+      setBook({ pair, bids: [], asks: [] });
+      setPickedPrice(null);
+      bookShownPairRef.current = pair;
+    }
     let lastWsData = 0;
 
     const unsubscribe = krakenSocket.subscribeBook(pair, (snapshot) => {
@@ -168,16 +182,34 @@ export function TradePage() {
     });
 
     refreshBook();
-    // Re-enter REST fallback after a later WS interruption as well as on
-    // initial connection failure. Never let delayed REST overwrite newer WS.
+    // A REST read only stands in when the socket has actually gone quiet for
+    // a whole cycle, so a healthy socket costs no requests at all and a dead
+    // one costs two a minute. Delayed REST never overwrites newer socket
+    // data — `bookWsVersionRef` guards that in `refreshBook`.
+    const quiet = () => Date.now() - lastWsData >= BOOK_REFRESH_MS;
     const fallbackTimer = window.setInterval(() => {
-      if (Date.now() - lastWsData >= WS_FALLBACK_TIMEOUT_MS) refreshBook();
-    }, 2000);
+      if (quiet()) refreshBook();
+    }, BOOK_REFRESH_MS);
+
+    // Coming back to the tab. A background tab has its timers throttled and
+    // its socket may have been closed by the browser, so the ladder on
+    // screen can be older than it looks. Read once, quietly: nothing is
+    // cleared, no banner is raised, and if the socket is still delivering
+    // this does nothing at all.
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (quiet()) refreshBook();
+    };
+    // Guarded the way the depth store guards its own listener: this module
+    // is also loaded where there is no document.
+    const hasDocument = typeof document !== 'undefined';
+    if (hasDocument) document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
       unsubscribe();
       bookGenerationRef.current += 1;
       clearInterval(fallbackTimer);
+      if (hasDocument) document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [pair, refreshBook]);
 

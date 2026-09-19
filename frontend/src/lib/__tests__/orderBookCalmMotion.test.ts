@@ -4,6 +4,9 @@ import { resolve } from 'path';
 const root = resolve(__dirname, '../../../..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace(/\r\n/g, '\n');
 const book = read('frontend/src/components/FuturesReferenceBook.tsx');
+const spot = read('frontend/src/components/OrderBookPanel.tsx');
+const terminal = read('frontend/src/pages/trade-terminal/TradeTerminal.css');
+const index = read('frontend/src/index.css');
 const css = read('frontend/src/pages/trade-terminal/TerminalAccountPanel.css');
 const premium = read('frontend/src/pages/trade-terminal/TerminalPremium.css');
 /** The two sheets that paint the bar on the terminal the owner looks at: the
@@ -160,5 +163,59 @@ describe('the data contract is untouched', () => {
     // Depth still comes from the aggregator, not from a locally held copy.
     expect(code).toContain("aggregateSpotBook(bids, step, 'BUY')");
     expect(code).toContain("aggregateSpotBook(asks, step, 'SELL')");
+  });
+});
+
+
+/**
+ * The same rules on the Spot ladder.
+ *
+ * The futures book was calmed first; Spot kept both faults and had one of
+ * its own. It keyed rows by price — so a moving ladder remounted them, the
+ * same tear-down the block above exists to stop — and on top of that it
+ * pulsed every changed row through a 32 %-alpha keyframe on EVERY publish,
+ * which is a flash the reference terminal does not have at all. One book
+ * everywhere means the Spot panel obeys the rules the futures panel already
+ * does.
+ */
+describe('the Spot ladder obeys the same rules as the futures one', () => {
+  const spotCode = spot.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  it('keys a Spot row by its depth slot, never by the price in it', () => {
+    expect(spotCode).toContain('key={`sell-${index}`}');
+    expect(spotCode).toContain('key={`buy-${index}`}');
+    // The old price keys, in either of the two forms the panel used.
+    expect(spotCode).not.toContain('key={spotPrecision ? spotLevelPrice(level.price, groupStep)');
+    expect(spotCode).not.toMatch(/key=\{level\.price/);
+  });
+
+  it('no longer pulses a row when its quantity changes', () => {
+    // The hook, its class names and its keyframes are DELETED, not disabled:
+    // a dormant flash is one prop away from coming back.
+    expect(spotCode).not.toContain('useRowFlash');
+    expect(spotCode).not.toContain('FLASH_DURATION_MS');
+    expect(spotCode).not.toContain('book-row-flash');
+    expect(index).not.toContain('book-row-flash');
+    expect(index).not.toContain('@keyframes book-row-flash-up');
+    expect(index).not.toContain('@keyframes book-row-flash-down');
+  });
+
+  it('keeps the Spot bar on a transform, so a size change never re-lays-out the row', () => {
+    expect(spotCode).toContain('transform: `scaleX(');
+    expect(spotCode).not.toMatch(/style=\{\{\s*width:/);
+    // And the sheet has to agree: a right-anchored full-width strip, with
+    // the transition on transform rather than on width.
+    const rule = /\.trade-terminal \.ob-depth-bar \{[^}]*\}/.exec(terminal)?.[0] ?? '';
+    expect(rule).toContain('left: 0');
+    expect(rule).toContain('transform-origin: 100% 50%');
+    expect(rule).toMatch(/transition: transform/);
+    expect(rule).not.toMatch(/transition:[^;]*width/);
+  });
+
+  it('still shows real levels and invents none', () => {
+    expect(spotCode).not.toMatch(/\blerp\b|\binterpolate\b|\bsmooth\b/i);
+    // Depth is still cumulative over the aggregated levels it was handed.
+    expect(spotCode).toContain('function withDepth(');
+    expect(spotCode).toContain('running += l.quantity');
   });
 });
