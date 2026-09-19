@@ -370,7 +370,15 @@ async function chartFlow(width) {
     assert.deepEqual((await api(s.context, s.token, 'state')).positions.map(x => [x.id, x.quantity]), before, 'Tool Off reset account positions');
     await setChartTools(p, true); await p.locator('[data-position-line]').first().waitFor();
     await setChartTools(p, false); await qty(p).fill('1');
-    const live = await command(s, 'OPEN', () => button(p, 'SHORT').click()); assert.equal(live.draft.candle, undefined, 'Tool Off retained the unsent historical selection');
+    const refusal=p.waitForResponse(r=>r.url().endsWith('/native/commands')&&r.request().method()==='POST'&&r.request().postDataJSON()?.kind==='OPEN');
+    await button(p,'SHORT').click();const refused=await refusal;
+    assert.equal(refused.request().postDataJSON().candle,undefined,'Tool Off retained the unsent historical selection');
+    assert(!refused.ok(),'Historical account admitted a new MARKET without selected entry');
+    assert.deepEqual((await api(s.context,s.token,'state')).positions.map(x=>[x.id,x.quantity]),before,'Refused entry changed exposure');
+    // Turning drawing tools off does not turn a persisted historical account into LIVE_EXECUTION.
+    const closed=await command(s,'CLOSE',()=>positionRow(p,'LONG').locator('.futures-position-close').nth(1).click());
+    assert.equal(closed.draft.candle,undefined,'Current close reused the historical selection');
+    assert.equal(closed.state.positions.length,0);assert.equal(closed.state.orders.length,0);
   } finally { await s.context.close(); }
 }
 const CASES = [
