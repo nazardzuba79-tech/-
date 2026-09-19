@@ -47,6 +47,28 @@ const UNAVAILABLE_AFTER_MS = 60_000;
 const FLUSH_MS = 300;
 const PING_MS = 20_000;
 const IDLE_CLOSE_MS = 750;
+/**
+ * How long a socket WE HAVE JUST OPENED is given to produce its first frame
+ * before the heartbeat is allowed to call it dead.
+ *
+ * Without this the heartbeat judged the connection purely on how long it had
+ * been since the last accepted frame. Once a book had been silent for
+ * `STALE_AFTER_MS` that condition stayed true no matter how young the socket
+ * was, so the one-second tick tore down every reconnect attempt one second
+ * after it opened — before a handshake, a subscribe and a first
+ * `orderbook.200` snapshot could complete. Measured on the fake-timer
+ * harness: eight sockets opened in eighty seconds, every one of them closed,
+ * each alive for a single tick. A visitor whose round trip to the venue
+ * takes longer than a second therefore never reconnected at all, and
+ * "Данные не обновляются — переподключение" was permanent rather than
+ * momentary — the label was accurate, and the reconnect it promised was the
+ * thing being prevented.
+ *
+ * A socket is now judged on its OWN age. Six seconds is the same allowance
+ * `FALLBACK_AFTER_MS` gives a healthy connection, and the backend fallback
+ * is already polling throughout, so nothing waits on this.
+ */
+const SOCKET_GRACE_MS = 6_000;
 /** Give the socket this long to produce a first frame before ALSO asking
  *  our own backend. Long enough that a healthy connection never triggers it. */
 const FALLBACK_AFTER_MS = 6_000;
@@ -210,6 +232,8 @@ class FuturesDepthTransport {
   private heartbeat: ReturnType<typeof setInterval> | null = null;
   private reconnectDelay = 1000;
   private lastPing = 0;
+  /** When the CURRENT socket was created — see `SOCKET_GRACE_MS`. */
+  private socketStartedAt = 0;
   private visibilityAttached = false;
 
   subscribe(pair: string, listener: DepthListener, onTrades?:(trades:FuturesTrade[])=>void): () => void {
@@ -385,6 +409,7 @@ class FuturesDepthTransport {
     try {
       const ws = new WebSocket(WS_URL);
       this.socket = ws;
+      this.socketStartedAt = Date.now();
       this.lastPing = Date.now();
       this.startHeartbeat();
       ws.onopen = () => {
@@ -481,7 +506,16 @@ class FuturesDepthTransport {
       }
       // A socket that has gone quiet across EVERY contract is a dead socket,
       // not a quiet market. Reconnect it — without emptying anything.
-      if (silent && [...this.subscriptions.values()].every(a => now - (a.lastAccepted ?? a.subscribedAt) > STALE_AFTER_MS)) {
+      //
+      // ...but only once it has HAD its chance. A socket opened a moment ago
+      // has not gone quiet, it has not finished connecting, and the book
+      // being stale says nothing about it: the staleness clock runs from the
+      // last accepted frame, which by definition predates every reconnect
+      // attempt. Judging the socket by that clock meant this tick fired one
+      // second after each new socket opened and closed it mid-handshake,
+      // forever. See SOCKET_GRACE_MS.
+      if (silent && now - this.socketStartedAt > SOCKET_GRACE_MS &&
+          [...this.subscriptions.values()].every(a => now - (a.lastAccepted ?? a.subscribedAt) > STALE_AFTER_MS)) {
         this.reconnect();
         return;
       }

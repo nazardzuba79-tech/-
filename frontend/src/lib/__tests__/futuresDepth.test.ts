@@ -246,6 +246,69 @@ describe('selected-contract depth lifecycle',()=>{
     expect(after.bids).toEqual([{price:'100',quantity:'2'}]); // untouched
     stop();jest.advanceTimersByTime(1000);
   });
+
+  /**
+   * The reconnect that never happened.
+   *
+   * The heartbeat decided whether the socket was dead purely from how long
+   * it had been since the last accepted frame. Once a book was stale that
+   * clock stayed past the threshold no matter how young the socket was, so
+   * the one-second tick closed every fresh socket one second after opening
+   * it — before a handshake, a subscribe and a first snapshot could land.
+   * Anyone whose round trip to the venue took longer than that second was
+   * left with a permanent "not updating - reconnecting" label and a
+   * reconnect that was being cancelled a second at a time.
+   *
+   * A new socket is now judged on its own age, so a slow one still gets to
+   * finish connecting and the panel goes back to live.
+   */
+  test('a reconnect is given time to finish connecting instead of being torn down every second',()=>{
+    const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    expect(listener.mock.calls[1][0].status).toBe('live');
+
+    // Silence long enough for the heartbeat to give up on this socket, then
+    // wait for the backoff to open the replacement.
+    jest.advanceTimersByTime(20_000);
+    expect(listener.mock.calls[listener.mock.calls.length-1][0].status).toBe('stale');
+    let opened=sockets.length;
+    expect(opened).toBeGreaterThan(1);
+    while(sockets.length===opened) jest.advanceTimersByTime(1_000);
+    opened=sockets.length;
+
+    // That replacement is a live handle, not a corpse. Three seconds after
+    // it was opened it is still the transport's socket — under the old rule
+    // it was closed one second in, every time, forever.
+    const fresh=sockets[sockets.length-1];
+    expect(fresh.close).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(3_000);
+    expect(fresh.close).not.toHaveBeenCalled();
+    expect(sockets).toHaveLength(opened); // nothing was thrown away and reopened
+
+    // A handshake that takes three seconds still completes, and the book
+    // comes back rather than staying labelled forever.
+    fresh.onopen();
+    fresh.onmessage({data:JSON.stringify(frame({u:40,seq:40,b:[['103','5']],a:[['104','6']]}))});
+    jest.advanceTimersByTime(300);
+    const back=listener.mock.calls[listener.mock.calls.length-1][0];
+    expect(back.status).toBe('live');
+    expect(back.bids).toEqual([{price:'103',quantity:'5'}]);
+    stop();jest.advanceTimersByTime(1000);
+  });
+
+  /** A socket that really is mute is still dropped — just not instantly. */
+  test('a socket that stays mute past its grace is still replaced',()=>{
+    const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
+    sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    jest.advanceTimersByTime(20_000);
+    const opened=sockets.length;
+    const mute=sockets[sockets.length-1];
+    mute.onopen(); // connects, then says nothing at all
+    jest.advanceTimersByTime(30_000);
+    expect(mute.close).toHaveBeenCalled();
+    expect(sockets.length).toBeGreaterThan(opened);
+    stop();jest.advanceTimersByTime(1000);
+  });
 });
 
 test('trade frames require exact contract and positive real quantities',()=>{

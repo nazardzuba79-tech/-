@@ -265,11 +265,11 @@
    every bar was permanently mid-animation, so the ladder never sat still.
    140ms lands each bar well before the next publish. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
-  background:rgba(46,189,133,.13);
+  background:rgba(46,189,133,.10);
   transition:transform 140ms linear;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
-  background:rgba(246,70,93,.13);
+  background:rgba(246,70,93,.10);
 }
 
 /* CENTRE PRICE. The number sits in its own slot and the direction arrow in a
@@ -514,6 +514,65 @@
   box-shadow:none;
 }
 
+
+/* ---------------------------------------------------------------------------
+   Order-book calm, part two: the ladder stopped being two blocks of colour.
+
+   THE COMPLAINT, measured. The owner put our book beside Binance's again and
+   said ours dazzles. Rendering the real build against the seeded replay feed
+   (scripts/qa-orderbook-motion.cjs) and reading the frames back says what he
+   is looking at, and it is not the bar's weight — that was already taken from
+   30% to 13% above. It is that the bars MERGE.
+
+   The bar is cumulative, so it grows monotonically from the touch outwards
+   and the far half of each side sits above 50% of its track. Each one is
+   `inset:0`, so it fills its row edge to edge with no gap, and nineteen of
+   them stacked butt together into one unbroken red field above the mid and
+   one unbroken green field below it. Two saturated rectangles with numbers
+   printed on them — which is the thing the eye catches, not any single bar.
+
+   Three changes, none of which touch what the bar MEASURES. Same cumulative
+   value, same per-side maximum, same right anchor, same transform, same
+   140ms. Only how much of the panel it is allowed to own:
+
+     1. A 1px gap top and bottom. The staircase becomes a stack of separate
+        bars again, the way the reference draws it, instead of a poured
+        field. This is the change that does most of the work.
+     2. 13% -> 10% alpha (above). With the rows separated the tint no longer
+        accumulates, so it can afford to be lighter still.
+     3. The `Всего` column steps down to the secondary text colour. Three
+        columns at the same brightness over a tinted row is three things
+        competing; the cumulative total is context for the bar beside it,
+        while the price and the size are the figures an order is placed on.
+        Nothing is hidden and no number changes — one of the three is simply
+        no longer shouting as loudly as the other two.
+
+   THE RATIO STRIP. `rgba(246,70,93,.2)` under a solid `#183731` wedge made
+   the loudest band in the panel out of the smallest fact in it, and it sat
+   directly under the ladder where it framed the whole book in red. Same two
+   figures, same geometry, same wedge — drawn at the ladder's weight rather
+   than above it, and the boxed B/S letters lose their border so they read as
+   labels rather than badges.
+
+   Every rule here is colour, alpha or a 1px inset. Not one sets a size, a
+   row height, a column width or a font size, so nothing a trader reads
+   moves, and the panel's data contract is untouched. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
+  inset:1px 0;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row > span:last-of-type {
+  color:var(--text-secondary,#98a2b3);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-ratio {
+  background:rgba(246,70,93,.10);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-ratio > i {
+  background:rgba(46,189,133,.13);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-ratio b {
+  border-color:transparent;
+  padding:0;
+}
 /* ── THE BOTTOM TABLE FITS ITS PANEL ──────────────────────────────────────
    Measured with one open position on a fixture terminal: the ten columns
    asked for 1224px while the panel gives 1125px at 1440 and 965px at 1280,
