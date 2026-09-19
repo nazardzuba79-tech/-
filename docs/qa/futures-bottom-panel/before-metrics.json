@@ -1,0 +1,490 @@
+{
+  "status": "MEASURED",
+  "label": "before",
+  "report": {
+    "empty-1920": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1605,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1605,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1605,
+        "height": 193
+      },
+      "deadSpacePx": 0,
+      "deadSpacePct": 0,
+      "rowCount": 0,
+      "rowHeights": [],
+      "columnCount": 0,
+      "headHeight": null,
+      "emptyState": {
+        "box": {
+          "left": 1,
+          "top": 780,
+          "bottom": 939,
+          "width": 1605,
+          "height": 159
+        },
+        "text": "Нет открытых позиций",
+        "iconSize": 22,
+        "centred": true
+      },
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(0)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(240, 201, 100)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    },
+    "empty-1664": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1349,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1349,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1349,
+        "height": 193
+      },
+      "deadSpacePx": 0,
+      "deadSpacePct": 0,
+      "rowCount": 0,
+      "rowHeights": [],
+      "columnCount": 0,
+      "headHeight": null,
+      "emptyState": {
+        "box": {
+          "left": 1,
+          "top": 780,
+          "bottom": 939,
+          "width": 1349,
+          "height": 159
+        },
+        "text": "Нет открытых позиций",
+        "iconSize": 22,
+        "centred": true
+      },
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(0)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(240, 201, 100)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    },
+    "empty-1440": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1125,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1125,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1125,
+        "height": 193
+      },
+      "deadSpacePx": 0,
+      "deadSpacePct": 0,
+      "rowCount": 0,
+      "rowHeights": [],
+      "columnCount": 0,
+      "headHeight": null,
+      "emptyState": {
+        "box": {
+          "left": 1,
+          "top": 780,
+          "bottom": 939,
+          "width": 1125,
+          "height": 159
+        },
+        "text": "Нет открытых позиций",
+        "iconSize": 22,
+        "centred": true
+      },
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(0)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(240, 201, 100)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    },
+    "empty-1366": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1051,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1051,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1051,
+        "height": 193
+      },
+      "deadSpacePx": 0,
+      "deadSpacePct": 0,
+      "rowCount": 0,
+      "rowHeights": [],
+      "columnCount": 0,
+      "headHeight": null,
+      "emptyState": {
+        "box": {
+          "left": 1,
+          "top": 795,
+          "bottom": 939,
+          "width": 1051,
+          "height": 144
+        },
+        "text": "Нет открытых позиций",
+        "iconSize": 22,
+        "centred": true
+      },
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(0)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(240, 201, 100)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    },
+    "filled-1920": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1605,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1605,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1605,
+        "height": 193
+      },
+      "deadSpacePx": 108,
+      "deadSpacePct": 56,
+      "rowCount": 1,
+      "rowHeights": [
+        50
+      ],
+      "columnCount": 10,
+      "headHeight": 36,
+      "emptyState": null,
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(1)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(234, 238, 243)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    },
+    "filled-1664": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1349,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1349,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1349,
+        "height": 193
+      },
+      "deadSpacePx": 94,
+      "deadSpacePct": 49,
+      "rowCount": 1,
+      "rowHeights": [
+        64
+      ],
+      "columnCount": 10,
+      "headHeight": 36,
+      "emptyState": null,
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(1)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(234, 238, 243)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    },
+    "filled-1440": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1125,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1125,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1125,
+        "height": 193
+      },
+      "deadSpacePx": 66,
+      "deadSpacePct": 34,
+      "rowCount": 1,
+      "rowHeights": [
+        77
+      ],
+      "columnCount": 10,
+      "headHeight": 51,
+      "emptyState": null,
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(1)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(234, 238, 243)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    },
+    "filled-1366": {
+      "panel": {
+        "left": 1,
+        "top": 704,
+        "bottom": 939,
+        "width": 1051,
+        "height": 235
+      },
+      "header": {
+        "left": 1,
+        "top": 704,
+        "bottom": 746,
+        "width": 1051,
+        "height": 42
+      },
+      "content": {
+        "left": 1,
+        "top": 746,
+        "bottom": 939,
+        "width": 1051,
+        "height": 193
+      },
+      "deadSpacePx": 66,
+      "deadSpacePct": 34,
+      "rowCount": 1,
+      "rowHeights": [
+        77
+      ],
+      "columnCount": 10,
+      "headHeight": 51,
+      "emptyState": null,
+      "tabCount": 5,
+      "tabLabels": [
+        "Открытые ордера(0)",
+        "Позиции(1)",
+        "История ордеров",
+        "История позиций",
+        "Активы"
+      ],
+      "tabHeight": 43,
+      "activeTab": {
+        "color": "rgb(234, 238, 243)",
+        "font-weight": "650",
+        "border-bottom-width": "2px",
+        "border-bottom-color": "rgb(240, 201, 100)"
+      },
+      "inactiveTab": {
+        "color": "rgb(152, 162, 179)",
+        "font-weight": "500",
+        "border-bottom-width": "2px"
+      },
+      "tiers": null,
+      "overflowX": 0,
+      "tableScrollX": 0,
+      "pageErrors": []
+    }
+  }
+}
