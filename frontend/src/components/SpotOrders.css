@@ -2,20 +2,20 @@
 .trade-terminal .spot-orders-panel { min-width: 0; min-height: 100%; }
 .trade-terminal .spot-orders-table { width: 100%; font-size: 11px; font-variant-numeric: tabular-nums; }
 .trade-terminal .spot-orders-table[data-has-rows="true"] { min-width: 950px; }
-.trade-terminal .spot-orders-table th { position: sticky; top: 0; z-index: 2; height: 29px; padding: 5px 12px; background: var(--toolbar-bg, #101720); color: var(--text-secondary); font-size: 10px; font-weight: 500; }
-.trade-terminal .spot-orders-table td { height: 37px; padding: 5px 12px; border-bottom-color: var(--border-color, #202b36); }
+.trade-terminal .spot-orders-table th { position: sticky; top: 0; z-index: 2; height: 29px; padding: 5px 12px; background: var(--toolbar-bg, #1a1f27); color: var(--text-secondary); font-size: 10px; font-weight: 500; }
+.trade-terminal .spot-orders-table td { height: 37px; padding: 5px 12px; border-bottom-color: var(--border-color, #1a1f27); }
 .trade-terminal .spot-orders-table .spot-order-number { text-align: right; }
 .trade-terminal .spot-orders-table .spot-order-pair { font-weight: 600; }
 .trade-terminal .spot-order-time time { display: grid; gap: 2px; }
 .trade-terminal .spot-order-time small, .trade-terminal .spot-order-unit { font-size: 9px; color: var(--text-secondary); }
 .trade-terminal .spot-order-status { display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); font-size: 10px; }
 .trade-terminal .spot-order-status::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.trade-terminal .spot-order-status[data-status="OPEN"], .trade-terminal .spot-order-status[data-status="PENDING_TRIGGER"] { color: var(--accent-yellow, #d5b73f); }
+.trade-terminal .spot-order-status[data-status="OPEN"], .trade-terminal .spot-order-status[data-status="PENDING_TRIGGER"] { color: var(--accent-yellow, #f0c964); }
 .trade-terminal .spot-order-status[data-status="FILLED"] { color: var(--color-buy, #19bf8a); }
 .trade-terminal .spot-order-status[data-status="PARTIALLY_FILLED"] { color: #94c9e8; }
 .trade-terminal .spot-orders-table .cancel-btn { min-height: 25px; padding: 3px 8px; font-size: 10px; border: 1px solid var(--border-color, #263340); }
 .trade-terminal .spot-orders-table .cancel-btn:disabled { opacity: .5; cursor: wait; }
-.trade-terminal .spot-orders-table .cancel-btn:focus-visible, .trade-terminal .spot-orders-error button:focus-visible { outline: 2px solid var(--accent-yellow, #d5b73f); outline-offset: 2px; }
+.trade-terminal .spot-orders-table .cancel-btn:focus-visible, .trade-terminal .spot-orders-error button:focus-visible { outline: 2px solid var(--accent-yellow, #f0c964); outline-offset: 2px; }
 .trade-terminal .spot-orders-table .spot-orders-empty-cell { height: auto; padding: 0; border-bottom: 0; }
 .trade-terminal .spot-orders-empty { min-height: 84px; display: flex; align-items: center; justify-content: center; gap: 11px; padding: 13px 18px; color: var(--text-secondary); white-space: normal; }
 .trade-terminal .spot-orders-empty-icon { width: 33px; height: 33px; display: grid; place-items: center; border: 1px solid var(--border-color, #25323f); border-radius: 8px; color: #748496; background: rgba(118, 140, 159, .035); flex-shrink: 0; }

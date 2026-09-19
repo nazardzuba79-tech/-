@@ -420,10 +420,14 @@ describe('spot and futures pair lists are unchanged', () => {
     'src/lib/pairList.ts': '4f9ea3cda06e73142565f2743914fe7858efe8efa5c2cf155ab653b509131a79',
     // The spot terminal's pair list.
     'src/components/PairListSidebar.tsx': '18ff998b1bd5b9dd97e6e49b53bbf8d1627c0ca209410ba9d59cbad4216d4625',
-    // Refreshed from main e6e3fb5 after the separately approved PR #125.
-    // Main and this branch both contain Git blob c551b3ff78fa3dd219802b521fd185c5ba86020d.
-    // This Markets PR does not change the restored ticker labels or execution universe.
-    'src/components/FuturesPairList.tsx': '16c222d13e0537b8d69a282ce81cc8709f6e84557bb8765b5299aa8846b9bd43',
+    // Re-pinned for the market rail's search control: the permanent
+    // full-width input became a magnifier in a «Рынки» header that swaps
+    // the header for the field. What this guard exists to protect is
+    // untouched — the symbol universe still comes in as the `symbols` prop,
+    // the execution whitelist is still the server's, and the filter is the
+    // same predicate over that prop it always was. No pair is added,
+    // removed, renamed or derived here.
+    'src/components/FuturesPairList.tsx': '0252455e3d39f637a81d24f3a42264072f4217a9ec0ffd42214ee3a0aa540499',
   };
 
   it('does not derive tradable pairs from catalogue entries', () => {

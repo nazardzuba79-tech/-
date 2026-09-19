@@ -27,13 +27,13 @@
 .trade-terminal {
   --bg-primary: #111821;
   --bg-secondary: #1e2329;
-  --bg-tertiary: #2b3139;
-  --bg-hover: #2b3139;
-  --border-color: #2b3139;
-  --text-primary: #eaecef;
+  --bg-tertiary: #232a34;
+  --bg-hover: #232a34;
+  --border-color: #232a34;
+  --text-primary: #eaeef3;
   --text-secondary: #848e9c;
-  --accent-yellow: #f0b90b;
-  --color-buy: #0ecb81;
+  --accent-yellow: #f0c964;
+  --color-buy: #2ebd85;
   --color-buy-hover: #0bc179;
   --color-sell: #f6465d;
   --color-sell-hover: #e03e53;
@@ -271,7 +271,7 @@
    colour stops the most prominent number on the page from flipping hue on
    every tick. Needs the .up/.down qualifier to outrank .value.up/.down. */
 .trade-terminal .ticker-item .value.price.up,
-.trade-terminal .ticker-item .value.price.down { color: #e9c53d; }
+.trade-terminal .ticker-item .value.price.down { color: #f0c964; }
 /* The signed move sits with the price, a step below it. */
 .trade-terminal .ticker-item .value.change { font-size: 13.5px; font-weight: 600; }
 .trade-terminal .ticker-item .value.up { color: var(--color-buy); }
@@ -412,7 +412,7 @@
    tool is a gold glyph on a barely-there gold wash — never a filled yellow
    button. No glow, no scaling. */
 .trade-terminal .tool-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
-.trade-terminal .tool-btn.active { background: rgba(240, 185, 11, 0.12); color: var(--accent-yellow); }
+.trade-terminal .tool-btn.active { background: rgba(240,201,100, 0.12); color: var(--accent-yellow); }
 .trade-terminal .tool-divider { width: 18px; height: 1px; background: var(--layer-border); margin: 5px 0; }
 
 /* === GROUPED TOOL === */
@@ -449,8 +449,8 @@
   text-align: left; white-space: nowrap;
   transition: background 0.15s, color 0.15s;
 }
-.tool-flyout-item:hover { background: #2b3139; color: #eaecef; }
-.tool-flyout-item.active { color: #f0b90b; }
+.tool-flyout-item:hover { background: #232a34; color: #eaeef3; }
+.tool-flyout-item.active { color: #f0c964; }
 .tool-flyout-item svg { flex-shrink: 0; }
 .trade-terminal .chart-placeholder {
   width: 100%; height: 100%;
@@ -495,10 +495,10 @@
 /* Exact reference active fills (#12c98d / #ef5350) with the lighter
    #16d89a / #ff6262 edge. */
 .trade-terminal .order-form-tab.active.buy {
-  background: #12c98d; border-color: #16d89a; color: #fff;
+  background: #2ebd85; border-color: #2ebd85; color: #fff;
 }
 .trade-terminal .order-form-tab.active.sell {
-  background: #ef5350; border-color: #ff6262; color: #fff;
+  background: #f6465d; border-color: #f6465d; color: #fff;
 }
 /* Five compact real order types, including OCO, share the approved 43px
    row and use the reference's active underline. */
@@ -663,11 +663,11 @@
   display: flex; align-items: center; justify-content: space-between;
   min-height: 43px; padding: 0 12px; border-bottom: 1px solid var(--border-color);
 }
-.trade-terminal .orderbook-title { font-size: 12px; font-weight: 700; color: #f1f4f7; }
+.trade-terminal .orderbook-title { font-size: 12px; font-weight: 700; color: #eaeef3; }
 .trade-terminal .orderbook-header-actions { display: flex; align-items: center; gap: 4px; }
 .trade-terminal .ob-group-select {
   min-width: 46px; height: 25px; padding: 3px 2px 3px 7px;
-  background: #202b36; border: 1px solid #2d3b49; color: #b4bec8;
+  background: #1a1f27; border: 1px solid #2d3b49; color: #b4bec8;
   cursor: pointer; border-radius: 3px; font-size: 10px;
   font-family: inherit; outline: none; transition: border-color 0.2s, color 0.2s;
 }
@@ -684,7 +684,7 @@
 .trade-terminal .orderbook-collapse:hover,
 .trade-terminal .pairs-header button:hover,
 .trade-terminal .restore-market-panel:hover,
-.trade-terminal .restore-orderbook:hover { color: #e1e6ea; background: #202b36; border-color: #2d3b49; }
+.trade-terminal .restore-orderbook:hover { color: #e1e6ea; background: #1a1f27; border-color: #2d3b49; }
 .trade-terminal .orderbook-col-headers {
   display: flex; padding: 4px 12px; font-size: 11px; color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
@@ -761,7 +761,7 @@
 .trade-terminal .pairs-section { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
 .trade-terminal .pairs-header {
   min-height: 43px; padding: 0 8px 0 13px; display: flex; align-items: center; justify-content: space-between;
-  color: #f1f4f7; border-bottom: 1px solid #24303c; font-size: 12px; font-weight: 700;
+  color: #eaeef3; border-bottom: 1px solid #24303c; font-size: 12px; font-weight: 700;
 }
 .trade-terminal .pairs-search { padding: 10px 10px 9px; position: relative; }
 /* Only the four things asked for: horizontal padding, vertical centring (an
@@ -776,7 +776,7 @@
   font-family: inherit;
 }
 .trade-terminal .pairs-search input:focus { border-color: var(--accent-yellow); }
-.trade-terminal .pairs-search input::placeholder { color: #7e8997; }
+.trade-terminal .pairs-search input::placeholder { color: #5c6675; }
 /* Leading search glyph, drawn in CSS so the panel gains no icon import. */
 .trade-terminal .pairs-search::before {
   content: ''; position: absolute; z-index: 1; left: 19px; top: 20px; width: 13px; height: 13px;
@@ -785,7 +785,7 @@
 }
 .trade-terminal .pairs-search kbd {
   position: absolute; z-index: 2; right: 19px; top: 17px;
-  color: #7e8997; background: transparent; border: none; font: inherit; font-size: 10px;
+  color: #5c6675; background: transparent; border: none; font: inherit; font-size: 10px;
   pointer-events: none;
 }
 .trade-terminal .pairs-tabs {
@@ -804,7 +804,7 @@
 .trade-terminal .pairs-sort {
   min-height: 31px; padding: 0 7px; display: grid;
   grid-template-columns: minmax(58px, 1fr) 59px 46px 34px;
-  color: #8995a2; border-bottom: 1px solid #202a35;
+  color: #5c6675; border-bottom: 1px solid #1a1f27;
 }
 .trade-terminal .pairs-sort button {
   min-width: 0; display: flex; align-items: center; gap: 1px; padding: 0 2px;
@@ -824,7 +824,7 @@
   display: grid; grid-template-columns: minmax(0, 1fr) 64px 46px;
   gap: 0 3px; align-items: center; height: 31px;
   padding: 0 9px 0 11px;
-  color: #8995a2; border-bottom: 1px solid #202a35;
+  color: #5c6675; border-bottom: 1px solid #1a1f27;
 }
 /* Sits in the header's first slot, above the pair column, so the sort
    control costs no extra row. Styled as a label with a caret rather than
@@ -890,7 +890,7 @@
    competing with the chart/order book for attention. */
 .trade-terminal .pair-row.active {
   background: #202c38;
-  border-left-color: #d4b32d;
+  border-left-color: #f0c964;
 }
 .trade-terminal .pair-row .p-icon { display: grid; place-items: center; }
 .trade-terminal .pair-row.active .p-icon { filter: brightness(1.15); }
@@ -927,7 +927,7 @@
    .pair-row.active, which made the open pair's star look favourited when
    it wasn't — selection is already shown by the row itself. */
 .trade-terminal .pair-row .p-star.on { color: var(--accent-yellow); }
-.trade-terminal .pair-row .p-star.on:hover { color: #f0cb4a; }
+.trade-terminal .pair-row .p-star.on:hover { color: #f0c964; }
 /* The base asset is the part a trader scans for, so it never truncates:
    the name is two spans, and only the quote is allowed to shrink. Worst
    case now reads "DOGE/USD…" instead of "DOGE/U…" — and at the widths
@@ -976,7 +976,7 @@
 }
 .trade-terminal .bottom-tabs {
   min-height: 43px; display: flex; padding: 0 24px; gap: 27px;
-  border-bottom: 1px solid #202b36; align-items: center;
+  border-bottom: 1px solid #1a1f27; align-items: center;
 }
 .trade-terminal .bottom-tab {
   background: transparent; border: none; color: var(--text-secondary);
@@ -984,7 +984,7 @@
   border-bottom: 2px solid transparent; transition: all 0.2s; position: relative;
 }
 .trade-terminal .bottom-tab:hover { color: var(--text-primary); }
-.trade-terminal .bottom-tab.active { color: #e4c43f; font-weight: 700; border-bottom-color: #d2b231; }
+.trade-terminal .bottom-tab.active { color: #f0c964; font-weight: 700; border-bottom-color: #f0c964; }
 .trade-terminal .bottom-tab .badge {
   position: static; display: inline-grid; place-items: center;
   min-width: 18px; height: 17px; margin-left: 5px; padding: 0 4px;
@@ -996,7 +996,7 @@
   background: transparent; border: none; color: var(--accent-yellow);
   font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 4px;
 }
-.trade-terminal .bottom-action-btn:hover { background: rgba(240, 185, 11, 0.1); }
+.trade-terminal .bottom-action-btn:hover { background: rgba(240,201,100, 0.1); }
 .trade-terminal .bottom-content { flex: 1; overflow: auto; }
 .trade-terminal .orders-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .trade-terminal .orders-table th {
@@ -1014,7 +1014,7 @@
   background: transparent; border: none; color: var(--accent-yellow);
   cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 3px;
 }
-.trade-terminal .orders-table .cancel-btn:hover { background: rgba(240, 185, 11, 0.1); }
+.trade-terminal .orders-table .cancel-btn:hover { background: rgba(240,201,100, 0.1); }
 /* A bare centered line of gray text read as unfinished rather than a
    deliberate "nothing here yet" state — the same small muted icon +
    caption every professional terminal uses, not a new block, just this
@@ -1035,13 +1035,13 @@
 }
 .trade-terminal .open-orders-empty-icon {
   width: 32px; height: 32px; margin-bottom: 3px; display: grid; place-items: center;
-  color: #6d7b88; background: #202b36; border: 1px solid #2c3945; border-radius: 5px;
+  color: #6d7b88; background: #1a1f27; border: 1px solid #2c3945; border-radius: 5px;
 }
 .trade-terminal .open-orders-empty strong { color: #8f9ba8; font-size: 11px; font-weight: 600; }
 .trade-terminal .restore-market-panel,
 .trade-terminal .restore-orderbook {
   position: absolute; top: 8px; z-index: 7;
-  color: #d4b32d; background: #18232e; border-color: #2d3b49;
+  color: #f0c964; background: #18232e; border-color: #2d3b49;
 }
 .trade-terminal .restore-market-panel { left: 8px; }
 .trade-terminal .restore-orderbook { right: 8px; }
@@ -1173,7 +1173,7 @@
   background: #1e2936; border: 1px solid #354354; border-radius: 4px;
   color: #cad5e0; font-size: 11px; cursor: pointer;
 }
-.trade-terminal.spot-terminal .terminal-panel-restores button:hover { color: #f1cd67; background: #293445; }
+.trade-terminal.spot-terminal .terminal-panel-restores button:hover { color: #f0c964; background: #293445; }
 .trade-terminal.spot-terminal .chart-toolbar { flex-wrap: wrap; gap: 3px 6px; padding: 5px 8px; }
 .trade-terminal.spot-terminal .chart-tools { max-width: 100%; overflow-x: auto; }
 .trade-terminal.spot-terminal .chart-tabs { flex-shrink: 0; }

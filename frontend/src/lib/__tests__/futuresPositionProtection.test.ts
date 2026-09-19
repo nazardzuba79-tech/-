@@ -211,7 +211,9 @@ describe('the row shows server state, never a draft', () => {
   it('renders the set-it label when the server says nothing is armed', () => {
     const c = cell({ protection: { takeProfit: null, stopLoss: null } });
     expect(chips(c.tree)).toEqual([]);
-    expect(text(c.tree)).toContain('futures.tpsl');
+    // The reference offers the action rather than restating the column's
+    // own name: «+ Добавить» where nothing is armed yet.
+    expect(text(c.tree)).toContain('futures.addTpsl');
     expect(text(c.tree)).not.toContain('—');
   });
 

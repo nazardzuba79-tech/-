@@ -1,7 +1,7 @@
 /* CFD order ticket, chart and local positions. Scoped to CFD only. */
 .trade-terminal.cfd-terminal .cfd-order-panel{min-width:0;min-height:100%;display:flex;flex-direction:column;background:var(--workspace-bg)}
 .trade-terminal.cfd-terminal .cfd-sideTabs{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin:10px 12px 2px;padding:3px;background:#111b25;border:1px solid #263440;border-radius:7px}
-.trade-terminal.cfd-terminal .cfd-sideTab{padding:9px 4px;border:1px solid transparent;border-radius:5px;color:#aeb9c4;background:transparent;font-size:12px;font-weight:750;cursor:pointer;transition:background .15s,color .15s}
+.trade-terminal.cfd-terminal .cfd-sideTab{padding:9px 4px;border:1px solid transparent;border-radius:5px;color:#98a2b3;background:transparent;font-size:12px;font-weight:750;cursor:pointer;transition:background .15s,color .15s}
 .trade-terminal.cfd-terminal .cfd-sideTab.buy.active,.trade-terminal.cfd-terminal .cfd-submit.buy{background:var(--buy);color:#fff}
 .trade-terminal.cfd-terminal .cfd-sideTab.sell.active,.trade-terminal.cfd-terminal .cfd-submit.sell{background:var(--sell);color:#fff}
 .trade-terminal.cfd-terminal .cfd-product-terms{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;border-bottom:1px solid var(--border);color:#8e9ba8;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
@@ -9,9 +9,9 @@
 .trade-terminal.cfd-terminal .cfd-form{display:flex;flex:1;flex-direction:column;gap:11px;padding:12px 14px 14px;min-width:0}
 .trade-terminal.cfd-terminal .leverage-control{padding-block:2px}
 .trade-terminal.cfd-terminal .leverage-control input[type="range"]{appearance:none;height:16px;margin:2px 0;padding:0;background:transparent}
-.trade-terminal.cfd-terminal .leverage-control input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:#354351}
+.trade-terminal.cfd-terminal .leverage-control input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:#232a34}
 .trade-terminal.cfd-terminal .leverage-control input[type="range"]::-webkit-slider-thumb{appearance:none;width:12px;height:12px;margin-top:-4px;border:2px solid #202b37;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.trade-terminal.cfd-terminal .leverage-control input[type="range"]::-moz-range-track{height:4px;border-radius:4px;background:#354351}
+.trade-terminal.cfd-terminal .leverage-control input[type="range"]::-moz-range-track{height:4px;border-radius:4px;background:#232a34}
 .trade-terminal.cfd-terminal .leverage-control input[type="range"]::-moz-range-thumb{border:0;border-radius:50%;background:var(--accent)}
 .trade-terminal.cfd-terminal .cfd-label{display:flex;flex-direction:column;gap:7px;color:#aab6c1;font-size:11px}
 .trade-terminal.cfd-terminal .cfd-input{width:100%;min-width:0;padding:9px 11px;background:#101922;border:1px solid #2b3946;border-radius:6px;color:var(--text-primary);font-size:13px;line-height:20px;outline:none}
@@ -19,10 +19,10 @@
 .trade-terminal.cfd-terminal .cfd-reference-wrap{position:relative}
 .trade-terminal.cfd-terminal .cfd-referencePrice{padding-right:96px;color:#e0e7ed}
 .trade-terminal.cfd-terminal .cfd-order-state{position:absolute;right:8px;top:50%;transform:translateY(-50%);max-width:86px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px}
-.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-live{color:#52dba6}.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-closed{color:#c7b67d}.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-stale{color:#dda25d}.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-off{color:#7f8d99}
+.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-live{color:#52dba6}.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-closed{color:#f0c964}.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-stale{color:#f0c964}.trade-terminal.cfd-terminal .cfd-order-state.cfd-state-off{color:#7f8d99}
 .trade-terminal.cfd-terminal .cfd-infoBox{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid #283642;border-radius:7px;background:#101922}
 .trade-terminal.cfd-terminal .cfd-infoRow{display:flex;justify-content:space-between;gap:10px;font-size:11px}.trade-terminal.cfd-terminal .cfd-infoRow .mono{white-space:nowrap}
-.trade-terminal.cfd-terminal .cfd-muted{color:#8594a2}.trade-terminal.cfd-terminal .cfd-error{margin:0;padding:8px 9px;border:1px solid rgba(239,83,80,.28);border-radius:5px;background:rgba(239,83,80,.09);color:#ff8b88;font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+.trade-terminal.cfd-terminal .cfd-muted{color:#8594a2}.trade-terminal.cfd-terminal .cfd-error{margin:0;padding:8px 9px;border:1px solid rgba(246,70,93,.28);border-radius:5px;background:rgba(246,70,93,.09);color:#ff8b88;font-size:10px;line-height:1.45;overflow-wrap:anywhere}
 .trade-terminal.cfd-terminal .cfd-submit{flex-shrink:0;min-height:42px;padding:11px;border:0;border-radius:6px;font-size:13px;font-weight:750;cursor:pointer}.trade-terminal.cfd-terminal .cfd-submit:disabled{opacity:.45;cursor:not-allowed}
 
 .trade-terminal.cfd-terminal .cfd-owned-chart{position:relative;isolation:isolate;background:#0b1118}
@@ -30,7 +30,7 @@
 .trade-terminal.cfd-terminal .cfd-chart-toolbar strong{font-size:11px;letter-spacing:.02em}
 .trade-terminal.cfd-terminal .cfd-chart-intervals{display:flex;align-items:center;gap:2px}.trade-terminal.cfd-terminal .cfd-chart-intervals button{min-width:35px;padding:5px 7px;border:1px solid transparent;border-radius:4px;background:transparent;color:#7f8e9c;font-size:9px;font-weight:650;cursor:pointer}.trade-terminal.cfd-terminal .cfd-chart-intervals button:hover{color:#d6e0e8;background:#17222c}.trade-terminal.cfd-terminal .cfd-chart-intervals button.active{border-color:#465866;background:#1a2732;color:#e2e9ef}
 .trade-terminal.cfd-terminal .cfd-owned-chart-canvas{position:relative;flex:1;min-width:0;min-height:260px}.trade-terminal.cfd-terminal .cfd-owned-chart-canvas>div{width:100%;height:100%}
-.trade-terminal.cfd-terminal .cfd-chart-overlay{position:absolute;inset:40px 0 0;z-index:3;display:grid;place-items:center;background:rgba(11,17,24,.42);pointer-events:none}.trade-terminal.cfd-terminal .cfd-chart-loader{width:22px;height:22px;border:2px solid #2e3d49;border-top-color:#d9b95b;border-radius:50%;animation:cfd-spin .8s linear infinite}@keyframes cfd-spin{to{transform:rotate(360deg)}}
+.trade-terminal.cfd-terminal .cfd-chart-overlay{position:absolute;inset:40px 0 0;z-index:3;display:grid;place-items:center;background:rgba(11,17,24,.42);pointer-events:none}.trade-terminal.cfd-terminal .cfd-chart-loader{width:22px;height:22px;border:2px solid #2e3d49;border-top-color:#f0c964;border-radius:50%;animation:cfd-spin .8s linear infinite}@keyframes cfd-spin{to{transform:rotate(360deg)}}
 .trade-terminal.cfd-terminal .cfd-chart-retry{position:absolute;z-index:4;inset:50% auto auto 50%;transform:translate(-50%,-50%);width:34px;height:34px;border:1px solid #354653;border-radius:50%;background:#111b25;color:#9aa8b5;font-size:18px;line-height:1;cursor:pointer}.trade-terminal.cfd-terminal .cfd-chart-retry:hover{color:#e0e7ed;border-color:#5e7180}
 
 .trade-terminal.cfd-terminal .cfd-bottom-panel{flex-basis:190px}

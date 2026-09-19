@@ -78,7 +78,7 @@ dialog.private-card-dialog footer :is(button, a) {
   text-decoration: none;
   cursor: pointer;
 }
-dialog.private-card-dialog footer .primary { color: #131d26; background: #eac365; }
+dialog.private-card-dialog footer .primary { color: #131d26; background: #f0c964; }
 dialog.private-card-dialog [role=alert] { color: #ffaeb9; font-size: 12px; }
 @media (max-width: 480px) {
   dialog.private-card-dialog { width: calc(100vw - 16px); max-width: calc(100vw - 16px); padding: 10px; }

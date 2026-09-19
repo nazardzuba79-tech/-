@@ -9,6 +9,17 @@ import './FuturesPositionParity.css';
 
 type Tab = 'open' | 'history';
 
+/**
+ * Money as the reference prints it: grouped thousands and a fixed number of
+ * decimals. Grouping only ever changes how a figure is SPELLED — the value
+ * itself is the server's, unrounded until this call, and the caller decides
+ * how many decimals the column carries.
+ */
+function group(value: number, digits: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
 export function FuturesPositionsPanel({
   refreshKey,
   tab: controlledTab,
@@ -145,16 +156,16 @@ export function FuturesPositionsPanel({
             <table className="futures-positions-table" style={styles.table}>
               <thead>
                 <tr>
-                  <Th>{t('trade.market')}</Th>
-                  <Th>{t('futures.size')}</Th>
-                  <Th>{t('futures.positionValue')}</Th>
-                  <Th>{t('futures.entryPrice')}</Th>
-                  <Th>{t('futures.markPrice')}</Th>
-                  <Th>{t('futures.liqPrice')}</Th>
-                  <Th>{t('futures.unrealizedPnl')}</Th>
-                  <Th>{t('futures.realizedPnl')}</Th>
+                  <Th>{t('futures.colContracts')}</Th>
+                  <Th>{t('futures.colQty')}</Th>
+                  <Th>{t('futures.colValue')}</Th>
+                  <Th>{t('futures.colEntry')}</Th>
+                  <Th>{t('futures.colMark')}</Th>
+                  <Th>{t('futures.colLiq')}</Th>
+                  <Th>{t('futures.colUnrealized')}</Th>
+                  <Th>{t('futures.colRealized')}</Th>
                   <Th>{t('futures.tpsl')}</Th>
-                  <Th>{t('futures.closeBy')}</Th>
+                  <Th>{t('futures.colCloseAs')}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -197,20 +208,29 @@ export function FuturesPositionsPanel({
                       || Number(aggregate.walletCollateral) !== 0);
                   const liquidationPrice = nativeCrossLiquidationUnknown ? null : p.liquidationPrice;
                   return (
-                    <tr key={p.id} className="futures-position-row">
+                    <tr key={p.id} className="futures-position-row" data-side={p.side}>
                       {/* Contract, with Cross and the leverage under it. */}
                       <Td>
                         <div className="futures-position-contract">
-                          <b>{p.symbol}</b>
+                          <span className="futures-position-ticker">
+                            <b>{p.symbol.replace('/', '')}</b>
+                            <i className="futures-position-perp">{t('futures.perpetual')}</i>
+                          </span>
                           <small className={p.side === 'LONG' ? 'text-buy' : 'text-sell'}>
-                            {p.side === 'LONG' ? t('futures.long') : t('futures.short')}
-                            {' · '}
-                            {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')} {p.leverage}x
+                            {t('futures.marginTrading')}{' '}
+                            {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}{' '}
+                            {Number(p.leverage).toFixed(2)}x
                           </small>
                         </div>
                       </Td>
-                      <Td className="mono">{p.size} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span></Td>
-                      <Td className="mono">{value === null ? '—' : `${value.toFixed(2)} ${quoteAsset}`}</Td>
+                      <Td className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
+                        {p.size} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
+                      </Td>
+                      <Td className="mono">
+                        {value === null ? '—' : (
+                          <>{group(value, 2)} <span className="futures-position-unit">{quoteAsset}</span></>
+                        )}
+                      </Td>
                       <Td className="mono">{p.entryPrice}</Td>
                       <Td className="mono">{p.markPrice ?? '—'}</Td>
                       <Td className="mono" style={{ color: 'var(--sell)' }}>{liquidationPrice ?? '—'}</Td>
@@ -218,23 +238,33 @@ export function FuturesPositionsPanel({
                           about the same open exposure. */}
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">
-                          <span
-                            className="futures-position-money"
-                            data-unit={pnl !== null ? quoteAsset : undefined}
-                            data-positive={pnl !== null && pnl > 0 ? 'true' : undefined}
-                          >{pnl !== null ? pnl.toFixed(2) : '—'}</span>
-                          <small
-                            className="futures-position-roi"
-                            data-positive={roe !== null && roe > 0 ? 'true' : undefined}
-                          >{roe !== null ? `${roe.toFixed(2)}%` : '—'}</small>
+                          <span className="futures-position-figure">
+                            <span
+                              className="futures-position-money"
+                              data-unit={pnl !== null ? quoteAsset : undefined}
+                              data-positive={pnl !== null && pnl > 0 ? 'true' : undefined}
+                            >{pnl !== null ? group(pnl, 4) : '—'}</span>
+                            <small
+                              className="futures-position-roi"
+                              data-positive={roe !== null && roe > 0 ? 'true' : undefined}
+                            >{roe !== null ? `${roe.toFixed(2)}%` : '—'}</small>
+                          </span>
+                          {pnl !== null && (
+                            <small className="futures-position-approx">≈{group(pnl, 2)} USD</small>
+                          )}
                         </div>
                       </Td>
                       <Td className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
-                        <span
-                          className="futures-position-realized"
-                          data-unit={Number.isFinite(realized) ? quoteAsset : undefined}
-                          data-positive={Number.isFinite(realized) && realized > 0 ? 'true' : undefined}
-                        >{Number.isFinite(realized) ? realized.toFixed(2) : '—'}</span>
+                        <div className="futures-position-pnl">
+                          <span
+                            className="futures-position-realized"
+                            data-unit={Number.isFinite(realized) ? quoteAsset : undefined}
+                            data-positive={Number.isFinite(realized) && realized > 0 ? 'true' : undefined}
+                          >{Number.isFinite(realized) ? group(realized, 4) : '—'}</span>
+                          {Number.isFinite(realized) && (
+                            <small className="futures-position-approx">≈{group(realized, 2)} USD</small>
+                          )}
+                        </div>
                       </Td>
                       <Td>
                         {/* Real server-held protection, carried on the same
@@ -256,7 +286,7 @@ export function FuturesPositionsPanel({
                               absent one. */}
                           {onLimitClose && (
                             <button type="button" className="futures-position-close" onClick={() => onLimitClose(p)}>
-                              {t('trade.limit')}
+                              {t('futures.closeLimit')}
                             </button>
                           )}
                           <button
@@ -265,7 +295,7 @@ export function FuturesPositionsPanel({
                             onClick={() => handleClose(p.id)}
                             disabled={closingId === p.id}
                           >
-                            {closingId === p.id ? t('futures.closing') : t('trade.market')}
+                            {closingId === p.id ? t('futures.closing') : t('futures.closeMarket')}
                           </button>
                           {/* The P&L card, as a compact icon button with a
                               name — only where a card service exists. */}

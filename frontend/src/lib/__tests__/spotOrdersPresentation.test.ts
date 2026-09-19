@@ -284,7 +284,13 @@ describe('Spot orders truthful dense presentation', () => {
     const pageSource = (file: string) => readFileSync(resolve(__dirname, '../../pages', file), 'utf8').replace(/\r\n/g, '\n');
     const css = pageSource('trade-terminal/TradeTerminal.css');
     const [shared, spot] = css.split('/* Final Spot-only reconciliation.');
-    // Re-taken once, from ceb3d8f0…, for the shared authenticated header
+    // Re-taken a second time, from 873d9210…, for the polish brief that puts
+    // Spot and CFD on the terminal palette: the owner asked for the design to
+    // reach both, so this shared section's colour literals were re-valued
+    // alongside the Futures ones. Colours only — the structural assertions
+    // around this line still pin the rules themselves, so a selector moved or
+    // a rule added still fails rather than riding along with a re-take.
+    // Re-taken once before that, from ceb3d8f0…, for the shared header
     // fix: `.trade-terminal *` blanket-reset margin and padding on the
     // global nav that renders inside this wrapper, collapsing it into the
     // top-left corner on /trade and /futures in production. The reset now
@@ -294,7 +300,7 @@ describe('Spot orders truthful dense presentation', () => {
     // — the assertion below pins it, so the fingerprint cannot be re-taken
     // again to cover a different edit without also deleting that line.
     expect(shared).toContain('.trade-terminal *:not(:where(.global-header, .global-header *)),');
-    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('873d9210fc4a00220d1746591746d00b5d0198f5b2b2b85e7e87fd1246b5bd82');
+    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('ea8ae585f40dfff60beef9d03817b517d6eef43ee691054074c653c5cbe69da4');
     const postcss = req('postcss');
     const rules: string[] = [];
     postcss.parse('/* Final Spot-only reconciliation.' + spot).walkRules((rule: { selectors: string[] }) => rules.push(...rule.selectors));

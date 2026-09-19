@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Star } from 'lucide-react';
+import { Search, Star, X } from 'lucide-react';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { referenceNumber } from '../lib/futuresReference';
 import { useLanguage } from '../lib/i18n';
@@ -62,7 +62,39 @@ export const FuturesPairList = forwardRef<
   const searchRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLElement | null>(null);
 
-  useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
+  /**
+   * Search is a header control, not a permanent field.
+   *
+   * A full-width input sat above the list at all times and bought nothing:
+   * on a 500-contract catalogue it is used for a few seconds and then takes
+   * a row's worth of height for the rest of the session. It is now a
+   * magnifier in the «Рынки» header that swaps the header for the field.
+   *
+   * The open is deliberately dumb: one state flip and a focus. No request,
+   * no fetch, no debounce, no spinner — the list is already in memory and
+   * the filter below is a `.filter()` over it, so the first keystroke
+   * paints on the next frame. The trap here would be making the button feel
+   * dead; nothing it does can block.
+   */
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  const openSearch = useCallback(() => {
+    setSearchOpen(true);
+    // The field carries `autoFocus`, so React focuses it in the same commit
+    // that mounts it — no frame of dead input. This call covers the OTHER
+    // path: the ticker bar asking for search while it is already open, where
+    // nothing mounts and autoFocus cannot fire.
+    searchRef.current?.focus();
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setSearch('');
+  }, []);
+
+  // The ticker bar's own entry points come through here. Opening from
+  // there must behave exactly like pressing the magnifier.
+  useImperativeHandle(ref, () => ({ focusSearch: openSearch }), [openSearch]);
 
   function toggleFavorite(pair: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -125,14 +157,45 @@ export const FuturesPairList = forwardRef<
 
   return (
     <>
-      <div className="pairs-search">
-        <input
-          ref={searchRef}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('trade.searchPair')}
+      {/* «Рынки» and a magnifier, or the field in their place. The row keeps
+          its height either way, so opening search moves nothing below it and
+          the chart, book and ticket never reflow. */}
+      <div className={`pairs-head${searchOpen ? ' searching' : ''}`}>
+        {searchOpen ? (
+          <input
+            ref={searchRef}
+            autoFocus
+            className="pairs-head-input"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Escape') return;
+              // preventDefault, not just stopPropagation. On mobile this
+              // list lives inside a <dialog>, and Escape is that element's
+              // native cancel — without this, backing out of the field
+              // dismissed the whole market panel. Now the first Escape
+              // closes the field and a second one closes the panel, which
+              // is the order a user expects and matches the desktop rail.
+              e.preventDefault();
+              e.stopPropagation();
+              closeSearch();
+            }}
+            placeholder={t('trade.searchPair')}
+            aria-label={t('trade.searchPair')}
+          />
+        ) : (
+          <span className="pairs-head-title">{t('nav.markets')}</span>
+        )}
+        <button
+          type="button"
+          className="pairs-head-search"
           aria-label={t('trade.searchPair')}
-        />
+          aria-expanded={searchOpen}
+          title={t('trade.searchPair')}
+          onClick={() => (searchOpen ? closeSearch() : openSearch())}
+        >
+          {searchOpen ? <X size={14} /> : <Search size={14} />}
+        </button>
       </div>
 
       <div className="pairs-tabs">
