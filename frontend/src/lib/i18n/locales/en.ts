@@ -1150,7 +1150,7 @@ export const EN: Record<Key, string> = {
   'futures.spotWallet': 'Spot wallet',
   'futures.futuresWallet': 'Futures wallet',
   'futures.availableMargin': 'Available margin',
-  'futures.demoAvailable': 'Demo balance',
+  'futures.demoAvailable': 'Available to trade',
   'futures.startTrading': 'Start trading',
   'futures.startTradingPending': 'Opening the account…',
   'futures.insufficientMargin': 'You do not have enough funds: this size needs {required} {asset}, {available} {asset} available.',
