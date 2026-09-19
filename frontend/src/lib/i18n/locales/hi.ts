@@ -1121,7 +1121,7 @@ export const HI: Record<Key, string> = {
   'futures.spotWallet': 'स्पॉट वॉलेट',
   'futures.futuresWallet': 'फ्यूचर्स वॉलेट',
   'futures.availableMargin': 'उपलब्ध मार्जिन',
-  'futures.demoAvailable': 'ट्रेडिंग के लिए उपलब्ध',
+  'futures.demoAvailable': 'डेमो बैलेंस',
   'futures.startTrading': 'ट्रेडिंग शुरू करें',
   'futures.startTradingPending': 'खाता खोला जा रहा है…',
   'futures.insufficientMargin': 'आपके पास पर्याप्त धनराशि नहीं है: इस आकार के लिए {required} {asset} चाहिए, उपलब्ध {available} {asset}।',
