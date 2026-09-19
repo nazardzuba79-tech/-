@@ -1,0 +1,1257 @@
+{
+  "status": "PASS",
+  "label": "after",
+  "report": {
+    "390": {
+      "open": {
+        "toggle": {
+          "left": 365,
+          "top": 240,
+          "right": 389,
+          "bottom": 281,
+          "width": 24,
+          "height": 41
+        },
+        "rail": {
+          "left": 1,
+          "top": 240,
+          "right": 365,
+          "bottom": 282,
+          "width": 364,
+          "height": 42
+        },
+        "shell": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 282,
+          "width": 388,
+          "height": 42
+        },
+        "chartView": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 348
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 36,
+          "height": 36
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 332,
+          "h": 278
+        },
+        "overflowX": 0
+      },
+      "chartStamp": "s032yx9w21vgn",
+      "drawingsBefore": 16,
+      "idleCalls": 17,
+      "msToCollapse": 249,
+      "collapsed": {
+        "toggle": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 270,
+          "width": 388,
+          "height": 30
+        },
+        "rail": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "width": 0,
+          "height": 0
+        },
+        "shell": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 264,
+          "width": 388,
+          "height": 24
+        },
+        "chartView": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 348
+        },
+        "railHidden": true,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "false",
+        "toggleLabel": "Показать инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 0,
+          "height": 0
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 332,
+          "h": 296
+        },
+        "overflowX": 0
+      },
+      "reopened": {
+        "toggle": {
+          "left": 365,
+          "top": 240,
+          "right": 389,
+          "bottom": 281,
+          "width": 24,
+          "height": 41
+        },
+        "rail": {
+          "left": 1,
+          "top": 240,
+          "right": 365,
+          "bottom": 282,
+          "width": 364,
+          "height": 42
+        },
+        "shell": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 282,
+          "width": 388,
+          "height": 42
+        },
+        "chartView": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 348
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 36,
+          "height": 36
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 332,
+          "h": 278
+        },
+        "overflowX": 0
+      },
+      "toggleWindowCalls": 0,
+      "toggleNewEndpoints": [],
+      "chartStampAfter": "s032yx9w21vgn",
+      "drawingsAfter": 16,
+      "tabsToReachToggle": 9,
+      "focusVisible": {
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(240, 201, 100)"
+      },
+      "collapsedByKeyboard": true,
+      "reopenedByKeyboard": true,
+      "afterHammering": {
+        "toggle": {
+          "left": 365,
+          "top": 240,
+          "right": 389,
+          "bottom": 281,
+          "width": 24,
+          "height": 41
+        },
+        "rail": {
+          "left": 1,
+          "top": 240,
+          "right": 365,
+          "bottom": 282,
+          "width": 364,
+          "height": 42
+        },
+        "shell": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 282,
+          "width": 388,
+          "height": 42
+        },
+        "chartView": {
+          "left": 1,
+          "top": 240,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 348
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 36,
+          "height": 36
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 332,
+          "h": 278
+        },
+        "overflowX": 0
+      },
+      "hammerNewEndpoints": [],
+      "chartStampAfterHammer": "s032yx9w21vgn",
+      "drawingsAfterHammer": 16,
+      "stillCollapses": true,
+      "pageErrors": []
+    },
+    "1366": {
+      "open": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 232,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 629
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 801,
+          "bottom": 894,
+          "width": 573,
+          "height": 662
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 472,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "chartStamp": "sjtfibhlwxwa",
+      "drawingsBefore": 16,
+      "idleCalls": 17,
+      "msToCollapse": 250,
+      "collapsed": {
+        "toggle": {
+          "left": 228,
+          "top": 854,
+          "right": 244,
+          "bottom": 884,
+          "width": 16,
+          "height": 30
+        },
+        "rail": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "width": 0,
+          "height": 0
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 228,
+          "bottom": 894,
+          "width": 0,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 801,
+          "bottom": 894,
+          "width": 573,
+          "height": 662
+        },
+        "railHidden": true,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "false",
+        "toggleLabel": "Показать инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 0,
+          "height": 0
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 516,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "reopened": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 232,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 629
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 801,
+          "bottom": 894,
+          "width": 573,
+          "height": 662
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 472,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "toggleWindowCalls": 0,
+      "toggleNewEndpoints": [],
+      "chartStampAfter": "sjtfibhlwxwa",
+      "drawingsAfter": 16,
+      "tabsToReachToggle": 9,
+      "focusVisible": {
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(240, 201, 100)"
+      },
+      "collapsedByKeyboard": true,
+      "reopenedByKeyboard": true,
+      "afterHammering": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 232,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 629
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 801,
+          "bottom": 894,
+          "width": 573,
+          "height": 662
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 472,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "hammerNewEndpoints": [],
+      "chartStampAfterHammer": "sjtfibhlwxwa",
+      "drawingsAfterHammer": 16,
+      "stillCollapses": true,
+      "pageErrors": []
+    },
+    "1440": {
+      "open": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 232,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 629
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 875,
+          "bottom": 894,
+          "width": 647,
+          "height": 662
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 546,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "chartStamp": "ss1jl6nf8i3",
+      "drawingsBefore": 16,
+      "idleCalls": 17,
+      "msToCollapse": 244,
+      "collapsed": {
+        "toggle": {
+          "left": 228,
+          "top": 854,
+          "right": 244,
+          "bottom": 884,
+          "width": 16,
+          "height": 30
+        },
+        "rail": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "width": 0,
+          "height": 0
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 228,
+          "bottom": 894,
+          "width": 0,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 875,
+          "bottom": 894,
+          "width": 647,
+          "height": 662
+        },
+        "railHidden": true,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "false",
+        "toggleLabel": "Показать инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 0,
+          "height": 0
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 590,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "reopened": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 232,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 629
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 875,
+          "bottom": 894,
+          "width": 647,
+          "height": 662
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 546,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "toggleWindowCalls": 0,
+      "toggleNewEndpoints": [],
+      "chartStampAfter": "ss1jl6nf8i3",
+      "drawingsAfter": 16,
+      "tabsToReachToggle": 9,
+      "focusVisible": {
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(240, 201, 100)"
+      },
+      "collapsedByKeyboard": true,
+      "reopenedByKeyboard": true,
+      "afterHammering": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 232,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 629
+        },
+        "shell": {
+          "left": 228,
+          "top": 232,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 662
+        },
+        "chartView": {
+          "left": 228,
+          "top": 232,
+          "right": 875,
+          "bottom": 894,
+          "width": 647,
+          "height": 662
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 546,
+          "h": 634
+        },
+        "overflowX": 0
+      },
+      "hammerNewEndpoints": [],
+      "chartStampAfterHammer": "ss1jl6nf8i3",
+      "drawingsAfterHammer": 16,
+      "stillCollapses": true,
+      "pageErrors": []
+    },
+    "1664": {
+      "open": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 204,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 657
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1099,
+          "bottom": 894,
+          "width": 871,
+          "height": 690
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 770,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "chartStamp": "s72zug5f983m",
+      "drawingsBefore": 16,
+      "idleCalls": 17,
+      "msToCollapse": 242,
+      "collapsed": {
+        "toggle": {
+          "left": 228,
+          "top": 854,
+          "right": 244,
+          "bottom": 884,
+          "width": 16,
+          "height": 30
+        },
+        "rail": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "width": 0,
+          "height": 0
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 228,
+          "bottom": 894,
+          "width": 0,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1099,
+          "bottom": 894,
+          "width": 871,
+          "height": 690
+        },
+        "railHidden": true,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "false",
+        "toggleLabel": "Показать инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 0,
+          "height": 0
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 814,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "reopened": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 204,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 657
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1099,
+          "bottom": 894,
+          "width": 871,
+          "height": 690
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 770,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "toggleWindowCalls": 0,
+      "toggleNewEndpoints": [],
+      "chartStampAfter": "s72zug5f983m",
+      "drawingsAfter": 16,
+      "tabsToReachToggle": 9,
+      "focusVisible": {
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(240, 201, 100)"
+      },
+      "collapsedByKeyboard": true,
+      "reopenedByKeyboard": true,
+      "afterHammering": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 204,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 657
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1099,
+          "bottom": 894,
+          "width": 871,
+          "height": 690
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 770,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "hammerNewEndpoints": [],
+      "chartStampAfterHammer": "s72zug5f983m",
+      "drawingsAfterHammer": 16,
+      "stillCollapses": true,
+      "pageErrors": []
+    },
+    "1920": {
+      "open": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 204,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 657
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1355,
+          "bottom": 894,
+          "width": 1127,
+          "height": 690
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 1026,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "chartStamp": "sijrr2s4el3",
+      "drawingsBefore": 16,
+      "idleCalls": 17,
+      "msToCollapse": 252,
+      "collapsed": {
+        "toggle": {
+          "left": 228,
+          "top": 854,
+          "right": 244,
+          "bottom": 884,
+          "width": 16,
+          "height": 30
+        },
+        "rail": {
+          "left": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "width": 0,
+          "height": 0
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 228,
+          "bottom": 894,
+          "width": 0,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1355,
+          "bottom": 894,
+          "width": 1127,
+          "height": 690
+        },
+        "railHidden": true,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "false",
+        "toggleLabel": "Показать инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 0,
+          "height": 0
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 1070,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "reopened": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 204,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 657
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1355,
+          "bottom": 894,
+          "width": 1127,
+          "height": 690
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 1026,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "toggleWindowCalls": 0,
+      "toggleNewEndpoints": [],
+      "chartStampAfter": "sijrr2s4el3",
+      "drawingsAfter": 16,
+      "tabsToReachToggle": 9,
+      "focusVisible": {
+        "outlineWidth": "2px",
+        "outlineStyle": "solid",
+        "outlineColor": "rgb(240, 201, 100)"
+      },
+      "collapsedByKeyboard": true,
+      "reopenedByKeyboard": true,
+      "afterHammering": {
+        "toggle": {
+          "left": 233,
+          "top": 866,
+          "right": 259,
+          "bottom": 888,
+          "width": 26,
+          "height": 22
+        },
+        "rail": {
+          "left": 228,
+          "top": 204,
+          "right": 271,
+          "bottom": 861,
+          "width": 43,
+          "height": 657
+        },
+        "shell": {
+          "left": 228,
+          "top": 204,
+          "right": 272,
+          "bottom": 894,
+          "width": 44,
+          "height": 690
+        },
+        "chartView": {
+          "left": 228,
+          "top": 204,
+          "right": 1355,
+          "bottom": 894,
+          "width": 1127,
+          "height": 690
+        },
+        "railHidden": false,
+        "toggleCount": 1,
+        "toggleTag": "BUTTON",
+        "toggleType": "button",
+        "toggleExpanded": "true",
+        "toggleLabel": "Скрыть инструменты",
+        "toggleOrder": "0",
+        "cursorPaths": 4,
+        "cursorText": "",
+        "cursorButtonSize": {
+          "width": 34,
+          "height": 32
+        },
+        "cursorActive": true,
+        "canvasCount": 7,
+        "canvasSize": {
+          "w": 1026,
+          "h": 662
+        },
+        "overflowX": 0
+      },
+      "hammerNewEndpoints": [],
+      "chartStampAfterHammer": "sijrr2s4el3",
+      "drawingsAfterHammer": 16,
+      "stillCollapses": true,
+      "pageErrors": []
+    },
+    "spot": {
+      "toggle": {
+        "left": 259,
+        "top": 225,
+        "right": 302,
+        "bottom": 249,
+        "width": 43,
+        "height": 24
+      },
+      "rail": {
+        "left": 259,
+        "top": 249,
+        "right": 302,
+        "bottom": 896,
+        "width": 43,
+        "height": 647
+      },
+      "shell": {
+        "left": 259,
+        "top": 225,
+        "right": 303,
+        "bottom": 896,
+        "width": 44,
+        "height": 671
+      },
+      "chartView": {
+        "left": 259,
+        "top": 225,
+        "right": 924,
+        "bottom": 896,
+        "width": 665,
+        "height": 671
+      },
+      "railHidden": false,
+      "toggleCount": 1,
+      "toggleTag": "BUTTON",
+      "toggleType": "button",
+      "toggleExpanded": "true",
+      "toggleLabel": "Скрыть инструменты",
+      "toggleOrder": "-1",
+      "cursorPaths": 4,
+      "cursorText": "",
+      "cursorButtonSize": {
+        "width": 34,
+        "height": 32
+      },
+      "cursorActive": true,
+      "canvasCount": 7,
+      "canvasSize": {
+        "w": 564,
+        "h": 642
+      },
+      "overflowX": 0,
+      "pageErrors": [],
+      "root": "trade-terminal spot-terminal market-reference terminal-studio"
+    }
+  }
+}
