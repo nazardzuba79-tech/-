@@ -7,6 +7,7 @@ export interface NativePosition {
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
   protection:NativeProtection;
+  pendingClose?:{reason:'STOP_LOSS'|'TAKE_PROFIT';quantity:string;triggerPrice:string;triggeredAt:number;actionId:string}|null;
   /**
    * The estimate on the basis that applies to THIS position, named by
    * `liquidationStatus`: an account-level Cross estimate with other
@@ -19,9 +20,13 @@ export interface NativePosition {
   marginMode:'CROSS'|'ISOLATED';
   /** ISOLATED only: the margin posted against this position. '0' for Cross. */
   isolatedMargin:string;
+  /** ISOLATED only: loss beyond the post that the simulation insurance model covered (SHORTFALL lines); '0' otherwise. */
+  shortfallCovered?:string;
 }
-export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number;marginType:'CROSS'|'ISOLATED'}
-export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string}
+export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number;marginType:'CROSS'|'ISOLATED';reduceOnly?:boolean;positionId?:string|null}
+export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string;
+  /** The one user action behind this fill; several fills of one close share it. Absent on older journals. */
+  actionId?:string;sourcePrice?:string}
 export interface NativeState {
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
   model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
@@ -51,7 +56,7 @@ export interface NativeAccountAggregate{
    */
   isolatedMargin?:string;
 }
-export type LedgerSource='INITIAL_COLLATERAL'|'OPENING_FEE'|'CLOSING_FEE'|'LIQUIDATION_FEE'|'REALIZED_PNL'|'FUNDING';
+export type LedgerSource='INITIAL_COLLATERAL'|'OPENING_FEE'|'CLOSING_FEE'|'LIQUIDATION_FEE'|'REALIZED_PNL'|'FUNDING'|'SHORTFALL_COVER';
 export interface LedgerEntryView{
   id:string;time:number;source:LedgerSource;kind:string;positionId:string|null;symbol:string|null;
   quantity:string|null;price:string|null;amount:string;balanceAfter:string;

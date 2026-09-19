@@ -212,6 +212,27 @@ export interface FuturesContractRules {
   maxOrderQty: string;
   maxMarketOrderQty: string;
   minNotionalValue: string;
+  /**
+   * The engine's taker fee rate, when it publishes one. The simulation
+   * engine reserves `notional / leverage + 2 x taker x notional` for an
+   * opening order (the fee to open and the fee to close), so an order's
+   * COST is that, not the bare margin. Absent for the real engine, which
+   * charges no futures fee.
+   */
+  takerFeeRate?: string;
+  makerFeeRate?: string;
+}
+
+/**
+ * What an order actually locks: initial margin plus the fee reserve the
+ * engine takes with it. Pure arithmetic on the form's own figures, so it
+ * updates on the same keystroke as the order value.
+ */
+export function orderCost(notional: number, leverage: number, takerFeeRate?: string | null): { margin: number; feeReserve: number; cost: number } {
+  const margin = leverage > 0 && Number.isFinite(notional) ? notional / leverage : 0;
+  const rate = takerFeeRate ? Number(takerFeeRate) : 0;
+  const feeReserve = Number.isFinite(rate) && rate > 0 && Number.isFinite(notional) ? notional * rate * 2 : 0;
+  return { margin, feeReserve, cost: margin + feeReserve };
 }
 
 /** Decimal places a step implies: '0.001' -> 3, '1' -> 0, '10' -> 0. */

@@ -3,7 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
 import { NativeDemoService } from '../native/service';
-import { NativeAccount, PrismaNativeRepository } from '../native/store';
+import { createNativeLimitPass } from '../native/limitPass';
+import { instructionDigest } from '../native/replay';
+import { NativeAccount, PrismaNativeRepository, inflate, StoredNativeAccount } from '../native/store';
 import type { OwnerSession } from '../serviceTypes';
 import type { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateHistoryRequest } from '../marketData';
 
@@ -189,7 +191,7 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(a.ledger?.openingBalance).toBe('10000000');
     expect(a.ledger?.closingBalance).toBe('10000000');
     expect(a.ledger?.reconciled).toBe(true);
-    expect(a.ledger?.totals).toEqual({ realizedPnl: '0', fees: '0', funding: '0', net: '0' });
+    expect(a.ledger?.totals).toEqual({ realizedPnl: '0', fees: '0', funding: '0', shortfallCovered: '0', net: '0' });
 
     // The concurrency assertion is unchanged: the balance moved ONCE, and
     // the two tabs produced one revision between them.
@@ -213,8 +215,12 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(reloaded.positions).toEqual(v.positions);
     expect(reloaded.events).toEqual(v.events);
     const row = await db.nativeDemoAccount.findUnique({ where: { userId: f.user.id } });
-    const payload = row!.payload as unknown as NativeAccount;
+    const payload = inflate(row!.payload as unknown as StoredNativeAccount);
     expect(payload.checkpoint?.state).toBeDefined();
+    const checkpoint=payload.checkpoint!;
+    expect(checkpoint.digest).toBe(instructionDigest(
+      checkpoint.commandCount===undefined?payload.commands:payload.commands.slice(0,checkpoint.commandCount),
+      checkpoint.commandCount===undefined?checkpoint.time:Infinity));
     const revision = await db.nativeDemoRevision.findUnique({ where: { userId_revision: { userId: f.user.id, revision: v.revision } } });
     expect((revision!.payload as unknown as NativeAccount).checkpoint).toBeUndefined();
     const card = await restarted.service.card(f.actor, id);
@@ -222,26 +228,50 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(await realState(f.user.id)).toEqual(before);
   });
 
-  test('two server processes cannot both commit on the same revision; the same key never executes twice', async () => {
+  test('two server processes cannot both commit on the same revision: the loser decides again on the winner\'s row; the same key never executes twice', async () => {
     const f = await fixture();
     await f.service.initialize(f.actor, `init-${randomUUID()}`);
     const other = f.make();
-    let waiting = 0, release!: () => void; const gate = new Promise<void>(r => { release = r; });
+    let waiting = 0, commits = 0, release!: () => void; const gate = new Promise<void>(r => { release = r; });
     for (const repository of [f.repository, other.repository]) {
       const commit = repository.commit.bind(repository);
-      repository.commit = async (...args) => { if (++waiting === 2) release(); await gate; return commit(...args); };
+      repository.commit = async (...args) => { commits += 1; if (++waiting === 2) release(); await gate; return commit(...args); };
     }
     const open = (key: string) => ({ kind: 'OPEN' as const, symbol: 'BTCUSDT', side: 'LONG' as const, type: 'MARKET' as const, margin: '1000', leverage: '10', idempotencyKey: key });
     const results = await Promise.allSettled([f.service.command(f.actor, open(randomUUID())), other.service.command(f.actor, open(randomUUID()))]);
-    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
-    expect(results.find(r => r.status === 'rejected')).toMatchObject({ reason: { status: 409, code: 'account_changed' } });
+    // The row lock + revision CAS let exactly one attempt through; the other was refused by the CAS and re-run on the new revision.
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(2);
+    expect(commits).toBe(3);
+    expect(f.service.conflicts + other.service.conflicts).toBe(1);
+    const merged = await f.make().service.state(f.actor);
+    expect(merged.revision).toBe(3);
+    expect(merged.positions).toHaveLength(1);
+    expect(new BigNumber(merged.positions[0].quantity).toFixed()).toBe('0.4');   // 0.2 + 0.2: one position, both fills
+    expect(merged.events.filter(e => e.kind === 'OPEN')).toHaveLength(2);
+    // The retried attempt decided on a book quoted AFTER the winner's, never on the book of the refused attempt.
+    const instructions = ((await db.nativeDemoAccount.findUnique({ where: { userId: f.user.id } }))!.payload as unknown as NativeAccount).commands;
+    // R11 observations participate in the same sequence as financial commands.
+    // A projection OBSERVE can follow either command; each OPEN itself must
+    // carry its pre-execution valuation regardless of checkpoint reuse.
+    expect(instructions.map(c => c.seq)).toEqual(instructions.map((_, index) => index + 1));
+    const journal = instructions.filter(c => c.kind === 'OPEN');
+    expect(journal).toHaveLength(2);
+    expect(journal[0].seq).toBe(1);
+    expect(journal[1].seq!).toBeGreaterThan(journal[0].seq!);
+    for(const c of journal){
+      expect(c.context?.marks.BTCUSDT).toEqual({mark:'50000',last:'50000'});
+      expect(c.context?.observedAt.BTCUSDT).toBeGreaterThan(0);
+      expect(c.collateral).toBeDefined();
+    }
+    expect(journal[1].kind === 'OPEN' && journal[0].kind === 'OPEN' && journal[1].book!.timestamp >= journal[0].book!.timestamp).toBe(true);
+    expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id } })).toBe(3);
     const key = randomUUID(), fresh = f.make();
     const same = await Promise.allSettled([fresh.service.command(f.actor, open(key)), f.make().service.command(f.actor, open(key))]);
     const ok = same.filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<NativeDemoService['command']>>> => r.status === 'fulfilled');
     expect(ok.length).toBeGreaterThanOrEqual(1);
     const state = await fresh.service.state(f.actor);
     expect(state.positions).toHaveLength(1);
-    expect(new BigNumber(state.positions[0].quantity).toFixed()).toBe('0.4');
+    expect(new BigNumber(state.positions[0].quantity).toFixed()).toBe('0.6');   // the same-key pair added 0.2 ONCE
     await expect(fresh.service.command(f.actor, { ...open(key), margin: '2000' })).rejects.toMatchObject({ status: 409, code: 'idempotency_conflict' });
     expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id, requestKey: key } })).toBe(1);
   });
@@ -251,6 +281,21 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     await f.service.initialize(f.actor, `init-${randomUUID()}`);
     await expect(db.$executeRaw`UPDATE "NativeDemoRevision" SET "revision" = 99 WHERE "userId" = ${f.user.id}`).rejects.toThrow(/immutable/);
     await expect(db.$executeRaw`DELETE FROM "NativeDemoRevision" WHERE "userId" = ${f.user.id}`).rejects.toThrow(/immutable/);
+  });
+
+  test('server LIMIT pass resumes from DB, preserves real balances and stops after session revocation',async()=>{
+    const f=await fixture();const real=await realState(f.user.id);
+    await f.service.initialize(f.actor,`init-${randomUUID()}`);
+    await f.service.command(f.actor,{kind:'OPEN',symbol:'BTCUSDT',type:'LIMIT',side:'LONG',quantity:'0.1',price:'49000',leverage:'10',idempotencyKey:randomUUID()});
+    const pass=createNativeLimitPass(db,f.market as unknown as PrivateTradingMarketData,()=>f.config);
+    f.market.price='48999';await pass.tick();
+    const row=await f.repository.read(f.actor);expect(row!.snapshot.orders[0].status).toBe('FILLED');
+    expect(row!.snapshot.events.find(e=>e.kind==='OPEN')).toMatchObject({price:'49000',sourcePrice:'48999.1',pricing:'MAKER_MODEL'});
+    const before=await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}});
+    await db.session.update({where:{id:f.session.id},data:{revokedAt:new Date()}});
+    f.market.price='100';await pass.tick();expect(pass.failures).toBe(1);
+    expect(await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}})).toEqual(before);
+    expect(await realState(f.user.id)).toEqual(real);await pass.stop();
   });
 
   test('every repository read/write re-checks owner, ADMIN role, live session and the server flag', async () => {

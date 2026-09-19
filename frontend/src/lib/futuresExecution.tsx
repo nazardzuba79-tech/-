@@ -164,6 +164,8 @@ export interface FuturesExecution {
     leverage: number;
     marginType: 'ISOLATED' | 'CROSS';
     reduceOnly?: boolean;
+    /** Explicit native table-close target; omitted from ordinary real-engine requests. */
+    positionId?: string;
   }): Promise<void>;
   cancelOrder(orderId: string): Promise<void>;
   closePosition(positionId: string): Promise<void>;

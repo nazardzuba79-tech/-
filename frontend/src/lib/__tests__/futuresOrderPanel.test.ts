@@ -789,7 +789,9 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
 
   test('button and guard read one expression, not two copies', () => {
     const code = source(FORM);
-    expect(code).toContain('disabled={!canSubmit}');
+    expect(code).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}");
+    expect(code).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}");
+    expect(code).toContain("if (activeCloseTarget && orderSide !== (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY')) return;");
     expect(code).toContain('if (!canSubmit) return;');
     // The old visual-only condition is gone.
     expect(code).not.toContain('disabled={submitting}');
