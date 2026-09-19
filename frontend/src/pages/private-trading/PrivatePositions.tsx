@@ -54,7 +54,7 @@ export function PrivatePositions({state,busy,onAction,onCard,onCancelOrder,onAdv
         <td><div className="private-ref-close-buttons">{position.mode==='DEMO_LIVE'?<><button type="button" className="private-ref-pill" disabled title="Лимитное закрытие пока недоступно в приватном режиме">Лимитный</button><button type="button" className="private-ref-pill" disabled={busy||unavailable} onClick={()=>onAction({kind:'close',position})}>Рыночный</button></>:<button type="button" className="private-ref-pill" disabled={busy||!onCloseOnChart} onClick={()=>onCloseOnChart?.(position.id)}>Закрыть на графике</button>}</div></td>
       </tr>;
     })}</tbody></table>:<div className="private-empty">Нет открытых позиций</div>;
-  return <section className="private-bottom-panel private-reference-panel"><div className="private-bottom-tabs" role="tablist" aria-label="Приватный торговый счёт"><span className="private-reference-demo">▣ Демо трейдинг</span>
+  return <section className="private-bottom-panel private-reference-panel"><div className="private-bottom-tabs" role="tablist" aria-label="Приватный торговый счёт"><span className="private-reference-demo">▣ Приватный счёт</span>
     {([['orders',`Открытые ордера (${activeOrders.length})`],['positions',`Позиции (${positionRows.length})`],['orderHistory','История ордеров'],['history','История позиций'],['executions','Исполнения'],['scenarios','Сценарии'],['copy','Приватный копитрейдинг']] as const).map(([id,label])=><button type="button" role="tab" aria-selected={tab===id} key={id} onClick={()=>setTab(id)}>{label}</button>)}
   </div><div className="private-table-scroll" role="tabpanel">
     {tab==='positions'&&referencePositions()}{tab==='history'&&table(historyRows,false)}

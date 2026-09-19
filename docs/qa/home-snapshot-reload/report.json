@@ -1,7 +1,7 @@
 {
-  "startedAt": "2026-09-17T11:40:17.289Z",
+  "startedAt": "2026-09-19T08:02:49.335Z",
   "firstVisit": {
-    "readyMs": 394,
+    "readyMs": 1048,
     "marketRequests": 8,
     "metadataRequests": 1,
     "painted": {
@@ -12,7 +12,7 @@
       "heatmap": 1,
       "marketsBtc": true,
       "placeholders": 0,
-      "badge": "6h snapshot"
+      "badge": "Updated every 6h"
     },
     "snapshot": {
       "version": 1,
@@ -27,7 +27,7 @@
     }
   },
   "reload": {
-    "readyMs": 199,
+    "readyMs": 334,
     "painted": {
       "candles": 1,
       "bookRows": 12,
@@ -36,7 +36,7 @@
       "heatmap": 1,
       "marketsBtc": true,
       "placeholders": 0,
-      "badge": "6h snapshot"
+      "badge": "Updated every 6h"
     },
     "reveal": {
       "sections": [
@@ -104,11 +104,12 @@
     },
     "marketRequests": [],
     "metadataRequests": [
+      "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU",
       "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU"
     ]
   },
   "coldVisit": {
-    "readyMs": 229,
+    "readyMs": 484,
     "marketRequests": 8
   },
   "pageErrors": [],

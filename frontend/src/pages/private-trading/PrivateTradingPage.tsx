@@ -115,7 +115,7 @@ function PrivateTradingWorkspace({onDenied}:{onDenied:()=>void}){
     else{setError('');setAction({kind:'close',position});}
   }
   return <>
-    <div className="private-mode-bar"><span className="private-mode-badge"><LockKeyhole size={13}/>Симуляция</span><span>Выделено: <strong>{privateNumber(state?.wallet.allocatedCapital)} USDT</strong></span><span>Резерв: <strong>{privateNumber(state?.wallet.reserved)} USDT</strong></span><Link to="/futures">Обычный терминал</Link></div>
+    <div className="private-mode-bar"><span className="private-mode-badge"><LockKeyhole size={13}/>Приватный счёт</span><span>Выделено: <strong>{privateNumber(state?.wallet.allocatedCapital)} USDT</strong></span><span>Резерв: <strong>{privateNumber(state?.wallet.reserved)} USDT</strong></span><Link to="/futures">Обычный терминал</Link></div>
     {error&&<div className="private-page-notice" role="alert"><span>{error}</span><button type="button" onClick={()=>{setError('');void refresh();}}><RefreshCw size={14}/>Повторить</button></div>}
     <main className="private-terminal-grid">
       <aside className="private-market-sidebar"><h2>Рынки</h2><FuturesPairList symbols={symbols} symbol={symbol} onChange={next=>{if(pending.current)return;cancelChartSelection();setSelectedTradeId(null);setChartFocus(null);setSymbol(next);setPreview(null);setPickedPrice(null);}}/></aside>

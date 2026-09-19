@@ -16,7 +16,11 @@ test('homepage hero does not open a real-time market socket', () => {
   const terminal = read('SapphireTerminal.tsx');
   expect(hero).not.toContain('useHeroStream');
   expect(hero).toContain('<SapphireTerminal market={market}/>');
-  expect(terminal).toContain("stale?'Stale':'6h snapshot'");
+  // The badge's wording changed ("Stale"/"6h snapshot" named the cache
+  // rather than the cadence), but what this guard protects did not: the
+  // badge still states the six-hour cadence on its face, which a page
+  // fed by a live socket could not say.
+  expect(terminal).toContain("stale?'Delayed':'Updated every 6h'");
   expect(terminal).not.toContain("'15s refresh'");
 });
 

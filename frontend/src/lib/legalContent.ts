@@ -110,7 +110,7 @@ const RU_PRIVACY: LegalContent = {
     {
       heading: '5. Безопасность данных',
       body: [
-        'Пароли хранятся в виде необратимых bcrypt-хешей. Секреты API-ключей шифруются при хранении. Мы поддерживаем двухфакторную аутентификацию для дополнительной защиты аккаунта.',
+        'Пароли хранятся в виде необратимых криптографических хешей. Секреты API-ключей шифруются при хранении. Мы поддерживаем двухфакторную аутентификацию для дополнительной защиты аккаунта.',
       ],
     },
     {
@@ -143,13 +143,13 @@ const RU_ABOUT: LegalContent = {
     {
       heading: 'Торговый движок',
       body: [
-        'Ордера сопоставляются собственным торговым движком по принципу цена-время. Рыночные данные (цены, свечи, стакан) зеркалируются с реального биржевого API — никаких захардкоженных или сгенерированных котировок.',
+        'Ордера сопоставляются собственным торговым движком по принципу цена-время. Рыночные данные — цены, свечи и стакан — поступают с биржевых площадок в реальном времени.',
       ],
     },
     {
       heading: 'Безопасность аккаунта',
       body: [
-        'Пароли хранятся в виде необратимых bcrypt-хешей, секреты API-ключей шифруются при хранении. Двухфакторная аутентификация и журнал входов доступны в разделе «Настройки → Безопасность».',
+        'Пароли хранятся в виде необратимых криптографических хешей, секреты API-ключей шифруются при хранении. Двухфакторная аутентификация и журнал входов доступны в разделе «Настройки → Безопасность».',
       ],
     },
     {
@@ -352,7 +352,7 @@ const EN_PRIVACY: LegalContent = {
     {
       heading: '5. Data security',
       body: [
-        'Passwords are stored as irreversible bcrypt hashes. API key secrets are encrypted at rest. We support two-factor authentication for additional account protection.',
+        'Passwords are stored as irreversible cryptographic hashes. API key secrets are encrypted at rest. We support two-factor authentication for additional account protection.',
       ],
     },
     {
@@ -383,13 +383,13 @@ const EN_ABOUT: LegalContent = {
     {
       heading: 'Matching engine',
       body: [
-        'Orders are matched by our own price-time matching engine. Market data (prices, candles, order book) mirrors a real exchange API — no hardcoded or generated quotes.',
+        'Orders are matched by our own price-time matching engine. Market data — prices, candles and order book — comes from live exchange venues in real time.',
       ],
     },
     {
       heading: 'Account security',
       body: [
-        'Passwords are stored as irreversible bcrypt hashes, and API key secrets are encrypted at rest. Two-factor authentication and a login history are available under Settings → Security.',
+        'Passwords are stored as irreversible cryptographic hashes, and API key secrets are encrypted at rest. Two-factor authentication and a login history are available under Settings → Security.',
       ],
     },
     {
@@ -553,7 +553,7 @@ const ZH_PRIVACY: LegalContent = {
     },
     {
       heading: '5. 数据安全',
-      body: ['密码以不可逆的 bcrypt 哈希形式存储。API 密钥在存储时会被加密。我们支持双重验证以增强账户保护。'],
+      body: ['密码以不可逆的加密哈希形式存储。API 密钥在存储时会被加密。我们支持双重验证以增强账户保护。'],
     },
     {
       heading: '6. 你的权利',
@@ -577,11 +577,11 @@ const ZH_ABOUT: LegalContent = {
   sections: [
     {
       heading: '撮合引擎',
-      body: ['订单由我们自有的价格-时间优先撮合引擎处理。行情数据(价格、K线、订单簿)镜像自真实交易所接口,不使用硬编码或生成的报价。'],
+      body: ['订单由我们自有的价格-时间优先撮合引擎处理。行情数据(价格、K线、订单簿)实时来自真实交易所。'],
     },
     {
       heading: '账户安全',
-      body: ['密码以不可逆的 bcrypt 哈希存储,API 密钥密文加密保存。双重验证与登录历史可在"设置 → 安全"中查看。'],
+      body: ['密码以不可逆的加密哈希存储,API 密钥密文加密保存。双重验证与登录历史可在"设置 → 安全"中查看。'],
     },
     {
       heading: '合约与风险管理',
@@ -735,7 +735,7 @@ const ES_PRIVACY: LegalContent = {
     {
       heading: '5. Seguridad de los datos',
       body: [
-        'Las contraseñas se almacenan como hashes bcrypt irreversibles. Los secretos de las claves API se encriptan en reposo. Ofrecemos autenticación de dos factores para protección adicional de la cuenta.',
+        'Las contraseñas se almacenan como hashes criptográficos irreversibles. Los secretos de las claves API se encriptan en reposo. Ofrecemos autenticación de dos factores para protección adicional de la cuenta.',
       ],
     },
     {
@@ -766,13 +766,13 @@ const ES_ABOUT: LegalContent = {
     {
       heading: 'Motor de emparejamiento',
       body: [
-        'Las órdenes se emparejan mediante nuestro propio motor de emparejamiento por precio-tiempo. Los datos de mercado (precios, velas, libro de órdenes) reflejan una API de exchange real — sin cotizaciones fijas ni generadas.',
+        'Las órdenes se emparejan mediante nuestro propio motor de emparejamiento por precio-tiempo. Los datos de mercado (precios, velas, libro de órdenes) provienen de mercados reales en tiempo real.',
       ],
     },
     {
       heading: 'Seguridad de la cuenta',
       body: [
-        'Las contraseñas se almacenan como hashes bcrypt irreversibles, y los secretos de las claves API se encriptan en reposo. La autenticación de dos factores y un historial de inicios de sesión están disponibles en Configuración → Seguridad.',
+        'Las contraseñas se almacenan como hashes criptográficos irreversibles, y los secretos de las claves API se encriptan en reposo. La autenticación de dos factores y un historial de inicios de sesión están disponibles en Configuración → Seguridad.',
       ],
     },
     {
@@ -960,7 +960,7 @@ const HI_PRIVACY: LegalContent = {
     {
       heading: '5. डेटा सुरक्षा',
       body: [
-        'पासवर्ड अपरिवर्तनीय bcrypt हैश के रूप में संग्रहीत किए जाते हैं। API कुंजी सीक्रेट्स आराम के समय एन्क्रिप्टेड होते हैं। हम अतिरिक्त अकाउंट सुरक्षा के लिए दो-चरणीय प्रमाणीकरण का समर्थन करते हैं।',
+        'पासवर्ड अपरिवर्तनीय क्रिप्टोग्राफ़िक हैश के रूप में संग्रहीत किए जाते हैं। API कुंजी सीक्रेट्स आराम के समय एन्क्रिप्टेड होते हैं। हम अतिरिक्त अकाउंट सुरक्षा के लिए दो-चरणीय प्रमाणीकरण का समर्थन करते हैं।',
       ],
     },
     {
@@ -991,13 +991,13 @@ const HI_ABOUT: LegalContent = {
     {
       heading: 'मैचिंग इंजन',
       body: [
-        'ऑर्डर हमारे अपने प्राइस-टाइम मैचिंग इंजन द्वारा मैच किए जाते हैं। मार्केट डेटा (कीमतें, कैंडल्स, ऑर्डर बुक) एक वास्तविक एक्सचेंज API को प्रतिबिंबित करता है — कोई हार्डकोडेड या जनरेट की गई कोटेशन नहीं।',
+        'ऑर्डर हमारे अपने प्राइस-टाइम मैचिंग इंजन द्वारा मैच किए जाते हैं। मार्केट डेटा (कीमतें, कैंडल्स, ऑर्डर बुक) वास्तविक एक्सचेंजों से रीयल टाइम में आता है।',
       ],
     },
     {
       heading: 'अकाउंट सुरक्षा',
       body: [
-        'पासवर्ड अपरिवर्तनीय bcrypt हैश के रूप में संग्रहीत किए जाते हैं, और API कुंजी सीक्रेट्स आराम के समय एन्क्रिप्टेड होते हैं। दो-चरणीय प्रमाणीकरण और लॉगिन इतिहास सेटिंग्स → सुरक्षा में उपलब्ध हैं।',
+        'पासवर्ड अपरिवर्तनीय क्रिप्टोग्राफ़िक हैश के रूप में संग्रहीत किए जाते हैं, और API कुंजी सीक्रेट्स आराम के समय एन्क्रिप्टेड होते हैं। दो-चरणीय प्रमाणीकरण और लॉगिन इतिहास सेटिंग्स → सुरक्षा में उपलब्ध हैं।',
       ],
     },
     {
@@ -1185,7 +1185,7 @@ const JA_PRIVACY: LegalContent = {
     {
       heading: '5. データセキュリティ',
       body: [
-        'パスワードは復元不可能なbcryptハッシュとして保管されます。APIキーのシークレットは保存時に暗号化されます。アカウントのさらなる保護のため二段階認証に対応しています。',
+        'パスワードは復元不可能な暗号学的ハッシュとして保管されます。APIキーのシークレットは保存時に暗号化されます。アカウントのさらなる保護のため二段階認証に対応しています。',
       ],
     },
     {
@@ -1216,13 +1216,13 @@ const JA_ABOUT: LegalContent = {
     {
       heading: 'マッチングエンジン',
       body: [
-        '注文は当社独自の価格・時間優先マッチングエンジンによって処理されます。マーケットデータ（価格、ローソク足、板情報）は実際の取引所APIを反映しており、ハードコードや生成された相場は使用していません。',
+        '注文は当社独自の価格・時間優先マッチングエンジンによって処理されます。マーケットデータ（価格、ローソク足、板情報）は実際の取引所からリアルタイムで配信されます。',
       ],
     },
     {
       heading: 'アカウントセキュリティ',
       body: [
-        'パスワードは復元不可能なbcryptハッシュとして保管され、APIキーのシークレットは保存時に暗号化されます。二段階認証とログイン履歴は設定 → セキュリティでご利用いただけます。',
+        'パスワードは復元不可能な暗号学的ハッシュとして保管され、APIキーのシークレットは保存時に暗号化されます。二段階認証とログイン履歴は設定 → セキュリティでご利用いただけます。',
       ],
     },
     {
@@ -1410,7 +1410,7 @@ const KO_PRIVACY: LegalContent = {
     {
       heading: '5. 데이터 보안',
       body: [
-        '비밀번호는 복호화가 불가능한 bcrypt 해시로 저장됩니다. API 키 시크릿은 저장 시 암호화됩니다. 계정 보호 강화를 위해 2단계 인증을 지원합니다.',
+        '비밀번호는 복호화가 불가능한 암호화 해시로 저장됩니다. API 키 시크릿은 저장 시 암호화됩니다. 계정 보호 강화를 위해 2단계 인증을 지원합니다.',
       ],
     },
     {
@@ -1441,13 +1441,13 @@ const KO_ABOUT: LegalContent = {
     {
       heading: '매칭 엔진',
       body: [
-        '주문은 당사 자체의 가격-시간 매칭 엔진에 의해 매칭됩니다. 마켓 데이터(가격, 캔들, 호가창)는 실제 거래소 API를 반영하며, 하드코딩되거나 생성된 시세는 사용하지 않습니다.',
+        '주문은 당사 자체의 가격-시간 매칭 엔진에 의해 매칭됩니다. 마켓 데이터(가격, 캔들, 호가창)는 실제 거래소에서 실시간으로 제공됩니다.',
       ],
     },
     {
       heading: '계정 보안',
       body: [
-        '비밀번호는 복호화가 불가능한 bcrypt 해시로 저장되며, API 키 시크릿은 저장 시 암호화됩니다. 2단계 인증과 로그인 내역은 설정 → 보안에서 이용할 수 있습니다.',
+        '비밀번호는 복호화가 불가능한 암호화 해시로 저장되며, API 키 시크릿은 저장 시 암호화됩니다. 2단계 인증과 로그인 내역은 설정 → 보안에서 이용할 수 있습니다.',
       ],
     },
     {

@@ -104,7 +104,18 @@ const out = 'docs/qa/terminal-reference';
           await menu.locator('.fo-mlChip').filter({hasText:/^10x$/}).click();
           const failure = page.locator('.futures-position-state');
           await failure.locator('button').waitFor();
-          assert.equal(await page.locator('.futures-state-columns th').count(), 9, 'position columns remain present when account data is unavailable');
+          // This used to count the nine column headings the panel painted over
+          // no rows. Those are gone: headings belong to rows, and a strip of
+          // them above an empty table read as breakage rather than emptiness.
+          // What the assertion was really protecting — that an account whose
+          // data could not be loaded still SAYS so instead of showing a blank
+          // panel, and still offers the read-only retry — is checked directly.
+          assert.equal(await page.locator('.futures-positions-panel').count(), 1,
+            'the positions panel still renders when account data is unavailable');
+          assert.ok((await failure.innerText()).trim().length > 0,
+            'the unavailable state still states itself rather than going blank');
+          assert.equal(await page.locator('.futures-state-columns').count(), 0,
+            'and it no longer paints column headings over no rows');
           await page.locator('.support-launcher').click();
           await page.locator('.support-panel').waitFor();
           await page.locator('.support-launcher').click();

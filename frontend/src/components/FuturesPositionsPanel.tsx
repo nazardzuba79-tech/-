@@ -101,15 +101,24 @@ export function FuturesPositionsPanel({
     }
   }
 
+  /**
+   * Nothing to show yet: the tabs, then one short centred line.
+   *
+   * This used to draw the full strip of column headings above the message —
+   * nine headings, 31px, over no rows at all. It reads as a table that has
+   * broken rather than an account that simply has no positions, and on the
+   * owner's own screen that strip is the first thing the eye lands on.
+   *
+   * The headings belong to rows; with no rows they say nothing that the
+   * message does not say better. What the strip was carrying instead is
+   * preserved where it belongs: whether this is a real zero or an unknown
+   * stays in the MESSAGE and in the retry button — «Нет открытых позиций»
+   * is an answer, a load failure is not, and only the failure offers the
+   * retry. Absence of data is never painted as a confirmed zero.
+   */
   function renderState(message: string, failed = false) {
     const resource = tab === 'open' ? account.positions : account.positionHistory;
-    const columns = tab === 'open'
-      ? ['trade.market', 'futures.side', 'futures.size', 'futures.entryPrice', 'futures.markPrice', 'futures.liqPrice', 'futures.unrealizedPnl', 'futures.roe', 'futures.tpsl'] as const
-      : ['trade.market', 'futures.side', 'futures.entryPrice', 'futures.realizedPnl', 'trade.status'] as const;
     return <>
-    <div className="futures-state-columns" tabIndex={0}>
-      <table style={styles.table}><thead><tr>{columns.map(key => <th key={key} style={styles.th}>{t(key)}</th>)}</tr></thead></table>
-    </div>
     <div className="futures-position-state" style={styles.empty} role="status" aria-busy={resource.loading || resource.refreshing}>
       <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.3">
         <rect x="7" y="4" width="18" height="24" rx="3" /><path d="M12 11h8M12 16h8M12 21h5" />
@@ -387,7 +396,11 @@ const styles: Record<string, React.CSSProperties> = {
   error: { margin: 10, background: 'var(--sell-dim)', color: 'var(--sell)', padding: '6px 10px', borderRadius: 6, fontSize: 13 },
   tableWrap: { flex: 1, overflow: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
-  th: { textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 400, fontSize: 12 },
+  // No fontSize here on purpose. An inline size beats every stylesheet,
+  // which is why the terminal's own rules had to carry `!important` to
+  // set a column heading at all. With the size left to CSS those can go,
+  // and the heading scale lives in one place instead of three.
+  th: { textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 400 },
   td: { padding: '8px 14px', color: 'var(--text-primary)', borderTop: '1px solid var(--border)' },
   closeBtn: {
     background: 'transparent',

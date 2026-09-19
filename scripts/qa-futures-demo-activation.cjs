@@ -60,16 +60,24 @@ async function run(browser, viewport) {
   try {
     // ---------- BEFORE: the account does not exist yet ----------
     await page.locator('.futures-account-demo').waitFor({ timeout: 20000 });
-    const demoRow = await stat(page, 'Демо баланс');
+    // The row's label was «Демо баланс» until the plain-language sweep; it
+    // now reads «Доступно для торговли». Same row, same figure, same
+    // assertions below — only the words a user reads changed.
+    const demoRow = await stat(page, 'Доступно для торговли');
+    // Three of these labels had drifted before this sweep: the summary says
+    // «Баланс маржи», «Используемая НМ» and «Используемая ПМ», not the
+    // wording this harness was written against, so every read below
+    // returned null and the run died on the first one. Same rows, same
+    // assertions — only the needles were out of date.
     const before = {
       demo: demoRow,
       available: await stat(page, 'Доступная маржа'),
-      marginBalance: await stat(page, 'Маржинальный баланс'),
-      initialPct: await stat(page, 'Начальная маржа'),
-      maintenancePct: await stat(page, 'Поддерживающая маржа'),
+      marginBalance: await stat(page, 'Баланс маржи'),
+      initialPct: await stat(page, 'Используемая НМ'),
+      maintenancePct: await stat(page, 'Используемая ПМ'),
     };
     console.log(`      [BEFORE] ${JSON.stringify(before)}`);
-    check(label('BEFORE: the real demo balance is shown, not 0.00'),
+    check(label('BEFORE: the real tradable balance is shown, not 0.00'),
       num(before.demo) === 10000000, `demo=${before.demo}`);
     check(label('BEFORE: available margin is unknown, NOT 0.00'),
       before.available.startsWith('—'), `available=${before.available}`);
@@ -105,10 +113,10 @@ async function run(browser, viewport) {
     // ---------- AFTER ----------
     const after = {
       available: await stat(page, 'Доступная маржа'),
-      marginBalance: await stat(page, 'Маржинальный баланс'),
+      marginBalance: await stat(page, 'Баланс маржи'),
       pnl: await page.locator('.futures-account-pnl .mono').innerText(),
-      initialPct: await stat(page, 'Начальная маржа'),
-      maintenancePct: await stat(page, 'Поддерживающая маржа'),
+      initialPct: await stat(page, 'Используемая НМ'),
+      maintenancePct: await stat(page, 'Используемая ПМ'),
       marginType: await stat(page, 'Тип маржи'),
     };
     console.log(`      [AFTER]  ${JSON.stringify(after)}`);

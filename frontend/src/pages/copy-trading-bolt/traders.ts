@@ -140,7 +140,7 @@ export const marketplaceTraders: Trader[] = [
   { id: 'VX-024', name: 'ChakraTrade', initials: 'CT', tone: 'orange', region: 'India', strategy: 'Momentum Trader', category: 'multi-asset', roi7: 0.6, roi30: 0.9, roi90: 2.4, roiAll: 6.1, winRate: 58.2, drawdown: 8.4, copiers: 22, aum: 64_000, volume: 1.4, risk: 'Moderate', activeMonths: 6, performanceFee: 0.08 },
 
   // --- newer, small books ---
-  { id: 'VX-025', name: 'SandboxAlpha', initials: 'SA', tone: 'rose', region: 'Indonesia', strategy: 'Swing Trader', category: 'swing', roi7: 2.4, roi30: 6.8, roi90: 14.2, roiAll: 14.2, winRate: 64.1, drawdown: 11.6, copiers: 14, aum: 38_000, volume: 0.8, risk: 'Moderate', activeMonths: 3, performanceFee: 0.06 },
+  { id: 'VX-025', name: 'SundaAlpha', initials: 'SA', tone: 'rose', region: 'Indonesia', strategy: 'Swing Trader', category: 'swing', roi7: 2.4, roi30: 6.8, roi90: 14.2, roiAll: 14.2, winRate: 64.1, drawdown: 11.6, copiers: 14, aum: 38_000, volume: 0.8, risk: 'Moderate', activeMonths: 3, performanceFee: 0.06 },
   { id: 'VX-026', name: 'DragonTick', initials: 'DT', tone: 'green', region: 'Vietnam', strategy: 'Futures Specialist', category: 'futures', roi7: 1.8, roi30: 5.4, roi90: 9.8, roiAll: 9.8, winRate: 61.4, drawdown: 16.2, copiers: 9, aum: 21_000, volume: 1.6, risk: 'High', activeMonths: 3, performanceFee: 0.06 },
   { id: 'VX-027', name: 'AsianWhale', initials: 'AW', tone: 'slate', region: 'Thailand', strategy: 'High Growth Strategy', category: 'multi-asset', roi7: 6.2, roi30: 18.4, roi90: 42.6, roiAll: 42.6, winRate: 63.8, drawdown: 28.4, copiers: 47, aum: 92_000, volume: 5.4, risk: 'Very High', activeMonths: 4, performanceFee: 0.1 },
 

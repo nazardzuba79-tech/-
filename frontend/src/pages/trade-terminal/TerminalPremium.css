@@ -70,7 +70,7 @@
    the whole terminal at 3.98:1 — below AA, at 11px, on the panel the eye
    spends most of its time on. They join the scale rather than getting a
    fourth grey of their own. */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.rb-columns small,.rb-feed[data-state=connecting],.futures-state-columns th) {
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.rb-columns small,.rb-feed[data-state=connecting]) {
   color:var(--text-tertiary);
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.mono,.rb-row,.fa-value,.futures-positions-table td.mono,.ticker-item .value,.rb-center strong) { font-variant-numeric:tabular-nums; }
