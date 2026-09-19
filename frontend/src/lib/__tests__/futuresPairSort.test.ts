@@ -36,6 +36,18 @@ beforeEach(async () => {
     if(name.endsWith('/formatNumber'))return {formatPrice:String};
     if(name.endsWith('/useFavorites'))return {useFavorites:()=>({favorites,toggle:jest.fn()})};
     if(name.endsWith('/useWindowedRows'))return {useWindowedRows:(n:number)=>({start:0,end:n,padTop:0,padBottom:0,ref:()=>{}})};
+    // The 7-day control reads market-wide returns off the shared asset
+    // catalogue, and subscribes ONLY while that sort is active. Supplied by
+    // name so this fixture exercises the real subscribe/unsubscribe path;
+    // the 7d values themselves are asserted in their own test below.
+    if(name.endsWith('/catalogueStore'))return {catalogueStore:{subscribe:(listener:any)=>{
+      listener({assets:[
+        {symbol:'BTC',market:{changePercent7d:3.1}},
+        {symbol:'ETH',market:{changePercent7d:-4.2}},
+        {symbol:'SOL',market:{changePercent7d:18.6}},
+      ]});
+      return ()=>{};
+    }}};
     return req(name);
   });
   pick.mockClear();

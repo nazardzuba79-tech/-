@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Search, Star } from 'lucide-react';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { referenceNumber } from '../lib/futuresReference';
@@ -6,6 +6,7 @@ import { useLanguage } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { formatPrice } from '../lib/formatNumber';
 import { useFavorites } from '../lib/useFavorites';
+import { catalogueStore } from '../lib/catalogueStore';
 import { useWindowedRows } from '../lib/useWindowedRows';
 import './FuturesPairList.css';
 
@@ -21,11 +22,45 @@ interface Row {
    *  market on the exchange. */
   lastPrice: number | null;
   change: number | null;
+  /** Market-wide 7-day return, or null where the catalogue has none. */
+  change7d: number | null;
   quoteVolume24h: number | null;
 }
 
-type SortField = 'price' | 'change';
+type SortField = 'price' | 'change' | 'change7d';
 type Sort = { field: SortField; dir: 1 | -1 } | null;
+
+/**
+ * Seven-day returns, and where they legitimately come from.
+ *
+ * The venue's live ticker stream publishes a 24h change and nothing longer:
+ * there is no 7d field on a perpetual's ticker, and inventing one from the
+ * prices we happen to have seen this session would be a number the exchange
+ * made up. So this reads the SAME market-wide CoinGecko figure the Markets
+ * page already sorts by — `market.changePercent7d`, off the shared asset
+ * catalogue — and a contract the catalogue does not cover keeps `null` and
+ * sorts last, in both directions.
+ *
+ * SUBSCRIBED ONLY WHEN ASKED. The catalogue is one request per tab, shared
+ * and reference-counted, but it is still a request the futures terminal has
+ * never needed. Nothing is fetched until someone actually presses a 7-day
+ * control; leaving that state unsubscribes again.
+ */
+function useChange7d(enabled: boolean): ReadonlyMap<string, number> {
+  const [values, setValues] = useState<ReadonlyMap<string, number>>(() => new Map());
+  useEffect(() => {
+    if (!enabled) return;
+    return catalogueStore.subscribe(state => {
+      const next = new Map<string, number>();
+      for (const asset of state.assets) {
+        const change = asset.market?.changePercent7d;
+        if (typeof change === 'number' && Number.isFinite(change)) next.set(asset.symbol.toUpperCase(), change);
+      }
+      setValues(next);
+    });
+  }, [enabled]);
+  return values;
+}
 
 /**
  * The futures market list, on the spot terminal's own `.pair-row` grid so
@@ -105,6 +140,11 @@ export const FuturesPairList = forwardRef<
 
   const sortField = sort?.field;
   const sortDir = sort?.dir ?? -1;
+  const change7d = useChange7d(sortField === 'change7d');
+  /** The 7-day figure replaces the 24h one in the last column while it is
+   *  the thing being sorted by, so the order on screen is the order the
+   *  control says it is — a sort you cannot see is a sort nobody trusts. */
+  const showing7d = sortField === 'change7d';
 
   function toggleSort(field: SortField) {
     // Descending -> ascending -> default (BTC first). Sorting never
@@ -129,6 +169,7 @@ export const FuturesPairList = forwardRef<
           symbol: s,
           lastPrice: referenceNumber(tk?.lastPrice),
           change: referenceNumber(tk?.changePercent24h),
+          change7d: change7d.get(s.split('/')[0].toUpperCase()) ?? null,
           quoteVolume24h: referenceNumber(tk?.quoteVolume24h),
         };
       });
@@ -145,11 +186,12 @@ export const FuturesPairList = forwardRef<
     return built.sort((a, b) => {
       if (sortField === 'price') return by(a.lastPrice, b.lastPrice);
       if (sortField === 'change') return by(a.change, b.change);
+      if (sortField === 'change7d') return by(a.change7d, b.change7d);
       if (a.symbol === 'BTC/USDT') return -1;
       if (b.symbol === 'BTC/USDT') return 1;
       return by(a.quoteVolume24h, b.quoteVolume24h);
     });
-  }, [symbols, tickers, search, sortField, sortDir, favoritesOnly, favorites]);
+  }, [symbols, tickers, search, sortField, sortDir, favoritesOnly, favorites, change7d]);
 
   const windowed = useWindowedRows(rows.length);
   const attachList = useCallback((node: HTMLElement | null) => {
@@ -200,6 +242,33 @@ export const FuturesPairList = forwardRef<
         >
           <Star size={12} fill={favoritesOnly ? 'currentColor' : 'none'} /> {t('trade.favorites')}
         </button>
+        {/* THE SEVEN-DAY CONTROL, IN THE CHOOSER ONLY.
+            Two states rather than one cycling button, because "show me the
+            week's winners" and "show me the week's losers" are two separate
+            questions and neither should require pressing through the other.
+            Pressing the active one returns to the default order.
+
+            Not in the left rail, and that is measured rather than taste: the
+            rail is 212px (184px on laptops) and already carries the
+            favourites filter and the market count on one 34px line. Adding
+            two chips there clipped the second one to "▼ 7". The chooser is
+            330px, exists for picking a contract, and is where the owner
+            asked for this. */}
+        {searchable && <div className="pairs-7d" role="group" aria-label={t('markets.change7d')}>
+          {([['gainers', -1], ['losers', 1]] as const).map(([kind, dir]) => {
+            const active = sortField === 'change7d' && sortDir === dir;
+            const label = t(kind === 'gainers' ? 'trade.sort7dGainers' : 'trade.sort7dLosers');
+            return <button type="button" key={kind} data-kind={kind}
+              className={`pairs-7d-btn${active ? ' active' : ''}`}
+              aria-pressed={active} title={label} aria-label={label}
+              onClick={() => {
+                setSort(active ? null : { field: 'change7d', dir });
+                if (listRef.current) listRef.current.scrollTop = 0;
+              }}>
+              <span aria-hidden="true">{kind === 'gainers' ? '▲' : '▼'}</span>7д
+            </button>;
+          })}
+        </div>}
       </div>
 
       <div className="pairs-col-headers futures-pair-headers">
@@ -209,7 +278,7 @@ export const FuturesPairList = forwardRef<
           <SortArrow active={sortField === 'price'} dir={sortDir} />
         </button>
         <button type="button" aria-pressed={sortField === 'change'} className={`pch-sort ${sortField === 'change' ? 'active' : ''}`} onClick={() => toggleSort('change')}>
-          {t('markets.change24h')}
+          {showing7d ? t('markets.change7d') : t('markets.change24h')}
           <SortArrow active={sortField === 'change'} dir={sortDir} />
         </button>
       </div>
@@ -223,7 +292,8 @@ export const FuturesPairList = forwardRef<
         {rows.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         {windowed.padTop > 0 && <div style={{ height: windowed.padTop }} aria-hidden />}
         {rows.slice(windowed.start, windowed.end).map((r) => {
-          const up = (r.change ?? 0) >= 0;
+          const shown = showing7d ? r.change7d : r.change;
+          const up = (shown ?? 0) >= 0;
           const base = r.symbol.split('/')[0];
           return (
             <button
@@ -249,8 +319,9 @@ export const FuturesPairList = forwardRef<
                   {r.symbol.split('/')[1] !== 'USDT' && <span className="p-quote">/{r.symbol.split('/')[1]}</span>}
                 </span>
               <span className="p-price">{r.lastPrice !== null ? formatPrice(r.lastPrice) : '—'}</span>
-              <span className={`p-change ${up ? 'up' : 'down'}`}>
-                {r.change !== null ? `${up ? '+' : ''}${r.change.toFixed(2)}%` : '—'}
+              <span className={`p-change ${up ? 'up' : 'down'}`}
+                title={showing7d ? t('markets.change7d') : t('markets.change24h')}>
+                {shown !== null ? `${up ? '+' : ''}${shown.toFixed(2)}%` : '—'}
               </span>
             </button>
           );
