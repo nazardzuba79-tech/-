@@ -107,6 +107,7 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     const scope=new CommandScope(input.kind);
     res.setHeader('X-Native-Request-Id',scope.id);
     scope.trace('http.accepted',{keyHash:createHash('sha256').update(input.idempotencyKey).digest('hex').slice(0,16)});
+    if(input.kind==='OPEN')scope.trace('entry.reference',{executionMode:input.executionMode??'LIVE_EXECUTION',symbol:input.symbol,candle:input.candle??null});
     res.once('finish',()=>scope.trace('http.finish',{status:res.statusCode}));
     res.once('close',()=>{if(!res.writableFinished)scope.trace('http.disconnected');});
     return service.command(actor(res),input,{scope});

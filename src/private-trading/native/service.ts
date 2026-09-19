@@ -511,6 +511,7 @@ export class NativeDemoService {
       }
       const row=prepared?prepared.row:await commandRead('repository.read',()=>this.repository.read(actor));if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
       if(request.executionMode==='HISTORICAL_DEMO'||row.executionMode==='HISTORICAL_DEMO'){
+        commandScope()?.trace('execution.dispatch',{executionMode:'HISTORICAL_DEMO'});
         if(request.executionMode==='LIVE_EXECUTION')throw new DemoEngineError('EXECUTION_MODE_MISMATCH');
         return this.historicalDemoAttempt(actor,row,request,hash,prepared?.holdings);
       }

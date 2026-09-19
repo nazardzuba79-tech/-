@@ -69,7 +69,8 @@ export function useNativeFuturesExecution(
     const refuse = async () => { throw new Error('Торговый счёт ещё не загружен'); };
     // A warm browser transcript is display-only. It becomes tradable only
     // after THIS session has received an authoritative server response.
-    const ready = allowed && native.stateLoaded && state !== null && state.initialized;
+    const historicalEntryPending = !!native.entryIntent && !pickedCandle;
+    const ready = allowed && native.stateLoaded && state !== null && state.initialized && !historicalEntryPending;
     if (!ready) {
       return {
         ...REAL_FUTURES_EXECUTION,
@@ -79,6 +80,7 @@ export function useNativeFuturesExecution(
         marginType: null,
         defaultMarginType: 'CROSS' as const,
         candle: pickedCandle,
+        historicalEntryPending,
         contract,
         account_aggregate: aggregate,
         activation,
@@ -96,6 +98,7 @@ export function useNativeFuturesExecution(
       marginType: null,
       defaultMarginType: 'CROSS' as const,
       candle: pickedCandle,
+      historicalEntryPending,
       contract,
       account_aggregate: aggregate,
       activation,
@@ -105,7 +108,12 @@ export function useNativeFuturesExecution(
         // never the older state captured when this execution object rendered.
         const current = native.getState();
         if (!current?.initialized) throw new PrivateTradingError('Торговый счёт ещё не загружен', 409);
-        const draft = nativeOrderDraft(current.positions, params, exitId, pickedCandle);
+        // The reference displayed by the form is the reference it submits.
+        // A missing/mismatched reference cannot silently become a live order.
+        if (params.candle !== undefined && JSON.stringify(params.candle) !== JSON.stringify(pickedCandle)) {
+          throw new PrivateTradingError('Выберите точку входа на графике.', 409, 'HISTORICAL_ENTRY_REQUIRED');
+        }
+        const draft = nativeOrderDraft(current.positions, params, exitId, params.candle === undefined ? pickedCandle : params.candle);
         // The server's refusal travels as the structured error it is (code,
         // status, contract limit), so the terminal localizes the real reason.
         try { await execute(draft); } catch (e) { throw failureOf(e, 'Операция не подтверждена'); }
@@ -169,5 +177,5 @@ export function useNativeFuturesExecution(
       showPnlCard: (positionId: string) => { void native.showCard(positionId); },
       refresh: () => { void run({ kind: 'REFRESH' }); },
     };
-  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, execute, native.stateLoaded, native.getState, contract, native.showCard, native.busy, native.initialize]);
+  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, execute, native.entryIntent, native.stateLoaded, native.getState, contract, native.showCard, native.busy, native.initialize]);
 }

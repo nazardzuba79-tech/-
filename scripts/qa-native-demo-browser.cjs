@@ -12,7 +12,8 @@ const root = path.resolve(__dirname, '..'), front = path.join(root, 'frontend');
 const largeOnly = process.env.NATIVE_QA_LARGE_ONLY === '1';
 const out = path.join(root, 'docs/qa/native-demo', largeOnly ? 'large-numbers' : '');
 fs.mkdirSync(out, { recursive: true });
-const origin = 'http://127.0.0.1:4178';
+const port = process.env.NATIVE_QA_PORT || '4178';
+const origin = `http://127.0.0.1:${port}`;
 const report = { fixtureOnly: true, productionVerified: false, scope: largeOnly ? 'original terminal / synthetic layout values' : 'original terminal / isolated native engine', checks: [], errors: [] };
 let browser, server, activePage, shim;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -36,7 +37,7 @@ async function check(name, fn) {
   }
 }
 async function startServer() {
-  server = spawn(process.execPath, ['scripts/serve-native-demo-review.cjs'], { cwd: root, env: { ...process.env, PORT: '4178', NATIVE_PREVIEW_FIXTURE: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  server = spawn(process.execPath, ['scripts/serve-native-demo-review.cjs'], { cwd: root, env: { ...process.env, PORT: port, NATIVE_PREVIEW_FIXTURE: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   const log = fs.createWriteStream(path.join(out, 'server.log'), { flags: 'a' });
   server.stdout.pipe(log, { end: false }); server.stderr.pipe(log, { end: false });
   server.once('exit', () => log.end());
@@ -352,6 +353,7 @@ async function chartFlow(width) {
   try {
     await ready(s); await family(p, 'MARKET'); await qty(p).fill('1');
     await armChartPicker(p);
+    assert(await button(p,'LONG').isDisabled(),'Armed historical entry may fall through to LIVE without a candle');
     await p.waitForFunction(() => window.__nativeQaSeries?.data().length > 10); await p.locator('.chart-area').scrollIntoViewIfNeeded();
     const points = await p.evaluate(() => { const c = window.__nativeQaChart, series = window.__nativeQaSeries, r = c.chartElement().getBoundingClientRect(); return series.data().slice(0, -3).filter(x => typeof x.time === 'number' && x.open !== undefined).map(x => ({ ...x, x: c.timeScale().timeToCoordinate(x.time) })).filter(x => x.x > 35 && x.x < r.width - 90).filter((_, i) => i % 7 === 0).map(x => ({ x: r.left + x.x, y: r.top + series.priceToCoordinate((x.high + x.low) / 2) })); });
     let picked = false;
@@ -362,7 +364,29 @@ async function chartFlow(width) {
       if (await p.evaluate(() => !document.querySelector('[data-chart-picking]'))) { picked = true; break; }
     }
     assert(picked, 'Original chart did not accept a closed-candle pick');
+    const reference=JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference'));
+    if(width===1440){
+      // A transient access poll used to erase the candle, then re-enable LIVE
+      // submit on recovery. Keep the actual UI selection through both polls.
+      await p.clock.install();
+      let failAccess=true;
+      await s.context.route('**/private-trading/access',route=>failAccess
+        ?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA access outage'})})
+        :route.continue());
+      const failed=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.status()===503);
+      await p.clock.runFor(15001);await failed;
+      await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===true);
+      assert.deepEqual(JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference')),reference);
+      failAccess=false;
+      const recovered=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.ok());
+      await p.clock.runFor(15001);await recovered;
+      await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===false);
+      await p.clock.resume();
+    }
     const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
+    assert.deepEqual(draft.candle,reference,'Displayed candle differs from actual HTTP payload');
+    assert.equal(draft.executionMode,'HISTORICAL_DEMO');
+    assert.equal(state.executionMode,'HISTORICAL_DEMO');
     assert(draft.candle && Number.isFinite(draft.candle.openTime), 'Selected candle did not reach native execution');
     assert.equal(state.positions.length, 1); assert(state.positions[0].historical); assert(state.entries.some(x => x.positionId === state.positions[0].id && x.candle.openTime === draft.candle.openTime));
     const before = state.positions.map(x => [x.id, x.quantity]);

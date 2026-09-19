@@ -128,6 +128,23 @@ function controller(rendered: NativePosition[], current: NativePosition[]) {
 }
 
 describe('execution resolves against current state, not a stale render', () => {
+  test('armed historical entry cannot submit a live order before a candle is selected',async()=>{
+    const native={...controller([],[]),entryIntent:true};
+    const execution=executionHook()(native,null);
+    expect(execution.ready).toBe(false);
+    await expect(execution.placeOrder({...params('CROSS'),reduceOnly:false})).rejects.toThrow();
+    expect(native.execute).not.toHaveBeenCalled();
+  });
+  test('the displayed candle reaches the command and a mismatched reference refuses',async()=>{
+    const picked={...candle,symbol:'BTCUSDT'};
+    const native={...controller([],[]),entryIntent:true,candle:picked};
+    const execution=executionHook()(native,null);
+    await execution.placeOrder({...params('CROSS'),reduceOnly:false,candle:execution.candle});
+    expect(native.execute).toHaveBeenCalledWith(expect.objectContaining({candle}));
+    native.execute.mockClear();
+    await expect(execution.placeOrder({...params('CROSS'),reduceOnly:false,candle:null})).rejects.toMatchObject({code:'HISTORICAL_ENTRY_REQUIRED'});
+    expect(native.execute).not.toHaveBeenCalled();
+  });
   test('hybrid close submits exactly once even for a stale-price failure and never sends the historical candle',async()=>{
     const p={...position('target','CROSS'),executionMode:'HISTORICAL_DEMO' as const};
     const native=controller([p],[p]);
