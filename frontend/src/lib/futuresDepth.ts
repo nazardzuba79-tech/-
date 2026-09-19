@@ -1,7 +1,7 @@
 /** Public linear-perpetual depth, for presentation only. No account or order API.
  * Protocol: https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook
  */
-import { BOOK_REFRESH_MS, BOOK_STALE_AFTER_MS, BOOK_UNAVAILABLE_AFTER_MS } from './bookFreshness';
+import { BOOK_REFRESH_MS, BOOK_STALE_AFTER_MS, BOOK_UNAVAILABLE_AFTER_MS, RECONNECT_GRACE_MS } from './bookFreshness';
 
 export interface FuturesDepthLevel { price: string; quantity: string }
 
@@ -19,7 +19,25 @@ export interface FuturesDepthLevel { price: string; quantity: string }
  *    than aged further: an empty array here means "we do not know", and the
  *    panel says so instead of drawing zero depth.
  */
-export type FuturesDepthStatus = 'connecting' | 'live' | 'stale' | 'unavailable';
+/**
+ * `reconnecting` is NOT a softer word for `stale`, and the difference is the
+ * whole point of it.
+ *
+ * `stale` means the feed has gone quiet for longer than three refresh cycles
+ * and nobody knows why — worth telling a trader about. `reconnecting` means
+ * we know exactly why the data stopped: the browser suspended the tab and
+ * closed our socket, and a handshake is in flight. That is the most ordinary
+ * thing a person does, and announcing it as a lost connection is a false
+ * alarm on a healthy feed. A trader who learns to ignore that warning will
+ * ignore the real one too.
+ *
+ * So the book keeps its last-good levels and says nothing for the length of
+ * RECONNECT_GRACE_MS. If a frame lands inside that window the state goes
+ * straight back to `live` and no warning was ever shown; if the window
+ * closes with nothing, the ordinary rules take over and `stale` is told.
+ * `unavailable` is never held back — data that old is not a price.
+ */
+export type FuturesDepthStatus = 'connecting' | 'live' | 'reconnecting' | 'stale' | 'unavailable';
 
 export interface FuturesDepthSnapshot {
   bids: FuturesDepthLevel[];
@@ -230,6 +248,13 @@ interface ActiveDepth {
   lastGood: { bids: FuturesDepthLevel[]; asks: FuturesDepthLevel[] } | null;
   source: 'socket' | 'rest' | null;
   status: FuturesDepthStatus;
+  /**
+   * While set and in the future, a silent feed is a reconnect rather than a
+   * fault, and `stale` is withheld. Set when the tab comes back, cleared by
+   * the first accepted frame or by its own expiry. Never suppresses
+   * `unavailable`.
+   */
+  graceUntil: number | null;
   flush: ReturnType<typeof setTimeout> | null;
   /** When this contract was first asked for, so the fallback can start. */
   subscribedAt: number;
@@ -284,7 +309,7 @@ class FuturesDepthTransport {
     const isNewTopic = !active;
     if (!active) {
       active = { book: new FuturesDepthBook(symbol), listeners: new Set(), tradeListeners: new Set(), pendingTrades: [],
-        tradeFlush: null, lastAccepted: null, lastGood: null, source: null, status: 'connecting', flush: null,
+        tradeFlush: null, lastAccepted: null, lastGood: null, source: null, status: 'connecting', graceUntil: null, flush: null,
         subscribedAt: Date.now(), poll: null, polling: false };
       this.subscriptions.set(symbol, active);
     }
@@ -352,6 +377,8 @@ class FuturesDepthTransport {
     active.lastAccepted = Date.now();
     active.lastGood = active.book.levels();
     active.source = source;
+    // A frame arrived, so whatever we were waiting through is over.
+    active.graceUntil = null;
     active.status = 'live';
     if (source === 'socket') this.stopFallback(active);
     this.scheduleEmit(symbol, active);
@@ -424,20 +451,47 @@ class FuturesDepthTransport {
     this.cancelReconnect();
     if (document.hidden) {
       // Stop spending the visitor's battery and the venue's connection —
-      // but keep the book. Coming back to a labelled book that is seconds
-      // old beats coming back to an empty panel.
-      this.markStale();
+      // but keep the book, and do NOT label it.
+      //
+      // This used to call markStale(), which flipped every live book to
+      // `stale` on the way out. Nobody saw that while the tab was hidden;
+      // the damage was done on the way back, because the status was still
+      // `stale` until the first frame of the new socket landed, and the
+      // panel announced "not updating — reconnecting" through an entirely
+      // normal handshake. The levels were right there and correct the whole
+      // time. Closing the socket is the browser's doing and ours; it is not
+      // news, so it is no longer reported as such.
+      this.quiesce();
       for (const active of this.subscriptions.values()) this.stopFallback(active);
       this.clearSocket();
       return;
     }
+    // Back on screen: reconnect, and hold the warning for one grace window.
+    // The book on screen is the last good one and stays put; if a frame
+    // lands inside the window the state returns to `live` having said
+    // nothing, and if the window closes empty the ordinary rules speak.
+    const now = Date.now();
+    for (const [symbol, active] of this.subscriptions) {
+      if (active.lastGood !== null && active.status !== 'unavailable') {
+        active.graceUntil = now + RECONNECT_GRACE_MS;
+        if (active.status === 'stale') {
+          active.status = 'reconnecting';
+          this.emit(symbol, active);
+        }
+      }
+    }
     this.reconnectDelay = 1000;
     this.connect();
     for (const [symbol, active] of this.subscriptions) {
-      active.subscribedAt = Date.now();
+      active.subscribedAt = now;
       this.scheduleFallback(active, symbol);
     }
   };
+
+  /** True while a silent feed is an explained reconnect rather than a fault. */
+  private inGrace(active: ActiveDepth, now: number) {
+    return active.graceUntil !== null && now < active.graceUntil;
+  }
 
   private connect() {
     if (this.subscriptions.size === 0 || (typeof document !== 'undefined' && document.hidden) || this.socket || this.reconnectTimer !== null) return;
@@ -486,7 +540,10 @@ class FuturesDepthTransport {
             // panel keeps the book it had while the new snapshot is in
             // flight — labelled, because it is no longer being updated.
             active.book = new FuturesDepthBook(symbol);
-            active.status = active.lastGood === null ? 'connecting' : 'stale';
+            // Same rule as the visibility path: a re-subscribe in flight
+            // inside the grace window is a reconnect, not a stale feed.
+            active.status = active.lastGood === null ? 'connecting'
+              : this.inGrace(active, Date.now()) ? 'reconnecting' : 'stale';
             this.send('unsubscribe', symbol);
             this.send('subscribe', symbol);
             this.scheduleEmit(symbol, active);
@@ -533,9 +590,23 @@ class FuturesDepthTransport {
             active.lastGood = null;
             this.emit(symbol, active);
           }
-        } else if (active.lastAccepted !== null && since > STALE_AFTER_MS && active.status === 'live') {
-          active.status = 'stale';
-          this.emit(symbol, active);
+        } else if (active.lastAccepted !== null && since > STALE_AFTER_MS &&
+                   (active.status === 'live' || active.status === 'reconnecting')) {
+          // THE GRACE DEFERS THIS, IT DOES NOT CANCEL IT. Inside the window
+          // the book is `reconnecting` and silent; the moment the window
+          // closes with nothing to show for it, the feed really has stopped
+          // and is told so. `unavailable` above is never deferred — data
+          // that old is not a price, whatever the reason it stopped.
+          if (this.inGrace(active, now)) {
+            if (active.status !== 'reconnecting') {
+              active.status = 'reconnecting';
+              this.emit(symbol, active);
+            }
+          } else {
+            active.graceUntil = null;
+            active.status = 'stale';
+            this.emit(symbol, active);
+          }
         }
         if (since > STALE_AFTER_MS) { silent = true; this.scheduleFallback(active, symbol); }
       }
@@ -563,6 +634,23 @@ class FuturesDepthTransport {
   }
 
   /** Label every book as no-longer-updating. Deliberately keeps the levels. */
+  /**
+   * Stand the feed down without saying anything.
+   *
+   * Same timer teardown as markStale, deliberately without the label: used
+   * when WE closed the socket on purpose and a reconnect is expected, so
+   * there is nothing a trader could act on.
+   */
+  private quiesce() {
+    for (const active of this.subscriptions.values()) {
+      if (active.flush !== null) clearTimeout(active.flush);
+      active.flush = null;
+      if (active.tradeFlush !== null) clearTimeout(active.tradeFlush);
+      active.tradeFlush = null;
+      active.pendingTrades = [];
+    }
+  }
+
   private markStale() {
     for (const [symbol, active] of this.subscriptions) {
       if (active.flush !== null) clearTimeout(active.flush);

@@ -208,12 +208,22 @@ describe('selected-contract depth lifecycle',()=>{
     hidden=true;handlers.get('visibilitychange')!();
     const hiddenView=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(hiddenView.bids).toEqual([{price:'100',quantity:'2'}]); // kept, not cleared
-    expect(hiddenView.status).toBe('stale');
+    // THIS LINE USED TO REQUIRE `stale`, AND THAT WAS THE BUG.
+    // Labelling the book on the way out is invisible while the tab is
+    // hidden; the cost lands on the way back, where the status is still
+    // `stale` until the new socket's first frame and the panel announces a
+    // lost connection through an ordinary handshake. Closing a socket we
+    // chose to close is not news, so nothing is emitted and nothing is
+    // relabelled — see futuresDepthReconnectGrace.test.ts for the journey.
+    expect(hiddenView.status).not.toBe('stale');
     jest.advanceTimersByTime(60_000);
     expect(sockets).toHaveLength(opened); // nothing reconnects behind a hidden tab
 
     hidden=false;handlers.get('visibilitychange')!();
     expect(sockets).toHaveLength(opened+1);
+    // And returning does not put the warning up either: the book is held
+    // over for the grace window while the handshake completes.
+    expect(listener.mock.calls[listener.mock.calls.length-1][0].status).not.toBe('stale');
     stop();jest.advanceTimersByTime(1000);
   });
 
