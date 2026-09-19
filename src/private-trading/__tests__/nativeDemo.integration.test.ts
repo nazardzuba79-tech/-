@@ -298,6 +298,19 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(await realState(f.user.id)).toEqual(real);await pass.stop();
   });
 
+  test('deadline/freshness guard after writes rolls back account and immutable receipt together',async()=>{
+    const f=await fixture();await f.service.initialize(f.actor,'initialize-deadline-rollback');
+    const row=(await f.repository.read(f.actor))!;
+    const before=await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}});
+    let checks=0;
+    await expect(f.repository.commit(f.actor,row.revision,row,'deadline-rollback-after-write','hash',()=>{
+      if(++checks===3)throw new Error('EXPIRED_BEFORE_TRANSACTION_FINISH');
+    })).rejects.toThrow('EXPIRED_BEFORE_TRANSACTION_FINISH');
+    expect(checks).toBe(3);
+    expect(await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}})).toEqual(before);
+    expect(await db.nativeDemoRevision.count({where:{userId:f.user.id}})).toBe(1);
+  });
+
   test('every repository read/write re-checks owner, ADMIN role, live session and the server flag', async () => {
     const f = await fixture();
     await f.service.initialize(f.actor, `init-${randomUUID()}`);

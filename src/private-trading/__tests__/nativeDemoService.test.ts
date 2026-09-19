@@ -81,6 +81,30 @@ let seq=0;const key=()=>`test-key-${++seq}`;
 const long=(extra:object={})=>({kind:'OPEN' as const,symbol:'BTCUSDT',side:'LONG' as const,type:'MARKET' as const,margin:'5000',leverage:'20',idempotencyKey:key(),...extra});
 
 describe('native demo service (fixture market, in-memory persistence)',()=>{
+  test.each(['OPEN','CLOSE'] as const)('%s observes its execution book after slow collateral, keeping the final-write freshness gate',async kind=>{
+    const f=setup();
+    f.repo.wallet=[{asset:'USDT',available:'10000000',locked:'0'},{asset:'ETH',available:'1',locked:'0'}];
+    await f.service.initialize(actor,key());
+    const position=kind==='CLOSE'?(await f.service.command(actor,long())).positions[0]:null;
+    f.clock.t+=PRIVATE_QUOTE_MAX_AGE_MS+1;
+    const quote=f.market.freshQuote.bind(f.market),reads:string[]=[];
+    f.market.freshQuote=async symbol=>{
+      reads.push(symbol);
+      if(symbol==='ETHUSDT')f.clock.t+=3000;
+      return quote(symbol);
+    };
+    const commit=f.repo.commit.bind(f.repo);
+    f.repo.commit=async(a,e,n,k,h,guard?:()=>void)=>{
+      f.clock.t+=3000; // Account lock/auth waits after the execution decision.
+      guard?.();
+      return commit(a,e,n,k,h);
+    };
+    const result=await f.service.command(actor,position?{kind:'CLOSE',positionId:position.id,idempotencyKey:key()}:long());
+    expect(reads.indexOf('ETHUSDT')).toBeGreaterThanOrEqual(0);
+    expect(reads.indexOf('BTCUSDT')).toBeGreaterThan(reads.indexOf('ETHUSDT'));
+    expect(result.positions).toHaveLength(kind==='OPEN'?1:0);
+    expect(f.service.expiredDecisions).toBe(0);
+  });
   test('live market order: server sizes 5,000 x 20, stores only the consumed depth, refresh is cheap and not persisted',async()=>{
     const f=setup();await f.service.initialize(actor,'init-key-1');
     let v=await f.service.command(actor,long());
@@ -412,8 +436,10 @@ describe('freshness after waiting on other sources (R8)',()=>{
   test('an execution book observed before a long wait is not the one the command commits on: the decision is taken again, once, on a fresh book',async()=>{
     const f=twoAssets();await f.service.initialize(actor,'r8-init-3');
     f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;f.asked.length=0;
-    // The order's own quote is taken first; then the wallet valuation waits 6 s on SOL. The book is stale at the decision.
-    let waited=0;f.market.waitFor.SOLUSDT=()=>{if(waited++===0)f.clock.t+=6000;};
+    // Collateral now precedes the execution book. A later replay wait must
+    // still invalidate that book and force the same bounded redecision.
+    const replay=(f.service as any).replay.bind(f.service);let waited=0;
+    (f.service as any).replay=async(...args:unknown[])=>{if(waited++===0)f.clock.t+=6000;return replay(...args);};
     const t0=f.clock.t;
     const v=await f.service.command(actor,long({margin:'5000',leverage:'20'}));
     expect(f.service.expiredDecisions).toBe(1);

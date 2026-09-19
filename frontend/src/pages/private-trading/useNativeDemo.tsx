@@ -69,6 +69,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   const[error,setError]=useState(''),[busy,setBusy]=useState(false),[card,setCard]=useState<PrivateResultCard|null>(null);
   const errorRef=useRef('');
   const[selecting,setSelecting]=useState<'entry'|'exit'|null>(null),[candle,setCandle]=useState<ChartTradeCandle|null>(null),[exitId,setExitId]=useState<string|null>(null);
+  const[entryIntent,setEntryIntent]=useState(false);
   const[selectedId,setSelectedId]=useState<string|null>(null),[focus,setFocus]=useState<{tradeId:string;time:number;sequence:number}|null>(null);
   const pendingExit=useRef<string|null>(null);
   const alive=useRef(true);
@@ -88,11 +89,14 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   },[]);
   /** A temporary access/control-plane outage makes the cached account
    * read-only; it does not erase true numbers and replace them with dashes. */
-  const suspend=useCallback(()=>{setAllowed(false);setCard(null);setDialog(null);setCandle(null);setSelecting(null);},[]);
+  // Preserve the unsent candle through transient access polling failures.
+  // Clearing it here previously re-enabled a LIVE order after access recovered.
+  // Only a real session boundary or an explicit chart cancellation clears it.
+  const suspend=useCallback(()=>{setAllowed(false);setCard(null);setDialog(null);},[]);
   /** A real session boundary MUST clear the transcript so another user can
    * never inherit it — and must orphan every command still in the lane, so
    * a late answer for the previous user is never applied to the next. */
-  const resetSession=useCallback(()=>{suspend();stateRef.current=null;setState(null);setStateLoaded(false);clearWarmState();epoch.current+=1;lane.current.reset();attempts.current.clear();},[suspend]);
+  const resetSession=useCallback(()=>{suspend();setCandle(null);setSelecting(null);setEntryIntent(false);stateRef.current=null;setState(null);setStateLoaded(false);clearWarmState();epoch.current+=1;lane.current.reset();attempts.current.clear();},[suspend]);
   const fail=useCallback((e:unknown)=>{
     if(!alive.current)return;
     if(e instanceof PrivateTradingError&&[401,403].includes(e.status))resetSession();
@@ -119,7 +123,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     nativeDemoApi.state(controller.signal).then(s=>{if(cancelled)return;commitState(s);refreshOnLoad.current=s.initialized;}).catch(e=>{if(!cancelled)fail(e);});
     return()=>{cancelled=true;controller.abort();};
   },[requested,allowed,fail,commitState]);
-  useEffect(()=>{setCandle(null);setSelecting(pendingExit.current?'exit':null);setExitId(pendingExit.current);pendingExit.current=null;},[symbol,requested]);
+  useEffect(()=>{setCandle(null);setEntryIntent(false);setSelecting(pendingExit.current?'exit':null);setExitId(pendingExit.current);pendingExit.current=null;},[symbol,requested]);
   /**
    * SEND ONE COMMAND, IN TURN, AND ANSWER WITH THE SERVER'S RESULT OR ITS REFUSAL.
    *
@@ -150,9 +154,11 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   useEffect(()=>{if(refreshOnLoad.current&&state?.initialized&&requested&&allowed){refreshOnLoad.current=false;void run({kind:'REFRESH'});}},[state,requested,allowed,run]);
   useEffect(()=>{if(!requested||!allowed||!state?.initialized)return;
     // A command in flight answers with fresh state anyway; the timer only fills quiet time.
-    const timer=window.setInterval(()=>{if(!document.hidden&&lane.current.pending===0&&!dialog&&!candle)void run({kind:'REFRESH'});},30000);
+    // Keeping a historical entry selected must not freeze an already-open
+    // hybrid position's current server valuation.
+    const timer=window.setInterval(()=>{if(!document.hidden&&lane.current.pending===0&&(state.executionMode==='HISTORICAL_DEMO'||(!dialog&&!candle)))void run({kind:'REFRESH'});},30000);
     return()=>clearInterval(timer);
-  },[requested,allowed,state?.initialized,run,dialog,candle]);
+  },[requested,allowed,state?.initialized,state?.executionMode,run,dialog,candle]);
   useEffect(()=>{const id=params.get('nativeCard');if(requested&&allowed&&id)nativeDemoApi.getCard(id).then(setCard).catch(fail);},[params,requested,allowed,fail]);
   const initialize=useCallback(async()=>{
     if(!state||!allowed)return;
@@ -174,14 +180,14 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   });
   const loader=useCallback<ChartCandleLoader>((pair,interval,limit,signal,endTime)=>privateTradingApi.candles(pair,interval,limit,signal,endTime),[]);
   const interaction:ChartTradingInteraction={enabled:requested&&allowed&&stateLoaded,selecting,selectedCandle:candle,trades,selectedTradeId:selectedId,focus,
-    onCandleSelect:c=>{setCandle(c);setSelecting(null);},onCancelSelection:()=>{setCandle(null);setSelecting(null);setExitId(null);},onTradeSelect:setSelectedId,
+    onCandleSelect:c=>{setCandle(c);setSelecting(null);},onCancelSelection:()=>{setCandle(null);setSelecting(null);setExitId(null);setEntryIntent(false);},onTradeSelect:setSelectedId,
     onTradeClose:id=>{const p=positions.find(p=>p.id===id&&p.status==='OPEN');if(p)setDialog({kind:'close',position:p});},
-    onSelectionModeChange:mode=>{setSelecting(mode);setCandle(null);if(mode==='entry')setExitId(null);}};
+    onSelectionModeChange:mode=>{setSelecting(mode);setCandle(null);setEntryIntent(mode==='entry');if(mode==='entry')setExitId(null);}};
 
   function selectEntry(p:NativePosition){onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));setSelectedId(p.id);setFocus(f=>({tradeId:p.id,time:p.openedAt,sequence:(f?.sequence??0)+1}));}
   function exitOnChart(p:NativePosition){if(p.symbol!==normalized){pendingExit.current=p.id;onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));}setSelectedId(p.id);setExitId(p.id);setCandle(null);setSelecting('exit');}
   const getState=useCallback(()=>stateRef.current,[]),getError=useCallback(()=>errorRef.current,[]);
-  return{requested,allowed,checked,binding,state,stateLoaded,getState,getError,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,run,execute,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
-    pickEntry:()=>{setCandle(null);setExitId(null);setSelecting('entry');}};
+  return{requested,allowed,checked,binding,state,stateLoaded,getState,getError,error,busy,card,setCard,dialog,setDialog,candle,setCandle,entryIntent,exitId,setExitId,selectedId,run,execute,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
+    pickEntry:()=>{setEntryIntent(true);setCandle(null);setExitId(null);setSelecting('entry');}};
 }
 export type NativeDemoController=ReturnType<typeof useNativeDemo>;

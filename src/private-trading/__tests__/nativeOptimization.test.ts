@@ -87,7 +87,7 @@ describe('issue 146 bounded command work',()=>{
     f.step();f.repo.wallet=[{asset:'ETH',available:'1',locked:'0'}];
     const marks=jest.spyOn(f.market,'marks'),quotes=jest.spyOn(f.market,'freshQuote');
     await open(f);await open(f,{quantity:'0.1'});
-    expect(marks.mock.calls).toEqual([[['ETHUSDT']]]);
+    expect(marks.mock.calls).toEqual([[['ETHUSDT'],expect.any(AbortSignal)]]);
     expect(quotes.mock.calls.map(c=>c[0])).toEqual(['BTCUSDT','BTCUSDT']);
     f.clock.t+=5001;await open(f,{quantity:'0.1'});expect(marks).toHaveBeenCalledTimes(2);
   });

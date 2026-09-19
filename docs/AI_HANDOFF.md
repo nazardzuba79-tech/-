@@ -2964,6 +2964,18 @@ withdrawal was placed.
 - **OBSERVED, NOT FIXED (pre-existing, out of scope).** `scripts/qa-native-demo-browser.cjs` rebuilds the frontend from the REPO ROOT, so `frontend/tailwind.config.js`'s relative `content` globs resolve to nothing and the eager `index-*.css` ships without the homepage utilities. Running the suite straight after that harness therefore fails `homepageTailwindUtilities` test 5 on a locally-correct tree. CI is unaffected (separate jobs); a local run needs `vite build` from `frontend/` first.
 - **NOT VERIFIED.** No production check. Every number here is the local harness against the real production bundle with fixture data. A real account with longer tickers or more than three positions was not exercised.
 - **NOT TOUCHED.** No trading math, balances, P&L, margin, execution, order matching, order book cadence, wallet ledger or schema.
+
+
+## Codex — 2026-09-19 — native MARKET hang after #149 (draft PR #152)
+
+- Owner requested current main and no merge. Based on `78a5a04fa532c3612020e15964c38649416174cc`; functional commits `ff447d449cc3831961943934199eedfbbe9d7746` and `8f64e9761e9185b072988dd4ea7e7c70fe64ae2a`, branch `codex/native-market-request-deadline`.
+- Read-only production revision 71 reproduces a CHECKPOINT_MISMATCH: an empty OBSERVE was appended inside a sealed historical prefix because the flat snapshot's time did not advance. Dropping only that last suffix reproduces the stored digest; verified replay of the suffix reproduces the financial snapshot exactly. Old fallback starts history at Aug 1; recovered replay requires zero history calls. Raw account data is not in Git. Evidence is `docs/qa/native-command-deadline/checkpoint-evidence.json`.
+- Material files: native service/replay/historyCache/store/routes and new commandScope; native client/lane/deadline plus closed-vocabulary locale messages; focused regression and SQL acceptance tests; browser timeout QA; private-trading CI test list; acceptance evidence in `docs/qa/native-command-deadline/`.
+- Fix: current observation timestamp; narrowly verified legacy checkpoint recovery; 30s pre-commit read/queue budget; existing 10s transaction with 2s max wait and freshness/deadline rollback guards; frontend 10s queue/45s headers+body deadline. Expired queued commands never run later. Unreadable or already committed receipts cannot be called unexecuted orders. No automatic order retry. Request IDs and sanitized stage evidence added.
+- Validation: 470 focused tests PASS; separate 11 PostgreSQL tests PASS including 20 HTTP acceptance operations and independent fill arithmetic; 30 browser checks PASS/zero page errors. Backend/collector TS and frontend TS/production build PASS. Full suite: candidate 4362 PASS / 130 FAIL / 40 skipped; exact main 4348 PASS / same 130 FAIL / 38 skipped. Exact new failures 0. Six CI workflows passed at functional head 8f64e976. See the acceptance report for exact names/counts and the production-like versus production distinction.
+- Preserved: all #150 visual work, original terminal/forms, native R11/R12 journal and maker/observed separation, fresh server-side MARKET execution, Wallet collateral switches, Copy Trading, matching/P&L/margin/funding formulas and ledger model. No manual production balance changes, production orders, merge or deploy.
+- Unresolved: original click lacks request correlation, so its exact client/server queue hop cannot be proven retrospectively; legacy MarkPriceService timeout is not established as its cause. Production still runs main, not this fix. Review this draft and, only after an authorized deploy, repeat the small production/native-account acceptance using the new correlation IDs. Do not declare production Futures E2E PASS from fixture results.
+
 ### 2026-09-19 — Claude — Copy Trading: the visible 61.9%, and the real cause of «Загрузка…» (`claude/copy-trading-ksenia-visible-and-loading`)
 
 - **CUT FROM FRESH `main` AT `03fc3e6`** (PR #141 merged as `c9f3ab9`; #143, #145, #147 on top). Two open items only; nothing else in Copy Trading was touched.
@@ -3009,6 +3021,21 @@ withdrawal was placed.
 - **NO NEW FAILURES FROM THE ROUTING CHANGE.** All nine suites that read `App.tsx` were run on this branch and on built `main`: the same five fail and the same four pass on both.
 - **NOT TOUCHED.** No Copy Trading data, design, Copy button, eligibility, following, Futures, Wallet or engine change. The only behaviour that changed is where the sign-out link lands.
 - **NOT MERGED**, as instructed.
+
+### Codex — current-main sync after #151
+
+- Synced this fix branch with main `faf58f8e25ab7d5df1c70885ac12a91adf57f56f`. Only conflict: both agents appended AI_HANDOFF; retained both complete entries. All #151 Copy Trading and logout changes are unchanged from main. This is a merge into the draft working branch only, not a PR merge or deployment. Previous tests remain attributed to 78a5a04; post-sync current-main validation is recorded in the final PR #152 acceptance summary; the first acceptance artifact stays attributed to its tested SHA.
+# Codex — 2026-09-19 16:53 UTC — PR #152 production transaction evidence
+
+- Parent `0ab84a4a0154b21ec32e900a6f7fdfb870456672`; main `faf58f8e25ab7d5df1c70885ac12a91adf57f56f`, zero behind. Owner authorized exact candidate deployment and the existing native production account, which settles its isolated demo balance.
+- First browser MARKET LONG BTCUSDT 0.001, Cross 10x was refused `quote_stale`, HTTP 503, in 13601ms. Request `923737bd-4374-4e36-8fad-85411f612bda`; account revision 74, wallet 11045208.67351093, journal and command counts unchanged; zero open positions/orders. No automatic or manual retry. Old MarkPriceService timeout is not proven as the cause.
+- `native/store.ts`: transaction substage timing; serialize immutable payloads before taking the row lock; select only revision from the newly inserted receipt rather than returning its full JSON. Auth/session rechecks, CAS, receipt semantics, freshness guards and rollback preserved. Exact slow query still requires candidate traces; no claim that production acceptance passed.
+- Validation: backend TypeScript, 143 focused tests and 11 real local PostgreSQL integration tests PASS, including final-write freshness rollback. Preserved all terminal design, Copy Trading, R11/R12 and financial formulas. Commit SHA is the commit containing this entry. No merge.
+
+### Codex — 2026-09-19 — fresh book after collateral (same PR #152)
+- Diagnostic candidate 1d15e201: request a06e8d5e-a9e3-4ecb-ac79-3d63f5817edc refused quote_stale at 7166ms, after transaction receipt lookup, BEFORE account_write. Lane wait 0ms; context 663ms; execution book 1270ms; subsequent collateral/replay/serialization/transaction admission consumed the remaining five-second freshness window. Revision 74 and wallet unchanged.
+- Live OPEN/CLOSE now validate identity/admission, value collateral, then obtain the fresh execution book. Existing bounded redecision, final-write freshness guard, transactional rollback and all math preserved. No blind retry or manufactured fill.
+- Backend TS, 145 focused tests and 11 local PostgreSQL tests pass. Added slow-collateral plus transaction-wait regressions for OPEN/CLOSE; retained the post-book slow-replay redecision test. Production affected E2E still required; no merge.
 ### 2026-09-19 — Claude — Futures terminal: a calm book, the layout the owner asked for, and 7-day sorting (`claude/futures-terminal-calm-book-and-layout`)
 
 - **CUT FROM FRESH `main` AT `78a5a04`.** Futures terminal UI only. No trading engine, execution, balances, PnL math, wallet ledger, margin logic, order matching, Copy Trading or admin change.
@@ -3029,6 +3056,16 @@ withdrawal was placed.
 - **NOT VERIFIED.** No check against the deployed production instance. The layout harness does not satisfy `liveMarketStore`'s SSE contract, so its pair rows render em dashes — the column geometry is still measured, and that is what was wrong, but the figures themselves were not exercised there.
 - **NOT MERGED**, as instructed.
 
+
+### Codex — 2026-09-19 — PR #152 historical entry / current valuation candidate
+- Owner clarified the policy: selected authoritative historical ENTRY, then current server mark/last and current CLOSE. This supersedes the fully isolated simulation-clock proposal. No old journal instruction is migrated or reinterpreted.
+- Parent head 0726df838d7e523886fb75289783ae19b6f64c8b; freshly fetched main 4098ad59e9187c86c2244290fcb0086c0d5a3d0f. Commit SHA is the commit containing this entry. Same draft PR #152; NO MERGE.
+- Native mode is persisted as HISTORICAL_DEMO only with no other-mode active exposure. Selected candle fixes entryPrice/entryTimestamp; execution/journal/funding admission time is actual creation time. Subsequent risk, PnL, limits and closes use journaled current server observations. Existing HTTP clients selecting a candle receive this new policy; explicit LIVE_EXECUTION cannot accept a historical candle.
+- Private current-price contract: source/received/fetched age <=60000ms, future tolerance unchanged. Rechecked before replay, after replay, and at existing transactional guard stages. Trace contains exact timestamps/ages. Missing collateral remains null/incomplete under the existing conservative floor; missing contract prices refuse execution. LIVE book 5000ms contract, CAS/idempotency, auth rechecks, rollback, formulas and R11/R12 remain unchanged.
+- New sampled-demo limits settle at actual observed last price, with existing maker/taker fee rules; no invented depth or observed-book claim. Hybrid positions are excluded from legacy historical OHLC matching/risk; funding keeps the existing boundary model. Separate lots preserve each selected entry.
+- Frontend sends explicit mode for a selected entry; hybrid close sends one command without automatic retries; historical selection no longer pauses the 30s server valuation poll. Design and Copy Trading unchanged.
+- Validation: 18 focused suites / 325 tests PASS; 12 real loopback PostgreSQL tests PASS including hybrid HTTP LONG/SHORT, legacy client wire, fresh service on each request, idempotent duplicate, current exit, independent PnL/fee/wallet audit. Backend build, collector build and frontend TypeScript/Vite build PASS. New unit cases cover 8s transaction latency, >60s rollback, current collateral OFF/ON, partial/targeted close, LIMIT/cancel, Cross/Isolated, TP/SL, OHLC exclusion and full/checkpoint replay.
+- Production before candidate: revision77, wallet11045208.67351093 USDT, zero positions/orders, old mode. No production orders submitted during implementation. Candidate deploy/production acceptance still pending at commit; do not call production PASS from local fixtures.
 ### 2026-09-19 — Claude — Futures terminal: the rail removed, and six legibility/layout corrections from the owner's live screenshots (`claude/futures-terminal-rail-removal-and-legibility`)
 
 - **CUT FROM FRESH `main` AT `4098ad5`** (PR #153, merged by owner request during the previous task). Futures terminal presentation only. No trading engine, execution, matching, balances, PnL math, wallet ledger, margin logic, Copy Trading or admin change.
@@ -3044,3 +3081,10 @@ withdrawal was placed.
 - **Material files.** `frontend/src/pages/FuturesPage.tsx`, `frontend/src/pages/trade-terminal/{TerminalAccountPanel,ReferenceFuturesTerminal,FuturesStudio,FuturesDesignVariants}.css`, `frontend/src/components/{TerminalChart.css,FuturesPairList.css,PriceChart.tsx}`, `frontend/src/index.css`, `scripts/qa-futures-layout.cjs`, `docs/qa/futures-layout/`.
 - **PRESERVED FROM CODEX.** Everything in `main` at `4098ad5` untouched; no Codex file reverted or rewritten. Private trading has its own grid (`.private-terminal-grid`, `.private-market-sidebar`) and keeps its rail; Spot/CFD do not carry `.futures-reference` and are unaffected.
 - **NOT VERIFIED.** No check against the deployed instance — egress to `voltextech.net` and `onrender.com` is blocked from this container. Everything here is the local harness against the real production bundle.
+
+### 2026-09-19 — Codex — PR #152 historical selection propagation
+- Continuation of 087b85c8 on existing codex/native-market-request-deadline; current main a7520eaf, no merge.
+- Found reproducible lost-selection path: transient access poll failure called suspend(), cleared candle/selecting, and recovered access re-enabled LIVE submit. Preserve the unsent reference across transient outages; still clear it at session boundaries and explicit cancellation. Pending historical selection now blocks submit. The ordinary form displays and explicitly submits the candle identity; mismatches refuse. Backend logs normalized entry reference and historical dispatch (no credentials/financial payload logging).
+- Material files: useNativeDemo, useNativeFuturesExecution, futuresExecution, FuturesOrderForm, native routes/service diagnostics, nativeReduceTarget test, native browser QA.
+- Preserved all current-main UI work, engine math, freshness contracts, CAS/idempotency, auth recheck, Copy Trading and book UX.
+- Validation: frontend/backend builds PASS; 70 focused tests PASS; all 30 local browser checks PASS, including actual access-failure/recovery/selected-reference HTTP propagation and HISTORICAL_DEMO server result on desktop/mobile. Two futuresOrderPanel tests also fail on unchanged 087b85c8 (empty quantity after successful submit); no new failures in that suite. Production candidate acceptance still pending at this commit.
