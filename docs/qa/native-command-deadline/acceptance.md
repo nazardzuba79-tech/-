@@ -5,11 +5,17 @@ Date: 2026-09-19. This is a targeted correctness fix, not a terminal redesign or
 ## Versions and evidence limits
 
 - Incident deployment: `52dce28e597120c1295800f24073837bff8b7da9` (merged #149).
-- Current main and Render backend: `78a5a04fa532c3612020e15964c38649416174cc` (includes visual #150).
+- Main and Render backend at the first completed acceptance: `78a5a04fa532c3612020e15964c38649416174cc` (includes visual #150).
 - Core fix commit: `ff447d449cc3831961943934199eedfbbe9d7746`; follow-up receipt-timeout protections are in this branch.
 - Read-only production account inspection: revision 71, last updated `2026-09-19T14:56:42.924Z`; zero open positions/orders. The production account was NOT repaired manually.
 - Historical logs do not contain a correlation ID for the original click. They cannot establish whether that specific POST reached the server or waited behind REFRESH in the browser. Do not claim otherwise.
 - Production execution of the fix is NOT verified: the candidate has not been deployed. SQL/API/browser results below use disposable local fixtures.
+
+## Subsequent main synchronization
+
+While finalizing this report, main advanced to `faf58f8e25ab7d5df1c70885ac12a91adf57f56f` through #151. Merge `f6b646c9fde6db5357ed57678a3c31cc36fde0c2` brings those changes into the draft fix branch. The only conflict was concurrent appended entries in AI_HANDOFF; both complete entries were retained. All #151 Copy Trading and logout changes are unchanged from main; native fix code is unchanged from its already validated functional head. No PR merge or deploy occurred.
+
+The numeric artifact below records the first completed comparison against 78a5a04 and is deliberately not re-labelled as a test against another SHA. The final post-sync full-suite counts and exact-head CI status are recorded in the [PR #152 acceptance summary](https://github.com/nazardzuba79-tech/-/pull/152).
 
 ## Reproduced root defect
 

@@ -3024,4 +3024,4 @@ withdrawal was placed.
 
 ### Codex — current-main sync after #151
 
-- Synced this fix branch with main `faf58f8e25ab7d5df1c70885ac12a91adf57f56f`. Only conflict: both agents appended AI_HANDOFF; retained both complete entries. All #151 Copy Trading and logout changes are unchanged from main. This is a merge into the draft working branch only, not a PR merge or deployment. Previous tests remain attributed to 78a5a04; current-main validation is recorded in the final acceptance report.
+- Synced this fix branch with main `faf58f8e25ab7d5df1c70885ac12a91adf57f56f`. Only conflict: both agents appended AI_HANDOFF; retained both complete entries. All #151 Copy Trading and logout changes are unchanged from main. This is a merge into the draft working branch only, not a PR merge or deployment. Previous tests remain attributed to 78a5a04; post-sync current-main validation is recorded in the final PR #152 acceptance summary; the first acceptance artifact stays attributed to its tested SHA.
