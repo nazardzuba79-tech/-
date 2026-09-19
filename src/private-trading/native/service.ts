@@ -509,14 +509,21 @@ export class NativeDemoService {
       // same millisecond. A burst drained from the lane, or a clock that does
       // not advance, must never replay a reduce before the position it names.
       const seq=nextInstructionSeq(row.commands);
+      let valuation!:CollateralValuation;
+      let collateralReady=false;
+      const prepareCollateral=async()=>{
+        commandScope()?.trace('collateral');
+        valuation=await this.collateral(actor,row,{reuse:true,holdings:prepared?.holdings});
+        collateralReady=true;
+      };
       // The instruction first: its row-based checks (a reduce order that
       // names a position that does not fit) refuse before any upstream read.
       commandScope()?.trace('instruction',{revision:row.revision});
-      let instruction=await this.instruction(row,request,seq);
-      let valuation:CollateralValuation,collateral:ExternalCollateral,commands:NativeInstruction[],result:Awaited<ReturnType<NativeDemoService['replay']>>;
+      let instruction=await this.instruction(row,request,seq,prepareCollateral);
+      let collateral:ExternalCollateral,commands:NativeInstruction[],result:Awaited<ReturnType<NativeDemoService['replay']>>;
       // THE DECISION IS TAKEN ON WHAT IS FRESH WHEN IT IS TAKEN. The execution
-      // book was observed before the wallet valuation and the history pass,
-      // either of which can wait on a slow source. If the book has left the
+      // book is observed after wallet valuation; the replay/history pass
+      // can still wait on a slow source. If the book has left the
       // freshness window by the time the command is about to commit, the
       // decision is made again ONCE on a fresh observation (a new
       // instruction, a new time); if that one has expired too, the command
@@ -527,8 +534,8 @@ export class NativeDemoService {
         // ONE valuation per command, taken BEFORE the decision and journaled
         // with it: admission, the fill margin check, the liquidation verdict
         // and the account in the response all read this same figure.
-        commandScope()?.trace('collateral');
-        valuation=await this.collateral(actor,row,{reuse:true,holdings:prepared?.holdings});collateral=externalCollateral(valuation);
+        if(!collateralReady)await prepareCollateral();
+        collateral=externalCollateral(valuation);
         if(instruction){
           instruction.collateral=collateral;instruction.recordedAt=this.now();
           if((instruction.kind==='OPEN'||instruction.kind==='CLOSE')&&instruction.book){
@@ -538,7 +545,7 @@ export class NativeDemoService {
         }
         if(this.expiredAtDecision(instruction)){
           if(round>=1)throw new PrivateMarketDataError('quote_stale');
-          this.expiredDecisions+=1;instruction=await this.instruction(row,request,seq);continue;
+          this.expiredDecisions+=1;collateralReady=false;instruction=await this.instruction(row,request,seq,prepareCollateral);continue;
         }
         // A shallow copy: the row is this command's own read and the replay
         // never mutates an instruction. Cloning the whole journal here was the
@@ -553,7 +560,7 @@ export class NativeDemoService {
         if(!this.expiredAtDecision(instruction))break;
         if(round>=1)throw new PrivateMarketDataError('quote_stale');
         this.expiredDecisions+=1;
-        instruction=await this.instruction(row,request,seq);
+        collateralReady=false;instruction=await this.instruction(row,request,seq,prepareCollateral);
       }
       let seqNext=instruction?seq+1:seq;
       const changed=!!instruction||!!result.observed||result.books.length>0||outcome(result.snapshot)!==outcome(row.snapshot);
@@ -699,7 +706,7 @@ export class NativeDemoService {
     }
     return context;
   }
-  private async instruction(row:NativeAccount,request:NativeCommand,seq:number):Promise<NativeInstruction|undefined>{
+  private async instruction(row:NativeAccount,request:NativeCommand,seq:number,beforeLiveQuote?:()=>Promise<void>):Promise<NativeInstruction|undefined>{
     const id=`native-${randomUUID()}`;
     if(request.kind==='OPEN'){
       const symbol=request.symbol.replace(/[^A-Z0-9]/g,''),instrument=await commandRead('market.instrument',()=>this.market.instrument(symbol,commandSignal())),rules=contractRules(instrument),profile=simulationProfile(instrument);
@@ -737,6 +744,10 @@ export class NativeDemoService {
         const at=selected.effectiveAt,mark=await this.markAt(symbol,at,request.candle.pricePoint==='OPEN'?'START':'END');
         return{id,seq,kind:'OPEN',at,order:order(size(selected.price)),instrument:{rules,profile},mark,last:selected.price,point:selected.price,candle};
       }
+      // Keep the execution book's freshness window for replay and commit,
+      // rather than spending it on unrelated collateral-provider waits.
+      // Identity/admission checks above still precede these external reads.
+      await beforeLiveQuote?.();
       const q=await this.quote(symbol,true);assertPrivateFreshQuote(q,symbol,this.now());
       const quantity=size(sizePrice??q.lastPrice);
       const book=truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},request.side==='LONG'?'BUY':'SELL',quantity,request.type==='LIMIT'?request.price:undefined);
@@ -750,6 +761,7 @@ export class NativeDemoService {
         if(c.effectiveAt<=p.openedAt)throw new DemoEngineError('EXIT_BEFORE_ENTRY');
         return{id,seq,kind:'CLOSE',at:c.effectiveAt,positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:c.price,candle:request.candle};
       }
+      await beforeLiveQuote?.();
       const q=await this.quote(p.symbol,true);assertPrivateFreshQuote(q,p.symbol,this.now());
       const book=truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},p.side==='LONG'?'SELL':'BUY',request.quantity??p.quantity);
       return{id,seq,kind:'CLOSE',at:this.now(),positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:p.side==='LONG'?q.bids[0].price:q.asks[0].price,book,mark:q.markPrice,last:q.lastPrice};
