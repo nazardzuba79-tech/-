@@ -334,6 +334,11 @@ let server, browser;
   const away = page.locator('a[href="/card"]').first();
   if (await away.count()) await away.click(); else await page.goto(origin + '/card', { waitUntil: 'domcontentloaded' });
   await page.waitForURL('**/card');
+  // URL can change before the lazy route has actually unmounted. Wait for
+  // the old Copy Trading cards to leave before navigating back, otherwise
+  // return locators can match stale DOM and make this regression flaky.
+  await page.locator('.trader-card[data-trader-id="VX-001"]').waitFor({ state: 'detached', timeout: 30000 });
+  await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor({ state: 'detached', timeout: 30000 });
   const backLink = page.locator('a[href="/copy-trading"]').first();
   if (await backLink.count()) await backLink.click(); else await page.goto(origin + '/copy-trading', { waitUntil: 'domcontentloaded' });
   await page.waitForURL('**/copy-trading');
