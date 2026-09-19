@@ -45,11 +45,27 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .futures-secondary-price { font-size:10px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .futures-secondary-price :is(.label,.value) { font-size:9px; color:#91a2b4; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .futures-funding-values { flex-wrap:wrap; gap:3px; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell .chart-toolbar { background:#12161c; padding:6px 10px; border-color:#232a34; display:flex; flex-direction:column; align-items:stretch; flex-wrap:nowrap; height:70px; min-height:70px; gap:4px; overflow:hidden; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tabs,.chart-tools) { display:flex; flex-wrap:nowrap; align-items:center; gap:5px; min-width:0; max-width:100%; margin:0; overflow-x:auto; scrollbar-width:none; flex:0 0 26px; }
+/* One row at every width. It used to stack into two 26px rows below 1600,
+   which cost the chart 28px of height on exactly the two laptop sizes that
+   have the least to spare. Nothing is removed to buy that back: both groups
+   already scroll inside themselves (`overflow-x:auto` below) and every
+   button is `flex-shrink:0`, so a narrow window reaches the same controls by
+   scrolling the strip rather than by growing it. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell .chart-toolbar { background:#12161c; padding:6px 10px; border-color:#232a34; display:flex; flex-direction:row; align-items:center; flex-wrap:nowrap; height:42px; min-height:42px; gap:4px; overflow:hidden; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tabs,.chart-tools) { display:flex; flex-wrap:nowrap; align-items:center; gap:5px; min-width:0; max-width:100%; margin:0; overflow-x:auto; scrollbar-width:none; flex:0 1 auto; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tabs,.chart-tools)::-webkit-scrollbar { display:none; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) { color:#a7b6c5; font-size:11px; border-radius:4px; flex-shrink:0; white-space:nowrap; min-height:25px; padding:4px 8px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tab.active,.chart-tool-btn.active) { background:#28313a; color:#f0c964; }
+/* Below 1440 the strip is 61px short of its own controls — the interval
+   buttons want 222px and the chart-type and indicator buttons 388, against
+   573 of toolbar at 1366. Rather than let the last indicators fall off the
+   scrollable end, the buttons give up three pixels of side padding each:
+   thirteen buttons, 78px, which is more than the deficit. The labels, the
+   11px they are set in, the tap targets' 25px height and every control
+   stay exactly as they are. */
+@media(max-width:1439px) {
+  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) { padding:4px 5px; }
+}
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell .drawing-rail { background:#12161c; border-color:#232a34; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .repaired-futures-book .reference-book { background:#12161c; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .repaired-futures-book .rb-controls { background:#12161c; padding:8px 10px; }
@@ -141,7 +157,5 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tab { flex-shrink:0; white-space:nowrap; }
 @media(min-width:1600px) {
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal { grid-template-columns:228px minmax(0,1fr) 248px 304px; }
-  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell .chart-toolbar { flex-direction:row; align-items:center; height:42px; min-height:42px; }
-  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tabs,.chart-tools) { flex:0 1 auto; }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell .chart-tools { margin-left:auto; }
 }

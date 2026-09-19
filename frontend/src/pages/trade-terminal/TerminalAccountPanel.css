@@ -731,7 +731,11 @@
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 13%; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 5%; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 12.5%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th { font-size: 11.5px; padding: 8px 7px; }
+  /* No `font-size` here: the 11.5px this rule used to carry never reached a
+     heading — a later unconditional 12.5px outranks it at every width
+     (issue #148 measured the rendered value). Padding is what the rule is
+     actually for. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th { padding: 8px 7px; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td { padding: 10px 7px; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close { padding: 5px 9px; }
   /* The two close pills and the card button may take a second line rather
@@ -1066,6 +1070,12 @@
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
     padding:0 6px;
   }
+  /* The gap is the ONLY thing separating the two close pills here. They
+     also carried a 2px right margin, which the gap already covers between
+     them and which outside them merely padded the cell's right edge — four
+     pixels of this column's minimum, spent on nothing. Folding it into the
+     gap is what closes the last pixel of sideways scroll at 1366; the
+     labels, their 11px size and both controls are untouched. */
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td:last-child > * {
     gap:3px;
   }
@@ -1075,7 +1085,7 @@
      the larger type. They keep their height, so the row keeps its 62px and
      stays one height across every desktop width. */
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
-    padding:0 3px; margin-right:2px;
+    padding:0 3px; margin-right:0;
   }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
     padding:0 2px;

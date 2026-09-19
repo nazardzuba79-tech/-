@@ -19,3 +19,17 @@
 .trade-terminal.trade-terminal.futures-reference .futures-position-roi::after {
   content: ')';
 }
+
+/* The closed-position history table's cell padding.
+
+   It used to come from the component's inline `th`/`td` styles. Those had to
+   go so the terminal's own rules could reach the OPEN positions table (an
+   inline declaration outranks every ordinary rule in a sheet, which left
+   seven of them dead and the table 38px wider than its panel at 1664). This
+   table has no rules in those sheets — it is five columns, not ten, and none
+   of the terminal's selectors name it — so the same removal would have left
+   it with no cell padding at all, and on a phone that is the difference
+   between a table that scrolls sideways through its columns and one that
+   collapses into the width it is given. These are the values it had. */
+.futures-history-table th { padding: 10px 14px; }
+.futures-history-table td { padding: 8px 14px; }
