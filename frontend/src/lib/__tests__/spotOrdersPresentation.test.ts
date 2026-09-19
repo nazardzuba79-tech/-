@@ -300,7 +300,17 @@ describe('Spot orders truthful dense presentation', () => {
     // — the assertion below pins it, so the fingerprint cannot be re-taken
     // again to cover a different edit without also deleting that line.
     expect(shared).toContain('.trade-terminal *:not(:where(.global-header, .global-header *)),');
-    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('ea8ae585f40dfff60beef9d03817b517d6eef43ee691054074c653c5cbe69da4');
+    // Re-taken once more, for the order book's depth bar and nothing else.
+    // The bar was a strip whose WIDTH was animated, so every update re-laid
+    // out the row and its three cells — the shimmer on a live ladder, and
+    // the reason a refresh looked like a rebuild. It is now a full-width
+    // strip scaled from its right edge, which is composited. The same two
+    // lines below pin that mechanic, so this fingerprint cannot be re-taken
+    // to cover a different edit without also deleting them.
+    expect(shared).toContain('transform-origin: 100% 50%;');
+    expect(shared).toMatch(/\.trade-terminal \.ob-depth-bar \{[^}]*transition: transform/);
+    expect(shared).not.toMatch(/\.trade-terminal \.ob-depth-bar \{[^}]*transition:[^;]*width/);
+    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('9003cd0a58895662b1e49323372c21f4c9640585348252c11e4b135e43f758ae');
     const postcss = req('postcss');
     const rules: string[] = [];
     postcss.parse('/* Final Spot-only reconciliation.' + spot).walkRules((rule: { selectors: string[] }) => rules.push(...rule.selectors));

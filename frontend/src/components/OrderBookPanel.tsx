@@ -211,9 +211,17 @@ export function OrderBookPanel({
         <span className="ob-col">{t('trade.sum')}</span>
       </div>
 
+      {/* Rows are keyed by DEPTH SLOT, not by price.
+          A ladder's prices move constantly: on a live book the level that was
+          row 3 a moment ago is row 4 now, and a price key makes React destroy
+          and re-create every row whose price changed rather than update the
+          three numbers inside it. That is what made the Spot book flicker on
+          each publish, and it is also why a refresh looked like the book had
+          been thrown away and rebuilt. The slot is the stable identity: row 3
+          stays row 3 and its text changes. */}
       <div className="orderbook-asks" ref={asksViewport}>
-        {asksDepth.map((level) => (
-          <Row key={spotPrecision ? spotLevelPrice(level.price, groupStep) : level.price.toFixed(decimals)} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
+        {asksDepth.map((level, index) => (
+          <Row key={`sell-${index}`} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
         ))}
       </div>
 
@@ -230,36 +238,12 @@ export function OrderBookPanel({
       </div>
 
       <div className="orderbook-bids">
-        {bidsDepth.map((level) => (
-          <Row key={spotPrecision ? spotLevelPrice(level.price, groupStep) : level.price.toFixed(decimals)} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
+        {bidsDepth.map((level, index) => (
+          <Row key={`buy-${index}`} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
         ))}
       </div>
     </>
   );
-}
-
-const FLASH_DURATION_MS = 450;
-
-/** True for a brief moment right after this row's quantity changes — same
- * per-row-hook pattern as usePriceFlash, needed here since it must isolate
- * state per price level, not just per side. */
-function useRowFlash(quantity: number): boolean {
-  const prevRef = useRef<number | null>(null);
-  const [flashing, setFlashing] = useState(false);
-  const timerRef = useRef<number>();
-
-  useEffect(() => {
-    if (prevRef.current !== null && prevRef.current !== quantity) {
-      setFlashing(true);
-      window.clearTimeout(timerRef.current);
-      timerRef.current = window.setTimeout(() => setFlashing(false), FLASH_DURATION_MS);
-    }
-    prevRef.current = quantity;
-  }, [quantity]);
-
-  useEffect(() => () => window.clearTimeout(timerRef.current), []);
-
-  return flashing;
 }
 
 const Row = memo(function Row({
@@ -278,19 +262,17 @@ const Row = memo(function Row({
   spotStep?: number;
 }) {
   const pct = Math.min(100, (level.cumulative / maxDepth) * 100);
-  const flashing = useRowFlash(level.quantity);
-  const flashClass = flashing ? (side === 'BUY' ? 'book-row-flash-up' : 'book-row-flash-down') : '';
   const priceText = spotStep === undefined ? level.price.toFixed(decimals) : spotLevelPrice(level.price, spotStep);
   const quantityText = spotStep === undefined ? formatBookAmount(level.quantity) : formatCompactBookValue(level.quantity);
   const totalText = spotStep === undefined ? formatBookTotal(level.price * level.quantity) : formatCompactBookValue(level.price * level.quantity, 'total');
   const pick = () => onPick?.(spotStep === undefined ? level.price.toFixed(2) : priceText);
 
   return (
-    <div className={`ob-row ${flashClass}${spotStep !== undefined ? ' ob-row--spot' : ''}`} onClick={pick}
+    <div className={`ob-row${spotStep !== undefined ? ' ob-row--spot' : ''}`} onClick={pick}
       role={spotStep !== undefined && onPick ? 'button' : undefined} tabIndex={spotStep !== undefined && onPick ? 0 : undefined}
       aria-label={spotStep !== undefined && onPick ? `${side === 'BUY' ? 'Bid' : 'Ask'} ${priceText}` : undefined}
       onKeyDown={event => { if (spotStep !== undefined && onPick && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); pick(); } }}>
-      <div className={`ob-depth-bar ${side === 'BUY' ? 'bid' : 'ask'}`} style={{ width: `${pct}%` }} />
+      <div className={`ob-depth-bar ${side === 'BUY' ? 'bid' : 'ask'}`} style={{ transform: `scaleX(${pct / 100})` }} />
       <span className={`cell ${side === 'BUY' ? 'bid-price' : 'ask-price'}`} title={spotStep !== undefined ? priceText : undefined}>{priceText}</span>
       <span className="cell" title={String(level.quantity)}>{quantityText}</span>
       <span className="cell" title={String(level.price * level.quantity)}>{totalText}</span>

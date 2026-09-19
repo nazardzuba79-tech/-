@@ -715,9 +715,18 @@
 .trade-terminal .ob-row .cell:last-child { text-align: right; color: var(--text-secondary); }
 .trade-terminal .ob-row .cell.ask-price { color: var(--color-sell); font-weight: 500; }
 .trade-terminal .ob-row .cell.bid-price { color: var(--color-buy); font-weight: 500; }
+/* The depth bar is a full-width strip scaled from its RIGHT edge, not a
+   strip whose width is animated. A width change is layout: every update
+   re-flowed the row and its three cells, which is what made a live ladder
+   shimmer and a refresh look like a rebuild. A transform is composited, so
+   the same size change costs nothing in layout. The per-terminal opacity
+   rules that follow this one are the palette's and are left alone. */
 .trade-terminal .ob-depth-bar {
-  position: absolute; top: 0; right: 0; bottom: 0;
-  opacity: 0.15; z-index: 0; transition: width 0.3s ease;
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  opacity: 0.15; z-index: 0;
+  transform-origin: 100% 50%;
+  will-change: transform;
+  transition: transform 0.14s linear;
 }
 .trade-terminal .ob-depth-bar.ask { background: var(--color-sell); }
 .trade-terminal .ob-depth-bar.bid { background: var(--color-buy); }

@@ -1,3 +1,5 @@
+// The thresholds under test, read from the rules themselves. See bookFreshness.
+import { BOOK_STALE_AFTER_MS, BOOK_UNAVAILABLE_AFTER_MS } from '../bookFreshness';
 import {
   FuturesDepthBook, subscribeFuturesDepth, parseFuturesTrades,
   setFuturesDepthFallbackBase, closeFuturesDepth, DepthFrameError, DepthDesyncError,
@@ -168,16 +170,19 @@ describe('selected-contract depth lifecycle',()=>{
     sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
     expect(listener.mock.calls[1][0].status).toBe('live');
 
-    // Twelve seconds of silence: same levels, labelled, and a reconnect
-    // (the heartbeat notices at 12s, the backoff opens the next socket 1s later).
-    jest.advanceTimersByTime(14_000);
+    // Silence past the stale threshold: same levels, labelled, and a
+    // reconnect. The threshold is read from the shared freshness rules
+    // rather than retyped, because its whole job is to stay longer than the
+    // refresh interval — a literal here would let the two drift apart.
+    jest.advanceTimersByTime(BOOK_STALE_AFTER_MS + 2_000);
     const stale=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(stale.status).toBe('stale');
     expect(stale.bids).toEqual([{price:'100',quantity:'2'}]);
     expect(sockets.length).toBeGreaterThan(1);
 
-    // A minute with nothing at all: now it is unknown, and says so. Not zero.
-    jest.advanceTimersByTime(60_000);
+    // Long enough that the levels are no longer a price: now it is unknown,
+    // and says so. Empty means "we do not know", never zero depth.
+    jest.advanceTimersByTime(BOOK_UNAVAILABLE_AFTER_MS);
     const gone=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(gone.status).toBe('unavailable');
     expect(gone.bids).toEqual([]);expect(gone.asks).toEqual([]);
@@ -269,7 +274,7 @@ describe('selected-contract depth lifecycle',()=>{
 
     // Silence long enough for the heartbeat to give up on this socket, then
     // wait for the backoff to open the replacement.
-    jest.advanceTimersByTime(20_000);
+    jest.advanceTimersByTime(BOOK_STALE_AFTER_MS + 8_000);
     expect(listener.mock.calls[listener.mock.calls.length-1][0].status).toBe('stale');
     let opened=sockets.length;
     expect(opened).toBeGreaterThan(1);
@@ -300,7 +305,7 @@ describe('selected-contract depth lifecycle',()=>{
   test('a socket that stays mute past its grace is still replaced',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
     sockets[0].onopen();sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
-    jest.advanceTimersByTime(20_000);
+    jest.advanceTimersByTime(BOOK_STALE_AFTER_MS + 8_000);
     const opened=sockets.length;
     const mute=sockets[sockets.length-1];
     mute.onopen(); // connects, then says nothing at all
