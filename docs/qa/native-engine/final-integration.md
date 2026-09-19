@@ -57,7 +57,7 @@ Final build, suite comparison and benchmark measurements are recorded in the acc
 | Check | Result |
 | --- | --- |
 | Focused engine and native frontend helpers | 707 passed, 20 skipped, 0 failed; 38 passed / 2 skipped suites |
-| Full candidate suite | 4303 passed, 130 failed, 37 skipped; 278 suites |
+| Full candidate suite before final main sync | 4303 passed, 130 failed, 37 skipped; 278 suites |
 | Full pristine integration-base suite | 4115 passed, 132 failed, 37 skipped; 263 suites |
 | Exact new assertion failures / suite-load failures | 0 / 0 |
 | Backend TypeScript and emitted build | PASS |
@@ -66,7 +66,7 @@ Final build, suite comparison and benchmark measurements are recorded in the acc
 
 Both full-suite checkouts had a production frontend build, so build-dependent tests executed on both sides. `failure-comparison.json` contains the exact normalized failing test names, suite-load failures and two fixed isolated-margin tests. Three `sourcePrice` assertions were subsequently strengthened from string-type checks to exact observed prices; the final focused run above includes these stronger assertions.
 
-Main advanced during validation to `03fc3e6c68fc926ae9eb11e85ba2d8046628cf72` (PR #147, order-book refresh/reconnect UI). The full baseline above is explicitly **87f1d8370f7d529dc2e4b9450abd6f537a5527a7**, not this later commit. The new main changes were inspected and do not overlap the engine files; they were not merged into this reviewed candidate. Revalidate the eventual merged result before release.
+Main advanced during validation to `03fc3e6c68fc926ae9eb11e85ba2d8046628cf72` (PR #147, order-book refresh/reconnect UI). The full baseline above is explicitly **87f1d8370f7d529dc2e4b9450abd6f537a5527a7**, not this later commit. The later main was synchronized into the integration branch after the green merged-result CI below; no new full-suite comparison against that later main is claimed.
 
 ### Reproduce the checks
 
@@ -105,3 +105,9 @@ The first PostgreSQL run found an outdated race-test assumption that the two OPE
 [Private trading and replay run 35445957999](https://github.com/nazardzuba79-tech/-/actions/runs/35445957999) passed: **21 suites / 626 tests, zero failed or skipped**, including both database integration suites on disposable PostgreSQL 16 and the actual P&L dialog/PNG browser step. Backend, collector and frontend builds also passed there. This CI tested GitHub's temporary merge result `90f28872c27fd60c8d5f33326eb76958de56287c` (head `3b46624076fdd2214dd8411f4b38bb7bdac9ae26` + main `03fc3e6c68fc926ae9eb11e85ba2d8046628cf72`). It is a CI merge ref, **not** a merge into main.
 
 All eight PR workflows on that code head passed: private trading/replay, native engine/browser, native account access, customer-error wording, private reference UI, Futures bottom-panel geometry, Futures ticker labels and CFD terminal. This adds relevant coverage of the newer main; it does not turn the local full-suite baseline into a full comparison against that newer main. Long-run capacity remains a draft release gate.
+
+### Final main synchronization
+
+Ordinary merge commit `2eed3d44d7963a93e48cf2f11b3ab2e31f067360` incorporates current main `03fc3e6c68fc926ae9eb11e85ba2d8046628cf72` into the integration branch. The only conflict was the appended `docs/AI_HANDOFF.md` entries; both agents' entries were preserved. There was no engine or UI conflict and no merge of PR #123 wholesale.
+
+Compared the resulting tree against green CI ref `90f28872c27fd60c8d5f33326eb76958de56287c`: **only five validation/handoff documentation files differ**. All application code, tests, workflows, dependencies and schema are identical to that tested merge result. Main itself was not changed and nothing was deployed.
