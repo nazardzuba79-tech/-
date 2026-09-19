@@ -122,20 +122,42 @@
    The `hidden` attribute on the rail is what removes the tools, and the
    toggle lives outside it so a short screen scrolls the TOOLS, never the
    control that brings them back. */
+/* ONE HEIGHT, DECLARED ONCE, USED BY BOTH STATES.
+   The control that hides the chart's tools is the same control whether the
+   rail is open or shut, so it must not teleport when pressed. Expanded, it
+   was measured sitting at 96-97.5% down the chart — the very bottom corner,
+   hard against the time axis, which is what the owner photographed. The
+   height below is the one they marked on that screenshot; both rules read
+   it, so the chip stays put across a toggle and there is a single number to
+   change if it ever moves again. */
+.trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell {
+  --rail-toggle-top: 80%;
+  /* The toggle is positioned against this shell in BOTH states now, so the
+     expanded shell needs the containing block the collapsed one already
+     had. Its `overflow:hidden` still clips the tools, not the chip: the
+     chip is 26px inside a 44px rail. */
+  position: relative;
+}
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
   order: 0;
   flex: 0 0 auto;
-  align-self: flex-start;
+  position: absolute;
+  top: var(--rail-toggle-top);
+  left: 5px;
+  transform: translateY(-50%);
+  z-index: 3;
   width: 26px;
   min-width: 26px;
   height: 22px;
   min-height: 22px;
-  margin: 5px 0 6px 5px;
-  border: 1px solid var(--border, #232a34);
-  border-bottom: 1px solid var(--border, #232a34);
+  margin: 0;
+  border: 1px solid #39434f;
   border-radius: 5px;
-  background: var(--panel-alt, #1a1f27);
-  color: var(--text-secondary, #98a2b3);
+  /* BRIGHT, NOT DIM. At --text-secondary on --panel-alt this chip was the
+     quietest thing in the chart area while being the only way to get the
+     tools back. Near-white on a lifted surface reads as a control. */
+  background: #1f2732;
+  color: #eef2f7;
 }
 /* The hairline that separated the old top bar from the tools now sits on
    the rail's own foot, so the chip reads as below the toolbar rather than
@@ -144,27 +166,21 @@
   border-bottom: 1px solid var(--border, #232a34);
 }
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle:hover {
-  background: var(--panel-alt-hover, #1f252e);
-  color: var(--text-primary, #eaeef3);
+  background: #2b3542;
+  border-color: #4a5766;
+  color: #fff;
 }
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle svg {
   width: 13px;
   height: 13px;
 }
 
-/* COLLAPSED: THE TAB SITS AT THE CHART'S VERTICAL MIDDLE.
-   It was pinned to the chart's bottom-left corner, which put it in the
-   busiest, least-looked-at corner of the workspace — hard against the time
-   axis, the TradingView mark and the bottom panel's tab row, all of which
-   compete with a 16px chip. The owner marked the height they wanted on a
-   screenshot and named the reference: Bybit, where the handle that brings a
-   collapsed rail back sits centred on the edge it belongs to, at eye level
-   and clear of both ends.
-   `top:50%` with a half-height translate centres it on the chart at any
-   height, so it lands correctly whether the bottom panel is open or folded
-   and at every desktop width rather than at one measured one. */
+/* COLLAPSED: THE SAME HEIGHT, A DIFFERENT SHAPE.
+   The tab reads as a handle on the workspace edge rather than a chip in the
+   margin, so it loses its left border and its inset — but it keeps
+   `--rail-toggle-top`, so pressing the chip does not make it jump. */
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
-  top: 50%;
+  top: var(--rail-toggle-top);
   bottom: auto;
   left: 0;
   transform: translateY(-50%);
@@ -173,7 +189,7 @@
   min-width: 16px;
   height: 30px;
   min-height: 30px;
-  border: 1px solid var(--border, #232a34);
+  border: 1px solid #39434f;
   border-left: 0;
   border-radius: 0 5px 5px 0;
 }
@@ -183,6 +199,13 @@
 @media (max-width: 900px) {
   .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
     order: 0;
+    /* The rail is a horizontal strip here and the toggle is a column at its
+       end; the desktop's absolute placement is explicitly undone rather
+       than left to cascade into a layout it was never meant for. */
+    position: static;
+    top: auto;
+    left: auto;
+    transform: none;
     align-self: stretch;
     width: 24px;
     min-width: 24px;
