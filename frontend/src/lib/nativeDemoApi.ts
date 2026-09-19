@@ -1,3 +1,4 @@
+import { nativeRequestDeadline } from './nativeRequestDeadline';
 import { getToken } from './api';
 import { PrivateTradingError, type PrivateResultCard } from './privateTradingApi';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE'}
@@ -128,7 +129,8 @@ export type NativeDraft=
 export function createNativeDemoClient(base:string,token:()=>string|null,fetcher:typeof fetch=fetch){
   async function request<T>(path:string,body?:unknown,signal?:AbortSignal):Promise<T>{
     const bearer=token();if(!bearer)throw new PrivateTradingError('Войдите в аккаунт',401);
-    const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
+    return nativeRequestDeadline(async requestSignal=>{
+    const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal:requestSignal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
     const data=await response.json().catch(()=>null);if(token()!==bearer)throw new PrivateTradingError('Сессия завершена',401);
     if(!response.ok)throw new PrivateTradingError(
       typeof data?.error==='string'?data.error:'Счёт временно недоступен',
@@ -137,6 +139,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
       {limit:data?.limit,allowed:data?.allowed,actual:data?.actual},
     );
     if(data===null)throw new PrivateTradingError('Сервер не подтвердил результат',502);return data;
+    },signal);
   }
   return{
     access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),

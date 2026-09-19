@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
+import { createHash } from 'crypto';
+import { CommandScope } from './commandScope';
 import { NativeCommand, NativeDemoService } from './service';
 import { OwnerSession } from '../serviceTypes';
 import { DemoEngineError, NATIVE_DEMO_MODEL } from './engine';
@@ -94,7 +96,15 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
   }));
   r.get('/contracts/:symbol',handle((req,res)=>service.contract(actor(res),z.string().regex(/^[A-Z0-9]{1,32}USDT$/).parse(req.params.symbol))));
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));
-  r.post('/commands',handle((req,res)=>service.command(actor(res),nativeCommandSchema.parse(req.body) as NativeCommand)));
+  r.post('/commands',handle((req,res)=>{
+    const input=nativeCommandSchema.parse(req.body) as NativeCommand;
+    const scope=new CommandScope(input.kind);
+    res.setHeader('X-Native-Request-Id',scope.id);
+    scope.trace('http.accepted',{keyHash:createHash('sha256').update(input.idempotencyKey).digest('hex').slice(0,16)});
+    res.once('finish',()=>scope.trace('http.finish',{status:res.statusCode}));
+    res.once('close',()=>{if(!res.writableFinished)scope.trace('http.disconnected');});
+    return service.command(actor(res),input,{scope});
+  }));
   r.post('/cards',handle((req,res)=>service.card(actor(res),z.object({positionId:key}).strict().parse(req.body).positionId)));
   r.get('/cards/:revision/:positionId',handle((req,res)=>service.card(actor(res),key.parse(req.params.positionId),z.coerce.number().int().positive().parse(req.params.revision))));
   r.use((e:unknown,_req:Request,res:Response,next:NextFunction)=>{

@@ -25,7 +25,7 @@ export class NativeCommandLane {
   private depth = 0;
   private tailRefresh: Promise<unknown> | null = null;
 
-  constructor(readonly limit = NATIVE_CLIENT_QUEUE_LIMIT) {}
+  constructor(readonly limit = NATIVE_CLIENT_QUEUE_LIMIT, readonly queueTimeoutMs = 10_000) {}
 
   /** Commands running or waiting. */
   get pending() { return this.depth; }
@@ -41,8 +41,17 @@ export class NativeCommandLane {
       return Promise.reject(new PrivateTradingError('Слишком много операций в очереди. Повторите через секунду', 429, 'client_queue_full'));
     }
     this.depth += 1;
-    const run = this.chain.then(task, task);
-    this.chain = run.catch(() => undefined);
+    const predecessor = this.chain;
+    const run = (async () => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([predecessor.catch(() => undefined), new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => reject(new PrivateTradingError('Ордер не отправлен: предыдущая операция ещё обрабатывается.', 408, 'native_queue_timeout')), this.queueTimeoutMs);
+        })]);
+      } finally { if (timer) clearTimeout(timer); }
+      return task();
+    })();
+    this.chain = Promise.allSettled([predecessor, run]);
     this.tailRefresh = coalesce ? run : null;
     const settle = () => { this.depth -= 1; if (this.tailRefresh === run) this.tailRefresh = null; };
     run.then(settle, settle);

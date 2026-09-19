@@ -188,6 +188,23 @@ export function instructionDigest(instructions:NativeInstruction[],before:number
       ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value);
   return createHash('sha256').update(evidence).digest('hex');
 }
+/** Recover only the old empty-account OBSERVE append bug. The original prefix
+ * must verify, there must be no exposure, and applying the one omitted
+ * observation must reproduce the persisted snapshot exactly. Other mismatch
+ * cases still require full replay; this never blesses an amended fill/book. */
+export function recoverEmptyObservationCheckpoint(checkpoint:NativeCheckpoint,instructions:NativeInstruction[],snapshot:DemoState):NativeCheckpoint|null{
+  const last=instructions.at(-1);
+  if(checkpoint.commandCount!==undefined||!last||last.kind!=='OBSERVE'||last.context
+    ||Object.keys(last.marks).length||Object.keys(last.observedAt??{}).length
+    ||last.at!==checkpoint.state.time||last.at>=checkpoint.time||exposedSymbols(checkpoint.state).size
+    ||instructionDigest(instructions.slice(0,-1),checkpoint.time)!==checkpoint.digest)return null;
+  const state=structuredClone(checkpoint.state);
+  apply(state,last,last.at);
+  const canonical=(value:unknown)=>JSON.stringify(value,(_key,v)=>v&&typeof v==='object'&&!Array.isArray(v)
+    ?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+  if(canonical(state)!==canonical(snapshot))return null;
+  return{...checkpoint,state,digest:instructionDigest(instructions,checkpoint.time)};
+}
 export function exposedSymbols(s:DemoState){
   return new Set([...s.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol),...s.orders.filter(activeOrder).map(o=>o.symbol)]);
 }

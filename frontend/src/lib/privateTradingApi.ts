@@ -181,6 +181,9 @@ export function privateExplanation(value:string):string{
  */
 export function privateErrorText(error:unknown):string{
   if(error instanceof PrivateTradingError){
+    if(error.code==='native_command_timeout')return 'Операция не выполнена: время ожидания истекло.';
+    if(error.code==='native_queue_timeout')return 'Ордер не отправлен: предыдущая операция ещё обрабатывается.';
+    if(error.code==='native_confirmation_unknown')return 'Результат не подтверждён. Проверьте позиции и ордера перед повторной отправкой.';
     if(error.status===401||error.status===403)return 'Доступ к приватному режиму завершён';
     if(error.status===429)return 'Расчёт уже выполняется. Дождитесь завершения.';
     // Status before wording. A 500 carries whatever the route threw — a

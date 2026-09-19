@@ -1,3 +1,4 @@
+import { nativeRequestDeadline } from '../nativeRequestDeadline';
 /**
  * LARGE FINANCIAL VALUES MUST STAY READABLE.
  *
@@ -24,7 +25,7 @@ function load(file: string, imports: Record<string, unknown> = {}) {
   const output: any = {};
   const source = readFileSync(resolve(frontend, 'src', file), 'utf8').replace(/import\.meta\.env\.VITE_API_URL/g, 'undefined');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  new Function('require', 'exports', code)((name: string) => name in imports ? imports[name] : name.endsWith('.css') ? {} : req(name), output);
+  new Function('require', 'exports', code)((name: string) => name in imports ? imports[name] : name.endsWith('.css') ? {} : name==='./nativeRequestDeadline'?{nativeRequestDeadline}:req(name), output);
   return output;
 }
 const privateApi = load('lib/privateTradingApi.ts', { './api': { getToken: () => 'owner-token' }, './privateTradingError': load('lib/privateTradingError.ts') });

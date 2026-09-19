@@ -442,12 +442,34 @@ async function largeValues(width) {
     await s.page.screenshot({ path: path.join(out, `terminal-${width}.png`), fullPage: true });
   } finally { await s.context.close(); }
 }
+async function pendingDeadline(mode) {
+  const s=await session(1440);let held,submits=0;
+  try {
+    await ready(s);await family(s.page,'MARKET');await qty(s.page).fill('0.002');
+    await s.page.route('**/native/commands',async route=>{
+      if(route.request().postDataJSON()?.kind!=='OPEN')return route.continue();
+      submits++;
+      if(mode==='refusal')return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({code:'native_command_timeout',error:'Operation deadline expired'})});
+      held=route; // Deliberately no response, and no request forwarded to the fixture engine.
+    });
+    await s.page.clock.install();
+    await button(s.page,'LONG').click();
+    if(mode==='unknown'){
+      await s.page.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.textContent.includes('Подожди'));
+      await s.page.clock.runFor(45010);
+    }
+    await s.page.locator('.fo-error').filter({hasText:mode==='unknown'?'Результат не подтверждён':'время ожидания истекло'}).waitFor();
+    assert(!await button(s.page,'LONG').isDisabled(),'Submit remained pending');assert.equal(submits,1,'Order automatically retried');
+    const state=await api(s.context,s.token,'state');assert.deepEqual(state.positions,s.initial.positions);assert.equal(state.account.settleBalance,s.initial.account.settleBalance);
+    return{singleSubmit:true,pendingCleared:true,serverStateUnchanged:true};
+  }finally{await held?.abort().catch(()=>{});await s.context.close();}
+}
 async function main() {
   // Observation only: no components, layout, prices or routing are replaced by the build shim.
   const chartModule = path.join(front, 'node_modules/lightweight-charts/dist/lightweight-charts.production.mjs');
   shim = path.join(os.tmpdir(), `voltex-native-observer-${process.pid}.mjs`);
   fs.writeFileSync(shim, `export * from ${JSON.stringify(chartModule)};import{createChart as original,CandlestickSeries}from ${JSON.stringify(chartModule)};import * as renderer from ${JSON.stringify(path.join(front, 'src/lib/privateResultCard.ts'))};window.__nativeQaCardRenderer=renderer;export function createChart(...args){const c=original(...args);window.__nativeQaChart=c;const add=c.addSeries.bind(c);c.addSeries=(type,...rest)=>{const s=add(type,...rest);if(type===CandlestickSeries)window.__nativeQaSeries=s;return s;};return c;}`);
-  const { build } = await import(path.join(front, 'node_modules/vite/dist/node/index.js'));
+  const { build } = await import(require('node:url').pathToFileURL(path.join(front, 'node_modules/vite/dist/node/index.js')).href);
   await build({ root: front, resolve: { alias: { 'lightweight-charts': shim } }, define: { 'import.meta.env.VITE_API_URL': JSON.stringify('/api/v1') } });
   await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });
   for (const width of [1440, 390]) {
@@ -458,6 +480,7 @@ async function main() {
     await check(`reduce-only-limit-contract-${width}`, () => limitCloseContract(width));
     await check(`chart-tool-selection-${width}`, () => chartFlow(width));
   }
+  if(!largeOnly){await check('server-deadline-refusal-clears-submit',()=>pendingDeadline('refusal'));await check('lost-response-clears-submit-without-retry',()=>pendingDeadline('unknown'));}
   assert.deepEqual(report.errors, [], 'Browser runtime errors');
   assert(report.checks.every(x => x.passed), `${report.checks.filter(x => !x.passed).length} QA checks failed; see report.json`);
   report.passed = true;

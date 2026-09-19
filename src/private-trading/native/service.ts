@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
+import { CommandScope, commandScope, commandCheck, commandRead, commandSignal } from './commandScope';
 import BigNumber from 'bignumber.js';
 import { nativeHistoryCache } from './historyCache';
-import { liveCheckpoint } from './replay';
+import { liveCheckpoint, recoverEmptyObservationCheckpoint } from './replay';
 import type { CollateralHolding } from './collateral';
 import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PrivateValuationMark, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote, assertPrivateFreshMark } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
@@ -132,9 +133,9 @@ export class NativeDemoService {
     }
     if(typeof this.market.marks==='function')for(let i=0;i<missing.length;i+=64){
       const wanted=missing.slice(i,i+64);
-      try{for(const [symbol,mark] of await this.market.marks(wanted))if(wanted.includes(symbol)&&valid(mark,symbol)){
+      try{for(const [symbol,mark] of await commandRead('market.marks',()=>this.market.marks(wanted,commandSignal())))if(wanted.includes(symbol)&&valid(mark,symbol)){
         this.marks.set(symbol,{at:this.now(),mark});out.set(symbol,mark);
-      }}catch{/* Missing marks take the validated quote fallback. */}
+      }}catch{commandCheck();/* Missing marks take the validated quote fallback. */}
     }
     while(this.marks.size>256)this.marks.delete(this.marks.keys().next().value!);
     return out;
@@ -144,7 +145,7 @@ export class NativeDemoService {
   private async quote(symbol:string,fresh=false):Promise<PrivateFreshQuote>{
     const cached=this.quotes.get(symbol);
     if(!fresh&&cached&&this.now()-cached.at<NATIVE_QUOTE_REUSE_MS)return cached.quote;
-    const quote=await this.market.freshQuote(symbol);
+    const quote=await commandRead('market.book',()=>this.market.freshQuote(symbol,commandSignal()));
     this.quotes.set(symbol,{at:this.now(),quote});
     if(this.quotes.size>256)for(const [k,v] of this.quotes)if(this.now()-v.at>=NATIVE_QUOTE_REUSE_MS)this.quotes.delete(k);
     return quote;
@@ -184,8 +185,8 @@ export class NativeDemoService {
    * rows and the live quotes make it.
    */
   async collateral(actor:OwnerSession,row?:NativeAccount|null,options:{reuse?:boolean;holdings?:CollateralHolding[]}={}):Promise<CollateralValuation>{
-    const accountRow=row===undefined?await this.repository.read(actor):row;
-    const holdings=options.holdings??await this.repository.holdings(actor);
+    const accountRow=row===undefined?await commandRead('repository.read',()=>this.repository.read(actor)):row;
+    const holdings=options.holdings??await commandRead('repository.holdings',()=>this.repository.holdings(actor));
     const settle='USDT';
     // Commands need enabled, nonzero collateral. Wallet reads still value
     // disabled holdings too, so a preference cannot alter economic equity.
@@ -217,6 +218,7 @@ export class NativeDemoService {
         // it backs are valued, so the two cannot drift apart.
         return{asset:h.asset,price:quoted.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quoted.markProviderTimestamp};
       }catch{
+        commandCheck();
         // A contract that does not exist and a provider that is down are
         // the same answer here: we do not know what this is worth.
         return{asset:h.asset,price:null,source:'BYBIT_LINEAR_MARK',asOf:null};
@@ -280,7 +282,7 @@ export class NativeDemoService {
    * worth when the account happened to be read.
    */
   async account(actor:OwnerSession):Promise<{account:CrossAccount;ledger:AccountLedger}|null>{
-    const row=await this.repository.read(actor);
+    const row=await commandRead('repository.read',()=>this.repository.read(actor));
     if(!row)return null;
     const view=await this.authoritative(actor,this.view(row),row);
     return{account:view.account as CrossAccount,ledger:view.ledger as AccountLedger};
@@ -331,7 +333,7 @@ export class NativeDemoService {
    * report, and reporting zero would be a different claim.
    */
   async wallet(actor:OwnerSession){
-    const row=await this.repository.read(actor);
+    const row=await commandRead('repository.read',()=>this.repository.read(actor));
     if(!row)return null;
     return this.walletForRow(actor,row);
   }
@@ -352,9 +354,9 @@ export class NativeDemoService {
     const prior=await this.repository.prior(actor,idempotencyKey,hash);
     if(prior)return this.walletForRow(actor,prior);
 
-    const row=await this.repository.read(actor);
+    const row=await commandRead('repository.read',()=>this.repository.read(actor));
     if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите торговый счёт',409);
-    const holdings=await this.repository.holdings(actor);
+    const holdings=await commandRead('repository.holdings',()=>this.repository.holdings(actor));
     const holding=holdings.find(h=>h.asset===asset);
     const held=holding?new BigNumber(holding.available).plus(holding.locked??'0'):new BigNumber(0);
     if(!holding||!held.gt(0))throw new PrivateTradingError('collateral_asset_missing','Этот актив отсутствует в кошельке.',409);
@@ -387,7 +389,7 @@ export class NativeDemoService {
     return this.walletForRow(actor,committed,valuation);
   }
   async state(actor:OwnerSession){
-    const row=await this.repository.read(actor);
+    const row=await commandRead('repository.read',()=>this.repository.read(actor));
     const view=await this.authoritative(actor,this.view(row),row);
     return{...view,demoAvailable:row?null:await this.repository.available(actor)};
   }
@@ -404,13 +406,13 @@ export class NativeDemoService {
    */
   async contract(actor:OwnerSession,symbol:string){
     void actor;
-    const instrument=await this.market.instrument(symbol);
+    const instrument=await commandRead('market.instrument',()=>this.market.instrument(symbol,commandSignal()));
     return{...contractRules(instrument),riskTiers:simulationProfile(instrument).riskTiers,
       takerFeeRate:simulationProfile(instrument).takerFeeRate,makerFeeRate:simulationProfile(instrument).makerFeeRate};
   }
   async initialize(actor:OwnerSession,key:string){const row=await this.repository.initialize(actor,key);return this.authoritative(actor,this.view(row),row);}
   private async bars(request:BarRequest):Promise<ReplayBar[]>{
-    return nativeHistoryCache(this.market,this.now).load(request);
+    return commandRead('market.history',()=>nativeHistoryCache(this.market,this.now).load(request,commandSignal()));
   }
   /** Mark price at a minute boundary: the open of the minute starting there, or the close of the minute ending there. */
   private async markAt(symbol:string,time:number,edge:'START'|'END'):Promise<string>{
@@ -419,10 +421,16 @@ export class NativeDemoService {
     const bar=bars.find(b=>b.time===start);if(!bar)throw new DemoEngineError('ENTRY_MARK_UNAVAILABLE');
     return edge==='START'?bar.mark.open:bar.mark.close;
   }
-  command(actor:OwnerSession,request:NativeCommand,options:{persist?:boolean}={}){
+  command(actor:OwnerSession,request:NativeCommand,options:{persist?:boolean;scope?:CommandScope}={}){
     // The lane is entered SYNCHRONOUSLY, so arrival order is call order and
     // not the order in which two idempotency lookups happened to return.
-    return this.serialized(actor.userId,request,options,()=>this.execute(actor,request,commandHash(request),options));
+    const scope=options.scope??new CommandScope(request.kind);
+    return scope.run(async()=>{
+      scope.trace('received');
+      try{const result=await this.serialized(actor.userId,request,options,()=>this.execute(actor,request,commandHash(request),options));
+        scope.trace('confirmed',{revision:result.revision});return result;
+      }catch(e){scope.trace('refused',{code:e instanceof PrivateTradingError||e instanceof PrivateMarketDataError||e instanceof DemoEngineError?e.code:'internal_error'});throw e;}
+    });
   }
   /** How many commands this account has running or waiting right now. */
   queued(userId:string){return this.lanes.get(userId)?.depth??0;}
@@ -434,8 +442,9 @@ export class NativeDemoService {
     if(plainRefresh&&lane.tailRefresh)return lane.tailRefresh as Promise<T>;
     if(lane.depth>=NATIVE_COMMAND_QUEUE_LIMIT)return Promise.reject(new PrivateTradingError('native_queue_full','Слишком много операций в очереди. Повторите через секунду',429));
     lane.depth+=1;this.lanes.set(userId,lane);
-    const run=lane.chain.then(task,task);
-    lane.chain=run.catch(()=>undefined);
+    const predecessor=lane.chain;
+    const run=(async()=>{await commandRead('lane.wait',()=>predecessor.catch(()=>undefined));commandCheck();return task();})();
+    lane.chain=Promise.allSettled([predecessor,run]);
     lane.tailRefresh=plainRefresh?run:null;
     const settle=()=>{lane.depth-=1;if(lane.tailRefresh===run)lane.tailRefresh=null;if(lane.depth===0)this.lanes.delete(userId);};
     run.then(settle,settle);
@@ -462,7 +471,7 @@ export class NativeDemoService {
       try{return await this.attempt(actor,request,hash,options);}
       catch(e){
         if(attempt>=NATIVE_COMMIT_ATTEMPTS||!(e instanceof PrivateTradingError&&e.code==='account_changed'))throw e;
-        this.conflicts+=1;
+        this.conflicts+=1;commandScope()?.trace('revision.conflict',{attempt});commandCheck();
       }
     }
   }
@@ -475,15 +484,16 @@ export class NativeDemoService {
       // Re-checked INSIDE the lane: a double click queues the same key twice,
       // and the second must answer with the first's receipt rather than find
       // its position already closed and refuse.
-      const prepared=this.repository.commandContext?await this.repository.commandContext(actor,request.idempotencyKey,hash):null;
-      const prior=prepared?prepared.prior:await this.repository.prior(actor,request.idempotencyKey,hash);if(prior)return this.authoritative(actor,this.view(prior),prior);
-      const row=prepared?prepared.row:await this.repository.read(actor);if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
+      const prepared=this.repository.commandContext?await commandRead('repository.context',()=>this.repository.commandContext!(actor,request.idempotencyKey,hash)):null;
+      const prior=prepared?prepared.prior:await commandRead('repository.prior',()=>this.repository.prior(actor,request.idempotencyKey,hash));if(prior)return this.authoritative(actor,this.view(prior),prior);
+      const row=prepared?prepared.row:await commandRead('repository.read',()=>this.repository.read(actor));if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
       // A monotonic per-account sequence orders instructions journaled in the
       // same millisecond. A burst drained from the lane, or a clock that does
       // not advance, must never replay a reduce before the position it names.
       const seq=nextInstructionSeq(row.commands);
       // The instruction first: its row-based checks (a reduce order that
       // names a position that does not fit) refuse before any upstream read.
+      commandScope()?.trace('instruction',{revision:row.revision});
       let instruction=await this.instruction(row,request,seq);
       let valuation:CollateralValuation,collateral:ExternalCollateral,commands:NativeInstruction[],result:Awaited<ReturnType<NativeDemoService['replay']>>;
       // THE DECISION IS TAKEN ON WHAT IS FRESH WHEN IT IS TAKEN. The execution
@@ -499,6 +509,7 @@ export class NativeDemoService {
         // ONE valuation per command, taken BEFORE the decision and journaled
         // with it: admission, the fill margin check, the liquidation verdict
         // and the account in the response all read this same figure.
+        commandScope()?.trace('collateral');
         valuation=await this.collateral(actor,row,{reuse:true,holdings:prepared?.holdings});collateral=externalCollateral(valuation);
         if(instruction){
           instruction.collateral=collateral;instruction.recordedAt=this.now();
@@ -519,6 +530,7 @@ export class NativeDemoService {
         // Backdated trades re-simulate the scenario from the beginning; everything else continues the
         // canonical checkpoint, so outcomes already shown are never recomputed away.
         const incremental=row.checkpoint&&(!instruction||instruction.at>=row.checkpoint.time)?row.checkpoint:null;
+        commandScope()?.trace('replay');commandCheck();
         result=await this.replay(row,commands,incremental,collateral,instruction?.context);
         if(!this.expiredAtDecision(instruction))break;
         if(round>=1)throw new PrivateMarketDataError('quote_stale');
@@ -551,7 +563,8 @@ export class NativeDemoService {
       next.checkpoint=liveCheckpoint(next.snapshot,commands)??result.checkpoint;
       next.executionSession={...actor};
       next.executionPending=executionPending;
-      const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash);
+      commandCheck();commandScope()?.trace('commit',{revision:row.revision});
+      const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash,()=>{commandCheck();if(this.expiredAtDecision(instruction))throw new PrivateMarketDataError('quote_stale');});
       return this.authoritative(actor,this.view(committed),committed,valuation);
     }
   }
@@ -562,7 +575,9 @@ export class NativeDemoService {
     catch(e){
       // A checkpoint that no longer matches (clock skew, legacy row) falls back to the full scenario.
       if(!(checkpoint&&e instanceof DemoEngineError&&e.code==='CHECKPOINT_MISMATCH'))throw e;
-      result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf},load);
+      const recovered=recoverEmptyObservationCheckpoint(checkpoint,row.commands,row.snapshot);
+      commandScope()?.trace(recovered?'checkpoint.recovered_empty_observation':'checkpoint.full_replay');
+      result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf,...(recovered?{checkpoint:recovered}:{})},load);
     }
     // Quotes are fetched only after the (possibly long) history pass, then checked for freshness again.
     const latest:Record<string,{mark:string;last:string;time:number}>={};
@@ -635,6 +650,7 @@ export class NativeDemoService {
     // The live risk pass values the account on THIS command's valuation and these marks; the books are executed after it.
     setDemoCollateral(result.snapshot,collateral);
     const observed=applyLatestQuotes(result.snapshot,latest,at);
+    result.snapshot.time=at;
     const books:{symbol:string;book:NativeBook;at:number}[]=[];
     for(const c of candidates){
       // Even a no-fill observation may extend the snapshot identity ledger.
@@ -668,7 +684,7 @@ export class NativeDemoService {
   private async instruction(row:NativeAccount,request:NativeCommand,seq:number):Promise<NativeInstruction|undefined>{
     const id=`native-${randomUUID()}`;
     if(request.kind==='OPEN'){
-      const symbol=request.symbol.replace(/[^A-Z0-9]/g,''),instrument=await this.market.instrument(symbol),rules=contractRules(instrument),profile=simulationProfile(instrument);
+      const symbol=request.symbol.replace(/[^A-Z0-9]/g,''),instrument=await commandRead('market.instrument',()=>this.market.instrument(symbol,commandSignal())),rules=contractRules(instrument),profile=simulationProfile(instrument);
       profile.riskModelVersion='NATIVE_MARGIN_V3:'+instrument.parameterVersion;
       profile.assumptions=['USDT-only demo, Cross or Isolated per order; gross hedge maintenance; not Bybit matching.','An isolated position is backed by its posted margin alone: its settlements are booked at their actual price and fee, and a loss beyond the post is a separate SHORTFALL line covered by the simulation insurance model, never by the shared wallet.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
       const sizePrice=request.type==='LIMIT'?request.price:undefined;
@@ -687,7 +703,7 @@ export class NativeDemoService {
         // the side and the size against the named position itself.
         ...(target?{reduceOnly:true,positionId:target.id}:{}),historical:!!request.candle});
       if(request.candle){
-        const selected=await this.market.resolveCandle({...request.candle,symbol}),candle=request.candle;
+        const selected=await commandRead('market.candle',()=>this.market.resolveCandle({...request.candle!,symbol,signal:commandSignal()})),candle=request.candle;
         if(request.type==='LIMIT'){
           // Owner rule on the SELECTED candle: Buy fills if Low <= limit, Sell if High >= limit.
           const touch=historicalLimitTouch(request.side,request.price!,selected.candle,selected.openTime,selected.intervalMs);
@@ -712,7 +728,7 @@ export class NativeDemoService {
       const p=row.snapshot.positions.find(p=>p.id===request.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
       if(request.quantity!==undefined&&new BigNumber(request.quantity).gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
       if(request.candle){
-        const c=await this.market.resolveCandle({...request.candle,symbol:p.symbol});
+        const c=await commandRead('market.candle',()=>this.market.resolveCandle({...request.candle!,symbol:p.symbol,signal:commandSignal()}));
         if(c.effectiveAt<=p.openedAt)throw new DemoEngineError('EXIT_BEFORE_ENTRY');
         return{id,seq,kind:'CLOSE',at:c.effectiveAt,positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:c.price,candle:request.candle};
       }
@@ -751,10 +767,10 @@ export class NativeDemoService {
   }
   /** Card values come from ONE persisted revision; an open position is revalued and frozen first. */
   async card(actor:OwnerSession,positionId:string,revision?:number){
-    let row=revision===undefined?await this.repository.read(actor):await this.repository.revision(actor,revision);if(!row)throw new DemoEngineError('ACCOUNT_MISSING');
+    let row=revision===undefined?await commandRead('repository.read',()=>this.repository.read(actor)):await this.repository.revision(actor,revision);if(!row)throw new DemoEngineError('ACCOUNT_MISSING');
     if(revision===undefined&&row.snapshot.positions.some(p=>p.id===positionId&&p.status==='OPEN')){
       await this.command(actor,{kind:'REFRESH',idempotencyKey:`card-${randomUUID()}`},{persist:true});
-      row=await this.repository.read(actor);if(!row)throw new DemoEngineError('ACCOUNT_MISSING');
+      row=await commandRead('repository.read',()=>this.repository.read(actor));if(!row)throw new DemoEngineError('ACCOUNT_MISSING');
     }
     const p=row.snapshot.positions.find(p=>p.id===positionId);if(!p)throw new DemoEngineError('POSITION_MISSING');const v=demoPositionView(row.snapshot,p);
     return{id:`native:${row.revision}:${p.id}`,symbol:p.symbol,side:p.side,leverage:p.leverage,mode:p.historical?'HISTORICAL_REPLAY':'DEMO_LIVE',status:p.status,
