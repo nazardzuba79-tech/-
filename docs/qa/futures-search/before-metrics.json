@@ -1,0 +1,419 @@
+{
+  "status": "MEASURED",
+  "label": "before",
+  "report": {
+    "390": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": null,
+        "railRowCount": 0,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 57,
+        "bar": {
+          "left": 1,
+          "top": 57,
+          "right": 389,
+          "bottom": 127,
+          "width": 388,
+          "height": 70
+        },
+        "pairName": {
+          "left": 85,
+          "top": 82,
+          "right": 153,
+          "bottom": 102,
+          "width": 68,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 79,
+          "right": 39,
+          "bottom": 105,
+          "width": 26,
+          "height": 26
+        },
+        "rail": null,
+        "chart": {
+          "left": 1,
+          "top": 128,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 460
+        },
+        "book": {
+          "left": 1,
+          "top": 1400,
+          "right": 389,
+          "bottom": 1860,
+          "width": 388,
+          "height": 460
+        },
+        "ticket": {
+          "left": 1,
+          "top": 598,
+          "right": 389,
+          "bottom": 1390,
+          "width": 388,
+          "height": 792
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1366": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": true,
+        "railFirstChild": "pairs-head",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 228,
+          "top": 49,
+          "right": 1365,
+          "bottom": 119,
+          "width": 1137,
+          "height": 70
+        },
+        "pairName": {
+          "left": 314,
+          "top": 74,
+          "right": 391,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 240,
+          "top": 71,
+          "right": 266,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 49,
+          "right": 227,
+          "bottom": 703,
+          "width": 226,
+          "height": 654
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 801,
+          "bottom": 703,
+          "width": 573,
+          "height": 583
+        },
+        "book": {
+          "left": 802,
+          "top": 120,
+          "right": 1052,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1053,
+          "top": 120,
+          "right": 1365,
+          "bottom": 939,
+          "width": 312,
+          "height": 819
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1440": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": true,
+        "railFirstChild": "pairs-head",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 228,
+          "top": 49,
+          "right": 1439,
+          "bottom": 119,
+          "width": 1211,
+          "height": 70
+        },
+        "pairName": {
+          "left": 315,
+          "top": 74,
+          "right": 392,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 240,
+          "top": 71,
+          "right": 266,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 49,
+          "right": 227,
+          "bottom": 703,
+          "width": 226,
+          "height": 654
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 875,
+          "bottom": 703,
+          "width": 647,
+          "height": 583
+        },
+        "book": {
+          "left": 876,
+          "top": 120,
+          "right": 1126,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1127,
+          "top": 120,
+          "right": 1439,
+          "bottom": 939,
+          "width": 312,
+          "height": 819
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1664": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": true,
+        "railFirstChild": "pairs-head",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 228,
+          "top": 49,
+          "right": 1350,
+          "bottom": 119,
+          "width": 1122,
+          "height": 70
+        },
+        "pairName": {
+          "left": 317,
+          "top": 74,
+          "right": 393,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 240,
+          "top": 71,
+          "right": 266,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 49,
+          "right": 227,
+          "bottom": 703,
+          "width": 226,
+          "height": 654
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1099,
+          "bottom": 703,
+          "width": 871,
+          "height": 583
+        },
+        "book": {
+          "left": 1100,
+          "top": 120,
+          "right": 1350,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1351,
+          "top": 49,
+          "right": 1663,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1920": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": true,
+        "railFirstChild": "pairs-head",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 228,
+          "top": 49,
+          "right": 1355,
+          "bottom": 119,
+          "width": 1127,
+          "height": 70
+        },
+        "pairName": {
+          "left": 317,
+          "top": 74,
+          "right": 394,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 240,
+          "top": 71,
+          "right": 266,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 49,
+          "right": 227,
+          "bottom": 703,
+          "width": 226,
+          "height": 654
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1355,
+          "bottom": 703,
+          "width": 1127,
+          "height": 583
+        },
+        "book": {
+          "left": 1356,
+          "top": 49,
+          "right": 1606,
+          "bottom": 703,
+          "width": 250,
+          "height": 654
+        },
+        "ticket": {
+          "left": 1607,
+          "top": 49,
+          "right": 1919,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    }
+  }
+}

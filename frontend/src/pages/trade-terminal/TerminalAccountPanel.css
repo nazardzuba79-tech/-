@@ -200,8 +200,8 @@
 /* Depth rises to the navbar as well, once the instrument row fits inside the
    chart column on its own (~1020-1070px of cells, chart = width - 740).
    `referenceRowCount` sizes the book from its measured height, so the
-   reclaimed row becomes actual price levels rather than padding. The chart
-   keeps its own row and its own height throughout. */
+   reclaimed row becomes actual price levels rather than padding.
+   The chart keeps its own row and its own height throughout. */
 @media(min-width:1760px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
     grid-column:2 / 3;
@@ -265,11 +265,11 @@
    every bar was permanently mid-animation, so the ladder never sat still.
    140ms lands each bar well before the next publish. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
-  background:rgba(46,189,133,.13);
+  background:rgba(46,189,133,.10);
   transition:transform 140ms linear;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
-  background:rgba(246,70,93,.13);
+  background:rgba(246,70,93,.10);
 }
 
 /* CENTRE PRICE. The number sits in its own slot and the direction arrow in a
@@ -327,7 +327,11 @@
   --fo-hairline:#252c36;
   --fo-text:#ffffff;
   --fo-text-2:#98a2b3;
-  --fo-text-3:#808a9a;
+  /* Lifted with the terminal's own scale — 5.6:1 on the ticket's surface
+     against 5.0 before, so the units beside the figures read as clearly as
+     the column headings beside them. The ticket keeps its own token; only
+     its value moves, and it moves to the same step. */
+  --fo-text-3:#8b95a5;
   --fo-field-height:44px;
   background:var(--fo-surface);
 }
@@ -514,6 +518,65 @@
   box-shadow:none;
 }
 
+
+/* ---------------------------------------------------------------------------
+   Order-book calm, part two: the ladder stopped being two blocks of colour.
+
+   THE COMPLAINT, measured. The owner put our book beside Binance's again and
+   said ours dazzles. Rendering the real build against the seeded replay feed
+   (scripts/qa-orderbook-motion.cjs) and reading the frames back says what he
+   is looking at, and it is not the bar's weight — that was already taken from
+   30% to 13% above. It is that the bars MERGE.
+
+   The bar is cumulative, so it grows monotonically from the touch outwards
+   and the far half of each side sits above 50% of its track. Each one is
+   `inset:0`, so it fills its row edge to edge with no gap, and nineteen of
+   them stacked butt together into one unbroken red field above the mid and
+   one unbroken green field below it. Two saturated rectangles with numbers
+   printed on them — which is the thing the eye catches, not any single bar.
+
+   Three changes, none of which touch what the bar MEASURES. Same cumulative
+   value, same per-side maximum, same right anchor, same transform, same
+   140ms. Only how much of the panel it is allowed to own:
+
+     1. A 1px gap top and bottom. The staircase becomes a stack of separate
+        bars again, the way the reference draws it, instead of a poured
+        field. This is the change that does most of the work.
+     2. 13% -> 10% alpha (above). With the rows separated the tint no longer
+        accumulates, so it can afford to be lighter still.
+     3. The `Всего` column steps down to the secondary text colour. Three
+        columns at the same brightness over a tinted row is three things
+        competing; the cumulative total is context for the bar beside it,
+        while the price and the size are the figures an order is placed on.
+        Nothing is hidden and no number changes — one of the three is simply
+        no longer shouting as loudly as the other two.
+
+   THE RATIO STRIP. `rgba(246,70,93,.2)` under a solid `#183731` wedge made
+   the loudest band in the panel out of the smallest fact in it, and it sat
+   directly under the ladder where it framed the whole book in red. Same two
+   figures, same geometry, same wedge — drawn at the ladder's weight rather
+   than above it, and the boxed B/S letters lose their border so they read as
+   labels rather than badges.
+
+   Every rule here is colour, alpha or a 1px inset. Not one sets a size, a
+   row height, a column width or a font size, so nothing a trader reads
+   moves, and the panel's data contract is untouched. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
+  inset:1px 0;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row > span:last-of-type {
+  color:var(--text-secondary,#98a2b3);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-ratio {
+  background:rgba(246,70,93,.10);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-ratio > i {
+  background:rgba(46,189,133,.13);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-ratio b {
+  border-color:transparent;
+  padding:0;
+}
 /* ── THE BOTTOM TABLE FITS ITS PANEL ──────────────────────────────────────
    Measured with one open position on a fixture terminal: the ten columns
    asked for 1224px while the panel gives 1125px at 1440 and 965px at 1280,
@@ -735,4 +798,275 @@
 /* "+ Добавить" is an offer, so it reads as one rather than as a value. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
   color: var(--text-secondary);
+}
+
+/* ---------------------------------------------------------------------------
+   THE INSTRUMENT ROW STARTS AT THE FAR-LEFT EDGE OF THE WORKSPACE.
+
+   Measured on the built page before this, at 1366 / 1440 / 1664 / 1920: the
+   row's left edge sat at 228px while the workspace's own content edge is at
+   1px. Everything in it — the list glyph, BTC/USDT, the caret, last, mark,
+   24h, high, low, turnover, open interest, funding — began to the right of
+   the market rail, and the rail ran all the way up beside it carrying a
+   search field in its top corner.
+
+   The rail now begins UNDER the row, and the row takes the column the rail
+   was using. Nothing is freed and left empty: the row that moved left is
+   what fills it.
+
+   THIS AMENDS THE CORRECTION ABOVE RATHER THAN REPLACING IT. That block
+   pulled the bar in from `2 / 5` so its unused tail stopped rendering as a
+   dead panel over order entry, and raised the ticket and the depth to the
+   navbar. All of that is kept — the ticket still owns column 4 for the full
+   height, the book still rises at 1760 — and only the row's LEFT edge moves,
+   from column 2 to column 1. It has to live here, after that block and after
+   FuturesDesignVariants' own `2 / 5`, because those are the rules that
+   actually decide the span; the same change in FuturesStudio.css alone was
+   overridden and measured no differently.
+
+   The ticket is raised to row 1 at every desktop width for the same reason
+   the block above raised it at 1500: with the bar ending at column 4, row 1
+   of the ticket's column would otherwise be the dead rectangle. Its WIDTH is
+   not touched at any width, and neither is the book's. */
+@media(min-width:1025px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    grid-column:1 / 4;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .reference-market-sidebar {
+    grid-row:2 / 4;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area {
+    grid-column:4; grid-row:1 / 4;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area .fo-panel {
+    padding-top:0;
+  }
+}
+/* Above this the depth column already rises to the navbar on its own (see
+   the block above), so the row stops at it rather than spanning it. */
+@media(min-width:1760px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    grid-column:1 / 3;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE BOTTOM PANEL, REDRAWN.
+
+   MEASURED FIRST, on the built page with one open position
+   (scripts/qa-futures-bottom-panel.cjs). Three numbers say what the owner
+   is looking at:
+
+     row height     50px at 1920, 64px at 1664, 77px at 1440 and 1366
+     heading height 36px at 1920/1664, 51px at 1440/1366
+     empty area     34-56% of the content box below a single row
+
+   The row and its headings changed height with the VIEWPORT, which is why
+   the table reads as unfinished: both were wrapping onto a second and third
+   line as the columns narrowed, so no two widths shared a rhythm. The empty
+   state, meanwhile, sat against the top of the panel with the rest of it
+   left black.
+
+   Four things are redrawn, and all of it is presentation — not one rule
+   here changes a figure, a column, a tab's wiring or what any cell
+   contains. The classes were already in the markup; nothing was added to
+   it.
+
+   1. HEADINGS ON ONE LINE. `white-space:nowrap` plus a step down in size,
+      so the header is one fixed 30px band at every width instead of 36 or
+      51. This narrows the columns, which is what the layer above
+      deliberately traded away to stop the row scrolling sideways — so the
+      harness asserts the table's own horizontal scroll is still zero at
+      every width, and that assertion is the thing that keeps this honest.
+   2. ONE ROW HEIGHT. Tighter line heights and a smaller secondary step let
+      every cell's content sit inside one 56px band from 1366 to 1920. The
+      harness asserts the set of row heights has exactly one member.
+   3. AN EMPTY STATE THAT IS CENTRED. It now fills the content box and
+      centres its icon and its line in both axes, so an empty panel reads as
+      deliberately empty rather than as an unfinished one.
+   4. A QUIETER SURFACE. Hairline rules at 1px in the panel's own border
+      colour instead of heavier separators, one hover tint, and the close
+      controls on a single row rather than stacked — the stack was part of
+      what forced the row to 77px.
+
+   SPOT AND CFD ARE NOT REACHED. Every selector below carries the Futures
+   studio prefix this sheet uses throughout. */
+
+/* ── Tabs: one rhythm, a hairline marker ─────────────────────────────── */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .terminal-account-header {
+  min-height:40px; height:40px; padding-inline:12px;
+  border-bottom:1px solid var(--border,#232a34);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .bottom-tabs {
+  gap:18px; height:100%; align-items:stretch;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .bottom-tab {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:0; border:0; border-bottom:1px solid transparent; border-radius:0;
+  background:none; font-size:12px; font-weight:500; line-height:1;
+  color:var(--text-secondary,#98a2b3);
+  transition:color 120ms ease, border-color 120ms ease;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .bottom-tab:hover {
+  color:var(--text-primary,#eaeef3);
+}
+/* The marker is a hairline, not a slab: one pixel of accent under a tab
+   that is already the brightest text in the row. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .bottom-tab[aria-selected=true] {
+  color:var(--text-primary,#eaeef3);
+  border-bottom-color:var(--accent,#f5a524);
+  font-weight:600;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .reference-tab-count {
+  color:var(--text-tertiary,#5c6675); font-size:11px; font-weight:400;
+}
+
+/* ── The table ───────────────────────────────────────────────────────── */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-content {
+  padding:0;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
+  white-space:nowrap !important;
+  height:30px; padding:0 10px !important;
+  font-size:10.5px !important; font-weight:500 !important; line-height:30px;
+  color:var(--text-secondary,#98a2b3) !important;
+  border-bottom:1px solid var(--border,#232a34);
+  background:var(--panel,#12161c);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td {
+  height:56px; padding:0 10px; vertical-align:middle;
+  font-size:12px; line-height:15px;
+  border-bottom:1px solid var(--border,#232a34);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table tbody tr:last-child td {
+  border-bottom:0;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-row:hover td {
+  background:var(--panel-alt,#1a1f27);
+}
+
+/* The identity cell: ticker, then one muted line for margin mode and
+   leverage. Two lines, not three. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-contract {
+  display:flex; flex-direction:column; gap:2px; line-height:14px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-ticker b {
+  font-size:12.5px; font-weight:600;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-perp {
+  font-size:10px; font-style:normal; color:var(--text-tertiary,#5c6675); margin-left:5px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-contract small {
+  font-size:10.5px; line-height:13px; white-space:nowrap;
+}
+/* A unit is context for the figure beside it, never a second figure. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-unit {
+  color:var(--text-tertiary,#5c6675); font-size:10.5px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-pnl {
+  display:flex; flex-direction:column; gap:1px; line-height:14px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-pnl :is(small,span:not(:first-child)) {
+  font-size:10.5px; line-height:13px;
+}
+
+/* The close controls sit on ONE row. Stacked, they were a third of the
+   row's height on their own. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td:last-child {
+  white-space:nowrap;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
+  height:24px; padding:0 10px; font-size:11px; line-height:24px;
+  margin:0 4px 0 0; vertical-align:middle;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
+  font-size:11px; padding:0 6px; height:22px; line-height:22px;
+}
+
+/* ── The empty state, centred in the space it is given ───────────────── */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-state {
+  flex:1; min-height:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:9px; padding:18px !important;
+  color:var(--text-tertiary,#5c6675); font-size:12px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-state svg {
+  width:20px !important; height:20px !important; opacity:.5;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-state span {
+  color:var(--text-secondary,#98a2b3);
+}
+/* The column strip above an empty state matches the real table's, so the
+   panel does not change shape the moment a position opens. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-state-columns th {
+  height:30px; line-height:30px; padding:0 10px !important; font-size:10.5px !important;
+  white-space:nowrap !important;
+}
+/* The panel itself is a column, so the empty state can actually take the
+   height it is being asked to centre inside. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-panel {
+  display:flex; flex-direction:column; min-height:0; height:100%;
+}
+
+/* ── The leverage tiers stop shouting ────────────────────────────────── */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-tiersTitle {
+  font-size:11px; font-weight:500; color:var(--text-secondary,#98a2b3);
+  background:transparent; border-top:1px solid var(--border,#232a34);
+  padding:9px 0 8px; list-style:none; cursor:pointer;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-tiersTitle:hover {
+  color:var(--text-primary,#eaeef3);
+}
+
+/* Unwrapping the headings costs width, and below 1500px ten columns do not
+   have it to spare — measured at 8px of sideways scroll at 1440 and 82px at
+   1366 before this. The gutter steps down instead, the way the block above
+   already steps it at 1600, so the headings stay on one line and the row
+   still does not scroll. Nothing is dropped and nothing wraps. */
+@media(max-width:1499px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio :is(.futures-positions-table,.futures-state-columns) :is(th,td) {
+    padding-inline:5px !important;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
+    padding:0 7px; margin-right:3px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(td,th) {
+    font-size:11.5px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
+    font-size:10px !important;
+  }
+}
+
+/* The last two cells were the rest of the row's height. «Лимитный» and
+   «Рыночный» stacked one above the other, and «+ Добавить» broke across
+   two lines, so at 1440 and 1366 the row still measured 71px against 56 at
+   1920. Both go on one line; neither loses a control. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td:last-child > * {
+  display:inline-flex; flex-direction:row; flex-wrap:nowrap; align-items:center; gap:5px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
+  flex:0 0 auto; white-space:nowrap;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
+  white-space:nowrap; display:inline-flex; align-items:center; gap:3px;
+}
+
+/* ONE ROW HEIGHT, chosen rather than hoped for. With the controls on one
+   line the row measured 56px at 1920 and 62px at the three narrower
+   widths — the widest cell needs the extra line there and not here. Fixing
+   the cell height at the larger of the two gives every width the same
+   rhythm, which is the point, and costs 1920 six pixels it had spare. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td {
+  height:62px;
+}
+/* ...and the last five pixels of sideways scroll at 1366, which the
+   unstacked controls cost. */
+@media(max-width:1399px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
+    padding:0 6px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td:last-child > * {
+    gap:4px;
+  }
 }

@@ -420,10 +420,18 @@ describe('spot and futures pair lists are unchanged', () => {
     'src/lib/pairList.ts': '4f9ea3cda06e73142565f2743914fe7858efe8efa5c2cf155ab653b509131a79',
     // The spot terminal's pair list.
     'src/components/PairListSidebar.tsx': '18ff998b1bd5b9dd97e6e49b53bbf8d1627c0ca209410ba9d59cbad4216d4625',
-    // Refreshed from main e6e3fb5 after the separately approved PR #125.
-    // Main and this branch both contain Git blob c551b3ff78fa3dd219802b521fd185c5ba86020d.
-    // This Markets PR does not change the restored ticker labels or execution universe.
-    'src/components/FuturesPairList.tsx': '16c222d13e0537b8d69a282ce81cc8709f6e84557bb8765b5299aa8846b9bd43',
+    // Re-pinned a second time, for the market chooser. The rail's search
+    // row is gone entirely — no header, no field, no collapsed row — and
+    // the field is now rendered only when the `searchable` prop is set, by
+    // the chooser under the BTC/USDT selector and by the mobile market
+    // dialog. See futuresMarketSearch.test.ts, which pins that behaviour.
+    //
+    // What THIS guard exists to protect is untouched by both edits: the
+    // symbol universe still arrives as the `symbols` prop, the execution
+    // whitelist is still the server's, and the filter is the same predicate
+    // over that prop it has always been. No pair is added, removed,
+    // renamed or derived here.
+    'src/components/FuturesPairList.tsx': '00f2140b7f9ee65bcf5221cbb4df9def917ba487f9a1685a345a429feff795b8',
   };
 
   it('does not derive tradable pairs from catalogue entries', () => {

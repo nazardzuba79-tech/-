@@ -124,7 +124,12 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
             aria-label={value === 'both' ? `${t('trade.buy')} / ${t('trade.sell')}` : t(value === 'bids' ? 'trade.buy' : 'trade.sell')}
             aria-pressed={mode === value} onClick={() => setMode(value)}>
             <svg viewBox="0 0 24 20" aria-hidden="true">{[0, 1, 2, 3].map(i => <g key={i}>
-              <path d={`M2 ${3 + i * 4}h7`} stroke={value === 'asks' || (value === 'both' && i < 2) ? '#ef454a' : '#20b985'} strokeWidth="3" />
+              {/* The panel's own sell/buy, not a third pair of them: these two
+                  glyphs used to carry #ef454a/#20b985 while every price in
+                  the ladder beside them is drawn #f6465d/#2ebd85, so one
+                  small control strip put four reds and greens on a panel
+                  that has two. */}
+              <path d={`M2 ${3 + i * 4}h7`} stroke={value === 'asks' || (value === 'both' && i < 2) ? '#f6465d' : '#2ebd85'} strokeWidth="3" />
               <path d={`M12 ${3 + i * 4}h10`} stroke="currentColor" strokeWidth="2" /></g>)}</svg>
           </button>)}
         </div>

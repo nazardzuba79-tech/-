@@ -7,6 +7,7 @@ import { referenceNumber } from '../lib/futuresReference';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { List as ListIcon } from 'lucide-react';
 import { CryptoIcon } from './CryptoIcon';
 
 /**
@@ -43,7 +44,8 @@ import { CryptoIcon } from './CryptoIcon';
  * Futures-only styles reflow these blocks on narrow screens without
  * hiding metrics or changing the shared Spot ticker styles.
  */
-export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; onSelectSymbol?: () => void }) {
+export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }:
+  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
   const [markPrice, setMarkPrice] = useState<number | null>(null);
@@ -188,10 +190,36 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
 
   return (
     <div className="ticker-bar futures-ticker-bar">
+      {/* Two ways in, on purpose. The caret on the pair is the one this
+          terminal always had; a trader who has not met it reads the pair as
+          a label, not a control. The list glyph beside it is the affordance
+          the reference terminal leads with, and it is unmistakably a button.
+          Both do the same thing — open the market list with its search
+          focused — so neither is a second code path. */}
+      {onSelectSymbol && (
+        <button
+          type="button"
+          className="pair-markets-btn"
+          /* `data-market-entry` is how the page's outside-click handler
+             recognises the two entry points. Without it, pressing the
+             button that opened the chooser closed it on pointerdown and
+             re-opened it on click, so it could never be shut from the
+             control that opened it. */
+          data-market-entry
+          aria-label={t('nav.markets')}
+          title={t('nav.markets')}
+          aria-expanded={marketsOpen}
+          onClick={onSelectSymbol}
+        >
+          <ListIcon size={16} />
+        </button>
+      )}
       <div
         className="pair-selector"
+        data-market-entry={onSelectSymbol ? '' : undefined}
         role={onSelectSymbol ? 'button' : undefined}
         tabIndex={onSelectSymbol ? 0 : undefined}
+        aria-expanded={onSelectSymbol ? marketsOpen : undefined}
         onClick={onSelectSymbol}
         onKeyDown={(e) => {
           if (onSelectSymbol && (e.key === 'Enter' || e.key === ' ')) {

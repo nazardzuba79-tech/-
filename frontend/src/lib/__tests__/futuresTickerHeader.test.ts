@@ -426,7 +426,13 @@ test('symbol selector keyboard behavior is preserved', () => {
 test('professional RU terminology is additive and does not reuse Spot volume labels', () => {
   // Russian is the eager locale and lives in its own file now.
   const dictionary = readLocale('ru');
-  for (const label of ['Изменение за 24ч', 'Макс. за 24ч', 'Мин. за 24ч', 'Оборот за 24ч', 'Ставка / Отсчет до финансирования', 'Маркировочная цена']) {
+  // «Ставка финансирования», not «Ставка / Отсчет до финансирования»: the
+  // owner asked for the shorter label, and the countdown it used to name is
+  // still rendered beside the rate — the slash was naming a second figure
+  // the row already shows. What this guard exists to protect is that the
+  // Futures header has its OWN derivatives terminology and does not fall
+  // back on Spot's volume wording, which is unchanged.
+  for (const label of ['Изменение за 24ч', 'Макс. за 24ч', 'Мин. за 24ч', 'Оборот за 24ч', 'Ставка финансирования', 'Маркировочная цена']) {
     expect(dictionary).toContain(label);
   }
   expect(source).not.toContain("t('trade.volume24h')");

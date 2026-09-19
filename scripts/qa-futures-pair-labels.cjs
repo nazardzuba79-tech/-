@@ -31,12 +31,24 @@ export function useLanguage(){return {t:(key:string)=>({'trade.searchPair':'По
 export function CryptoIcon({symbol,size}:{symbol:string;size:number}){return <span aria-hidden style={{display:'grid',placeItems:'center',width:size,height:size,borderRadius:'50%',background:'#245265',color:'#fff',fontSize:10}}>{symbol.slice(0,1)}</span>;}
 `);
   fs.writeFileSync(path.join(temp, 'index.html'), '<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/entry.tsx"></script></body></html>');
+  // This is a component/geometry fixture, not the full FuturesPage. Start
+  // with the production rail's default (NO field), then explicitly switch
+  // the real component to its searchable variant for the existing search
+  // regressions. The real two entry points and overlay are covered by
+  // qa-futures-market-search.cjs; no removed production button is invented.
   fs.writeFileSync(path.join(temp, 'entry.tsx'), `import React,{useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {FuturesPairList} from '../src/components/FuturesPairList';
 ${sheets.map(s => `import '../src/pages/${s}';`).join('\n')}
 const symbols=['BTC/USDT','ETH/USDT','JUP/USDT','DOGE/USDT','1000PEPE/USDT','UNKNOWN/USDT',...Array.from({length:1500},(_,i)=>'FIXTURE'+i+'/USDT')];
-function Fixture(){const [symbol,setSymbol]=useState('BTC/USDT');return <div className="trade-terminal futures-terminal futures-reference futures-studio terminal-studio" data-terminal-design="studio" data-selected={symbol}><div className="terminal"><aside className="left-panel reference-market-sidebar"><FuturesPairList symbols={symbols} symbol={symbol} onChange={setSymbol}/></aside><div className="chart-area"/><div className="orderbook-area"/><div className="order-form-area"/><div className="bottom-panel"/></div></div>;}
+function Fixture(){
+  const [symbol,setSymbol]=useState('BTC/USDT');
+  const [searchable,setSearchable]=useState(false);
+  return <div className="trade-terminal futures-terminal futures-reference futures-studio terminal-studio" data-terminal-design="studio" data-selected={symbol}>
+    <button type="button" data-fixture-search style={{position:'fixed',top:8,right:16,zIndex:1000}} onClick={()=>setSearchable(true)}>Search variant (fixture only)</button>
+    <div className="terminal"><aside className="left-panel reference-market-sidebar"><FuturesPairList searchable={searchable} onDismiss={()=>setSearchable(false)} symbols={symbols} symbol={symbol} onChange={setSymbol}/></aside><div className="chart-area"/><div className="orderbook-area"/><div className="order-form-area"/><div className="bottom-panel"/></div>
+  </div>;
+}
 createRoot(document.getElementById('root')!).render(<Fixture/>);
 `);
   const { build } = await import(pathToFileURL(path.join(front, 'node_modules/vite/dist/node/index.js')).href);
@@ -74,6 +86,16 @@ createRoot(document.getElementById('root')!).render(<Fixture/>);
       report.readiness = { width, errors, html: await page.content(), nodes: await page.locator('.pairs-list, .reference-market-sidebar').evaluateAll(nodes => nodes.map(n => ({ tag:n.className, display:getComputedStyle(n).display, rect:n.getBoundingClientRect().toJSON(), rows:n.querySelectorAll('[data-row]').length }))) };
       throw error;
     }
+    assert.equal(await page.locator('.reference-market-sidebar input').count(), 0, 'Permanent rail regained a search field');
+    assert.equal(await page.locator('.reference-market-sidebar').evaluate(el => el.firstElementChild.className), 'pairs-tabs', 'Rail must start at Favorites');
+    const panelGeometry = await page.evaluate(() => {
+      const box = selector => document.querySelector(selector).getBoundingClientRect().toJSON();
+      return { rail: box('.reference-market-sidebar'), chart: box('.chart-area'), bottom: box('.bottom-panel') };
+    });
+    if (width >= 1025) {
+      assert(panelGeometry.rail.bottom <= panelGeometry.bottom.top + 0.5, `${width}: permanent rail overlaps positions table`);
+      assert(Math.abs(panelGeometry.rail.bottom - panelGeometry.chart.bottom) <= 0.5, `${width}: rail must end at chart bottom`);
+    }
     const dimensions = async () => list.locator('[data-row]').evaluateAll(rows => rows.slice(0, 5).map(row => {
       const name = row.querySelector('.p-name'), base = row.querySelector('.p-base');
       const price = row.querySelector('.p-price'), change = row.querySelector('.p-change');
@@ -110,25 +132,31 @@ createRoot(document.getElementById('root')!).render(<Fixture/>);
     assert.equal(geometry[2].text, 'JUP', 'Fixture ordering changed');
     if (width === 1664) assert(report.beforeNameWidth < geometry[0].nameWidth, 'Regression did not reproduce');
     assert(await list.locator('[data-row]').count() < 100, 'Windowing was lost');
-    await page.locator('.pairs-search input').fill('JUP');
+    await page.locator('[data-fixture-search]').click();
+    const input = page.locator('.market-chooser-input');
+    await input.waitFor({ state: 'visible' });
+    assert(await input.evaluate(el => document.activeElement === el), 'Search variant did not autofocus');
+    await input.fill('JUP');
     await list.locator('[aria-label="JUP/USDT"]').click();
     assert.equal(await page.locator('.trade-terminal').getAttribute('data-selected'), 'JUP/USDT');
     await list.locator('.p-star').click();
     assert.equal(await page.locator('.trade-terminal').getAttribute('data-selected'), 'JUP/USDT', 'Favorite click changed market');
-    await page.locator('.pairs-search input').fill('');
+    await input.fill('');
     await page.locator('.pairs-tab').click();
     assert.equal(await list.locator('[data-row]').count(), 1, 'Favorite filter changed');
     await page.locator('.pairs-tab').click();
-    await page.locator('.pairs-search input').fill('UNKNOWN');
+    await input.fill('UNKNOWN');
     assert.equal(await list.locator('.p-price').innerText(), '—');
     assert.equal(await list.locator('.p-change').innerText(), '—');
-    await page.locator('.pairs-search input').fill('');
+    await input.fill('');
     await page.locator('.pch-sort').nth(1).click();
     assert.equal(await list.locator('[data-row]').first().getAttribute('aria-label'), '1000PEPE/USDT', '24h descending sort changed');
     assert.equal(await page.locator('.trade-terminal').getAttribute('data-selected'), 'JUP/USDT', 'Sort changed selected market');
+    await input.press('Escape');
+    assert.equal(await page.locator('.market-chooser-input').count(), 0, 'Dismissed search variant left a field behind');
     await page.locator('.reference-market-sidebar').screenshot({ path: path.join(out, `after-${width}-fixture.png`) });
     assert.deepEqual(errors, []);
-    report.checks.push({ width, passed:true, geometry });
+    report.checks.push({ width, passed:true, geometry, panelGeometry });
     await context.close();
   }
   report.passed = true;

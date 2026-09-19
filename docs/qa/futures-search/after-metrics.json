@@ -1,0 +1,1907 @@
+{
+  "status": "PASS",
+  "label": "after",
+  "report": {
+    "390": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": null,
+        "railRowCount": 0,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 57,
+        "bar": {
+          "left": 1,
+          "top": 57,
+          "right": 389,
+          "bottom": 127,
+          "width": 388,
+          "height": 70
+        },
+        "pairName": {
+          "left": 85,
+          "top": 82,
+          "right": 153,
+          "bottom": 102,
+          "width": 68,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 79,
+          "right": 39,
+          "bottom": 105,
+          "width": 26,
+          "height": 26
+        },
+        "rail": null,
+        "chart": {
+          "left": 1,
+          "top": 128,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 460
+        },
+        "book": {
+          "left": 1,
+          "top": 1400,
+          "right": 389,
+          "bottom": 1860,
+          "width": 388,
+          "height": 460
+        },
+        "ticket": {
+          "left": 1,
+          "top": 598,
+          "right": 389,
+          "bottom": 1390,
+          "width": 388,
+          "height": 792
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "idleTally": {
+        "/api/v1/market/live": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/market/futures/orderbook/BTCUSDT": 6
+      },
+      "idleWindowCalls": 16,
+      "idleCallsPerSecond": 1.6,
+      "baselineEndpoints": [
+        "/api/v1/support/conversations/mine",
+        "/api/v1/market/snapshot",
+        "/api/v1/me",
+        "/api/v1/futures/config",
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/derivatives/BTC",
+        "/api/v1/private-trading/candles",
+        "/api/v1/private-trading/access",
+        "/api/v1/market/universe",
+        "/api/v1/market/live",
+        "/api/v1/market/assets/icons",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "msToUsableViaListButton": 68,
+      "focusedViaListButton": true,
+      "openWindowCalls": 3,
+      "openWindowEndpointList": [
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "openCallsPerSecond": 2.8,
+      "endpointsOpenAdded": [],
+      "open": {
+        "open": true,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": null,
+        "railRowCount": 0,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "openGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 57,
+        "bar": {
+          "left": 1,
+          "top": 57,
+          "right": 389,
+          "bottom": 127,
+          "width": 388,
+          "height": 70
+        },
+        "pairName": {
+          "left": 85,
+          "top": 82,
+          "right": 153,
+          "bottom": 102,
+          "width": 68,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 79,
+          "right": 39,
+          "bottom": 105,
+          "width": 26,
+          "height": 26
+        },
+        "rail": null,
+        "chart": {
+          "left": 1,
+          "top": 128,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 460
+        },
+        "book": {
+          "left": 1,
+          "top": 1400,
+          "right": 389,
+          "bottom": 1860,
+          "width": 388,
+          "height": 460
+        },
+        "ticket": {
+          "left": 1,
+          "top": 598,
+          "right": 389,
+          "bottom": 1390,
+          "width": 388,
+          "height": 792
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "controlWindowCalls": 21,
+      "controlTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 10,
+        "/api/v1/market/live": 1,
+        "/api/v1/market/snapshot": 1,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/private-trading/access": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2
+      },
+      "controlSeconds": 10,
+      "endpointsControlAdded": [],
+      "queries": {
+        "btc": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTCUSDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC/USDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "eth": {
+          "rowCount": 1,
+          "rows": [
+            "ETH/USDT"
+          ]
+        }
+      },
+      "typeWindowCalls": 4,
+      "typeSeconds": 1.4,
+      "typeTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 1
+      },
+      "typeCallsPerSecond": 2.86,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": null,
+        "railRowCount": 0,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "focusedViaCaret": true,
+      "msToUsableViaCaret": 68,
+      "selectionTarget": "ETH/USDT",
+      "selectedPair": "ETH/USDT",
+      "closedOnSelect": true,
+      "settled": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": null,
+        "railRowCount": 0,
+        "rows": [
+          "ETH/USDT"
+        ],
+        "rowCount": 1,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "ETH/USDT"
+      },
+      "settledGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 57,
+        "bar": {
+          "left": 1,
+          "top": 57,
+          "right": 389,
+          "bottom": 127,
+          "width": 388,
+          "height": 70
+        },
+        "pairName": {
+          "left": 85,
+          "top": 82,
+          "right": 153,
+          "bottom": 102,
+          "width": 68,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 79,
+          "right": 39,
+          "bottom": 105,
+          "width": 26,
+          "height": 26
+        },
+        "rail": null,
+        "chart": {
+          "left": 1,
+          "top": 128,
+          "right": 389,
+          "bottom": 588,
+          "width": 388,
+          "height": 460
+        },
+        "book": {
+          "left": 1,
+          "top": 1400,
+          "right": 389,
+          "bottom": 1860,
+          "width": 388,
+          "height": 460
+        },
+        "ticket": {
+          "left": 1,
+          "top": 598,
+          "right": 389,
+          "bottom": 1390,
+          "width": 388,
+          "height": 792
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1366": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1052,
+          "bottom": 119,
+          "width": 1051,
+          "height": 70
+        },
+        "pairName": {
+          "left": 87,
+          "top": 74,
+          "right": 164,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 801,
+          "bottom": 703,
+          "width": 573,
+          "height": 583
+        },
+        "book": {
+          "left": 802,
+          "top": 120,
+          "right": 1052,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1053,
+          "top": 49,
+          "right": 1365,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "idleTally": {
+        "/api/v1/market/live": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/market/futures/orderbook/BTCUSDT": 6
+      },
+      "idleWindowCalls": 16,
+      "idleCallsPerSecond": 1.6,
+      "baselineEndpoints": [
+        "/api/v1/support/conversations/mine",
+        "/api/v1/market/snapshot",
+        "/api/v1/me",
+        "/api/v1/futures/config",
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/derivatives/BTC",
+        "/api/v1/private-trading/candles",
+        "/api/v1/private-trading/access",
+        "/api/v1/market/universe",
+        "/api/v1/market/live",
+        "/api/v1/market/assets/icons",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "msToUsableViaListButton": 69,
+      "focusedViaListButton": true,
+      "openWindowCalls": 3,
+      "openWindowEndpointList": [
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "openCallsPerSecond": 2.8,
+      "endpointsOpenAdded": [],
+      "open": {
+        "open": true,
+        "chooserPresent": true,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅",
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "openGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1052,
+          "bottom": 119,
+          "width": 1051,
+          "height": 70
+        },
+        "pairName": {
+          "left": 87,
+          "top": 74,
+          "right": 164,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 801,
+          "bottom": 703,
+          "width": 573,
+          "height": 583
+        },
+        "book": {
+          "left": 802,
+          "top": 120,
+          "right": 1052,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1053,
+          "top": 49,
+          "right": 1365,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": {
+          "left": 1,
+          "top": 120,
+          "right": 331,
+          "bottom": 680,
+          "width": 330,
+          "height": 560
+        },
+        "overflowX": 0
+      },
+      "controlWindowCalls": 21,
+      "controlTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 10,
+        "/api/v1/market/live": 1,
+        "/api/v1/market/snapshot": 1,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/private-trading/access": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2
+      },
+      "controlSeconds": 10,
+      "endpointsControlAdded": [],
+      "queries": {
+        "btc": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTCUSDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC/USDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "eth": {
+          "rowCount": 1,
+          "rows": [
+            "ETH/USDT"
+          ]
+        }
+      },
+      "typeWindowCalls": 4,
+      "typeSeconds": 1.4,
+      "typeTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 1
+      },
+      "typeCallsPerSecond": 2.86,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "msToUsableViaCaret": 46,
+      "focusedViaCaret": true,
+      "afterOutsideClick": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "toggledOpen": true,
+      "toggledClosed": false,
+      "afterHammering": false,
+      "stillOpensAfterHammering": true,
+      "selectionTarget": "ETH/USDT",
+      "selectedPair": "ETH/USDT",
+      "closedOnSelect": true,
+      "sortPressed": "true",
+      "railRowsAfterSort": 3,
+      "railRowsBeforeSort": 3,
+      "settled": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "ETH/USDT"
+      },
+      "settledGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1052,
+          "bottom": 119,
+          "width": 1051,
+          "height": 70
+        },
+        "pairName": {
+          "left": 87,
+          "top": 74,
+          "right": 164,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 801,
+          "bottom": 703,
+          "width": 573,
+          "height": 583
+        },
+        "book": {
+          "left": 802,
+          "top": 120,
+          "right": 1052,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1053,
+          "top": 49,
+          "right": 1365,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1440": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1126,
+          "bottom": 119,
+          "width": 1125,
+          "height": 70
+        },
+        "pairName": {
+          "left": 88,
+          "top": 74,
+          "right": 165,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 875,
+          "bottom": 703,
+          "width": 647,
+          "height": 583
+        },
+        "book": {
+          "left": 876,
+          "top": 120,
+          "right": 1126,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1127,
+          "top": 49,
+          "right": 1439,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "idleTally": {
+        "/api/v1/market/live": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/market/futures/orderbook/BTCUSDT": 6
+      },
+      "idleWindowCalls": 16,
+      "idleCallsPerSecond": 1.6,
+      "baselineEndpoints": [
+        "/api/v1/support/conversations/mine",
+        "/api/v1/market/snapshot",
+        "/api/v1/me",
+        "/api/v1/futures/config",
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/derivatives/BTC",
+        "/api/v1/private-trading/candles",
+        "/api/v1/private-trading/access",
+        "/api/v1/market/universe",
+        "/api/v1/market/live",
+        "/api/v1/market/assets/icons",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "msToUsableViaListButton": 73,
+      "focusedViaListButton": true,
+      "openWindowCalls": 3,
+      "openWindowEndpointList": [
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "openCallsPerSecond": 2.79,
+      "endpointsOpenAdded": [],
+      "open": {
+        "open": true,
+        "chooserPresent": true,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅",
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "openGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1126,
+          "bottom": 119,
+          "width": 1125,
+          "height": 70
+        },
+        "pairName": {
+          "left": 88,
+          "top": 74,
+          "right": 165,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 875,
+          "bottom": 703,
+          "width": 647,
+          "height": 583
+        },
+        "book": {
+          "left": 876,
+          "top": 120,
+          "right": 1126,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1127,
+          "top": 49,
+          "right": 1439,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": {
+          "left": 1,
+          "top": 120,
+          "right": 331,
+          "bottom": 680,
+          "width": 330,
+          "height": 560
+        },
+        "overflowX": 0
+      },
+      "controlWindowCalls": 21,
+      "controlTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 10,
+        "/api/v1/market/live": 1,
+        "/api/v1/market/snapshot": 1,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/private-trading/access": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2
+      },
+      "controlSeconds": 10,
+      "endpointsControlAdded": [],
+      "queries": {
+        "btc": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTCUSDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC/USDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "eth": {
+          "rowCount": 1,
+          "rows": [
+            "ETH/USDT"
+          ]
+        }
+      },
+      "typeWindowCalls": 4,
+      "typeSeconds": 1.4,
+      "typeTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 1
+      },
+      "typeCallsPerSecond": 2.86,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "msToUsableViaCaret": 37,
+      "focusedViaCaret": true,
+      "afterOutsideClick": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "toggledOpen": true,
+      "toggledClosed": false,
+      "afterHammering": false,
+      "stillOpensAfterHammering": true,
+      "selectionTarget": "ETH/USDT",
+      "selectedPair": "ETH/USDT",
+      "closedOnSelect": true,
+      "sortPressed": "true",
+      "railRowsAfterSort": 3,
+      "railRowsBeforeSort": 3,
+      "settled": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "ETH/USDT"
+      },
+      "settledGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1126,
+          "bottom": 119,
+          "width": 1125,
+          "height": 70
+        },
+        "pairName": {
+          "left": 88,
+          "top": 74,
+          "right": 165,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 875,
+          "bottom": 703,
+          "width": 647,
+          "height": 583
+        },
+        "book": {
+          "left": 876,
+          "top": 120,
+          "right": 1126,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1127,
+          "top": 49,
+          "right": 1439,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1664": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1350,
+          "bottom": 119,
+          "width": 1349,
+          "height": 70
+        },
+        "pairName": {
+          "left": 118,
+          "top": 74,
+          "right": 194,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1099,
+          "bottom": 703,
+          "width": 871,
+          "height": 583
+        },
+        "book": {
+          "left": 1100,
+          "top": 120,
+          "right": 1350,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1351,
+          "top": 49,
+          "right": 1663,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "idleTally": {
+        "/api/v1/market/live": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/market/futures/orderbook/BTCUSDT": 6
+      },
+      "idleWindowCalls": 16,
+      "idleCallsPerSecond": 1.6,
+      "baselineEndpoints": [
+        "/api/v1/support/conversations/mine",
+        "/api/v1/market/snapshot",
+        "/api/v1/me",
+        "/api/v1/futures/config",
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/derivatives/BTC",
+        "/api/v1/private-trading/candles",
+        "/api/v1/private-trading/access",
+        "/api/v1/market/universe",
+        "/api/v1/market/live",
+        "/api/v1/market/assets/icons",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "msToUsableViaListButton": 57,
+      "focusedViaListButton": true,
+      "openWindowCalls": 3,
+      "openWindowEndpointList": [
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "openCallsPerSecond": 2.83,
+      "endpointsOpenAdded": [],
+      "open": {
+        "open": true,
+        "chooserPresent": true,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅",
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "openGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1350,
+          "bottom": 119,
+          "width": 1349,
+          "height": 70
+        },
+        "pairName": {
+          "left": 118,
+          "top": 74,
+          "right": 194,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1099,
+          "bottom": 703,
+          "width": 871,
+          "height": 583
+        },
+        "book": {
+          "left": 1100,
+          "top": 120,
+          "right": 1350,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1351,
+          "top": 49,
+          "right": 1663,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": {
+          "left": 1,
+          "top": 120,
+          "right": 331,
+          "bottom": 680,
+          "width": 330,
+          "height": 560
+        },
+        "overflowX": 0
+      },
+      "controlWindowCalls": 21,
+      "controlTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 10,
+        "/api/v1/market/live": 1,
+        "/api/v1/market/snapshot": 1,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/private-trading/access": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2
+      },
+      "controlSeconds": 10,
+      "endpointsControlAdded": [],
+      "queries": {
+        "btc": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTCUSDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC/USDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "eth": {
+          "rowCount": 1,
+          "rows": [
+            "ETH/USDT"
+          ]
+        }
+      },
+      "typeWindowCalls": 4,
+      "typeSeconds": 1.5,
+      "typeTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 1
+      },
+      "typeCallsPerSecond": 2.67,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "msToUsableViaCaret": 64,
+      "focusedViaCaret": true,
+      "afterOutsideClick": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "toggledOpen": true,
+      "toggledClosed": false,
+      "afterHammering": false,
+      "stillOpensAfterHammering": true,
+      "selectionTarget": "ETH/USDT",
+      "selectedPair": "ETH/USDT",
+      "closedOnSelect": true,
+      "sortPressed": "true",
+      "railRowsAfterSort": 3,
+      "railRowsBeforeSort": 3,
+      "settled": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "ETH/USDT"
+      },
+      "settledGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1350,
+          "bottom": 119,
+          "width": 1349,
+          "height": 70
+        },
+        "pairName": {
+          "left": 118,
+          "top": 74,
+          "right": 194,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1099,
+          "bottom": 703,
+          "width": 871,
+          "height": 583
+        },
+        "book": {
+          "left": 1100,
+          "top": 120,
+          "right": 1350,
+          "bottom": 703,
+          "width": 250,
+          "height": 583
+        },
+        "ticket": {
+          "left": 1351,
+          "top": 49,
+          "right": 1663,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1920": {
+      "rest": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "geometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1355,
+          "bottom": 119,
+          "width": 1354,
+          "height": 70
+        },
+        "pairName": {
+          "left": 119,
+          "top": 74,
+          "right": 195,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1355,
+          "bottom": 703,
+          "width": 1127,
+          "height": 583
+        },
+        "book": {
+          "left": 1356,
+          "top": 49,
+          "right": 1606,
+          "bottom": 703,
+          "width": 250,
+          "height": 654
+        },
+        "ticket": {
+          "left": 1607,
+          "top": 49,
+          "right": 1919,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "idleTally": {
+        "/api/v1/market/live": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/market/futures/orderbook/BTCUSDT": 6
+      },
+      "idleWindowCalls": 16,
+      "idleCallsPerSecond": 1.6,
+      "baselineEndpoints": [
+        "/api/v1/support/conversations/mine",
+        "/api/v1/market/snapshot",
+        "/api/v1/me",
+        "/api/v1/futures/config",
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/derivatives/BTC",
+        "/api/v1/private-trading/candles",
+        "/api/v1/private-trading/access",
+        "/api/v1/market/universe",
+        "/api/v1/market/live",
+        "/api/v1/market/assets/icons",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "msToUsableViaListButton": 86,
+      "focusedViaListButton": true,
+      "openWindowCalls": 3,
+      "openWindowEndpointList": [
+        "/api/v1/futures/mark-price/BTC-USDT",
+        "/api/v1/futures/funding-rate/BTC-USDT",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "openCallsPerSecond": 2.76,
+      "endpointsOpenAdded": [],
+      "open": {
+        "open": true,
+        "chooserPresent": true,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅",
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "openGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1355,
+          "bottom": 119,
+          "width": 1354,
+          "height": 70
+        },
+        "pairName": {
+          "left": 119,
+          "top": 74,
+          "right": 195,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1355,
+          "bottom": 703,
+          "width": 1127,
+          "height": 583
+        },
+        "book": {
+          "left": 1356,
+          "top": 49,
+          "right": 1606,
+          "bottom": 703,
+          "width": 250,
+          "height": 654
+        },
+        "ticket": {
+          "left": 1607,
+          "top": 49,
+          "right": 1919,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": {
+          "left": 1,
+          "top": 120,
+          "right": 331,
+          "bottom": 680,
+          "width": 330,
+          "height": 560
+        },
+        "overflowX": 0
+      },
+      "controlWindowCalls": 20,
+      "controlTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 10,
+        "/api/v1/market/snapshot": 1,
+        "/api/v1/private-trading/candles": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 4,
+        "/api/v1/private-trading/access": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 2
+      },
+      "controlSeconds": 10,
+      "endpointsControlAdded": [],
+      "queries": {
+        "btc": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTCUSDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "BTC/USDT": {
+          "rowCount": 1,
+          "rows": [
+            "BTC/USDT"
+          ]
+        },
+        "eth": {
+          "rowCount": 1,
+          "rows": [
+            "ETH/USDT"
+          ]
+        }
+      },
+      "typeWindowCalls": 4,
+      "typeSeconds": 1.5,
+      "typeTally": {
+        "/api/v1/market/futures/orderbook/BTCUSDT": 2,
+        "/api/v1/futures/mark-price/BTC-USDT": 1,
+        "/api/v1/futures/funding-rate/BTC-USDT": 1
+      },
+      "typeCallsPerSecond": 2.67,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "msToUsableViaCaret": 40,
+      "focusedViaCaret": true,
+      "afterOutsideClick": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "BTC/USDT"
+      },
+      "toggledOpen": true,
+      "toggledClosed": false,
+      "afterHammering": false,
+      "stillOpensAfterHammering": true,
+      "selectionTarget": "ETH/USDT",
+      "selectedPair": "ETH/USDT",
+      "closedOnSelect": true,
+      "sortPressed": "true",
+      "railRowsAfterSort": 3,
+      "railRowsBeforeSort": 3,
+      "settled": {
+        "open": false,
+        "chooserPresent": false,
+        "railHasField": false,
+        "railHasLegacyHead": false,
+        "railFirstChild": "pairs-tabs",
+        "railRowCount": 3,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ],
+        "pair": "ETH/USDT"
+      },
+      "settledGeometry": {
+        "workspaceLeft": 1,
+        "workspaceTop": 49,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1355,
+          "bottom": 119,
+          "width": 1354,
+          "height": 70
+        },
+        "pairName": {
+          "left": 119,
+          "top": 74,
+          "right": 195,
+          "bottom": 94,
+          "width": 76,
+          "height": 20
+        },
+        "listButton": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26
+        },
+        "rail": {
+          "left": 1,
+          "top": 120,
+          "right": 227,
+          "bottom": 939,
+          "width": 226,
+          "height": 819
+        },
+        "chart": {
+          "left": 228,
+          "top": 120,
+          "right": 1355,
+          "bottom": 703,
+          "width": 1127,
+          "height": 583
+        },
+        "book": {
+          "left": 1356,
+          "top": 49,
+          "right": 1606,
+          "bottom": 703,
+          "width": 250,
+          "height": 654
+        },
+        "ticket": {
+          "left": 1607,
+          "top": 49,
+          "right": 1919,
+          "bottom": 939,
+          "width": 312,
+          "height": 890
+        },
+        "chooser": null,
+        "overflowX": 0
+      },
+      "pageErrors": []
+    }
+  }
+}
