@@ -84,3 +84,109 @@
   .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle { flex:1; width:100%; border-left:0; }
   .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle svg { transform:rotate(270deg); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE COLLAPSE CONTROL MOVES TO THE FOOT OF THE RAIL — FUTURES ONLY.
+
+   It used to sit ABOVE the tools, in a full-width 24px bar of its own with
+   `order:-1` holding it there. That bar was a row the rail did not need:
+   the first thing under the chart heading was a control about the panel
+   rather than a tool, and it read as part of the toolbar's content.
+
+   It is now the rail's last child — which is already its DOM order, so the
+   move is the removal of `order:-1` rather than a re-ordering — drawn as a
+   compact chip at the left edge under the tools, with the rule above it
+   instead of below.
+
+   WHY THIS IS SCOPED TO FUTURES. `.terminal-chart-shell` is shared: Spot
+   (`/trade`) and the private terminal render the same component, and the
+   brief allowed either scoping the change to Futures or proving Spot is
+   unaffected. Scoping is the smaller claim and the one the owner asked
+   for first, so every selector below carries `.futures-reference`, which
+   Spot's root (`.spot-terminal.market-reference`) does not have. The
+   browser run opens `/trade` as well and measures it: Spot's toggle keeps
+   `order:-1`, keeps its 43x24 bar above the tools, and lands on the same
+   pixels as before this change. The one thing Spot DOES inherit is the
+   crosshair glyph, because that is the component's icon rather than a
+   style — deliberate, and asserted on Spot too so it cannot drift back.
+
+   NOTHING HERE TOUCHES THE CHART. The rail and the canvas are siblings;
+   collapsing changes this element's width and nothing else, so no chart is
+   remounted, no candle refetched, no scale reset and no drawing dropped.
+   The `hidden` attribute on the rail is what removes the tools, and the
+   toggle lives outside it so a short screen scrolls the TOOLS, never the
+   control that brings them back. */
+.trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
+  order: 0;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  width: 26px;
+  min-width: 26px;
+  height: 22px;
+  min-height: 22px;
+  margin: 5px 0 6px 5px;
+  border: 1px solid var(--border, #232a34);
+  border-bottom: 1px solid var(--border, #232a34);
+  border-radius: 5px;
+  background: var(--panel-alt, #1a1f27);
+  color: var(--text-secondary, #98a2b3);
+}
+/* The hairline that separated the old top bar from the tools now sits on
+   the rail's own foot, so the chip reads as below the toolbar rather than
+   welded to the last tool. */
+.trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail {
+  border-bottom: 1px solid var(--border, #232a34);
+}
+.trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle:hover {
+  background: var(--panel-alt-hover, #1f252e);
+  color: var(--text-primary, #eaeef3);
+}
+.trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* COLLAPSED: the tab that brings the tools back sits at the chart's
+   bottom-left corner, under where the rail was, rather than at its top. */
+.trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
+  top: auto;
+  bottom: 10px;
+  left: 0;
+  margin: 0;
+  width: 16px;
+  min-width: 16px;
+  height: 30px;
+  min-height: 30px;
+  border: 1px solid var(--border, #232a34);
+  border-left: 0;
+  border-radius: 0 5px 5px 0;
+}
+/* Below 900px the rail is a horizontal strip and the toggle is a column at
+   its end — the existing adaptive geometry, which this change leaves alone
+   rather than forcing the desktop's vertical shape onto a phone. */
+@media (max-width: 900px) {
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
+    order: 0;
+    align-self: stretch;
+    width: 24px;
+    min-width: 24px;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    border: 0;
+    border-left: 1px solid var(--border, #232a34);
+    border-radius: 0;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail {
+    border-bottom: 0;
+  }
+  .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
+    position: static;
+    bottom: auto;
+    flex: 1;
+    width: 100%;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+  }
+}

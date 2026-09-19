@@ -2300,10 +2300,30 @@ const ICON_PROPS = {
   strokeLinejoin: 'round' as const,
 };
 
+/**
+ * The cursor tool, drawn as a crosshair rather than an arrow.
+ *
+ * An arrow is the operating system's pointer; on a chart it says "select
+ * things", which is not what this mode does. Every charting app the owner
+ * put beside ours — TradingView, Bybit — marks this mode with a crosshair,
+ * because a crosshair is what the chart actually shows while the mode is
+ * on. Four rays with a gap at the centre, so the point the cursor is
+ * reading stays visible inside its own marker.
+ *
+ * Drawn a hair thinner than the rest of the rail: the other icons are
+ * shapes with an outline, this one is only lines, and at 1.8 it read as
+ * the heaviest thing on the panel. The SIZE and the 24-unit box are the
+ * rail's own, so the button, its hit area and the active gold are
+ * untouched — this is the glyph and nothing else. It is a `<path>` set,
+ * never a text glyph or an emoji.
+ */
 function CursorIcon() {
   return (
-    <svg {...ICON_PROPS}>
-      <path d="M5 3v17l4.5-4.5 3 6 3-1.5-3-6H19L5 3z" />
+    <svg {...ICON_PROPS} strokeWidth={1.5}>
+      <path d="M12 2.5v6.2" />
+      <path d="M12 15.3v6.2" />
+      <path d="M2.5 12h6.2" />
+      <path d="M15.3 12h6.2" />
     </svg>
   );
 }
