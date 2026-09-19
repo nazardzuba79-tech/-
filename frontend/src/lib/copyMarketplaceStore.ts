@@ -1,4 +1,5 @@
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
+import { privateStrategyView } from './copyMarketplacePrivacy';
 
 /** The marketplace transports display rows, not history. Ten is what the
  *  trade table shows; anything longer is a payload regression. */
@@ -209,6 +210,7 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
     || (Array.isArray(value.trades) && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id)))
     || reportedKseniaPerformance(value, id);
   const visibleTrades = Array.isArray(value.trades)
+    && (!hidden || (value.trades.length === 0 && value.reportedPerformance === undefined))
     && value.trades.length <= VISIBLE_TRADE_ROWS
     && value.trades.every((trade: unknown) => visibleTrade(trade, id))
     && value.trades.every((trade: any, index: number) => index === 0
@@ -346,12 +348,12 @@ export class CopyMarketplaceStore {
     if (!snapshot) return empty();
     const state = empty();
     if (validStrategy(snapshot.nazar, 'VX-001')) {
-      state.nazar = snapshot.nazar as SyntheticCopyTradingResponse;
+      state.nazar = privateStrategyView(snapshot.nazar as SyntheticCopyTradingResponse);
       state.fetchedAt.nazar = snapshot.fetchedAt.nazar;
       state.diagnosis.nazar = 'ok';
     }
     if (validStrategy(snapshot.ksenia, 'VX-KSENIA')) {
-      state.ksenia = snapshot.ksenia as KseniaResponse;
+      state.ksenia = privateStrategyView(snapshot.ksenia as KseniaResponse);
       state.fetchedAt.ksenia = snapshot.fetchedAt.ksenia;
       state.diagnosis.ksenia = 'ok';
     }
@@ -360,6 +362,12 @@ export class CopyMarketplaceStore {
       state.fetchedAt.identities = snapshot.fetchedAt.identities;
       state.diagnosis.identities = 'ok';
     }
+    // Upgrade this session's warm cache without losing confirmed figures.
+    // Never let a previous release re-expose trades while the API is down.
+    if (state.nazar || state.ksenia || state.identities.length) writeSnapshot(session, {
+      nazar: state.nazar, ksenia: state.ksenia,
+      identities: state.identities.length ? state.identities : null, fetchedAt: state.fetchedAt,
+    }, this.storage);
     return state;
   }
 
@@ -439,19 +447,20 @@ export class CopyMarketplaceStore {
         next.diagnosis[section] = valid ? 'ok' : reported ? 'server_unavailable' : 'rejected_by_client';
         if (valid) {
           if (section === 'identities') next.identities = value.filter((i: PublicStrategyIdentity | null) => i !== null);
-          else if (section === 'nazar') next.nazar = value;
-          else next.ksenia = value;
+          else if (section === 'nazar') next.nazar = privateStrategyView(value);
+          else next.ksenia = privateStrategyView(value);
           next.fetchedAt[section] = this.now();
         }
         next.stale[section] = !valid;
       }
-      // Delivered. Worth reusing for the prefetch window — but only if at
-      // least one section actually came back usable; a 200 whose every
-      // section was rejected is a failure wearing a success's clothes.
-      this.lastAttemptFailed = !next.nazar && !next.ksenia && !next.identities.length;
+      // A successful identity lookup or an old warm value is not a successful
+      // performance refresh. Either missing strategy must remain retryable.
+      this.lastAttemptFailed = next.stale.nazar || next.stale.ksenia;
       this.emit(next);
       this.persist();
     }).catch((error: unknown) => {
+      // A late rejection from an old login may not mutate this login's retry state.
+      if (generation !== this.generation || this.getSession() !== this.session) return;
       this.lastAttemptFailed = true;
       // `controller.abort()` after fifteen seconds and a connection that
       // never opened both surface as one rejection; the flag we set when we

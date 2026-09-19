@@ -14,8 +14,11 @@ async function fetchCopyMarketplace(signal: AbortSignal): Promise<CopyMarketplac
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 401) {
-    clearToken();
-    if (typeof window !== 'undefined') window.location.href = '/';
+    // This request belongs to the captured session, not a later login.
+    if (!signal.aborted && getToken() === token) {
+      clearToken();
+      if (typeof window !== 'undefined') window.location.href = '/';
+    }
     throw new MarketplaceFailure('unauthenticated');
   }
   // The status code stays out of the diagnosis: it is the server's to log,
