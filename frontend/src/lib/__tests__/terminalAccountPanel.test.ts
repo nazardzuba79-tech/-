@@ -95,14 +95,26 @@ function spotHarness(getMyOrders: any) {
   return App;
 }
 const compact = () => container.querySelector('section')!.getAttribute('data-compact') === 'true';
+/** Whether the fold is even OFFERED — the guard that keeps live rows visible. */
+const canCompact = () => container.querySelector('section')!.getAttribute('data-can-compact') === 'true';
 const order = { id: 'actual-order', pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', status: 'OPEN', price: '50000', originalQuantity: '1', remainingQuantity: '1', triggerPrice: null, ocoGroupId: null, createdAt: '2026-09-14T10:00:00Z' };
 
-test('Spot empty body folds, stays mounted and polls, then reveals a newly arrived order', async () => {
+/**
+ * THE PANEL OPENS OPEN. This suite used to assert the opposite, and the
+ * change is the owner's: a terminal that folded its own orders panel
+ * whenever the account happened to be empty greeted every new account with
+ * the chart at full height and the tab row collapsed to a 44px strip.
+ * Nobody asked for that. Folding is now a user action and only a user
+ * action; everything else this suite pinned — readers stay mounted, polling
+ * continues, new activity and errors reveal the body — is unchanged and
+ * still asserted below.
+ */
+test('Spot empty body stays OPEN, stays mounted and polls, and shows a newly arrived order', async () => {
   const getMyOrders = jest.fn().mockResolvedValueOnce([]).mockResolvedValue([order]);
   const App = spotHarness(getMyOrders);
   await act(async () => { root.render(React.createElement(App)); await tick(); });
-  expect(compact()).toBe(true);
-  expect(container.querySelector('#body')!.hasAttribute('hidden')).toBe(true);
+  expect(compact()).toBe(false);
+  expect(container.querySelector('#body')!.hasAttribute('hidden')).toBe(false);
   expect(container.querySelector('.spot-orders-panel')).not.toBeNull();
   expect(getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED');
   await act(async () => { jest.advanceTimersByTime(4000); await tick(); });
@@ -112,24 +124,44 @@ test('Spot empty body folds, stays mounted and polls, then reveals a newly arriv
   expect(container.querySelector('[data-order-id="actual-order"]')).not.toBeNull();
 });
 
-test('an empty Spot table can be manually revealed and folded with an accessible control', async () => {
+test('a body the user folded stays mounted and polling, and reopens on new activity', async () => {
+  const getMyOrders = jest.fn().mockResolvedValueOnce([]).mockResolvedValue([order]);
+  const App = spotHarness(getMyOrders);
+  await act(async () => { root.render(React.createElement(App)); await tick(); });
+  const toggle = () => container.querySelector('.terminal-account-toggle') as HTMLButtonElement;
+  await act(async () => toggle().click());
+  expect(compact()).toBe(true);
+  expect(container.querySelector('#body')!.hasAttribute('hidden')).toBe(true);
+  // Folded is a display state only: the reader is still there and still asking.
+  expect(container.querySelector('.spot-orders-panel')).not.toBeNull();
+  await act(async () => { jest.advanceTimersByTime(4000); await tick(); });
+  expect(getMyOrders).toHaveBeenCalledTimes(2);
+  // An order arriving while folded is exactly what must not stay hidden.
+  expect(compact()).toBe(false);
+  expect(container.querySelector('[data-order-id="actual-order"]')).not.toBeNull();
+});
+
+test('an empty Spot table can be folded and reopened with an accessible control', async () => {
   const App = spotHarness(jest.fn().mockResolvedValue([]));
   await act(async () => { root.render(React.createElement(App)); await tick(); });
-  expect(compact()).toBe(true);
+  expect(compact()).toBe(false);
   const toggle = () => container.querySelector('.terminal-account-toggle') as HTMLButtonElement;
+  // Open on arrival, and the control offers to fold rather than to reveal.
+  expect(toggle().getAttribute('aria-expanded')).toBe('true');
+  expect(toggle().getAttribute('aria-label')).toBe('trade.collapseAccountPanel');
+  await act(async () => toggle().click());
+  expect(compact()).toBe(true);
   expect(toggle().getAttribute('aria-expanded')).toBe('false');
   expect(toggle().getAttribute('aria-label')).toBe('trade.expandAccountPanel');
   await act(async () => toggle().click());
   expect(compact()).toBe(false);
-  expect(toggle().getAttribute('aria-expanded')).toBe('true');
-  await act(async () => toggle().click());
-  expect(compact()).toBe(true);
 });
 
-test('a failed Spot refresh immediately restores its error and retry, even after confirmed empty data', async () => {
+test('a failed Spot refresh immediately restores its error and retry, even from a folded panel', async () => {
   const getMyOrders = jest.fn().mockResolvedValueOnce([]).mockRejectedValue(new Error('unavailable'));
   const App = spotHarness(getMyOrders);
   await act(async () => { root.render(React.createElement(App)); await tick(); });
+  await act(async () => (container.querySelector('.terminal-account-toggle') as HTMLButtonElement).click());
   expect(compact()).toBe(true);
   await act(async () => { jest.advanceTimersByTime(4000); await tick(); });
   expect(compact()).toBe(false);
@@ -156,28 +188,31 @@ test('Futures requires both successful empty resources and reveals new positions
   function App({ orders, positions }: any) {
     const empty = isVerifiedEmptyAccountResource(orders) && isVerifiedEmptyAccountResource(positions);
     const panel = mod.useCompactAccountPanel(empty, 'futures:positions');
-    return React.createElement('section', { 'data-compact': panel.compact }, React.createElement('div', { hidden: panel.compact }, 'positions'));
+    return React.createElement('section', { 'data-compact': panel.compact, 'data-can-compact': panel.canCompact },
+      React.createElement('div', { hidden: panel.compact }, 'positions'));
   }
   const render = async (orders: any, positions: any) => act(async () => { root.render(React.createElement(App, { orders, positions })); await tick(); });
-  await render(resource([]), resource(null)); expect(compact()).toBe(false);
-  await render(resource([]), resource([])); expect(compact()).toBe(true);
-  await render(resource([order]), resource([])); expect(compact()).toBe(false);
-  await render(resource([]), resource([])); expect(compact()).toBe(true);
-  await render(resource([]), resource([{ id: 'new-position' }])); expect(compact()).toBe(false);
-  await render(resource([]), resource([])); expect(compact()).toBe(true);
-  await render(resource([], { failed: true }), resource([])); expect(compact()).toBe(false);
+  // Open in every state, because folding is now the user's decision. What
+  // this still pins is the OFFER: the control appears only once both reads
+  // have come back verifiably empty, so a panel holding live positions, or
+  // one that has not answered yet, can never be folded away.
+  await render(resource([]), resource(null)); expect(compact()).toBe(false); expect(canCompact()).toBe(false);
+  await render(resource([]), resource([])); expect(compact()).toBe(false); expect(canCompact()).toBe(true);
+  await render(resource([order]), resource([])); expect(compact()).toBe(false); expect(canCompact()).toBe(false);
+  await render(resource([]), resource([{ id: 'new-position' }])); expect(compact()).toBe(false); expect(canCompact()).toBe(false);
+  await render(resource([], { failed: true }), resource([])); expect(compact()).toBe(false); expect(canCompact()).toBe(false);
 });
 
 test('real terminal pages preserve tab navigation and mounted readers while the body is compact', () => {
   const spot = read('pages/TradePage.tsx'), futures = read('pages/FuturesPage.tsx');
   expect(spot).toContain('onAccountCount={setAccountOpenOrderCount}');
   expect(spot).toContain('<div className="account-tab-content" hidden={bottomTab !== \'open\'}>');
-  expect(spot).toContain('accountPanel.reveal(`spot:${pair}:${tab.id}`)');
+  expect(spot).toContain('accountPanel.reveal()');
   // Public/Real futures keeps the same readers; only the owner's simulation view (which never shows
   // the real account panel) skips polling the real account. What decides that is the engine seam
   // itself — `nativeExecution` is non-null exactly while this account is bound to the simulation
   // engine — rather than a `?demo=1` query parameter or a second flag that could disagree with it.
   expect(futures).toContain('useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 })');
-  expect(futures).toContain('accountPanel.reveal(`futures:${tab.id}`)');
+  expect(futures).toContain('accountPanel.reveal()');
   for (const page of [spot, futures]) expect(page).toContain('hidden={accountPanel.compact}');
 });

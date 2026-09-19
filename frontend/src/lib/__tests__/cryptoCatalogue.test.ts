@@ -431,8 +431,45 @@ describe('spot and futures pair lists are unchanged', () => {
     // whitelist is still the server's, and the filter is the same predicate
     // over that prop it has always been. No pair is added, removed,
     // renamed or derived here.
-    'src/components/FuturesPairList.tsx': '00f2140b7f9ee65bcf5221cbb4df9def917ba487f9a1685a345a429feff795b8',
+    //
+    // Re-pinned a THIRD time, for the 7-day gain/loss sort, and this one
+    // deserves more than a new hash because it is the first edit that makes
+    // this module import the catalogue at all — the exact coupling this
+    // guard was written to watch for.
+    //
+    // What it reads, and all it reads, is `market.changePercent7d`: the
+    // market-wide return the Markets page already sorts by, joined to rows
+    // that ALREADY exist by their base asset. The catalogue cannot add a
+    // market, cannot remove one, and cannot rename one; a contract it does
+    // not cover keeps `null` and sorts last in both directions. The
+    // subscription is opened only while a 7-day sort is active and dropped
+    // when it is not. The test below asserts that boundary directly rather
+    // than trusting this paragraph.
+    'src/components/FuturesPairList.tsx': '4be3a5a6ce19eb716e12505c10c495bacc187064bec1aa9f7dc9bfc53767f85b',
   };
+
+  it('reads only a 7-day return from the catalogue, never a market', () => {
+    const list = code('src/components/FuturesPairList.tsx');
+    // The rows are still the `symbols` prop, filtered. Nothing else builds them.
+    expect(list).toContain('const built = symbols');
+    expect(list).toMatch(/symbols\s*\n?\s*\.filter\(/);
+    // The catalogue is touched in exactly one helper, and that helper reads
+    // exactly one field off each asset.
+    const helper = list.slice(list.indexOf('function useChange7d'), list.indexOf('export const FuturesPairList'));
+    expect(helper).toContain('asset.market?.changePercent7d');
+    expect([...list.matchAll(/asset\.market\?\./g)]).toHaveLength(1);
+    // One call site, and it is a subscription. (The name also appears twice
+    // on the import line — once as the binding, once in the path — so the
+    // call is counted rather than the mentions.)
+    expect([...list.matchAll(/catalogueStore\.\w+/g)].map((m) => m[0])).toEqual(['catalogueStore.subscribe']);
+    // Nothing anywhere in the module turns a catalogue entry into a market.
+    expect(list).not.toMatch(/tradingPairs/);
+    expect(list).not.toMatch(/asset\.symbol\s*\+/);
+    expect(list).not.toMatch(/symbols\s*=\s*\[?\s*\.\.\.\s*(state\.)?assets/);
+    // And it is only subscribed while the 7-day sort is the active one.
+    expect(helper).toContain('if (!enabled) return;');
+    expect(list).toContain("useChange7d(sortField === 'change7d')");
+  });
 
   it('does not derive tradable pairs from catalogue entries', () => {
     const store = code('src/lib/catalogueStore.ts');

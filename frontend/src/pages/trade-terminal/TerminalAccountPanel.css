@@ -260,13 +260,19 @@
    enough that the numbers stay the loudest thing in the row. Same geometry,
    same anchor, same data — only the weight changes.
 
-   The transform transition is kept, and shortened. It exists so a bar that
-   grows does not teleport; at 260ms on a book publishing every 300ms almost
-   every bar was permanently mid-animation, so the ladder never sat still.
-   140ms lands each bar well before the next publish. */
+   THE TRANSITION IS GONE, and shortening it was not enough. This sheet
+   loads last, so its 140ms rule outranked the one removed in
+   ReferenceFuturesTerminal.css and the bars kept easing. Measured on a
+   fixed replayed feed with the rule still here: the ladder's CONTENT
+   changed 2.33 times a second — bang on Binance's 2.5 — while its PIXELS
+   changed 4.22 times a second. Nearly half of the ladder's motion carried
+   no new information at all; it was the tail of the previous bar still
+   arriving. A trader reads that as the numbers squeaking.
+   Binance eases nothing: it moves two or three times a second and is
+   bit-identical in between. So does this now. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
   background:rgba(46,189,133,.10);
-  transition:transform 140ms linear;
+  transition:none;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
   background:rgba(246,70,93,.10);

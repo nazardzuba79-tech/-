@@ -1,0 +1,42 @@
+{
+  "label": "after-dom",
+  "seed": 20260918,
+  "frameMs": 100,
+  "windowMs": 15000,
+  "results": {
+    "desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 2761,
+      "depthStyleWrites": 858,
+      "otherAttr": 17,
+      "samples": 61,
+      "rowCounts": [
+        28
+      ],
+      "heights": [
+        605
+      ],
+      "shots": [
+        "/home/user/-/docs/qa/orderbook-calm/after-dom-book-0.png",
+        "/home/user/-/docs/qa/orderbook-calm/after-dom-book-1.png",
+        "/home/user/-/docs/qa/orderbook-calm/after-dom-book-2.png"
+      ]
+    },
+    "mobile": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 1213,
+      "depthStyleWrites": 330,
+      "otherAttr": 14,
+      "samples": 60,
+      "rowCounts": [
+        12
+      ],
+      "heights": [
+        306
+      ],
+      "shots": []
+    }
+  }
+}

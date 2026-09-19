@@ -157,3 +157,153 @@
     grid-row: 2 / 3;
   }
 }
+
+/* ── THE CHOOSER'S OWN LAYOUT ─────────────────────────────────────────────
+   The chooser is a 330px layer, not the 212px rail, and it was inheriting
+   the rail's geometry from half a dozen terminal sheets that each know a
+   different column map. The result is what the owner photographed: the
+   filter row clipped through the middle of its own text, a dead band under
+   it, the two sort headings crammed against the right edge with one of the
+   glyphs cut off by the panel border, and the last row sliced in half at
+   the bottom.
+
+   These rules are scoped to `.futures-market-chooser` AND carry the same
+   root classes the terminal sheets use, because scoping alone lost: the
+   studio sheet's five-class selector outranked a plain descendant rule and
+   the headings kept the rail's track map inside a panel 118px wider. The
+   repetition is the house style here for exactly this reason.
+   Nothing outside the layer is touched. Everything here is spacing and alignment: no figure, no colour
+   rule and no row content changes. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-tabs {
+  /* An explicit height that cannot be squeezed. It was a flex child with no
+     floor, so the layer's fixed height pushed it below its own line-height
+     and cut the word in half. */
+  flex: 0 0 34px;
+  height: 34px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+/* The count belongs at the end of the row, on the same baseline as the
+   filter beside it — not floated into its own band. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-count {
+  order: 3;
+  margin-left: auto;
+  padding: 0;
+}
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-tab { flex: 0 0 auto; }
+
+/* THE SEVEN-DAY CONTROL. Two chips, sharing one outline so they read as one
+   control with two states rather than two unrelated buttons. */
+.trade-terminal.trade-terminal.trade-terminal .pairs-7d {
+  order: 2;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  height: 20px;
+  border: 1px solid var(--border, #232c39);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.trade-terminal.trade-terminal.trade-terminal .pairs-7d-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary, #8b96a5);
+  font-size: 10.5px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.trade-terminal.trade-terminal.trade-terminal .pairs-7d-btn + .pairs-7d-btn { border-left: 1px solid var(--border, #232c39); }
+.trade-terminal.trade-terminal.trade-terminal .pairs-7d-btn:hover { background: #ffffff0a; color: var(--text-primary, #eaeef3); }
+.trade-terminal.trade-terminal.trade-terminal .pairs-7d-btn[data-kind=gainers].active { background: rgba(46, 189, 133, .16); color: #2ebd85; }
+.trade-terminal.trade-terminal.trade-terminal .pairs-7d-btn[data-kind=losers].active { background: rgba(246, 70, 93, .16); color: #f6465d; }
+.trade-terminal.trade-terminal.trade-terminal .pairs-7d-btn:focus-visible { outline: 1px solid var(--accent, #e9ad35); outline-offset: -2px; }
+
+/* The heading row, on the SAME track map as the rows beneath it, so a
+   heading sits over the column it names instead of drifting right. The
+   symbol column gets its heading back — it had none, which is why the two
+   numeric headings looked shoved into a corner. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers.futures-pair-headers {
+  flex: 0 0 28px;
+  height: 28px;
+  min-height: 28px;
+  display: grid;
+  /* THE SAME FIVE TRACKS AS A ROW, not a three-track approximation of them.
+     Matching only the numeric widths and guessing a left padding for the
+     star and logo left the headings 4px off their columns — measured, at
+     every width. Sharing the track map means the browser lines them up and
+     no arithmetic here can drift from the rows below. */
+  grid-template-columns: 14px 22px minmax(0, 1fr) 78px 66px;
+  column-gap: 6px;
+  align-items: center;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+/* Three children over five tracks: the star and logo columns stay empty. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers > :nth-child(1) { grid-column: 3; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers > :nth-child(2) { grid-column: 4; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers > :nth-child(3) { grid-column: 5; }
+/* BOTH ROWS RESERVE THE SAME SCROLLBAR GUTTER.
+   The list scrolls and the heading row does not, so the list is narrower by
+   exactly one scrollbar. The middle track is the flexible one, so that
+   difference lands entirely on the two numeric columns and pushes every
+   heading off the column it names — measured at 8-10px, at every width.
+
+   The gutter is NOT reproduced as a padding here. A magic number would have
+   to match a scrollbar metric this sheet does not own: `index.css` sets
+   `scrollbar-width: thin` globally, which makes Chromium use its own thin
+   width and ignore any `::-webkit-scrollbar { width }` declared nearby, and
+   other platforms size it differently again. Instead the heading row is
+   given the same two properties the list has, so the browser reserves the
+   same space in both and the two can never disagree. Its own scrollbar is
+   painted transparent — there is nothing to scroll in a 28px heading row,
+   and the gutter is the point. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser :is(.pairs-list, .pairs-col-headers) {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers::-webkit-scrollbar-thumb { background: transparent; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers { scrollbar-color: transparent transparent; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers .pch-sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers > span:first-child { min-width: 0; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-col-headers .pch-arrow { flex: 0 0 auto; }
+
+/* Rows on the chooser's own width: the star and logo keep their slots, the
+   ticker gets the space the 330px layer actually has, and the two numeric
+   columns line up under their headings. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .futures-pair-list .pair-row {
+  grid-template-columns: 14px 22px minmax(0, 1fr) 78px 66px;
+  column-gap: 6px;
+  padding-inline: 10px;
+}
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .futures-pair-list .pair-row .p-name { min-width: 0; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .futures-pair-list .pair-row :is(.p-price, .p-change) {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* A whole row at the bottom edge, never half of one: the list scrolls in
+   its own box and the layer's rounded corner clips it cleanly. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-market-chooser.futures-market-chooser .pairs-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 2px;
+}

@@ -574,6 +574,8 @@ export const KO: Record<Key, string> = {
   'markets.price': '가격',
   'markets.change24h': '24시간 %',
   'markets.change7d': '7일 %',
+  'trade.sort7dGainers': '7일 상승',
+  'trade.sort7dLosers': '7일 하락',
   'markets.change30d': '30일 %',
   'markets.high24h': '24시간 고가',
   'markets.low24h': '24시간 저가',

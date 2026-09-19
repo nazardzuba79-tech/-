@@ -356,7 +356,7 @@ export function TradePage() {
                 aria-selected={bottomTab === tab.id}
                 aria-controls="spot-bottom-content"
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
-                onClick={() => { setBottomTab(tab.id); accountPanel.reveal(`spot:${pair}:${tab.id}`); }}
+                onClick={() => { setBottomTab(tab.id); accountPanel.reveal(); }}
               >
                 {t(tab.labelKey)}
                 {tab.id === 'open' && <span className="badge">{openOrderCount ?? '—'}</span>}

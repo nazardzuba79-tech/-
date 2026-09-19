@@ -46,7 +46,10 @@
   width:0; flex-basis:0; border-right:0; background:transparent; overflow:visible; position:relative;
 }
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
-  position:absolute; top:8px; left:0; z-index:4;
+  /* Centred on the chart's left edge, not tucked under its top corner —
+     the same Bybit-like placement the futures terminal uses below, so the
+     two terminals put the control in the same place. */
+  position:absolute; top:50%; left:0; transform:translateY(-50%); z-index:4;
   width:16px; min-width:16px; height:30px; min-height:30px; flex:none; margin:0;
   border:1px solid var(--border,#232a34); border-left:0; border-radius:0 5px 5px 0;
   background:var(--panel-alt,#1a1f27); color:var(--text-secondary,#98a2b3);
@@ -81,7 +84,10 @@
   .trade-terminal .terminal-chart-shell .drawing-rail-toggle { width:24px; height:100%; margin-top:0; border-top:0; border-left:1px solid #232a34; }
   .trade-terminal .terminal-chart-shell .drawing-rail-toggle svg { transform:rotate(90deg); }
   .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed { width:100%; flex-basis:24px; min-height:24px; }
-  .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle { flex:1; width:100%; border-left:0; }
+  /* The phone rail is a horizontal strip, so the collapsed tab is a full
+     row rather than a chip on a vertical edge: the desktop centring must
+     not follow it here. */
+  .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle { position:static; top:auto; transform:none; flex:1; width:100%; border-left:0; }
   .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle svg { transform:rotate(270deg); }
 }
 
@@ -146,12 +152,22 @@
   height: 13px;
 }
 
-/* COLLAPSED: the tab that brings the tools back sits at the chart's
-   bottom-left corner, under where the rail was, rather than at its top. */
+/* COLLAPSED: THE TAB SITS AT THE CHART'S VERTICAL MIDDLE.
+   It was pinned to the chart's bottom-left corner, which put it in the
+   busiest, least-looked-at corner of the workspace — hard against the time
+   axis, the TradingView mark and the bottom panel's tab row, all of which
+   compete with a 16px chip. The owner marked the height they wanted on a
+   screenshot and named the reference: Bybit, where the handle that brings a
+   collapsed rail back sits centred on the edge it belongs to, at eye level
+   and clear of both ends.
+   `top:50%` with a half-height translate centres it on the chart at any
+   height, so it lands correctly whether the bottom panel is open or folded
+   and at every desktop width rather than at one measured one. */
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
-  top: auto;
-  bottom: 10px;
+  top: 50%;
+  bottom: auto;
   left: 0;
+  transform: translateY(-50%);
   margin: 0;
   width: 16px;
   min-width: 16px;
@@ -183,6 +199,8 @@
   .trade-terminal.futures-reference .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
     position: static;
     bottom: auto;
+    top: auto;
+    transform: none;
     flex: 1;
     width: 100%;
     height: auto;
