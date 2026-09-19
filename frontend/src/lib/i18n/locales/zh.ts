@@ -1144,7 +1144,7 @@ export const ZH: Record<Key, string> = {
   'futures.spotWallet': '现货钱包',
   'futures.futuresWallet': '合约钱包',
   'futures.availableMargin': '可用保证金',
-  'futures.demoAvailable': '可用于交易',
+  'futures.demoAvailable': '模拟余额',
   'futures.startTrading': '开始交易',
   'futures.startTradingPending': '正在开通账户…',
   'futures.insufficientMargin': '您的资金不足：该数量需要 {required} {asset}，可用 {available} {asset}。',
