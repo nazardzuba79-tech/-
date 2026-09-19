@@ -243,8 +243,14 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(new BigNumber(merged.positions[0].quantity).toFixed()).toBe('0.4');   // 0.2 + 0.2: one position, both fills
     expect(merged.events.filter(e => e.kind === 'OPEN')).toHaveLength(2);
     // The retried attempt decided on a book quoted AFTER the winner's, never on the book of the refused attempt.
-    const journal = ((await db.nativeDemoAccount.findUnique({ where: { userId: f.user.id } }))!.payload as unknown as NativeAccount).commands.filter(c => c.kind === 'OPEN');
-    expect(journal.map(c => c.seq)).toEqual([1, 2]);
+    const instructions = ((await db.nativeDemoAccount.findUnique({ where: { userId: f.user.id } }))!.payload as unknown as NativeAccount).commands;
+    // R11 observations participate in the same sequence as financial commands.
+    // Do not mistake the intervening persisted valuation for a missing OPEN.
+    expect(instructions.map(c => c.seq)).toEqual(instructions.map((_, index) => index + 1));
+    expect(instructions.slice(0, 3).map(c => c.kind)).toEqual(['OPEN', 'OBSERVE', 'OPEN']);
+    const journal = instructions.filter(c => c.kind === 'OPEN');
+    expect(journal).toHaveLength(2);
+    expect(journal.map(c => c.seq)).toEqual([1, 3]);
     expect(journal[1].kind === 'OPEN' && journal[0].kind === 'OPEN' && journal[1].book!.timestamp >= journal[0].book!.timestamp).toBe(true);
     expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id } })).toBe(3);
     const key = randomUUID(), fresh = f.make();
