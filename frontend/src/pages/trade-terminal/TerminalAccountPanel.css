@@ -1070,3 +1070,106 @@
     gap:4px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE TOP-LEFT INSTRUMENT CLUSTER — FUTURES ONLY.
+
+   The reference builds this corner as ONE block: list button, a large
+   coin mark, and a two-line identity (pair over asset name), set tight
+   together and centred as a unit. Ours had the same three parts as three
+   loose children of the header's flex row, sharing the header's own
+   20–24px gap — so they read as items on a line rather than a block, and
+   the 20px mark was too light to anchor them.
+
+   What changes, and why each number:
+
+   - The three parts move inside `.pair-cluster`, whose gaps are its own
+     (10px) and much tighter than the header's (16–24px). The header's gap
+     now falls only BETWEEN the cluster and the first statistic, which is
+     what makes the corner read as a block with air around it rather than
+     four evenly spaced things.
+   - The mark goes 20px → 28px. At 28 it carries the two text lines beside
+     it instead of floating next to them.
+   - The pair goes to 19px/650 and gains a second line at 11px in tertiary
+     — the same 11px muted caption the CFD terminal already uses for an
+     instrument's name, so this is the house pattern rather than a new one.
+   - Both lines sit in a column with `line-height:1.2` and no margins, so
+     the stack's optical centre lands on the mark's centre. Nothing here
+     uses `baseline` alignment: a 28px image and a 19px text baseline do
+     not agree, which is exactly how the old row drifted.
+
+   SCOPED TO FUTURES. `.pair-selector`, `.pair-name` and `.pair-markets-btn`
+   are shared with the Spot terminal and the CFD terminal; every selector
+   below carries `.futures-reference`, which only Futures' root has. Spot
+   keeps its 20px mark, its single line and its own spacing, and the
+   browser run measures /trade to confirm that rather than assuming it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+/* The button loses its own right margin: inside the cluster the gap owns
+   the spacing, and two spacings in a row is how a 2px drift appears. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-markets-btn {
+  margin-right: 0;
+  width: 28px;
+  height: 28px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-selector {
+  gap: 10px;
+  padding: 2px 4px 2px 0;
+  margin-right: 0;
+  min-width: 0;
+  border-radius: 6px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-identity {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-identity .pair-name {
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+  color: var(--text-primary, #eaeef3);
+  white-space: nowrap;
+}
+/* The asset's own name. `min-height` reserves the line whether or not the
+   catalogue has a name for this symbol, so the pair above it never shifts
+   when the metadata lands — and an unknown asset leaves the line empty
+   rather than showing a guess. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-asset {
+  min-height: 14px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: var(--text-tertiary, #8b95a5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The caret belongs to the identity, not to the row: pinned to the stack's
+   own centre so it cannot drift against a two-line block. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-arrow {
+  align-self: center;
+  margin-left: 2px;
+}
+/* Below the desktop breakpoints the header already reflows; the cluster
+   keeps its shape but gives back the weight it does not have room for. */
+@media (max-width: 900px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster {
+    gap: 8px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-identity .pair-name {
+    font-size: 16px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-cluster .pair-selector {
+    gap: 8px;
+  }
+}
