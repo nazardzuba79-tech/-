@@ -1,9 +1,9 @@
 {
-  "startedAt": "2026-09-19T09:14:03.334Z",
+  "startedAt": "2026-09-19T15:24:19.173Z",
   "date": "2026-09-19",
   "environment": "LOCAL QA ONLY — actual router/service, in-memory persistence",
   "firstVisit": {
-    "readyMs": 2445,
+    "readyMs": 2636,
     "facts": {
       "nazar": {
         "name": "Nazar",
@@ -62,21 +62,21 @@
   },
   "persisted": {
     "keys": [
-      "voltex.copy.marketplace.v1.1xef90y"
+      "voltex.copy.marketplace.v1.pamdwe"
     ],
-    "bytes": 388956,
+    "bytes": 389012,
     "nazar": "VX-001",
     "ksenia": "VX-KSENIA",
     "fetchedAt": {
-      "nazar": 1789809245805,
-      "ksenia": 1789809245811,
-      "identities": 1789809245811
+      "nazar": 1789831461553,
+      "ksenia": 1789831461555,
+      "identities": 1789831461555
     },
     "carriesToken": false,
     "carriesRequestState": false
   },
   "reload": {
-    "paintMs": 295,
+    "paintMs": 321,
     "facts": {
       "nazar": {
         "name": "Nazar",
@@ -112,17 +112,17 @@
     "timeline": [
       {
         "id": "VX-001",
-        "t": 47,
+        "t": 51,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 47,
+        "t": 51,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 181,
+        "t": 199,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -131,7 +131,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 181,
+        "t": 199,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -170,10 +170,10 @@
   },
   "navigate": {
     "departed": {
-      "url": "http://127.0.0.1:44059/card",
+      "url": "http://127.0.0.1:33417/card",
       "cards": 0
     },
-    "url": "http://127.0.0.1:44059/copy-trading",
+    "url": "http://127.0.0.1:33417/copy-trading",
     "cards": [
       "VX-001",
       "VX-KSENIA",
@@ -227,17 +227,17 @@
     "timeline": [
       {
         "id": "VX-001",
-        "t": 1531,
+        "t": 1598,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 1531,
+        "t": 1598,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 1866,
+        "t": 1915,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -246,7 +246,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 1866,
+        "t": 1915,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -291,17 +291,17 @@
     "timeline": [
       {
         "id": "VX-001",
-        "t": 47,
+        "t": 51,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 47,
+        "t": 51,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 181,
+        "t": 199,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -310,7 +310,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 181,
+        "t": 199,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -319,17 +319,17 @@
       },
       {
         "id": "VX-001",
-        "t": 1062,
+        "t": 1095,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 1062,
+        "t": 1095,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 1232,
+        "t": 1281,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -338,7 +338,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 1232,
+        "t": 1281,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -347,17 +347,17 @@
       },
       {
         "id": "VX-001",
-        "t": 1531,
+        "t": 1598,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 1531,
+        "t": 1598,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 1866,
+        "t": 1915,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -366,7 +366,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 1866,
+        "t": 1915,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -411,17 +411,17 @@
     "timeline": [
       {
         "id": "VX-001",
-        "t": 47,
+        "t": 51,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 47,
+        "t": 51,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 181,
+        "t": 199,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -430,7 +430,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 181,
+        "t": 199,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -439,17 +439,17 @@
       },
       {
         "id": "VX-001",
-        "t": 1062,
+        "t": 1095,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 1062,
+        "t": 1095,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 1232,
+        "t": 1281,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -458,7 +458,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 1232,
+        "t": 1281,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -467,17 +467,17 @@
       },
       {
         "id": "VX-001",
-        "t": 1531,
+        "t": 1598,
         "state": null
       },
       {
         "id": "VX-KSENIA",
-        "t": 1531,
+        "t": 1598,
         "state": null
       },
       {
         "id": "VX-001",
-        "t": 1866,
+        "t": 1915,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -486,7 +486,7 @@
       },
       {
         "id": "VX-KSENIA",
-        "t": 1866,
+        "t": 1915,
         "state": {
           "chart": true,
           "skeleton": 0,
@@ -559,7 +559,7 @@
       }
     },
     "keysAfterOwnResponse": [
-      "voltex.copy.marketplace.v1.rb9juk"
+      "voltex.copy.marketplace.v1.2tqysi"
     ]
   },
   "logout": {
@@ -633,63 +633,63 @@
     {
       "phase": "firstVisit",
       "mode": "live",
-      "at": "2026-09-19T09:14:03.785Z"
+      "at": "2026-09-19T15:24:19.372Z"
     },
     {
       "phase": "reload",
       "mode": "hold",
-      "at": "2026-09-19T09:14:06.490Z"
+      "at": "2026-09-19T15:24:22.262Z"
     },
     {
       "phase": "failedRefresh",
       "mode": "fail",
-      "at": "2026-09-19T09:14:09.574Z"
+      "at": "2026-09-19T15:24:25.408Z"
     },
     {
       "phase": "failedRefresh",
       "mode": "live",
-      "at": "2026-09-19T09:14:10.701Z"
+      "at": "2026-09-19T15:24:26.539Z"
     },
     {
       "phase": "invalidRefresh",
       "mode": "invalid",
-      "at": "2026-09-19T09:14:11.853Z"
+      "at": "2026-09-19T15:24:27.696Z"
     },
     {
       "phase": "otherToken",
       "mode": "hold",
-      "at": "2026-09-19T09:14:11.970Z"
+      "at": "2026-09-19T15:24:27.837Z"
     },
     {
       "phase": "logout",
       "mode": "hold",
-      "at": "2026-09-19T09:14:13.374Z"
+      "at": "2026-09-19T15:24:29.329Z"
     }
   ],
   "pageErrors": [],
   "findings": [],
   "sessions": {
-    "A": "1xef90y",
-    "B": "rb9juk",
-    "C": "wld25h"
+    "A": "pamdwe",
+    "B": "2tqysi",
+    "C": "15tjal5"
   },
   "keysByPhase": {
     "firstVisit": {
       "token": "A",
       "keys": [
-        "A:voltex.copy.marketplace.v1.1xef90y"
+        "A:voltex.copy.marketplace.v1.pamdwe"
       ]
     },
     "reload": {
       "token": "A",
       "keys": [
-        "A:voltex.copy.marketplace.v1.1xef90y"
+        "A:voltex.copy.marketplace.v1.pamdwe"
       ]
     },
     "afterRefreshes": {
       "token": "A",
       "keys": [
-        "A:voltex.copy.marketplace.v1.1xef90y"
+        "A:voltex.copy.marketplace.v1.pamdwe"
       ]
     },
     "afterLogout": {
@@ -699,7 +699,7 @@
     "afterThirdSession": {
       "token": "C",
       "keys": [
-        "C:voltex.copy.marketplace.v1.wld25h"
+        "C:voltex.copy.marketplace.v1.15tjal5"
       ]
     }
   },
