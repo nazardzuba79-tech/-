@@ -1,0 +1,35 @@
+name: Reviewer Copy and UI audit
+on:
+  push:
+    branches: [review/copy-141-ui-audit]
+permissions:
+  contents: read
+jobs:
+  review-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package tracked review inputs without credentials or repository metadata
+        run: |
+          mkdir -p /tmp/reviewer-evidence
+          python3 - <<'PY'
+          import pathlib, subprocess, zipfile
+          paths = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          allowed = ('frontend/src/', 'frontend/public/', 'src/', 'scripts/', 'prisma/', '.github/workflows/')
+          root_exts = ('.json', '.js', '.cjs', '.mjs', '.ts', '.md')
+          with zipfile.ZipFile('/tmp/reviewer-evidence/source.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+              for name in paths:
+                  if not name or '.env' in pathlib.Path(name).name or name.endswith(('.pem', '.key')):
+                      continue
+                  if name.startswith(allowed) or ('/' not in name and name.endswith(root_exts)) or name in ('frontend/package.json','frontend/package-lock.json','frontend/tsconfig.json','frontend/vite.config.ts','frontend/index.html','frontend/tailwind.config.js','frontend/postcss.config.js'):
+                      z.write(name, name)
+          PY
+          git rev-parse HEAD > /tmp/reviewer-evidence/revision.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reviewer-copy-ui-source
+          path: /tmp/reviewer-evidence/
+          retention-days: 1
