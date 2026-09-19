@@ -58,7 +58,7 @@ export function HomeSapphireTape({ market }: { market: HomeMarket }) {
     <button className="tape-motion-toggle" type="button" aria-label={paused ? 'Resume scrolling' : 'Pause scrolling'} aria-pressed={paused} onClick={() => setPaused(!paused)}>
       {paused ? <Play size={13}/> : <Pause size={13}/>}
     </button>
-    <div ref={tape} className="ticker-strip" tabIndex={0} role="region" aria-label={market.tickersStale ? 'Stale market quotes — scroll horizontally' : 'Market quotes — scroll horizontally'} onPointerDown={stop} onWheel={stop} onTouchStart={stop} onKeyDown={e => {
+    <div ref={tape} className="ticker-strip" tabIndex={0} role="region" aria-label={market.tickersStale ? 'Delayed market quotes — scroll horizontally' : 'Market quotes — scroll horizontally'} onPointerDown={stop} onWheel={stop} onTouchStart={stop} onKeyDown={e => {
       const node = tape.current; if (!node) return; stop();
       const max = group.current?.offsetWidth ?? 0;
       const target: Record<string, number> = { Home: 0, End: max, ArrowLeft: Math.max(0, node.scrollLeft - 180), ArrowRight: Math.min(max, node.scrollLeft + 180) };
