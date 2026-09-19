@@ -1121,7 +1121,7 @@ export const JA: Record<Key, string> = {
   'futures.spotWallet': '現物ウォレット',
   'futures.futuresWallet': '先物ウォレット',
   'futures.availableMargin': '利用可能証拠金',
-  'futures.demoAvailable': 'デモ残高',
+  'futures.demoAvailable': '取引可能額',
   'futures.startTrading': '取引を開始',
   'futures.startTradingPending': '口座を開設しています…',
   'futures.insufficientMargin': '資金が不足しています：この数量には {required} {asset} が必要です（利用可能 {available} {asset}）。',
