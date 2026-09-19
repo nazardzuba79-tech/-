@@ -1,6 +1,7 @@
 import { CopyPerformanceService } from '../CopyPerformanceService';
 import { summarizeStrategy } from '../marketplaceSummary';
 import { withKseniaReportedTrade } from '../kseniaReportedTrade';
+import { resolve } from 'path';
 import { KSENIA_REPORTED_WEEK, reportedWeekIsCurrent, withKseniaReportedWeek } from '../kseniaReportedWeek';
 import { KSENIA_REVIEW } from '../canonical/kseniaReview';
 
@@ -195,20 +196,51 @@ describe('nothing is counted twice, and nothing is rewritten', () => {
     expect(after.economics.periods.ALL.roi).toBe((before as any).economics.periods.ALL.roi);
   }, 600_000);
 
-  it('applies only while the reported period is the current week', async () => {
-    // Inside the week: applied.
-    expect(reportedWeekIsCurrent('2026-09-13T00:00:00.000Z')).toBe(true);
-    expect(reportedWeekIsCurrent('2026-09-19T23:59:59.999Z')).toBe(true);
-    // Past it: the rolling 7D window no longer describes that week, so 7D
-    // goes back to the model rather than carrying one reported week forward
-    // into weeks that have not happened.
-    expect(reportedWeekIsCurrent('2026-09-20T00:00:00.000Z')).toBe(false);
-    const later: any = withKseniaReportedWeek(await ksenia('2026-09-24T12:00:00Z'));
-    expect(later.reportedWeeks[0].appliedToVisibleWeeklyRoi).toBe(false);
-    expect(later.analytics.roi7).not.toBe(61.9);
-    // It is still on record for the week it belongs to.
-    expect(later.reportedWeeks[0].returnPct).toBe(61.9);
+  it('SURVIVES the week changing, and every later day, until the owner says otherwise', async () => {
+    // The owner pinned it. A new day, a new week and a model that has run
+    // on for weeks must all still show the reported figure — this is the
+    // requirement that replaced the original week anchor.
+    for (const day of ['2026-09-19T12:00:00Z', '2026-09-20T12:00:00Z', '2026-09-24T12:00:00Z',
+      '2026-10-05T12:00:00Z', '2026-11-02T12:00:00Z']) {
+      const data: any = withKseniaReportedWeek(await ksenia(day));
+      expect(data.analytics.roi7).toBe(61.9);
+      expect(data.economics.periods['7D'].roi).toBe(61.9);
+      expect(data.weekly.find((w: any) => w.period === '2026-09-13').roi).toBe(61.9);
+      expect(data.reportedWeeks[0].appliedToVisibleWeeklyRoi).toBe(true);
+    }
   }, 600_000);
+
+  it('stops calling it a rolling week once the week has passed', async () => {
+    // Truthfulness is the condition attached to pinning it: the figure
+    // stays, but it must not be presented as a freshly computed last seven
+    // days when it no longer is. `stillInsideReportedWeek` is what the UI
+    // reads to change the wording.
+    const inside: any = withKseniaReportedWeek(await ksenia('2026-09-19T12:00:00Z'));
+    expect(inside.reportedWeeks[0].stillInsideReportedWeek).toBe(true);
+    const after: any = withKseniaReportedWeek(await ksenia('2026-09-24T12:00:00Z'));
+    expect(after.reportedWeeks[0].stillInsideReportedWeek).toBe(false);
+    // The period it belongs to travels with it, so the label can name it.
+    expect(after.reportedWeeks[0].periodStart).toBe('2026-09-13');
+    expect(after.reportedWeeks[0].periodEnd).toBe('2026-09-19');
+    expect(reportedWeekIsCurrent('2026-09-19T23:59:59.999Z')).toBe(true);
+    expect(reportedWeekIsCurrent('2026-09-20T00:00:00.000Z')).toBe(false);
+  }, 600_000);
+
+  it('is the only copy of the number anywhere in the source', () => {
+    // One canonical value. If a component ever hard-codes 61.9 this fails,
+    // which is what keeps card and profile from drifting apart.
+    const { execSync } = require('child_process');
+    const hits = execSync(
+      "grep -rn --include=*.ts --include=*.tsx '61\\.9' src frontend/src || true",
+      { cwd: resolve(__dirname, '../../../..'), encoding: 'utf8' })
+      .split('\n').filter(Boolean)
+      .filter((line: string) => !line.includes('__tests__'));
+    const files = [...new Set(hits.map((l: string) => l.split(':')[0]))].sort();
+    expect(files).toEqual(['src/services/copyTrading/kseniaReportedWeek.ts']);
+    // And exactly one of those lines is the value itself; the rest explain it.
+    const values = hits.filter((l: string) => /returnPct:\s*61\.9/.test(l));
+    expect(values).toHaveLength(1);
+  });
 
   it('applying it twice changes nothing', async () => {
     const once: any = withKseniaReportedWeek(await ksenia());

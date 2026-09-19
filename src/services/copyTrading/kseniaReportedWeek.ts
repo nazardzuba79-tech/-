@@ -36,10 +36,24 @@
  * reads a weekly return from — `analytics.roi7`, `economics.periods['7D'].roi`
  * and the `weekly[]` row for this week — and only those three.
  *
- * It is applied only while the reported period IS the current week. Once the
- * model has moved past 2026-09-19 the rolling 7D window no longer describes
- * that week, so 7D goes back to the model and the reported figure stays on
- * the `weekly[]` row it belongs to, which is where that week's result lives.
+ * IT STAYS UNTIL THE OWNER SAYS OTHERWISE. It was first anchored to the
+ * reported week, so it would have quietly reverted to the model on 20
+ * September; the owner has since asked for it to remain the strategy's
+ * shown result indefinitely. It is therefore a PINNED figure rather than a
+ * window that happens to contain it — a new day, a new week, a reload and a
+ * route return all leave it exactly where it is.
+ *
+ * Which makes one thing mandatory: it must not be PRESENTED as a freshly
+ * computed rolling seven days once it is no longer one. The payload carries
+ * `periodStart`/`periodEnd` and `source: 'OWNER_REPORTED'`, and the UI reads
+ * those to label the figure as the manager's reported result for that week
+ * rather than as a rolling window. See `reportedRoi` in
+ * frontend/src/lib/syntheticCopyTrading.ts.
+ *
+ * ONE VALUE, ONE PLACE. `returnPct` below is the only copy of the number in
+ * the codebase. It travels in the response as `reportedWeeks[0]`, is read
+ * once by the period selector, and every surface renders what that selector
+ * returns — no component holds its own copy to drift out of step.
  *
  * WHAT STILL DOES NOT MOVE, and this is the honest cost of the above. No
  * balance, no AUM, no follower PnL, no fee, no equity point, no daily
@@ -89,8 +103,12 @@ export interface ReportedWeek {
   includesReportedTradeOf20260916: boolean;
   modeledReturnPct: number;
   publishedReturnPct: number;
-  /** True when the reported figure is the one the weekly ROI now shows. */
+  /** True when the reported figure is the one the weekly ROI now shows.
+   *  Since the owner pinned it, this is always true. */
   appliedToVisibleWeeklyRoi?: boolean;
+  /** Whether the model is still inside the reported week. Decides how the
+   *  figure is LABELLED, never whether it is shown. */
+  stillInsideReportedWeek?: boolean;
 }
 
 /**
@@ -101,7 +119,14 @@ export interface ReportedWeek {
  * accumulating into anything, so calling it twice cannot double anything —
  * which is the failure mode that matters for a number reported once.
  */
-/** Is the reported period still the week the model is currently inside? */
+/**
+ * Is the model still inside the week the figure was reported for?
+ *
+ * No longer decides whether the figure is SHOWN — it is always shown. It
+ * decides how it is DESCRIBED: inside the week it genuinely is the last
+ * seven days, and after it, it is that week's reported result being held.
+ * Truthfulness is the whole reason this survived the pinning.
+ */
 export function reportedWeekIsCurrent(simulatedAt: unknown): boolean {
   const day = typeof simulatedAt === 'string' ? simulatedAt.slice(0, 10) : null;
   return !!day && day >= KSENIA_REPORTED_WEEK.periodStart && day <= KSENIA_REPORTED_WEEK.periodEnd;
@@ -111,12 +136,16 @@ export function withKseniaReportedWeek<T>(input: T): T {
   const source = input as any;
   if (!source || source.trader?.id !== KSENIA_REPORTED_WEEK.traderId) return input;
 
-  const current = reportedWeekIsCurrent(source.simulation?.simulatedAt);
-  const record: ReportedWeek = { ...KSENIA_REPORTED_WEEK, appliedToVisibleWeeklyRoi: current };
+  // Always applied. `stillInsideReportedWeek` only changes how the figure is
+  // described, never whether it is there.
+  const record: ReportedWeek = {
+    ...KSENIA_REPORTED_WEEK,
+    appliedToVisibleWeeklyRoi: true,
+    stillInsideReportedWeek: reportedWeekIsCurrent(source.simulation?.simulatedAt),
+  };
   // A shallow copy per level we touch: nothing else in the response is
   // cloned, and nothing else is written.
   const data: any = { ...source, reportedWeeks: [record] };
-  if (!current) return data as T;
 
   const roi = KSENIA_REPORTED_WEEK.returnPct;
   if (data.analytics) data.analytics = { ...data.analytics, roi7: roi };
