@@ -45,13 +45,15 @@ jobs:
           frontend/src/lib/__tests__/copyMarketplacePayload.test.ts
           src/services/copyTrading/__tests__/tradeHistoryVisibility.test.ts
           src/services/copyTrading/__tests__/kseniaReportedWeek.test.ts
-      - name: Publish tested commit ONLY to a review branch
+      - name: Publish tested source ONLY to a review branch
         working-directory: checked
         run: |
           git config user.name 'VOLTEX reviewer'
           git config user.email 'reviewer@users.noreply.github.com'
-          git add frontend/src/lib/copyMarketplacePrivacy.ts frontend/src/lib/copyMarketplaceStore.ts frontend/src/lib/useCopyMarketplace.ts frontend/src/lib/__tests__/copyMarketplaceReview.test.ts .github/workflows/copy-trading-card-regression.yml
+          # CI configuration will be updated separately through the owner-authorized connector.
+          git restore .github/workflows/copy-trading-card-regression.yml
+          git add frontend/src/lib/copyMarketplacePrivacy.ts frontend/src/lib/copyMarketplaceStore.ts frontend/src/lib/useCopyMarketplace.ts frontend/src/lib/__tests__/copyMarketplaceReview.test.ts
           git diff --cached --stat
           git commit -m 'Copy review: protect legacy cache privacy and retry incomplete strategies'
-          git push origin HEAD:refs/heads/review/copy-141-corrections
           echo "TESTED_CORRECTION_SHA=$(git rev-parse HEAD)"
+          git push origin HEAD:refs/heads/review/copy-141-corrections
