@@ -338,8 +338,17 @@ test('registration visual opt-in leaves Login, auth forms, routes and default sh
   expect(hash(shell)).toBe('80868fe97ddced590f9523c3ae041030898119d469c083aa33c06cdc87742bb0');
   expect(hash(read('src/pages/register/RegisterPage.tsx').replace(/      cardVisual="registration"\r?\n/, '')))
     .toBe('f7a7a607c68e5cdab4493a138e141449e43e3ded5cf0ffbc7ee3cc70fe98d503');
-  expect(hash(read('src/pages/AuthPage.tsx'))).toBe('55fd61964ba9471a9a802f30c15b86585b92ea04fb193e04cf3c4f0b44f3419e');
-  expect(hash(read('src/pages/register/RegisterPanel.tsx'))).toBe('1f8279c104d5d4dc414d032bc0a7caca2270bbd23b3c6591bc5e3c4111a60943');
+  // Both re-taken for issue #144, and for nothing else. AuthPage's two
+  // failure lines and RegisterPanel's one now go through
+  // `customerErrorText` instead of rendering `ApiError.message`, and
+  // RegisterPanel's local `useServerErrorLocalizer` — which translated
+  // three registration sentences and passed everything else through
+  // verbatim — is gone, its three mappings absorbed into the shared table
+  // with the same `register.error.*` wording. No field, validation rule,
+  // password requirement, referral handling, route, layout, class name or
+  // card visual in either file changed.
+  expect(hash(read('src/pages/AuthPage.tsx'))).toBe('f50f721e6dc4198b5bb0e61f937ec7de661471c5741a74ec021ad80a4c1e6e2c');
+  expect(hash(read('src/pages/register/RegisterPanel.tsx'))).toBe('246293253242a8072affe8805d0ee44ecd9d4976e1f4cc25d5a702910af4c7df');
   const css = read('src/pages/auth-shell/auth-shell.css').replace(/\r\n/g, '\n')
     .replace(/\/\* Registration alone[\s\S]*?(?=\.vx-auth-card-kicker)/, '')
     .replace('  .vx-auth-card-registration .vx-auth-card-art { margin-left: 0; }\n', '');

@@ -1,13 +1,14 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AlertTriangleIcon, ArrowRightIcon, Loader2Icon, LockKeyholeIcon } from 'lucide-react';
-import { api, setToken, ApiError } from '../lib/api';
+import { api, setToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { defaultTradingPath } from '../lib/tradingMode';
 import { readNext } from '../lib/returnTo';
 import { openSupportWidget } from '../lib/supportWidget';
 import { AuthShell } from './auth-shell/AuthShell';
 import { AuthField, AuthPasswordField } from './auth-shell/AuthFields';
+import { customerErrorText } from '../lib/customerError';
 
 /**
  * /login — sign-in only, on the same split screen /register uses.
@@ -47,7 +48,7 @@ export function AuthPage() {
         navigate(afterLogin());
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('auth.genericError'));
+      setError(customerErrorText(err, t, t('auth.genericError')));
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,7 @@ export function AuthPage() {
       setToken(token);
       navigate(afterLogin());
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('auth.genericError'));
+      setError(customerErrorText(err, t, t('auth.genericError')));
     } finally {
       setLoading(false);
     }

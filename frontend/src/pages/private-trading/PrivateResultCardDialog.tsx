@@ -11,7 +11,7 @@ export function PrivateResultCardDialog({snapshot,onClose,onError,loadSnapshot=p
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
   useEffect(()=>{dialog.current?.showModal();return()=>dialog.current?.close();},[]);
   useEffect(()=>{let cancelled=false;setUrl(null);
-    privateResultCardPng(snapshot).then(privateResultCardDataUrl).then(pngUrl=>{if(!cancelled)setUrl(pngUrl);}).catch(e=>{if(!cancelled)setError(e.message);});
+    privateResultCardPng(snapshot).then(privateResultCardDataUrl).then(pngUrl=>{if(!cancelled)setUrl(pngUrl);}).catch(e=>{console.warn('[private-trading] card render failed',e);if(!cancelled)setError('Не удалось подготовить карточку. Повторите попытку.');});
     return()=>{cancelled=true;};
   },[snapshot]);
   async function exportCard(){

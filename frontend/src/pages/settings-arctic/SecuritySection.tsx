@@ -1,11 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { CheckCircle2, KeyRound, LogOut, MonitorSmartphone, ShieldAlert, ShieldCheck, Smartphone, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { useLanguage, localeOf } from '../../lib/i18n';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
 import { summarizeUserAgent } from './deviceLabel';
+import { customerErrorText } from '../../lib/customerError';
 
 const inputClass =
   'h-11 rounded-xl border border-border bg-card px-3.5 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand focus:ring-2 focus:ring-brand/20';
@@ -48,7 +49,7 @@ export function SecuritySection({
       toast.success(t('settings.sessionSignedOut'));
       reloadSessions();
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+      toast.error(customerErrorText(err, t, t('settings.twoFaGenericError')));
     }
   }
 
@@ -197,7 +198,7 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
       toast.success(t('settings.passwordChanged'));
       onDone();
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : t('settings.changePasswordError');
+      const message = customerErrorText(err, t, t('settings.changePasswordError'));
       setError(message);
     } finally {
       setSubmitting(false);
@@ -260,7 +261,7 @@ function TwoFactorModal({ enabled, onClose, onChanged }: { enabled: boolean; onC
     try {
       setSetup(await api.setup2FA());
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+      setError(customerErrorText(err, t, t('settings.twoFaGenericError')));
     } finally {
       setBusy(false);
     }
@@ -275,7 +276,7 @@ function TwoFactorModal({ enabled, onClose, onChanged }: { enabled: boolean; onC
       setBackupCodes(res.backupCodes);
       toast.success(t('settings.enabled'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+      setError(customerErrorText(err, t, t('settings.twoFaGenericError')));
     } finally {
       setBusy(false);
     }
@@ -290,7 +291,7 @@ function TwoFactorModal({ enabled, onClose, onChanged }: { enabled: boolean; onC
       toast.success(t('settings.disabled'));
       onChanged();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+      setError(customerErrorText(err, t, t('settings.twoFaGenericError')));
     } finally {
       setBusy(false);
     }

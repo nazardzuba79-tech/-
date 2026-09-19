@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { api, ApiError, getToken, type SupportConversation, type SupportMessage, type SupportSubject } from '../lib/api';
+import { api, getToken, type SupportConversation, type SupportMessage, type SupportSubject } from '../lib/api';
 import { useLanguage, type Key } from '../lib/i18n';
 import { onOpenSupportWidget } from '../lib/supportWidget';
+import { customerErrorText } from '../lib/customerError';
 
 // Guest identity is just this id, kept in localStorage — same anonymous-
 // visitor-id trust model Intercom/Zendesk widgets themselves use (see the
@@ -147,7 +148,7 @@ export function SupportWidget() {
       if (!getToken()) localStorage.setItem(GUEST_CONVERSATION_KEY, created.id);
       setFirstMessage('');
     } catch (err) {
-      setStartError(err instanceof ApiError ? err.message : t('support.startError'));
+      setStartError(customerErrorText(err, t, t('support.startError')));
     } finally {
       setStarting(false);
     }

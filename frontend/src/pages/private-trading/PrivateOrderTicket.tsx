@@ -34,7 +34,7 @@ export function PrivateOrderTicket({symbol,market,wallet,busy,preview,pickedPric
         draft.events=events.map(event=>({id:event.id,effectiveAt:privateInputUtc(event.effectiveAt),...(event.kind==='MARGIN'?{kind:'MARGIN' as const,amount:event.amount}:event.kind==='CLOSE'?{kind:'CLOSE' as const,quantity:event.quantity}:{kind:'TPSL' as const,takeProfit:event.takeProfit||null,stopLoss:event.stopLoss||null})}));
       }
       onPreview(draft);
-    }catch(e){setError(e instanceof Error?e.message:'Проверьте параметры');}
+    }catch(e){console.warn('[private-trading] draft build failed',e);setError('Проверьте параметры и повторите.');}
   }
   const form=(<form onSubmit={submit}>
       <div className="private-segments sides" role="group" aria-label="Направление"><button type="button" className="long" aria-pressed={side==='LONG'} onClick={()=>setSide('LONG')}>Long</button><button type="button" className="short" aria-pressed={side==='SHORT'} onClick={()=>setSide('SHORT')}>Short</button></div>

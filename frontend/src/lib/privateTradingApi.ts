@@ -156,18 +156,44 @@ export function privateExplanation(value:string):string{
     HISTORY_DID_NOT_REACH_AS_OF:'История не покрывает весь выбранный период.',
     FUNDING_PAGE_LIMIT:'Период funding превышает доступный объём расчёта.',
   };
-  return messages[code]??(/^[A-Za-z0-9_]+(?::.*)?$/.test(value)?'Условие расчёта не подтверждено доступными данными.':value);
+  // An unrecognised condition is still a real limitation of the model, so it
+  // is named as one — but in OUR words. Returning `value` here meant that
+  // anything the server had not been taught to say arrived on screen
+  // verbatim, which is how a route's English text, or an exception's own
+  // message, reached a customer.
+  return messages[code]??'Условие расчёта не подтверждено доступными данными.';
 }
+/**
+ * The display boundary for the private terminal.
+ *
+ * Everything above this line may keep the server's own text: the error
+ * object carries it, the console logs it, and a developer needs it. Nothing
+ * below it may. `PrivateTradingError.message` is built from `data.error` or
+ * `data.message` exactly as the route wrote them, and the catch-all arm used
+ * to hand back ANY `Error.message` — a TypeError from a bad parse, an HTML
+ * error page, a stack-shaped string — as long as it did not look like a
+ * network failure.
+ *
+ * The recognisable business refusals keep their meaning and their wording;
+ * everything else resolves to one honest sentence and the original goes to
+ * the console. A refusal is never turned into a success, and an unavailable
+ * operation is never reported as working.
+ */
 export function privateErrorText(error:unknown):string{
   if(error instanceof PrivateTradingError){
     if(error.status===401||error.status===403)return 'Доступ к приватному режиму завершён';
+    if(error.status===429)return 'Расчёт уже выполняется. Дождитесь завершения.';
+    // Status before wording. A 500 carries whatever the route threw — a
+    // stack, an HTML error page, a parse failure — and reading that as
+    // prose is how `TypeError: … (reading 'balance')` came back as
+    // "недостаточно средств", a refusal the account never made.
+    if(error.status>=500)return 'Не удалось обновить данные. Повторите запрос.';
     if(/quote.*stale|stale.*quote|quote.*expired/i.test(error.message))return 'Котировка обновилась. Рассчитайте предпросмотр ещё раз.';
     if(/insufficient|balance|capital/i.test(error.message))return 'Недостаточно выделенных средств для этой операции.';
     if(/history.*gap|incomplete|unavailable/i.test(error.message))return 'Данные сейчас недоступны. Повторите запрос позже.';
-    if(error.status===429)return 'Расчёт уже выполняется. Дождитесь завершения.';
-    if(error.status>=500)return 'Не удалось обновить данные. Повторите запрос.';
-    if(/^[a-z0-9_]+$/i.test(error.message))return 'Проверьте параметры операции и повторите запрос.';
-    return error.message;
+    if(error.message)console.warn('[private-trading] unmapped refusal',error.status,error.message);
+    return 'Проверьте параметры операции и повторите запрос.';
   }
-  return error instanceof Error&&error.message&&!/fetch|network|abort/i.test(error.message)?error.message:'Не удалось связаться с сервером. Повторите запрос.';
+  if(error instanceof Error&&error.message)console.warn('[private-trading] request failed',error.message);
+  return 'Не удалось связаться с сервером. Повторите запрос.';
 }

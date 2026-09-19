@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Copy, KeyRound, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
+import { customerErrorText } from '../../lib/customerError';
 
 // Ported from the archive's components/voltex/api-section.tsx. The
 // archive's "Create API key" always shows a fake toast and an empty
@@ -36,7 +37,7 @@ export function ApiSection() {
       toast.success(t('settings.createKey'));
       reload();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('settings.createKeyError'));
+      setError(customerErrorText(err, t, t('settings.createKeyError')));
     } finally {
       setCreating(false);
     }

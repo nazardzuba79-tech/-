@@ -452,10 +452,15 @@ test('the account header reports unknown margin figures as dashes, never as zero
   // No margin row at all on a plain ledger — and no IM/MM bars either.
   expect(rendered).not.toMatch(/Начальная маржа|Поддерживающая маржа|Доступная маржа/);
   expect(rendered).not.toContain('wallet-margin-usage');
-  // And it says the total is a floor, in the terminal's own words.
+  // And it says the total is incomplete, in the customer's own words: the
+  // unpriced asset is named, and the note says it is NOT in the sum. #144
+  // rewrote the sentence; the fact it carries is what this pins.
   expect(rendered).toContain('wallet-valuation-note');
   expect(rendered).toContain('EUR');
-  expect(rendered).toContain('нижняя граница');
+  expect(rendered).toContain('Оценка неполная');
+  expect(rendered).toMatch(/не вошли в сумму/);
+  // Unknown is never presented as zero.
+  expect(rendered).not.toMatch(/EUR[^<]*\$0[,.]00/);
 });
 
 test('Convert is offered as unavailable rather than wired to nothing', () => {
@@ -631,7 +636,16 @@ test.each([
   [wallet + 'useWalletData.ts', '5da69390d6944e665b8d562654398b843acc0793f82dac375212c3feee907dba'],
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
   [wallet + 'DepositModal.tsx', '1db97b349fe86b39fd81c8a35129ebfc319d47b866b0572963483ef76c8d61e4'],
-  [wallet + 'WithdrawModal.tsx', 'fe3a8d9fa872116f18ccd03aa530f3bf82787ab7652634e88af6efa977dc4220'],
+  // Re-taken for issue #144 (+3/-2 in each of WithdrawModal and
+  // TransferModal): the single line that displayed a failure now calls
+  // `customerErrorText` instead of rendering `ApiError.message`, and the now
+  // unused `ApiError` import is gone. The refusal itself is NOT softened —
+  // "Insufficient BTC balance" still reaches the customer as "Недостаточно
+  // BTC на балансе", in their own language. No amount, asset, network,
+  // address, validation rule, submit path, success condition or balance
+  // figure in either file changed; the success branch is untouched, so a
+  // withdrawal or transfer is still only reported done on the server's word.
+  [wallet + 'WithdrawModal.tsx', '15873a49ea88eaefc7025d70b7eabb676b994d6511687327ef3a6196c7ec302b'],
   // Re-taken for the Futures account store (+4/-0, purely additive): one
   // import and one `refreshFuturesAccount(['balances'])` after a SUCCESSFUL
   // transfer, so the shared futures account state does not keep serving a
@@ -641,7 +655,8 @@ test.each([
   // `load()` on the success path only. The other two hashes in this suite
   // (DepositModal.tsx, api.ts) are PRE-EXISTING failures on main cbe066e
   // and are deliberately left untouched.
-  [wallet + 'TransferModal.tsx', '81d78430c88e2b691e8bbeecc81aca8f077d16580231581df248c370e6b2fc0d'],
+  // Re-taken for the same one-line #144 change; see WithdrawModal above.
+  [wallet + 'TransferModal.tsx', '27eb01d9c3404b3134e9fbfe7622b4f6c2e69ffbd40d3e6824f919c8c7f856b3'],
   // ui.tsx re-pinned for ONE deliberate change to `Select`: its Escape
   // handler now listens in the capture phase and stops propagation, so
   // Escape closes the open dropdown instead of the dialog around it. The

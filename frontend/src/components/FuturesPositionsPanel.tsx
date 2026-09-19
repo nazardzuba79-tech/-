@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { ApiError } from '../lib/api';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import { useLanguage } from '../lib/i18n';
@@ -91,11 +90,8 @@ export function FuturesPositionsPanel({
       // only this panel's own list.
       execution.refresh(['positions', 'positionHistory', 'balances']);
     } catch (err) {
-      setError(futuresOrderErrorMessage(
-        err,
-        t,
-        err instanceof ApiError ? err.message : t('futures.closePositionError'),
-      ));
+      // Our sentence, not the server's — see futuresOrderErrors.ts.
+      setError(futuresOrderErrorMessage(err, t, t('futures.closePositionError')));
     } finally {
       setClosingId(null);
     }

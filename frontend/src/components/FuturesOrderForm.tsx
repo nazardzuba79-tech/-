@@ -461,11 +461,12 @@ export function FuturesOrderForm({
       // The refusal is localized from the engine's own reason code, so a
       // margin shortfall reads as a margin shortfall rather than borrowing
       // whichever contract limit happened to be nearby.
-      const message = futuresOrderErrorMessage(
-        err,
-        t,
-        err instanceof ApiError ? err.message : t('futures.placeOrderError'),
-      );
+      // The fallback is OUR sentence, never the server's. `ApiError.message`
+      // is whatever the route wrote into `body.error` — English route text, a
+      // caught exception, a flattened validation report, or «Request failed
+      // (500)». A real refusal still reads as itself: the mapper recovers it
+      // from `body.code`, which is the part that means something.
+      const message = futuresOrderErrorMessage(err, t, t('futures.placeOrderError'));
       setError(message);
       toast.error(message);
     } finally {

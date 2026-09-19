@@ -2,7 +2,7 @@ import { useCallback,useEffect,useRef,useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getToken,onSessionChange } from '../../lib/api';
 import { nativeDemoApi,type NativeState,type NativeDraft,type NativePosition,type NativeEvent } from '../../lib/nativeDemoApi';
-import { PrivateTradingError,privateTradingApi,type PrivateResultCard } from '../../lib/privateTradingApi';
+import { PrivateTradingError,privateTradingApi,privateErrorText,type PrivateResultCard } from '../../lib/privateTradingApi';
 import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCandleLoader } from '../../lib/chartTrading';
 
 const NATIVE_WARM_PREFIX='voltex:native-state:v1:';
@@ -107,7 +107,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   const fail=useCallback((e:unknown)=>{
     if(!alive.current)return;
     if(e instanceof PrivateTradingError&&[401,403].includes(e.status))resetSession();
-    const message=e instanceof Error?e.message:'Операция не подтверждена';errorRef.current=message;setError(message);
+    const message=privateErrorText(e);errorRef.current=message;setError(message);
   },[resetSession]);
   useEffect(()=>{alive.current=true;const controller=new AbortController();let cancelled=false;
     async function check(){try{

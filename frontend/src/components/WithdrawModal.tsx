@@ -1,6 +1,7 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { api, ApiError } from '../lib/api';
+import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
+import { customerErrorText } from '../lib/customerError';
 
 interface HeldBalance {
   asset: string;
@@ -69,7 +70,7 @@ export function WithdrawModal({ asset, onClose }: { asset: string; onClose: () =
       setNetwork('');
       reloadHistory();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('wallet.withdrawError'));
+      setError(customerErrorText(err, t, t('wallet.withdrawError')));
     } finally {
       setSubmitting(false);
     }

@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import { isVerifiedEmptyAccountResource } from '../terminalAccountPanel';
 import * as spotPresentation from '../../components/spotOrderPresentation';
+import { customerErrorText } from '../customerError';
 
 const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
@@ -61,6 +62,9 @@ function modules(api: object) {
     } }).outputText;
     new Function('require', 'exports', code)((name: string) => {
       if (name.endsWith('/api')) return { api, ApiError: Error };
+      // The real display boundary: the panel's failure text is composed
+      // there now, so a stub would let the two drift apart.
+      if (name.endsWith('/customerError')) return { customerErrorText };
       if (name.endsWith('/i18n')) return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }), localeOf: () => 'en-US' };
       if (name.endsWith('/toast')) return { useToast: () => ({ success: () => {}, error: () => {} }) };
       if (name === './spotOrderPresentation') return spotPresentation;

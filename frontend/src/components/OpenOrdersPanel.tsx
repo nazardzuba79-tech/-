@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { api, ApiError } from '../lib/api';
+import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { useToast } from '../lib/toast';
 import { SpotOrdersView } from './SpotOrdersView';
 import { cancelSpotOrders, spotOrderCancelIds, createSpotReadController, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
 import './SpotOrders.css';
+import { customerErrorText } from '../lib/customerError';
 
 export interface OpenOrdersHandle {
   cancelAll: () => Promise<void>;
@@ -69,7 +70,7 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, {
         await load(true);
         toast.success(t('trade.orderCancelled'));
       } catch (err) {
-        toast.error(err instanceof ApiError ? err.message : t('trade.cancelOrderError'));
+        toast.error(customerErrorText(err, t, t('trade.cancelOrderError')));
       } finally {
         cancelInFlight.current = false;
         setCancelling(false);

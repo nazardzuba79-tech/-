@@ -10,12 +10,13 @@ import {
   LockKeyholeIcon,
   XIcon,
 } from 'lucide-react';
-import { api, ApiError, setToken } from '../../lib/api';
+import { api, setToken } from '../../lib/api';
 import { defaultTradingPath } from '../../lib/tradingMode';
 import { readNext } from '../../lib/returnTo';
 import { useLanguage } from '../../lib/i18n';
 import { REFERRAL_CODE_STORAGE_KEY } from '../ReferralRedirectPage';
 import { AuthField, AuthPasswordField } from '../auth-shell/AuthFields';
+import { customerErrorText } from '../../lib/customerError';
 
 /**
  * The registration form, wired to the exchange's real auth.
@@ -52,30 +53,6 @@ function isValidPassword(value: string): boolean {
 }
 
 /**
- * The registration endpoint answers with two fixed English strings (see
- * src/api/routes/auth.ts): "Registration failed" — used for a duplicate
- * email and deliberately generic so an unauthenticated caller cannot
- * enumerate registered addresses — and "Registration is currently closed"
- * when REGISTRATION_OPEN=false. Those two are the app's own server strings,
- * so they get the app's own translations rather than being shown in English
- * inside a Russian, Japanese or Korean form.
- *
- * Anything else the server says is passed through verbatim: inventing a
- * friendlier wording for an error we have not seen would hide what actually
- * went wrong.
- */
-function useServerErrorLocalizer() {
-  const { t } = useLanguage();
-  return (message: string): string => {
-    if (message === 'Registration failed') return t('register.error.failed');
-    if (message === 'Registration is currently closed') return t('register.error.closed');
-    // The throttling messages our own express-rate-limit instances emit.
-    if (message.startsWith('Too many registration attempts')) return t('register.error.tooManyAttempts');
-    return message;
-  };
-}
-
-/**
  * One line of the live password checklist.
  *
  * `state` is deliberately three-valued rather than a boolean: an empty
@@ -100,7 +77,6 @@ function Requirement({ state, label, met, unmet }: { state: 'idle' | 'met' | 'un
 
 export function RegisterPanel() {
   const { t } = useLanguage();
-  const localizeServerError = useServerErrorLocalizer();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -161,7 +137,7 @@ export function RegisterPanel() {
       setToken(result.token);
       navigate(readNext(window.location.search) ?? defaultTradingPath(), { replace: true });
     } catch (err) {
-      setGlobalError(err instanceof ApiError ? localizeServerError(err.message) : t('auth.genericError'));
+      setGlobalError(customerErrorText(err, t, t('auth.genericError')));
       setLoading(false);
     }
     // No `finally`: on success this component is navigating away, and

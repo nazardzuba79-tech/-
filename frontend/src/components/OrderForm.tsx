@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { api, ApiError } from '../lib/api';
+import { api } from '../lib/api';
 import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
@@ -8,6 +8,7 @@ import { useToast } from '../lib/toast';
 import { parseChangePercent } from '../lib/priceChange';
 import { positiveOrderNumber, orderFundingPrice, balancePercentageQuantity } from '../lib/spotOrderEntry';
 import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedback';
+import { customerErrorText } from '../lib/customerError';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -235,7 +236,7 @@ export function OrderForm({
         toast.success(t('trade.orderPlaced'));
       }
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : t('trade.placeOrderError');
+      const message = customerErrorText(err, t, t('trade.placeOrderError'));
       setError(message);
       toast.error(message);
     } finally {

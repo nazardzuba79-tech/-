@@ -1120,7 +1120,7 @@ export const RU = {
   // The Wallet page's own valuation note keeps this wording, assets and
   // all: it is a page with room for a sentence. The Futures ticket has a
   // mark and a tooltip instead, and reads the key below.
-  'futures.collateralIncomplete': 'Нет цены для {assets}. Баланс показан как нижняя граница.',
+  'futures.collateralIncomplete': 'Оценка неполная: для {assets} пока нет цены, и эти активы не вошли в сумму.',
   // The Futures ticket's tooltip. No asset codes and no "lower bound":
   // which ticker is unpriced is a fact about our providers, not about
   // this trader. It must still say the total is incomplete.
@@ -1332,4 +1332,46 @@ export const RU = {
   'home.ecosystem.jpmorgan': "Глобальные банковские услуги и рынки",
   'home.ecosystem.goldman': "Глобальные банковские услуги и рынки",
   'home.ecosystem.morganstanley': "Институциональные ценные бумаги и управление капиталом",
+
+  // Server refusals, in the customer's language. See lib/customerError.ts.
+  'serverError.invalidCredentials': 'Неверная почта или пароль.',
+  'serverError.sessionExpired': 'Сессия закончилась. Войдите заново.',
+  'serverError.invalidCode': 'Код подтверждения не подошёл.',
+  'serverError.signInRequired': 'Войдите в аккаунт, чтобы продолжить.',
+  'serverError.tooManyAttempts': 'Слишком много попыток. Подождите немного и повторите.',
+  'serverError.accountBlocked': 'Доступ к аккаунту закрыт. Напишите в поддержку.',
+  'serverError.passwordIncorrect': 'Текущий пароль указан неверно.',
+  'serverError.twoFaAlreadyOn': 'Двухфакторная защита уже включена.',
+  'serverError.twoFaNotOn': 'Двухфакторная защита не включена.',
+  'serverError.twoFaSetupFirst': 'Сначала откройте настройку двухфакторной защиты и отсканируйте код.',
+  'serverError.sessionNotFound': 'Эта сессия уже завершена.',
+  'serverError.accountNotFound': 'Аккаунт не найден.',
+  'serverError.nothingToUpdate': 'Изменений нет — сохранять нечего.',
+  'serverError.imageRequired': 'Выберите изображение.',
+  'serverError.documentRequired': 'Приложите фото документа.',
+  'serverError.documentMissing': 'Файл документа недоступен.',
+  'serverError.alreadyVerified': 'Аккаунт уже подтверждён.',
+  'serverError.reviewPending': 'Заявка уже на проверке. Дождитесь ответа.',
+  'serverError.uploadFailed': 'Не удалось загрузить файл. Попробуйте ещё раз.',
+  'serverError.apiKeyNotFound': 'Этот ключ уже удалён.',
+  'serverError.amountAboveZero': 'Укажите сумму больше нуля.',
+  'serverError.insufficientBalance': 'Недостаточно {asset} на балансе.',
+  'serverError.insufficientTransfer': 'Недостаточно {asset} для перевода.',
+  'serverError.withdrawalNotFound': 'Заявка на вывод не найдена.',
+  'serverError.withdrawalAlreadyHandled': 'Эта заявка уже обработана.',
+  'serverError.withdrawFailed': 'Заявка на вывод не отправлена. Попробуйте ещё раз.',
+  'serverError.invalidTxHash': 'Хеш транзакции не подходит для выбранной сети.',
+  'serverError.orderNotCancellable': 'Этот ордер уже нельзя отменить — он исполнен или снят.',
+  'serverError.orderNotPending': 'Этот ордер больше не активен.',
+  'serverError.positionClosed': 'Позиция уже закрыта.',
+  'serverError.purchaseFailed': 'Покупка не прошла. Попробуйте ещё раз.',
+  'serverError.priceUnavailable': 'Цена сейчас недоступна, поэтому расчёт не подтверждён.',
+  'serverError.dataUnavailable': 'Данные временно недоступны. Попробуйте обновить чуть позже.',
+  'serverError.unavailable': 'Сервис временно недоступен. Повторите чуть позже.',
+  'serverError.checkFields': 'Проверьте заполненные поля.',
+  'serverError.notFound': 'Данные не найдены.',
+  'serverError.practiceOnly': 'Этот аккаунт работает только в тренировочном режиме.',
+  'serverError.cardNotEligible': 'Карта пока недоступна для этого аккаунта.',
+  'serverError.cardApplicationRequired': 'Сначала отправьте заявку на карту.',
+  'serverError.cardApplicationExists': 'Заявка на карту уже отправлена.',
 } as const;
