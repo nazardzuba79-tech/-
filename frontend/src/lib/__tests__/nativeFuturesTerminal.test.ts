@@ -164,6 +164,16 @@ describe('the adapter projects native state into the terminal shapes', () => {
     expect(row.initialMargin).toBe('900');
   });
 
+  test('a partially filled protective exit remains visible as triggering', () => {
+    const row = adapter.nativePositionToTerminal({ ...position,
+      protection: { ...position.protection, takeProfit: null },
+      pendingClose: { reason: 'TAKE_PROFIT', quantity: '0.2', triggerPrice: '65010', triggeredAt: position.openedAt + 1000, actionId: 'exit-1' },
+    });
+    expect(row.protection?.takeProfit).toMatchObject({ id: 'exit-1', status: 'TRIGGERING', triggerPrice: '65010' });
+    expect(row.protection?.stopLoss).toBeNull();
+    expect(row.size).toBe(position.quantity);
+  });
+
   test('TP/SL becomes a trigger row without inventing retry bookkeeping', () => {
     const row = adapter.nativePositionToTerminal(position);
     expect(row.protection.takeProfit).toMatchObject({ kind: 'TAKE_PROFIT', triggerPrice: '65000', attempts: 0, lastError: null });
@@ -181,6 +191,8 @@ describe('the adapter projects native state into the terminal shapes', () => {
     expect(adapter.nativeOrderToTerminal(order)).toMatchObject({
       symbol: 'ETH/USDT', side: 'SELL', originalQuantity: '2', remainingQuantity: '0.5', leverage: 10, marginType: 'CROSS',
     });
+    expect(adapter.nativeOrderToTerminal(order).reduceOnly).toBe(false);
+    expect(adapter.nativeOrderToTerminal({ ...order, reduceOnly: true, positionId: 'p1' }).reduceOnly).toBe(true);
   });
 
   test('locked margin is used margin plus the order reserve, summed exactly', () => {

@@ -80,6 +80,12 @@ jobs:
           src/private-trading/__tests__/nativeDemoReplay.test.ts
           src/private-trading/__tests__/nativeDemoService.test.ts
           src/private-trading/__tests__/nativeDemo.integration.test.ts
+          src/private-trading/__tests__/nativeOptimization.test.ts
+          src/private-trading/__tests__/nativeJournalFinal.test.ts
+          src/private-trading/__tests__/nativeLiveLimit.test.ts
+          src/private-trading/__tests__/nativeBookReplay.test.ts
+          src/private-trading/__tests__/nativeObservedBookExecution.test.ts
+          src/private-trading/__tests__/nativeCallGraph.test.ts
           src/api/routes/__tests__/nativeDemoAccess.test.ts
           src/private-trading/__tests__/chartMarketData.test.ts
           src/private-trading/__tests__/liveEngine.test.ts
@@ -96,6 +102,28 @@ jobs:
           frontend/src/lib/__tests__/priceChartMarketOrders.test.ts
           frontend/src/lib/__tests__/privateChartTicket.test.ts
           frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+      - name: Checkout exact pre-optimization baseline for short capacity comparison
+        uses: actions/checkout@v4
+        with:
+          ref: d3510b2b4601bbd09476f03c5ac98fb72537a2b7
+          path: benchmark-before
+          persist-credentials: false
+      - name: Short before/after capacity test on disposable PostgreSQL
+        timeout-minutes: 3
+        env:
+          BENCH_DB: '1'
+          BENCH_FRAME: '1'
+        run: |
+          node node_modules/typescript/bin/tsc -p benchmark-before/tsconfig.json
+          BENCH_DIST=benchmark-before/dist node --expose-gc scripts/bench-native-engine.cjs --ops 30 --contracts 1,10 --label before-d3510b2 --out capacity-before.json
+          node --expose-gc scripts/bench-native-engine.cjs --ops 30 --contracts 1,10 --label candidate --out capacity-after.json
+      - name: Preserve short capacity measurements
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-engine-capacity-146
+          path: capacity-*.json
+          retention-days: 7
       - name: Install disposable card browser tooling
         run: |
           npm install --prefix /tmp/voltex-private-card-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0

@@ -40,7 +40,9 @@ export type LedgerSource =
   /** Price movement banked on the quantity that left the position. Fees are NOT inside this. */
   | 'REALIZED_PNL'
   /** The custom VOLTEX funding cash-flow, debited or credited at settlement. */
-  | 'FUNDING';
+  | 'FUNDING'
+  /** A loss (fees included) an isolated settlement realised beyond its post, covered by the simulation insurance model. */
+  | 'SHORTFALL_COVER';
 
 export interface LedgerEntry {
   /** Stable across reads: the journal event it came from, plus which component of it. */
@@ -67,12 +69,21 @@ export interface AccountLedger {
     realizedPnl: string;
     fees: string;
     funding: string;
-    /** realizedPnl - fees + funding. The whole of what trading did to the balance. */
+    /** SHORTFALL lines: what isolated settlements lost beyond their posts and the account did not pay. */
+    shortfallCovered: string;
+    /** realizedPnl - fees + funding + shortfallCovered. The whole of what trading did to the balance. */
     net: string;
   };
-  /** The engine's own figure, carried so a caller can see the two agree. */
+  /** The engine's own free-cash figure, carried so a caller can see the parts. */
   walletBalance: string;
-  /** closingBalance === walletBalance. False means money moved without a journal entry. */
+  /**
+   * Free cash PLUS margin posted to open isolated positions. A post is a
+   * TRANSFER out of free cash, not an economic event, so it has no ledger
+   * line; the ledger's closing balance is therefore the settle balance,
+   * and it is this figure the fold is reconciled against.
+   */
+  settleBalance: string;
+  /** closingBalance === settleBalance. False means money moved without a journal entry. */
   reconciled: boolean;
 }
 
@@ -88,7 +99,7 @@ const REDUCING: DemoEvent['kind'][] = ['CLOSE', 'TAKE_PROFIT', 'STOP_LOSS', 'LIQ
 export function accountLedger(state: DemoState): AccountLedger {
   const entries: LedgerEntry[] = [];
   let balance = n(state.initialDeposit);
-  let realizedPnl = new D(0), fees = new D(0), funding = new D(0);
+  let realizedPnl = new D(0), fees = new D(0), funding = new D(0), shortfallCovered = new D(0);
 
   entries.push({
     id: 'initial', time: state.events[0]?.time ?? state.time, source: 'INITIAL_COLLATERAL', kind: 'INITIALIZE',
@@ -124,6 +135,16 @@ export function accountLedger(state: DemoState): AccountLedger {
       continue;
     }
 
+    if (event.kind === 'SHORTFALL') {
+      // The slice it follows booked its real loss and fee; this line is the
+      // part of that settlement the post could not cover and the account did
+      // not pay. Positive, and always paired with a reducing event.
+      if (cashflow.isZero()) continue;
+      shortfallCovered = shortfallCovered.plus(cashflow);
+      push(event, 'SHORTFALL_COVER', cashflow);
+      continue;
+    }
+
     if (REDUCING.includes(event.kind)) {
       // The engine books `cashflow = gross - fee`, so the gross is recovered
       // rather than recomputed from the price — one source, not two.
@@ -142,14 +163,17 @@ export function accountLedger(state: DemoState): AccountLedger {
   }
 
   const closing = out(balance);
+  const posted = state.positions.filter((p) => p.status === 'OPEN' && p.marginType === 'ISOLATED').reduce((v, p) => v.plus(p.isolatedMargin), new D(0));
+  const settleBalance = out(n(state.walletBalance).plus(posted));
   return {
     entries, openingBalance: state.initialDeposit, closingBalance: closing,
     totals: {
-      realizedPnl: out(realizedPnl), fees: out(fees), funding: out(funding),
-      net: out(realizedPnl.minus(fees).plus(funding)),
+      realizedPnl: out(realizedPnl), fees: out(fees), funding: out(funding), shortfallCovered: out(shortfallCovered),
+      net: out(realizedPnl.minus(fees).plus(funding).plus(shortfallCovered)),
     },
     walletBalance: state.walletBalance,
-    reconciled: n(closing).eq(n(state.walletBalance)),
+    settleBalance,
+    reconciled: n(closing).eq(n(settleBalance)),
   };
 }
 
