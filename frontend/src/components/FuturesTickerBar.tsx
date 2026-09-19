@@ -9,6 +9,7 @@ import { formatPrice, formatCompact } from '../lib/formatNumber';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { List as ListIcon } from 'lucide-react';
 import { CryptoIcon } from './CryptoIcon';
+import { useAssetMetadata } from '../lib/assetMetadataStore';
 
 /**
  * The futures instrument row, on the same `.ticker-bar` / `.stat` system the
@@ -48,6 +49,20 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
   { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
+  /**
+   * The instrument's own name, for the line under the pair.
+   *
+   * The reference puts "Bitcoin" under "BTCUSDT", and this is where that
+   * name comes from: the same catalogue the market list and the icons read,
+   * through the same batched store — `CryptoIcon` below already asks for
+   * this symbol, and the store coalesces both asks into ONE request inside
+   * its 50ms window, so the caption costs no extra network.
+   *
+   * A symbol the catalogue does not cover is simply absent, and the caption
+   * renders nothing rather than a guess. Its line keeps its height either
+   * way (see `.pair-asset`), so nothing shifts when the name arrives.
+   */
+  const assetName = useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null;
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
   const [fundingRate, setFundingRate] = useState<number | null>(null);
@@ -196,6 +211,14 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
           the reference terminal leads with, and it is unmistakably a button.
           Both do the same thing — open the market list with its search
           focused — so neither is a second code path. */}
+      {/* ONE compositional node, as in the reference: the list button, the
+          instrument's artwork and its name stack sit inside a single
+          container rather than as three loose children of the header's
+          flex row. That is the whole difference between "elements on a
+          line" and a block — the gaps inside the cluster are its own, and
+          the header's much larger gap now falls only BETWEEN the cluster
+          and the first statistic. */}
+      <div className="pair-cluster">
       {onSelectSymbol && (
         <button
           type="button"
@@ -231,9 +254,16 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
         {/* The instrument's own artwork, resolved by the same component the
             market list uses, so the identity block reads as one unit:
             logo + pair + the selector's caret. */}
-        <CryptoIcon symbol={baseAsset} size={20} />
-        <span className="pair-name">{symbol}</span>
+        <CryptoIcon symbol={baseAsset} size={28} />
+        {/* Pair over asset name, the reference's two-line identity. The
+            stack is what lets the artwork grow: at 28px a single line of
+            text beside it reads as under-weighted, and two do not. */}
+        <span className="pair-identity">
+          <span className="pair-name">{symbol}</span>
+          <span className="pair-asset">{assetName}</span>
+        </span>
         <span className="pair-arrow" aria-hidden="true" />
+      </div>
       </div>
 
       <div className="ticker-item futures-primary-price">
