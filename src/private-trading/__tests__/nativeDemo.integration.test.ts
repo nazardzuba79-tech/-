@@ -4,6 +4,7 @@ import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
 import { NativeDemoService } from '../native/service';
 import { createNativeLimitPass } from '../native/limitPass';
+import { instructionDigest } from '../native/replay';
 import { NativeAccount, PrismaNativeRepository, inflate, StoredNativeAccount } from '../native/store';
 import type { OwnerSession } from '../serviceTypes';
 import type { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateHistoryRequest } from '../marketData';
@@ -216,6 +217,10 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     const row = await db.nativeDemoAccount.findUnique({ where: { userId: f.user.id } });
     const payload = inflate(row!.payload as unknown as StoredNativeAccount);
     expect(payload.checkpoint?.state).toBeDefined();
+    const checkpoint=payload.checkpoint!;
+    expect(checkpoint.digest).toBe(instructionDigest(
+      checkpoint.commandCount===undefined?payload.commands:payload.commands.slice(0,checkpoint.commandCount),
+      checkpoint.commandCount===undefined?checkpoint.time:Infinity));
     const revision = await db.nativeDemoRevision.findUnique({ where: { userId_revision: { userId: f.user.id, revision: v.revision } } });
     expect((revision!.payload as unknown as NativeAccount).checkpoint).toBeUndefined();
     const card = await restarted.service.card(f.actor, id);

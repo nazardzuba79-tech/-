@@ -70,6 +70,18 @@ describe('issue 146 bounded command work',()=>{
     expect(wallet!.collateral.priced).toBe('50000');expect(wallet!.collateral.collateralPriced).toBe('0');
     expect(marks.mock.calls.flatMap(c=>c[0])).toEqual(['ETHUSDT']);
   });
+  test('checkpoint survives compact/inflate and JSONB key reordering without full replay fallback',async()=>{
+    const f=setup();await f.service.initialize(actor,key());await open(f);
+    const stored=JSON.parse(JSON.stringify(compact(f.repo.row!),(_key,value)=>
+      value&&typeof value==='object'&&!Array.isArray(value)
+        ?Object.fromEntries(Object.keys(value).sort().reverse().map(key=>[key,value[key]])):value));
+    const row=inflate(stored);
+    // Direct replay has no service fallback: an invalid digest must fail here.
+    const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:row.commands,asOf:f.clock.t,checkpoint:row.checkpoint},f.bars);
+    expect(outcome(result.snapshot)).toEqual(outcome(await f.replay('FULL')));
+    const c=row.commands.find(c=>c.kind==='OPEN')!;if(c.kind==='OPEN')c.book!.asks[0].price='1';
+    await expect(replayNativeDemoAsync({deposit:row.deposit,instructions:row.commands,asOf:f.clock.t,checkpoint:row.checkpoint},f.bars)).rejects.toMatchObject({code:'CHECKPOINT_MISMATCH'});
+  });
   test('collateral and portfolio share validated marks, but MARKET always requests its own book',async()=>{
     const f=setup();f.market.hasMarks=true;await f.service.initialize(actor,key());await open(f,{symbol:'ETHUSDT'});
     f.step();f.repo.wallet=[{asset:'ETH',available:'1',locked:'0'}];

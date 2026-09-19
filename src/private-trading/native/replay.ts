@@ -180,7 +180,14 @@ function segment(s:DemoState,group:Tick[]) {
   }
 }
 /** Pin order AND decision inputs, not just ids: an amended price/book must invalidate the checkpoint. */
-export function instructionDigest(instructions:NativeInstruction[],before:number){return createHash('sha256').update(JSON.stringify(instructions.filter(c=>c.at<before).sort(compareInstructions))).digest('hex');}
+export function instructionDigest(instructions:NativeInstruction[],before:number){
+  // JSONB and instrument-table inflation can reorder keys. Hash the same
+  // evidence independently of object insertion order, preserving array order.
+  const evidence=JSON.stringify(instructions.filter(c=>c.at<before).sort(compareInstructions),(_key,value)=>
+    value&&typeof value==='object'&&!Array.isArray(value)
+      ?Object.fromEntries(Object.keys(value).sort().map(key=>[key,value[key]])):value);
+  return createHash('sha256').update(evidence).digest('hex');
+}
 export function exposedSymbols(s:DemoState){
   return new Set([...s.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol),...s.orders.filter(activeOrder).map(o=>o.symbol)]);
 }
