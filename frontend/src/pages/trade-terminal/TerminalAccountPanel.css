@@ -795,3 +795,53 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
   color: var(--text-secondary);
 }
+
+/* ---------------------------------------------------------------------------
+   THE INSTRUMENT ROW STARTS AT THE FAR-LEFT EDGE OF THE WORKSPACE.
+
+   Measured on the built page before this, at 1366 / 1440 / 1664 / 1920: the
+   row's left edge sat at 228px while the workspace's own content edge is at
+   1px. Everything in it — the list glyph, BTC/USDT, the caret, last, mark,
+   24h, high, low, turnover, open interest, funding — began to the right of
+   the market rail, and the rail ran all the way up beside it carrying a
+   search field in its top corner.
+
+   The rail now begins UNDER the row, and the row takes the column the rail
+   was using. Nothing is freed and left empty: the row that moved left is
+   what fills it.
+
+   THIS AMENDS THE CORRECTION ABOVE RATHER THAN REPLACING IT. That block
+   pulled the bar in from `2 / 5` so its unused tail stopped rendering as a
+   dead panel over order entry, and raised the ticket and the depth to the
+   navbar. All of that is kept — the ticket still owns column 4 for the full
+   height, the book still rises at 1760 — and only the row's LEFT edge moves,
+   from column 2 to column 1. It has to live here, after that block and after
+   FuturesDesignVariants' own `2 / 5`, because those are the rules that
+   actually decide the span; the same change in FuturesStudio.css alone was
+   overridden and measured no differently.
+
+   The ticket is raised to row 1 at every desktop width for the same reason
+   the block above raised it at 1500: with the bar ending at column 4, row 1
+   of the ticket's column would otherwise be the dead rectangle. Its WIDTH is
+   not touched at any width, and neither is the book's. */
+@media(min-width:1025px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    grid-column:1 / 4;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .reference-market-sidebar {
+    grid-row:2 / 4;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area {
+    grid-column:4; grid-row:1 / 4;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area .fo-panel {
+    padding-top:0;
+  }
+}
+/* Above this the depth column already rises to the navbar on its own (see
+   the block above), so the row stops at it rather than spanning it. */
+@media(min-width:1760px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    grid-column:1 / 3;
+  }
+}

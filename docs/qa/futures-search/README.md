@@ -1,67 +1,50 @@
-# Futures market rail: search as a header control — evidence
+# Futures instrument row and market chooser — browser evidence
 
-Produced by `node scripts/qa-futures-market-search.cjs` against the normal
-production build, on loopback fixtures. Reads only; every write 404s. No
-production account, database or external call.
+Produced by `scripts/qa-futures-market-search.cjs`. Local fixture harness:
+fixture market data, reads only, every write 404s. No production account,
+database or external call, and no market feed — the fixture serves three
+contracts, so the filtering here proves the predicate and the narrowing,
+not behaviour at 500 markets.
 
-## What changed
+## Files
 
-The permanent full-width search input above the market list is gone. In its
-place is a fixed-height row: **«Рынки»** on the left, a **magnifier** on the
-right. Pressing the magnifier swaps the title for the field; pressing it
-again, or `Escape`, closes it.
-
-There are now **two obvious ways in**, both reaching the same search: the
-list glyph beside the pair in the top bar (the reference terminal's
-affordance) and the pair's own caret, which this terminal already had.
-
-## The "instant" claim, measured
-
-"No API request" is measured rather than asserted from reading the code. The
-page polls its ticker feed and chart on timers whatever the user does, so a
-raw count over the search window would charge those polls to the search.
-Three windows are compared instead:
-
-1. **idle** — nothing touched, 3s;
-2. **control** — the field open and focused, nothing typed, 1.6s;
-3. **search** — the click, and then the typing.
-
-An endpoint is charged to search only if neither an idle page nor an
-open-and-idle one reached it.
-
-| viewport | ms to usable | endpoints opening added | endpoints typing added | rows all → BTC → ETH | list moved | overflow |
-|---|---|---|---|---|---|---|
-| 1440 | 36 | none | none | 3 → 1 → 1 | no | 0 |
-| 1366 | 21 | none | none | 3 → 1 → 1 | no | 0 |
-| 390 | 27 | none | none | 3 → 1 → 1 | no | 0 |
-
-Also asserted at every viewport: the field takes focus on open; the header
-keeps its height and the list, chart, order book and ticket keep their exact
-geometry; `Escape` closes it; ten rapid open/close pairs leave it closed and
-an eleventh press still opens it; picking a filtered row selects that
-contract; the sort control reports itself pressed.
-
-## A real defect this run found
-
-On mobile the rail lives inside a `<dialog>`, and `Escape` is that element's
-native cancel — backing out of the search field **dismissed the whole market
-panel**. The handler now calls `preventDefault()`, so the first `Escape`
-closes the field and a second closes the panel, matching the desktop rail.
-
-## Honest limits
-
-- The fixture serves the three core contracts, so `BTC` and `ETH` each
-  narrow the list to one row. Filtering is proven; filtering *at scale* is
-  not measured here.
-- For the same reason **sorting could not be proven to reorder**: with three
-  rows and no live prices every sort key is null. What is asserted is that
-  the control still responds and reports `aria-pressed`. The sort logic
-  itself was not touched — the regression pins that separately.
-- No production check.
-
-| file | what it shows |
+| file | what it is |
 |---|---|
-| `*-closed.png` | the resting state: «Рынки» + magnifier, favourites, `Цена ⇅` / `24ч % ⇅` |
-| `*-open.png` | the field in the header's place, nothing below it moved |
-| `*-btc.png` | `BTC` typed, list filtered |
-| `metrics.json` | every measurement above, per viewport |
+| `before-*-rest.png`, `before-metrics.json` | `main` at `da1204b`, measured with `QA_GEOMETRY_ONLY=1` — no interaction, no assertions |
+| `after-*-rest.png` | this branch at rest: the rail starts at the favourites row |
+| `after-*-open.png` | the chooser open under the BTC/USDT selector |
+| `after-metrics.json` | every measurement, per width |
+| `top-row-before-after-1440.png` | the two side by side |
+
+## What the run asserts
+
+Geometry, at 1920 / 1664 / 1440 / 1366 (and overflow only at 390):
+
+- the instrument row's left edge is the workspace's own content edge;
+- the row starts left of the rail, and the rail begins under the row;
+- no more than a grid gap between the row's bottom and the rail's top;
+- chart, order book and order ticket keep their left, top and width with
+  the chooser open;
+- no horizontal overflow, at rest or open.
+
+Behaviour:
+
+- both entry points — the list glyph and the pair caret — open the same
+  layer, focused, and the time from click to focused field is recorded;
+- opening and typing reach no endpoint the untouched page has never
+  reached, and add no calls to the two endpoints the market list can
+  touch (`/market/assets/icons`, `/market/live`), measured over equal
+  windows;
+- Escape closes, a click outside closes, the opening control also closes;
+- twenty open/close pairs alternating between the two buttons leave it
+  closed, and it still opens afterwards;
+- picking a contract selects it and dismisses the layer;
+- the rail's own sort still works after all of it;
+- zero page errors.
+
+## What it deliberately does not assert
+
+Total request volume. In this sandbox it is dominated by the depth REST
+fallback polling at 1 Hz, because the venue WebSocket is unreachable from
+this network — it drifts by several calls per ten-second window whatever
+the page is doing, and the order book is not what search touches.

@@ -42,72 +42,83 @@
   }
 }
 
-/* ── «Рынки» header, and the search that replaces it ──────────────────────
-   The permanent full-width input above the list is gone. It bought nothing
-   after the first few seconds of a session and cost a row of height for the
-   rest of it. The header row keeps a FIXED height whether it is showing the
-   title or the field, so opening search moves nothing below it — the list,
-   the chart, the book and the ticket all stay exactly where they were. */
-.trade-terminal .pairs-head {
+/* ── THE MARKET CHOOSER ───────────────────────────────────────────────────
+   The search field is gone from the left rail. Not collapsed, not hidden,
+   not a zero-height row — the element does not exist, so the rail's first
+   child is the favourites filter and the list starts where the panel does.
+
+   It lives here instead: a layer the two entry points in the instrument row
+   open, holding the field at the top and the SAME market list underneath
+   it. Placed in the rail's own grid cell so it hangs directly under the
+   BTC/USDT selector at the far-left edge of the workspace, sized and
+   elevated so it reads as a temporary chooser rather than a second rail.
+
+   Two grid items sharing one cell OVERLAP; they do not displace each other.
+   That is the whole reason it is placed this way rather than positioned
+   against a measured rectangle: the chart, the order book and the order
+   ticket keep every pixel they had, nothing below it moves, and there is no
+   rect to read and no frame to wait for before it is usable. */
+@media (min-width: 1025px) {
+  .trade-terminal .futures-market-chooser {
+    grid-column: 1;
+    grid-row: 2 / 4;
+    justify-self: start;
+    align-self: start;
+    z-index: 40;
+    /* Wider than the rail it covers, so it is legible as a layer over the
+       chart rather than a repaint of the column underneath. */
+    width: min(330px, calc(100vw - 24px));
+    /* An explicit height, not only a maximum. `align-self:start` makes the
+       layer shrink-wrap its content, and a flex child with nothing to fill
+       took zero height — the field and the column headings rendered and the
+       rows underneath them did not. */
+    height: min(560px, 68vh);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid var(--border, #232c39);
+    border-radius: 8px;
+    background: var(--panel, #12161c);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, .55);
+  }
+}
+.trade-terminal .futures-market-chooser .pairs-list { flex: 1; min-height: 0; }
+
+/* The field itself. One implementation, used by the chooser and by the
+   mobile market dialog — the rail never renders it. */
+.trade-terminal .market-chooser-search {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
-  box-sizing: border-box;
-  padding: 0 8px 0 10px;
-  border-bottom: 1px solid var(--border, #232c39);
-}
-.trade-terminal .pairs-head-title {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .01em;
-  color: var(--text-primary, #fff);
-}
-.trade-terminal .pairs-head-input {
-  flex: 1;
-  min-width: 0;
-  height: 24px;
-  box-sizing: border-box;
-  padding: 0 6px;
-  border: 1px solid var(--border, #2a3745);
-  border-radius: 5px;
-  background: var(--panel-alt, #0c131b);
-  color: var(--text-primary, #fff);
-  font-size: 11.5px;
-  /* Visual only, and short: the field is usable on the frame it mounts. */
-  animation: pairs-head-reveal 120ms ease-out;
-}
-.trade-terminal .pairs-head-input:focus {
-  outline: none;
-  border-color: var(--accent, #e9ad35);
-}
-@keyframes pairs-head-reveal { from { opacity: .4; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .trade-terminal .pairs-head-input { animation: none; }
-}
-/* No button background at rest — a compact terminal control, not a chip. */
-.trade-terminal .pairs-head-search {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
   flex: 0 0 auto;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border, #232c39);
+  color: var(--text-secondary, #8b96a5);
+}
+.trade-terminal .market-chooser-input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  box-sizing: border-box;
   padding: 0;
   border: 0;
-  border-radius: 5px;
   background: transparent;
-  color: var(--text-secondary, #8b96a5);
-  cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-.trade-terminal .pairs-head-search:hover,
-.trade-terminal .pairs-head-search:focus-visible {
-  background: var(--panel-alt, rgba(255, 255, 255, .06));
   color: var(--text-primary, #fff);
+  font-size: 12px;
 }
+/* The focus ring belongs to the row, not to the bare input inside it, so
+   the magnifier and the field read as one control. Declared here rather
+   than inherited from whichever terminal sheet happened to reach the
+   input. */
+.trade-terminal .market-chooser-input:focus { outline: none; }
+.trade-terminal .market-chooser-search:focus-within {
+  border-bottom-color: var(--accent, #e9ad35);
+}
+.trade-terminal .market-chooser-input::placeholder { color: var(--text-tertiary, #6c7787); }
 
 /* The second way in: the reference terminal's list glyph, left of the pair.
    The caret on the pair itself already opened this; a trader who has not
