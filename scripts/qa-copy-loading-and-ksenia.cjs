@@ -309,6 +309,80 @@ let server, browser;
     await c.close();
   }
 
+  // ── 9. a LATER model date: the pinned figure must survive the week ───
+  // The owner pinned 61.9% until they say otherwise, so a model that has
+  // run on past the reported week must still show it — and must stop
+  // calling it a rolling seven days, because by then it is not one.
+  {
+    const laterDate = process.env.QA_LATER_DATE || '2026-09-26';
+    const later = db();
+    const account = later.account();
+    const laterService = new CopyPerformanceService(later.handle, () => new Date(`${laterDate}T12:00:00Z`));
+    const app2 = express();
+    app2.use((_q, r, n) => { r.setHeader('Cache-Control', 'no-store'); n(); });
+    app2.use('/api/v1', copyPerformanceRouter(later.handle, laterService));
+    const auth2 = requireAuth(later.handle);
+    app2.get('/api/v1/me', auth2, (q, r) => r.json({ id: q.userId, email: 'qa@example.invalid',
+      displayName: 'QA', avatarUrl: null, isAdmin: false, kycStatus: 'NOT_STARTED',
+      twoFactorEnabled: false, createdAt: `${laterDate}T00:00:00Z` }));
+    app2.get('/api/v1/wallet/portfolio-history', auth2, (_q, r) => r.json({ points: [{ date: laterDate, totalValueUsd: '0' }] }));
+    app2.get(['/api/v1/balances', '/api/v1/futures/balances'], auth2, (_q, r) => r.json([]));
+    app2.get('/api/v1/support/conversations/mine', auth2, (_q, r) => r.json({ conversation: null }));
+    app2.get('/api/v1/market/external/tickers', (_q, r) => r.json({ source: 'qa', tickers: [] }));
+    app2.use('/api/v1', (q, r) => r.status(404).json({ error: 'unrelated', path: q.path }));
+    app2.use(express.static(dist, { index: false }));
+    app2.get('*', (_q, r) => r.sendFile(path.join(dist, 'index.html')));
+    const s2 = app2.listen(0, '127.0.0.1'); await once(s2, 'listening');
+    const origin2 = `http://127.0.0.1:${s2.address().port}`;
+    const c = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' });
+    await c.addInitScript(t => { try { localStorage.setItem('exchange_token', t);
+      localStorage.setItem('exchange_lang', 'ru'); } catch {} }, account.token);
+    const page = await c.newPage(); const errs = errorsOf(page);
+    await page.goto(`${origin2}/copy-trading`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.trader-card[data-trader-id="VX-KSENIA"]', { timeout: 20_000 }).catch(() => {});
+    await wait(3500);
+    await page.click('.period-group button:has-text("7Д")', { timeout: 10_000 }).catch(() => {});
+    await wait(1500);
+    await page.locator('.trader-card[data-trader-id="VX-001"]').scrollIntoViewIfNeeded().catch(() => {});
+    await wait(400);
+    const laterCards = await page.evaluate(FACTS);
+    await page.screenshot({ path: path.join(OUT, '09-later-week-cards.png') });
+    const kEl = await page.$('.trader-card[data-trader-id="VX-KSENIA"]');
+    if (kEl) await kEl.screenshot({ path: path.join(OUT, '09b-card-ksenia-later-week.png') }).catch(() => {});
+    const cardLabel = await page.evaluate(() => document
+      .querySelector('.trader-card[data-trader-id="VX-KSENIA"] .card-roi-copy span')
+      ?.textContent?.replace(/\s+/g, ' ').trim() ?? null);
+
+    // …and the profile, at the same later date.
+    await page.click('.trader-card[data-trader-id="VX-KSENIA"]').catch(() => {});
+    await page.waitForSelector('.trader-profile-page', { timeout: 15_000 }).catch(() => {});
+    await page.waitForSelector('.profile-detail-loading', { state: 'detached', timeout: 20_000 }).catch(() => {});
+    await page.getByRole('button', { name: '7D', exact: true }).click({ timeout: 10_000 }).catch(() => {});
+    await wait(1500);
+    const laterProfile = await page.evaluate(() => {
+      const p = document.querySelector('.trader-profile-page');
+      const t = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : null;
+      return { readouts: t(p?.querySelector('.profile-performance-chart .chart-readouts')),
+        range: t(p?.querySelector('.profile-period-range')) };
+    });
+    await page.screenshot({ path: path.join(OUT, '09c-ksenia-profile-later-week.png') });
+    report.scenarios.laterWeek = { date: laterDate, cards: laterCards, cardLabel, profile: laterProfile, errors: errs };
+
+    if (!/61[.,]9/.test(laterCards.ksenia?.roi ?? '')) {
+      finding(`later week (${laterDate}): Ksenia card reverted to ${JSON.stringify(laterCards.ksenia?.roi)}`);
+    }
+    if (!/61[.,]9/.test(laterProfile.readouts ?? '')) {
+      finding(`later week (${laterDate}): Ksenia profile reverted — ${JSON.stringify(laterProfile.readouts)}`);
+    }
+    // Pinned, but not passed off as a fresh rolling window.
+    if (/7Д|7D/.test(cardLabel ?? '')) finding(`later week: card still labels it a rolling window — ${JSON.stringify(cardLabel)}`);
+    if (/Скользящий/.test(laterProfile.range ?? '')) {
+      finding(`later week: profile still says «Скользящий период» — ${JSON.stringify(laterProfile.range)}`);
+    }
+    if (!live(laterCards.nazar)) finding(`later week: Nazar not live — ${JSON.stringify(laterCards.nazar)}`);
+    await c.close(); s2.close();
+  }
+
   for (const [name, s] of Object.entries(report.scenarios)) {
     if (s && Array.isArray(s.errors) && s.errors.length) finding(`${name}: page errors — ${s.errors.join(' | ')}`);
   }
@@ -325,6 +399,13 @@ let server, browser;
       before: report.scenarios.lateToken.beforeToken?.nazar,
       after: report.scenarios.lateToken.afterToken?.nazar },
     timeout: report.scenarios.timeout?.cards?.nazar,
+    laterWeek: report.scenarios.laterWeek && {
+      date: report.scenarios.laterWeek.date,
+      kseniaCard: report.scenarios.laterWeek.cards?.ksenia?.roi,
+      cardLabel: report.scenarios.laterWeek.cardLabel,
+      profileReadouts: report.scenarios.laterWeek.profile?.readouts,
+      profileRange: report.scenarios.laterWeek.profile?.range,
+      nazarCard: report.scenarios.laterWeek.cards?.nazar?.roi },
   }, null, 2));
   process.exitCode = report.status === 'PASS' ? 0 : 1;
 })().catch(e => { console.error(e); process.exitCode = 1; })
