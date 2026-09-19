@@ -1,0 +1,243 @@
+{
+  "status": "MEASURED",
+  "label": "before",
+  "report": {
+    "390": {
+      "futures": {
+        "hasCluster": false,
+        "bar": {
+          "left": 1,
+          "top": 57,
+          "right": 389,
+          "bottom": 127,
+          "width": 388,
+          "height": 70,
+          "cy": 92
+        },
+        "cluster": null,
+        "btn": {
+          "left": 13,
+          "top": 79,
+          "right": 39,
+          "bottom": 105,
+          "width": 26,
+          "height": 26,
+          "cy": 92
+        },
+        "selector": {
+          "left": 57,
+          "top": 82,
+          "right": 176,
+          "bottom": 102,
+          "width": 119,
+          "height": 20,
+          "cy": 92
+        },
+        "icon": {
+          "left": 57,
+          "top": 82,
+          "right": 77,
+          "bottom": 102,
+          "width": 20,
+          "height": 20,
+          "cy": 92
+        },
+        "name": {
+          "left": 85,
+          "top": 82,
+          "right": 153,
+          "bottom": 102,
+          "width": 68,
+          "height": 20,
+          "cy": 92
+        },
+        "asset": null,
+        "arrow": {
+          "left": 167,
+          "top": 86,
+          "right": 176,
+          "bottom": 95,
+          "width": 8,
+          "height": 8,
+          "cy": 91
+        },
+        "firstStat": {
+          "left": 192,
+          "top": 70,
+          "right": 324,
+          "bottom": 114,
+          "width": 132,
+          "height": 44,
+          "cy": 92
+        },
+        "iconSize": "20x20",
+        "nameFont": {
+          "size": "14px",
+          "weight": "600"
+        },
+        "assetFont": null,
+        "assetText": null,
+        "nameText": "BTC/USDT",
+        "clusterGap": null,
+        "barGap": "16px",
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "1440": {
+      "futures": {
+        "hasCluster": false,
+        "bar": {
+          "left": 1,
+          "top": 49,
+          "right": 1126,
+          "bottom": 119,
+          "width": 1125,
+          "height": 70,
+          "cy": 84
+        },
+        "cluster": null,
+        "btn": {
+          "left": 13,
+          "top": 71,
+          "right": 39,
+          "bottom": 97,
+          "width": 26,
+          "height": 26,
+          "cy": 84
+        },
+        "selector": {
+          "left": 60,
+          "top": 74,
+          "right": 188,
+          "bottom": 94,
+          "width": 127,
+          "height": 20,
+          "cy": 84
+        },
+        "icon": {
+          "left": 60,
+          "top": 74,
+          "right": 80,
+          "bottom": 94,
+          "width": 20,
+          "height": 20,
+          "cy": 84
+        },
+        "name": {
+          "left": 88,
+          "top": 74,
+          "right": 165,
+          "bottom": 94,
+          "width": 76,
+          "height": 20,
+          "cy": 84
+        },
+        "asset": null,
+        "arrow": {
+          "left": 179,
+          "top": 78,
+          "right": 187,
+          "bottom": 87,
+          "width": 8,
+          "height": 8,
+          "cy": 83
+        },
+        "firstStat": {
+          "left": 207,
+          "top": 61,
+          "right": 339,
+          "bottom": 108,
+          "width": 132,
+          "height": 47,
+          "cy": 84
+        },
+        "iconSize": "20x20",
+        "nameFont": {
+          "size": "15px",
+          "weight": "600"
+        },
+        "assetFont": null,
+        "assetText": null,
+        "nameText": "BTC/USDT",
+        "clusterGap": null,
+        "barGap": "19.44px",
+        "overflowX": 0
+      },
+      "pageErrors": []
+    },
+    "spot": {
+      "hasCluster": false,
+      "bar": {
+        "left": 0,
+        "top": 77,
+        "right": 1440,
+        "bottom": 147,
+        "width": 1440,
+        "height": 70,
+        "cy": 112
+      },
+      "cluster": null,
+      "btn": null,
+      "selector": {
+        "left": 16,
+        "top": 102,
+        "right": 125,
+        "bottom": 122,
+        "width": 109,
+        "height": 20,
+        "cy": 112
+      },
+      "icon": {
+        "left": 16,
+        "top": 102,
+        "right": 92,
+        "bottom": 122,
+        "width": 76,
+        "height": 20,
+        "cy": 112
+      },
+      "name": {
+        "left": 16,
+        "top": 102,
+        "right": 92,
+        "bottom": 122,
+        "width": 76,
+        "height": 20,
+        "cy": 112
+      },
+      "asset": null,
+      "arrow": {
+        "left": 104,
+        "top": 106,
+        "right": 113,
+        "bottom": 115,
+        "width": 8,
+        "height": 8,
+        "cy": 110
+      },
+      "firstStat": {
+        "left": 250,
+        "top": 90,
+        "right": 366,
+        "bottom": 134,
+        "width": 116,
+        "height": 44,
+        "cy": 112
+      },
+      "iconSize": "76x20",
+      "nameFont": {
+        "size": "15px",
+        "weight": "600"
+      },
+      "assetFont": null,
+      "assetText": null,
+      "nameText": "BTC/USDT",
+      "clusterGap": null,
+      "barGap": "20px",
+      "overflowX": 0,
+      "pageErrors": [],
+      "root": "trade-terminal spot-terminal market-reference terminal-studio"
+    }
+  }
+}

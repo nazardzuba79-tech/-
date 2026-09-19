@@ -55,6 +55,14 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
 // reads this suite exists to protect — mark price, index price and the
 // settled funding rate — are byte-unchanged, as the behavioural tests
 // above re-prove.
+// Re-taken again for the instrument cluster's asset caption. The reads
+// block changed in exactly one way, asserted by name below rather than only
+// hashed: one display-metadata read for the name that sits under the pair,
+// through the same batched store `CryptoIcon` already uses. It is not a
+// financial read and adds no request — the store coalesces it with the
+// icon's own ask. The VOLTEX reads this suite exists to protect — mark
+// price, index price and the settled funding rate — are byte-unchanged,
+// as the behavioural tests above re-prove.
 // Exact perpetual display replaces spot references; financial reads remain protected above.
 test('market-data reads use perpetual references and preserve financial inputs', () => {
   const reads = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
@@ -62,11 +70,16 @@ test('market-data reads use perpetual references and preserve financial inputs',
   // cannot be advanced again for something else without deleting these.
   expect(reads).toContain('useFuturesConfig().config?.fundingIntervalHours ?? null');
   expect(reads).not.toContain('getFuturesConfig');
+  // The caption's read, pinned by name so this re-take is bounded to it.
+  expect(reads).toContain("useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null");
+  // And it must stay display-only: no price, size or money enters here.
+  expect(reads).not.toMatch(/assetMetadata[^;]*(price|balance|position|margin)/i);
   // What it is not allowed to have changed.
   for (const read of ['getFuturesMarkPrice', 'getFuturesFundingRate']) {
     expect(reads).toContain(read);
   }
-  expect(hash(reads)).toBe('27318636dc7aaa60b1c29ff82bfaf892cbc2f2dbbeae15392b56c5d2592a152e');
+  // Previous digest, before the caption's read: 27318636…a152e.
+  expect(hash(reads)).toBe('4282c42238bdc970045e119a94f31a9892ee27002cc3f7532403ebe047bbb765');
 });
 test('funding countdown implementation is unchanged', () => {
   expect(hash(source.slice(source.indexOf('const NextFundingCountdown'))))
@@ -289,6 +302,16 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
       };
     }
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
+    // Display metadata for the asset caption under the pair. `overrides`
+    // can name the asset so a test can assert the caption; the default is
+    // "the catalogue does not know this symbol", which is the state the
+    // caption must survive by rendering nothing rather than a guess.
+    if (name === '../lib/assetMetadataStore') return {
+      useAssetMetadata: (symbols: string[]) => overrides.__assetName
+        ? Object.fromEntries(symbols.map(s => [s.toUpperCase(),
+          { id: `cg:${s.toLowerCase()}`, name: overrides.__assetName, logoUrl: null }]))
+        : {},
+    };
     if (name === '../lib/formatNumber') return numbers;
     if (name === '../lib/priceChange') return changes;
     return req(name);
@@ -479,5 +502,62 @@ describe('24h change shows the quote move beside the percent', () => {
     const tree = component.render();
     const cell = nodes(tree).filter(n => n.props.className?.split(' ').includes('ticker-item'))[1];
     expect(text(nodes(cell).find(n => n.props.className?.includes('change')))).toBe('—');
+  });
+});
+
+/**
+ * THE TOP-LEFT INSTRUMENT CLUSTER.
+ *
+ * The owner's reference builds this corner as one block: list button, a
+ * large asset mark, and a two-line identity. Geometry is proven in a real
+ * browser by `scripts/qa-futures-topbar-cluster.cjs`, which measures the
+ * mark, the gaps inside the cluster against the gap to the first statistic,
+ * and every part's optical centre. What is pinned HERE is the structure
+ * those measurements depend on, and the honesty of the caption.
+ */
+describe('the instrument cluster is one node, and its caption is real', () => {
+  it('holds the list button, the mark and the identity inside one container', () => {
+    const body = source.slice(source.indexOf('  return ('));
+    expect(body).toContain('className="pair-cluster"');
+    // Order inside the cluster, as the reference has it.
+    const cluster = body.slice(body.indexOf('className="pair-cluster"'));
+    expect(cluster.indexOf('className="pair-markets-btn"'))
+      .toBeLessThan(cluster.indexOf('className="pair-selector"'));
+    expect(cluster.indexOf('className="pair-selector"'))
+      .toBeLessThan(cluster.indexOf('<CryptoIcon'));
+    expect(cluster.indexOf('<CryptoIcon'))
+      .toBeLessThan(cluster.indexOf('className="pair-identity"'));
+  });
+
+  it('gives the mark the larger size the reference asks for', () => {
+    expect(source).toContain('<CryptoIcon symbol={baseAsset} size={28} />');
+    expect(source).not.toContain('size={20}');
+  });
+
+  it('stacks the pair over the asset name, in that order', () => {
+    const identity = source.slice(source.indexOf('className="pair-identity"'),
+      source.indexOf('className="pair-arrow"'));
+    expect(identity.indexOf('className="pair-name"')).toBeGreaterThan(-1);
+    expect(identity.indexOf('className="pair-name"'))
+      .toBeLessThan(identity.indexOf('className="pair-asset"'));
+    expect(identity).toContain('{symbol}');
+    expect(identity).toContain('{assetName}');
+  });
+
+  it('never invents a name: an unknown asset renders an empty caption', () => {
+    // No fallback string, no base ticker standing in for a name, no dash
+    // pretending to be one. `?? null` and nothing else.
+    expect(source).toContain("?.name ?? null");
+    expect(source).not.toMatch(/assetName\s*(\|\||\?\?)\s*['"`]/);
+    // Unknown by default in this fixture, so this is the real render.
+    const unknown = mount().render();
+    const text = JSON.stringify(unknown);
+    expect(text).toContain('pair-asset');
+    expect(text).not.toContain('Bitcoin');
+  });
+
+  it('prints the catalogue name when the catalogue has one', () => {
+    const named = mount({ __assetName: 'Bitcoin' }).render();
+    expect(JSON.stringify(named)).toContain('Bitcoin');
   });
 });
