@@ -180,6 +180,79 @@ const measure = (page) => page.evaluate(() => {
         style: styleOf(summary, ['font-size', 'color', 'background-color', 'border-top-width']),
       } : null;
     })(),
+    // The strip of column headings the empty state draws over nothing. The
+    // owner sees it on an account with no positions and it is the thing
+    // that makes the panel look broken rather than simply empty, so it is
+    // measured on its own rather than inferred from a gap.
+    emptyColumns: (() => {
+      const strip = document.querySelector('.futures-state-columns');
+      if (!strip) return null;
+      const th = [...strip.querySelectorAll('th')];
+      return { box: box(strip), count: th.length,
+        labels: th.map(c => c.textContent.trim()).slice(0, 12),
+        fontSize: th[0] ? getComputedStyle(th[0]).fontSize : null };
+    })(),
+    // Sizes, because "readable" is a number before it is an opinion.
+    type: {
+      tab: styleOf(tabs[0], ['font-size', 'line-height']),
+      th: styleOf(headCells[0] || document.querySelector('.futures-state-columns th'), ['font-size', 'line-height', 'color']),
+      td: styleOf(document.querySelector('.futures-positions-table tbody td'), ['font-size', 'line-height', 'color']),
+      // The money columns specifically: whatever the row renders as a figure.
+      money: styleOf(document.querySelector('.futures-position-money, .futures-positions-table tbody td .mono'),
+        ['font-size', 'line-height', 'color']),
+    },
+    // Anything whose text no longer fits the box it is painted in.
+    clipped: [...document.querySelectorAll('.bottom-panel *')]
+      .filter(el => !el.children.length && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1)
+      .slice(0, 12)
+      .map(el => ({ cls: String(el.className).slice(0, 40), text: (el.textContent || '').trim().slice(0, 24),
+        scroll: el.scrollWidth, client: el.clientWidth })),
+    // The global header, which the owner asked to carry a larger brand.
+    brand: (() => {
+      const link = document.querySelector('.header-brand');
+      if (!link) return null;
+      const svg = link.querySelector('svg');
+      // The SVG's own ink, not its 40x40 viewBox with the padding around it.
+      let ink = null;
+      if (svg) {
+        try {
+          const bb = svg.getBBox();
+          const r = svg.getBoundingClientRect();
+          const vb = svg.viewBox.baseVal;
+          const scale = vb && vb.width ? r.width / vb.width : 1;
+          ink = { w: Math.round(bb.width * scale * 10) / 10, h: Math.round(bb.height * scale * 10) / 10 };
+        } catch { ink = null; }
+      }
+      // The wordmark's real cap-to-baseline ink, measured through a canvas
+      // in the element's own resolved font rather than read off line-height.
+      const word = [...link.querySelectorAll('span')]
+        .find(s => (s.textContent || '').replace(/\s+/g, '') === 'VOLTEX');
+      let wordInk = null;
+      if (word) {
+        const cs = getComputedStyle(word);
+        const ctx = document.createElement('canvas').getContext('2d');
+        ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const m = ctx.measureText('VOLTEX');
+        wordInk = { h: Math.round((m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * 10) / 10,
+          w: Math.round(m.width * 10) / 10, fontSize: cs.fontSize, fontWeight: cs.fontWeight,
+          letterSpacing: cs.letterSpacing };
+      }
+      const nav = document.querySelector('.top-nav-link, header a[href="/markets"], nav a');
+      return { link: box(link), markBox: box(svg), markInk: ink, wordInk,
+        header: box(document.querySelector('header, .top-nav, .app-header')),
+        navFontSize: nav ? getComputedStyle(nav).fontSize : null,
+        wallet: box(document.querySelector('.nav-wallet-link')),
+        deposit: box(document.querySelector('.deposit-button')) };
+    })(),
+    // The order ticket keeps its own text scale; --text-secondary does not
+    // reach it, so its resolved values are recorded beside the panel's.
+    ticket: (() => {
+      const root = document.querySelector('.fo-panel');
+      if (!root) return null;
+      const cs = getComputedStyle(root);
+      return Object.fromEntries(['--fo-text', '--fo-text-2', '--fo-text-3', '--fo-surface', '--fo-control']
+        .map(n => [n, cs.getPropertyValue(n).trim()]));
+    })(),
     overflowX: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
     // Horizontal scroll INSIDE the table is a real complaint about width,
     // separate from the page overflowing.
