@@ -70,11 +70,32 @@
 }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .card-identity { gap: 12px; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .card-topline { min-height: 52px; }
+/* Nazar's avatar carries the SAME gold ring as Ksenia's.
+ *
+ * Ksenia's comes from the shared VIP rule in CopyTradingBolt.css:
+ *
+ *   .trader-card-vip .avatar { border: 2px solid #ca8d35;
+ *                              box-shadow: 0 0 0 3px rgba(247,166,0,.12); }
+ *
+ * Nazar's card carries `trader-card-vip` too, so he was already entitled to
+ * it — but this rule, which is later and more specific, was replacing the
+ * ring with a 1px #9b8965 hairline and then switching off its glow outright
+ * with `box-shadow: none`. That is the whole reason the two avatars did not
+ * match.
+ *
+ * The two values below are Ksenia's, copied rather than re-chosen, so the
+ * rings cannot drift apart. The ring sits on the wrapper, which renders
+ * whether the box holds the photo or the initials waiting for it, and the
+ * photo is an absolutely positioned child at `inset: 0` — inside the border
+ * box, so it cannot cover the ring it sits in.
+ *
+ * Size, padding and card geometry are untouched: 50px is still 50px, and
+ * this changes nothing for any other trader. */
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .avatar {
   width: 50px;
   height: 50px;
-  border: 1px solid #9b8965;
-  box-shadow: none;
+  border: 2px solid #ca8d35;
+  box-shadow: 0 0 0 3px rgba(247, 166, 0, .12);
 }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .avatar-gold:not(img) {
   color: #e0cba6;
