@@ -138,6 +138,7 @@ export interface SyntheticCopyTradingResponse {
     includesReportedTradeOf20260916: boolean;
     modeledReturnPct: number; publishedReturnPct: number;
     appliedToVisibleWeeklyRoi?: boolean;
+    stillInsideReportedWeek?: boolean;
   }[];
   tradeVisibility?: {
     mode: 'HIDDEN';
@@ -274,6 +275,9 @@ export interface SyntheticPeriodAnalytics {
   /** The owner-reported return this window is showing, when it is showing
    *  one; `null` when `roi` is the engine's own derivation. */
   reportedRoi: number | null;
+  /** The period that reported figure belongs to, and whether the model is
+   *  still inside it. `null` when `roi` is derived. */
+  reportedPeriod: { start: string; end: string; stillCurrent: boolean } | null;
   /** True when the server withheld the executions. `trades` is then empty
    *  and every aggregate on this object is still the real one. */
   tradesHidden: boolean;
@@ -374,13 +378,28 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
    * it applies to `7D` and nothing else, and 30D / 90D / ALL keep deriving
    * exactly as before.
    */
-  const reportedRoi = period === '7D'
-    ? data.reportedWeeks?.find(week => week.appliedToVisibleWeeklyRoi && week.source === 'OWNER_REPORTED')?.returnPct
+  const reported = period === '7D'
+    ? data.reportedWeeks?.find(week => week.appliedToVisibleWeeklyRoi && week.source === 'OWNER_REPORTED')
     : undefined;
+  const reportedRoi = reported?.returnPct;
   return {
     period,
     methodology: data.economics?.methodology,
     reportedRoi: reportedRoi ?? null,
+    /**
+     * How this window must be DESCRIBED, when it is showing a reported
+     * figure rather than a derived one.
+     *
+     * Once the model moves past the reported week, the number is no longer
+     * the last seven days — it is that week's result, held. Calling it a
+     * rolling period then would be untrue, so the surfaces read this
+     * instead of assembling their own wording, and there is exactly one
+     * sentence to change if it ever needs rewording.
+     */
+    reportedPeriod: reported ? {
+      start: reported.periodStart, end: reported.periodEnd,
+      stillCurrent: reported.stillInsideReportedWeek !== false,
+    } : null,
     // v8 is an explicitly simple operating-capital return, NOT geometric TWR.
     roi: reportedRoi ?? (data.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
       ? returns.reduce((total, value) => total + value, 0) * 100

@@ -258,6 +258,11 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
   const { following } = useFollowing();
   const isNazara = trader.id === nazarTrader.id;
   const visual = getTraderVisual(trader.id);
+  // The one place the card learns that this ROI is a held reported result.
+  // The value itself never appears here — only the period selector's answer.
+  const roiWindow = synthetic && (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA')
+    ? selectSyntheticPeriod(synthetic, period) : undefined;
+  const reportedWeek = !!roiWindow?.reportedPeriod && !roiWindow.reportedPeriod.stillCurrent;
   const selectedMetrics = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA'
     ? synthetic ? selectSyntheticPeriod(synthetic, trader.id === 'VX-KSENIA' ? 'ALL' : period) : undefined
     : selectDemoPerformance(trader, period);
@@ -293,7 +298,11 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
       {(isNazara || trader.id === 'VX-KSENIA') && <p className="nazara-strategy">{trader.strategy}</p>}
       <div className="card-return">
         <div className="card-roi-copy">
-          <span>ROI <small>{period}</small></span>
+          {/* When the figure is one the manager reported for a week that has
+              since passed, the «7Д» chip would be claiming a rolling window
+              the number is not. Name the week instead — one short line, no
+              jargon — and leave every other card and period untouched. */}
+          <span>ROI <small>{reportedWeek ? 'за отчётную неделю' : period}</small></span>
           <strong className={roiClass(periodRoi)}><LiveMetric value={formatPercent(periodRoi)} /></strong>
         </div>
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
@@ -448,10 +457,20 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
         </div>
       </div>
       {periodData && periodData.equity.length > 0 ? <p className="profile-period-range">
-        {period === 'ALL' ? 'ALL · С момента запуска' : `${period} · Скользящий период`} · {formatSyntheticHistoryDate(periodData.equity[0].date)} — {formatSyntheticHistoryDate(periodData.equity[periodData.equity.length - 1].date)} · {periodData.calendarDays} календарных дней
+        {/* A figure the manager reported is NOT a rolling window, and once
+            the week it belongs to has passed, describing it as the last
+            seven days would be untrue. So when this window is showing a
+            reported result, the line names the week it is for and says the
+            manager is its source — and goes back to the ordinary rolling
+            wording the moment it is showing a derived number again. */}
+        {periodData.reportedPeriod && !periodData.reportedPeriod.stillCurrent
+          ? <>Результат за неделю {formatSyntheticHistoryDate(periodData.reportedPeriod.start)} — {formatSyntheticHistoryDate(periodData.reportedPeriod.end)} · по данным управляющего</>
+          : <>{period === 'ALL' ? 'ALL · С момента запуска' : `${period} · Скользящий период`} · {formatSyntheticHistoryDate(periodData.equity[0].date)} — {formatSyntheticHistoryDate(periodData.equity[periodData.equity.length - 1].date)} · {periodData.calendarDays} календарных дней</>}
       </p> : (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && <p className="profile-period-range"><LiveMetric value="—" /></p>}
       <div className="chart-readouts" aria-label="Результат за выбранный период">
-        <div><span>ROI · {period}</span><strong className={roiClass(displayedRoi)}><LiveMetric value={formatPercent(displayedRoi)} /></strong></div>
+        {/* Same rule, on the readout itself: «ROI · 7D» claims a window. */}
+        <div><span>{periodData?.reportedPeriod && !periodData.reportedPeriod.stillCurrent
+          ? 'ROI · за отчётную неделю' : `ROI · ${period}`}</span><strong className={roiClass(displayedRoi)}><LiveMetric value={formatPercent(displayedRoi)} /></strong></div>
         <div><span>Накопленный PnL · USDT</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}><LiveMetric value={periodData ? signedUsd(periodData.pnl) : '—'} /></strong></div>
       </div>
       {periodData && !simpleReturn && <div className="profile-equity-readouts" aria-label="Торговый оборот за выбранный период">
