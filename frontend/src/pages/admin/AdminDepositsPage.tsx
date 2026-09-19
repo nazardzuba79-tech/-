@@ -102,7 +102,7 @@ export function AdminDepositsPage() {
       <h1 style={styles.title}>Пополнения</h1>
       {error && <div style={{ ...styles.errorBox, marginBottom: 16 }}>{error}</div>}
 
-      <p style={styles.hint}>Лента недавних переводов: недоступные провайдеры и старые транзакции могут не отображаться. Зачисление повторно проверяется backend.</p>
+      <p style={styles.hint}>Лента недавних переводов: недоступные провайдеры и старые транзакции могут не отображаться. Зачисление повторно проверяется перед подтверждением.</p>
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>Непривязанные входящие переводы</h3>
       <div style={{ ...styles.table, marginBottom: 20 }}>
         <div style={{ ...styles.tableHeader, gridTemplateColumns: '110px 155px 0.8fr 70px 1fr 1.2fr 90px 105px', minWidth: 920 }}>

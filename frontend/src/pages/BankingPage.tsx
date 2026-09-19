@@ -136,7 +136,7 @@ export function BankingPage() {
                 <div className="banking-program-top"><div><span>{programLabel(item.id)}</span><h3>{percent(item.monthlyRate)} <small>в месяц</small></h3></div>{item.compound ? <LockKeyhole /> : <RefreshCw />}</div>
                 <dl>
                   <dt>Срок</dt><dd>{item.termMonths} месяцев</dd>
-                  <dt>Минимум</dt><dd>$2,500 equivalent</dd>
+                  <dt>Минимум</dt><dd>эквивалент $2,500</dd>
                   <dt>Капитализация</dt><dd>{item.compound ? 'Ежемесячная' : 'Без auto-compound'}</dd>
                   <dt>Выплата</dt><dd>{item.payoutFrequency === 'MONTHLY' ? 'Ежемесячно' : 'После завершения срока'}</dd>
                 </dl>
@@ -157,7 +157,7 @@ export function BankingPage() {
                 <label>Актив<select value={asset} onChange={(event) => setAsset(event.target.value as BankingAsset)}>{(['USDT', 'USDC', 'BTC', 'ETH', 'SOL'] as BankingAsset[]).map((item) => <option key={item}>{item}</option>)}</select></label>
                 <label>Сумма<input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" /></label>
               </div>
-              <div className="banking-reference"><span>USD equivalent</span><strong>{amount && assetInfo?.priceUsd ? `≈ $${bankingNumber(String(Number(amount) * Number(assetInfo.priceUsd)))}` : '—'}</strong></div>
+              <div className="banking-reference"><span>Эквивалент в USD</span><strong>{amount && assetInfo?.priceUsd ? `≈ $${bankingNumber(String(Number(amount) * Number(assetInfo.priceUsd)))}` : '—'}</strong></div>
               <div className="banking-reference"><span>Минимум по текущей цене</span><strong>{minimumText}</strong></div>
               <label>Дата начала<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
               <div className="banking-periods">{availablePeriods.map((value) => <button type="button" key={value} className={period === value ? 'active' : ''} onClick={() => setPeriod(value)}>{value === 'custom' ? 'Выбрать дату' : `${value} мес.`}</button>)}</div>
@@ -184,18 +184,18 @@ export function BankingPage() {
         <section className="banking-card-yield">
           <div className="banking-card-icon"><WalletCards /></div>
           <div><span className="banking-eyebrow">ОТДЕЛЬНЫЙ ПРОДУКТ</span><h2>VOLTEX Card Yield</h2><p><strong>12% годовых на USDT</strong> — на фактический доступный баланс карты. Средства не блокируются и могут быть потрачены в любой момент.</p></div>
-          <div className="banking-card-metric"><span>Доступный баланс карты</span><strong>{state?.cardYield.availableCardBalance ?? '—'} USDT</strong><small>Не смешивается с Earn balance</small></div>
+          <div className="banking-card-metric"><span>Доступный баланс карты</span><strong>{state?.cardYield.availableCardBalance ?? '—'} USDT</strong><small>Не смешивается с балансом Earn</small></div>
         </section>
 
         <section className="banking-section">
-          <div className="banking-heading"><div><h2>Мои размещения</h2><p>Только фактические server-side размещения. Демо-данные не используются.</p></div></div>
+          <div className="banking-heading"><div><h2>Мои размещения</h2><p>Только ваши фактические размещения.</p></div></div>
           <div className="banking-table-wrap">
             {placements.length ? <table><thead><tr><th>Актив</th><th>Программа</th><th>Основная сумма</th><th>Ставка</th><th>Начислено</th><th>Статус</th><th>Завершение</th></tr></thead><tbody>{placements.map((row) => <tr key={row.id}><td><b>{row.asset}</b></td><td>{programLabel(row.programId)}</td><td>{bankingNumber(row.principal, row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8)}</td><td>{percent(row.monthlyRate)} / мес.</td><td>{bankingNumber(row.rewardAccrued, row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8)} {row.asset}</td><td>{row.status === 'ACTIVE' ? 'Активно' : 'Завершено'}</td><td>{row.maturityDate}</td></tr>)}</tbody></table> : <div className="banking-empty">Активных размещений пока нет.</div>}
           </div>
         </section>
       </main>
 
-      {confirmOpen && calculation && <div className="banking-modal-backdrop" role="presentation"><div className="banking-modal" role="dialog" aria-modal="true" aria-label="Подтверждение размещения"><button className="banking-modal-close" onClick={() => setConfirmOpen(false)} aria-label="Закрыть"><X /></button><h2>Подтвердить размещение</h2><p>{programLabel(programId)} · {asset}</p><div className="banking-modal-amount">{bankingNumber(amount, precision)} <span>{asset}</span></div><dl><dt>Ставка</dt><dd>{program && percent(program.monthlyRate)} в месяц</dd><dt>Срок</dt><dd>{program?.termMonths} месяцев</dd><dt>Валюта вознаграждения</dt><dd>{asset}</dd><dt>Минимум</dt><dd>$2,500 equivalent</dd></dl><p className="banking-condition">{program?.lockRule === 'PRINCIPAL_RETURN_UNDEFINED' ? 'Условия досрочного возврата основной суммы не определены.' : `Основная сумма и вознаграждения заблокированы на ${program?.termMonths ?? 24} месяцев.`}</p><button className="banking-primary" disabled={busy} onClick={() => void place()}>{busy ? 'Сохранение…' : 'Подтвердить'}</button></div></div>}
+      {confirmOpen && calculation && <div className="banking-modal-backdrop" role="presentation"><div className="banking-modal" role="dialog" aria-modal="true" aria-label="Подтверждение размещения"><button className="banking-modal-close" onClick={() => setConfirmOpen(false)} aria-label="Закрыть"><X /></button><h2>Подтвердить размещение</h2><p>{programLabel(programId)} · {asset}</p><div className="banking-modal-amount">{bankingNumber(amount, precision)} <span>{asset}</span></div><dl><dt>Ставка</dt><dd>{program && percent(program.monthlyRate)} в месяц</dd><dt>Срок</dt><dd>{program?.termMonths} месяцев</dd><dt>Валюта вознаграждения</dt><dd>{asset}</dd><dt>Минимум</dt><dd>эквивалент $2,500</dd></dl><p className="banking-condition">{program?.lockRule === 'PRINCIPAL_RETURN_UNDEFINED' ? 'Условия досрочного возврата основной суммы не определены.' : `Основная сумма и вознаграждения заблокированы на ${program?.termMonths ?? 24} месяцев.`}</p><button className="banking-primary" disabled={busy} onClick={() => void place()}>{busy ? 'Сохранение…' : 'Подтвердить'}</button></div></div>}
     </div>
   );
 }
