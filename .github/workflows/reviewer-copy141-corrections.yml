@@ -1,0 +1,57 @@
+name: Validate reviewer Copy Trading corrections
+on:
+  push:
+    branches: [review/copy-141-ui-audit]
+    paths: [.github/workflows/reviewer-copy141-corrections.yml]
+permissions:
+  contents: write
+jobs:
+  corrected-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: cp scripts/reviewer-copy141-fixes.py /tmp/reviewer-copy141-fixes.py
+      - uses: actions/checkout@v4
+        with:
+          ref: e57e38199721e02a991d6d7072b213c6b48c60f0
+          path: checked
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply only the reviewed changes on the exact PR revision
+        working-directory: checked
+        run: |
+          test "$(git rev-parse HEAD)" = e57e38199721e02a991d6d7072b213c6b48c60f0
+          python3 /tmp/reviewer-copy141-fixes.py .
+          git diff --check
+      - name: Dependencies and builds
+        working-directory: checked
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm run build
+          npm run build --prefix frontend
+      - name: Reviewer regressions and existing Copy Trading tests
+        working-directory: checked
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/copyMarketplaceReview.test.ts
+          frontend/src/lib/__tests__/copyMarketplaceRetry.test.ts
+          frontend/src/lib/__tests__/copyMarketplaceCache.test.ts
+          frontend/src/lib/__tests__/copyMarketplacePayload.test.ts
+          src/services/copyTrading/__tests__/tradeHistoryVisibility.test.ts
+          src/services/copyTrading/__tests__/kseniaReportedWeek.test.ts
+      - name: Publish tested commit ONLY to a review branch
+        working-directory: checked
+        run: |
+          git config user.name 'VOLTEX reviewer'
+          git config user.email 'reviewer@users.noreply.github.com'
+          git add frontend/src/lib/copyMarketplacePrivacy.ts frontend/src/lib/copyMarketplaceStore.ts frontend/src/lib/useCopyMarketplace.ts frontend/src/lib/__tests__/copyMarketplaceReview.test.ts .github/workflows/copy-trading-card-regression.yml
+          git diff --cached --stat
+          git commit -m 'Copy review: protect legacy cache privacy and retry incomplete strategies'
+          git push origin HEAD:refs/heads/review/copy-141-corrections
+          echo "TESTED_CORRECTION_SHA=$(git rev-parse HEAD)"
