@@ -5,19 +5,15 @@ import { LOCALES, readLocale } from '../../../test-utils/i18nSource';
 /**
  * The exchange is shown to people who are not building it. A screen that
  * names the WebSocket, the backend, the database, an env var or a fixture is
- * telling the reader about our plumbing instead of about their money.
- *
- * Important distinction: "demo" / "simulation" are NOT plumbing when they
- * truthfully disclose that a balance or trading mode is simulated. Those
- * labels must remain visible so a user or investor is never led to believe a
- * simulated account is a live-custody account.
+ * telling the reader about our plumbing instead of about their money — and
+ * "demo", "sandbox" and "synthetic data" are worse, because a reader who
+ * sees them on a screen that is in fact live draws the wrong conclusion.
  *
  * This guard is the standing version of a sweep done by hand once. It reads
  * the rendered copy — the seven dictionaries, and string/JSX text in the
  * components — and fails on the vocabulary below. It deliberately does NOT
  * look at identifiers, imports, types, CSS classes or comments: naming a
- * variable `nativeDemoApi` is fine; a truthful "Demo balance" / "Симуляция"
- * label is also fine because it describes the product state, not the plumbing.
+ * variable `nativeDemoApi` is fine, printing "демо" on a panel is not.
  */
 
 const root = resolve(__dirname, '../../../..');
@@ -32,6 +28,8 @@ const PLUMBING = [
   /синтетическ|synthetic data/i,
   /фикстур|fixture/i,
   /песочниц|sandbox/i,
+  /демо|\bdemo\b/i,
+  /симуляци|simulation/i,
   /заглушк|\bmock\b/i,
   /снапшот|снимк(ам|ов|и) /i,
   /захардкож|hardcoded/i,
@@ -48,11 +46,13 @@ const PLUMBING = [
 const ENV_VAR_NAME = /[A-Z][A-Z0-9]{3,}_[A-Z0-9_]{3,}/;
 
 /**
- * Product terms may stay when they are truthful disclosures rather than
- * implementation details. API keys are a product the user creates and revokes.
- * Simulated/demo balances and modes must also stay plainly labeled. The admin
- * test-balance section is staff-only and likewise must not be disguised as
- * ordinary funds.
+ * Two things stay, and both are deliberate.
+ *
+ * API keys are a product the user creates, uses and revokes on a settings
+ * page of their own — the word is the feature's name, not a leak. The admin
+ * console's test-balance section is staff-only and must keep saying plainly
+ * that the funds it credits are not real; making that read like a normal
+ * balance would be the dangerous edit, not the honest one.
  */
 const ALLOWED = [
   /API[- ]?(key|ключ|кунж|कुंज|キー|키|密钥|клав)/i,
