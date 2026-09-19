@@ -128,6 +128,14 @@ function controller(rendered: NativePosition[], current: NativePosition[]) {
 }
 
 describe('execution resolves against current state, not a stale render', () => {
+  test('hybrid close submits exactly once even for a stale-price failure and never sends the historical candle',async()=>{
+    const p={...position('target','CROSS'),executionMode:'HISTORICAL_DEMO' as const};
+    const native=controller([p],[p]);
+    native.execute.mockRejectedValueOnce(new PrivateTradingError('Unavailable',503,'quote_stale'));
+    await expect(executionHook()(native,null).closePosition(p.id)).rejects.toMatchObject({code:'quote_stale'});
+    expect(native.execute).toHaveBeenCalledTimes(1);
+    expect(native.execute).toHaveBeenCalledWith({kind:'CLOSE',positionId:p.id});
+  });
   test('a removed explicit target refuses even while the rendered state still contains it', async () => {
     const p = position('target', 'ISOLATED'), neighbour = position('neighbour', 'CROSS');
     const native = controller([neighbour, p], [neighbour]);

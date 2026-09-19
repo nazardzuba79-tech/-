@@ -6,6 +6,8 @@ import type { LiveStatus } from '../services/marketData/live/contract';
 
 /** Public data only. API instances MUST use the authenticated Frankfurt collector. */
 export const PRIVATE_QUOTE_MAX_AGE_MS = 5_000;
+/** Owner-authorized sampled demo valuation/settlement. NEVER a live book budget. */
+export const HISTORICAL_DEMO_CURRENT_MAX_AGE_MS = 60_000;
 export const PRIVATE_HISTORY_MAX_CANDLES = 50_000;
 export const PRIVATE_HISTORY_MAX_RANGE_MS = 90 * 24 * 60 * 60 * 1_000;
 const FUTURE_SKEW_MS = 1_000;
@@ -181,6 +183,12 @@ export interface PrivateMark {
   markProviderTimestamp: number; receivedAt: number; fetchedAt: number;
 }
 const privateMarkSchema = z.object({ symbol: symbolSchema, markPrice: positive, lastPrice: positive, markProviderTimestamp: timestamp, receivedAt: timestamp, fetchedAt: timestamp });
+export function assertHistoricalDemoCurrentPrice(value:unknown,expectedSymbol:string,now=Date.now()):PrivateMark {
+  const quote=read(privateMarkSchema,value);
+  if(quote.symbol!==symbol(expectedSymbol))return invalid();
+  if(![quote.markProviderTimestamp,quote.receivedAt,quote.fetchedAt].every(t=>fresh(t,now,HISTORICAL_DEMO_CURRENT_MAX_AGE_MS)))throw new PrivateMarketDataError('near_live_price_stale');
+  return quote;
+}
 const privateMarksSchema = z.object({ status: z.enum(['disabled', 'connecting', 'live', 'stale']), fetchedAt: timestamp, marks: z.array(privateMarkSchema).max(PRIVATE_MARKS_MAX) });
 export type PrivateMarksPage = z.infer<typeof privateMarksSchema>;
 export function liveMarks(rows: LiveTicker[], requested: string[], now: number, status: LiveStatus): PrivateMarksPage {
@@ -388,6 +396,29 @@ export class PrivateTradingMarketData {
       if (![mark.markProviderTimestamp, mark.receivedAt, mark.fetchedAt].every(t => fresh(t, now))) continue;
       out.set(mark.symbol, mark);
     }
+    return out;
+  }
+  /** Sampled prices only for the private HISTORICAL_DEMO policy. No depth is invented. */
+  async historicalDemoPrices(symbols:string[],signal?:AbortSignal):Promise<Map<string,PrivateMark>> {
+    const wanted=[...new Set(symbols.map(symbol))],out=new Map<string,PrivateMark>();
+    if(!wanted.length)return out;
+    if(wanted.length>PRIVATE_MARKS_MAX)throw new PrivateMarketDataError('invalid_symbol',400);
+    const page=read(privateMarksSchema,await this.get(`marks?${new URLSearchParams({symbols:wanted.join(',')})}`,signal));
+    for(const value of page.marks){
+      if(!wanted.includes(value.symbol)||out.has(value.symbol))return invalid();
+      if([value.markProviderTimestamp,value.receivedAt,value.fetchedAt].every(t=>fresh(t,this.now(),HISTORICAL_DEMO_CURRENT_MAX_AGE_MS)))out.set(value.symbol,value);
+    }
+    // Missing frame rows take the existing authenticated REST observation.
+    // Its live book checks remain unchanged; only this consumer's subsequent
+    // mark/last lifetime is the explicit 60-second sampled-demo contract.
+    const missing=wanted.filter(s=>!out.has(s));
+    for(let i=0;i<missing.length;i+=8)await Promise.all(missing.slice(i,i+8).map(async s=>{
+      try{
+        const q=await this.freshQuote(s,signal);
+        out.set(s,assertHistoricalDemoCurrentPrice({symbol:s,markPrice:q.markPrice,lastPrice:q.lastPrice,
+          markProviderTimestamp:Math.min(q.markProviderTimestamp,q.providerTimestamp),receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt},s,this.now()));
+      }catch{abort(signal);/* Missing collateral stays unpriced; execution symbols are required by the caller. */}
+    }));
     return out;
   }
   private async chartPage(request: PrivateChartRequest): Promise<PrivateChartPage> {

@@ -9,6 +9,7 @@ import { NativeCheckpoint, NativeInstruction } from './replay';
 import { CollateralHolding } from './collateral';
 
 export interface NativeAccount {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
   revision:number; deposit:string; commands:NativeInstruction[]; snapshot:DemoState;
   createdAt:number; source:'DEMO_BALANCE'|'PREVIEW_FIXTURE';
   /** Non-settle wallet assets the owner chose NOT to use as Cross collateral. */

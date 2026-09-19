@@ -150,9 +150,11 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   useEffect(()=>{if(refreshOnLoad.current&&state?.initialized&&requested&&allowed){refreshOnLoad.current=false;void run({kind:'REFRESH'});}},[state,requested,allowed,run]);
   useEffect(()=>{if(!requested||!allowed||!state?.initialized)return;
     // A command in flight answers with fresh state anyway; the timer only fills quiet time.
-    const timer=window.setInterval(()=>{if(!document.hidden&&lane.current.pending===0&&!dialog&&!candle)void run({kind:'REFRESH'});},30000);
+    // Keeping a historical entry selected must not freeze an already-open
+    // hybrid position's current server valuation.
+    const timer=window.setInterval(()=>{if(!document.hidden&&lane.current.pending===0&&(state.executionMode==='HISTORICAL_DEMO'||(!dialog&&!candle)))void run({kind:'REFRESH'});},30000);
     return()=>clearInterval(timer);
-  },[requested,allowed,state?.initialized,run,dialog,candle]);
+  },[requested,allowed,state?.initialized,state?.executionMode,run,dialog,candle]);
   useEffect(()=>{const id=params.get('nativeCard');if(requested&&allowed&&id)nativeDemoApi.getCard(id).then(setCard).catch(fail);},[params,requested,allowed,fail]);
   const initialize=useCallback(async()=>{
     if(!state||!allowed)return;

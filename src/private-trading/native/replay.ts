@@ -46,6 +46,7 @@ export type NativeCandleRef={source:'BYBIT_LINEAR';interval:string;openTime:numb
  * exactly as it did.
  */
 export type NativeInstruction = {id:string;at:number;seq?:number;
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
   /** Freeze historical resolution for the scenario instead of changing it as the journal ages. */
   recordedAt?:number;
   /** Portfolio observation BEFORE a live execution, not only the order's contract. */
@@ -145,8 +146,8 @@ function segment(s:DemoState,group:Tick[]) {
     const candidates:BigNumber[]=[new D(1)];
     const include=(a:string,b:string,target:string)=>{if(crossed(a,b,target)){const r=ratio(a,b,target);if(r.gt(previous)||(initial&&r.eq(previous)))candidates.push(r);}};
     for(const {to,from} of points){
-      for(const o of s.orders.filter(o=>o.symbol===to.symbol&&o.historical&&o.type==='LIMIT'&&activeOrder(o)))if(o.price)include(from.last,to.last,o.price);
-      for(const p of s.positions.filter(p=>p.symbol===to.symbol&&p.historical&&p.status==='OPEN')){
+      for(const o of s.orders.filter(o=>o.symbol===to.symbol&&o.historical&&o.executionMode!=='HISTORICAL_DEMO'&&o.type==='LIMIT'&&activeOrder(o)))if(o.price)include(from.last,to.last,o.price);
+      for(const p of s.positions.filter(p=>p.symbol===to.symbol&&p.historical&&p.executionMode!=='HISTORICAL_DEMO'&&p.status==='OPEN')){
         const a=p.protection.triggerBy==='MARK'?from.mark:from.last,b=p.protection.triggerBy==='MARK'?to.mark:to.last;
         for(const trigger of [p.protection.takeProfit,p.protection.stopLoss])if(trigger!==null)include(a,b,trigger);
       }
@@ -169,7 +170,7 @@ function segment(s:DemoState,group:Tick[]) {
     // orders, placed on the declared OHLC model. A live resting order is
     // filled by an observed book (a BOOK instruction), never by a path that
     // proves a price and no volume.
-    for(const o of s.orders.filter(o=>points.some(p=>p.to.symbol===o.symbol)&&o.type==='LIMIT'&&o.historical&&activeOrder(o))){
+    for(const o of s.orders.filter(o=>points.some(p=>p.to.symbol===o.symbol)&&o.type==='LIMIT'&&o.historical&&o.executionMode!=='HISTORICAL_DEMO'&&activeOrder(o))){
       const last=(s.historicalMarks?.[o.symbol]??s.marks[o.symbol]).last;
       if(o.price&&(o.side==='LONG'?n(last).lte(o.price):n(last).gte(o.price))){
         try {fillDemoOrder(s,o.id,o.remaining,bounded(o.side,last,o.price),at,'OHLC_PATH_MODEL',true);}
@@ -209,7 +210,7 @@ export function exposedSymbols(s:DemoState){
   return new Set([...s.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol),...s.orders.filter(activeOrder).map(o=>o.symbol)]);
 }
 function historicalSymbols(s:DemoState){
-  return new Set([...s.positions.filter(p=>p.status==='OPEN'&&p.historical).map(p=>p.symbol),...s.orders.filter(o=>activeOrder(o)&&o.historical).map(o=>o.symbol)]);
+  return new Set([...s.positions.filter(p=>p.status==='OPEN'&&p.historical&&p.executionMode!=='HISTORICAL_DEMO').map(p=>p.symbol),...s.orders.filter(o=>activeOrder(o)&&o.historical&&o.executionMode!=='HISTORICAL_DEMO').map(o=>o.symbol)]);
 }
 function sortInstructions(input:NativeInstruction[]){
   if(input.length>NATIVE_JOURNAL_HARD_LIMIT)throw new DemoEngineError('JOURNAL_LIMIT');
@@ -249,6 +250,11 @@ function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefine
 function apply(s:DemoState,c:NativeInstruction,time:number){
   if(c.collateral!==undefined)setDemoCollateral(s,c.collateral);
   if(c.context)markDemoAccount(s,c.context.marks,time);
+  if(c.executionMode==='HISTORICAL_DEMO'&&c.kind!=='OBSERVE'){
+    evaluateDemoRiskAndProtection(s,time,'NEAR_LIVE_DEMO');
+    // A newly observed liquidation/stop already satisfied this close intent.
+    if(c.kind==='CLOSE'&&!s.positions.some(p=>p.id===c.positionId&&p.status==='OPEN'))return;
+  }
   if(c.kind==='OPEN'){
     registerDemoInstrument(s,c.instrument);
     markDemoAccount(s,{[c.order.symbol]:{mark:c.mark,last:c.last}},time);
@@ -273,13 +279,31 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
       }
       executeCloseBook(s,c.positionId,c.quantity,c.book,time,c.id);
     }
-    else closeDemoPosition(s,c.positionId,c.quantity,c.price,time,'SELECTED_POINT',c.id);
+    else closeDemoPosition(s,c.positionId,c.quantity,c.price,time,c.executionMode==='HISTORICAL_DEMO'?'NEAR_LIVE_DEMO':'SELECTED_POINT',c.id);
   }
   else if(c.kind==='CANCEL')cancelDemoOrder(s,c.orderId,time);
   else if(c.kind==='PROTECTION')protectDemoPosition(s,c.positionId,c.protection,time);
   else if(c.kind==='LEVERAGE')setDemoLeverage(s,c.positionId,c.leverage,time);
-  else if(c.kind==='OBSERVE'){markDemoAccount(s,c.marks,time);evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');}
+  else if(c.kind==='OBSERVE'){
+    if(c.executionMode==='HISTORICAL_DEMO')applyHistoricalDemoPrices(s,c.marks,time);
+    else {markDemoAccount(s,c.marks,time);evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');}
+  }
   else if(c.kind==='BOOK')executeObservedBook(s,c.symbol,c.book,time);
+}
+/** Explicit sampled demo settlement; never called by the live observed-book path. */
+export function applyHistoricalDemoPrices(s:DemoState,marks:Record<string,{mark:string;last:string}>,time:number){
+  if(s.positions.some(p=>p.status==='OPEN'&&p.executionMode!=='HISTORICAL_DEMO')
+    ||s.orders.some(o=>activeOrder(o)&&o.executionMode!=='HISTORICAL_DEMO'))throw new DemoEngineError('EXECUTION_MODE_MISMATCH');
+  markDemoAccount(s,marks,time);
+  evaluateDemoRiskAndProtection(s,time,'NEAR_LIVE_DEMO');
+  for(const o of s.orders.filter(o=>activeOrder(o)&&o.type==='LIMIT'&&o.executionMode==='HISTORICAL_DEMO')){
+    const price=marks[o.symbol]?.last;if(!price||!o.price)continue;
+    if(o.side==='LONG'?n(price).lte(o.price):n(price).gte(o.price)){
+      try{fillDemoOrder(s,o.id,o.remaining,price,time,'NEAR_LIVE_DEMO',o.createdAt!==time);}
+      catch(e){if(e instanceof DemoEngineError&&['INSUFFICIENT_FILL_MARGIN','POSITION_NOT_OPEN'].includes(e.code))cancelDemoOrder(s,o.id,time);else throw e;}
+    }
+  }
+  evaluateDemoRiskAndProtection(s,time,'NEAR_LIVE_DEMO');
 }
 export function checkCoverage(bars:ReplayBar[],request:BarRequest){
   if(bars.length>50000)throw new DemoEngineError('HISTORY_LIMIT');
@@ -302,7 +326,7 @@ function processGroups(s:DemoState,ticks:Tick[],commands:NativeInstruction[]){
       // completed later cannot replace them with an invented intrabar path.
       // Funding retains its explicit boundary-mark model for both families.
       const liveMarks={...s.marks};
-      const livePositions=s.positions.filter(p=>p.status==='OPEN'&&!p.historical).map(p=>({p,mark:p.markPrice,last:p.lastPrice}));
+      const livePositions=s.positions.filter(p=>p.status==='OPEN'&&(!p.historical||p.executionMode==='HISTORICAL_DEMO')).map(p=>({p,mark:p.markPrice,last:p.lastPrice}));
       const funding=time%NATIVE_DEMO_MODEL.funding.intervalMs===0;
       const selected=funding?group:group.filter(t=>historical.has(t.symbol));
       markDemoAccount(s,Object.fromEntries(selected.map(t=>[t.symbol,{mark:t.mark,last:t.last}])),time,!funding);
@@ -315,7 +339,7 @@ function processGroups(s:DemoState,ticks:Tick[],commands:NativeInstruction[]){
     }else segment(s,group);
     while(cursor<commands.length&&commands[cursor].at===time)apply(s,commands[cursor++],time);
     if(boundary)for(const t of group){
-      for(const o of s.orders.filter(o=>o.symbol===t.symbol&&o.type==='LIMIT'&&o.historical&&activeOrder(o))){
+      for(const o of s.orders.filter(o=>o.symbol===t.symbol&&o.type==='LIMIT'&&o.historical&&o.executionMode!=='HISTORICAL_DEMO'&&activeOrder(o))){
         // Marketable at its own placement moment = taker; resting until this boundary = maker.
         if(o.price&&(o.side==='LONG'?n(t.last).lte(o.price):n(t.last).gte(o.price)))fillDemoOrder(s,o.id,o.remaining,t.last,time,'OHLC_PATH_MODEL',o.createdAt!==time);
       }

@@ -21,6 +21,53 @@ suite('native HTTP acceptance with independent fill arithmetic',()=>{
   let db:PrismaClient;
   beforeAll(()=>{db=new PrismaClient();jest.spyOn(console,'info').mockImplementation(()=>{});});
   afterAll(async()=>{await db?.$disconnect();jest.restoreAllMocks();if(process.env.NATIVE_ACCEPTANCE_REPORT)writeFileSync(process.env.NATIVE_ACCEPTANCE_REPORT,JSON.stringify(report,null,2));});
+  test('hybrid HTTP LONG and SHORT: historical source, current mark/exit, persisted reload, exact reconciliation',async()=>{
+    const user=await db.user.create({data:{email:`hybrid-${randomUUID()}@example.test`,passwordHash:'NO_LOGIN',role:'ADMIN',referralCode:randomUUID()}});
+    const session=await db.session.create({data:{userId:user.id}}),actor={userId:user.id,sessionId:session.id,expiresAt:Date.now()+3600000};
+    await db.demoBalance.create({data:{userId:user.id,asset:'USDT',available:'1000'}});
+    const repo=new PrismaNativeRepository(db,()=>({enabled:true,ownerId:user.id}));
+    let entry='60000',current='81000',bookCalls=0;
+    const selected=Math.floor(Date.now()/3600000)*3600000-86400000;
+    const market=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'LOCAL_FIXTURE_ONLY'},request:(async(url)=>{
+      const u=new URL(String(url)),symbol=u.pathname.split('/').at(-1)!,t=Date.now();let data:unknown;
+      if(u.pathname.includes('/instruments/'))data={...instrument(symbol),fetchedAt:t};
+      else if(u.pathname.endsWith('/marks'))data={status:'live',fetchedAt:t,marks:u.searchParams.get('symbols')!.split(',').map(symbol=>({symbol,markPrice:current,lastPrice:current,markProviderTimestamp:t-15000,receivedAt:t-15000,fetchedAt:t}))};
+      else if(u.pathname.includes('/chart-candles/'))data={source:'BYBIT_LINEAR',symbol:'BTCUSDT',interval:'1h',fetchedAt:t,providerTimestamp:t,candles:[{timestamp:selected,open:entry,high:entry,low:entry,close:entry,volume:'10'}]};
+      else {if(u.pathname.includes('/quote/'))bookCalls++;throw Error('Unexpected source '+u.pathname);}
+      return new Response(JSON.stringify(data),{status:200});
+    }) as typeof fetch});
+    const app=express();app.use(express.json());
+    app.use('/native',(req,res,next)=>nativeDemoRoutes(new NativeDemoService(repo,market),()=>actor)(req,res,next));
+    app.use((e:any,_req:express.Request,res:express.Response,_next:express.NextFunction)=>res.status(e.status??500).json({error:e.message,code:e.code}));
+    await new NativeDemoService(repo,market).initialize(actor,randomUUID());
+    let wallet=n(1000);
+    for(const side of ['LONG','SHORT'] as const){
+      entry='60000';current='81000';
+      const input={kind:'OPEN',symbol:'BTCUSDT',side,type:'MARKET',quantity:'0.001',leverage:'10',marginType:'CROSS',...(side==='SHORT'?{executionMode:'HISTORICAL_DEMO'}:{}),
+        candle:{source:'BYBIT_LINEAR',interval:'1h',openTime:selected,pricePoint:'OPEN'},idempotencyKey:randomUUID()};
+      const opened=await request(app).post('/native/commands').send(input);
+      expect({status:opened.status,error:opened.body.error}).toEqual({status:200,error:undefined});
+      const p=opened.body.positions[0],fee=n(entry).times('.001').times(rate);
+      expect(p.entryPrice).toBe(entry);expect(p.openedAt).toBe(selected);expect(p.markPrice).toBe(current);
+      expect(p.unrealizedPnl).toBe(n(current).minus(entry).times('.001').times(side==='LONG'?1:-1).toFixed());
+      wallet=wallet.minus(fee);expect(opened.body.account.settleBalance).toBe(wallet.toFixed());
+      const duplicate=await request(app).post('/native/commands').send(input);
+      expect(duplicate.status).toBe(200);expect(duplicate.body.revision).toBe(opened.body.revision);
+      const reload=await request(app).get('/native/state');expect(reload.body.positions[0].entryPrice).toBe(entry);
+      current='81500';const marked=await request(app).post('/native/commands').send({kind:'REFRESH',idempotencyKey:randomUUID()});
+      expect(marked.status).toBe(200);expect(marked.body.positions[0].markPrice).toBe(current);
+      const closed=await request(app).post('/native/commands').send({kind:'CLOSE',positionId:p.id,idempotencyKey:randomUUID(),candle:input.candle});
+      expect(closed.status).toBe(200);const exit=closed.body.events.filter((e:any)=>e.kind==='CLOSE').at(-1);
+      expect(exit.price).toBe(current);expect(exit.pricing).toBe('NEAR_LIVE_DEMO');
+      const pnl=n(current).minus(entry).times('.001').times(side==='LONG'?1:-1),closeFee=n(current).times('.001').times(rate);
+      wallet=wallet.plus(pnl).minus(closeFee);
+      expect(exit.cashflow).toBe(pnl.minus(closeFee).toFixed());expect(exit.fee).toBe(closeFee.toFixed());
+      expect(closed.body.account.settleBalance).toBe(wallet.toFixed());expect(closed.body.ledger.reconciled).toBe(true);
+      expect(closed.body.positions).toHaveLength(0);expect(closed.body.orders.filter((o:any)=>['OPEN','PARTIALLY_FILLED'].includes(o.status))).toHaveLength(0);
+      report.push({test:`HISTORICAL_DEMO ${side}`,input,server:{entry:p.entryPrice,exit:exit.price,wallet:closed.body.account.settleBalance},expected:{wallet:wallet.toFixed(),pnl:pnl.toFixed(),fees:fee.plus(closeFee).toFixed()},status:'PASS',ms:0});
+    }
+    expect(bookCalls).toBe(0);
+  },30000);
   test('LONG, SHORT, reload, closes, LIMIT, reduce-only, both margin modes, TP/SL and refusal',async()=>{
     const user=await db.user.create({data:{email:`acceptance-${randomUUID()}@example.test`,passwordHash:'NO_LOGIN',role:'ADMIN',referralCode:randomUUID()}});
     const session=await db.session.create({data:{userId:user.id}});

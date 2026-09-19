@@ -116,6 +116,11 @@ export function useNativeFuturesExecution(
       async closePosition(positionId) {
         const first=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
         if(!first)throw new PrivateTradingError('Позиция уже закрыта или не найдена',409);
+        if(first.executionMode==='HISTORICAL_DEMO'){
+          // One current-price command, no automatic resubmission after any failure.
+          try{await execute({kind:'CLOSE',positionId});}catch(e){throw failureOf(e,'Позиция не закрыта');}
+          return;
+        }
         /**
          * The server owns CLOSE sizing now. A position may be larger than one
          * venue market order (or older than today's contract limits), so the

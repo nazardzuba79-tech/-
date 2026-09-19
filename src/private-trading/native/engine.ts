@@ -89,6 +89,7 @@ export interface DemoProtection { takeProfit: string | null; stopLoss: string | 
  */
 export interface PendingClose { reason: 'STOP_LOSS' | 'TAKE_PROFIT'; quantity: string; triggerPrice: string; triggeredAt: number; actionId: string }
 export interface DemoOrder {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'; entryTimestamp?:number;
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; remaining: string;
   filled: string; averagePrice: string | null; price: string | null; leverage: string; reserved: string;
   status: 'OPEN' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED'; createdAt: number;
@@ -97,6 +98,7 @@ export interface DemoOrder {
   marginType: DemoMarginType;
 }
 export interface DemoPosition {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'; entryTimestamp?:number;
   id: string; symbol: string; side: Side; quantity: string; entryPrice: string; leverage: string;
   status: 'OPEN' | 'CLOSED' | 'LIQUIDATED'; openedAt: number; closedAt: number | null;
   markPrice: string; lastPrice: string; entryNotional: string; realizedGross: string;
@@ -133,7 +135,7 @@ export interface DemoEvent {
    * settlement), never an observed fill. SELECTED_POINT / COMMAND: the
    * trader's own input.
    */
-  pricing: 'OBSERVED_BOOK' | 'MAKER_MODEL' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
+  pricing: 'OBSERVED_BOOK' | 'MAKER_MODEL' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND' | 'NEAR_LIVE_DEMO';
   /** MAKER_MODEL fills: the observed book level the liquidity came from. */
   sourcePrice?: string;
   /**
@@ -236,6 +238,7 @@ export interface DemoState {
   time: number; nextEvent: number;
 }
 export interface DemoOrderInput {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'; entryTimestamp?:number;
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; leverage: string;
   price?: string; reduceOnly?: boolean; positionId?: string; protection?: Partial<DemoProtection>; historical?: boolean;
   /** Omitted on instructions journaled before margin mode existed; those are Cross. */
@@ -435,7 +438,7 @@ export function demoAccount(s: DemoState) {
   let upl = new D(0), mm = new D(0), im = new D(0), reserve = new D(0);
   let isolatedMargin = new D(0), isolatedUpl = new D(0), isolatedMaintenance = new D(0);
   for (const p of s.positions.filter(p => p.status === 'OPEN')) {
-    const mark = (p.historical ? s.historicalMarks?.[p.symbol] ?? s.marks[p.symbol] : s.marks[p.symbol])?.mark; if (!mark) throw new DemoEngineError('MARK_MISSING');
+    const mark = (p.historical && p.executionMode!=='HISTORICAL_DEMO' ? s.historicalMarks?.[p.symbol] ?? s.marks[p.symbol] : s.marks[p.symbol])?.mark; if (!mark) throw new DemoEngineError('MARK_MISSING');
     const risk = positionRisk(s,p,mark);
     if (p.marginType === 'ISOLATED') {
       isolatedMargin = isolatedMargin.plus(p.isolatedMargin);
@@ -606,7 +609,8 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
     if(need.plus(nextReserve).gt(capacity))throw new DemoEngineError('INSUFFICIENT_FILL_MARGIN');
     if(!p) {
       p={id:o.id,symbol:o.symbol,side:o.side,quantity:'0',entryPrice:price,leverage:o.leverage,status:'OPEN',openedAt:time,closedAt:null,
-        markPrice:(o.historical?s.historicalMarks?.[o.symbol]??s.marks[o.symbol]:s.marks[o.symbol]).mark,lastPrice:(o.historical?s.historicalMarks?.[o.symbol]??s.marks[o.symbol]:s.marks[o.symbol]).last,entryNotional:'0',realizedGross:'0',openingFees:'0',closingFees:'0',
+        ...(o.executionMode?{executionMode:o.executionMode,entryTimestamp:o.entryTimestamp}:{}),
+        markPrice:(o.historical&&o.executionMode!=='HISTORICAL_DEMO'?s.historicalMarks?.[o.symbol]??s.marks[o.symbol]:s.marks[o.symbol]).mark,lastPrice:(o.historical&&o.executionMode!=='HISTORICAL_DEMO'?s.historicalMarks?.[o.symbol]??s.marks[o.symbol]:s.marks[o.symbol]).last,entryNotional:'0',realizedGross:'0',openingFees:'0',closingFees:'0',
         fundingNet:'0',roiBasis:'0',closedRoiBasis:'0',protection:structuredClone(o.protection),historical:o.historical,lastFundingAt:time,
         marginType:o.marginType,isolatedMargin:'0',shortfallCovered:'0'};s.positions.push(p);
     }
@@ -690,7 +694,7 @@ export function markDemoAccount(s:DemoState,marks:Record<string,{mark:string;las
     if(historicalOnly)s.historicalMarks![symbol]={...v,time};
     else {s.marks[symbol]={...v,time};if(s.historicalMarks?.[symbol])s.historicalMarks[symbol]={...v,time};}
   }
-  for(const p of s.positions.filter(p=>p.status==='OPEN'&&(!historicalOnly||p.historical))){const v=p.historical?s.historicalMarks?.[p.symbol]??s.marks[p.symbol]:s.marks[p.symbol];if(!v)throw new DemoEngineError('MARK_MISSING');p.markPrice=v.mark;p.lastPrice=v.last;}
+  for(const p of s.positions.filter(p=>p.status==='OPEN'&&(!historicalOnly||(p.historical&&p.executionMode!=='HISTORICAL_DEMO')))){const v=p.historical&&p.executionMode!=='HISTORICAL_DEMO'?s.historicalMarks?.[p.symbol]??s.marks[p.symbol]:s.marks[p.symbol];if(!v)throw new DemoEngineError('MARK_MISSING');p.markPrice=v.mark;p.lastPrice=v.last;}
   s.time=time;
 }
 export function settleDemoFunding(s:DemoState,time:number) {
@@ -715,7 +719,7 @@ export function settleDemoFunding(s:DemoState,time:number) {
 }
 export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:DemoEvent['pricing']='OHLC_PATH_MODEL',historicalOnly=false) {
   requireTime(s,time);
-  const eligible=(p:DemoPosition)=>!historicalOnly||p.historical;
+  const eligible=(p:DemoPosition)=>!historicalOnly||(p.historical&&p.executionMode!=='HISTORICAL_DEMO');
   // Isolated first, and one at a time: a position whose own post is gone is
   // closed on its own, and the rest of the account — including every other
   // isolated position — is untouched by it.
@@ -725,7 +729,7 @@ export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:De
     settleClose(s,p,p.quantity,isolatedBankruptcyBound(p),time,'LIQUIDATION','MARK_SETTLEMENT',null);
   }
   if(demoAccount(s).liquidatable){
-    for(const o of s.orders.filter(o=>active(o)&&o.marginType==='CROSS'&&(!historicalOnly||o.historical)))cancelDemoOrder(s,o.id,time);
+    for(const o of s.orders.filter(o=>active(o)&&o.marginType==='CROSS'&&(!historicalOnly||(o.historical&&o.executionMode!=='HISTORICAL_DEMO'))))cancelDemoOrder(s,o.id,time);
     // Only the shared book is swept. An isolated position is not collateral
     // for the account and is not seized to save it.
     for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='CROSS'&&eligible(p)))settleClose(s,p,p.quantity,p.markPrice,time,'LIQUIDATION','MARK_SETTLEMENT',null);

@@ -4,6 +4,7 @@ import { PrivateTradingError, type PrivateResultCard } from './privateTradingApi
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export interface NativeProtection {takeProfit:string|null;stopLoss:string|null;quantity:string|null;triggerBy:'MARK'|'LAST'}
 export interface NativePosition {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';entryTimestamp?:number;
   id:string;symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;lastPrice:string;leverage:string;
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
@@ -29,6 +30,7 @@ export interface NativeEvent {id:string;kind:string;time:number;positionId:strin
   /** The one user action behind this fill; several fills of one close share it. Absent on older journals. */
   actionId?:string;sourcePrice?:string}
 export interface NativeState {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
   model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
   /**
@@ -120,7 +122,7 @@ export interface NativeWallet{
   unpricedAssets:string[];
 }
 export type NativeDraft=
- | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string;marginType?:'CROSS'|'ISOLATED'}
+ | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string;marginType?:'CROSS'|'ISOLATED';executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'}
  | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
  | {kind:'CANCEL';orderId:string}
  | {kind:'PROTECTION';positionId:string;protection:Partial<NativeProtection>}
@@ -165,7 +167,8 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     wallet:(signal?:AbortSignal)=>request<NativeWallet>('/native/wallet',undefined,signal),
     setCollateral:(asset:string,enabled:boolean,idempotencyKey:string)=>request<NativeWallet>('/native/collateral-preference',{asset,enabled,idempotencyKey}),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
-    command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
+    command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,
+      ...(draft.kind==='OPEN'&&draft.candle&&!draft.reduceOnly?{executionMode:draft.executionMode??'HISTORICAL_DEMO'}:{}),idempotencyKey}),
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),
     getCard:(id:string)=>{const m=/^native:(\d+):(native-[a-zA-Z0-9-]+)$/.exec(id);if(!m)throw new PrivateTradingError('Карточка не найдена',404);return request<PrivateResultCard>(`/native/cards/${m[1]}/${m[2]}`);},
   };

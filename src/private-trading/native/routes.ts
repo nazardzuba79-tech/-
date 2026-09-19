@@ -22,7 +22,7 @@ export const nativeCommandSchema=z.discriminatedUnion('kind',[
     reduceOnly:z.literal(true).optional(),positionId:key.optional(),
     // Omitted means Cross, which is what every order placed before this
     // field existed was. The engine validates it again on the way in.
-    marginType:z.enum(['CROSS','ISOLATED']).optional()}).strict(),
+    marginType:z.enum(['CROSS','ISOLATED']).optional(),executionMode:z.enum(['LIVE_EXECUTION','HISTORICAL_DEMO']).optional()}).strict(),
   z.object({kind:z.literal('CLOSE'),idempotencyKey:key,positionId:key,quantity:positive.optional(),candle:candle.optional()}).strict(),
   z.object({kind:z.literal('CANCEL'),idempotencyKey:key,orderId:key}).strict(),
   z.object({kind:z.literal('PROTECTION'),idempotencyKey:key,positionId:key,protection}).strict(),
@@ -31,8 +31,10 @@ export const nativeCommandSchema=z.discriminatedUnion('kind',[
 ]).superRefine((x,c)=>{
   if(x.kind==='OPEN'&&(Boolean(x.margin)===Boolean(x.quantity)||x.type==='LIMIT'&&!x.price))c.addIssue({code:'custom',message:'Укажите маржу или количество; для лимитного ордера нужна цена'});
   if(x.kind==='OPEN'&&x.reduceOnly&&!x.positionId)c.addIssue({code:'custom',message:'Для сокращающего ордера нужна позиция'});
+  if(x.kind==='OPEN'&&x.executionMode==='LIVE_EXECUTION'&&x.candle)c.addIssue({code:'custom',message:'Историческая точка недоступна для live execution'});
 });
 export const NATIVE_ERROR_TEXT:Record<string,string>={
+  HISTORICAL_ENTRY_REQUIRED:'Выберите точку входа на графике.',EXECUTION_MODE_MISMATCH:'Сначала закройте позиции и отмените ордера другого режима.',
   HISTORY_GAP:'История содержит пропуски. Сделка не записана.',HISTORY_LIMIT:'Слишком длинный участок истории для одного расчёта.',MARK_HISTORY_GAP:'Нет Mark Price истории для этого участка.',
   // Say what the trader can act on. The cause here is genuinely the
   // account's free collateral, so it is named as that and nothing else —
@@ -98,6 +100,10 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));
   r.post('/commands',handle((req,res)=>{
     const input=nativeCommandSchema.parse(req.body) as NativeCommand;
+    // Existing authenticated terminal builds sent the selected candle before
+    // the mode field existed. New HTTP entries use the hybrid policy; stored
+    // journal instructions are never rewritten or reinterpreted here.
+    if(input.kind==='OPEN'&&input.candle&&!input.reduceOnly&&!input.executionMode)input.executionMode='HISTORICAL_DEMO';
     const scope=new CommandScope(input.kind);
     res.setHeader('X-Native-Request-Id',scope.id);
     scope.trace('http.accepted',{keyHash:createHash('sha256').update(input.idempotencyKey).digest('hex').slice(0,16)});
