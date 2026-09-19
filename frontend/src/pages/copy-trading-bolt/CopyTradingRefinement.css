@@ -319,3 +319,36 @@
   .copytrading-bolt-root.profile-view .profile-chart-x-inception span:nth-child(2),
   .copytrading-bolt-root.profile-view .profile-chart-x-inception span:nth-child(4) { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE TRADE HISTORY, WITHHELD.
+
+   The rows are removed on the server (see
+   services/copyTrading/tradeHistoryVisibility.ts), so this is what the
+   panel has to show instead — not a cover over a table that is still
+   there. It is deliberately small and calm: a struck-through eye and one
+   sentence, occupying about the height of two rows rather than the space
+   the whole table used to, so the panels above and below keep their
+   rhythm instead of leaving a hole where the history was. */
+.copytrading-bolt-root.profile-view .trades-hidden-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 84px;
+  padding: 18px;
+  border: 1px solid #242b33;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .012);
+  color: var(--profile-muted, #747f8c);
+}
+.copytrading-bolt-root.profile-view .trades-hidden-note svg { flex: 0 0 auto; opacity: .75; }
+.copytrading-bolt-root.profile-view .trades-hidden-note p {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: .01em;
+}
+@media (max-width: 640px) {
+  .copytrading-bolt-root.profile-view .trades-hidden-note { min-height: 72px; padding: 14px; gap: 8px; }
+  .copytrading-bolt-root.profile-view .trades-hidden-note p { font-size: 12px; }
+}

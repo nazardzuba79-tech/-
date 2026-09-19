@@ -138,6 +138,36 @@ function reportedKseniaCountsInPeriod(value: Record<string, any>, period: Perfor
   const closeMs = Date.parse(`${KSENIA_REPORTED_CLOSE_DATE}T00:00:00Z`);
   return Number.isFinite(endMs) && closeMs > endMs - PERIOD_DAYS[period] * 86_400_000;
 }
+/**
+ * The server's DECLARATION that it withheld the executions.
+ *
+ * Without this the redacted payload is indistinguishable from a broken one:
+ * `trades: []` on a strategy with 465 trades is exactly what a truncated or
+ * half-built response looks like, and the client would rightly drop the
+ * whole card — which is the failure mode this file already exists to
+ * prevent. So the omission has to be stated, not inferred.
+ *
+ * It is checked strictly. `mode` and `reason` are exact, and the periods it
+ * excuses must be real period names — a declaration cannot be a blanket
+ * permission to omit whatever the payload happens to be missing.
+ *
+ * NOTHING FINANCIAL IS RELAXED BY IT. Every ROI, PnL, gross profit/loss,
+ * net total, trade count, drawdown and volatility is still required to be a
+ * finite number, in every period, exactly as before. The only thing this
+ * can excuse is the HOLDING-TIME aggregate, which is a duration rather than
+ * a financial figure, and only for the periods it names.
+ */
+function hiddenTradeHistory(value: Record<string, any>): boolean {
+  const visibility = value.tradeVisibility;
+  return record(visibility) && visibility.mode === 'HIDDEN' && visibility.reason === 'OWNER_RESTRICTED'
+    && Array.isArray(visibility.holdingTimeUnknownPeriods)
+    && visibility.holdingTimeUnknownPeriods.every((period: unknown) =>
+      typeof period === 'string' && ['7D', '30D', '90D', 'ALL'].includes(period));
+}
+function holdingTimeMayBeUnknown(value: Record<string, any>, period: PerformancePeriod): boolean {
+  return hiddenTradeHistory(value) && value.tradeVisibility.holdingTimeUnknownPeriods.includes(period);
+}
+
 function visibleTrade(value: unknown, strategyId: string): value is Record<string, any> {
   if (reportedKseniaTrade(value, strategyId)) return true;
   return record(value)
@@ -170,8 +200,13 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
   // fully formed. The single owner-reported Ksenia row is intentionally
   // partial only where the operator did not provide the underlying facts.
   // Counted, not necessarily on screen. See reportedKseniaPerformance.
-  const reportedPresent = (Array.isArray(value.trades)
-    && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id)))
+  const hidden = hiddenTradeHistory(value);
+  // With the executions withheld there is no reported ROW and no reported
+  // BLOCK to read — redaction removes both, deliberately, because one
+  // owner-reported execution is still an execution. The declaration takes
+  // over that job for exactly the periods it names.
+  const reportedPresent = hidden
+    || (Array.isArray(value.trades) && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id)))
     || reportedKseniaPerformance(value, id);
   const visibleTrades = Array.isArray(value.trades)
     && value.trades.length <= VISIBLE_TRADE_ROWS
@@ -181,12 +216,16 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
   const tradeStats = record(value.tradeStats)
     && (['7D','30D','90D','ALL'] as PerformancePeriod[]).every(period => {
       const stats = (value.tradeStats as any)[period];
-      const mayOmitHolding = reportedPresent && reportedKseniaCountsInPeriod(value, period);
+      const mayOmitHolding = hidden
+        ? holdingTimeMayBeUnknown(value, period)
+        : reportedPresent && reportedKseniaCountsInPeriod(value, period);
       return numbers(stats, 'totalTrades winningTrades losingTrades grossProfit grossLoss netPnlTotal')
         && (finite(stats.holdingTimeTotalMinutes) || (mayOmitHolding && stats.holdingTimeTotalMinutes === undefined));
     })
     // The real total must be at least what is shown, or the count under the
-    // table would be smaller than the table.
+    // table would be smaller than the table. When the rows are withheld this
+    // still has to be the REAL total — «скрыто» is not «ноль сделок», and a
+    // redacted payload that forgot its count would be a bug, not a policy.
     && finite(value.tradeHistoryCount) && (value.tradeHistoryCount as number) >= value.trades.length
     && (value.tradeStats as any).ALL.totalTrades === value.tradeHistoryCount
     // Main Markets is a FULL-HISTORY aggregate. A summary that omits it

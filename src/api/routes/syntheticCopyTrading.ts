@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { SyntheticCopyTradingService } from '../../services/copyTrading/SyntheticCopyTradingService';
 import { PrismaSyntheticStateStore } from '../../services/copyTrading/PrismaSyntheticStateStore';
+import { redactTradeHistory } from '../../services/copyTrading/tradeHistoryVisibility';
 
 const advanceSchema = z.object({ days: z.union([z.literal(1), z.literal(7), z.literal(30), z.literal(90)]) });
 const modeSchema = z.object({ mode: z.enum(['REAL_TIME', 'FAST_FORWARD']) });
@@ -24,8 +25,14 @@ export function syntheticCopyTradingRouter(prisma: PrismaClient) {
   const router = Router();
   const service = new SyntheticCopyTradingService(new PrismaSyntheticStateStore(prisma));
 
+  // This endpoint predates the marketplace and returns the SAME strategy
+  // (`trader.id` is VX-001) with its whole trade array, to any authenticated
+  // visitor. Redacting only the marketplace would have left the history one
+  // direct request away, so it is redacted on identical terms. The admin
+  // routes below are unchanged: the complete history stays on the server for
+  // the calculations and for the owner's own access.
   router.get('/copy-trading/synthetic', requireAuth(prisma), async (_req, res, next) => {
-    try { res.json(await service.get()); } catch (error) { next(error); }
+    try { res.json(redactTradeHistory(await service.get())); } catch (error) { next(error); }
   });
 
   router.post('/admin/copy-trading/synthetic/advance', requireAuth(prisma), requireAdmin(prisma), async (req, res, next) => {

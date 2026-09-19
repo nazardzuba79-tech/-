@@ -17,6 +17,7 @@ import {
   Star,
   Users,
   Zap,
+  EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -541,6 +542,28 @@ function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: Synt
   // hiding data the browser holds.
   const visibleTrades = periodData?.trades.slice(0, VISIBLE_TRADE_ROWS);
   const cashflowHistory = periodData?.economics !== undefined;
+
+  // The executions were withheld by the server, so there is nothing to
+  // render and nothing in the payload to render it from. This block is what
+  // the visitor gets instead — a statement, not a teaser: it does not say
+  // the rows are available to anyone, because no server rule makes that
+  // true. The COUNT stays on screen, because a hidden history is still a
+  // real history and «скрыто» is not «ноль сделок».
+  if (periodData?.tradesHidden) {
+    return (
+      <section className="profile-panel profile-trades-panel">
+        <div className="profile-panel-heading">
+          <div><span>Исполнено стратегией</span><h2>История сделок</h2></div>
+          <strong>{`${periodData.totalTrades} закрытых`}</strong>
+        </div>
+        <div className="trades-hidden-note" role="note">
+          <EyeOff size={22} aria-hidden="true" />
+          <p>Информация о сделках скрыта</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="profile-panel profile-trades-panel">
       <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>{simpleReturn ? 'Последние закрытые сделки' : 'История сделок'}</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.totalTrades}` : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>

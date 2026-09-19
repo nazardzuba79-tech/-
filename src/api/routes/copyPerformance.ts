@@ -5,6 +5,7 @@ import { CopyPerformanceService } from '../../services/copyTrading/CopyPerforman
 import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrading/strategyOwner';
 import { summarizeStrategy } from '../../services/copyTrading/marketplaceSummary';
 import { withKseniaReportedTrade } from '../../services/copyTrading/kseniaReportedTrade';
+import { redactTradeHistory } from '../../services/copyTrading/tradeHistoryVisibility';
 
 /** Server-side only, and deliberately not exported to the response. */
 function logSectionFailures(results: PromiseSettledResult<unknown>[]) {
@@ -30,9 +31,13 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     // trade rows for the history table and nothing more. `summarizeStrategy`
     // reads every trade to build `tradeStats`, so no figure is derived from
     // the ten. See services/copyTrading/marketplaceSummary.ts.
+    // `redactTradeHistory` is LAST on both strategies, after the Ksenia
+    // overlay has folded its reported trade into the aggregates — otherwise
+    // that overlay would reinsert a row into a response already cleaned.
+    // Executions never leave this function. See tradeHistoryVisibility.ts.
     const results = await Promise.allSettled([
-      service.get('nazar').then(summarizeStrategy),
-      service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade),
+      service.get('nazar').then(summarizeStrategy).then(redactTradeHistory),
+      service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade).then(redactTradeHistory),
       Promise.all(PUBLIC_STRATEGIES.map(id => resolveStrategyOwner(prisma, id))),
     ]);
     const [nazar, ksenia, identities] = results.map(result => result.status === 'fulfilled' ? result.value : null);
@@ -54,7 +59,9 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
       res.setHeader('Cache-Control', 'no-store');
       try {
         const summary = summarizeStrategy(await service.get(strategy));
-        res.json(strategy === 'ksenia' ? withKseniaReportedTrade(summary) : summary);
+        // The per-strategy endpoint is a direct link to the same data, so it
+        // redacts on exactly the same terms — and last, for the same reason.
+        res.json(redactTradeHistory(strategy === 'ksenia' ? withKseniaReportedTrade(summary) : summary));
       }
       catch (error) {
         console.error(`[copy-trading] strategy "${strategy}" unavailable: `
