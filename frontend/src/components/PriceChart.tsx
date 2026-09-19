@@ -370,9 +370,14 @@ export function PriceChart({
         background: { type: ColorType.Solid, color: plotBackground || '#101014' },
         // A cool, slightly desaturated near-white rather than pure #fff —
         // reads as a premium instrument panel, not a stark spreadsheet.
-        textColor: terminal ? '#c7d2e0' : '#a3adba',
+        // Lifted a step for the terminal: the price and time axes are read
+        // as numbers, and 11px of #c7d2e0 on #101014 was drawing the thin
+        // strokes of 8, 3 and 5 with a single dim pixel. A point larger and
+        // a tone brighter is the whole difference between a figure you read
+        // and one you decipher; the axes are still quieter than the candles.
+        textColor: terminal ? '#dbe3ee' : '#a3adba',
         fontFamily: 'Inter, Arial, sans-serif',
-        fontSize: 11,
+        fontSize: terminal ? 12 : 11,
       },
       grid: {
         vertLines: { visible: false },

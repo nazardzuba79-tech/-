@@ -286,9 +286,19 @@ body {
   background: none;
   border: 0;
   border-radius: 6px;
-  color: var(--h-text-2);
-  font-size: 13px;
-  font-weight: 500;
+  /* THE NAV IS READ, NOT SCANNED.
+     13px at weight 500 in #9aa4b4 on #0e1116 sits close to the point where
+     a stem is drawn with one dim pixel and the type stops looking sharp —
+     which is what the owner reported. 14px at 600 in the brighter ramp
+     tone puts a full pixel under every stem, so the same faces render
+     crisply rather than smeared, and the row still reads as navigation
+     rather than as headings. */
+  color: var(--h-text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-decoration: none;
   white-space: nowrap;
   transition: color 180ms ease, background 180ms ease;
@@ -297,13 +307,17 @@ body {
   color: var(--h-text);
   background: var(--h-hover);
 }
+/* Crypto Card and OTC stay a step quieter than the primary links, but the
+   step is now one tone and half a pixel rather than the two tones and a
+   full pixel that made them look switched off. */
 .nav-item.nav-secondary {
-  color: var(--h-text-3);
-  font-size: 12.5px;
+  color: var(--h-text-2);
+  font-size: 13.5px;
+  font-weight: 550;
   gap: 5px;
 }
 .nav-item.nav-secondary:hover {
-  color: var(--h-text-2);
+  color: var(--h-text);
 }
 .nav-item.nav-admin {
   color: var(--h-admin);
@@ -2272,7 +2286,12 @@ a:hover > .nav-card-icon {
 /* Measured Bybit typography; keep shell ownership here, not in a lazy route. */
 :is(.futures-reference,.market-reference) > .global-header { font-family:'Inter Terminal', Inter, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; height:48px; padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#181a20; }
 :is(.futures-reference,.market-reference) > .global-header::before { content:none; }
-:is(.futures-reference,.market-reference) > .global-header .nav-item { font-family:inherit; font-size:14px; font-weight:400; letter-spacing:0; line-height:20px; margin:0; padding:0 12px; border-radius:0; }
+/* THE TERMINAL'S OWN NAV RULE IS THE ONE THAT WINS, so the legibility fix
+   has to land here too — the base `.nav-item` never applies on this page.
+   Weight 400 at 14px in #d1d4dc is where the owner said the row stopped
+   looking sharp; 550 puts a full pixel under each stem without turning
+   navigation into headings, and the ramp's brightest tone finishes it. */
+:is(.futures-reference,.market-reference) > .global-header .nav-item { font-family:inherit; font-size:14px; font-weight:550; color:var(--h-text); letter-spacing:0; line-height:20px; margin:0; padding:0 12px; border-radius:0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 :is(.futures-reference,.market-reference) > .global-header .nav-active { color:var(--h-accent); background:transparent; }
 :is(.futures-reference,.market-reference) > .global-header .nav-active::after { bottom:0; height:2px; }
 :is(.futures-reference,.market-reference) > .global-header .header-icon,
