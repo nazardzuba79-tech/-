@@ -333,7 +333,7 @@ export function FuturesPositionsPanel({
         renderState(t(account.positionHistory.failed ? 'futures.loadPositionsError' : 'futures.noPositionHistory'), account.positionHistory.failed)
       ) : (
         <div style={styles.tableWrap}>
-          <table style={styles.table}>
+          <table className="futures-history-table" style={styles.table}>
             <thead>
               <tr>
                 <Th>{t('trade.market')}</Th>
@@ -404,6 +404,11 @@ const styles: Record<string, React.CSSProperties> = {
   // that was 38px of sideways scroll inside the panel, and at 1440/1366 a
   // contract cell one line taller than its neighbours. The sheet owns cell
   // padding; the size and colour that belong to the component stay here.
+  //
+  // The history table below is the exception that proves it: it carried no
+  // class at all, so no sheet could reach it and this inline padding was the
+  // only padding it had. It now has one, `.futures-history-table`, and keeps
+  // exactly these values in FuturesPositionParity.css.
   th: { textAlign: 'left', color: 'var(--text-secondary)', fontWeight: 400 },
   td: { color: 'var(--text-primary)', borderTop: '1px solid var(--border)' },
   closeBtn: {
