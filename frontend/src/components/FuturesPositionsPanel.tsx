@@ -396,7 +396,11 @@ const styles: Record<string, React.CSSProperties> = {
   error: { margin: 10, background: 'var(--sell-dim)', color: 'var(--sell)', padding: '6px 10px', borderRadius: 6, fontSize: 13 },
   tableWrap: { flex: 1, overflow: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
-  th: { textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 400, fontSize: 12 },
+  // No fontSize here on purpose. An inline size beats every stylesheet,
+  // which is why the terminal's own rules had to carry `!important` to
+  // set a column heading at all. With the size left to CSS those can go,
+  // and the heading scale lives in one place instead of three.
+  th: { textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 400 },
   td: { padding: '8px 14px', color: 'var(--text-primary)', borderTop: '1px solid var(--border)' },
   closeBtn: {
     background: 'transparent',

@@ -619,12 +619,6 @@
 }
 /* The empty state's own header table was pinned to 864px by a rule that
    out-specified the intent to let it fit; it fits now. */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-state-columns table {
-  min-width: 0;
-  width: 100%;
-  table-layout: fixed;
-}
-
 /* ── THE WATCHLIST PRICE STOPPED FITTING ──────────────────────────────────
    Measured at 1440: the rail is 212px, while the row's tracks plus its gaps
    and padding asked for 222. The price column was the one that gave, so
@@ -722,16 +716,21 @@
    rather than collide, and the close controls keep the room two pills need.
    Above 1600 the reference's own proportions apply unchanged. */
 @media (max-width: 1599px) {
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 13.5%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(2) { width: 6.5%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(3) { width: 9%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 7%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 8%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 7%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 12%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 10%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 8%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 19%; }
+  /* Re-shared by measured demand at the larger heading size. The old map
+     reserved 13.5% and 19% for the two widest BODY columns while giving the
+     price headings 7-8%; at 12.5px those headings need 82-183px and expanded
+     past their share, which is what pushed the table into a scroll. Measured
+     heading ink: 69 / 31 / 46 / 72 / 113 / 84 / 173 / 125 / 37 / 78 px. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 10.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(2) { width: 4.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(3) { width: 6%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 8%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 12.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 9.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 18.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 13%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 12.5%; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th { font-size: 11.5px; padding: 8px 7px; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td { padding: 10px 7px; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close { padding: 5px 9px; }
@@ -903,7 +902,7 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .bottom-tab {
   display:inline-flex; align-items:center; gap:4px;
   padding:0; border:0; border-bottom:1px solid transparent; border-radius:0;
-  background:none; font-size:12px; font-weight:500; line-height:1;
+  background:none; font-size:14px; font-weight:500; line-height:1;
   color:var(--text-secondary,#98a2b3);
   transition:color 120ms ease, border-color 120ms ease;
 }
@@ -918,7 +917,7 @@
   font-weight:600;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel .reference-tab-count {
-  color:var(--text-tertiary,#5c6675); font-size:11px; font-weight:400;
+  color:var(--text-tertiary,#5c6675); font-size:12.5px; font-weight:400;
 }
 
 /* ── The table ───────────────────────────────────────────────────────── */
@@ -928,14 +927,14 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
   white-space:nowrap !important;
   height:30px; padding:0 10px !important;
-  font-size:10.5px !important; font-weight:500 !important; line-height:30px;
+  font-size:12.5px; font-weight:500 !important; line-height:30px;
   color:var(--text-secondary,#98a2b3) !important;
   border-bottom:1px solid var(--border,#232a34);
   background:var(--panel,#12161c);
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td {
   height:56px; padding:0 10px; vertical-align:middle;
-  font-size:12px; line-height:15px;
+  font-size:13.5px; line-height:17px;
   border-bottom:1px solid var(--border,#232a34);
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table tbody tr:last-child td {
@@ -958,6 +957,17 @@
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-contract small {
   font-size:10.5px; line-height:13px; white-space:nowrap;
+}
+/* Below 1600 the sub-line under the ticker — «Марж. торговля 10.00x» — is
+   what sets the first column's floor, and at 166px it was the widest column
+   in the table while its own heading needs 69. It is context, not a figure,
+   so it is the thing that gives way when the larger type needs room: it
+   wraps here and the numbers keep their width and their nowrap. No amount,
+   unit, price or P&L is allowed to wrap anywhere in this table. */
+@media (max-width: 1599px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-contract small {
+    white-space:normal; overflow-wrap:normal; word-break:keep-all;
+  }
 }
 /* A unit is context for the figure beside it, never a second figure. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-unit {
@@ -998,10 +1008,6 @@
 }
 /* The column strip above an empty state matches the real table's, so the
    panel does not change shape the moment a position opens. */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-state-columns th {
-  height:30px; line-height:30px; padding:0 10px !important; font-size:10.5px !important;
-  white-space:nowrap !important;
-}
 /* The panel itself is a column, so the empty state can actually take the
    height it is being asked to centre inside. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-panel {
@@ -1024,17 +1030,11 @@
    already steps it at 1600, so the headings stay on one line and the row
    still does not scroll. Nothing is dropped and nothing wraps. */
 @media(max-width:1499px) {
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio :is(.futures-positions-table,.futures-state-columns) :is(th,td) {
-    padding-inline:5px !important;
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td) {
+    padding-inline:4px !important;
   }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
     padding:0 7px; margin-right:3px;
-  }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(td,th) {
-    font-size:11.5px;
-  }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
-    font-size:10px !important;
   }
 }
 
@@ -1067,7 +1067,23 @@
     padding:0 6px;
   }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td:last-child > * {
-    gap:4px;
+    gap:3px;
+  }
+  /* The last two columns are controls, and controls give way before figures
+     do. At 1366 «Лимитный»/«Рыночный» and «+ Добавить» were 161px and 102px
+     against headings needing 78 and 37, so their own padding is what funds
+     the larger type. They keep their height, so the row keeps its 62px and
+     stays one height across every desktop width. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
+    padding:0 4px; margin-right:2px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
+    padding:0 3px;
+  }
+  /* One more pixel each side, ten columns. Cell padding is the last thing
+     left that is not a figure, a heading or a control's own label. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td) {
+    padding-inline:3px !important;
   }
 }
 

@@ -93,8 +93,6 @@
 .trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .chart-indicator-group .chart-tool-btn { background:transparent; padding-inline:7px; }
 .trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .chart-indicator-group .chart-tool-btn.active { background:transparent; color:#f0c964; box-shadow:inset 0 -2px #f0c964; }
 .trade-terminal.terminal-studio :is(.chart-tab,.chart-tool-btn):focus-visible { outline:1px solid #f0c964; outline-offset:-1px; }
-.trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .futures-state-columns table { min-width:864px; }
-.trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .futures-state-columns th { font-size:11px!important; line-height:15px; color:#98a2b3!important; overflow-wrap:normal; word-break:normal; }
 .trade-terminal.terminal-studio .terminal-account-state { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; padding:12px; color:#98a2b3; font-size:12px; line-height:18px; }
 .trade-terminal.terminal-studio .terminal-account-retry { flex:0 0 auto; min-height:30px; padding:5px 10px; border:1px solid #232a34; border-radius:4px; background:transparent; color:#d7e1eb; font:inherit; cursor:pointer; }
 .trade-terminal.terminal-studio .terminal-account-retry:hover { background:#243340; border-color:#526779; }

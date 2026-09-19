@@ -154,9 +154,6 @@
 .trade-terminal.trade-terminal.futures-reference .futures-account-usage .fa-fill { display:block; height:100%; border-radius:999px; transition:width 160ms linear; }
 .trade-terminal.trade-terminal.futures-reference .futures-account-usage .fa-value { flex:0 0 54px; margin-left:0; justify-content:flex-end; }
 .trade-terminal.trade-terminal.futures-reference .futures-account-actions button { min-height:34px; font-size:13px !important; font-weight:500 !important; color:var(--text-primary) !important; background:var(--panel-alt) !important; }
-.trade-terminal.trade-terminal.futures-reference .futures-state-columns { flex-shrink:0; overflow:auto; scrollbar-width:thin; border-bottom:1px solid var(--border-color); }
-.trade-terminal.trade-terminal.futures-reference .futures-state-columns table { min-width:760px; }
-.trade-terminal.trade-terminal.futures-reference .futures-state-columns th { white-space:nowrap; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-state { flex:1; display:flex; flex-direction:row; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; min-height:76px; padding:16px !important; font-size:13px !important; color:var(--text-secondary) !important; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-state svg { color:#7d7d8e; flex-shrink:0; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-state button,
