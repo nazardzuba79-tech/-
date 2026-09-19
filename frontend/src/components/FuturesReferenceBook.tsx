@@ -69,9 +69,22 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
    * draws nothing, because there is nothing: an absent book is never shown
    * as zero depth.
    */
-  const feed = status === 'stale' ? t('trade.bookStale')
+  const waiting = !bids.length && !asks.length;
+  /**
+   * NOTHING IS ANNOUNCED UNTIL THERE IS SOMETHING TO ANNOUNCE.
+   *
+   * A book that has not arrived yet is not a fault, and saying so in a
+   * coloured band is the loudest thing on the panel at the one moment the
+   * panel knows least. The first seconds now draw a quiet placeholder
+   * ladder instead — the real geometry, no figures, no colour — so the
+   * layout is already correct when the levels land and nothing jumps.
+   *
+   * What is still said, and deliberately: a book that HAD data and has
+   * stopped updating, and a book that is gone. Those are facts a trader
+   * needs. They are drawn quietly now, not as alarms, but they are drawn.
+   */
+  const feed = status === 'stale' && !waiting ? t('trade.bookStale')
     : status === 'unavailable' ? t('trade.bookUnavailable')
-    : status === 'connecting' && !bids.length && !asks.length ? t('trade.bookConnecting')
     : null;
 
   useEffect(() => {
@@ -97,6 +110,13 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
    * there. Nothing is smoothed or held back: the same level data renders in
    * the same frame, only without replacing the element it renders into.
    */
+  /** The ladder's own shape, with nothing in it. Never a zero, never a
+   *  price: an em dash is "not known yet", which is what this is. */
+  const placeholders = (side: 'bid' | 'ask') => Array.from({ length: count }, (_, index) =>
+    <div className={`rb-row ${side} is-placeholder`} key={`${side}-skeleton-${index}`} aria-hidden="true">
+      <span>—</span><span>—</span><span>—</span>
+    </div>);
+
   const rows = (levels: SpotDepthLevel[], side: 'bid' | 'ask') => levels.map((level, index) => {
     const exact = spotLevelPrice(level.price, step);
     const price = referencePrice(level.price, step);
@@ -142,8 +162,9 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
           does not fit beside "Сумма(BTC)" — it overlapped its neighbour. */}
       <div className="rb-columns"><span>{t('trade.price')}<small>({quote})</small></span><span>{t('trade.bookQty')}<small>({base})</small></span><span title="Cumulative base quantity">{t('trade.bookTotal')}<small>({base})</small></span></div>
       {feed && <div className="rb-feed" role="status" data-state={status}>{feed}</div>}
-      <div className={`rb-body rb-${mode}`} data-stale={status === 'stale' || undefined} ref={body}>
-        {mode !== 'bids' && <div className="rb-stack rb-asks">{rows(sell, 'ask')}</div>}
+      <div className={`rb-body rb-${mode}`} data-stale={status === 'stale' && !waiting || undefined}
+        data-waiting={waiting || undefined} ref={body}>
+        {mode !== 'bids' && <div className="rb-stack rb-asks">{waiting ? placeholders('ask') : rows(sell, 'ask')}</div>}
         <div className="rb-center">
           {/* The arrow is its own fixed-width slot, never part of the number.
               Prefixing it into the string changed the string's width every
@@ -158,7 +179,7 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
           {last === null && metrics.mid !== null && <small className="rb-mid-label" title="(best bid + best ask) / 2">Mid</small>}
           <span title={t('trade.spread')}>{t('trade.spread')} {metrics.spread !== null ? formatSpotBookNumber(metrics.spread) : '—'}</span>
         </div>
-        {mode !== 'asks' && <div className="rb-stack rb-bids">{rows(buy, 'bid')}</div>}
+        {mode !== 'asks' && <div className="rb-stack rb-bids">{waiting ? placeholders('bid') : rows(buy, 'bid')}</div>}
       </div>
       <div className="rb-ratio" data-available={ratio !== null} title="Buy / sell quantity in the displayed depth window; not a position ratio">
         {ratio !== null && <i style={{ width: `${ratio}%` }} />}

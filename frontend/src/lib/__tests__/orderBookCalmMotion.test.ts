@@ -9,6 +9,7 @@ const terminal = read('frontend/src/pages/trade-terminal/TradeTerminal.css');
 const index = read('frontend/src/index.css');
 const css = read('frontend/src/pages/trade-terminal/TerminalAccountPanel.css');
 const premium = read('frontend/src/pages/trade-terminal/TerminalPremium.css');
+const reference = read('frontend/src/pages/trade-terminal/ReferenceFuturesTerminal.css');
 /** The two sheets that paint the bar on the terminal the owner looks at: the
  * rule here, and the palette token it resolves to. ReferenceFuturesTerminal
  * still carries the pre-fix 30% fallback for designs this panel never uses,
@@ -129,12 +130,53 @@ describe('depth bars are muted and settle between publishes', () => {
     expect(Math.max(...alphas)).toBeLessThanOrEqual(0.15);
   });
 
-  it('finishes each bar before the next publish rather than easing through it', () => {
-    // The book coalesces to one publish per 300ms; a transition at or above
-    // that leaves every bar permanently mid-animation.
-    const ms = Number(/transition:transform (\d+)ms/.exec(rule)?.[1]);
-    expect(ms).toBeGreaterThan(0);
-    expect(ms).toBeLessThan(300);
+  /**
+   * NO EASING AT ALL — and this assertion replaces one that asked only for a
+   * SHORT ease, which was not enough and is worth recording why.
+   *
+   * The owner supplied a screen recording of Binance Futures. Cropping its
+   * order book and diffing consecutive frames gives 5 repaints in 2.0s —
+   * 2.5 per second, mean gap 425ms — and BETWEEN them the panel is
+   * bit-identical. That is the whole character of a calm book: it is not a
+   * smoother animation, it is no animation.
+   *
+   * Measured here with a 140ms ease still in place (scripts/qa-orderbook-calm.cjs,
+   * fixed replayed feed): the ladder's CONTENT changed 2.33 times a second
+   * while its PIXELS changed 4.22 times a second. Nearly half the motion
+   * carried no new information — it was the tail of the previous bar still
+   * arriving, which is what "the numbers squeak" describes.
+   *
+   * The sweep is over EVERY terminal sheet, not one rule in one file. The
+   * previous version checked a single rule, and that is exactly how a 140ms
+   * transition in TerminalAccountPanel.css — the sheet Futures loads last —
+   * survived the transition being removed from ReferenceFuturesTerminal.css
+   * and kept the ladder moving.
+   */
+  it('does not ease the bar at all: no sheet may animate a depth bar', () => {
+    const sheets = [
+      ['TerminalAccountPanel.css', css],
+      ['TerminalPremium.css', premium],
+      ['ReferenceFuturesTerminal.css', reference],
+      ['TradeTerminal.css', terminal],
+    ] as const;
+    const offenders: string[] = [];
+    for (const [name, sheet] of sheets) {
+      for (const match of sheet.matchAll(/\.rb-depth[^{]*\{([^}]*)\}/g)) {
+        const body = match[1];
+        if (/transition\s*:/.test(body) && !/transition\s*:\s*none/.test(body)) {
+          offenders.push(`${name}: ${body.trim()}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+    // And the sheet that loads last says so explicitly, so a later edit that
+    // re-adds one elsewhere is still overridden rather than silently winning.
+    expect(rule).toMatch(/transition\s*:\s*none/);
+  });
+
+  it('does not ease the buy/sell ratio bar either', () => {
+    const ratio = /\.rb-ratio\s*>\s*i\s*\{([^}]*)\}/.exec(reference)?.[1] ?? '';
+    expect(ratio).not.toMatch(/transition\s*:/);
   });
 
   it('keeps the bar on a transform, so a bar change never re-lays-out the row', () => {
@@ -152,10 +194,35 @@ describe('depth bars are muted and settle between publishes', () => {
  * book itself is maintained. The visual work stops at the DOM.
  */
 describe('the data contract is untouched', () => {
-  it('still distinguishes stale, unavailable and connecting rather than blanking', () => {
-    expect(code).toContain("status === 'stale' ? t('trade.bookStale')");
-    expect(code).toContain("status === 'unavailable' ? t('trade.bookUnavailable')");
-    expect(code).toContain("t('trade.bookConnecting')");
+  /**
+   * Three states, still told apart. What changed is how the FIRST of them
+   * is presented, and the change is deliberate: a book that has not arrived
+   * yet is not a fault, and announcing it in a coloured band was the
+   * loudest thing on the panel at the one moment the panel knew least. The
+   * owner photographed exactly that. Waiting now draws a quiet placeholder
+   * ladder; a book that HAD data and stopped, and a book that is gone, are
+   * still named, because those are facts a trader needs.
+   */
+  it('still tells stale and unavailable apart, and still names them', () => {
+    expect(code).toContain("t('trade.bookStale')");
+    expect(code).toContain("t('trade.bookUnavailable')");
+    // `status` is still the three-valued thing it was; nothing collapsed it.
+    expect(code).toContain("status === 'stale'");
+    expect(code).toContain("status === 'unavailable'");
+  });
+
+  it('draws a placeholder ladder while waiting instead of an alarm or a blank', () => {
+    expect(code).toContain('const waiting = !bids.length && !asks.length');
+    expect(code).toContain('is-placeholder');
+    // The waiting state renders the ladder's real shape...
+    expect(code).toMatch(/waiting \? placeholders\('ask'\) : rows\(sell, 'ask'\)/);
+    expect(code).toMatch(/waiting \? placeholders\('bid'\) : rows\(buy, 'bid'\)/);
+    // ...and a placeholder is an em dash, never a zero and never a price.
+    const fn = code.slice(code.indexOf('const placeholders ='), code.indexOf('const rows = ('));
+    expect(fn).toContain('—');
+    expect(fn).not.toMatch(/\b0\b/);
+    // Nothing is announced before there has ever been a book.
+    expect(code).toContain("status === 'stale' && !waiting");
   });
 
   it('does not average, interpolate or invent a level anywhere in the panel', () => {

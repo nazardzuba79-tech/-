@@ -541,7 +541,7 @@ export function FuturesPage() {
                 aria-selected={bottomTab === tab.id}
                 aria-controls="futures-bottom-content"
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
-                onClick={() => { setBottomTab(tab.id); accountPanel.reveal(`futures:${tab.id}`); }}
+                onClick={() => { setBottomTab(tab.id); accountPanel.reveal(); }}
               >
                 {t(tab.labelKey)}
                 {tab.id === 'positions' && <span className="reference-tab-count">({visibleAccount.positions.data?.length ?? '—'})</span>}

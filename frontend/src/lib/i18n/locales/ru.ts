@@ -585,6 +585,8 @@ export const RU = {
   'markets.price': 'Цена',
   'markets.change24h': '24ч %',
   'markets.change7d': '7д %',
+  'trade.sort7dGainers': 'Рост за 7 дней',
+  'trade.sort7dLosers': 'Падение за 7 дней',
   'markets.change30d': '30д %',
   'markets.high24h': '24ч максимум',
   'markets.low24h': '24ч минимум',

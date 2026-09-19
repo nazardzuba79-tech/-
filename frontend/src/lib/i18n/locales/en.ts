@@ -582,6 +582,8 @@ export const EN: Record<Key, string> = {
   'markets.price': 'Price',
   'markets.change24h': '24h %',
   'markets.change7d': '7d %',
+  'trade.sort7dGainers': 'Gainers, 7 days',
+  'trade.sort7dLosers': 'Losers, 7 days',
   'markets.change30d': '30d %',
   'markets.high24h': '24h High',
   'markets.low24h': '24h Low',
