@@ -145,3 +145,15 @@
   background: var(--panel-alt, rgba(255, 255, 255, .06));
   color: var(--text-primary, #fff);
 }
+
+/* The permanent rail is NOT the temporary chooser. After moving it below
+   the instrument row, spanning 2 / 4 let it run underneath the positions
+   table in row 3 (225px overlap at 1664x900 in the real-CSS fixture).
+   Only the chooser may overlay that row; the standing rail must end with
+   the chart. The terminal ancestor makes this component boundary stronger
+   than the older studio/account-skin span without changing any widths. */
+@media (min-width: 1025px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal .reference-market-sidebar {
+    grid-row: 2 / 3;
+  }
+}
