@@ -1075,15 +1075,27 @@
      the larger type. They keep their height, so the row keeps its 62px and
      stays one height across every desktop width. */
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
-    padding:0 4px; margin-right:2px;
+    padding:0 3px; margin-right:2px;
   }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
-    padding:0 3px;
+    padding:0 2px;
   }
   /* One more pixel each side, ten columns. Cell padding is the last thing
      left that is not a figure, a heading or a control's own label. */
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td) {
     padding-inline:3px !important;
+  }
+  /* The headings keep their 12.5px and their nowrap; what they give up is
+     the tracking added for looks. Across ten nowrap headings that is the
+     last of the width, and «Нереализованный P&L(ROI)» — the widest of them
+     at 173px — pays most of it. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
+    letter-spacing:normal;
+  }
+  /* The approximate USD line under a P&L is a restatement of the figure
+     above it, so it is the one line in the row allowed to wrap. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-approx {
+    white-space:normal;
   }
 }
 
