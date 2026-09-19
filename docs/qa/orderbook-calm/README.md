@@ -41,11 +41,18 @@ Ladder (`byRegion.asks` / `byRegion.bids`), same seed, same window:
 
 | | before | after | Binance |
 |---|---|---|---|
-| compositor frames in ~6 s | 249 | **28** | — |
-| repaints/sec | 5.39 | **2.17** | 2.5 |
-| mean gap | 186 ms | **452 ms** | 425 ms |
-| still share | 82.0 % | **92.7 %** | — |
+| compositor frames in ~6 s | 249 | **26** | — |
+| repaints/sec | 5.39 | **2.30** | 2.5 |
+| mean gap | 186 ms | **450 ms** | 425 ms |
+| still share | 82.0 % | **92.3 %** | — |
 | control region | 0 | **0** | — |
+
+`after.json` is the run on the merged head. The fix was measured twice, before
+and after merging `main` forward, and the two runs agree to within the
+harness's own noise: 2.17/s at a 452 ms gap on the first, 2.30/s at 450 ms
+here. Treat the figure as "about 2.2-2.3 per second", not as four significant
+digits — the window is six seconds, so one repaint either way moves the last
+decimal.
 
 `after.json.ladderContent` separately probes the DOM under rAF: 2.33 text
 updates/sec and 2.33 bar updates/sec. Pixel cadence and content cadence now
