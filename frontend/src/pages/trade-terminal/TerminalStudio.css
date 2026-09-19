@@ -92,6 +92,17 @@
 .trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .chart-type-group .chart-tool-btn.active { background:#283440; color:#eaeef3; }
 .trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .chart-indicator-group .chart-tool-btn { background:transparent; padding-inline:7px; }
 .trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .chart-indicator-group .chart-tool-btn.active { background:transparent; color:#f0c964; box-shadow:inset 0 -2px #f0c964; }
+/* Below 1440 the toolbar is a single row (FuturesStudio.css) and it is the
+   narrow widths that have to fit every control in it. The interval and
+   chart-type buttons give up three pixels a side there; these four keep
+   their own 7px because THIS rule outranks that one, so the last of the
+   indicators would still have fallen off the scrollable end. Two pixels a
+   side, four buttons, sixteen pixels — enough to land MACD inside the
+   strip. The labels, the 11px they are set in and the 25px tap target are
+   untouched, and nothing above 1439 changes. */
+@media(max-width:1439px) {
+  .trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .chart-indicator-group .chart-tool-btn { padding-inline:5px; }
+}
 .trade-terminal.terminal-studio :is(.chart-tab,.chart-tool-btn):focus-visible { outline:1px solid #f0c964; outline-offset:-1px; }
 .trade-terminal.terminal-studio .terminal-account-state { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; padding:12px; color:#98a2b3; font-size:12px; line-height:18px; }
 .trade-terminal.terminal-studio .terminal-account-retry { flex:0 0 auto; min-height:30px; padding:5px 10px; border:1px solid #232a34; border-radius:4px; background:transparent; color:#d7e1eb; font:inherit; cursor:pointer; }
