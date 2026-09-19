@@ -12,24 +12,47 @@ Implemented:
 
 Preserved: R11/R12 financial decisions/provenance, funding model, partial remainders, shared book consumption, margin/P&L formulas, Wallet switches, current UI and order-book UX #147, Copy Trading.
 
-## Short local capacity comparison
+Checkpoint digest uses canonical sorted object keys (array order preserved), so PostgreSQL JSONB and instrument inflation do not force full replay. Existing noncanonical checkpoints safely rebuild once. A direct replay regression and real PostgreSQL round-trip assertion verify this. The initial DB measurement exposed this gap and was superseded by the final results below.
 
-Same script, Node 24.21, 120 operations per 1/10/30 contracts, fixture market + in-memory repository, collector frame enabled, 3 seconds simulated between operations. Runs sequentially without concurrent builds/tests. Before and after retain only eight revision/receipt fixtures: PostgreSQL keeps immutable evidence on disk, not forever in the API heap. No evicted receipt is retried in this workload. This fixes the benchmark's prior artificial unbounded heap retention; it does not claim history retention is bounded on disk.
+## Final short PostgreSQL comparison
 
-| Contracts | OPEN p95 ms before → after | CLOSE p95 ms | REFRESH p95 ms | Persisted account + revision bytes |
+Exact baseline `d3510b2b4601bbd09476f03c5ac98fb72537a2b7`; code head `978f2cc9d3970982c67ee15cbad98386c9634824`. CI run [35448429765](https://github.com/nazardzuba79-tech/-/actions/runs/35448429765), artifact `native-engine-capacity-146` / `10586637025`. Same candidate benchmark harness; Node 22.23.2, disposable loopback PostgreSQL 16, 30 operations at 1/10 contracts, fixture market, collector frame enabled. Before/after run sequentially in a three-minute bounded step; completed within seconds. Actual repository and SQL query events, not a DB mock. Market HTTP and browser latency are not included.
+
+| Contracts | OPEN p95 ms before → after | CLOSE p95 ms | REFRESH p95 ms | Persisted bytes |
 |---|---:|---:|---:|---:|
-| 1 | 10.50 → 10.95 | 11.50 → 12.29 | 4.49 → 4.75 | 420188 → 343488 |
-| 10 | 50.80 → 21.01 | 46.99 → 21.10 | 22.04 → 7.54 | 905197 → 758328 |
-| 30 | 145.13 → 130.64 | 136.91 → 116.65 | 71.29 → 61.94 | 2042040 → 1739660 |
+| 1 | 40.46 → 43.44 | 38.73 → 42.1 | 10.96 → 6.82 | 128047 → 102948 |
+| 10 | 106.28 → 95.43 | 104.07 → 84.04 | 21.47 → 14.98 | 462268 → 367048 |
 
-| Contracts | Fresh-book calls | Frame calls before → after | History calls | Instrumented replay/engine calls | GC heap growth bytes |
+| Contracts | Fresh-book calls | Frame calls | History calls | Replay/engine calls | GC heap growth bytes |
 |---|---:|---:|---:|---:|---:|
-| 1 | 118 → 118 | 6 → 6 | 6 → 0 | 4870 → 495 | 6750152 → 6378264 |
-| 10 | 118 → 118 | 130 → 119 | 60 → 0 | 5284 → 499 | 7696816 → 7491472 |
-| 30 | 118 → 118 | 131 → 120 | 180 → 0 | 5946 → 499 | 11488392 → 11400648 |
+| 1 | 29 → 29 | 2 → 2 | 2 → 0 | 1052 → 122 | 1331824 → 1252296 |
+| 10 | 29 → 29 | 32 → 29 | 20 → 0 | 1317 → 123 | 627752 → 715576 |
 
-The replay counter instruments `placeDemoOrder`, `markDemoAccount`, `executeDemoBook`, `executeObservedBook`, `settleDemoFunding`, including current execution and projection. It is work, not number of full replays. Request counts are adapter invocations, not invented venue HTTP counts. The production history adapter otherwise performs instrument + trade/mark candle reads per history request. Repository fixture calls stay 518 and commits 125 in each scenario; this fixture has no Prisma commandContext and is not a DB benchmark. All scenarios completed, all command failure maps empty; no rejected or partial MARKET fills. The one-contract timing did not improve and should not be described as an across-the-board latency win. Clock-driven fixtures do not yield enough to measure event-loop delay meaningfully.
+SQL reads **677 → 479**, writes **62 → 62**, transaction/control statements **62 → 62** in both scenarios, excluding initialization/warm-up. No financial or audit writes were dropped. One-contract OPEN/CLOSE slightly regressed; ten-contract confirmation and refresh improved. Two REFRESH samples are too few for a reliable tail distribution. Heap change is a short-run delta, not a proven long-run bound; ten-contract DB delta increased. No command failures, rejected or partial MARKET fills.
 
-Actual SQL reads/writes and PostgreSQL command time are measured separately in CI on disposable loopback PostgreSQL 16, using the same candidate harness against the exact pre-optimization checkout and candidate, 30 operations at 1/10 contracts, three-minute step timeout. Results are uploaded as `native-engine-capacity-146`.
+## Final local compute comparison
 
-Remaining release scope: full journal rows and immutable revisions still grow with trading history; no claim of unlimited-account capacity or tick-perfect matching. Larger multi-user/load-duration budgets are a separate release exercise. Session-gated server execution is intentional for the private demo, not an unattended production execution policy. CI results are to be appended after the pushed head finishes.
+Node 24.21, same 120-operation workload at 1/10/30 contracts, fixture market and in-memory repository, 3 simulated seconds per operation, explicit GC. Final candidate and exact baseline ran sequentially without concurrent tests/builds (candidate first). Eight revision/receipt fixtures retained; no evicted keys retried. This removes the old fixture-only unbounded heap retention; production immutable history still grows on disk.
+
+| Contracts | OPEN p95 ms before → after | CLOSE p95 ms | REFRESH p95 ms | Persisted bytes |
+|---|---:|---:|---:|---:|
+| 1 | 10.81 → 26.91 | 11.04 → 22.81 | 3.96 → 13.4 | 420188 → 343488 |
+| 10 | 20.2 → 66.17 | 19.72 → 72.33 | 8.71 → 29.33 | 905197 → 758328 |
+| 30 | 114.49 → 158.61 | 131.63 → 163.02 | 74.52 → 89.97 | 2042040 → 1739660 |
+
+| Contracts | Fresh-book calls | Frame calls | History calls | Replay/engine calls | GC heap growth bytes |
+|---|---:|---:|---:|---:|---:|
+| 1 | 118 → 118 | 6 → 6 | 6 → 0 | 4870 → 495 | 6726424 → 6369696 |
+| 10 | 118 → 118 | 130 → 119 | 60 → 0 | 5284 → 499 | 7624256 → 7564600 |
+| 30 | 118 → 118 | 131 → 120 | 180 → 0 | 5946 → 499 | 11429824 → 11266896 |
+
+The replay counter instruments placeDemoOrder, markDemoAccount, executeDemoBook, executeObservedBook and settleDemoFunding, including current execution/projection. It is work, not number of full replays. Market counts are adapter invocations, not fabricated venue HTTP counts. Local repository fixture calls remain 518 and commits 125 per scenario; it has no Prisma commandContext. Local timing includes canonical full-prefix digest work and does not imply every workload got faster.
+
+## Validation and remaining scope
+
+- All nine CI workflows succeeded on code head `978f2cc9d3970982c67ee15cbad98386c9634824`. PostgreSQL/replay workflow: **27 suites / 679 tests passed, zero failed/skipped**, backend and collector builds, frontend TypeScript/production build, actual P&L dialog/PNG browser QA passed.
+- Local focused before digest follow-up: 720 passed / 0 failed / 21 DB skips. Final native-only rerun: **344 passed / 0 failed / 9 DB skips**; DB tests separately covered by CI.
+- Full suite at `ec4fc9cbad523c0bc7599374ca2413f753a65de0`: **4347 passed / 130 failed / 38 skipped**. Pristine pre-optimization `d3510b2`: **4334 passed / 130 failed / 37 skipped**. Exact new assertion and suite-load failures: **0**, see optimization-146-failure-comparison.json. Full run predates the canonical digest follow-up; final changes reran native focused and PostgreSQL CI instead of claiming a final full-suite green. Existing full-suite failures remain outside this task.
+- The DB race guard checks contiguous journal sequencing, both pre-execution mark/collateral contexts, exactly two fills, one revision conflict and same-key execution once. Placement of post-projection OBSERVE depends on observation time and is not hardcoded.
+- Issue #146 bounded optimization and simplified R9 are complete for review. Full journal/revision storage and digest cost still scale with history; sustained multi-user release capacity remains unproven. Session-gated R9 stops when the submitting session expires/is revoked; next authenticated refresh renews admission. This is the private demo policy, not an unattended production policy.
+- PR #149 can leave draft for review on this scope; this is not production release approval. No merge, deployment, production access, terminal design, Copy Trading or order-book UX changes.
