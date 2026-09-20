@@ -59,6 +59,9 @@ function fixture() {
       }),
       create: jest.fn(async ({ data }: any) => { revisions.push(data); return data; }),
     },
+    nativeDemoLiveProjection: {
+      upsert: jest.fn(async ({ create }: any) => ({ userId: create.userId })),
+    },
     $queryRaw: jest.fn(async () => []),
     $transaction: jest.fn(async (run: any) => run(db)),
     balance: new Proxy({}, { get: () => forbidden }),

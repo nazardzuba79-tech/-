@@ -163,6 +163,7 @@ export function FuturesPage() {
    * it, and it is not persisted anywhere — it is the state of a toolbar.
    */
   const [chartTrading, setChartTrading] = useState(false);
+  useEffect(()=>{native.setHistoryDemand({positions:bottomTab==='positionHistory',orders:bottomTab==='orderHistory',chart:chartTrading});},[bottomTab,chartTrading,native.setHistoryDemand]);
   /**
    * Where the chart tool menu is open, or `null` for closed.
    *
@@ -555,6 +556,7 @@ export function FuturesPage() {
           </div>
 
           <div className="bottom-content" id="futures-bottom-content" role="tabpanel" aria-labelledby={`futures-tab-${bottomTab}`} hidden={accountPanel.compact}>
+            {nativeExecution&&native.historyHasMore&&<button type="button" className="bottom-tab" onClick={native.loadMoreHistory}>{t('catalogue.nextPage')}</button>}
             {bottomTab === 'positions' && (
               <FuturesPositionsPanel
                 refreshKey={positionsRefreshKey}

@@ -21,11 +21,14 @@ export class NativeLimitPass {
   tick():Promise<void>{
     if(this.running)return this.running;
     const work=(async()=>{
-      for(const actor of (await this.targets()).slice(0,4)){
-        if(actor.expiresAt<=this.now()||this.service.queued(actor.userId)>0)continue;
+      const targets=await this.targets();
+      // Four in flight, but visit every configured account each pass. A
+      // four-account round-robin cannot preserve a 30s UI budget at scale.
+      for(let i=0;i<targets.length;i+=4)await Promise.all(targets.slice(i,i+4).map(async actor=>{
+        if(actor.expiresAt<=this.now()||this.service.queued(actor.userId)>0)return;
         try{await this.service.command(actor,{kind:'REFRESH',idempotencyKey:`limit-pass-${randomUUID()}`});}
         catch{this.failures++;} // Fail closed; the next sample can retry a new observation.
-      }
+      }));
     })();
     this.running=work;
     void work.then(()=>{this.running=null;},()=>{this.running=null;});
@@ -33,19 +36,21 @@ export class NativeLimitPass {
   }
 }
 export function createNativeLimitPass(db:PrismaClient,market:PrivateTradingMarketData,config:()=>PrivateTradingConfig=privateTradingConfig){
-  const service=new NativeDemoService(new PrismaNativeRepository(db,config),market);
-  let after='';
+  const service=new NativeDemoService(new PrismaNativeRepository(db,config,true),market);
   return new NativeLimitPass(service,async()=>{
     const c=config();if(!c.enabled||!c.ownerId)return[];
     const ids=[c.ownerId,...nativeTestAccountIds()];
     // Fetch only scheduler metadata of configured accounts, not full histories.
-    // Round-robin bounds work even if all test accounts have pending orders.
+    // The configured owner + at most 100 explicit testers bound the scan.
     const rows=await db.$queryRaw<{userId:string;actor:OwnerSession}[]>(Prisma.sql`
-      SELECT "userId", "payload"->'executionSession' AS actor FROM "NativeDemoAccount"
-      WHERE "userId" IN (${Prisma.join(ids)}) AND "userId" > ${after}
-        AND "payload"->>'executionPending' = 'true'
-      ORDER BY "userId" LIMIT 4`);
-    after=rows.length===4?rows[rows.length-1].userId:'';
+      SELECT a."userId", CASE WHEN COALESCE((p."executionSession"->>'expiresAt')::numeric,0)
+        >= COALESCE((a."payload"->'executionSession'->>'expiresAt')::numeric,0)
+        THEN p."executionSession" ELSE a."payload"->'executionSession' END AS actor
+      FROM "NativeDemoAccount" a LEFT JOIN "NativeDemoLiveProjection" p ON p."userId"=a."userId"
+      WHERE a."userId" IN (${Prisma.join(ids)})
+        AND (EXISTS (SELECT 1 FROM jsonb_array_elements(a."payload"->'snapshot'->'positions') v WHERE v->>'status'='OPEN')
+          OR EXISTS (SELECT 1 FROM jsonb_array_elements(a."payload"->'snapshot'->'orders') v WHERE v->>'status' IN ('OPEN','PARTIALLY_FILLED')))
+      ORDER BY a."userId" LIMIT 101`);
     return rows.filter(r=>r.actor&&r.actor.userId===r.userId&&typeof r.actor.sessionId==='string'
       &&Number.isSafeInteger(r.actor.expiresAt)&&r.actor.expiresAt>Date.now()).map(r=>r.actor);
   });
