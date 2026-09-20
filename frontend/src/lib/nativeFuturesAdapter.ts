@@ -227,8 +227,8 @@ export function nativeAccountState(
     balances: balances === null ? unanswered<FuturesBalance[]>(flags.loading, flags.failed) : answered(balances, flags.fetchedAt),
     positions: answered(state.positions.map(nativePositionToTerminal), flags.fetchedAt),
     orders: answered(working.map(nativeOrderToTerminal), flags.fetchedAt),
-    orderHistory: answered(state.orders.map(nativeOrderToTerminal), flags.fetchedAt),
-    positionHistory: answered(state.history.map(nativePositionToHistoryRow), flags.fetchedAt),
+    orderHistory: state.historyDeferred&&!state.orderHistoryLoaded?unanswered<FuturesOrder[]>(!state.historyFailed,!!state.historyFailed):answered(state.orders.map(nativeOrderToTerminal), flags.fetchedAt),
+    positionHistory: state.historyDeferred&&!state.positionHistoryLoaded?unanswered<FuturesPositionHistoryRow[]>(!state.historyFailed,!!state.historyFailed):answered(state.history.map(nativePositionToHistoryRow), flags.fetchedAt),
   };
 }
 

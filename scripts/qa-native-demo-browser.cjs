@@ -6,6 +6,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { pathToFileURL } = require('node:url');
+const { reviewHistoryPage } = require('./native-demo-review-repository.cjs');
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const root = path.resolve(__dirname, '..'), front = path.join(root, 'frontend');
@@ -407,7 +409,8 @@ async function largeValues(width) {
     const base = await api(s.context, s.token, 'commands', { kind: 'OPEN', symbol: 'BTCUSDT', side: 'LONG', type: 'MARKET', quantity: '1', leverage: '10', idempotencyKey: 'qa-layout-seed-position' });
     const baseCard = await api(s.context, s.token, 'cards', { positionId: base.positions[0].id });
     s.base = base; s.baseCard = baseCard; current = structuredClone(base); cardModel = structuredClone(baseCard);
-    await s.context.route('**/native/state', route => route.fulfill({ json: current }));
+    await s.context.route('**/native/live', route => route.fulfill({ json: {...current,history:[],events:[],entries:[],historyDeferred:true} }));
+    await s.context.route('**/native/history?*', route => route.fulfill({json:reviewHistoryPage({revision:current.revision,commands:[],snapshot:{positions:[...current.positions,...current.history],orders:current.orders,events:current.events}},Object.fromEntries(new URL(route.request().url()).searchParams),{positionViews:true})}));
     await s.context.route('**/native/commands', route => route.request().postDataJSON()?.kind === 'REFRESH' ? route.fulfill({ json: current }) : route.fulfill({ status: 405, json: { error: 'Layout fixture cannot execute trades' } }));
     await s.context.route('**/native/cards', route => route.fulfill({ json: cardModel }));
   });
@@ -447,14 +450,14 @@ async function main() {
   const chartModule = path.join(front, 'node_modules/lightweight-charts/dist/lightweight-charts.production.mjs');
   shim = path.join(os.tmpdir(), `voltex-native-observer-${process.pid}.mjs`);
   fs.writeFileSync(shim, `export * from ${JSON.stringify(chartModule)};import{createChart as original,CandlestickSeries}from ${JSON.stringify(chartModule)};import * as renderer from ${JSON.stringify(path.join(front, 'src/lib/privateResultCard.ts'))};window.__nativeQaCardRenderer=renderer;export function createChart(...args){const c=original(...args);window.__nativeQaChart=c;const add=c.addSeries.bind(c);c.addSeries=(type,...rest)=>{const s=add(type,...rest);if(type===CandlestickSeries)window.__nativeQaSeries=s;return s;};return c;}`);
-  const { build } = await import(path.join(front, 'node_modules/vite/dist/node/index.js'));
+  const { build } = await import(pathToFileURL(path.join(front, 'node_modules/vite/dist/node/index.js')).href);
   await build({ root: front, resolve: { alias: { 'lightweight-charts': shim } }, define: { 'import.meta.env.VITE_API_URL': JSON.stringify('/api/v1') } });
   await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });
   for (const width of [1440, 390]) {
     if (largeOnly) { await check(`large-values-${width}`, () => largeValues(width)); continue; }
     await check(`normal-owner-flow-${width}`, () => normalFlow(width));
     await check(`access-outage-no-real-fallback-${width}`, () => outage(width, 'access'));
-    await check(`state-outage-no-real-fallback-${width}`, () => outage(width, 'native/state'));
+    await check(`state-outage-no-real-fallback-${width}`, () => outage(width, 'native/live'));
     await check(`reduce-only-limit-contract-${width}`, () => limitCloseContract(width));
     await check(`chart-tool-selection-${width}`, () => chartFlow(width));
   }

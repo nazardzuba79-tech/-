@@ -1,0 +1,58 @@
+{
+  "base": "ff7c26b8363a0e9c543ff04afd9be918229fdcdc",
+  "postgres": "local disposable PostgreSQL, synthetic fixture; not production/Neon billing",
+  "fixture": {
+    "closedTrades": 118,
+    "accountJsonBytes": 352204
+  },
+  "measurements": [
+    {
+      "name": "before",
+      "cycles": 120,
+      "workerCycles": 0,
+      "dbWireBytes": 47616004,
+      "sqlReads": 872,
+      "sqlWrites": 8,
+      "responseBytes": 39665040,
+      "p50Ms": 29.01,
+      "p95Ms": 37.79
+    },
+    {
+      "name": "after",
+      "cycles": 120,
+      "workerCycles": 0,
+      "dbWireBytes": 431520,
+      "sqlReads": 1200,
+      "sqlWrites": 0,
+      "responseBytes": 336840,
+      "p50Ms": 11.19,
+      "p95Ms": 14.17
+    },
+    {
+      "name": "before-with-worker",
+      "cycles": 120,
+      "workerCycles": 360,
+      "dbWireBytes": 185855882,
+      "sqlReads": 3394,
+      "sqlWrites": 8,
+      "responseBytes": 39665040,
+      "p50Ms": 61.38,
+      "p95Ms": 69.41
+    },
+    {
+      "name": "after-with-worker",
+      "cycles": 120,
+      "workerCycles": 360,
+      "dbWireBytes": 4076671,
+      "sqlReads": 3758,
+      "sqlWrites": 12,
+      "responseBytes": 336840,
+      "p50Ms": 11,
+      "p95Ms": 14.22
+    }
+  ],
+  "reductionPercent": 99.094,
+  "workerInclusiveReductionPercent": 97.807,
+  "authoritativeResultEquality": true,
+  "userVisiblePnlEquality": true
+}
