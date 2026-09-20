@@ -250,4 +250,4 @@
 #archive-terminal-preview .archive-mark-index { font-size:12px !important; }
 #archive-terminal-preview .fo-tpslNote { color:var(--text-secondary); font-size:12px; line-height:1.45; margin:6px 0; }
 #archive-terminal-preview .fo-tpslBox { padding:8px 0; font-size:12px; }
-#archive-terminal-preview .futures-position-contract small { white-space:normal; }
+#archive-terminal-preview .futures-position-contract small { white-space:nowrap; }
