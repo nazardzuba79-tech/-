@@ -789,8 +789,12 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
 
   test('button and guard read one expression, not two copies', () => {
     const code = source(FORM);
-    expect(code).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}");
-    expect(code).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}");
+    // `protectionBreachFor` is per-direction by necessity: a take-profit
+    // above the price is right for a long and wrong for a short, so each
+    // button carries its own reading of the SAME function. `canSubmit` is
+    // still the one shared guard, and `place` still re-reads it.
+    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}");
+    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}");
     expect(code).toContain("if (activeCloseTarget && orderSide !== (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY')) return;");
     expect(code).toContain('if (!canSubmit) return;');
     // The old visual-only condition is gone.
@@ -804,15 +808,40 @@ describe('L. the panel references no spot conditional-order machinery', () => {
   const code = source(FORM);
 
   test('no spot trigger endpoint is referenced', () => {
-    for (const forbidden of ['PENDING_TRIGGER', 'updateOrderTrigger', 'getMyOrders', 'ocoGroupId', 'triggerPrice']) {
+    for (const forbidden of ['PENDING_TRIGGER', 'updateOrderTrigger', 'getMyOrders', 'ocoGroupId']) {
       expect(code).not.toContain(forbidden);
     }
+    // `triggerPrice` is banned as MACHINERY — a field set on a request or
+    // read off a response — not as a word. The panel names the futures
+    // translation key `futures.orderError.triggerPrice` for its own
+    // preflight refusal, and a translation key sends nothing anywhere.
+    expect(code).not.toContain('triggerPrice:');
+    expect(code).not.toContain('triggerPrice=');
+    // Stronger than a substring ban: EVERY occurrence of the word in this
+    // file is that one translation key, so none of them is a field.
+    const occurrences = [...code.matchAll(/triggerPrice/g)].length;
+    const asKey = [...code.matchAll(/'futures\.orderError\.triggerPrice'/g)].length;
+    expect({ occurrences, asKey }).toEqual({ occurrences: asKey, asKey: 1 });
   });
 
-  test('no TP/SL controls were invented on top of a contract that has none', () => {
-    for (const forbidden of ['takeProfit', 'stopLoss', 'takeProfitPrice', 'stopLossPrice']) {
-      expect(code).not.toContain(forbidden);
-    }
+  test('TP/SL at entry exists only where the engine takes it with the order', () => {
+    // The old shape of this test banned the words outright, because no
+    // engine behind this panel accepted protection at all. One does now:
+    // `placeDemoOrder` carries `protection` on the order, validates the
+    // levels against the order's own price and applies them to the position
+    // the fill creates. So the ban becomes a CONDITION — the fields render
+    // behind `execution.entryProtection`, which is false for the real
+    // futures engine, whose POST /futures/orders has no such field.
+    expect(code).toContain('execution.entryProtection');
+    expect(code).toContain('{execution.entryProtection && (');
+    // Reduce Only takes the fields away rather than greying them out: the
+    // engine throws REDUCE_ORDER_PROTECTION for that input, and a disabled
+    // input invites a trader to hunt for the switch that turns it on.
+    expect(code).toContain('const entryProtectionAvailable = execution.entryProtection && !reduceOnly;');
+    // Nothing is armed by this panel outside placeOrder: no PUT, no second
+    // request that could fail after the order already succeeded.
+    expect(code).not.toContain('setProtection');
+    expect(code).not.toContain('setFuturesPositionProtection');
   });
 
   test('the account store from PR #14 is still the only source of account data', () => {

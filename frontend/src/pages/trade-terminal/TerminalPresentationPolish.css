@@ -126,6 +126,22 @@
   .trade-terminal.trade-terminal.trade-terminal.futures-reference .order-form-area { grid-row:2 / 4; }
   .trade-terminal.trade-terminal.trade-terminal.futures-reference .reference-order-heading { min-height:38px; height:38px; font-size:13px; }
 }
+/* THE STRIP AT 1366, MEASURED.
+ *
+ * `1.4vw` resolves to 18.4px there, and eight of those is 147px on a bar
+ * that is 1052px wide holding 1092px of content — so the funding rate sat
+ * under the pinned calculator trigger. Capping the gap at 14px in this
+ * band recovers 38px and brings the strip inside its own box.
+ *
+ * Scoped to <=1400 on purpose: 1440 and 1920 already fit, and tightening a
+ * bar that fits buys nothing and costs the composition. The floor and the
+ * ceiling of the clamp above are untouched.
+ *
+ * Numbers from scripts/qa-futures-pro-terminal.cjs, which reports
+ * `overflowPx` at all three widths on every run. */
+@media(min-width:1025px) and (max-width:1400px) {
+  .trade-terminal.trade-terminal.trade-terminal.futures-reference .ticker-bar { padding:10px 42px 10px 8px; }
+}
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book { background:#12161c; padding:0; overflow:hidden; }
 .trade-terminal.futures-reference .repaired-futures-book .reference-book { background:#12161c; width:100%; min-width:0; }
 .trade-terminal.futures-reference .repaired-futures-book .rb-tabs { height:38px; flex-basis:38px; gap:18px; }

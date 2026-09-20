@@ -18,9 +18,19 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  *
  * Order runs price -> market -> derivatives:
  *
- *   Last with Mark underneath, 24h change, High, Low, Turnover (quote),
- *   Open interest (base), Funding rate / Next funding.
- *   Index remains in the data flow, but is not a separate visible metric.
+ *   Last with Mark and Index underneath, 24h change, High, Low,
+ *   Turnover (quote), Open interest (base), Funding rate / Next funding,
+ *   and the calculator trigger pinned to the right edge.
+ *
+ * Index used to be fetched and then dropped — in the data flow, not on the
+ * strip. It is shown now because a mark price quoted without the index it
+ * is anchored to cannot be judged: the gap between the two is the whole
+ * question a perpetual trader is asking when they look at either. It
+ * shares the price block with the mark rather than taking a cell of its
+ * own, because the strip has no room for a ninth labelled cell — measured,
+ * not guessed: as one it pushed funding 100px past the right edge at 1366.
+ * Nothing new is fetched for it; it arrives on the same
+ * /futures/mark-price response the mark does.
  *
  * Funding sits at the end deliberately. It is important, but it is a
  * once-per-8h settlement, and putting it immediately after mark price
@@ -45,8 +55,8 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  * Futures-only styles reflow these blocks on narrow screens without
  * hiding metrics or changing the shared Spot ticker styles.
  */
-export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }:
-  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean }) {
+export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, onOpenCalculator }:
+  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean; onOpenCalculator?: () => void }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
   /**
@@ -273,9 +283,26 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
             is the mark everywhere this design is used — but it stays in the
             accessible name, so the cell is still self-describing to a
             screen reader. */}
-        <span className="futures-secondary-price" title={t('futures.markPrice')}>
-          <span className="value" aria-label={t('futures.markPrice')}>
+        {/* MARK AND INDEX, ON ONE LINE UNDER THE LAST PRICE.
+            Index was fetched and then dropped on the floor — the state has
+            held it since the mark arrived, with nothing rendering it — and
+            a mark quoted without the index it is anchored to cannot be
+            judged: the gap between the two is the question a perpetual
+            trader is asking when they look at either.
+
+            It sits HERE rather than in a cell of its own because the strip
+            has no room for a ninth labelled cell: at 1366 that cell pushed
+            the funding rate 100px past the right edge. Three readings of
+            one price in one block is also the truer shape — and the labels
+            survive in `title` and `aria-label`, so neither figure is
+            anonymous on hover or to a screen reader. */}
+        <span className="futures-secondary-price">
+          <span className="value" title={t('futures.markPrice')} aria-label={t('futures.markPrice')}>
             {markPrice !== null ? formatPrice(markPrice) : '—'}
+          </span>
+          <span className="futures-price-sep" aria-hidden="true">·</span>
+          <span className="value" data-metric="index" title={t('futures.indexPrice')} aria-label={t('futures.indexPrice')}>
+            {indexPrice !== null ? formatPrice(indexPrice) : '—'}
           </span>
         </span>
       </div>
@@ -350,6 +377,23 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
           <NextFundingCountdown intervalHours={fundingIntervalHours} />
         </span>
       </div>
+      {onOpenCalculator ? (
+        <button
+          type="button"
+          className="ticker-calc-btn"
+          data-open-calculator="true"
+          onClick={onOpenCalculator}
+          title={t('calc.title')}
+          aria-label={t('calc.title')}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2" />
+            <path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v4M8 19h4" />
+          </svg>
+          <span className="ticker-calc-label">{t('calc.open')}</span>
+        </button>
+      ) : null}
     </div>
   );
 }

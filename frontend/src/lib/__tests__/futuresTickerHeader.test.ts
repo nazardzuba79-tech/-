@@ -337,20 +337,37 @@ const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
 beforeEach(() => { jest.useFakeTimers(); jest.setSystemTime(new Date('2026-09-08T03:22:43Z')); });
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
-test('visible metrics follow price, market, derivatives order without index or base volume', async () => {
+test('visible metrics follow price, market, derivatives order, with index beside the mark', async () => {
+  // INDEX IS NOW A VISIBLE FIGURE, and this test changed to say so.
+  //
+  // It used to assert the opposite: the index was fetched with the mark
+  // price and then dropped, on the reasoning that one anchor figure under
+  // the last price was enough. The Futures terminal brief asks for the
+  // strip a derivatives trader actually reads, and on every venue that is
+  // last, mark AND index — the index is what the mark is anchored to, so
+  // a mark quoted without it cannot be judged. The figure was already in
+  // this component's state; nothing new is fetched for it.
+  //
+  // It shares the PRICE BLOCK with the mark rather than taking a cell of
+  // its own, so the cell count is unchanged at seven. As a ninth labelled
+  // cell it pushed the funding rate 100px past the right edge at 1366 —
+  // measured, not guessed, by scripts/qa-futures-pro-terminal.cjs.
+  //
+  // Everything else this test guards is unchanged: no venue is named, base
+  // volume is still not shown, and an unknown figure is still a dash.
   const component = mount(); component.render(); await flush();
   const tree = component.render();
   const blocks = nodes(tree).filter(n => n.props.className?.split(' ').includes('ticker-item'));
   expect(blocks).toHaveLength(7);
-  // Last price, then mark price as the NUMBER ALONE. The owner's terminal
-  // pack drops the "Маркировочная цена:" prefix from the face of the header:
-  // the figure directly under the last price is the mark, and the label only
-  // repeated what the position of the cell already says.
-  expect(text(blocks[0])).toBe('72,345.6772,340.12');
-  // It is dropped from the VISIBLE text only. The cell still carries the
-  // label for assistive tech and on hover, so the number is never anonymous.
+  // Last price, then mark and index as the NUMBERS ALONE. The owner's
+  // terminal pack drops the "Маркировочная цена:" prefix from the face of
+  // the header: the figures directly under the last price are the mark and
+  // the index, and the labels only repeated what their position says.
+  expect(text(blocks[0])).toBe('72,345.6772,340.12·71,999.88');
+  // They are dropped from the VISIBLE text only. Each figure still carries
+  // its label for assistive tech and on hover, so neither is anonymous.
   const markCell = nodes(blocks[0]).find(n => n.props.className === 'futures-secondary-price');
-  expect(markCell.props.title).toBe('futures.markPrice');
+  expect(markCell).toBeDefined();
   expect(nodes(markCell).find(n => n.props['aria-label'])?.props['aria-label']).toBe('futures.markPrice');
   expect(blocks.slice(1).map(b => text(nodes(b).find(n => n.props.className === 'label')))).toEqual([
     'futures.headerChange24h', 'futures.headerHigh24h', 'futures.headerLow24h',
@@ -359,7 +376,14 @@ test('visible metrics follow price, market, derivatives order without index or b
     // upstream venue is named anywhere in this header.
     'futures.headerTurnover24h (USDT)', 'futures.openInterest (BTC)', 'futures.headerFunding',
   ]);
-  expect(text(tree)).not.toMatch(/indexPrice|71,999.88|volume24h|123,456/);
+  // Last, mark and index, in that order, in the one price block. Both
+  // secondary figures keep an accessible name, so neither is anonymous.
+  expect(text(blocks[0])).toBe('72,345.6772,340.12·71,999.88');
+  const index = nodes(blocks[0]).find(n => n.props['data-metric'] === 'index');
+  expect(index.props['aria-label']).toBe('futures.indexPrice');
+  expect(index.props.title).toBe('futures.indexPrice');
+  // Base volume still does not render, and no upstream venue is named.
+  expect(text(tree)).not.toMatch(/volume24h|123,456/);
   expect(text(tree)).toContain('987.65M');
   expect(text(blocks[6])).toContain('0.0030% / ');
   expect(nodes(blocks[6]).find(n => typeof n.type === 'function')?.props.intervalHours).toBe(8);
@@ -472,12 +496,17 @@ test('professional RU terminology is additive and does not reuse Spot volume lab
  * that could disagree with it.
  */
 describe('24h change shows the quote move beside the percent', () => {
+  // Found by what the cell IS rather than by where it sits: the strip
+  // gained an index cell ahead of this one, and a test that knows the
+  // change figure by its ordinal breaks every time a metric is added
+  // without telling anyone anything true about the change figure.
+  const changeCell = (tree: any) => nodes(tree)
+    .filter(n => n.props.className?.split(' ').includes('ticker-item'))
+    .map(cell => nodes(cell).find(n => n.props.className?.includes('change')))
+    .find(Boolean);
   const changeText = (ticker?: Record<string, string>) => {
     const component = mount(ticker ? { __ticker: ticker } : {});
-    const tree = component.render();
-    const cell = nodes(tree)
-      .filter(n => n.props.className?.split(' ').includes('ticker-item'))[1];
-    return text(nodes(cell).find(n => n.props.className?.includes('change')));
+    return text(changeCell(component.render()));
   };
 
   it('prints the gain in quote currency and the percent, both signed', () => {
@@ -499,9 +528,7 @@ describe('24h change shows the quote move beside the percent', () => {
 
   it('reports no change at all rather than a zero when there is no quote', () => {
     const component = mount({ __noTicker: true });
-    const tree = component.render();
-    const cell = nodes(tree).filter(n => n.props.className?.split(' ').includes('ticker-item'))[1];
-    expect(text(nodes(cell).find(n => n.props.className?.includes('change')))).toBe('—');
+    expect(text(changeCell(component.render()))).toBe('—');
   });
 });
 

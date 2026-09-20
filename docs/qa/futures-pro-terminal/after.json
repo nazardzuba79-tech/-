@@ -1,0 +1,1134 @@
+{
+  "label": "after",
+  "takenAt": "2026-09-20T09:16:08.551Z",
+  "viewports": {
+    "1920x1080": {
+      "terminal": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1223,
+            "top": 69,
+            "width": 120,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1355,
+            "lastCellRight": 1061,
+            "calculatorRight": 1343,
+            "innerScrollPx": 0,
+            "coveredByTriggerPx": 0,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 297,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1607,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 1493,
+            "top": 780,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": null
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "calculator": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1223,
+            "top": 69,
+            "width": 120,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1355,
+            "lastCellRight": 1061,
+            "calculatorRight": 1343,
+            "innerScrollPx": 0,
+            "coveredByTriggerPx": 0,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 297,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1607,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 1493,
+            "top": 780,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": null
+        },
+        "calculator": {
+          "box": {
+            "left": 520,
+            "top": 234,
+            "width": 880,
+            "height": 611
+          },
+          "readOnlyBadge": "Только расчёт",
+          "headline": "1,537.80 USDT",
+          "rows": [
+            {
+              "label": "Номинал позиции",
+              "value": "19,315.10 USDT"
+            },
+            {
+              "label": "Начальная маржа",
+              "value": "1,931.51 USDT"
+            },
+            {
+              "label": "Маржа позиции",
+              "value": "1,941.07 USDT"
+            },
+            {
+              "label": "Комиссия за открытие",
+              "value": "10.6233 USDT"
+            },
+            {
+              "label": "Комиссия за закрытие",
+              "value": "11.4813 USDT"
+            },
+            {
+              "label": "Валовой P&L",
+              "value": "1,559.90 USDT"
+            },
+            {
+              "label": "Чистый P&L",
+              "value": "1,537.80 USDT"
+            }
+          ]
+        },
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "confirming": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1223,
+            "top": 69,
+            "width": 120,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1355,
+            "lastCellRight": 1061,
+            "calculatorRight": 1343,
+            "innerScrollPx": 0,
+            "coveredByTriggerPx": 0,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 297,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1607,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": null,
+          "confirmOpen": true,
+          "report": null
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "reported": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1223,
+            "top": 69,
+            "width": 120,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1355,
+            "lastCellRight": 1061,
+            "calculatorRight": 1343,
+            "innerScrollPx": 0,
+            "coveredByTriggerPx": 0,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 297,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1607,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 1493,
+            "top": 780,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": "Закрыто 0 из 2. Не удалось: 2. Не удалось закрыть позицию"
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      }
+    },
+    "1440x900": {
+      "terminal": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1081,
+            "top": 69,
+            "width": 33,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1126,
+            "lastCellRight": 1099,
+            "calculatorRight": 1114,
+            "innerScrollPx": 37,
+            "coveredByTriggerPx": 18,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 302,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1127,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 1013,
+            "top": 658,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": null
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "calculator": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1081,
+            "top": 69,
+            "width": 33,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1126,
+            "lastCellRight": 1099,
+            "calculatorRight": 1114,
+            "innerScrollPx": 37,
+            "coveredByTriggerPx": 18,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 302,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1127,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 1013,
+            "top": 658,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": null
+        },
+        "calculator": {
+          "box": {
+            "left": 280,
+            "top": 144,
+            "width": 880,
+            "height": 611
+          },
+          "readOnlyBadge": "Только расчёт",
+          "headline": "1,537.80 USDT",
+          "rows": [
+            {
+              "label": "Номинал позиции",
+              "value": "19,315.10 USDT"
+            },
+            {
+              "label": "Начальная маржа",
+              "value": "1,931.51 USDT"
+            },
+            {
+              "label": "Маржа позиции",
+              "value": "1,941.07 USDT"
+            },
+            {
+              "label": "Комиссия за открытие",
+              "value": "10.6233 USDT"
+            },
+            {
+              "label": "Комиссия за закрытие",
+              "value": "11.4813 USDT"
+            },
+            {
+              "label": "Валовой P&L",
+              "value": "1,559.90 USDT"
+            },
+            {
+              "label": "Чистый P&L",
+              "value": "1,537.80 USDT"
+            }
+          ]
+        },
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "confirming": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1081,
+            "top": 69,
+            "width": 33,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1126,
+            "lastCellRight": 1099,
+            "calculatorRight": 1114,
+            "innerScrollPx": 37,
+            "coveredByTriggerPx": 18,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 302,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1127,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": null,
+          "confirmOpen": true,
+          "report": null
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "reported": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1081,
+            "top": 69,
+            "width": 33,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1126,
+            "lastCellRight": 1099,
+            "calculatorRight": 1114,
+            "innerScrollPx": 37,
+            "coveredByTriggerPx": 18,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 302,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1127,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 1013,
+            "top": 658,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": "Закрыто 0 из 2. Не удалось: 2. Не удалось закрыть позицию"
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      }
+    },
+    "1366x768": {
+      "terminal": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1011,
+            "top": 69,
+            "width": 29,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1052,
+            "lastCellRight": 1033,
+            "calculatorRight": 1040,
+            "innerScrollPx": 32,
+            "coveredByTriggerPx": 22,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 293,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1053,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 939,
+            "top": 542,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": null
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "calculator": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1011,
+            "top": 69,
+            "width": 29,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1052,
+            "lastCellRight": 1033,
+            "calculatorRight": 1040,
+            "innerScrollPx": 32,
+            "coveredByTriggerPx": 22,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 293,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1053,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 939,
+            "top": 542,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": null
+        },
+        "calculator": {
+          "box": {
+            "left": 243,
+            "top": 78,
+            "width": 880,
+            "height": 611
+          },
+          "readOnlyBadge": "Только расчёт",
+          "headline": "1,537.80 USDT",
+          "rows": [
+            {
+              "label": "Номинал позиции",
+              "value": "19,315.10 USDT"
+            },
+            {
+              "label": "Начальная маржа",
+              "value": "1,931.51 USDT"
+            },
+            {
+              "label": "Маржа позиции",
+              "value": "1,941.07 USDT"
+            },
+            {
+              "label": "Комиссия за открытие",
+              "value": "10.6233 USDT"
+            },
+            {
+              "label": "Комиссия за закрытие",
+              "value": "11.4813 USDT"
+            },
+            {
+              "label": "Валовой P&L",
+              "value": "1,559.90 USDT"
+            },
+            {
+              "label": "Чистый P&L",
+              "value": "1,537.80 USDT"
+            }
+          ]
+        },
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "confirming": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1011,
+            "top": 69,
+            "width": 29,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1052,
+            "lastCellRight": 1033,
+            "calculatorRight": 1040,
+            "innerScrollPx": 32,
+            "coveredByTriggerPx": 22,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 293,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1053,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": null,
+          "confirmOpen": true,
+          "report": null
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      },
+      "reported": {
+        "ticker": {
+          "count": 7,
+          "labels": [
+            "(price block)",
+            "Изменение за 24ч",
+            "Макс. за 24ч",
+            "Мин. за 24ч",
+            "Оборот за 24ч (USDT)",
+            "Открытый интерес (USDT)",
+            "Ставка финансирования"
+          ],
+          "calculatorButton": {
+            "left": 1011,
+            "top": 69,
+            "width": 29,
+            "height": 30
+          },
+          "fit": {
+            "barRight": 1052,
+            "lastCellRight": 1033,
+            "calculatorRight": 1040,
+            "innerScrollPx": 32,
+            "coveredByTriggerPx": 22,
+            "overflowPx": 0
+          },
+          "indexCell": {
+            "box": {
+              "left": 293,
+              "top": 89,
+              "width": 62,
+              "height": 19
+            },
+            "value": "77,835.42",
+            "label": "Индекс-цена"
+          }
+        },
+        "orderTicket": {
+          "rows": [
+            {
+              "label": "Стоимость позиции",
+              "value": "—"
+            },
+            {
+              "label": "Маржа",
+              "value": "—"
+            },
+            {
+              "label": "Прим. цена ликвидации",
+              "value": "—/—"
+            },
+            {
+              "label": "Максимальная позиция",
+              "value": "250000.00 USDT"
+            }
+          ],
+          "forbiddenControls": []
+        },
+        "status": {
+          "box": {
+            "left": 1053,
+            "top": 49,
+            "width": 312,
+            "height": 29
+          },
+          "state": "connecting",
+          "text": "Нет соединения",
+          "feedAge": null,
+          "mentionsLatency": false
+        },
+        "positions": {
+          "rows": 2,
+          "closeAllButton": {
+            "left": 939,
+            "top": 542,
+            "width": 99,
+            "height": 29
+          },
+          "confirmOpen": false,
+          "report": "Закрыто 0 из 2. Не удалось: 2. Не удалось закрыть позицию"
+        },
+        "calculator": null,
+        "brokenFigures": [],
+        "horizontalOverflow": 0
+      }
+    }
+  }
+}

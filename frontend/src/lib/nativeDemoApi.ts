@@ -76,6 +76,40 @@ export interface NativeContract{
   riskTiers:{maxNotional:string;maintenanceRate:string;deduction:string;maxLeverage:string}[];takerFeeRate:string;makerFeeRate:string;
 }
 /**
+ * What the calculator can ask the server to price. One shape per tab, each
+ * carrying only what its answer depends on.
+ */
+export type NativeQuoteInput=
+  |{kind:'ORDER';symbol:string;side:'LONG'|'SHORT';quantity:string;price:string;leverage:string;maker?:boolean;market?:boolean}
+  |{kind:'POSITION';symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;leverage:string;allocatedMargin?:string}
+  |{kind:'TARGET';symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;leverage:string;basis:'GROSS'|'NET';
+    targetPnl?:string;targetRoiPercent?:string;allocatedMargin?:string;maker?:boolean}
+  |{kind:'FUNDING';symbol:string;side:'LONG'|'SHORT';quantity:string;markPrice:string;rate:string;intervals?:number}
+  |{kind:'PNL';symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;exitPrice:string;leverage:string;maker?:boolean};
+
+/** Which contract rule an order broke, with the limit and what was asked for. */
+export interface NativeQuoteViolation{code:string;limit:string;allowed:string;actual:string}
+
+/**
+ * Every figure here was computed by the engine's own functions. `null` means
+ * the engine has NO answer — an unreachable liquidation boundary, a cost that
+ * cannot be quoted — and renders as a dash, never as zero.
+ */
+export type NativeQuoteResult=
+  |{kind:'ORDER';entryNotional:string|null;baseInitialMargin:string|null;closeFeeReserve:string|null;openingFee:string|null;
+    positionMargin:string|null;totalCost:string|null;violation:NativeQuoteViolation|null;
+    rules:Omit<NativeContract,'riskTiers'|'takerFeeRate'|'makerFeeRate'>;takerFeeRate:string;makerFeeRate:string}
+  |{kind:'POSITION';entryNotional:string;markNotional:string;baseInitialMargin:string;closeFeeReserve:string;allocatedMargin:string;
+    maintenanceMargin:string;equity:string;unrealizedPnl:string;realizedGross:string;netPnl:string;roiMarginBasis:string;
+    roiPercent:string|null;liquidationPrice:string|null;liquidatable:boolean;takerFeeRate:string;makerFeeRate:string}
+  |{kind:'TARGET';exitPrice:string|null;targetPnl:string;roiMarginBasis:string;openingFee:string;closingFeeRate:string;
+    takerFeeRate:string;makerFeeRate:string}
+  |{kind:'FUNDING';perInterval:string;intervals:number;total:string;takerFeeRate:string;makerFeeRate:string}
+  |{kind:'PNL';entryNotional:string;baseInitialMargin:string;positionMargin:string;openingFee:string;closingFee:string;
+    grossPnl:string;netPnl:string;roiMarginBasis:string;roiPercent:string|null;roiPercentNet:string|null;
+    takerFeeRate:string;makerFeeRate:string};
+
+/**
  * The Cross collateral base: the whole wallet priced in the settle asset.
  *
  * `price`/`value` are `null` for an asset whose quote could not be obtained.
@@ -175,6 +209,18 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     setCollateral:(asset:string,enabled:boolean,idempotencyKey:string)=>request<NativeWallet>('/native/collateral-preference',{asset,enabled,idempotencyKey}),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
+    /**
+     * PRICING, NOT TRADING. The calculator's only call: the server runs the
+     * engine's own quoteOrderCost / calculatePosition / liquidationPrice /
+     * targetExitPrice / fundingCashflow and returns the figures.
+     *
+     * It is a request rather than a local computation because the frontend
+     * image is built from `frontend/` alone and cannot import `src/`. It is
+     * a POST because it carries a body, NOT because it writes — the route
+     * touches no repository, issues no command and creates no revision,
+     * which is why it takes no idempotency key.
+     */
+    quote:(input:NativeQuoteInput,signal?:AbortSignal)=>request<NativeQuoteResult>('/native/quote',input,signal),
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),
     getCard:(id:string)=>{const m=/^native:(\d+):(native-[a-zA-Z0-9-]+)$/.exec(id);if(!m)throw new PrivateTradingError('Карточка не найдена',404);return request<PrivateResultCard>(`/native/cards/${m[1]}/${m[2]}`);},
   };

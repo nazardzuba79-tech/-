@@ -45,6 +45,24 @@ export function FuturesPositionsPanel({
   const tab: Tab = controlledTab ?? ownTab;
   const [closingId, setClosingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * CLOSE ALL, as a small state machine rather than a boolean.
+   *
+   * `confirm` holds the ids the trader agreed to, captured at the moment
+   * they pressed — not re-read at execution time. A position that opened
+   * while the confirmation was on screen was never agreed to and must not
+   * be closed by a button the trader pressed before it existed.
+   *
+   * `done` is a REPORT, not a celebration: it carries what was closed, what
+   * was not, and why the first refusal happened. Nothing here ever shows a
+   * success the engine did not confirm one position at a time.
+   */
+  const [closeAll, setCloseAll] = useState<
+    | { phase: 'idle' }
+    | { phase: 'confirm'; ids: string[] }
+    | { phase: 'running'; total: number; done: number }
+    | { phase: 'done'; total: number; closed: number; failed: number; reason: string | null }
+  >({ phase: 'idle' });
 
   // Open positions keep the 4s cadence this panel always polled at — it is
   // the fastest any component asks for, and the shared store honours the
@@ -98,6 +116,48 @@ export function FuturesPositionsPanel({
   }
 
   /**
+   * Close every position the trader confirmed, ONE AT A TIME.
+   *
+   * Sequential on purpose. Each close is an authoritative command against
+   * the same account, and the engine serializes them anyway — firing ten at
+   * once earns nine `account_changed` retries and a report nobody can read.
+   * In sequence, each answer is attributable to the position it belongs to.
+   *
+   * It is the SAME `execution.closePosition` a single row's Market button
+   * calls. There is no bulk endpoint, no second settlement path, and no way
+   * for this button to move a balance that one button could not.
+   *
+   * A refusal does not stop the run: the remaining positions are still the
+   * trader's to close, and abandoning them because the third one failed
+   * would leave the account in a state nobody asked for. Every outcome is
+   * counted and the first refusal's reason is kept, so the report can say
+   * what actually happened instead of "done".
+   */
+  async function runCloseAll(ids: string[]) {
+    setError(null);
+    setCloseAll({ phase: 'running', total: ids.length, done: 0 });
+    let closed = 0;
+    let failed = 0;
+    let reason: string | null = null;
+    for (const [index, id] of ids.entries()) {
+      try {
+        await execution.closePosition(id);
+        closed += 1;
+      } catch (err) {
+        failed += 1;
+        // Our sentence, not the server's — see futuresOrderErrors.ts.
+        if (reason === null) reason = futuresOrderErrorMessage(err, t, t('futures.closePositionError'));
+      }
+      setCloseAll({ phase: 'running', total: ids.length, done: index + 1 });
+    }
+    // One refresh at the end rather than one per close: the intermediate
+    // states are not states anybody asked to see, and ten refreshes of the
+    // same three resources is ten times the work for one answer.
+    execution.refresh(['positions', 'positionHistory', 'balances']);
+    setCloseAll({ phase: 'done', total: ids.length, closed, failed, reason });
+  }
+
+  /**
    * Nothing to show yet: the tabs, then one short centred line.
    *
    * This used to draw the full strip of column headings above the message —
@@ -148,6 +208,67 @@ export function FuturesPositionsPanel({
         <button type="button" className="terminal-account-retry" disabled={activeResource.loading || activeResource.refreshing}
           onClick={() => execution.refresh([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>
       </div>}
+
+      {/* CLOSE ALL.
+
+          Above the rows it acts on, never inside them: a destructive
+          control in the body of a table is one mis-aimed click away from
+          the row button beside it.
+
+          It outlives the run it reports on. A successful Close All empties
+          the table, and a bar living inside the rows branch would unmount
+          with them — taking "Closed 3 of 3" away and leaving the trader to
+          infer the outcome from an empty screen. So it renders whenever
+          there is something to close OR something to report. */}
+      {tab === 'open' && (!!positions?.length || closeAll.phase !== 'idle') && (
+        <div className="futures-close-all-bar">
+          {closeAll.phase === 'confirm' ? (
+            <div className="futures-close-all-confirm" role="alertdialog" aria-live="assertive"
+                 data-close-all-confirm="true">
+              <div className="futures-close-all-text">
+                <strong>{t('futures.closeAllTitle')}</strong>
+                <span>{t('futures.closeAllBody', { count: closeAll.ids.length })}</span>
+              </div>
+              <div className="futures-close-all-actions">
+                <button type="button" className="futures-close-all-cancel"
+                        onClick={() => setCloseAll({ phase: 'idle' })}>
+                  {t('futures.protectionCancel')}
+                </button>
+                <button type="button" className="futures-close-all-go" data-close-all-confirmed="true"
+                        onClick={() => void runCloseAll(closeAll.ids)}>
+                  {t('futures.closeAllConfirm')}
+                </button>
+              </div>
+            </div>
+          ) : closeAll.phase === 'running' ? (
+            <span className="futures-close-all-status" role="status">
+              {t('futures.closeAllRunning')} {closeAll.done}/{closeAll.total}
+            </span>
+          ) : (
+            <>
+              {closeAll.phase === 'done' && (
+                /* The REPORT. `closed` counts engine confirmations, so a
+                   partial run reads as a partial run and a refused one
+                   names its reason. */
+                <span className={`futures-close-all-report${closeAll.failed ? ' futures-close-all-failed' : ''}`}
+                      role="status" data-close-all-report="true">
+                  {closeAll.failed
+                    ? t('futures.closeAllPartial', { closed: closeAll.closed, count: closeAll.total, failed: closeAll.failed })
+                    : t('futures.closeAllDone', { closed: closeAll.closed, count: closeAll.total })}
+                  {closeAll.reason ? ` ${closeAll.reason}` : ''}
+                </span>
+              )}
+              {!!positions?.length && (
+                <button type="button" className="futures-close-all-trigger" data-close-all="true"
+                        disabled={closingId !== null}
+                        onClick={() => setCloseAll({ phase: 'confirm', ids: positions.map(p => p.id) })}>
+                  {t('futures.closeAll')}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {tab === 'open' ? (
         positions === null ? (

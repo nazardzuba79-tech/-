@@ -112,6 +112,18 @@
 .futures-terminal .fo-qtyLabelRow > span { font-size: 12px; color: #98a2b3 !important; }
 .futures-terminal .fo-reduceOnlyRow { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #98a2b3; cursor: pointer; }
 .futures-terminal .fo-reduceOnlyRow input { accent-color: var(--accent-yellow); }
+/* TP/SL at entry. Two fields, not a panel: this is a pair of levels on an
+   order the trader is already filling in, and giving it a border and a
+   header of its own would read as a separate instrument. */
+.futures-terminal .fo-tpslBox { display: flex; flex-direction: column; gap: 6px; }
+.futures-terminal .fo-tpslCaption { font-size: 12px; color: #98a2b3; }
+.futures-terminal .fo-tpslRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.futures-terminal .fo-tpslField { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.futures-terminal .fo-tpslLabel { font-size: 11px; color: #7e8792; }
+.futures-terminal .fo-tpslBox .fo-input { width: 100%; min-width: 0; }
+/* Under Reduce Only the fields are replaced by the sentence that says where
+   protection belongs, rather than greyed out. */
+.futures-terminal .fo-tpslNote { margin: 0; font-size: 11px; line-height: 1.45; color: #7e8792; }
 .futures-terminal .fo-infoBox { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: var(--panel-alt); }
 .futures-terminal .fo-infoRow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; }
 .futures-terminal .fo-infoRow > :first-child { color: #98a2b3 !important; }

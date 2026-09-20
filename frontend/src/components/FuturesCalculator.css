@@ -1,0 +1,338 @@
+/*
+ * The Futures calculator.
+ *
+ * Every colour here is a terminal token that already exists — --panel,
+ * --panel-alt, --border, --text-primary/secondary, --color-buy/sell and the
+ * gold accent. Nothing is a new hue: the calculator has to read as the same
+ * product as the panel behind it, not as a visitor from another design.
+ *
+ * It is a centred dialog rather than a side panel on purpose. At 1366x768 a
+ * side panel takes its width from the order ticket, which is the one column
+ * that cannot afford it; a dialog borrows from the chart instead, and the
+ * chart is still visible around it.
+ */
+
+.fc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(4, 7, 11, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.fc-panel {
+  width: min(880px, 100%);
+  max-height: min(680px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  background: var(--panel, #12161c);
+  border: 1px solid var(--border, #232a34);
+  border-radius: 10px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  color: var(--text-primary, #eaeef3);
+  overflow: hidden;
+}
+.fc-panel:focus { outline: none; }
+
+/* ---------- head ---------- */
+
+.fc-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border, #232a34);
+  background: var(--panel-alt, #161b23);
+}
+.fc-headText { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.fc-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.fc-sub { margin: 0; font-size: 12px; color: var(--text-secondary, #98a2b3); }
+
+/* The one badge that is worth a colour: it is the answer to "can this
+   thing move my money", and the answer is no. */
+.fc-readonly {
+  margin-left: auto;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid rgba(240, 201, 100, 0.34);
+  background: rgba(240, 201, 100, 0.1);
+  color: #f0c964;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.fc-close {
+  flex: none;
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  border: 1px solid var(--border, #232a34);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #98a2b3);
+  font-size: 18px; line-height: 1;
+  cursor: pointer;
+}
+.fc-close:hover { color: var(--text-primary, #eaeef3); border-color: #39434f; }
+
+/* ---------- tabs ---------- */
+
+.fc-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border, #232a34);
+  background: var(--panel-alt, #161b23);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.fc-tabs::-webkit-scrollbar { display: none; }
+.fc-tab {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary, #98a2b3);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fc-tab:hover { color: var(--text-primary, #eaeef3); }
+.fc-tabActive { color: #f0c964; border-bottom-color: #f0c964; }
+.fc-tab:focus-visible { outline: 2px solid #f0c964; outline-offset: -2px; }
+
+/* ---------- body ---------- */
+
+.fc-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
+}
+.fc-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 16px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border, #232a34);
+}
+.fc-results {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 16px;
+  overflow-y: auto;
+  background: var(--panel-alt, #161b23);
+}
+
+/* ---------- side ---------- */
+
+.fc-sideRow { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fc-sideBtn {
+  padding: 9px 10px;
+  border: 1px solid var(--border, #232a34);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #98a2b3);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fc-sideBtn:hover { color: var(--text-primary, #eaeef3); }
+.fc-sideActive.fc-sideLONG {
+  background: rgba(14, 203, 129, 0.14);
+  border-color: rgba(14, 203, 129, 0.5);
+  color: var(--color-buy, #2ebd85);
+}
+.fc-sideActive.fc-sideSHORT {
+  background: rgba(241, 108, 123, 0.14);
+  border-color: rgba(241, 108, 123, 0.5);
+  color: var(--color-sell, #f16c7b);
+}
+.fc-sideBtn:focus-visible { outline: 2px solid #f0c964; outline-offset: 1px; }
+
+/* ---------- fields ---------- */
+
+.fc-field { display: flex; flex-direction: column; gap: 5px; }
+.fc-fieldHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.fc-fieldLabel { font-size: 12px; color: var(--text-secondary, #98a2b3); }
+.fc-fieldHint { font-size: 11px; color: var(--text-tertiary, #7e8792); }
+.fc-inputWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border, #232a34);
+  border-radius: 6px;
+  background: var(--panel, #12161c);
+}
+.fc-inputWrap:focus-within { border-color: #f0c964; }
+.fc-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary, #eaeef3);
+  font: inherit;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+.fc-input:focus { outline: none; }
+.fc-suffix { flex: none; font-size: 11.5px; color: var(--text-tertiary, #7e8792); }
+
+/* ---------- segmented chips ---------- */
+
+.fc-segment { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fc-segmentLabel { font-size: 12px; color: var(--text-secondary, #98a2b3); }
+.fc-segmentBtns { display: flex; gap: 4px; }
+.fc-chip {
+  padding: 5px 10px;
+  border: 1px solid var(--border, #232a34);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary, #98a2b3);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.fc-chip:hover { color: var(--text-primary, #eaeef3); }
+.fc-chipActive { background: #28313a; border-color: #39434f; color: #f0c964; }
+.fc-chip:focus-visible { outline: 2px solid #f0c964; outline-offset: 1px; }
+
+/* ---------- funding ---------- */
+
+.fc-funding { border: 1px solid var(--border, #232a34); border-radius: 6px; }
+.fc-fundingSummary {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-secondary, #98a2b3);
+  cursor: pointer;
+}
+.fc-fundingSummary::marker { color: var(--text-tertiary, #7e8792); }
+.fc-fundingBody { display: flex; flex-direction: column; gap: 9px; padding: 0 10px 10px; }
+.fc-note { margin: 0; font-size: 11px; line-height: 1.45; color: var(--text-tertiary, #7e8792); }
+
+/* ---------- results ---------- */
+
+.fc-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border, #232a34);
+}
+.fc-headlineLabel {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #7e8792);
+}
+.fc-headlineValue {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.fc-headlineRoi { font-size: 12.5px; font-weight: 600; }
+.fc-unit { font-size: 13px; font-weight: 500; color: var(--text-secondary, #98a2b3); }
+.fc-muted { color: var(--text-tertiary, #7e8792); font-weight: 400; }
+
+.fc-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+}
+.fc-rowStrong { border-top: 1px solid var(--border, #232a34); margin-top: 4px; padding-top: 9px; }
+.fc-rowLabel { font-size: 12px; color: var(--text-secondary, #98a2b3); }
+.fc-rowValue {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.fc-rowStrong .fc-rowValue { font-size: 14px; font-weight: 600; }
+
+.fc-up { color: var(--color-buy, #2ebd85); }
+.fc-down { color: var(--color-sell, #f16c7b); }
+
+.fc-explain {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-tertiary, #7e8792);
+}
+.fc-rules { font-size: 11px; }
+.fc-warn {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(240, 201, 100, 0.3);
+  background: rgba(240, 201, 100, 0.08);
+  color: #f0c964;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.fc-error {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(241, 108, 123, 0.34);
+  background: rgba(241, 108, 123, 0.1);
+  color: var(--color-sell, #f16c7b);
+  font-size: 12px;
+}
+
+/* ---------- foot ---------- */
+
+.fc-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border, #232a34);
+  background: var(--panel-alt, #161b23);
+}
+.fc-footNote { margin: 0; flex: 1; font-size: 11px; line-height: 1.45; color: var(--text-tertiary, #7e8792); }
+.fc-use {
+  flex: none;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #f0c964;
+  color: #10141e;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fc-use:hover:not(:disabled) { background: #f5d67f; }
+.fc-use:disabled { opacity: 0.45; cursor: not-allowed; }
+.fc-use:focus-visible { outline: 2px solid #f0c964; outline-offset: 2px; }
+
+/* ---------- narrow ---------- */
+
+@media (max-width: 720px) {
+  .fc-body { grid-template-columns: minmax(0, 1fr); }
+  .fc-inputs { border-right: 0; border-bottom: 1px solid var(--border, #232a34); }
+  .fc-panel { max-height: calc(100vh - 32px); }
+  .fc-headlineValue { font-size: 22px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-backdrop { backdrop-filter: none; }
+}
