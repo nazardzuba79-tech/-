@@ -8,6 +8,9 @@ import type { LiveStatus } from '../services/marketData/live/contract';
 export const PRIVATE_QUOTE_MAX_AGE_MS = 5_000;
 /** Owner-authorized sampled demo valuation/settlement. NEVER a live book budget. */
 export const HISTORICAL_DEMO_CURRENT_MAX_AGE_MS = 60_000;
+// Admission reserve for the bounded 2s transaction wait + 10s transaction.
+// Read-only valuation keeps the full 60s lifetime; LIVE guards are unchanged.
+export const HISTORICAL_DEMO_COMMIT_HEADROOM_MS = 15_000;
 export const PRIVATE_HISTORY_MAX_CANDLES = 50_000;
 export const PRIVATE_HISTORY_MAX_RANGE_MS = 90 * 24 * 60 * 60 * 1_000;
 const FUTURE_SKEW_MS = 1_000;
@@ -399,16 +402,20 @@ export class PrivateTradingMarketData {
     return out;
   }
   /** Sampled prices only for the private HISTORICAL_DEMO policy. No depth is invented. */
-  async historicalDemoPrices(symbols:string[],signal?:AbortSignal):Promise<Map<string,PrivateMark>> {
+  async historicalDemoPrices(symbols:string[],signal?:AbortSignal,minRemainingMs=0):Promise<Map<string,PrivateMark>> {
+    if(!Number.isFinite(minRemainingMs)||minRemainingMs<0||minRemainingMs>=HISTORICAL_DEMO_CURRENT_MAX_AGE_MS)throw new PrivateMarketDataError('invalid_request',400);
+    const maxAge=HISTORICAL_DEMO_CURRENT_MAX_AGE_MS-minRemainingMs;
     const wanted=[...new Set(symbols.map(symbol))],out=new Map<string,PrivateMark>();
     if(!wanted.length)return out;
     if(wanted.length>PRIVATE_MARKS_MAX)throw new PrivateMarketDataError('invalid_symbol',400);
     const page=read(privateMarksSchema,await this.get(`marks?${new URLSearchParams({symbols:wanted.join(',')})}`,signal));
     for(const value of page.marks){
       if(!wanted.includes(value.symbol)||out.has(value.symbol))return invalid();
-      if([value.markProviderTimestamp,value.receivedAt,value.fetchedAt].every(t=>fresh(t,this.now(),HISTORICAL_DEMO_CURRENT_MAX_AGE_MS)))out.set(value.symbol,value);
+      if([value.markProviderTimestamp,value.receivedAt,value.fetchedAt].every(t=>fresh(t,this.now(),maxAge)))out.set(value.symbol,value);
     }
-    // Missing frame rows take the existing authenticated REST observation.
+    // Missing rows and rows without commit headroom take a fresh authenticated
+    // REST observation before valuation. Never carry an almost-expired frame
+    // through account/receipt persistence.
     // Its live book checks remain unchanged; only this consumer's subsequent
     // mark/last lifetime is the explicit 60-second sampled-demo contract.
     const missing=wanted.filter(s=>!out.has(s));

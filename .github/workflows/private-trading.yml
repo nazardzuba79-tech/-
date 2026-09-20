@@ -80,6 +80,7 @@ jobs:
           src/private-trading/__tests__/nativeDemoReplay.test.ts
           src/private-trading/__tests__/nativeDemoService.test.ts
           src/private-trading/__tests__/nativeHistoricalCurrent.test.ts
+          src/private-trading/__tests__/nativeLiveProjection.test.ts
           src/private-trading/__tests__/nativeDemo.integration.test.ts
           src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts
           src/private-trading/__tests__/nativeCommandDeadline.test.ts

@@ -136,9 +136,11 @@ export class PrismaNativeRepository implements NativeRepository {
     const result=await nativeHistoryPage(this.db,actor.userId,query);
     await this.owner(this.db,actor);return result;
   }
-  private async writeProjection(tx:Prisma.TransactionClient,actor:OwnerSession,account:NativeAccount){
+  private projectionData(account:NativeAccount){
     const projection=deriveNativeLiveProjection(account);
-    const data={revision:account.revision,payload:JSON.parse(JSON.stringify(projection)) as Prisma.InputJsonValue,digest:projectionDigest(projection)};
+    return {revision:account.revision,payload:JSON.parse(JSON.stringify(projection)) as Prisma.InputJsonValue,digest:projectionDigest(projection)};
+  }
+  private async writeProjection(tx:Prisma.TransactionClient,actor:OwnerSession,account:NativeAccount,data=this.projectionData(account)){
     await tx.nativeDemoLiveProjection.upsert({where:{userId:actor.userId},create:{userId:actor.userId,...data},update:data,select:{userId:true}});
   }
   async live(actor:OwnerSession):Promise<NativeLiveProjection|null>{
@@ -221,6 +223,7 @@ export class PrismaNativeRepository implements NativeRepository {
     // the entire revision we just inserted: the caller already owns it.
     const result={...next,revision:expected+1};
     const accountPayload=json(result),receiptPayload=json(revisionPayload(result));
+    const projectionData=this.projectionData(result);
     const trace=commandScope();
     const timed=async<T>(stage:string,run:()=>Promise<T>):Promise<T>=>{
       const started=Date.now();trace?.trace(stage);
@@ -238,7 +241,7 @@ export class PrismaNativeRepository implements NativeRepository {
       const changed=await timed('transaction.account_write',()=>tx.nativeDemoAccount.updateMany({where:{userId:actor.userId,revision:expected},data:{revision:expected+1,payload:accountPayload}}));
       if(changed.count!==1)throw new PrivateTradingError('account_changed','Счёт изменился в другой вкладке. Обновите расчёт',409);
       await timed('transaction.receipt_write',()=>tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:result.revision,requestKey:key,requestHash:hash,payload:receiptPayload},select:{revision:true}}));
-      await timed('transaction.projection_write',()=>this.writeProjection(tx,actor,result));
+      await timed('transaction.projection_write',()=>this.writeProjection(tx,actor,result,projectionData));
       await timed('transaction.final_authorization',()=>this.owner(tx,actor));beforeWrite?.();return result;
     },{timeout:10000,maxWait:2000});
   }

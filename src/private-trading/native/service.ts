@@ -4,7 +4,7 @@ import BigNumber from 'bignumber.js';
 import { nativeHistoryCache } from './historyCache';
 import { liveCheckpoint, recoverEmptyObservationCheckpoint } from './replay';
 import type { CollateralHolding } from './collateral';
-import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PrivateValuationMark, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote, assertPrivateFreshMark, assertHistoricalDemoCurrentPrice, HISTORICAL_DEMO_CURRENT_MAX_AGE_MS } from '../marketData';
+import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PrivateValuationMark, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote, assertPrivateFreshMark, assertHistoricalDemoCurrentPrice, HISTORICAL_DEMO_CURRENT_MAX_AGE_MS, HISTORICAL_DEMO_COMMIT_HEADROOM_MS } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
@@ -633,17 +633,23 @@ export class NativeDemoService {
       return this.authoritative(actor,this.view(committed),committed,valuation);
     }
   }
-  private async demoCurrentPrices(symbols:string[],required:ReadonlySet<string>=new Set(symbols)):Promise<Map<string,PrivateMark>>{
+  private async demoCurrentPrices(symbols:string[],required:ReadonlySet<string>=new Set(symbols),minRemainingMs=0):Promise<Map<string,PrivateMark>>{
     const all=new Map<string,PrivateMark>(),wanted=[...new Set(symbols)].sort();
     for(let i=0;i<wanted.length;i+=64){
       const batch=wanted.slice(i,i+64);
-      const prices=await commandRead('market.near_live_prices',()=>this.market.historicalDemoPrices(batch,commandSignal()));
+      const prices=await commandRead('market.near_live_prices',()=>this.market.historicalDemoPrices(batch,commandSignal(),minRemainingMs));
       for(const symbol of batch){
         const quote=prices.get(symbol);if(!quote){if(required.has(symbol))throw new PrivateMarketDataError('near_live_price_unavailable');continue;}
         all.set(symbol,assertHistoricalDemoCurrentPrice(quote,symbol,this.now()));
       }
     }
+    this.demoCommitHeadroom(all,minRemainingMs);
     return all;
+  }
+  private demoCommitHeadroom(prices:Map<string,PrivateMark>,minRemainingMs:number){
+    const now=this.now();
+    for(const q of prices.values())if([q.markProviderTimestamp,q.receivedAt,q.fetchedAt].some(t=>now-t>HISTORICAL_DEMO_CURRENT_MAX_AGE_MS-minRemainingMs))
+      throw new PrivateMarketDataError('near_live_price_stale');
   }
   private demoCollateral(holdings:CollateralHolding[],prices:Map<string,PrivateMark>,row:NativeAccount){
     return valueCollateral(holdings,[...prices].map(([symbol,q])=>({asset:symbol.replace(/USDT$/,''),price:q.markPrice,source:'BYBIT_LINEAR_MARK',asOf:q.markProviderTimestamp})),
@@ -684,7 +690,7 @@ export class NativeDemoService {
     }else if(request.kind==='CANCEL')draft={id,seq,kind:'CANCEL',at:this.now(),orderId:request.orderId};
     else if(request.kind==='PROTECTION')draft={id,seq,kind:'PROTECTION',at:this.now(),positionId:request.positionId,protection:request.protection};
     else if(request.kind==='LEVERAGE')draft={id,seq,kind:'LEVERAGE',at:this.now(),positionId:request.positionId,leverage:request.leverage};
-    const prices=await this.demoCurrentPrices([...symbols],required);
+    const prices=await this.demoCurrentPrices([...symbols],required,HISTORICAL_DEMO_COMMIT_HEADROOM_MS);
     const valuation=this.demoCollateral(holdings,prices,row),collateral=externalCollateral(valuation);
     // Preserve the engine's conservative collateral floor: unknown holdings
     // remain null/incomplete, cannot fund admission, and cannot trigger liquidation.
@@ -721,6 +727,9 @@ export class NativeDemoService {
       executionSession:{...actor},executionPending:exposedSymbols(result.snapshot).size>0};
     // Flat polling changes no financial state and does not grow the journal.
     if(!draft&&!exposedSymbols(row.snapshot).size)return this.authoritative(actor,this.view({...next,revision:row.revision}),next,valuation);
+    // Replay may consume the reserve. Refuse before starting any writes in that
+    // case; never retry a financial command or bypass the final 60s rollback guard.
+    this.demoCommitHeadroom(prices,HISTORICAL_DEMO_COMMIT_HEADROOM_MS);
     let checks=0;
     const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash,()=>guard(['pre_transaction','before_account_write','before_commit'][checks++]??'before_write'));
     return this.authoritative(actor,this.view(committed),committed,valuation);

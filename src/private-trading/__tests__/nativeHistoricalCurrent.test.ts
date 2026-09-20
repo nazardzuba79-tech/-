@@ -3,6 +3,7 @@ import { actor, setup, key, H, H0, M, outcome } from '../native/testing/liveFixt
 import { NativeCommand, NativeDemoService } from '../native/service';
 import { demoPositionView } from '../native/engine';
 import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateTradingMarketData } from '../marketData';
+import { deriveNativeLiveProjection, projectionDigest, verifiedProjection } from '../native/liveProjection';
 
 const selectedAt=H0-24*H;
 const candle={source:'BYBIT_LINEAR' as const,interval:'1h' as const,openTime:selectedAt,pricePoint:'OPEN' as const};
@@ -21,6 +22,46 @@ async function fixture(entry='60000',current='81000',deposit='100000'){
 }
 
 describe('historical entry with current server valuation and exit',()=>{
+  test('59,592ms collateral is refreshed before valuation; 6,626ms persistence retains exact entry and fresh collateral',async()=>{
+    const f=await fixture();f.repo.wallet=[{asset:'USDC',available:'100',locked:'0'}];
+    const request=jest.fn(async()=>new Response(JSON.stringify({status:'live',fetchedAt:f.clock.now(),marks:
+      [...(await f.source.marks(['BTCUSDT','USDCUSDT']))].map(([s,q])=>({...q,
+        ...(s==='USDCUSDT'?{markPrice:'0.98',lastPrice:'0.98',markProviderTimestamp:f.clock.now()-59592}:{} )}))})));
+    const feed=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',token:'fixture'},now:f.clock.now,request});
+    const refresh=jest.spyOn(feed,'freshQuote').mockImplementation(async s=>({...f.source.quoteNow(s),markPrice:'0.999',lastPrice:'0.999'}));
+    f.market.historicalDemoPrices=feed.historicalDemoPrices.bind(feed);
+    // Read-only valuation retains the unchanged 60s policy.
+    expect((await feed.historicalDemoPrices(['USDCUSDT','BTCUSDT'])).get('USDCUSDT')!.markPrice).toBe('0.98');
+    expect(refresh).not.toHaveBeenCalled();
+    const commit=f.repo.commit.bind(f.repo);
+    (f.repo as any).commit=async(...args:any[])=>{args[5]();f.clock.t+=3563;args[5]();f.clock.t+=3063;args[5]();return (commit as any)(...args);};
+    await f.open();
+    expect(refresh).toHaveBeenCalledTimes(1);expect(refresh.mock.calls[0][0]).toBe('USDCUSDT');
+    const row=f.repo.row!,p=row.snapshot.positions[0],open=row.commands.find(c=>c.kind==='OPEN')!;
+    expect(p.entryPrice).toBe('60000');expect(p.markPrice).toBe('81000');
+    expect(open.context!.marks.USDCUSDT.mark).toBe('0.999');
+    expect(open.context!.observedAt!.USDCUSDT).toBe(f.clock.now()-6626);
+    expect(f.repo.commits).toBe(1);
+    expect(outcome(await f.replay('FULL'))).toEqual(outcome(row.snapshot));
+  });
+  test('source ignoring headroom fails before a write, without retry or balance change',async()=>{
+    const f=await fixture(),before=structuredClone(f.repo.row),marks=f.market.historicalDemoPrices.bind(f.market);
+    f.market.historicalDemoPrices=jest.fn(async symbols=>new Map([...(await marks(symbols))].map(([s,q])=>[s,{...q,receivedAt:f.clock.now()-59592}])));
+    await expect(f.open()).rejects.toMatchObject({code:'near_live_price_stale'});
+    expect(f.repo.row).toEqual(before);expect(f.repo.commits).toBe(0);expect(f.market.historicalDemoPrices).toHaveBeenCalledTimes(1);
+  });
+  test('compact reload preserves historical mode and 60s current valuation without financial writes or history',async()=>{
+    const f=await fixture();await f.open();const before=structuredClone(f.repo.row);
+    Object.assign(f.repo,{live:async()=>deriveNativeLiveProjection(f.repo.row!)});
+    const marks=f.market.historicalDemoPrices.bind(f.market);
+    f.market.historicalDemoPrices=async symbols=>new Map([...(await marks(symbols))].map(([s,q])=>[s,{...q,markPrice:'81500',markProviderTimestamp:f.clock.now()-8000}]));
+    const v=await new NativeDemoService(f.repo,f.market,f.clock.now).live(actor);
+    expect(v.executionMode).toBe('HISTORICAL_DEMO');expect(v.revision).toBe(before!.revision);
+    expect(v.positions[0].entryPrice).toBe('60000');expect(v.positions[0].markPrice).toBe('81500');
+    expect(f.repo.row).toEqual(before);expect(v.history).toEqual([]);
+    const p=deriveNativeLiveProjection(f.repo.row!),{executionMode,...old}=p;
+    expect(verifiedProjection(old,projectionDigest(old),p.revision)).toBeNull();
+  });
   test.each(['LONG','SHORT'] as const)('%s: immutable historical entry, new mark, reload, current exit, exact ledger',async side=>{
     const f=await fixture(side==='LONG'?'60000':'82000');
     await f.open({side});
