@@ -1,0 +1,534 @@
+{
+  "scope": "local unit/integration regression suites; no browser QA and no production validation",
+  "main": "2bc51d54a60a86778d9c50164291dd2f282c9239",
+  "suitesPassed": 83,
+  "suitesFailed": 0,
+  "suitesSkipped": 4,
+  "testsPassed": 1542,
+  "testsFailed": 0,
+  "testsSkipped": 33,
+  "suites": [
+    {
+      "file": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+      "passed": 10,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeDemo.integration.test.ts",
+      "passed": 0,
+      "skipped": 10,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/service.integration.test.ts",
+      "passed": 0,
+      "skipped": 12,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts",
+      "passed": 0,
+      "skipped": 2,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeLivePostgres.test.ts",
+      "passed": 0,
+      "skipped": 9,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresMobileScope.test.ts",
+      "passed": 2,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeDemoService.test.ts",
+      "passed": 59,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeDemoReplay.test.ts",
+      "passed": 25,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresFinalPolish.test.ts",
+      "passed": 31,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeCallGraph.test.ts",
+      "passed": 16,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeStress30.test.ts",
+      "passed": 1,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/privateTradingFrontend.test.ts",
+      "passed": 58,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresOrderPanel.test.ts",
+      "passed": 62,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/priceChartMarketOrders.test.ts",
+      "passed": 26,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeTestAccounts.test.ts",
+      "passed": 17,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/marketData.test.ts",
+      "passed": 57,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresAccountUnknownState.test.ts",
+      "passed": 35,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresProTerminal.test.ts",
+      "passed": 27,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresPositionProtection.test.ts",
+      "passed": 26,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/service.runtime.test.ts",
+      "passed": 33,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeCommandDeadline.test.ts",
+      "passed": 10,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresPairSort.test.ts",
+      "passed": 3,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "passed": 29,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/privateChartTicket.test.ts",
+      "passed": 30,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeHistoricalCurrent.test.ts",
+      "passed": 15,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/chartMarketData.test.ts",
+      "passed": 46,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/chartDrawings.test.ts",
+      "passed": 58,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeOptimization.test.ts",
+      "passed": 14,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeDemoFrontend.test.ts",
+      "passed": 8,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeLiveHook.test.ts",
+      "passed": 4,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/api/routes/__tests__/privateTrading.test.ts",
+      "passed": 40,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeSharedLane.test.ts",
+      "passed": 3,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeLiveLimit.test.ts",
+      "passed": 8,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeTradeLifecycle.test.ts",
+      "passed": 10,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/api/routes/__tests__/nativeDemoAccess.test.ts",
+      "passed": 9,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresOrderErrors.test.ts",
+      "passed": 11,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeReduceOnlyAdmission.test.ts",
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeQuoteReadOnly.test.ts",
+      "passed": 17,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeIsolatedGap.test.ts",
+      "passed": 11,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeJournalFinal.test.ts",
+      "passed": 7,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresCandles.test.ts",
+      "passed": 12,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresCloseAll.test.ts",
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/liveEngine.test.ts",
+      "passed": 22,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeReduceTarget.test.ts",
+      "passed": 27,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+      "passed": 23,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeObservedBookExecution.test.ts",
+      "passed": 4,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "passed": 24,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeBookReplay.test.ts",
+      "passed": 3,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeOrderSizing.test.ts",
+      "passed": 70,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresDepth.test.ts",
+      "passed": 26,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeLiveProjection.test.ts",
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeReviewHarness.test.ts",
+      "passed": 7,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeRiskContract.test.ts",
+      "passed": 21,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeErrorMessages.test.ts",
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/replay.test.ts",
+      "passed": 34,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeDemoEngine.test.ts",
+      "passed": 33,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/simulationOnlyIsolation.test.ts",
+      "passed": 9,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresAccountStore.test.ts",
+      "passed": 26,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeLeverageChange.test.ts",
+      "passed": 7,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/isolatedMargin.test.ts",
+      "passed": 19,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts",
+      "passed": 30,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/moneyMatrix.test.ts",
+      "passed": 17,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeInvariants.test.ts",
+      "passed": 13,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/nativeReduceOnlyClose.test.ts",
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/accountLedger.test.ts",
+      "passed": 11,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/crossDemo.test.ts",
+      "passed": 5,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/calculatorMath.test.ts",
+      "passed": 34,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresReferenceRow.test.ts",
+      "passed": 19,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/math.test.ts",
+      "passed": 33,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/collateral.test.ts",
+      "passed": 14,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeRequestDeadline.test.ts",
+      "passed": 4,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeCommandLane.test.ts",
+      "passed": 8,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/store.test.ts",
+      "passed": 5,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresDemoActivation.test.ts",
+      "passed": 9,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/crossAccount.test.ts",
+      "passed": 9,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresSingleMoneySource.test.ts",
+      "passed": 13,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/chartTrading.test.ts",
+      "passed": 21,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "src/private-trading/__tests__/unifiedWallet.test.ts",
+      "passed": 8,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresMarketStats.test.ts",
+      "passed": 18,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresMarketSearch.test.ts",
+      "passed": 20,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresDepthReconnectGrace.test.ts",
+      "passed": 2,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresReference.test.ts",
+      "passed": 14,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeChartExits.test.ts",
+      "passed": 5,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresDiscovery.test.ts",
+      "passed": 3,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nativeLivePolicy.test.ts",
+      "passed": 6,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts",
+      "passed": 4,
+      "skipped": 0,
+      "failed": 0
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresRouteLoadAndAdminPagination.test.ts",
+      "passed": 2,
+      "skipped": 0,
+      "failed": 0
+    }
+  ]
+}

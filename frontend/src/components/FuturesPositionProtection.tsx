@@ -242,6 +242,10 @@ export function FuturesPositionProtectionCell({
         )}
       </button>
 
+      {compactTrigger && <div className="futures-mobile-protection-values" aria-label={t('futures.tpsl')}>
+        <span>TP <b>{tp?.triggerPrice ?? '—'}</b>{tp?.status === 'FAILED' && <em>{t('futures.protectionRetrying')}</em>}</span>
+        <span>SL <b>{sl?.triggerPrice ?? '—'}</b>{sl?.status === 'FAILED' && <em>{t('futures.protectionRetrying')}</em>}</span>
+      </div>}
       {open && (
         <div
           ref={popoverRef}

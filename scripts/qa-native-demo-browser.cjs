@@ -83,8 +83,17 @@ async function session(width, configure) {
   });
   const s = { context, page, token, initial, realRequests, drafts };
   if (configure) await configure(s);
-  await page.goto(origin + '/futures'); await page.locator('.fo-form').waitFor();
+  await page.goto(origin + '/futures'); await page.locator('.chart-surface').waitFor();
   return s;
+}
+// Follow the actual mobile workspace, without altering the engine assertions.
+async function workspace(page, name) {
+  const tab = page.locator(`#mobile-futures-${name}`);
+  if (await tab.isVisible() && await tab.getAttribute('aria-selected') !== 'true') await tab.click();
+}
+async function accountTab(page, name) {
+  await workspace(page, 'positions');
+  await page.locator(`#futures-tab-${name}`).click();
 }
 async function ready(s) {
   // The permanent "Торговля с графика" strip is gone; the chart surface is
@@ -97,10 +106,12 @@ async function ready(s) {
     const limit = document.querySelector('.fo-priceInputRow input');
     return Boolean(balance && !balance.includes('—') && limit && Number(limit.value) > 0);
   });
+  await workspace(s.page, 'trade');
 }
 
 /** Open the chart tool menu the way a trader does: a double click ON the chart. */
 async function openChartMenu(p) {
+  await workspace(p, 'chart');
   // Scroll first: at 390px the chart sits below the fold, and a viewport
   // coordinate taken from an off-screen box lands somewhere else entirely.
   await p.locator('.chart-surface').scrollIntoViewIfNeeded();
@@ -137,6 +148,7 @@ async function armChartPicker(p) {
   await p.locator('.chart-surface[data-chart-picking]').waitFor();
 }
 async function family(page, type) {
+  await workspace(page, 'trade');
   await page.locator('.fo-panel .order-family-tabs [role=tab]').nth(type === 'MARKET' ? 1 : 0).click();
   await page.locator(type === 'MARKET' ? '.fo-markPrice' : '.fo-priceInputRow input').waitFor();
 }
@@ -162,6 +174,7 @@ async function open(s, side, quantity) {
   assert.equal(result.draft.side, side); assert.equal(result.draft.quantity, quantity); assert.equal(result.draft.type, 'MARKET'); return result.state;
 }
 async function geometry(page) {
+  await workspace(page, 'trade');
   const g = await page.evaluate(() => {
     const rect = e => { const r = e.getBoundingClientRect(); return { width: r.width, height: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
     const p = document.querySelector('.fo-priceField'), q = document.querySelector('.fo-qtyInputRow').closest('.fo-field');
@@ -173,20 +186,24 @@ async function geometry(page) {
   return g;
 }
 async function tableLayout(page, width) {
+  await workspace(page, 'positions');
   const g = await page.evaluate(() => {
     const panel = document.querySelector('.futures-positions-panel'), scroller = document.querySelector('.futures-positions-scroll') || panel?.querySelector('table')?.parentElement;
     const cells = [...(panel?.querySelectorAll('tbody td') || [])];
     const clipped = cells.filter(e => e.scrollWidth > e.clientWidth + 1).map(e => e.innerText);
-    const overlap = [...(panel?.querySelectorAll('tbody tr') || [])].flatMap(tr => [...tr.children].slice(1).flatMap((e, i) => { const a = tr.children[i].getBoundingClientRect(), b = e.getBoundingClientRect(); return a.right > b.left + 1 ? [i] : []; }));
+    const overlap = [...(panel?.querySelectorAll('tbody tr') || [])].flatMap(tr => [...tr.children].flatMap((e, i) => [...tr.children].slice(i + 1).flatMap(other => {
+      const a = e.getBoundingClientRect(), b = other.getBoundingClientRect();
+      return Math.min(a.right,b.right) > Math.max(a.left,b.left) + 1 && Math.min(a.bottom,b.bottom) > Math.max(a.top,b.top) + 1 ? [i] : [];
+    })));
     const old = document.querySelectorAll('.native-demo-controls,.native-demo-panel,.native-mode-switch').length;
-    return { pageWidth: document.documentElement.scrollWidth, viewport: innerWidth, clipped, overlap, old, headers: [...(panel?.querySelectorAll('th') || [])].map(e => e.innerText), text: panel?.innerText || '', scroll: scroller ? { client: scroller.clientWidth, full: scroller.scrollWidth, overflow: getComputedStyle(scroller).overflowX } : null };
+    return { mobileCards: getComputedStyle(panel?.querySelector('.futures-position-row') ?? panel).display === 'grid', pageWidth: document.documentElement.scrollWidth, viewport: innerWidth, clipped, overlap, old, headers: [...(panel?.querySelectorAll('th') || [])].map(e => e.innerText), text: panel?.innerText || '', scroll: scroller ? { client: scroller.clientWidth, full: scroller.scrollWidth, overflow: getComputedStyle(scroller).overflowX } : null };
   });
   assert(g.pageWidth <= g.viewport + 1, `Page horizontal overflow: ${g.pageWidth} > ${g.viewport}`);
   assert.equal(g.old, 0, 'Legacy terminal UI was rendered'); assert.deepEqual(g.clipped, [], 'Table cell clipping'); assert.deepEqual(g.overlap, [], 'Table cell overlap');
   assert(!/NaN|Infinity|\d[eE][+-]?\d/.test(g.text), 'Invalid/scientific financial value');
   assert(g.scroll, 'No internal table scroller');
   if (g.scroll.full > g.scroll.client + 1) assert(['auto', 'scroll'].includes(g.scroll.overflow), 'Wide table is not internally scrollable');
-  if (width === 390) assert(g.scroll.full > g.scroll.client, 'Phone table unexpectedly lost its columns');
+  if (width <= 900 && g.mobileCards) assert(g.scroll.full <= g.scroll.client + 1, 'Mobile position cards require horizontal scrolling');
   return g;
 }
 async function card(page, filename, width) {
@@ -225,6 +242,7 @@ function expectedUsagePercent(part, equity) {
 }
 
 async function accountSummary(page, state) {
+  await workspace(page, 'trade');
   const g = await page.locator('.futures-account-summary').evaluate(e => ({
     balance: e.querySelector('.futures-account-balance .fa-value')?.textContent,
     available: e.querySelector('.futures-account-available .fa-value')?.textContent,
@@ -272,22 +290,23 @@ async function normalFlow(width) {
       await qty(p).fill('');
       return { price: seeded, quantity: 5, positionValue: expected };
     });
-    await p.locator('#futures-tab-positions').click();
+    await accountTab(p, 'positions');
     let state = await open(s, 'LONG', '5'); const longId = state.positions.find(x => x.side === 'LONG')?.id; assert(longId);
     state = await open(s, 'SHORT', '3'); assert.equal(state.positions.length, 2);
     state = await open(s, 'LONG', '2'); assert.equal(state.positions.find(x => x.id === longId).quantity, '7');
+    await workspace(p, 'positions');
     await rows(p).first().waitFor();
-    await check(`positions-remain-visible-${width}`, async () => { assert(await p.locator('#futures-bottom-content').isVisible(), 'Opening a position hid the lower panel'); assert.equal(await rows(p).count(), 2); });
+    await check(`positions-reachable-${width}`, async () => { assert(await p.locator('#futures-bottom-content').isVisible(), 'Positions workspace did not reveal the lower panel'); assert.equal(await rows(p).count(), 2); });
     await check(`fields-market-${width}`, () => geometry(p));
     await check(`account-summary-${width}`, () => accountSummary(p, state));
     await check(`position-table-${width}`, () => tableLayout(p, width));
     const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1);
     await family(p, 'LIMIT'); await price(p).fill(limit); await qty(p).fill('1');
     state = (await command(s, 'OPEN', () => button(p, 'SHORT').click())).state; assert(state.orders.some(x => x.status === 'OPEN'));
-    await p.locator('#futures-tab-orders').click();
+    await accountTab(p, 'orders');
     state = (await command(s, 'CANCEL', () => p.locator('#futures-bottom-content').getByRole('button', { name: 'Отменить', exact: true }).click())).state;
     assert(!state.orders.some(x => ['OPEN', 'PARTIALLY_FILLED'].includes(x.status)));
-    await p.locator('#futures-tab-positions').click();
+    await accountTab(p, 'positions');
     const row = positionRow(p, 'LONG'); await row.locator('.fut-tpslTrigger').click();
     await p.locator('.fut-tpslInput').nth(0).fill(limit);
     state = (await command(s, 'PROTECTION', () => p.locator('.fut-tpslSave').click())).state;
@@ -312,13 +331,14 @@ async function normalFlow(width) {
     await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').check(); await qty(p).fill('2');
     state = (await command(s, 'CLOSE', () => button(p, 'SHORT').click())).state;
     assert.equal(state.positions.find(x => x.id === longId).quantity, '5');
+    await workspace(p, 'positions');
     await row.locator('.futures-position-card, .archive-pnl-open').click(); await check(`pnl-card-${width}`, () => card(p, `card-${width}.png`, width));
     const before = await api(s.context, s.token, 'state'), identity = before.positions.map(x => [x.id, x.quantity]);
-    await p.reload(); await ready(s); await p.locator('#futures-tab-positions').click(); await rows(p).first().waitFor();
+    await p.reload(); await ready(s); await accountTab(p, 'positions'); await rows(p).first().waitFor();
     const after = await api(s.context, s.token, 'state'); assert(after.revision >= before.revision); assert.deepEqual(after.positions.map(x => [x.id, x.quantity]), identity);
     // File-backed isolated repository persistence, NOT a PostgreSQL/re-login claim.
     if (width === 1440) { await stopServer(); await startServer(); await p.reload(); await ready(s); assert.deepEqual((await api(s.context, s.token, 'state')).positions.map(x => [x.id, x.quantity]), identity); }
-    await p.locator('#futures-tab-positions').click();
+    await accountTab(p, 'positions');
     state = (await command(s, 'CLOSE', () => positionRow(p, 'SHORT').locator('.futures-position-close').nth(1).click())).state;
     assert(!state.positions.some(x => x.side === 'SHORT')); assert(state.history.some(x => x.side === 'SHORT'));
     await check(`owner-no-real-account-requests-${width}`, () => { assert.deepEqual(s.realRequests, [], 'Owner requested real Futures account endpoints'); });
@@ -341,7 +361,7 @@ async function outage(width, endpoint) {
 async function limitCloseContract(width) {
   const s = await session(width);
   try {
-    await ready(s); const state = await open(s, 'LONG', '1'); await s.page.locator('#futures-tab-positions').click();
+    await ready(s); const state = await open(s, 'LONG', '1'); await accountTab(s.page, 'positions');
     await positionRow(s.page, 'LONG').locator('.futures-position-close').nth(0).click();
     const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1); await price(s.page).fill(limit);
     const response = s.page.waitForResponse(r => r.url().endsWith('/native/commands') && r.request().method() === 'POST' && r.request().postDataJSON()?.kind !== 'REFRESH');
@@ -385,6 +405,7 @@ async function chartFlow(width) {
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===false);
       await p.clock.resume();
     }
+    await workspace(p, 'trade');
     const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
     assert.deepEqual(draft.candle,reference,'Displayed candle differs from actual HTTP payload');
     assert.equal(draft.executionMode,'HISTORICAL_DEMO');
@@ -395,13 +416,14 @@ async function chartFlow(width) {
     await setChartTools(p, false);
     assert.deepEqual((await api(s.context, s.token, 'state')).positions.map(x => [x.id, x.quantity]), before, 'Tool Off reset account positions');
     await setChartTools(p, true); await p.locator('[data-position-line]').first().waitFor();
-    await setChartTools(p, false); await qty(p).fill('1');
+    await setChartTools(p, false); await workspace(p, 'trade'); await qty(p).fill('1');
     const refusal=p.waitForResponse(r=>r.url().endsWith('/native/commands')&&r.request().method()==='POST'&&r.request().postDataJSON()?.kind==='OPEN');
     await button(p,'SHORT').click();const refused=await refusal;
     assert.equal(refused.request().postDataJSON().candle,undefined,'Tool Off retained the unsent historical selection');
     assert(!refused.ok(),'Historical account admitted a new MARKET without selected entry');
     assert.deepEqual((await api(s.context,s.token,'state')).positions.map(x=>[x.id,x.quantity]),before,'Refused entry changed exposure');
     // Turning drawing tools off does not turn a persisted historical account into LIVE_EXECUTION.
+    await workspace(p, 'positions');
     const closed=await command(s,'CLOSE',()=>positionRow(p,'LONG').locator('.futures-position-close').nth(1).click());
     assert.equal(closed.draft.candle,undefined,'Current close reused the historical selection');
     assert.equal(closed.state.positions.length,0);assert.equal(closed.state.orders.filter(o=>['OPEN','PARTIALLY_FILLED'].includes(o.status)).length,0);
@@ -452,7 +474,7 @@ async function largeValues(width) {
       Object.assign(current.positions[0], { quantity: '1250.5', entryPrice: '1875000.5', markPrice: '1999999.99', unrealizedPnl: example.pnl, realizedPnl: example.pnl, roiPercent: example.roi });
       current.account.unrealizedPnl = example.pnl;
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
-      await s.page.reload(); await ready(s); await s.page.locator('#futures-tab-positions').click(); await rows(s.page).first().waitFor();
+      await s.page.reload(); await ready(s); await accountTab(s.page, 'positions'); await rows(s.page).first().waitFor();
       await check(`large-table-${example.id}-${width}`, async () => {
         // The reference prints the figure grouped and to four decimals, with
         // the settle-currency approximation under it; the brackets and the
@@ -474,7 +496,7 @@ async function largeValues(width) {
       await check(`large-card-png-${example.id}-${width}`, async () => { await s.page.locator('.futures-position-card, .archive-pnl-open').click(); return card(s.page, `card-${example.id}-${width}.png`, width); });
       const completed = { ...current.positions[0], status: 'CLOSED', closedAt: current.asOf, netPnl: example.pnl, liquidationPrice: null };
       current = { ...current, positions: [], history: [completed] };
-      await s.page.reload(); await ready(s); await s.page.locator('#futures-tab-positionHistory').click();
+      await s.page.reload(); await ready(s); await accountTab(s.page, 'positionHistory');
       await s.page.locator('.futures-positions-panel tbody tr').waitFor();
       await check(`large-history-${example.id}-${width}`, async () => {
         assert((await s.page.locator('.futures-positions-panel').innerText()).includes(Number(example.pnl).toFixed(2)), 'Closed P&L not rendered in full');

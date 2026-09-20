@@ -193,7 +193,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/futuresDepth') return { setFuturesDepthFallbackBase: () => {}, subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
-    if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null } }) };
+    if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null, onCancelSelection: overrides.cancelSelection ?? jest.fn() } }) };
     if (name === './private-trading/NativeDemoControls') {
       for (const label of ['NativeDemoSwitch', 'NativeDemoTicket', 'NativeDemoPanel', 'NativeDemoDialogs']) components[label] ??= () => null;
       return { NativeDemoSwitch: components.NativeDemoSwitch, NativeDemoTicket: components.NativeDemoTicket, NativeDemoPanel: components.NativeDemoPanel, NativeDemoDialogs: components.NativeDemoDialogs };
@@ -207,6 +207,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     }
     return req(name);
   }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false),
+    scrollY: overrides.scrollY ?? 0, scrollTo: overrides.scrollTo ?? jest.fn(),
+    requestAnimationFrame: (callback: FrameRequestCallback) => { callback(0); return 1; },
     matchMedia: overrides.matchMedia ?? (() => ({ matches: true, addEventListener() {}, removeEventListener() {} })),
   });
   return {
@@ -549,4 +551,76 @@ test('archive is the default composition and review variants preserve contract a
  }
  params.delete('terminalDesign');tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
  expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
+});
+
+
+describe('mobile Futures workspace handoffs', () => {
+  const mobileMedia = (query: string) => ({ matches: query.includes('max-width'), addEventListener() {}, removeEventListener() {} });
+  function workspace(extra: Record<string, any> = {}) {
+    const page = mount('pages/FuturesPage.tsx', { params: new URLSearchParams(), matchMedia: mobileMedia, socket: { subscribeBook: () => jest.fn() }, ...extra });
+    const part = (tree: any, name: string) => nodes(tree).find(n => n.type === page.components[name]);
+    const active = (tree: any) => nodes(tree).find(n => n.props?.['data-mobile-tab']).props['data-mobile-tab'];
+    const select = (tree: any, tab: string) => nodes(tree).find(n => n.props?.id === `mobile-futures-${tab}`).props.onClick();
+    return { page, part, active, select };
+  }
+
+  test('switching workspaces preserves the single chart, book, order ticket and calculator instances', () => {
+    const { page, part, active, select } = workspace();
+    let tree = page.render();
+    const originals = ['TerminalChart', 'FuturesReferenceBook', 'FuturesOrderForm', 'FuturesCalculator']
+      .map(name => ({ name, type: part(tree, name)?.type, key: part(tree, name)?.key }));
+    expect(active(tree)).toBe('chart');
+    for (const tab of ['trade', 'positions', 'chart']) {
+      select(tree, tab); tree = page.render();
+      expect(active(tree)).toBe(tab);
+      for (const original of originals) {
+        const matches = nodes(tree).filter(n => n.type === original.type);
+        expect(matches).toHaveLength(1);
+        expect(matches[0].key).toBe(original.key);
+      }
+    }
+  });
+
+  test('book price and calculator values switch to the existing ticket without submitting', () => {
+    const placeFuturesOrder = jest.fn();
+    const { page, part, active, select } = workspace({ api: { placeFuturesOrder } });
+    let tree = page.render();
+    part(tree, 'FuturesReferenceBook').props.onPickPrice('79000.1'); tree = page.render();
+    expect(active(tree)).toBe('trade');
+    expect(part(tree, 'FuturesOrderForm').props.pickedPrice).toBe('79000.1');
+    select(tree, 'chart'); tree = page.render();
+    const draft = { side: 'SHORT', price: '80000', quantity: '0.02', leverage: '5' };
+    part(tree, 'FuturesCalculator').props.onUseValues(draft); tree = page.render();
+    expect(active(tree)).toBe('trade');
+    expect(part(tree, 'FuturesOrderForm').props.calculatorDraft).toMatchObject(draft);
+    expect(placeFuturesOrder).not.toHaveBeenCalled();
+  });
+
+  test('limit close hands the authoritative position to the same reduce-only ticket', async () => {
+    const target = { id: 'mobile-position', symbol: 'BTC/USDT', side: 'LONG', size: '0.02', marginType: 'ISOLATED' };
+    const cancelSelection = jest.fn(), placeFuturesOrder = jest.fn();
+    const { page, part, active, select } = workspace({ cancelSelection, api: {
+      getFuturesPositions: () => Promise.resolve([target]), placeFuturesOrder,
+    } });
+    page.render(); await tick();
+    let tree = page.render(); select(tree, 'positions'); tree = page.render();
+    part(tree, 'FuturesPositionsPanel').props.onLimitClose(target); tree = page.render();
+    expect(active(tree)).toBe('trade');
+    expect(part(tree, 'FuturesOrderForm').props.closeTicket).toMatchObject(target);
+    expect(cancelSelection).toHaveBeenCalledTimes(1);
+    expect(placeFuturesOrder).not.toHaveBeenCalled();
+  });
+
+  test('each workspace restores its scroll, and desktop price picks do not scroll the page', () => {
+    const scrollTo = jest.fn();
+    const { page, select } = workspace({ scrollY: 250, scrollTo });
+    let tree = page.render(); select(tree, 'trade'); tree = page.render();
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' });
+    select(tree, 'chart');
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 250, behavior: 'instant' });
+    const desktop = workspace({ scrollTo, matchMedia: (query: string) => ({ matches: query.includes('min-width'), addEventListener() {}, removeEventListener() {} }) });
+    const calls = scrollTo.mock.calls.length;
+    desktop.part(desktop.page.render(), 'FuturesReferenceBook').props.onPickPrice('79000');
+    expect(scrollTo).toHaveBeenCalledTimes(calls);
+  });
 });

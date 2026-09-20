@@ -353,7 +353,7 @@ export function FuturesPositionsPanel({
                   return (
                     <tr key={p.id} className="futures-position-row" data-side={p.side}>
                       {/* Contract, with Cross and the leverage under it. */}
-                      <Td>
+                      <Td label={t('futures.colContracts')}>
                         <div className="futures-position-contract">
                           <span className="futures-position-ticker">
                             <b>{p.symbol.replace('/', '')}</b>
@@ -373,20 +373,20 @@ export function FuturesPositionsPanel({
                           </small>
                         </div>
                       </Td>
-                      <Td className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
+                      <Td label={t('futures.colQty')} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
                         {formatPositionQuantity(p.size, p.symbol)} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
                       </Td>
-                      <Td className="mono">
+                      <Td label={t('futures.colValue')} className="mono">
                         {value === null ? '—' : (
                           <>{group(value, 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         )}
                       </Td>
-                      <Td className="mono">{archive ? formatPrice(Number(p.entryPrice)) : p.entryPrice}</Td>
-                      <Td className="mono">{p.markPrice === null ? '—' : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
-                      <Td className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? '—' : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
+                      <Td label={t('futures.colEntry')} className="mono">{archive ? formatPrice(Number(p.entryPrice)) : p.entryPrice}</Td>
+                      <Td label={t('futures.colMark')} className="mono">{p.markPrice === null ? '—' : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
+                      <Td label={t('futures.colLiq')} className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? '—' : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
-                      <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
+                      <Td label={t('futures.colUnrealized')} className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">
                           <span className="futures-position-figure">
                             <span
@@ -406,7 +406,7 @@ export function FuturesPositionsPanel({
                           )}
                         </div>
                       </Td>
-                      <Td className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
+                      <Td label={t('futures.colRealized')} className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">
                           <span
                             className="futures-position-realized"
@@ -418,7 +418,7 @@ export function FuturesPositionsPanel({
                           )}
                         </div>
                       </Td>
-                      <Td>
+                      <Td label={t('futures.tpsl')}>
                         {/* Real server-held protection, carried on the same
                             positions payload this table already reads — no
                             extra endpoint and no extra timer. */}
@@ -429,7 +429,7 @@ export function FuturesPositionsPanel({
                           onSaved={() => execution.refresh(['positions'])}
                         />
                       </Td>
-                      <Td>
+                      <Td label={t('futures.colCloseAs')}>
                         <div className="futures-position-actions">
                           {/* "Лимитный" is only offered where a limit close
                               really exists — it hands the order form a
@@ -523,9 +523,9 @@ export function FuturesPositionsPanel({
 function Th({ children }: { children?: React.ReactNode }) {
   return <th style={styles.th}>{children}</th>;
 }
-function Td({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+function Td({ children, className, style, label }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; label?: string }) {
   return (
-    <td className={className} style={{ ...styles.td, ...style }}>
+    <td className={className} data-mobile-label={label} style={{ ...styles.td, ...style }}>
       {children}
     </td>
   );
