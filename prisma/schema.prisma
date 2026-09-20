@@ -1003,6 +1003,16 @@ model NativeDemoAccount {
 }
 
 /// Append-only complete simulation revisions. Backdated trades never overwrite old evidence.
+// Rebuildable display input; NativeDemoAccount/Revision remain authoritative.
+model NativeDemoLiveProjection {
+  userId    String   @id
+  revision  Int
+  payload   Json
+  digest    String
+  executionSession Json?
+  updatedAt DateTime @updatedAt
+}
+
 model NativeDemoRevision {
   userId      String
   revision    Int

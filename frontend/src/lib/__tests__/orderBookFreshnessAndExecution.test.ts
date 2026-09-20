@@ -102,8 +102,15 @@ describe('3. the last real snapshot stays on screen', () => {
 
   it('serves the futures last-good while a new book is still arriving', () => {
     expect(depth).toContain('if (active.lastGood) return { bids: active.lastGood.bids, asks: active.lastGood.asks, ...meta };');
-    // A dropped socket labels the book; it does not throw it away.
-    expect(depth).toContain("active.status = active.lastGood === null ? 'connecting' : 'stale';");
+    // A dropped socket labels the book; it does not throw it away. The
+    // label now depends on WHY it dropped: inside a reconnect grace this is
+    // an expected handshake and says `reconnecting`, which renders without a
+    // banner; outside one it is a silent feed and still says `stale`. What
+    // this test has always guarded — that `lastGood` is what stays on
+    // screen and an empty book is the only thing that reports `connecting`
+    // — is unchanged, and the third branch is now pinned too.
+    expect(depth).toContain("active.status = active.lastGood === null ? 'connecting'");
+    expect(depth).toContain("this.inGrace(active, Date.now()) ? 'reconnecting' : 'stale';");
   });
 
   it('still drops levels that are too old to be a price, rather than ageing them', () => {

@@ -48,6 +48,107 @@
         "navWeight": "550",
         "navColor": "rgb(255, 255, 255)"
       },
+      "contrast": {
+        "sampled": 109,
+        "worst": [
+          {
+            "text": "Открыть Шорт",
+            "cls": "submit-btn sell",
+            "color": "rgb(255, 255, 255)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 4.13
+          },
+          {
+            "text": "Нет данных графика для B",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 12,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(USDT)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "/",
+            "cls": "fo-sidePairSep",
+            "color": "rgb(139, 149, 165)",
+            "size": 13,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "Открыть Лонг",
+            "cls": "submit-btn buy",
+            "color": "rgb(11, 14, 17)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 6.42
+          }
+        ]
+      },
       "railTabExpanded": {
         "tabCentreY": 627,
         "percentDownChart": 82.8
@@ -59,6 +160,14 @@
         "percentDownChart": 82.8
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 1079,
+        "rowBottom": 866,
+        "rowHeight": 62,
+        "overflow": -213,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,
@@ -255,6 +364,107 @@
         "navWeight": "550",
         "navColor": "rgb(255, 255, 255)"
       },
+      "contrast": {
+        "sampled": 109,
+        "worst": [
+          {
+            "text": "Открыть Шорт",
+            "cls": "submit-btn sell",
+            "color": "rgb(255, 255, 255)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 4.13
+          },
+          {
+            "text": "Нет данных графика для B",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 12,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(USDT)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "/",
+            "cls": "fo-sidePairSep",
+            "color": "rgb(139, 149, 165)",
+            "size": 13,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "Открыть Лонг",
+            "cls": "submit-btn buy",
+            "color": "rgb(11, 14, 17)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 6.42
+          }
+        ]
+      },
       "railTabExpanded": {
         "tabCentreY": 529,
         "percentDownChart": 83.5
@@ -266,6 +476,14 @@
         "percentDownChart": 83.5
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 899,
+        "rowBottom": 744,
+        "rowHeight": 62,
+        "overflow": -155,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,
@@ -462,6 +680,107 @@
         "navWeight": "550",
         "navColor": "rgb(255, 255, 255)"
       },
+      "contrast": {
+        "sampled": 109,
+        "worst": [
+          {
+            "text": "Открыть Шорт",
+            "cls": "submit-btn sell",
+            "color": "rgb(255, 255, 255)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 4.13
+          },
+          {
+            "text": "Нет данных графика для B",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 12,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(USDT)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "/",
+            "cls": "fo-sidePairSep",
+            "color": "rgb(139, 149, 165)",
+            "size": 13,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "Открыть Лонг",
+            "cls": "submit-btn buy",
+            "color": "rgb(11, 14, 17)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 6.42
+          }
+        ]
+      },
       "railTabExpanded": {
         "tabCentreY": 529,
         "percentDownChart": 83.5
@@ -473,6 +792,14 @@
         "percentDownChart": 83.5
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 899,
+        "rowBottom": 744,
+        "rowHeight": 62,
+        "overflow": -155,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,
@@ -669,6 +996,107 @@
         "navWeight": "550",
         "navColor": "rgb(255, 255, 255)"
       },
+      "contrast": {
+        "sampled": 101,
+        "worst": [
+          {
+            "text": "Открыть Шорт",
+            "cls": "submit-btn sell",
+            "color": "rgb(255, 255, 255)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 4.13
+          },
+          {
+            "text": "Нет данных графика для B",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 12,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(USDT)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(BTC)",
+            "cls": "",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "500",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "(0)",
+            "cls": "reference-tab-count",
+            "color": "rgb(139, 149, 165)",
+            "size": 12.5,
+            "weight": "400",
+            "ratio": 6
+          },
+          {
+            "text": "/",
+            "cls": "fo-sidePairSep",
+            "color": "rgb(139, 149, 165)",
+            "size": 13,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "USDT",
+            "cls": "fa-unit",
+            "color": "rgb(139, 149, 165)",
+            "size": 11,
+            "weight": "400",
+            "ratio": 6.4
+          },
+          {
+            "text": "Открыть Лонг",
+            "cls": "submit-btn buy",
+            "color": "rgb(11, 14, 17)",
+            "size": 13.5,
+            "weight": "600",
+            "ratio": 6.42
+          }
+        ]
+      },
       "railTabExpanded": {
         "tabCentreY": 436,
         "percentDownChart": 84.5
@@ -680,6 +1108,14 @@
         "percentDownChart": 84.5
       },
       "railTabDrift": 0,
+      "onePosition": {
+        "rendered": true,
+        "bodyBottom": 767,
+        "rowBottom": 628,
+        "rowHeight": 62,
+        "overflow": -139,
+        "scrolls": false
+      },
       "chooser": {
         "box": {
           "x": 1,

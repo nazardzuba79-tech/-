@@ -9,6 +9,7 @@ import { nativeAdmissionLimits } from './replay';
 import { ContractRuleError } from '../math';
 import { PrivateTradingError } from '../serviceTypes';
 import BigNumber from 'bignumber.js';
+import { historyQuery } from './historyPage';
 const key=z.string().min(8).max(100).regex(/^[a-zA-Z0-9:_-]+$/);
 const positive=z.string().max(60).regex(/^\d{1,18}(?:\.\d{1,18})?$/).refine(x=>new BigNumber(x).gt(0));
 const collateralAsset=z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2,16}$/);
@@ -70,6 +71,16 @@ const LIMIT_TEXT:Record<string,string>={
 export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession){
   const r=Router();const handle=(run:(req:Request,res:Response)=>Promise<unknown>)=>(req:Request,res:Response,next:NextFunction)=>void run(req,res).then(result=>res.json(result)).catch(next);
   r.get('/state',handle((_req,res)=>service.state(actor(res))));
+  r.get('/live',handle((_req,res)=>service.live(actor(res))));
+  // Session admission for the existing executor, separate from pure GET revaluation.
+  r.post('/execution-session',handle(async(_req,res)=>{
+    if(!service.repository.activate)throw new PrivateTradingError('live_unavailable','Счёт временно недоступен',503);
+    await service.repository.activate(actor(res));return{ok:true};
+  }));
+  r.get('/history',handle((req,res)=>{
+    if(!service.repository.history)throw new PrivateTradingError('history_unavailable','История временно недоступна',503);
+    return service.repository.history(actor(res),historyQuery.parse(req.query));
+  }));
   // The terminal's order form sizes against these. Without them the client
   // can only guess a quantity and let the engine refuse it, which is exactly
   // how a slider-sized order used to fail on the contract's quantity step.

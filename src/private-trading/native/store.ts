@@ -7,6 +7,8 @@ import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { emptyDemoState, DemoInstrument, DemoState, migrateDemoState } from './engine';
 import { NativeCheckpoint, NativeInstruction } from './replay';
 import { CollateralHolding } from './collateral';
+import { deriveNativeLiveProjection, projectionDigest, verifiedProjection, type NativeLiveProjection } from './liveProjection';
+import { nativeHistoryPage, type HistoryQuery } from './historyPage';
 
 export interface NativeAccount {
   executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
@@ -79,6 +81,9 @@ const forward=(stored:NativeAccount):NativeAccount=>{
 };
 export const commandHash=(v:unknown):string=>createHash('sha256').update(JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x)).digest('hex');
 export interface NativeRepository {
+  live?(actor:OwnerSession):Promise<NativeLiveProjection|null>;
+  history?(actor:OwnerSession,query:HistoryQuery):ReturnType<typeof nativeHistoryPage>;
+  activate?(actor:OwnerSession):Promise<void>;
   /** One authorization envelope for the three command reads; commit still rechecks access and CAS. */
   commandContext?(actor:OwnerSession,key:string,hash:string):Promise<{prior:NativeAccount|null;row:NativeAccount|null;holdings:CollateralHolding[]}>;
   read(actor:OwnerSession):Promise<NativeAccount|null>;
@@ -95,18 +100,86 @@ export interface NativeRepository {
 }
 /** Only DemoBalance + NativeDemo* writes exist here. Real wallets/orders are not dependencies. */
 export class PrismaNativeRepository implements NativeRepository {
-  constructor(private readonly db:PrismaClient,private readonly config:()=>PrivateTradingConfig=privateTradingConfig){}
+  // Executor-only cache; every use rechecks DB revision and authorization.
+  // A clone protects the cached authoritative transcript from replay mutation.
+  private readonly executionCache=new Map<string,NativeAccount>();
+  constructor(private readonly db:PrismaClient,private readonly config:()=>PrivateTradingConfig=privateTradingConfig,private readonly cacheExecution=false){}
+  private remember(userId:string,row:NativeAccount){
+    if(!this.cacheExecution)return;
+    this.executionCache.delete(userId);
+    if(Buffer.byteLength(JSON.stringify(row))>8*1024*1024)return;
+    if(this.executionCache.size>=4)this.executionCache.delete(this.executionCache.keys().next().value!);
+    this.executionCache.set(userId,structuredClone(row));
+  }
+  private async commandRow(userId:string){
+    if(this.cacheExecution){
+      const head=await this.db.nativeDemoAccount.findUnique({where:{userId},select:{revision:true}});
+      const cached=this.executionCache.get(userId);
+      if(head&&cached?.revision===head.revision)return structuredClone(cached);
+      if(!head){this.executionCache.delete(userId);return null;}
+    }
+    const row=await this.db.nativeDemoAccount.findUnique({where:{userId}});
+    if(!row)return null;
+    const account=forward(row.payload as unknown as NativeAccount);this.remember(userId,account);return account;
+  }
   private owner(db:PrismaClient|Prisma.TransactionClient,actor:OwnerSession){return assertNativeTrader(db,actor,this.config);}
+  async activate(actor:OwnerSession){
+    if(!await this.live(actor))return;
+    await this.db.$transaction(async tx=>{
+      await this.owner(tx,actor);
+      await tx.nativeDemoLiveProjection.updateMany({where:{userId:actor.userId},data:{executionSession:JSON.parse(JSON.stringify(actor))}});
+      await this.owner(tx,actor);
+    });
+  }
+  async history(actor:OwnerSession,query:HistoryQuery){
+    await this.owner(this.db,actor);
+    const result=await nativeHistoryPage(this.db,actor.userId,query);
+    await this.owner(this.db,actor);return result;
+  }
+  private async writeProjection(tx:Prisma.TransactionClient,actor:OwnerSession,account:NativeAccount){
+    const projection=deriveNativeLiveProjection(account);
+    const data={revision:account.revision,payload:JSON.parse(JSON.stringify(projection)) as Prisma.InputJsonValue,digest:projectionDigest(projection)};
+    await tx.nativeDemoLiveProjection.upsert({where:{userId:actor.userId},create:{userId:actor.userId,...data},update:data,select:{userId:true}});
+  }
+  async live(actor:OwnerSession):Promise<NativeLiveProjection|null>{
+    await this.owner(this.db,actor);
+    // One MVCC statement observes the authoritative revision and its derived
+    // row together. Never select a.payload or immutable revision payloads.
+    const rows=await this.db.$queryRaw<{revision:number;projectionRevision:number|null;payload:unknown;digest:string|null}[]>`
+      SELECT a."revision", p."revision" AS "projectionRevision", p."payload", p."digest"
+      FROM "NativeDemoAccount" a LEFT JOIN "NativeDemoLiveProjection" p ON p."userId"=a."userId"
+      WHERE a."userId"=${actor.userId}`;
+    await this.owner(this.db,actor);
+    if(!rows.length)return null;
+    const ready=rows[0].projectionRevision===rows[0].revision&&verifiedProjection(rows[0].payload,rows[0].digest,rows[0].revision);
+    if(ready)return ready;
+    // Exceptional recovery only. Lock the same row as command commit, so a
+    // rebuild cannot overwrite a concurrently committed newer projection.
+    return this.db.$transaction(async tx=>{
+      await tx.$queryRaw`SELECT "userId" FROM "NativeDemoAccount" WHERE "userId"=${actor.userId} FOR UPDATE`;
+      await this.owner(tx,actor);
+      const row=await tx.nativeDemoAccount.findUnique({where:{userId:actor.userId}});
+      if(!row)return null;
+      const account=forward(row.payload as unknown as NativeAccount);
+      if(account.revision!==row.revision)throw new PrivateTradingError('journal_corrupt','Счёт временно недоступен',503);
+      const existing=await tx.nativeDemoLiveProjection.findUnique({where:{userId:actor.userId}});
+      const concurrent=existing&&existing.revision===row.revision&&verifiedProjection(existing.payload,existing.digest,row.revision);
+      if(concurrent){await this.owner(tx,actor);return concurrent;}
+      await this.writeProjection(tx,actor,account);
+      await this.owner(tx,actor);
+      return deriveNativeLiveProjection(account);
+    },{timeout:10000});
+  }
   async commandContext(actor:OwnerSession,key:string,hash:string){
     await this.owner(this.db,actor);
     const [prior,row,holdings]=await Promise.all([
       this.db.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId:actor.userId,requestKey:key}}}),
-      this.db.nativeDemoAccount.findUnique({where:{userId:actor.userId}}),
+      this.commandRow(actor.userId),
       this.db.demoBalance.findMany({where:{userId:actor.userId},orderBy:{asset:'asc'}}),
     ]);
     await this.owner(this.db,actor);
     if(prior&&prior.requestHash!==hash)throw new PrivateTradingError('idempotency_conflict','Запрос с этим ключом уже содержит другие параметры',409);
-    return{prior:prior?forward(prior.payload as unknown as NativeAccount):null,row:row?forward(row.payload as unknown as NativeAccount):null,
+    return{prior:prior?forward(prior.payload as unknown as NativeAccount):null,row,
       holdings:holdings.map(r=>({asset:r.asset,available:r.available.toString(),locked:r.locked.toString()}))};
   }
   async read(actor:OwnerSession){await this.owner(this.db,actor);const row=await this.db.nativeDemoAccount.findUnique({where:{userId:actor.userId}});await this.owner(this.db,actor);return row?forward(row.payload as unknown as NativeAccount):null;}
@@ -139,6 +212,7 @@ export class PrismaNativeRepository implements NativeRepository {
       const now=Date.now(),next:NativeAccount={revision:1,deposit:value,commands:[],snapshot:emptyDemoState(value,now),createdAt:now,source:'DEMO_BALANCE',disabledCollateralAssets:[]};
       await tx.nativeDemoAccount.create({data:{userId:actor.userId,revision:1,payload:json(next)}});
       await tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:1,requestKey:key,requestHash:commandHash({kind:'INITIALIZE'}),payload:json(revisionPayload(next))}});
+      await this.writeProjection(tx,actor,next);
       await this.owner(tx,actor);return next;
     },{timeout:10000});
   }
@@ -164,6 +238,7 @@ export class PrismaNativeRepository implements NativeRepository {
       const changed=await timed('transaction.account_write',()=>tx.nativeDemoAccount.updateMany({where:{userId:actor.userId,revision:expected},data:{revision:expected+1,payload:accountPayload}}));
       if(changed.count!==1)throw new PrivateTradingError('account_changed','Счёт изменился в другой вкладке. Обновите расчёт',409);
       await timed('transaction.receipt_write',()=>tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:result.revision,requestKey:key,requestHash:hash,payload:receiptPayload},select:{revision:true}}));
+      await timed('transaction.projection_write',()=>this.writeProjection(tx,actor,result));
       await timed('transaction.final_authorization',()=>this.owner(tx,actor));beforeWrite?.();return result;
     },{timeout:10000,maxWait:2000});
   }

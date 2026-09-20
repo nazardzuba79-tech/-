@@ -31,6 +31,10 @@ export interface NativeEvent {id:string;kind:string;time:number;positionId:strin
   actionId?:string;sourcePrice?:string}
 export interface NativeState {
   executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
+  historyDeferred?:boolean;
+  positionHistoryLoaded?:boolean;
+  orderHistoryLoaded?:boolean;
+  historyFailed?:boolean;
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
   model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
   /**
@@ -146,6 +150,14 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
   return{
     access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),
     state:(signal?:AbortSignal)=>request<NativeState>('/native/state',undefined,signal),
+    live:(signal?:AbortSignal)=>request<NativeState>('/native/live',undefined,signal),
+    activate:(signal?:AbortSignal)=>request<{ok:true}>('/native/execution-session',{},signal),
+    history:<K extends keyof NativeHistoryItems>(kind:K,revision:number,options:{symbol?:string;cursor?:string;signal?:AbortSignal}={})=>{
+      const params=new URLSearchParams({kind,revision:String(revision),limit:'50'});
+      if(options.symbol)params.set('symbol',options.symbol);
+      if(options.cursor)params.set('cursor',options.cursor);
+      return request<{revision:number;kind:K;items:NativeHistoryItems[K][];nextCursor:string|null}>(`/native/history?${params}`,undefined,options.signal);
+    },
     /** The contract's own trading rules — what the engine will accept as a
      *  quantity. The order form sizes against these instead of guessing. */
     contract:(symbol:string,signal?:AbortSignal)=>request<NativeContract>(`/native/contracts/${encodeURIComponent(symbol)}`,undefined,signal),
@@ -174,6 +186,9 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
   };
 }
 export const nativeDemoApi=createNativeDemoClient(import.meta.env.VITE_API_URL||'/api/v1',getToken);
+export interface NativeHistoryItems {
+  positions:NativePosition;orders:NativeOrder;events:NativeEvent;entries:{positionId:string;candle:NativeCandle|null};
+}
 /** Signed fraction string -> percent text by decimal shifting (no floating point): '-0.001' -> '−0.1%'. */
 export function nativeFundingPercent(value:string):string{
   const m=/^([+-]?)(\d+)(?:\.(\d+))?$/.exec(value);if(!m)return '—';
