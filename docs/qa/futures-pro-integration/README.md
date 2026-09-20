@@ -33,7 +33,7 @@ New branch: `codex/futures-design-pro-integration`, based directly on fresh main
 ## Validation
 
 - Backend TypeScript/build, collector TypeScript and frontend TypeScript/production build: PASS locally and in CI.
-- Broad integration suite: **82 suites, 1,536 tests PASS**. Its DB-less job reports **33 PostgreSQL-gated tests skipped**; those cases are covered by the separate disposable PostgreSQL workflow, not counted as passing in that job.
+- Initial broad integration suite: **82 suites, 1,536 tests PASS**, with **33 PostgreSQL-gated skips** in that DB-less run. Separate private-trading CI covers 24 of those cases. The remaining **9 nativeLivePostgres cases also PASS locally** against a freshly migrated disposable database (zero skips). The integration workflow now provisions disposable PostgreSQL and enables both DB guards, so all 33 cases run in future CI rather than silently skipping.
 - `calculatorMath`: **34 PASS**; `nativeQuoteReadOnly`: **17 PASS**. Quote proof forbids mutating repository methods and checks that account, history and live projection are not read or written.
 - Futures Pro: **27 PASS**; Close All: **6 PASS**; latest focused terminal follow-up: **105 PASS**.
 - #152: historical ENTRY/current near-live valuation, partial/reduce-only close, Isolated/leverage, TP/SL/OCO, idempotency, expiry rollback, reconciliation and shared scheduling regressions PASS. Existing financial formulas and LIVE authorization/freshness guards remain unchanged.
