@@ -33,3 +33,98 @@
    collapses into the width it is given. These are the values it had. */
 .futures-history-table th { padding: 10px 14px; }
 .futures-history-table td { padding: 8px 14px; }
+
+/* ── Close all positions ────────────────────────────────────────────────
+
+   The bar sits between the tabs and the rows, so the destructive control
+   is never adjacent to a single row's own close button. It is quiet until
+   it is asked for: one text button, no fill, no colour — a red "Close all"
+   sitting permanently above an account is a threat, not an affordance.
+
+   The CONFIRMATION replaces the bar in place rather than opening a modal
+   over the table. The trader is deciding about the positions on screen;
+   covering them to ask about them is the wrong way round. */
+
+.futures-close-all-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border-color, #232a34);
+  min-height: 38px;
+  flex: none;
+}
+
+.futures-close-all-trigger {
+  border: 1px solid var(--border-color, #232a34);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #98a2b3);
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 11px;
+  cursor: pointer;
+}
+.futures-close-all-trigger:hover:not(:disabled) {
+  color: var(--sell, #f16c7b);
+  border-color: rgba(241, 108, 123, 0.5);
+}
+.futures-close-all-trigger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.futures-close-all-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1;
+  flex-wrap: wrap;
+  padding: 7px 10px;
+  border: 1px solid rgba(241, 108, 123, 0.4);
+  border-radius: 5px;
+  background: rgba(241, 108, 123, 0.08);
+}
+.futures-close-all-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.futures-close-all-text strong { font-size: 12.5px; color: var(--text-primary, #eaeef3); }
+.futures-close-all-text span { font-size: 11.5px; color: var(--text-secondary, #98a2b3); }
+.futures-close-all-actions { display: flex; gap: 8px; flex: none; }
+
+.futures-close-all-cancel {
+  border: 1px solid var(--border-color, #232a34);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #98a2b3);
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.futures-close-all-cancel:hover { color: var(--text-primary, #eaeef3); }
+
+.futures-close-all-go {
+  border: 0;
+  border-radius: 4px;
+  background: var(--sell, #f16c7b);
+  color: #10141e;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 13px;
+  cursor: pointer;
+}
+.futures-close-all-go:hover { filter: brightness(1.08); }
+
+.futures-close-all-status,
+.futures-close-all-report {
+  margin-right: auto;
+  font-size: 11.5px;
+  color: var(--text-secondary, #98a2b3);
+  font-variant-numeric: tabular-nums;
+}
+.futures-close-all-failed { color: var(--sell, #f16c7b); }
+
+@media (max-width: 720px) {
+  .futures-close-all-confirm { flex-direction: column; align-items: stretch; }
+  .futures-close-all-actions { justify-content: flex-end; }
+}
