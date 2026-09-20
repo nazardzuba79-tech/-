@@ -1,4 +1,5 @@
 import type { PrivateTradingMarketData } from '../marketData';
+import { commandRead } from './commandScope';
 import { DemoEngineError } from './engine';
 import { BarRequest, ReplayBar, checkCoverage } from './replay';
 
@@ -13,23 +14,26 @@ export class NativeHistoryCache {
   private tail:Promise<unknown>=Promise.resolve();
   constructor(private market:PrivateTradingMarketData,private now:()=>number){}
   get size(){return this.entries.size;}
-  load(request:BarRequest):Promise<ReplayBar[]>{
-    const run=this.tail.then(()=>this.read(request));
+  load(request:BarRequest,signal?:AbortSignal):Promise<ReplayBar[]>{
+    const run=this.tail.then(()=>this.read(request,signal));
     this.tail=run.catch(()=>undefined);
     return run;
   }
-  private async read(r:BarRequest){
+  private async read(r:BarRequest,signal?:AbortSignal){
+    signal?.throwIfAborted();
     const key=(time:number)=>`${r.symbol}:${r.intervalMs}:${time}`;
     const now=this.now();
     for(const [k,v] of this.entries)if(v.expires<=now)this.entries.delete(k);
     if(r.end>Math.floor(now/r.intervalMs)*r.intervalMs)throw new DemoEngineError('HISTORY_GAP');
     const result:ReplayBar[]=[];
     for(let time=r.start;time<r.end;){
+      signal?.throwIfAborted();
       const hit=this.entries.get(key(time));
       if(hit){result.push(hit.bar);time+=r.intervalMs;continue;}
       const start=time;
       while(time<r.end&&!this.entries.has(key(time)))time+=r.intervalMs;
-      const history=await this.market.history({symbol:r.symbol,startTime:start,endTime:time,intervalMinutes:(r.intervalMs/MINUTE) as 1|15|60,omitProviderFunding:true});
+      const history=await commandRead('market.history.fetch',()=>this.market.history({symbol:r.symbol,startTime:start,endTime:time,intervalMinutes:(r.intervalMs/MINUTE) as 1|15|60,omitProviderFunding:true,signal}));
+      signal?.throwIfAborted();
       if(!history.complete||history.symbol!==r.symbol||history.intervalMs!==r.intervalMs)throw new DemoEngineError('HISTORY_GAP');
       const marks=new Map(history.markCandles.map(c=>[c.timestamp,c]));
       if(marks.size!==history.markCandles.length)throw new DemoEngineError('MARK_HISTORY_GAP');

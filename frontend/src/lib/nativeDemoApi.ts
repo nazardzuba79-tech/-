@@ -1,8 +1,10 @@
+import { nativeRequestDeadline } from './nativeRequestDeadline';
 import { getToken } from './api';
 import { PrivateTradingError, type PrivateResultCard } from './privateTradingApi';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export interface NativeProtection {takeProfit:string|null;stopLoss:string|null;quantity:string|null;triggerBy:'MARK'|'LAST'}
 export interface NativePosition {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';entryTimestamp?:number;
   id:string;symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;lastPrice:string;leverage:string;
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
@@ -28,6 +30,7 @@ export interface NativeEvent {id:string;kind:string;time:number;positionId:strin
   /** The one user action behind this fill; several fills of one close share it. Absent on older journals. */
   actionId?:string;sourcePrice?:string}
 export interface NativeState {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
   historyDeferred?:boolean;
   positionHistoryLoaded?:boolean;
   orderHistoryLoaded?:boolean;
@@ -123,7 +126,7 @@ export interface NativeWallet{
   unpricedAssets:string[];
 }
 export type NativeDraft=
- | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string;marginType?:'CROSS'|'ISOLATED'}
+ | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string;marginType?:'CROSS'|'ISOLATED';executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'}
  | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
  | {kind:'CANCEL';orderId:string}
  | {kind:'PROTECTION';positionId:string;protection:Partial<NativeProtection>}
@@ -132,7 +135,8 @@ export type NativeDraft=
 export function createNativeDemoClient(base:string,token:()=>string|null,fetcher:typeof fetch=fetch){
   async function request<T>(path:string,body?:unknown,signal?:AbortSignal):Promise<T>{
     const bearer=token();if(!bearer)throw new PrivateTradingError('Войдите в аккаунт',401);
-    const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
+    return nativeRequestDeadline(async requestSignal=>{
+    const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal:requestSignal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
     const data=await response.json().catch(()=>null);if(token()!==bearer)throw new PrivateTradingError('Сессия завершена',401);
     if(!response.ok)throw new PrivateTradingError(
       typeof data?.error==='string'?data.error:'Счёт временно недоступен',
@@ -141,6 +145,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
       {limit:data?.limit,allowed:data?.allowed,actual:data?.actual},
     );
     if(data===null)throw new PrivateTradingError('Сервер не подтвердил результат',502);return data;
+    },signal);
   }
   return{
     access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),
@@ -174,7 +179,8 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     wallet:(signal?:AbortSignal)=>request<NativeWallet>('/native/wallet',undefined,signal),
     setCollateral:(asset:string,enabled:boolean,idempotencyKey:string)=>request<NativeWallet>('/native/collateral-preference',{asset,enabled,idempotencyKey}),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
-    command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
+    command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,
+      ...(draft.kind==='OPEN'&&draft.candle&&!draft.reduceOnly?{executionMode:draft.executionMode??'HISTORICAL_DEMO'}:{}),idempotencyKey}),
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),
     getCard:(id:string)=>{const m=/^native:(\d+):(native-[a-zA-Z0-9-]+)$/.exec(id);if(!m)throw new PrivateTradingError('Карточка не найдена',404);return request<PrivateResultCard>(`/native/cards/${m[1]}/${m[2]}`);},
   };

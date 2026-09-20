@@ -1,3 +1,4 @@
+import { commandRead, commandScope } from './commandScope';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 import { privateTradingConfig, PrivateTradingConfig } from '../access';
@@ -10,6 +11,7 @@ import { deriveNativeLiveProjection, projectionDigest, verifiedProjection, type 
 import { nativeHistoryPage, type HistoryQuery } from './historyPage';
 
 export interface NativeAccount {
+  executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
   revision:number; deposit:string; commands:NativeInstruction[]; snapshot:DemoState;
   createdAt:number; source:'DEMO_BALANCE'|'PREVIEW_FIXTURE';
   /** Non-settle wallet assets the owner chose NOT to use as Cross collateral. */
@@ -79,6 +81,8 @@ const forward=(stored:NativeAccount):NativeAccount=>{
 };
 export const commandHash=(v:unknown):string=>createHash('sha256').update(JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x)).digest('hex');
 export interface NativeRepository {
+  /** Repositories using the same DB client share scheduling, never financial state. */
+  readonly commandLaneScope?: object;
   live?(actor:OwnerSession):Promise<NativeLiveProjection|null>;
   history?(actor:OwnerSession,query:HistoryQuery):ReturnType<typeof nativeHistoryPage>;
   activate?(actor:OwnerSession):Promise<void>;
@@ -94,7 +98,7 @@ export interface NativeRepository {
   revision(actor:OwnerSession,revision:number):Promise<NativeAccount|null>;
   initialize(actor:OwnerSession,key:string):Promise<NativeAccount>;
   prior(actor:OwnerSession,key:string,hash:string):Promise<NativeAccount|null>;
-  commit(actor:OwnerSession,expected:number,next:NativeAccount,key:string,hash:string):Promise<NativeAccount>;
+  commit(actor:OwnerSession,expected:number,next:NativeAccount,key:string,hash:string,beforeWrite?:()=>void):Promise<NativeAccount>;
 }
 /** Only DemoBalance + NativeDemo* writes exist here. Real wallets/orders are not dependencies. */
 export class PrismaNativeRepository implements NativeRepository {
@@ -102,6 +106,7 @@ export class PrismaNativeRepository implements NativeRepository {
   // A clone protects the cached authoritative transcript from replay mutation.
   private readonly executionCache=new Map<string,NativeAccount>();
   constructor(private readonly db:PrismaClient,private readonly config:()=>PrivateTradingConfig=privateTradingConfig,private readonly cacheExecution=false){}
+  get commandLaneScope(): object { return this.db; }
   private remember(userId:string,row:NativeAccount){
     if(!this.cacheExecution)return;
     this.executionCache.delete(userId);
@@ -134,9 +139,11 @@ export class PrismaNativeRepository implements NativeRepository {
     const result=await nativeHistoryPage(this.db,actor.userId,query);
     await this.owner(this.db,actor);return result;
   }
-  private async writeProjection(tx:Prisma.TransactionClient,actor:OwnerSession,account:NativeAccount){
+  private projectionData(account:NativeAccount){
     const projection=deriveNativeLiveProjection(account);
-    const data={revision:account.revision,payload:JSON.parse(JSON.stringify(projection)) as Prisma.InputJsonValue,digest:projectionDigest(projection)};
+    return {revision:account.revision,payload:JSON.parse(JSON.stringify(projection)) as Prisma.InputJsonValue,digest:projectionDigest(projection)};
+  }
+  private async writeProjection(tx:Prisma.TransactionClient,actor:OwnerSession,account:NativeAccount,data=this.projectionData(account)){
     await tx.nativeDemoLiveProjection.upsert({where:{userId:actor.userId},create:{userId:actor.userId,...data},update:data,select:{userId:true}});
   }
   async live(actor:OwnerSession):Promise<NativeLiveProjection|null>{
@@ -214,19 +221,31 @@ export class PrismaNativeRepository implements NativeRepository {
       await this.owner(tx,actor);return next;
     },{timeout:10000});
   }
-  async commit(actor:OwnerSession,expected:number,next:NativeAccount,key:string,hash:string){
-    await this.owner(this.db,actor);
+  async commit(actor:OwnerSession,expected:number,next:NativeAccount,key:string,hash:string,beforeWrite?:()=>void){
+    // Prepare immutable JSON before taking the account lock. Never download
+    // the entire revision we just inserted: the caller already owns it.
+    const result={...next,revision:expected+1};
+    const accountPayload=json(result),receiptPayload=json(revisionPayload(result));
+    const projectionData=this.projectionData(result);
+    const trace=commandScope();
+    const timed=async<T>(stage:string,run:()=>Promise<T>):Promise<T>=>{
+      const started=Date.now();trace?.trace(stage);
+      try{return await run();}finally{trace?.trace(stage+'.end',{durationMs:Date.now()-started});}
+    };
+    await commandRead('repository.commit_authorization',()=>this.owner(this.db,actor));
+    beforeWrite?.();
     return this.db.$transaction(async tx=>{
-      await tx.$queryRaw`SELECT "userId" FROM "NativeDemoAccount" WHERE "userId" = ${actor.userId} FOR UPDATE`;
-      await this.owner(tx,actor);
-      const prior=await tx.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId:actor.userId,requestKey:key}}});
+      trace?.trace('transaction.enter');
+      await timed('transaction.lock',()=>tx.$queryRaw`SELECT "userId" FROM "NativeDemoAccount" WHERE "userId" = ${actor.userId} FOR UPDATE`);
+      await timed('transaction.authorization',()=>this.owner(tx,actor));
+      const prior=await timed('transaction.receipt',()=>tx.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId:actor.userId,requestKey:key}}}));
       if(prior){if(prior.requestHash!==hash)throw new PrivateTradingError('idempotency_conflict','Параметры запроса изменились',409);return forward(prior.payload as unknown as NativeAccount);}
-      const changed=await tx.nativeDemoAccount.updateMany({where:{userId:actor.userId,revision:expected},data:{revision:expected+1,payload:json({...next,revision:expected+1})}});
+      beforeWrite?.();
+      const changed=await timed('transaction.account_write',()=>tx.nativeDemoAccount.updateMany({where:{userId:actor.userId,revision:expected},data:{revision:expected+1,payload:accountPayload}}));
       if(changed.count!==1)throw new PrivateTradingError('account_changed','Счёт изменился в другой вкладке. Обновите расчёт',409);
-      const result={...next,revision:expected+1};
-      await tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:result.revision,requestKey:key,requestHash:hash,payload:json(revisionPayload(result))}});
-      await this.writeProjection(tx,actor,result);
-      await this.owner(tx,actor);return result;
-    },{timeout:10000});
+      await timed('transaction.receipt_write',()=>tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:result.revision,requestKey:key,requestHash:hash,payload:receiptPayload},select:{revision:true}}));
+      await timed('transaction.projection_write',()=>this.writeProjection(tx,actor,result,projectionData));
+      await timed('transaction.final_authorization',()=>this.owner(tx,actor));beforeWrite?.();return result;
+    },{timeout:10000,maxWait:2000});
   }
 }

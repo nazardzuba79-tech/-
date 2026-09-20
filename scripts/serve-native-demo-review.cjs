@@ -34,7 +34,17 @@ function fixtureCandle(t,interval=60000){const x=Math.sin(t/3600000)*.02,y=Math.
 const sizes={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
 function fixtureInstrument(symbol){return{provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};}
 async function transport(url,options={}){
-  const u=new URL(url),m=/^\/internal\/v1\/private-trading\/([^/]+)\/([A-Z0-9]+)$/.exec(u.pathname);if(!m)throw new Error('Path denied');
+  const u=new URL(url);
+  if(u.pathname==='/internal/v1/private-trading/marks'){
+    const requested=[...new Set((u.searchParams.get('symbols')||'').split(','))];
+    if(!requested.length||requested.length>64||requested.some(s=>!symbols.includes(s)))throw new Error('Invalid preview marks');
+    const marks=await Promise.all(requested.map(async symbol=>{
+      if(fixture){const at=now(),price=fixtureCandle(Math.floor(at/60000)*60000).close;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
+      const q=await source.freshQuote(symbol,options.signal);return{symbol,markPrice:q.markPrice,lastPrice:q.lastPrice,markProviderTimestamp:q.markProviderTimestamp,receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt};
+    }));
+    return new Response(JSON.stringify({status:'live',fetchedAt:now(),marks}),{status:200,headers:{'Content-Type':'application/json'}});
+  }
+  const m=/^\/internal\/v1\/private-trading\/([^/]+)\/([A-Z0-9]+)$/.exec(u.pathname);if(!m)throw new Error('Path denied');
   const[kind,symbol]=m.slice(1),q=u.searchParams;let result;
   if(fixture){
     if(kind==='instruments')result=fixtureInstrument(symbol);

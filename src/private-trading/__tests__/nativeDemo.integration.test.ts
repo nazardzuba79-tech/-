@@ -33,9 +33,9 @@ class FixtureMarket {
   }
 }
 dbDescribe('native demo real TEST PostgreSQL persistence', () => {
-  let db: PrismaClient;
-  beforeAll(async () => { db = new PrismaClient(); await db.$connect(); }, 20000);
-  afterAll(async () => { await db?.$disconnect(); });
+  let db: PrismaClient, secondProcessDb: PrismaClient;
+  beforeAll(async () => { db = new PrismaClient(); secondProcessDb = new PrismaClient(); await Promise.all([db.$connect(), secondProcessDb.$connect()]); }, 20000);
+  afterAll(async () => { await Promise.all([db?.$disconnect(), secondProcessDb?.$disconnect()]); });
   async function fixture(demo = '10000000') {
     const tag = randomUUID().replace(/-/g, '');
     const user = await db.user.create({ data: { email: `qa-native-${tag}@example.test`, passwordHash: 'TEST_FIXTURE_NO_LOGIN', referralCode: `nd${tag}`, role: 'ADMIN' } });
@@ -46,7 +46,7 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     const actor: OwnerSession = { userId: user.id, sessionId: session.id, expiresAt: Date.now() + 3_600_000 };
     const config = { enabled: true, ownerId: user.id };
     const market = new FixtureMarket();
-    const make = () => { const repository = new PrismaNativeRepository(db, () => config); return { repository, service: new NativeDemoService(repository, market as unknown as PrivateTradingMarketData) }; };
+    const make = (client = db) => { const repository = new PrismaNativeRepository(client, () => config); return { repository, service: new NativeDemoService(repository, market as unknown as PrivateTradingMarketData) }; };
     return { user, session, actor, config, market, make, ...make() };
   }
   const realState = async (userId: string) => JSON.parse(JSON.stringify({
@@ -231,7 +231,9 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
   test('two server processes cannot both commit on the same revision: the loser decides again on the winner\'s row; the same key never executes twice', async () => {
     const f = await fixture();
     await f.service.initialize(f.actor, `init-${randomUUID()}`);
-    const other = f.make();
+    // Separate processes have separate Prisma clients and do not share the in-process command lane.
+    const other = f.make(secondProcessDb);
+    expect(other.repository.commandLaneScope).not.toBe(f.repository.commandLaneScope);
     let waiting = 0, commits = 0, release!: () => void; const gate = new Promise<void>(r => { release = r; });
     for (const repository of [f.repository, other.repository]) {
       const commit = repository.commit.bind(repository);
@@ -266,7 +268,7 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(journal[1].kind === 'OPEN' && journal[0].kind === 'OPEN' && journal[1].book!.timestamp >= journal[0].book!.timestamp).toBe(true);
     expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id } })).toBe(3);
     const key = randomUUID(), fresh = f.make();
-    const same = await Promise.allSettled([fresh.service.command(f.actor, open(key)), f.make().service.command(f.actor, open(key))]);
+    const same = await Promise.allSettled([fresh.service.command(f.actor, open(key)), f.make(secondProcessDb).service.command(f.actor, open(key))]);
     const ok = same.filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<NativeDemoService['command']>>> => r.status === 'fulfilled');
     expect(ok.length).toBeGreaterThanOrEqual(1);
     const state = await fresh.service.state(f.actor);
@@ -296,6 +298,19 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     f.market.price='100';await pass.tick();expect(pass.failures).toBe(1);
     expect(await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}})).toEqual(before);
     expect(await realState(f.user.id)).toEqual(real);await pass.stop();
+  });
+
+  test('deadline/freshness guard after writes rolls back account and immutable receipt together',async()=>{
+    const f=await fixture();await f.service.initialize(f.actor,'initialize-deadline-rollback');
+    const row=(await f.repository.read(f.actor))!;
+    const before=await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}});
+    let checks=0;
+    await expect(f.repository.commit(f.actor,row.revision,row,'deadline-rollback-after-write','hash',()=>{
+      if(++checks===3)throw new Error('EXPIRED_BEFORE_TRANSACTION_FINISH');
+    })).rejects.toThrow('EXPIRED_BEFORE_TRANSACTION_FINISH');
+    expect(checks).toBe(3);
+    expect(await db.nativeDemoAccount.findUnique({where:{userId:f.user.id}})).toEqual(before);
+    expect(await db.nativeDemoRevision.count({where:{userId:f.user.id}})).toBe(1);
   });
 
   test('every repository read/write re-checks owner, ADMIN role, live session and the server flag', async () => {

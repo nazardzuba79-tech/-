@@ -544,5 +544,18 @@ describe('futures-only, and wired into the positions table', () => {
     expect(cellNode).toBeTruthy();
     expect(cellNode.props.positionId).toBe('pos-1');
     expect(cellNode.props.protection.takeProfit.triggerPrice).toBe('110000');
+    // Production acceptance found the native leverage dialog unreachable:
+    // the new-order leverage selector does not edit existing positions.
+    expect(byClass(tree, 'futures-position-leverage')).toHaveLength(0);
+    const edit = jest.fn();
+    const editable = panel.render({ refreshKey: 0, tab: 'open', onEditLeverage: edit });
+    const button = byClass(editable, 'futures-position-leverage')[0];
+    expect(button.props.children).toEqual(['10.00', 'x']);
+    button.props.onClick();
+    expect(edit).toHaveBeenCalledWith('pos-1');
+    const busy = panel.render({ refreshKey: 0, tab: 'open', onEditLeverage: edit, leverageBusy: true });
+    expect(byClass(busy, 'futures-position-leverage')[0].props.disabled).toBe(true);
+    // The row remains authoritative, not an optimistic leverage preview.
+    expect(account.positions.data[0].leverage).toBe(10);
   });
 });

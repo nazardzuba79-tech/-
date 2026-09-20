@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { createNativeLimitPass } from '../native/limitPass';
 import { NativeDemoService } from '../native/service';
 import type { PrivateTradingMarketData } from '../marketData';
+import { assertHistoricalDemoCurrentPrice } from '../marketData';
 
 const url=process.env.NATIVE_EGRESS_TEST_DATABASE_URL;
 const pg=url?describe:describe.skip;
@@ -47,6 +48,20 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
       expect((await repo.read(actor))?.revision).toBe(2);
       expect(await repo.revision(actor,3)).toBeNull();expect((await repo.live(actor))?.revision).toBe(2);
     }finally{await db.$executeRawUnsafe('ALTER TABLE "NativeDemoLiveProjection" DROP CONSTRAINT "native_test_reject_three"');}
+  });
+  test('final 60s price guard rolls back account, receipt and projection together after their SQL writes',async()=>{
+    const before=await repo.read(actor),projection=await repo.live(actor),now=Date.now();let checks=0;
+    const quote={symbol:'BTCUSDT',markPrice:'81000',lastPrice:'81000',markProviderTimestamp:now,receivedAt:now,fetchedAt:now};
+    queries=[];
+    await expect(repo.commit(actor,1,fixture,'expired-final-guard','hash',()=>{
+      assertHistoricalDemoCurrentPrice(quote,'BTCUSDT',now+(++checks===3?60001:0));
+    })).rejects.toMatchObject({code:'near_live_price_stale'});
+    expect(checks).toBe(3);
+    expect(queries.some(q=>q.includes('INSERT INTO "public"."NativeDemoRevision"'))).toBe(true);
+    expect(queries.some(q=>q.includes('INSERT INTO "public"."NativeDemoLiveProjection"'))).toBe(true);
+    expect(await repo.read(actor)).toEqual(before);expect(await repo.live(actor)).toEqual(projection);
+    expect(await repo.prior(actor,'expired-final-guard','hash')).toBeNull();
+    expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(1);
   });
   test.each(['missing','corrupt','stale'])('%s projection rebuilds from authority without financial writes',async variant=>{
     await repo.commit(actor,1,fixture,'commit-test','hash');

@@ -475,6 +475,7 @@ export function FuturesOrderForm({
         leverage,
         marginType,
         reduceOnly,
+        ...(execution.engine === 'NATIVE' ? { candle: execution.candle } : {}),
         ...(execution.engine === 'NATIVE' && activeCloseTarget ? { positionId: activeCloseTarget.id } : {}),
       });
       setCloseTarget(null);
@@ -580,6 +581,12 @@ export function FuturesOrderForm({
       }} />
 
       <form onSubmit={handleSubmit} className="fo-form" data-close-position-id={activeCloseTarget?.id}>
+        {execution.engine === 'NATIVE' && !reduceOnly && (execution.candle || execution.historicalEntryPending) && <div className="fo-infoRow" role="status" aria-label="Точка входа"
+          data-entry-reference={execution.candle ? JSON.stringify(execution.candle) : undefined}>
+          <span>Вход</span><strong>{execution.candle
+            ? `${new Date(execution.candle.openTime).toISOString().slice(0,16).replace('T',' ')} UTC · ${execution.candle.interval} · ${execution.candle.pricePoint === 'OPEN' ? 'Открытие' : 'Закрытие'}`
+            : 'Выберите свечу на графике'}</strong>
+        </div>}
         {/* One compact control where a margin-mode toggle and a full
             leverage slider used to stack. The panel now has exactly ONE
             persistent slider, and it is position size. Every bound comes

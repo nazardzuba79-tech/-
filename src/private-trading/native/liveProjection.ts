@@ -7,6 +7,7 @@ import { accountLedger, type AccountLedger } from './ledger';
 export interface NativeLiveProjection {
   version: 1;
   revision: number;
+  executionMode: 'LIVE_EXECUTION' | 'HISTORICAL_DEMO';
   source: NativeAccount['source'];
   createdAt: number;
   disabledCollateralAssets: string[];
@@ -32,7 +33,7 @@ export function deriveNativeLiveProjection(account: NativeAccount): NativeLivePr
     historicalMarks: select(full.historicalMarks),
   };
   const { entries: _entries, ...ledger } = accountLedger(full);
-  return structuredClone({ version: 1, revision: account.revision, source: account.source,
+  return structuredClone({ version: 1, revision: account.revision, executionMode: account.executionMode ?? 'LIVE_EXECUTION', source: account.source,
     createdAt: account.createdAt, disabledCollateralAssets: account.disabledCollateralAssets ?? [], state, ledger });
 }
 
@@ -46,7 +47,7 @@ export function projectionDigest(value: unknown): string {
 export function verifiedProjection(value: unknown, digest: string | null, revision: number): NativeLiveProjection | null {
   if (!value || !digest || projectionDigest(value) !== digest) return null;
   const p = value as NativeLiveProjection;
-  if (p.version !== 1 || p.revision !== revision || p.state?.version !== 3 || !p.ledger
+  if (p.version !== 1 || p.revision !== revision || !['LIVE_EXECUTION','HISTORICAL_DEMO'].includes(p.executionMode) || p.state?.version !== 3 || !p.ledger
     || !Array.isArray(p.state.positions) || !Array.isArray(p.state.orders)
     || p.state.events?.length !== 0 || !Array.isArray(p.disabledCollateralAssets)
     || p.state.positions.some(row => row.status !== 'OPEN')

@@ -135,6 +135,7 @@ export interface FuturesExecution {
    *  server. `null` means "trade at the current book", which is every
    *  ordinary order. */
   candle: NativeCandle | null;
+  historicalEntryPending?: boolean;
   /** The selected contract's quantity rules, when the engine publishes
    *  them. `null` — every real account — means the terminal enforces no
    *  per-contract step or ceiling of its own, which is what it always did. */
@@ -156,6 +157,7 @@ export interface FuturesExecution {
    */
   activation: FuturesAccountActivation | null;
   placeOrder(params: {
+    candle?: NativeCandle | null;
     symbol: string;
     side: 'BUY' | 'SELL';
     type: 'LIMIT' | 'MARKET';
