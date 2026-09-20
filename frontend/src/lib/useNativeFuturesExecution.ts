@@ -102,6 +102,10 @@ export function useNativeFuturesExecution(
       contract,
       account_aggregate: aggregate,
       activation,
+      // The simulation engine carries TP/SL on the order itself
+      // (`DemoOrderInput.protection`), validates the levels against the
+      // order's own price and applies them to the position the fill creates.
+      entryProtection: true,
       async placeOrder(params) {
         // A position may close/change between the form's render and submit.
         // Resolve against the controller's current authoritative transcript,

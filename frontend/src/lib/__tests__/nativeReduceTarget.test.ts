@@ -64,6 +64,15 @@ describe('strict native reduce-only target', () => {
 });
 
 describe('actual native command construction', () => {
+  test('entry protection travels atomically with the opening draft', () => {
+    const protection = { takeProfit:'55000', stopLoss:'49000' };
+    const draft = nativeOrderDraft([], { ...params('CROSS'), side:'BUY', reduceOnly:false, protection }, null, null);
+    expect(draft).toMatchObject({ kind:'OPEN', side:'LONG', protection });
+  });
+  test('a stale chart-close selection cannot silently discard entry protection', () => {
+    expect(() => nativeOrderDraft([position('cross', 'CROSS')], { ...params('CROSS'), reduceOnly:false,
+      protection:{ takeProfit:'55000', stopLoss:null } }, 'cross', null)).toThrow(PrivateTradingError);
+  });
   const cross = position('cross', 'CROSS'), isolated = position('isolated', 'ISOLATED');
   test('table LIMIT id wins over stale chart exit/candle and preserves typed price and quantity', () => {
     expect(nativeOrderDraft([cross, isolated], { ...params('CROSS', '0.500'), positionId: isolated.id }, cross.id, candle)).toEqual({

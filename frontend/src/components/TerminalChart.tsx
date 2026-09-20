@@ -4,14 +4,16 @@ import { TradingViewAdvancedChart } from './TradingViewAdvancedChart';
 import { TradingViewRulerLayer } from './TradingViewRulerLayer';
 import { getFuturesCandles } from '../lib/futuresCandles';
 import { useLanguage } from '../lib/i18n';
-import type { ChartCandleLoader, ChartTradingInteraction } from '../lib/chartTrading';
+import type { ChartCandleLoader, ChartPositionLine, ChartTradingInteraction } from '../lib/chartTrading';
 import './TerminalChart.css';
 
 /** Switch only the chart subtree: tickets, order families and books keep their state. */
-export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, candleLoader }: {
+export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, positionLines, candleLoader }: {
   pair:string; market?:'spot'|'futures'; chrome?:'default'|'terminal'; drawingTools?:boolean;
   compactTools?:boolean;
   privateTrading?:ChartTradingInteraction;
+  /** Open positions to draw on the price scale. See PriceChart. */
+  positionLines?:ChartPositionLine[];
   candleLoader?:ChartCandleLoader;
 }) {
   const [mode,setMode]=useState<'voltex'|'tradingview'>('voltex');
@@ -41,7 +43,8 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
     {mode==='voltex'
       ? <TradingViewRulerLayer>
           <PriceChart key={`${market}:${pair}`} pair={pair} chrome="terminal" drawingTools market={market} compactTools={compactTools}
-            privateTrading={privateTrading} candleLoader={candleLoader ?? (market==='futures'?getFuturesCandles:undefined)} />
+            privateTrading={privateTrading} positionLines={positionLines}
+            candleLoader={candleLoader ?? (market==='futures'?getFuturesCandles:undefined)} />
         </TradingViewRulerLayer>
       : <TradingViewAdvancedChart key={`${market}:${pair}`} pair={pair} market={market} />}
   </div>;

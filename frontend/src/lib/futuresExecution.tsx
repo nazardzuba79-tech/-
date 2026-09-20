@@ -156,6 +156,23 @@ export interface FuturesExecution {
    * already open, so the card's normal path is untouched in both cases.
    */
   activation: FuturesAccountActivation | null;
+  /**
+   * Whether this engine accepts Take Profit / Stop Loss ON THE ORDER.
+   *
+   * A capability, not a preference, and the order ticket renders its TP/SL
+   * fields only where it is true. The simulation engine carries protection
+   * through placement (`DemoOrderInput.protection`), validates the levels
+   * against the order's own price and applies them to the position the fill
+   * creates — one command, one outcome. The real futures engine has no such
+   * field on POST /futures/orders: protection there is a PUT against a
+   * position that already exists, which is what the positions table
+   * already offers.
+   *
+   * Rendering the fields on an engine that would ignore them is the exact
+   * shape of control this terminal does not ship: it would look like
+   * protection and arm nothing.
+   */
+  entryProtection: boolean;
   placeOrder(params: {
     candle?: NativeCandle | null;
     symbol: string;
@@ -168,6 +185,10 @@ export interface FuturesExecution {
     reduceOnly?: boolean;
     /** Explicit native table-close target; omitted from ordinary real-engine requests. */
     positionId?: string;
+    /** TP/SL to arm with the order. Only ever sent to an engine whose
+     *  `entryProtection` is true; a `null` level means "do not arm that
+     *  side", which is not the same as leaving the field out. */
+    protection?: { takeProfit: string | null; stopLoss: string | null };
   }): Promise<void>;
   cancelOrder(orderId: string): Promise<void>;
   closePosition(positionId: string): Promise<void>;
@@ -192,7 +213,12 @@ export const REAL_FUTURES_EXECUTION: FuturesExecution = {
   contract: null,
   account_aggregate: null,
   activation: null,
-  placeOrder: async (params) => { await api.placeFuturesOrder(params); },
+  entryProtection: false,
+  placeOrder: async (params) => {
+    // Real venue entry does not accept atomic protection. Never drop a requested bracket.
+    if (params.protection) throw new Error('Set TP/SL on the open position for this account.');
+    await api.placeFuturesOrder(params);
+  },
   cancelOrder: async (orderId) => { await api.cancelFuturesOrder(orderId); },
   closePosition: async (positionId) => { await api.closeFuturesPosition(positionId); },
   setProtection: async (positionId, body) => { await api.setFuturesPositionProtection(positionId, body); },

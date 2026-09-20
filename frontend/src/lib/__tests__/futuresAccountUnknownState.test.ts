@@ -1,3 +1,4 @@
+import * as positionActions from '../futuresPositionActions';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -80,7 +81,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     },
   };
 
-  const react = { ...React, memo: (fn: any) => fn,
+  const react = { ...React, useId: () => 'test-id', memo: (fn: any) => fn,
     useState(initial: any) {
       const i = index++;
       if (!(i in hooks)) hooks[i] = typeof initial === 'function' ? initial() : initial;
@@ -121,6 +122,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
   new Function('require', 'exports', 'window', compiled)((name: string) => {
+    if (name === '../lib/futuresPositionActions') return positionActions;
     if (name === 'react') return react;
     if (name === 'react-router-dom') return { useNavigate: () => jest.fn() };
     if (name === '../lib/api') return { api, ApiError: Error };

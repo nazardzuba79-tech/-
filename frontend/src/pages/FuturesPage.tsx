@@ -7,11 +7,18 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
+import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
+import { FuturesTerminalStatus } from '../components/FuturesTerminalStatus';
+import { ArchiveAccountActivity } from '../components/ArchiveTerminalDetails';
+import { Calculator } from 'lucide-react';
+import { ArchiveTopAssets } from '../components/ArchiveTopAssets';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
+import type { ChartPositionLine } from '../lib/chartTrading';
 import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
+import { FuturesCloseAllPositions } from '../components/FuturesCloseAllPositions';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
@@ -45,6 +52,7 @@ import './trade-terminal/FuturesDesignVariants.css';
 import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
 import './trade-terminal/TerminalPremium.css';
+import './trade-terminal/ArchiveTerminalPreview.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately
@@ -80,6 +88,8 @@ export function FuturesPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedDesign = searchParams.get('terminalDesign');
+  const archivePreview = requestedDesign === null || requestedDesign === 'archive';
+  const [onlyCurrentPair, setOnlyCurrentPair] = useState(false);
   const design = ['studio', 'graphite', 'focus'].includes(requestedDesign ?? '') ? requestedDesign : 'studio';
   const studio = design !== null;
   // Discover all real USDT perpetuals; execution remains restricted by config.
@@ -151,8 +161,11 @@ export function FuturesPage() {
   // `status` rides with the levels so the panel can tell "this is the book"
   // from "this WAS the book" from "we do not know" — three different things
   // that all used to render as an empty table.
-  const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[]; status: FuturesDepthStatus }>(
-    { symbol, bids: [], asks: [], status: 'connecting' });
+  // `asOf` rides along with them: it is the LOCAL arrival time of the
+  // newest accepted frame, which is the only honest way to say how old the
+  // numbers on screen are. The status line reads it; the book does not.
+  const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[]; status: FuturesDepthStatus; asOf: number | null }>(
+    { symbol, bids: [], asks: [], status: 'connecting', asOf: null });
   const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
   /**
    * "Торговля с графика" — a CHART TOOL switch, not an account switch.
@@ -188,6 +201,14 @@ export function FuturesPage() {
   /** A reduce-only close the trader started from the positions table. The
    *  form fills itself from it; nothing is placed until they submit. */
   const [closeTicket, setCloseTicket] = useState<FuturesCloseTicket | null>(null);
+  /**
+   * The calculator is a panel over the terminal, not a route: it is opened
+   * to answer a question about the market already on screen, and closing it
+   * must leave that market exactly as it was.
+   */
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  /** The last hand-over from the calculator. An UNSENT draft — see the order form. */
+  const [calculatorDraft, setCalculatorDraft] = useState<(CalculatorDraft & { seq: number }) | null>(null);
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => {
@@ -321,6 +342,52 @@ export function FuturesPage() {
     return Number.isFinite(value) && value > 0 ? value : null;
   }, [tape, symbol]);
 
+  /**
+   * The same price the ticker prints, as a string, for surfaces that hand
+   * numbers back to the engine. Kept as text on purpose: the engine parses
+   * decimal strings, and a round trip through a JS number is exactly where a
+   * tick-sized figure loses its last digit.
+   */
+  const livePrice = useMemo(() => {
+    const value = tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null;
+    return value === null ? null : String(value);
+  }, [tapeLastPrice, reference, symbol]);
+
+  /**
+   * The open positions the chart draws, and ONLY when the chart is not
+   * already drawing them from somewhere else.
+   *
+   * `privateTrading` gives the chart the simulation transcript, which
+   * already puts an entry line on every open trade and TP/SL/LIQ on the
+   * selected one. Handing it this list as well would draw a second entry
+   * line over the first for the same position — the duplicate the brief
+   * explicitly rules out. So this is the REAL engine's equivalent of that
+   * path, not a second copy of it.
+   *
+   * Every figure travels through untouched, as the server's own string:
+   * parsing it here would round it once before the chart rounds it again.
+   *
+   * No status filtering is needed on the protection legs. /futures/positions
+   * builds them with `activeProtectionByPosition`, which selects only the
+   * ARMED statuses (PENDING, FAILED — which is re-armed — and TRIGGERING).
+   * An executed or cancelled trigger never reaches this list, so a TP line
+   * on the chart is always a trigger that is still standing.
+   */
+  const chartPositionLines = useMemo<ChartPositionLine[] | undefined>(() => {
+    if (nativeExecution) return undefined;
+    const rows = visibleAccount.positions.data;
+    if (!rows?.length) return undefined;
+    return rows.map(row => ({
+      id: row.id,
+      symbol: row.symbol,
+      side: row.side,
+      entryPrice: row.entryPrice,
+      liquidationPrice: row.liquidationPrice,
+      takeProfit: row.protection?.takeProfit?.triggerPrice ?? null,
+      stopLoss: row.protection?.stopLoss?.triggerPrice ?? null,
+    }));
+  }, [nativeExecution, chartTrading, visibleAccount.positions.data]);
+
   const handleOrderPlaced = useCallback(() => {
     setCloseTicket(null);
     setPositionsRefreshKey((k) => k + 1);
@@ -336,8 +403,8 @@ export function FuturesPage() {
   }
 
   return (
-    <div className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-terminal-design={design ?? undefined}>
-      {requestedDesign && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
+    <div id={archivePreview ? 'archive-terminal-preview' : undefined} className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-terminal-design={archivePreview ? 'archive' : design ?? undefined}>
+      {requestedDesign && !archivePreview && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
         {([['studio', 'A · Studio'], ['graphite', 'B · Graphite'], ['focus', 'C · Focus']] as const).map(([id, label]) =>
           <button key={id} type="button" aria-pressed={design === id} onClick={() => {
             const next = new URLSearchParams(searchParams); next.set('terminalDesign', id);
@@ -354,7 +421,8 @@ export function FuturesPage() {
           space on every page of the site. */}
       <Nav
         active="/futures"
-        rightExtra={nativeExecution?undefined:<PrivateTradingEntry/>}
+        rightExtra={archivePreview ? <>{!nativeExecution && <PrivateTradingEntry/>}<ArchiveAccountActivity positions={visibleAccount.positions.data?.length ?? null} orders={visibleAccount.orders.data?.length ?? null} /></> : nativeExecution ? undefined : <PrivateTradingEntry/>}
+        quoteAsset={archivePreview ? symbol.split('/')[1] : undefined}
         onTickerSelect={handleTickerSelect}
         staticTicker
         tickerSymbols={symbols}
@@ -365,7 +433,7 @@ export function FuturesPage() {
       <FuturesExecutionProvider value={execution}>
       <FuturesAccountSourceContext.Provider value={execution.account}>
       <div className="terminal" data-account-compact={accountPanel.compact}>
-        <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} />
+        <FuturesTickerBar archive={archivePreview} symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} onOpenCalculator={archivePreview ? undefined : () => setCalculatorOpen(true)} />
 
         <div className="main-grid">
           {/* NO PERMANENT MARKET RAIL.
@@ -447,7 +515,8 @@ export function FuturesPage() {
               } : undefined}
             >
               <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
-                privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}
+                privateTrading={nativeExecution ? native.interaction : undefined}
+                positionLines={chartPositionLines}
                 candleLoader={nativeExecution?native.loader:undefined} />
               {nativeExecution && <button
                 type="button"
@@ -507,9 +576,17 @@ export function FuturesPage() {
           </div>
 
           <div className="order-form-area">
-            <h2 className="reference-order-heading">{t('nav.trade')}</h2>
+            {archivePreview ? <div className="archive-trading-heading">
+              <h2 className="reference-order-heading">{t('nav.trade')}</h2>
+              <button type="button" className="archive-calculator-trigger" data-open-calculator="true" title={t('calc.title')} aria-label={t('calc.title')} onClick={() => setCalculatorOpen(true)}><Calculator size={19} /></button>
+            </div> : <h2 className="reference-order-heading">{t('nav.trade')}</h2>}
+            <FuturesTerminalStatus
+              status={book.symbol === symbol ? book.status : 'connecting'}
+              asOf={book.symbol === symbol ? book.asOf : null}
+            />
             <FuturesOrderForm
               key={symbol}
+              archive={archivePreview}
               symbol={symbol}
               /* The simulation engine lists every contract the terminal
                  discovers, so its universe is not the real engine's
@@ -528,6 +605,7 @@ export function FuturesPage() {
                  available whenever the book is. */
               lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null}
               closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
+              calculatorDraft={calculatorDraft ?? undefined}
             />
           </div>
         </div>
@@ -547,11 +625,13 @@ export function FuturesPage() {
                 onClick={() => { setBottomTab(tab.id); accountPanel.reveal(); }}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'positions' && <span className="reference-tab-count">({visibleAccount.positions.data?.length ?? '—'})</span>}
-                {tab.id === 'orders' && <span className="reference-tab-count">({visibleAccount.orders.data?.length ?? '—'})</span>}
+                {tab.id === 'positions' && <span className="reference-tab-count">{`(${visibleAccount.positions.data?.length ?? '—'})`}</span>}
+                {tab.id === 'orders' && <span className="reference-tab-count">{`(${visibleAccount.orders.data?.length ?? '—'})`}</span>}
               </button>
             ))}
           </div>
+          {archivePreview && <label className="archive-pair-filter"><input type="checkbox" checked={!onlyCurrentPair} onChange={e => setOnlyCurrentPair(!e.target.checked)} />{t('futures.allMarkets')}</label>}
+          {archivePreview && <FuturesCloseAllPositions visible={bottomTab === 'positions'} />}
           {accountPanel.canCompact && <AccountPanelToggle compact={accountPanel.compact} onToggle={accountPanel.toggle} controls="futures-bottom-content" />}
           </div>
 
@@ -559,6 +639,8 @@ export function FuturesPage() {
             {nativeExecution&&native.historyHasMore&&<button type="button" className="bottom-tab" onClick={native.loadMoreHistory}>{t('catalogue.nextPage')}</button>}
             {bottomTab === 'positions' && (
               <FuturesPositionsPanel
+                archive={archivePreview}
+                symbolFilter={archivePreview && onlyCurrentPair ? symbol : undefined}
                 refreshKey={positionsRefreshKey}
                 tab="open"
                 leverageBusy={native.busy}
@@ -593,6 +675,7 @@ export function FuturesPage() {
       </div>
       </FuturesAccountSourceContext.Provider>
       </FuturesExecutionProvider>
+      {archivePreview && <ArchiveTopAssets symbols={symbols} onSelect={setSymbol} />}
 
       {!desktopMarkets && <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
         onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
@@ -606,6 +689,27 @@ export function FuturesPage() {
       </dialog>}
       {nativeExecution&&<NativeDemoDialogs controller={native}/>}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
+      {/* The calculator sits at the page level, not inside the ticket, because
+          it is the one surface that is allowed to know the whole terminal:
+          the symbol on screen, the price the trader last clicked, the tape's
+          last print. It hands back a DRAFT — `setCalculatorDraft` fills the
+          order form's fields and nothing else; the trader still presses the
+          order button. */}
+      <FuturesCalculator
+        open={calculatorOpen}
+        onClose={() => setCalculatorOpen(false)}
+        symbol={symbol}
+        initial={{
+          price: (pickedPrice?.symbol === symbol ? pickedPrice.value : undefined)
+            ?? livePrice ?? undefined,
+          markPrice: reference.get(symbol)?.markPrice?.toString() ?? null,
+        }}
+        onUseValues={draft => {
+          pickedSeq.current += 1;
+          setCalculatorDraft({ ...draft, seq: pickedSeq.current });
+          setCalculatorOpen(false);
+        }}
+      />
     </div>
   );
 }

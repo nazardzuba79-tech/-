@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useId, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
@@ -21,7 +21,7 @@ import {
   QUANTITY_DECIMALS,
 } from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
-import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFamilyPresentation';
+import { OrderFamilyTabs, type OrderFamily } from './OrderFamilyPresentation';
 
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
@@ -42,8 +42,11 @@ export function FuturesOrderForm({
   pickedPriceSequence,
   executionEnabled = true,
   closeTicket,
+  calculatorDraft,
   lastPrice = null,
+  archive = false,
 }: {
+  archive?: boolean;
   symbol: string;
   onPlaced: () => void;
   onOpenTransfer?: () => void;
@@ -60,6 +63,13 @@ export function FuturesOrderForm({
    *  order. */
   closeTicket?: FuturesCloseTicket;
   /**
+   * Values handed over by the calculator. This FILLS THE FORM AND NOTHING
+   * ELSE: no order is created, nothing is submitted, and the trader still
+   * has to press the order button. `seq` is what makes a repeat of the same
+   * numbers register as a new hand-over.
+   */
+  calculatorDraft?: { side: 'LONG' | 'SHORT'; price: string; quantity: string; leverage: string; seq: number };
+  /**
    * The last TRADED price for this contract.
    *
    * Separate from mark price on purpose. The button beside the Limit field
@@ -72,7 +82,9 @@ export function FuturesOrderForm({
    */
   lastPrice?: number | null;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const [protectionEnabled, setBracketExpanded] = useState(false);
+  const protectionPanelId = useId();
   const toast = useToast();
   const [baseAsset, quoteAsset] = symbol.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -135,6 +147,26 @@ export function FuturesOrderForm({
    */
   const [requestedLeverage, setRequestedLeverage] = useState(10);
   /**
+   * THE CALCULATOR HANDS OVER AN UNSENT DRAFT.
+   *
+   * It fills price, quantity, side and the requested leverage, and then
+   * stops. It does not submit, it does not switch the form into a state the
+   * trader did not choose, and it clears no error it did not cause — the
+   * whole point of the button is that the numbers arrive where the trader
+   * can still look at them and change their mind.
+   */
+  useEffect(() => {
+    if (!calculatorDraft) return;
+    // Applying an entry draft drops an unsent close ticket, never a position.
+    setCloseTarget(null);
+    setReduceOnly(false);
+    setSide(calculatorDraft.side === 'LONG' ? 'BUY' : 'SELL');
+    if (calculatorDraft.price) { setPrice(calculatorDraft.price); setPriceEdited(true); setType('LIMIT'); setFamily('LIMIT'); }
+    if (calculatorDraft.quantity) setQuantity(calculatorDraft.quantity);
+    if (calculatorDraft.leverage) setRequestedLeverage(Number(calculatorDraft.leverage));
+    setPercent(0);
+  }, [calculatorDraft?.seq]);
+  /**
    * CROSS IS THE DEFAULT, because this account is a Cross account.
    *
    * The Wallet calls it `Единый торговый счёт` under a `Кросс-маржа` chip,
@@ -155,6 +187,16 @@ export function FuturesOrderForm({
    */
   const [chosenMarginType, setMarginType] = useState<'ISOLATED' | 'CROSS' | null>(null);
   const [reduceOnly, setReduceOnly] = useState(false);
+  /**
+   * TP/SL to arm WITH the order, on an engine that accepts them there.
+   *
+   * Drafts, held as text. They are sent on the same command as the order —
+   * see `entryProtection` in lib/futuresExecution — so there is no window
+   * in which the position exists unprotected, and no second request that
+   * could fail after the order already succeeded.
+   */
+  const [entryTakeProfit, setEntryTakeProfit] = useState('');
+  const [entryStopLoss, setEntryStopLoss] = useState('');
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -359,6 +401,81 @@ export function FuturesOrderForm({
           freeBalance: availableMargin ?? 0,
         })
       : null;
+  /**
+   * The fee this order is expected to cost, and it is only ever shown when
+   * the engine actually publishes a rate.
+   *
+   * The real futures engine charges nothing (there is no fee rate in
+   * src/futures and no fee column on the trade), so on that path this row
+   * does not render at all — a "0.00 USDT" fee line is a number nobody
+   * computed, and a dash is a field asking the trader to look for something
+   * that does not exist. The simulation engine DOES publish a taker rate and
+   * reserves the fee to open plus the fee to close, which is exactly what
+   * `orderCost` already returns as `feeReserve`. Same figure the admission
+   * check uses; not a second formula.
+   */
+  /**
+   * Whether this ticket may carry protection at all.
+   *
+   * Two conditions, both of them the engine's: it has to accept protection
+   * on the order, and the order must not be a reducing one. `placeDemoOrder`
+   * throws REDUCE_ORDER_PROTECTION for a reduce-only order with a level set
+   * — protection belongs to the position being closed, and the positions
+   * table is where it is set. So the fields are not merely disabled under
+   * Reduce Only, they are replaced by the sentence that says where to go.
+   */
+  const entryProtectionAvailable = execution.entryProtection && !reduceOnly;
+  /**
+   * The engine's own direction rule, mirrored one round trip early.
+   *
+   * `validateProtection` in the simulation engine: for a LONG, take profit
+   * must sit ABOVE the order's price and the stop BELOW it; for a SHORT the
+   * two swap. This does not relax that rule or replace it — the engine
+   * still checks — it just refuses to let the trader press a button that
+   * would come back INVALID_TRIGGER_PRICE.
+   *
+   * Both sides are checked because the direction is the BUTTON here, not a
+   * mode: a level that is valid for a long is wrong for a short, so each
+   * button is disabled on its own terms.
+   */
+  function protectionBreachFor(orderSide: 'BUY' | 'SELL'): boolean {
+    if (!entryProtectionAvailable || (archive && !protectionEnabled) || !orderSizeKnown) return false;
+    const positionSide = orderSide === 'BUY' ? 'LONG' : 'SHORT';
+    for (const [kind, raw] of [['TP', entryTakeProfit], ['SL', entryStopLoss]] as const) {
+      if (raw === '') continue;
+      const level = parseFloat(raw);
+      if (!Number.isFinite(level) || level <= 0) return true;
+      const mustBeAbove = positionSide === 'LONG' ? kind === 'TP' : kind === 'SL';
+      if (mustBeAbove ? level <= effectivePrice : level >= effectivePrice) return true;
+    }
+    return false;
+  }
+  /** Both sides breached means no button can be pressed; the form says so. */
+  const protectionBreach = protectionBreachFor('BUY') && protectionBreachFor('SELL');
+  /** The levels as the engine wants them, or null when nothing is armed. */
+  const armedProtection = entryProtectionAvailable && (!archive || protectionEnabled) && (entryTakeProfit !== '' || entryStopLoss !== '')
+    ? { takeProfit: entryTakeProfit === '' ? null : entryTakeProfit,
+        stopLoss: entryStopLoss === '' ? null : entryStopLoss }
+    : null;
+  const feeRatePublished = Number(execution.contract?.takerFeeRate ?? 0) > 0;
+  /**
+   * The largest position this account could open right now, in quote
+   * currency — the slider's 100% answer, stated as a number.
+   *
+   * `maxAffordableNotional` is the same function the % slider sizes with, so
+   * the ceiling printed here is the ceiling the slider actually delivers,
+   * tier caps included. An unknown balance or an unknown existing exposure
+   * has no ceiling: it renders as a dash rather than a figure computed from
+   * a fake zero, which could only ever be too high.
+   */
+  const maxPositionNotional = !reduceOnly && config && availableMargin !== null && baseExposure !== null
+    ? maxAffordableNotional({
+        tiers: config.leverageTiers,
+        freeMargin: availableMargin,
+        selectedLeverage: requestedLeverage,
+        existingExposure: baseExposure,
+      }).notional
+    : null;
   const liqPreviewLong = liqPreviewFor('LONG');
   const liqPreviewShort = liqPreviewFor('SHORT');
 
@@ -417,12 +534,15 @@ export function FuturesOrderForm({
    * When the engine publishes its rules, the size is floored onto the
    * contract's quantity step and clamped to its ceiling — both downward, so
    * a size that fitted the margin still fits it. Without rules (every real
-   * account, and a contract that has not answered yet) this is the plain
-   * 8-decimal floor the form has always used.
+   * account, and a contract that has not answered yet), BTC uses its 0.001
+   * contract step; other assets retain the existing fallback precision.
    */
   function contractSized(raw: number): string {
     const rules = execution.contract;
-    if (!rules) return floorToDecimals(raw, QUANTITY_DECIMALS).toFixed(QUANTITY_DECIMALS);
+    if (!rules) {
+      const decimals = symbol.split('/')[0] === 'BTC' ? 3 : QUANTITY_DECIMALS;
+      return floorToDecimals(raw, decimals).toFixed(decimals);
+    }
     const fitted = fitQuantityToContract(raw, effectivePrice, rules, { market: type === 'MARKET' });
     return fitted.quantity.toFixed(stepDecimals(rules.qtyStep));
   }
@@ -477,12 +597,21 @@ export function FuturesOrderForm({
         reduceOnly,
         ...(execution.engine === 'NATIVE' ? { candle: execution.candle } : {}),
         ...(execution.engine === 'NATIVE' && activeCloseTarget ? { positionId: activeCloseTarget.id } : {}),
+        // Sent on the SAME command as the order, so the position is never
+        // open unprotected and there is no second request to fail after the
+        // first succeeded. Omitted entirely when neither level is set: an
+        // engine told `{takeProfit:null,stopLoss:null}` is being told to arm
+        // nothing, which is what leaving the key out already means.
+        ...(armedProtection ? { protection: armedProtection } : {}),
       });
       setCloseTarget(null);
       setPrice('');
       setPriceEdited(false);
       setQuantity('');
+      setBracketExpanded(false);
       setPercent(0);
+      setEntryTakeProfit('');
+      setEntryStopLoss('');
       // The account really did change: refresh it now rather than waiting
       // for whichever poll fires next. Balances too — placing an order
       // locks margin, and that figure used to lag by up to five seconds.
@@ -536,6 +665,7 @@ export function FuturesOrderForm({
     && effectiveMaxLeverage !== null
     && !marginShortfall
     && !contractBreach
+    && !protectionBreach
     && !submitting;
 
   /** Same guard, same confirmation, same order of checks as before — only
@@ -574,7 +704,7 @@ export function FuturesOrderForm({
 
   return (
     <div className="fo-panel">
-      <OrderFamilyTabs value={family} onChange={next => {
+      <OrderFamilyTabs value={family} archive={archive} onChange={next => {
         setFamily(next);
         if (next === 'LIMIT' || next === 'MARKET') setType(next);
         setPercent(0); setError(null);
@@ -610,7 +740,7 @@ export function FuturesOrderForm({
           warningThreshold={config?.highLeverageWarningThreshold ?? Infinity}
         />
 
-        <OrderFamilyFields key={`${symbol}-${family}`} family={family} quote={quoteAsset} />
+        {!connectedFamily && <p className="fo-tpslNote" role="status">{t('futures.tpslReduceOnlyOff')}</p>}
         {/* PRICE AND QUANTITY ARE ONE FIELD SHAPE, TWICE.
             Both are `fo-field`: the same outer box, the same caption inside
             at the top left, the same trailing element inside at the right.
@@ -677,7 +807,7 @@ export function FuturesOrderForm({
                 setQuantity(e.target.value);
                 setPercent(0);
               }}
-              placeholder="0.00000"
+              placeholder={archive && baseAsset === 'BTC' ? '0.000' : '0.00000'}
             />
             <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span></span>
           </div>
@@ -686,6 +816,24 @@ export function FuturesOrderForm({
         {/* The ONLY persistent slider in this panel. */}
         <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} continuous label={t('trade.quantity')} />
 
+        {archive && execution.entryProtection && connectedFamily && !reduceOnly && <div className="archive-order-protection">
+          <button type="button" className="archive-protection-toggle" aria-expanded={protectionEnabled} aria-controls={protectionPanelId} onClick={() => setBracketExpanded(enabled => !enabled)}>
+            <span className="archive-protection-toggle-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M5 12h14" />
+                {!protectionEnabled && <path d="M12 5v14" />}
+              </svg>
+            </span>
+            TP/SL
+          </button>
+          <div id={protectionPanelId} hidden={!protectionEnabled}>
+            <div className="archive-protection-fields">
+              <input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(e.target.value)} />
+              <input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(e.target.value)} />
+            </div>
+          </div>
+        </div>}
+
         <label className="fo-reduceOnlyRow">
           <input type="checkbox" checked={reduceOnly} onChange={(e) => {
             setReduceOnly(e.target.checked);
@@ -693,6 +841,54 @@ export function FuturesOrderForm({
           }} />
           {t('futures.reduceOnly')}
         </label>
+
+        {/* TP/SL AT ENTRY — only on an engine that takes them WITH the order.
+            See `entryProtection` in lib/futuresExecution: the simulation
+            engine carries protection on the order and applies it to the
+            position the fill creates, so there is no unprotected window and
+            no second request to fail after the order succeeded. The real
+            futures engine has no such field, so nothing renders here for it
+            and the positions table stays the one place protection is set.
+
+            Under Reduce Only the fields are not disabled-but-present: they
+            are replaced by the sentence that says where protection belongs.
+            A greyed-out input invites a trader to keep looking for the way
+            to switch it on. */}
+        {execution.entryProtection && (!archive || reduceOnly) && (
+          <div className="fo-tpslBox" data-entry-protection={reduceOnly ? 'reduce-only' : 'available'}>
+            <span className="fo-tpslCaption">{t('futures.tpslAtEntry')}</span>
+            {reduceOnly ? (
+              <p className="fo-tpslNote">{t('futures.tpslReduceOnlyOff')}</p>
+            ) : (
+              <div className="fo-tpslRow">
+                <label className="fo-tpslField">
+                  <span className="fo-tpslLabel">{t('futures.takeProfitLabel')}</span>
+                  <input
+                    className="mono fo-input"
+                    inputMode="decimal"
+                    placeholder="—"
+                    value={entryTakeProfit}
+                    onChange={(e) => setEntryTakeProfit(e.target.value)}
+                    aria-label={t('futures.takeProfitLabel')}
+                    data-entry-take-profit="true"
+                  />
+                </label>
+                <label className="fo-tpslField">
+                  <span className="fo-tpslLabel">{t('futures.stopLossLabel')}</span>
+                  <input
+                    className="mono fo-input"
+                    inputMode="decimal"
+                    placeholder="—"
+                    value={entryStopLoss}
+                    onChange={(e) => setEntryStopLoss(e.target.value)}
+                    aria-label={t('futures.stopLossLabel')}
+                    data-entry-stop-loss="true"
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="fo-infoBox">
           <div className="fo-infoRow">
@@ -718,23 +914,58 @@ export function FuturesOrderForm({
               <span className="fo-sidePairShort">{liqPreviewShort ? liqPreviewShort.toFixed(2) : '—'}</span>
             </span>
           </div>
-          {/* NO FEE ROW.
-              VOLTEX charges nothing on futures: there is no fee rate in
-              src/futures, none in src/config/futuresConfig, and no fee
+          {/* A MARKET order has no price field, so the price it will be
+              valued at is otherwise invisible. `effectivePrice` is the mark
+              price when the mark is known and the tape's last print until
+              then — an ESTIMATE, and the label says so. A LIMIT order does
+              not get this row: its entry is the number in the field two
+              lines up, and repeating it would be noise. */}
+          {type === 'MARKET' && (
+            <div className="fo-infoRow">
+              <span style={{ color: 'var(--text-secondary)' }}>{t('futures.approxEntry')}</span>
+              <span className="mono">
+                {orderSizeKnown ? `${effectivePrice.toFixed(2)} ${quoteAsset}` : '—'}
+              </span>
+            </div>
+          )}
+          {/* Only when the engine publishes a rate. See `feeRatePublished`. */}
+          {feeRatePublished && (
+            <div className="fo-infoRow">
+              <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estFees')}</span>
+              <span className="mono">
+                {orderSizeKnown ? `${orderCosting.feeReserve.toFixed(4)} ${quoteAsset}` : '—'}
+              </span>
+            </div>
+          )}
+          {/* What 100% on the slider would actually buy. Suppressed entirely
+              for a reduce-only ticket, where the budget is the position
+              being closed and not the free balance at all. */}
+          {!reduceOnly && (
+            <div className="fo-infoRow">
+              <span style={{ color: 'var(--text-secondary)' }}>{t('futures.maxPosition')}</span>
+              <span className="mono">
+                {maxPositionNotional !== null ? `${maxPositionNotional.toFixed(2)} ${quoteAsset}` : '—'}
+              </span>
+            </div>
+          )}
+          {/* THE FEE ROW IS CONDITIONAL, AND THAT IS THE POINT.
+              The real futures engine charges nothing: there is no fee rate
+              in src/futures, none in src/config/futuresConfig, and no fee
               column in the Prisma schema. (The only `feeRate` in the
               codebase is Copy Trading's PERFORMANCE fee — a different
-              thing, and not applicable to an order here.)
+              thing, and not applicable to an order here.) On that path the
+              row above does not render.
 
-              The row read "0.00 USDT (0%)" once, which was a number nobody
+              It read "0.00 USDT (0%)" once, which was a number nobody
               computed, and then a dash. Both were noise: a line that only
               ever says "nothing" is a line asking the trader to check for
-              something that does not exist. Zero fees are a fact worth
-              stating on a fees page, not a field to leave empty here.
+              something that does not exist.
 
-              When a real rate exists it comes back with the work that
-              CHARGES it — a config value, settlement at fill, and the
-              amount stored on the trade. A displayed fee that is not
-              deducted is as wrong as an invented one. */}
+              The simulation engine DOES publish `takerFeeRate` and DOES
+              charge it — `quoteOrderCost` reserves the open fee and the
+              close fee at admission. So where the fee is real the row is
+              shown, and where it is not the row is absent. A displayed fee
+              that is not deducted is as wrong as an invented one. */}
         </div>
 
         {error && <div className="fo-error">{error}</div>}
@@ -748,7 +979,10 @@ export function FuturesOrderForm({
             })}
           </div>
         )}
-        {marginShortfall && !contractBreach && !error && (
+        {protectionBreach && !contractBreach && !error && (
+          <div className="fo-error" role="status">{t('futures.orderError.triggerPrice')}</div>
+        )}
+        {marginShortfall && !contractBreach && !protectionBreach && !error && (
           <div className="fo-error" role="status">
             {t('futures.insufficientMargin', {
               required: requiredMargin.toFixed(2),
@@ -780,7 +1014,7 @@ export function FuturesOrderForm({
         <div className="fo-submitPair">
           <button
             type="button"
-            disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}
+            disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}
             title={!connectedFamily ? t('analytics.unavailable') : undefined}
             onClick={() => place('BUY')}
             className="submit-btn buy"
@@ -789,7 +1023,7 @@ export function FuturesOrderForm({
           </button>
           <button
             type="button"
-            disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}
+            disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}
             title={!connectedFamily ? t('analytics.unavailable') : undefined}
             onClick={() => place('SELL')}
             className="submit-btn sell"

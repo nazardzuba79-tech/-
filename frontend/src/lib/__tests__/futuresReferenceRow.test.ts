@@ -32,7 +32,8 @@ describe('1. price and quantity are one field shape, used twice', () => {
     expect(FORM.match(/className="fo-fieldRow/g)!.length).toBe(3);
     expect(FORM.match(/className="fo-fieldTrailing"/g)!.length).toBe(3);
     // "Последняя" and the unit live in that slot, not beside the field.
-    expect(FORM).toMatch(/fo-fieldTrailing[\s\S]{0,200}fo-lastPriceBtn/);
+    const priceTrailing = FORM.match(/className="fo-fieldTrailing">([\s\S]*?)<\/span>/)?.[1];
+    expect(priceTrailing).toContain('fo-lastPriceBtn');
     expect(FORM).toMatch(/fo-fieldTrailing[\s\S]{0,120}fo-unit/);
   });
 
@@ -87,8 +88,9 @@ describe('2. the positions row carries the reference columns', () => {
     // is longer than it was — the facts it must carry are unchanged.
     expect(PANEL).toContain('futures-position-contract');
     expect(PANEL).toContain('futures-position-perp');
-    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,700}futures\.cross/);
-    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,700}Number\(p\.leverage\)\.toFixed\(2\)/);
+    const contractCell = PANEL.match(/className="futures-position-contract">([\s\S]*?)<\/Td>/)?.[1];
+    expect(contractCell).toContain("t('futures.cross')");
+    expect(contractCell).toContain('Number(p.leverage).toFixed(2)');
   });
 
   test('quantity with its unit, and the position value in the quote asset', () => {
@@ -159,7 +161,8 @@ describe('2. the positions row carries the reference columns', () => {
     expect(PANEL).toContain('futures-position-card');
     // Neither extra is rendered where it would do nothing.
     expect(PANEL).toContain('{onLimitClose && (');
-    expect(PANEL).toContain('{execution.showPnlCard && (');
+    expect(PANEL).toContain('{!archive && execution.showPnlCard && (');
+    expect(PANEL).toContain('execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)');
   });
 
   test('the horizontal scroll is the TABLE\'s, and no number is truncated', () => {
@@ -223,7 +226,14 @@ describe('3. the account summary under the order buttons', () => {
     // engine has not opened yet has no available margin, and printing
     // `0.00` over a wallet the server says holds demo funds is the same
     // fake zero in a different disguise.
-    expect(SUMMARY).toContain("value === null || unopened ? '—' : mask(format(value))");
+    //
+    // `Number.isFinite` joined it third, and it is the same rule again.
+    // These figures are sums of parsed decimal strings; a payload missing a
+    // field parses to NaN, and what reached the screen was the literal text
+    // "NaN.undefined" — `groupAmount` splitting a non-number on its decimal
+    // point. NaN and Infinity are not amounts, so they are what this card
+    // already calls not knowing.
+    expect(SUMMARY).toContain("value === null || unopened || !Number.isFinite(value) ? '—' : mask(format(value))");
     expect(SUMMARY).toContain('const unopened = activation !== null;');
     // And the percentages take the same route rather than a second one:
     // one function, same `null`/`unopened` test as `show`, still no zero.

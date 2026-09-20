@@ -34,12 +34,14 @@ export function FuturesPositionProtectionCell({
   positionId,
   protection,
   onSaved,
+  compactTrigger = false,
 }: {
   positionId: string;
   /** Server state. `null` means the payload has not said yet — unknown, not
    *  "none" — so the trigger is rendered as a dash rather than "Not set". */
   protection: PositionProtection | null;
   onSaved: () => void;
+  compactTrigger?: boolean;
 }) {
   const execution = useFuturesExecution();
   const { t } = useLanguage();
@@ -216,7 +218,9 @@ export function FuturesPositionProtectionCell({
         aria-expanded={open}
         style={styles.trigger}
       >
-        {protection === null ? (
+        {compactTrigger ? (
+          <span className="fut-tpslAdd" style={styles.setLabel}>+ {t('futures.addTpsl')}</span>
+        ) : protection === null ? (
           <span style={styles.dash}>—</span>
         ) : hasAny ? (
           <span style={styles.chips}>

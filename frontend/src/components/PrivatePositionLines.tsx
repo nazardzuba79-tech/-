@@ -38,7 +38,7 @@ export function PrivatePositionLines({chart,series,interaction,pair}:{
     {points.map(point=>{
       const trade=interaction.trades.find(t=>t.id===point.id);if(!trade)return null;
       const color=trade.side==='LONG'?'long':'short';
-      const amount=new Intl.NumberFormat('en-US',{maximumFractionDigits:8}).format(trade.quantity);
+      const amount=new Intl.NumberFormat('en-US',{maximumFractionDigits:chartSymbol(pair)==='BTCUSDT'?3:8}).format(trade.quantity);
       return <div key={trade.id} className={`private-position-line-label ${color}`} data-position-line={trade.id}
         data-entry-price={trade.entryPrice} style={{left:point.x,top:point.y}}
         onPointerDown={event=>event.stopPropagation()} onDoubleClick={event=>event.stopPropagation()}>

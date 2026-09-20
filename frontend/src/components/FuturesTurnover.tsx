@@ -4,7 +4,7 @@ import { livePerpetualTurnover } from '../lib/terminalPresentation';
 import { formatCompact } from '../lib/formatNumber';
 
 /** Separate from financial mark/funding reads; one shared reference stream. */
-export function FuturesTurnover({ pair, aggregate, stale }: { pair: string; aggregate: number | null; stale: boolean }) {
+export function FuturesTurnover({ pair, aggregate, stale, fullPrecision = false }: { pair: string; aggregate: number | null; stale: boolean; fullPrecision?: boolean }) {
   const live = useLiveMarket();
   const [now, setNow] = useState(Date.now);
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(timer); }, []);
@@ -12,6 +12,6 @@ export function FuturesTurnover({ pair, aggregate, stale }: { pair: string; aggr
   const validAggregate = aggregate !== null && Number.isFinite(aggregate) && aggregate >= 0;
   const value = validAggregate && !stale ? aggregate : fallback ?? (validAggregate ? aggregate : null);
   return <span className={`value${value !== null && value === aggregate && stale && fallback === null ? ' is-stale' : ''}`}>
-    {value !== null ? formatCompact(value) : '—'}
+    {value !== null ? fullPrecision ? value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : formatCompact(value) : '—'}
   </span>;
 }

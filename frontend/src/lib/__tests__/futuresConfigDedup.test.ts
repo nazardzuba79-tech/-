@@ -395,7 +395,7 @@ function sources(): string[] {
   const out: string[] = [];
   const walk = (p: string) => {
     if (statSync(p).isDirectory()) for (const e of readdirSync(p)) walk(join(p, e));
-    else if (/\.tsx?$/.test(p) && !p.includes('__tests__')) out.push(relative(frontend, p));
+    else if (/\.tsx?$/.test(p) && !p.includes('__tests__')) out.push(relative(frontend, p).split('\\').join('/'));
   };
   walk(resolve(frontend, 'src'));
   return out.sort();
