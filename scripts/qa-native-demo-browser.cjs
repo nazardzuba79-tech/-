@@ -312,7 +312,7 @@ async function normalFlow(width) {
     await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').check(); await qty(p).fill('2');
     state = (await command(s, 'CLOSE', () => button(p, 'SHORT').click())).state;
     assert.equal(state.positions.find(x => x.id === longId).quantity, '5');
-    await row.locator('.futures-position-card').click(); await check(`pnl-card-${width}`, () => card(p, `card-${width}.png`, width));
+    await row.locator('.futures-position-card, .archive-pnl-open').click(); await check(`pnl-card-${width}`, () => card(p, `card-${width}.png`, width));
     const before = await api(s.context, s.token, 'state'), identity = before.positions.map(x => [x.id, x.quantity]);
     await p.reload(); await ready(s); await p.locator('#futures-tab-positions').click(); await rows(p).first().waitFor();
     const after = await api(s.context, s.token, 'state'); assert(after.revision >= before.revision); assert.deepEqual(after.positions.map(x => [x.id, x.quantity]), identity);
@@ -460,11 +460,18 @@ async function largeValues(width) {
         const grouped = (v, d) => Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
         assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 4));
         assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), Number(example.roi).toFixed(2) + '%');
-        assert.equal((await s.page.locator('.futures-position-approx').first().innerText()).trim(), `≈${grouped(example.pnl, 2)} USD`);
+        if (await s.page.locator('#archive-terminal-preview').count()) {
+          // The approved compact row retains the authoritative amount/unit;
+          // it deliberately omits the duplicate approximate USD line.
+          assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
+          assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
+        } else {
+          assert.equal((await s.page.locator('.futures-position-approx').first().innerText()).trim(), `≈${grouped(example.pnl, 2)} USD`);
+        }
         return tableLayout(s.page, width);
       });
       await check(`large-card-glyphs-${example.id}-${width}`, () => cardGlyphs(s.page, cardModel));
-      await check(`large-card-png-${example.id}-${width}`, async () => { await s.page.locator('.futures-position-card').click(); return card(s.page, `card-${example.id}-${width}.png`, width); });
+      await check(`large-card-png-${example.id}-${width}`, async () => { await s.page.locator('.futures-position-card, .archive-pnl-open').click(); return card(s.page, `card-${example.id}-${width}.png`, width); });
       const completed = { ...current.positions[0], status: 'CLOSED', closedAt: current.asOf, netPnl: example.pnl, liquidationPrice: null };
       current = { ...current, positions: [], history: [completed] };
       await s.page.reload(); await ready(s); await s.page.locator('#futures-tab-positionHistory').click();

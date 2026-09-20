@@ -7,12 +7,12 @@ const families = [
   ['STOP', 'trade.stopOrder'], ['TAKE_PROFIT', 'trade.takeProfitOrder'], ['OCO', 'trade.ocoOrder'],
 ] as const;
 
-export function OrderFamilyTabs({ value, onChange }: { value: OrderFamily; onChange: (value: OrderFamily) => void }) {
+export function OrderFamilyTabs({ value, onChange, archive = false }: { value: OrderFamily; onChange: (value: OrderFamily) => void; archive?: boolean }) {
   const { t } = useLanguage();
   return <div className="order-family-tabs" role="tablist" aria-label={t('nav.trade')}>
-    {families.map(([family, label]) => <button key={family} type="button" role="tab"
+    {families.filter(([family]) => !archive || family !== 'OCO').map(([family, label]) => <button key={family} type="button" role="tab"
       aria-selected={value === family} className={value === family ? 'active' : ''}
-      onClick={() => onChange(family)}>{t(label)}</button>)}
+      onClick={() => onChange(family)}>{archive ? family === 'TAKE_PROFIT' ? 'Take Profit' : family === 'LIMIT' ? t('futures.closeLimit') : family === 'MARKET' ? t('futures.closeMarket') : t(label) : t(label)}</button>)}
   </div>;
 }
 

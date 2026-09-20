@@ -1,3 +1,4 @@
+import * as positionActions from '../futuresPositionActions';
 import * as terminalPresentation from '../terminalPresentation';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -53,7 +54,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     },
   };
 
-  const react = { ...React, memo: (fn: any) => fn,
+  const react = { ...React, useId: () => 'test-id', memo: (fn: any) => fn,
     useState(initial: any) {
       const i = index++;
       if (!(i in hooks)) hooks[i] = typeof initial === 'function' ? initial() : initial;
@@ -126,6 +127,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
   new Function('require', 'exports', 'window', compiled)((name: string) => {
+    if (name === '../lib/terminalWarmCache') return { readFuturesSymbolCache: () => null, writeFuturesSymbolCache: () => {} };
+    if (name === '../lib/futuresPositionActions') return positionActions;
     if (name === 'react') return react;
     if (name === '../lib/terminalAccountPanel') return accountPanelState;
     if (name === '../lib/useCompactAccountPanel') {
@@ -143,7 +146,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       // make inline — so these suites drive exactly the path they drove
       // before the seam existed.
       const real = {
-        engine: 'REAL', ready: true, account: null, marginType: null, candle: null, contract: null,
+        engine: 'REAL', ready: true, defaultMarginType: 'ISOLATED', entryProtection: false, account: null, marginType: null, candle: null, contract: null,
         placeOrder: (p: any) => api.placeFuturesOrder(p),
         cancelOrder: (id: string) => api.cancelFuturesOrder(id),
         closePosition: (id: string) => api.closeFuturesPosition(id),
@@ -187,10 +190,10 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/futuresMath') return futuresMath;
     if (name === './spotOrderPresentation') return assetReads;
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
-    if (name === '../lib/futuresDepth') return { subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
+    if (name === '../lib/futuresDepth') return { setFuturesDepthFallbackBase: () => {}, subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
     // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
-    if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true }) };
+    if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true, state: null, setHistoryDemand: () => {}, interaction: { selecting: null } }) };
     if (name === './private-trading/NativeDemoControls') {
       for (const label of ['NativeDemoSwitch', 'NativeDemoTicket', 'NativeDemoPanel', 'NativeDemoDialogs']) components[label] ??= () => null;
       return { NativeDemoSwitch: components.NativeDemoSwitch, NativeDemoTicket: components.NativeDemoTicket, NativeDemoPanel: components.NativeDemoPanel, NativeDemoDialogs: components.NativeDemoDialogs };
@@ -272,15 +275,17 @@ test.each([
   expect(JSON.stringify(raw)).toBe(original);
 });
 
-test('Futures moves one market list between desktop sidebar and mobile dialog without losing the selected contract', () => {
+test('Futures opens one desktop chooser and preserves its contract across the mobile breakpoint', () => {
   let changed = () => {};
   const media = { matches: true, addEventListener: (_: string, cb: () => void) => { changed = cb; }, removeEventListener() {} };
   const page = mount('pages/FuturesPage.tsx', { params: new URLSearchParams(), matchMedia: () => media,
     socket: { subscribeBook: () => () => {} } });
   let tree = page.render();
   const lists = () => nodes(tree).filter(n => n.type === page.components.FuturesPairList);
+  expect(lists()).toHaveLength(0);
+  nodes(tree).find(n => n.type === page.components.FuturesTickerBar).props.onSelectSymbol();
+  tree = page.render();
   expect(lists()).toHaveLength(1);
-  expect(nodes(tree).some(n => n.type === 'aside')).toBe(true);
   expect(nodes(tree).some(n => n.type === 'dialog')).toBe(false);
   lists()[0].props.onChange('ETH/USDT');
   media.matches = false; changed(); tree = page.render();
@@ -288,7 +293,8 @@ test('Futures moves one market list between desktop sidebar and mobile dialog wi
   expect(lists()[0].props.symbol).toBe('ETH/USDT');
   expect(nodes(tree).some(n => n.type === 'aside')).toBe(false);
   expect(nodes(tree).some(n => n.type === 'dialog')).toBe(true);
-  media.matches = true; changed(); tree = page.render();
+  media.matches = true; changed(); tree = page.render(); tree = page.render();
+  nodes(tree).find(n => n.type === page.components.FuturesTickerBar).props.onSelectSymbol(); tree = page.render();
   expect(lists()).toHaveLength(1);
   expect(lists()[0].props.symbol).toBe('ETH/USDT');
   expect(nodes(tree).some(n => n.type === 'dialog')).toBe(false);
@@ -310,10 +316,12 @@ test('Futures wires dynamic precision, isolates selected-contract depth and pres
   tree = page.render();
   expect(part(tree, 'ConnectionBanner')).toBeUndefined(); // main #71 removed the unrelated Spot banner.
   expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual(btc.bids);
+  part(tree, 'FuturesTickerBar').props.onSelectSymbol(); tree = page.render();
+  if (!part(tree, 'FuturesPairList')) { part(tree, 'FuturesTickerBar').props.onSelectSymbol(); tree = page.render(); }
   part(tree, 'FuturesPairList').props.onChange('DOGE/USDT');
   tree = page.render();
   expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual([]);
-  expect(part(tree, 'FuturesReferenceBook').key).toBe('DOGE/USDT');
+  expect(part(tree, 'FuturesReferenceBook').key).toBeNull(); // Keep the book instance; its symbol prop owns transport snapshots.
   listeners[0].callback(btc); await tick();
   tree = page.render();
   expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual([]);
@@ -329,10 +337,12 @@ test('Futures wires dynamic precision, isolates selected-contract depth and pres
   part(tree, 'FuturesReferenceBook').props.onPickPrice('0.09432');
   tree = page.render();
   expect(part(tree, 'FuturesOrderForm').props.pickedPriceSequence).toBe(2);
+  if (!part(tree, 'FuturesPairList')) { part(tree, 'FuturesTickerBar').props.onSelectSymbol(); tree = page.render(); }
   part(tree, 'FuturesPairList').props.onChange('ETH/USDT');
   tree = page.render();
   expect(part(tree, 'FuturesOrderForm').key).toBe('ETH/USDT');
   expect(part(tree, 'FuturesOrderForm').props.pickedPrice).toBeUndefined();
+  if (!part(tree, 'FuturesPairList')) { part(tree, 'FuturesTickerBar').props.onSelectSymbol(); tree = page.render(); }
   part(tree, 'FuturesPairList').props.onChange('DOGE/USDT');
   tree = page.render();
   expect(part(tree, 'FuturesOrderForm').props.pickedPrice).toBeUndefined();
@@ -524,13 +534,14 @@ test('Futures Assets uses only Futures balances; compact Spot keeps its original
   expect(source('pages/TradePage.tsx')).toContain('<AssetsPanel compact refreshKey={ordersRefreshKey} />');
 });
 
-test('studio is the default composition and review variants preserve contract and orders',()=>{
+test('archive is the default composition and review variants preserve contract and orders',()=>{
  const params=new URLSearchParams();const page=mount('pages/FuturesPage.tsx',{params,matchMedia:()=>({matches:true,addEventListener(){},removeEventListener(){}}),socket:{subscribeBook:()=>()=>{}}});
  let tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
+ nodes(tree).find(n=>n.type===page.components.FuturesTickerBar)!.props.onSelectSymbol(); tree=page.render();
  nodes(tree).find(n=>n.type===page.components.FuturesPairList)!.props.onChange('ETH/USDT');params.set('terminalDesign','studio');tree=page.render();
  expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
  expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
- expect(nodes(tree).filter(n=>n.type===page.components.FuturesPairList)).toHaveLength(1);
+ expect(nodes(tree).filter(n=>n.type===page.components.FuturesPairList)).toHaveLength(0);
  for (const design of ['graphite','focus','studio']) {
    params.set('terminalDesign',design);tree=page.render();
    expect(nodes(tree).some(n=>n.props?.['data-terminal-design']===design)).toBe(true);

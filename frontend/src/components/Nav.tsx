@@ -12,7 +12,7 @@ import { TopGainersTicker } from './TopGainersTicker';
 import type { LiveQuote } from '../lib/liveMarketTypes';
 import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
 
-export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference}:{active:string;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>}) {
+export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference,quoteAsset}:{active:string;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>;quoteAsset?:string}) {
   const navigate=useNavigate(),location=useLocation(),{t}=useLanguage();
   const[mobileOpen,setMobileOpen]=useState(false),[isAdmin,setIsAdmin]=useState(false),[avatarUrl,setAvatarUrl]=useState<string|null>(null),[showDeposit,setShowDeposit]=useState(false),[tradeMenuOpen,setTradeMenuOpen]=useState(false),[profileMenuOpen,setProfileMenuOpen]=useState(false);
   const tradeMenuCloseTimer=useRef<number|null>(null),profileMenuRef=useRef<HTMLDivElement>(null);
@@ -56,9 +56,9 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         </nav>
       </div>
       <div className="header-actions nav-desktop-right">
-        {WALLET_LINK&&<Link to={WALLET_LINK.to} className={`nav-item top-nav-link nav-wallet-link${active===WALLET_LINK.to?' nav-active is-active':''}`}>{WALLET_LINK.label}</Link>}
+        {WALLET_LINK&&<Link to={WALLET_LINK.to} className={`nav-item top-nav-link nav-wallet-link${active===WALLET_LINK.to?' nav-active is-active':''}`}>{quoteAsset&&<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 10h18M7 15h2m3 0h1"/></svg>}{WALLET_LINK.label}</Link>}
         <button onClick={()=>setShowDeposit(true)} className="deposit-button top-nav-fund-btn"><span>{t('wallet.deposit')}</span></button>
-        {rightExtra&&<div className="header-extra-action">{rightExtra}</div>}<LanguageSwitcher variant="pill"/>
+        {rightExtra&&<div className="header-extra-action">{rightExtra}</div>}<LanguageSwitcher variant="pill" quoteAsset={quoteAsset}/>
         <div className="top-nav-profile-wrap" ref={profileMenuRef}><button type="button" className="header-icon profile-control top-nav-profile-btn" onClick={()=>setProfileMenuOpen(o=>!o)} aria-expanded={profileMenuOpen}><span className="top-nav-profile-avatar">{avatarUrl?<img src={avatarUrl} alt=""/>:<UserRound size={13}/>}</span><span>{t('nav.profile')}</span><ChevronDown size={11} className={`nav-chevron${profileMenuOpen?' nav-chevron-open':''}`}/></button>{profileMenuOpen&&<div className="top-nav-profile-menu"><Link to="/settings" onClick={()=>setProfileMenuOpen(false)}>{t('nav.profile')}</Link><button type="button" onClick={handleLogout}><LogOut size={14}/>{t('nav.logout')}</button></div>}</div>
       </div>
       <div className={`nav-mobile-menu${mobileOpen?' open':''}`}>

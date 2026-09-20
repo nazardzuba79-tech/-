@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import type { NativeAccount } from './store';
 import { emptyDemoState, type DemoState } from './engine';
 import { accountLedger, type AccountLedger } from './ledger';
+import type { NativeInstruction } from './replay';
 
 /** Derived display input only. Never pass this incomplete state to replay or execution. */
 export interface NativeLiveProjection {
@@ -13,11 +14,19 @@ export interface NativeLiveProjection {
   disabledCollateralAssets: string[];
   state: DemoState;
   ledger: Omit<AccountLedger, 'entries'>;
+  /** At most one immutable candle anchor per open position; never a journal. */
+  entryMarkers?: {positionId:string;candle:NonNullable<Extract<NativeInstruction,{kind:'OPEN'}>['candle']>}[];
 }
 
 export function deriveNativeLiveProjection(account: NativeAccount): NativeLiveProjection {
   const full = account.snapshot;
   const positions = full.positions.filter(p => p.status === 'OPEN');
+  const openIds = new Set(positions.map(p => p.id));
+  const anchors = new Map<string, NonNullable<NativeLiveProjection['entryMarkers']>[number]>();
+  for (const command of account.commands) {
+    if (command.kind === 'OPEN' && command.candle && openIds.has(command.order.id) && !anchors.has(command.order.id))
+      anchors.set(command.order.id, {positionId:command.order.id,candle:command.candle});
+  }
   const orders = full.orders.filter(o => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED');
   const symbols = new Set([...positions, ...orders].map(row => row.symbol));
   const select = <T>(values: Record<string, T> = {}) => Object.fromEntries(Object.entries(values).filter(([symbol]) => symbols.has(symbol)));
@@ -34,7 +43,7 @@ export function deriveNativeLiveProjection(account: NativeAccount): NativeLivePr
   };
   const { entries: _entries, ...ledger } = accountLedger(full);
   return structuredClone({ version: 1, revision: account.revision, executionMode: account.executionMode ?? 'LIVE_EXECUTION', source: account.source,
-    createdAt: account.createdAt, disabledCollateralAssets: account.disabledCollateralAssets ?? [], state, ledger });
+    createdAt: account.createdAt, disabledCollateralAssets: account.disabledCollateralAssets ?? [], state, ledger, entryMarkers:[...anchors.values()] });
 }
 
 // JSONB changes key order; the digest is intentionally independent of it.

@@ -174,7 +174,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   const normalized=symbol.replace(/[^A-Z0-9]/gi,'').toUpperCase();
   const positions=[...(state?.positions??[]),...history.overlay.positions];
   const trades:ChartTradeOverlay[]=positions.filter(p=>p.symbol===normalized).map(p=>{
-    const entry=history.overlay.entries.find(e=>e.positionId===p.id)?.candle;
+    const entry=(state?.entries??[]).find(e=>e.positionId===p.id)?.candle??history.overlay.entries.find(e=>e.positionId===p.id)?.candle;
     return{id:p.id,symbol:p.symbol,side:p.side,leverage:Number(p.leverage),entryPrice:Number(p.entryPrice),quantity:Number(p.quantity),pnl:Number(p.status==='OPEN'?p.unrealizedPnl:p.netPnl),status:p.status,
       entryTime:p.openedAt,entryCandleOpenTime:entry?.openTime,entryInterval:entry?.interval,entryModel:entry?.pricePoint,
       takeProfit:p.protection.takeProfit===null?null:Number(p.protection.takeProfit),stopLoss:p.protection.stopLoss===null?null:Number(p.protection.stopLoss),liquidationPrice:p.status==='OPEN'&&p.liquidationPrice!==null?Number(p.liquidationPrice):null,

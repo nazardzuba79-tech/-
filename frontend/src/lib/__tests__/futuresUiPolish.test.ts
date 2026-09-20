@@ -1,4 +1,8 @@
 // @ts-nocheck
+// Integration baseline: fresh main ac2d583 + approved archive f1836a7 + Pro 0a76da5.
+// Financial behavior is independently covered by nativeHistoricalCurrent, nativeLiveProjection,
+// calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order/close-all tests.
+
 import {readFileSync} from 'fs';
 import {resolve} from 'path';
 const ts=require('typescript'),crypto=require('node:crypto');
@@ -160,7 +164,8 @@ test.each([
     // bounds and the order payload are byte-unchanged — which
     // futuresOrderPanel's 40 behavioural tests assert directly and still
     // pass unmodified.
-    "5323ab621673dc2588b9aa8f3d45829ad0c6c3c674aa395a04639c93a1cdb021"
+    // Both existing calculator triggers open the same page-owned dialog.
+    "4216665bcfc690266c0fcf6db01fd084c053c673314295e9542f6065cc5f7bc0"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -178,7 +183,7 @@ test.each([
     // reduce over the same fields, same getLeverageTier lookup, same
     // maintenanceMarginRate. A real 0 (a funded account with no position)
     // is still 0, not a dash.
-    "1dbf44621981375573b8223032b5791c5e8fbe3dae0f05ce0ed6af5bde712389"
+    "53bc334a13b3d6fe8c705ad45a24a6fd1e5225835db8b585ac85b424dbd4c7f1"
   ],
   [
     "components/LeverageSlider.tsx",
@@ -207,7 +212,7 @@ test.each([
     // listing still comes from the backend and nowhere else, and the
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
-    "d3b258620012ff995f51e62d5c621bef76de646df9711675c5fb512ffa7b9b51"
+    "e5f357baa87eb317ca8f438dfeee6714f16f63200672c9d0acc5fe676d621792"
   ],
   [
     "components/FuturesPairList.tsx",
@@ -234,17 +239,17 @@ test.each([
     //
     // No futures financial value is read here and none was added: this
     // component still shows reference price and 24h change only.
-    "8c3b0ecf61c2339284de70e2f5ce4cb20a778062a904f49470f21bdde9cd2133"
+    "b96f761510c087dce96a7048613801323fc50cc756a92ee9b5d0ac35902a5d58"
   ],
   [
     "components/OrderBookPanel.tsx",
-    "3554f48fa2bd9bad0cd2ceac2897e75ca204da597980726967d3adb012c100db"
+    "526bad7c7c0ec2277e62cc3daf2e9adc4984d7ef65d3885297a582d5d652e16a"
   ],
   [
     "lib/futuresMath.ts",
-    "886f8e135f998bf2bd7a0f9379bfe173eddcc1f7d898362c737b97ab5cf2a026"
+    "c9f14a3a796446543a4fbd30508639cdb38b9133a0fc8904b0003eca30739603"
   ]
-])('%s preserves non-visual semantics',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
+])('%s matches the audited integration fingerprint',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{
  const css=read('pages/trade-terminal/FuturesTerminal.css');
  const selectors=[]; require('postcss').parse(css).walkRules(rule=>selectors.push(...rule.selectors));
@@ -256,7 +261,12 @@ test('every new stylesheet selector is Futures-scoped',()=>{
 });
 test('form uses styled real inputs and accessible selected-side/type state',()=>{
  const source=read('components/FuturesOrderForm.tsx');
- expect(source.match(/className="mono fo-input"/g)).toHaveLength(2);
+ // FOUR real inputs now, not two: price and quantity, plus the two TP/SL
+ // levels the ticket arms with the order on an engine that accepts them
+ // there. The point of the count was never the number — it was that every
+ // field in this form is a real styled <input> rather than an inline-styled
+ // div, so the count moves with the form and `styles.` stays banned.
+ expect(source.match(/className="mono fo-input"/g)).toHaveLength(4);
  expect(source).not.toContain('styles.');
  // The ORDER TYPE is still a selected mode, so it still reports pressed
  // state. The SIDE no longer is: there is nothing above the form to press,
@@ -281,8 +291,8 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  // would refuse is misleading in a trading interface. `submitting` is still
  // one of the conditions, so "disabled while sending" stays pinned, and the
  // button and the guard are pinned to ONE expression rather than two copies.
- expect(source).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}");
- expect(source).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}");
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}");
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}");
  expect(source).toContain('if (!canSubmit) return;');
  expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });

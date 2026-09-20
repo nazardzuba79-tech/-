@@ -7,7 +7,7 @@ import { LANGUAGES } from '../lib/i18n';
  * `variant="pill"` also shows the current language code + a chevron next
  * to the globe (used by the top nav); the default `"icon"` variant is the
  * plain icon-only button used on Marketing/Auth. */
-export function LanguageSwitcher({ variant = 'icon' }: { variant?: 'icon' | 'pill' }) {
+export function LanguageSwitcher({ variant = 'icon', quoteAsset }: { variant?: 'icon' | 'pill'; quoteAsset?: string }) {
   const { lang, setLang } = useLanguage();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,7 +35,7 @@ export function LanguageSwitcher({ variant = 'icon' }: { variant?: 'icon' | 'pil
         <GlobeIcon size={variant === 'pill' ? 15 : 18} />
         {variant === 'pill' && (
           <>
-            <span>{currentLabel}</span>
+            <span>{currentLabel}{quoteAsset ? ` / ${quoteAsset}` : ''}</span>
             <ChevronDownIcon />
           </>
         )}

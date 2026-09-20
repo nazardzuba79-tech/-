@@ -74,6 +74,10 @@ const CODE_KEY: Record<string, Key> = {
   INVALID_PROTECTION: 'futures.orderError.triggerPrice',
   INVALID_TRIGGER_STEP: 'futures.orderError.triggerStep',
   INVALID_PROTECTION_QUANTITY: 'futures.orderError.protectionQuantity',
+  // The order ticket does not offer TP/SL under Reduce Only, so this should
+  // not be reachable from it. Mapped anyway: an unmapped code falls back to
+  // a generic sentence, and this one has a specific thing to say.
+  REDUCE_ORDER_PROTECTION: 'futures.tpslReduceOnlyOff',
 };
 
 export type Translate = (key: Key, params?: Record<string, string | number>) => string;

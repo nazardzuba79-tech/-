@@ -260,6 +260,9 @@ const measure = (page) => page.evaluate(() => {
       const s = document.querySelector('.futures-positions-scroll, .futures-state-columns');
       return s ? Math.max(0, s.scrollWidth - s.clientWidth) : null;
     })(),
+    archive: !!document.querySelector('#archive-terminal-preview'),
+    tableScrollMode: getComputedStyle(document.querySelector('.futures-positions-scroll') || document.body).overflowX,
+    orderRail: one('.order-form-area'),
   };
 });
 
@@ -370,8 +373,17 @@ const measure = (page) => page.evaluate(() => {
             `${key}: rows have ${view.rowHeights.length} different heights: ${view.rowHeights.join(', ')}`);
           assert.ok(view.rowHeights[0] >= 40 && view.rowHeights[0] <= 72,
             `${key}: row height ${view.rowHeights[0]}px is outside a readable band`);
-          assert.equal(view.tableScrollX, 0,
-            `${key}: the table scrolls sideways by ${view.tableScrollX}px inside its panel`);
+          if (view.archive) {
+            // The approved archive design deliberately keeps readable columns
+            // and a horizontal scrollbar INSIDE the positions panel. The trading
+            // rail must remain independent; page overflow is still forbidden.
+            assert.ok(['auto', 'scroll'].includes(view.tableScrollMode), `${key}: columns are clipped without a scrollbar`);
+            assert.ok(view.orderRail && view.panel.left + view.panel.width <= view.orderRail.left + 1,
+              `${key}: positions overlap the trading rail`);
+          } else {
+            assert.equal(view.tableScrollX, 0,
+              `${key}: the table scrolls sideways by ${view.tableScrollX}px inside its panel`);
+          }
         }
       }
     }

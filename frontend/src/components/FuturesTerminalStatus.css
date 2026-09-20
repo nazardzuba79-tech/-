@@ -1,0 +1,54 @@
+/*
+ * The terminal status line.
+ *
+ * It is deliberately the quietest thing in the column. A status strip earns
+ * attention by CHANGING, not by being loud — so live is a small green dot
+ * and muted text, and anything else drops the dot's fill and lets the words
+ * do the work. Nothing here uses a colour the terminal does not already
+ * have.
+ */
+
+.fts-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 14px;
+  border-top: 1px solid var(--border-color, #232a34);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--text-tertiary, #7e8792);
+  flex: none;
+}
+
+.fts-conn { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+
+.fts-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--text-tertiary, #7e8792);
+  background: transparent;
+}
+.fts-dotLive {
+  border-color: var(--buy, #2ebd85);
+  background: var(--buy, #2ebd85);
+}
+
+.fts-connText { white-space: nowrap; }
+.fts-bar[data-terminal-status="live"] .fts-connText { color: var(--text-secondary, #98a2b3); }
+
+.fts-age { font-variant-numeric: tabular-nums; opacity: 0.8; }
+
+.fts-fees { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fts-fee { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+.fts-fee i { font-style: normal; }
+.fts-fee b { font-weight: 500; color: var(--text-secondary, #98a2b3); font-variant-numeric: tabular-nums; }
+
+/* At the narrowest terminal width the two halves stack rather than
+   squeezing the fee pair onto a second line on their own. */
+@media (max-width: 640px) {
+  .fts-bar { justify-content: flex-start; }
+}

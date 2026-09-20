@@ -1,3 +1,5 @@
+import * as formatNumber from '../formatNumber';
+import * as positionActions from '../futuresPositionActions';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -81,6 +83,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   } }).outputText;
   const output: any = {};
   new Function('require', 'exports', 'window', 'document', compiled)((name: string) => {
+    if (name === '../lib/futuresPositionActions') return positionActions;
+    if (name === '../lib/formatNumber') return formatNumber;
     if (name === 'react') return react;
     if (name === '../lib/api') return { api, ApiError };
     if (name === '../lib/futuresExecution') {

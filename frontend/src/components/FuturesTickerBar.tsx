@@ -18,9 +18,19 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  *
  * Order runs price -> market -> derivatives:
  *
- *   Last with Mark underneath, 24h change, High, Low, Turnover (quote),
- *   Open interest (base), Funding rate / Next funding.
- *   Index remains in the data flow, but is not a separate visible metric.
+ *   Last with Mark and Index underneath, 24h change, High, Low,
+ *   Turnover (quote), Open interest (base), Funding rate / Next funding,
+ *   and the calculator trigger pinned to the right edge.
+ *
+ * Index used to be fetched and then dropped — in the data flow, not on the
+ * strip. It is shown now because a mark price quoted without the index it
+ * is anchored to cannot be judged: the gap between the two is the whole
+ * question a perpetual trader is asking when they look at either. It
+ * shares the price block with the mark rather than taking a cell of its
+ * own, because the strip has no room for a ninth labelled cell — measured,
+ * not guessed: as one it pushed funding 100px past the right edge at 1366.
+ * Nothing new is fetched for it; it arrives on the same
+ * /futures/mark-price response the mark does.
  *
  * Funding sits at the end deliberately. It is important, but it is a
  * once-per-8h settlement, and putting it immediately after mark price
@@ -45,8 +55,8 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  * Futures-only styles reflow these blocks on narrow screens without
  * hiding metrics or changing the shared Spot ticker styles.
  */
-export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }:
-  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean }) {
+export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, archive = false, onOpenCalculator }:
+  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean; archive?: boolean; onOpenCalculator?: () => void }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
   /**
@@ -254,39 +264,49 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
         {/* The instrument's own artwork, resolved by the same component the
             market list uses, so the identity block reads as one unit:
             logo + pair + the selector's caret. */}
-        <CryptoIcon symbol={baseAsset} size={28} />
+        <CryptoIcon symbol={baseAsset} size={archive ? 24 : 28} />
         {/* Pair over asset name, the reference's two-line identity. The
             stack is what lets the artwork grow: at 28px a single line of
             text beside it reads as under-weighted, and two do not. */}
         <span className="pair-identity">
-          <span className="pair-name">{symbol}</span>
-          <span className="pair-asset">{assetName}</span>
+          <span className="pair-name">{symbol}{archive && <small className="archive-perpetual">{t('futures.perpetual')}</small>}</span>
+          <span className="pair-asset">{archive ? `${assetName ?? baseAsset} ${quoteAsset}` : assetName}</span>
         </span>
         <span className="pair-arrow" aria-hidden="true" />
       </div>
       </div>
 
+      <div className={archive ? 'archive-ticker-metrics' : undefined} style={archive ? undefined : { display: 'contents' }}>
       <div className="ticker-item futures-primary-price">
-        <span className={`value price ${dir}`} aria-label={t('trade.lastPrice')}>{stats ? formatPrice(stats.lastPrice) : '—'}</span>
+        <span className={`value price ${dir}`} aria-label={t('trade.lastPrice')}>{stats ? formatPrice(stats.lastPrice) : '—'}{archive && stats?.changePercent != null && <span className="archive-price-direction" aria-hidden="true">{positive ? ' ↑' : ' ↓'}</span>}</span>
         {/* Mark price, as the number alone. The label is dropped from the
             face of the terminal — the figure directly under the last price
             is the mark everywhere this design is used — but it stays in the
             accessible name, so the cell is still self-describing to a
             screen reader. */}
-        <span className="futures-secondary-price" title={t('futures.markPrice')}>
-          <span className="value" aria-label={t('futures.markPrice')}>
+        {archive ? <span className={`archive-price-change ${dir}`} title={t('futures.headerChange24h')}>
+          {stats?.changePercent != null ? `${absoluteChange24h !== null ? `${positive ? '+' : ''}${formatPrice(absoluteChange24h)} ` : ''}(${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)` : '—'}
+        </span> : (<span className="futures-secondary-price">
+          <span className="value" title={t('futures.markPrice')} aria-label={t('futures.markPrice')}>
             {markPrice !== null ? formatPrice(markPrice) : '—'}
           </span>
-        </span>
+          <span className="futures-price-sep" aria-hidden="true">·</span>
+          <span className="value" data-metric="index" title={t('futures.indexPrice')} aria-label={t('futures.indexPrice')}>
+            {indexPrice !== null ? formatPrice(indexPrice) : '—'}
+          </span>
+        </span>)}
       </div>
-      <div className="ticker-item">
+      {archive ? <div className="ticker-item archive-index-mark">
+        <span className="label">{t('futures.markPrice')} / {t('futures.indexPrice')}</span>
+        <span className="value archive-mark-index"><span aria-label={t('futures.markPrice')}>{markPrice !== null ? formatPrice(markPrice) : '—'}</span><span aria-hidden="true"> / </span><span data-metric="index" aria-label={t('futures.indexPrice')}>{indexPrice !== null ? formatPrice(indexPrice) : '—'}</span></span>
+      </div> : <div className="ticker-item">
         <span className="label">{t('futures.headerChange24h')}</span>
         <span className={`value change ${dir}`}>
           {stats?.changePercent != null
             ? `${absoluteChange24h !== null ? `${positive ? '+' : ''}${formatPrice(absoluteChange24h)} ` : ''}(${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
             : '—'}
         </span>
-      </div>
+      </div>}
       <div className="ticker-item">
         <span className="label">{t('futures.headerHigh24h')}</span>
         <span className="value">{stats?.high24h != null ? formatPrice(stats.high24h) : '—'}</span>
@@ -311,7 +331,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
             USDT-margined perpetuals and the upstream figure is the
             quote-currency turnover, never a converted one. */}
         <span className="label">{`${t('futures.headerTurnover24h')} (${quoteAsset})`}</span>
-        <FuturesTurnover pair={symbol} aggregate={stats24h?.turnover24hUsd ?? null} stale={Boolean(derivatives?.available && derivatives.stale)} />
+        <FuturesTurnover pair={symbol} aggregate={stats24h?.turnover24hUsd ?? null} stale={Boolean(derivatives?.available && derivatives.stale)} fullPrecision={archive} />
       </div>
       <div className="ticker-item">
         {/* Derivatives-market open interest, in base units when the
@@ -350,6 +370,24 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
           <NextFundingCountdown intervalHours={fundingIntervalHours} />
         </span>
       </div>
+      </div>
+      {onOpenCalculator ? (
+        <button
+          type="button"
+          className="ticker-calc-btn"
+          data-open-calculator="true"
+          onClick={onOpenCalculator}
+          title={t('calc.title')}
+          aria-label={t('calc.title')}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2" />
+            <path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v4M8 19h4" />
+          </svg>
+          <span className="ticker-calc-label">{t('calc.open')}</span>
+        </button>
+      ) : null}
     </div>
   );
 }

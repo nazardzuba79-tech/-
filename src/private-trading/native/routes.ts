@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { createHash } from 'crypto';
 import { CommandScope } from './commandScope';
-import { NativeCommand, NativeDemoService } from './service';
+import { NativeCommand, NativeDemoService, NativeQuoteInput } from './service';
 import { OwnerSession } from '../serviceTypes';
 import { DemoEngineError, NATIVE_DEMO_MODEL } from './engine';
 import { nativeAdmissionLimits } from './replay';
@@ -34,6 +34,22 @@ export const nativeCommandSchema=z.discriminatedUnion('kind',[
   if(x.kind==='OPEN'&&x.reduceOnly&&!x.positionId)c.addIssue({code:'custom',message:'Для сокращающего ордера нужна позиция'});
   if(x.kind==='OPEN'&&x.executionMode==='LIVE_EXECUTION'&&x.candle)c.addIssue({code:'custom',message:'Историческая точка недоступна для live execution'});
 });
+const symbol=z.string().regex(/^[A-Z0-9]{1,32}(?:\/)?USDT$/);
+/** A signed decimal: PnL targets and funding rates may be negative. */
+const signed=z.string().max(60).regex(/^-?\d{1,18}(?:\.\d{1,18})?$/);
+export const nativeQuoteSchema=z.discriminatedUnion('kind',[
+  z.object({kind:z.literal('ORDER'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,price:positive,leverage:positive,maker:z.boolean().optional(),market:z.boolean().optional()}).strict(),
+  z.object({kind:z.literal('POSITION'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,entryPrice:positive,markPrice:positive,leverage:positive,allocatedMargin:signed.optional()}).strict(),
+  z.object({kind:z.literal('TARGET'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,entryPrice:positive,leverage:positive,
+    basis:z.enum(['GROSS','NET']),targetPnl:signed.optional(),targetRoiPercent:signed.optional(),allocatedMargin:signed.optional(),maker:z.boolean().optional()}).strict(),
+  z.object({kind:z.literal('FUNDING'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,markPrice:positive,rate:signed,intervals:z.number().int().positive().max(1000).optional()}).strict(),
+  z.object({kind:z.literal('PNL'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,entryPrice:positive,exitPrice:positive,leverage:positive,maker:z.boolean().optional()}).strict(),
+]).superRefine((x,c)=>{
+  // A target needs something to aim at. Checked on the union rather than the
+  // member because `discriminatedUnion` only accepts plain object members.
+  if(x.kind==='TARGET'&&x.targetPnl===undefined&&x.targetRoiPercent===undefined)c.addIssue({code:'custom',message:'Укажите целевой PnL или ROI'});
+});
+
 export const NATIVE_ERROR_TEXT:Record<string,string>={
   HISTORICAL_ENTRY_REQUIRED:'Выберите точку входа на графике.',EXECUTION_MODE_MISMATCH:'Сначала закройте позиции и отмените ордера другого режима.',
   HISTORY_GAP:'История содержит пропуски. Сделка не записана.',HISTORY_LIMIT:'Слишком длинный участок истории для одного расчёта.',MARK_HISTORY_GAP:'Нет Mark Price истории для этого участка.',
@@ -123,6 +139,13 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     res.once('close',()=>{if(!res.writableFinished)scope.trace('http.disconnected');});
     return service.command(actor(res),input,{scope});
   }));
+  /**
+   * PRICING, NOT TRADING. This route computes and returns; it writes nothing,
+   * issues no command and creates no revision, which is why it takes no
+   * idempotency key — there is nothing to be idempotent about. It sits behind
+   * the same owner gate as every other native route.
+   */
+  r.post('/quote',handle((req,res)=>service.priceQuote(actor(res),nativeQuoteSchema.parse(req.body) as NativeQuoteInput)));
   r.post('/cards',handle((req,res)=>service.card(actor(res),z.object({positionId:key}).strict().parse(req.body).positionId)));
   r.get('/cards/:revision/:positionId',handle((req,res)=>service.card(actor(res),key.parse(req.params.positionId),z.coerce.number().int().positive().parse(req.params.revision))));
   r.use((e:unknown,_req:Request,res:Response,next:NextFunction)=>{

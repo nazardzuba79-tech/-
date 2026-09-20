@@ -33,6 +33,29 @@ export interface ChartTradeOverlay {
   liquidationPrice?: number | null;
   exits: { time: number; price: number; kind: string; quantity?: number; candleOpenTime?: number }[];
 }
+/**
+ * One open position, as the price scale draws it.
+ *
+ * Deliberately flat and deliberately `string | null`: these are the
+ * server's own decimal strings, parsed once at the drawing site, and a
+ * `null` level is a level the engine says does not exist. There is no
+ * field here a client could compute — that is the whole point of the
+ * type. A chart that invents a liquidation price is worse than a chart
+ * that shows none.
+ */
+export interface ChartPositionLine {
+  id: string;
+  /** Contract symbol as the account reports it, e.g. "BTC/USDT". */
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  entryPrice: string;
+  /** `null` = no liquidation price is reachable with current collateral. */
+  liquidationPrice: string | null;
+  /** Armed protection, as the server holds it. Never a local draft. */
+  takeProfit: string | null;
+  stopLoss: string | null;
+}
+
 export interface ChartTradingInteraction {
   enabled: boolean;
   selecting: 'entry' | 'exit' | null;

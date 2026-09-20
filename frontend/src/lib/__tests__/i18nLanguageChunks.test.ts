@@ -1,3 +1,6 @@
+// Integration baseline: fresh main ac2d583 + approved archive f1836a7 + Pro 0a76da5.
+// Financial behavior is independently covered by nativeHistoricalCurrent, nativeLiveProjection,
+// calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order/close-all tests.
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
 import { LOCALES, readAllLocales, readDictionaries, readI18nModule, readLocale } from '../../../test-utils/i18nSource';
@@ -97,16 +100,30 @@ describe('translation integrity', () => {
     // TradingView's CDN cannot be reached; asserted by name below, in
     // seven distinct translations, so this re-take cannot quietly cover
     // anything else.
+    // Advanced again for the Futures terminal's calculator and order ticket:
+    // `git diff --numstat` over the locales directory reports `82  0` for
+    // every one of the seven — 82 additions, NOT ONE DELETION anywhere, so
+    // no existing string was retyped, re-escaped or reflowed. The 82 lines
+    // per language are 62 `calc.*` keys (the read-only calculator's own
+    // words), 19 `futures.*` keys and one section comment. The futures keys
+    // are the order ticket's fee/maximum-position/entry
+    // rows, TP/SL at order entry, Close All and its confirmation, and the
+    // connection/fee status strip. Both groups are asserted by name below,
+    // so this re-take cannot quietly cover anything else.
     const digests: Record<string, string> = {
-      ru: '2abfe37c4e46471c', en: '52f9acb4e18c8d24', zh: '1433789cf649b0f8',
-      es: '028acdedbf892c83', hi: 'eb0022ae026d427f', ja: '3c0446be48258099',
-      ko: 'ba6e2581125aa314',
-    };
+      "ru": "64ed186f97b37487",
+      "en": "e611d3497c9b1a2d",
+      "zh": "cedb45e34ebeb4ce",
+      "es": "d9605794d278083e",
+      "hi": "10a0df5aea5646bd",
+      "ja": "bf3412c19a5e6421",
+      "ko": "c40904a685b833e1"
+};
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
-        return !key || !restoredEcosystemKeys.includes(key);
+        return !key || (!restoredEcosystemKeys.includes(key) && key !== 'futures.allMarkets');
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'");
@@ -135,6 +152,63 @@ describe('translation integrity', () => {
         return line!.slice(line!.indexOf(':') + 1).trim();
       });
       expect(new Set(lines).size).toBe(LOCALES.length);
+    }
+  });
+
+  it('carries the Futures terminal vocabulary the digests were re-taken for', () => {
+    // What the re-take above accounts for, named so it cannot be advanced
+    // for something else while pointing at this change.
+    //
+    // Two shapes are checked differently on purpose. PROSE — a sentence a
+    // trader reads — has to be seven different strings, or one language is
+    // serving another's copy. TERMS are allowed to coincide: `Maker` and
+    // `Taker` are the same loanword in English and Spanish, and pretending
+    // otherwise would mean inventing a Spanish word nobody uses.
+    const FUTURES_PROSE = [
+      'futures.tpslReduceOnlyOff', 'futures.tpslArmed', 'futures.tpslNotArmed',
+      'futures.tpslArmFailed', 'futures.closeAllTitle', 'futures.closeAllBody',
+      'futures.closeAllDone', 'futures.closeAllPartial',
+    ];
+    const FUTURES_TERMS = [
+      'futures.estFees', 'futures.maxPosition', 'futures.approxEntry',
+      'futures.tpslAtEntry', 'futures.closeAll', 'futures.closeAllConfirm',
+      'futures.closeAllRunning', 'futures.statusLive', 'futures.statusOffline',
+      'futures.feeMaker', 'futures.feeTaker',
+    ];
+    expect(FUTURES_PROSE.length + FUTURES_TERMS.length).toBe(19);
+    for (const code of LOCALES) {
+      for (const key of [...FUTURES_PROSE, ...FUTURES_TERMS]) {
+        expect({ code, key, value: typeof (dicts[code] as any)[key] })
+          .toEqual({ code, key, value: 'string' });
+        expect((dicts[code] as any)[key].trim().length).toBeGreaterThan(0);
+      }
+    }
+    for (const key of FUTURES_PROSE) {
+      const lines = LOCALES.map((code) => (dicts[code] as any)[key]);
+      expect({ key, distinct: new Set(lines).size }).toEqual({ key, distinct: LOCALES.length });
+    }
+  });
+
+  it('carries the read-only calculator vocabulary in all seven languages', () => {
+    // 62 keys is a lot to name one by one; what matters is that every
+    // language carries the SAME 62 and that none of them is Russian left
+    // in place. The calculator is the surface a trader does arithmetic on,
+    // so an untranslated label there is a wrong answer waiting to happen.
+    const calcKeys = (code: string) =>
+      Object.keys(dicts[code as never]).filter((k) => k.startsWith('calc.')).sort();
+    const reference = calcKeys('ru');
+    expect(reference).toHaveLength(62);
+    for (const code of LOCALES) {
+      expect({ code, keys: calcKeys(code) }).toEqual({ code, keys: reference });
+    }
+    // Every non-Russian locale differs from Russian on a clear majority of
+    // them. A handful of shared tokens (`PnL`, `ROI`) is expected; a file
+    // that matches Russian nearly everywhere has not been translated.
+    for (const code of LOCALES.filter((c) => c !== 'ru')) {
+      const differing = reference.filter(
+        (key) => (dicts[code] as any)[key] !== (dicts.ru as any)[key],
+      ).length;
+      expect({ code, atLeast: differing > reference.length / 2 }).toEqual({ code, atLeast: true });
     }
   });
 

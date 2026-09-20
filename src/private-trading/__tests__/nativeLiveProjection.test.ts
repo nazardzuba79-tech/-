@@ -15,6 +15,26 @@ async function prepared(marginType:'CROSS'|'ISOLATED'='CROSS'){
   return{...f,live,liveRepo:repo};
 }
 describe('compact native live read model',()=>{
+  test('open entry candle survives compact reload and moving marks without journal reads',async()=>{
+    const f=await prepared(),row=f.repo.row!;
+    const open=row.commands.find(c=>c.kind==='OPEN');
+    if(!open||open.kind!=='OPEN')throw new Error('missing open fixture');
+    const candle={source:'BYBIT_LINEAR' as const,interval:'1h' as const,openTime:H0-3*H,pricePoint:'CLOSE' as const};
+    open.candle=candle;
+    row.snapshot.positions[0].entryTimestamp=candle.openTime+H;
+    row.commands.push(...Array.from({length:100},()=>structuredClone(open)));
+    const projection=deriveNativeLiveProjection(row);
+    expect(projection.entryMarkers).toEqual([{positionId:open.order.id,candle}]);
+    const before=JSON.stringify(row),first=await f.live.live(actor);
+    f.step();f.market.price='52000';const next=await f.live.live(actor);
+    expect(first.entries).toEqual(projection.entryMarkers);expect(next.entries).toEqual(first.entries);
+    expect(next.positions[0].openedAt).toBe(candle.openTime+H);
+    expect(next.positions[0].entryPrice).toBe(first.positions[0].entryPrice);
+    expect(next.positions[0].markPrice).not.toBe(first.positions[0].markPrice);
+    expect(JSON.stringify(row)).toBe(before);expect(f.liveRepo.read).not.toHaveBeenCalled();expect(f.liveRepo.commit).not.toHaveBeenCalled();
+    row.snapshot.positions[0].status='CLOSED';
+    expect(deriveNativeLiveProjection(row).entryMarkers).toEqual([]);
+  });
   test.each(['CROSS','ISOLATED'] as const)('%s revaluation exactly equals existing display helpers; no financial writes/full reads',async mode=>{
     const f=await prepared(mode);f.step();f.market.price='51000';
     const before=JSON.stringify(f.repo.row);

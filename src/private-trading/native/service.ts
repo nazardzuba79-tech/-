@@ -7,10 +7,40 @@ import type { CollateralHolding } from './collateral';
 import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PrivateValuationMark, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote, assertPrivateFreshMark, assertHistoricalDemoCurrentPrice, HISTORICAL_DEMO_CURRENT_MAX_AGE_MS, HISTORICAL_DEMO_COMMIT_HEADROOM_MS } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
+import { calculatePosition, closePositionAllocation, fundingCashflow, pnlForRoi, quoteOrderCost, roiPercent, targetExitPrice, validateContractOrder, ContractRuleError } from '../math';
 import { NativeAccount, NativeRepository, commandHash } from './store';
 import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, executeObservedBook, protectionTrigger, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
+
+/**
+ * What the calculator can ask to have priced. Four shapes, one per tab, each
+ * carrying only what its authoritative function needs — there is no "compute
+ * everything" mode, because a field the answer does not depend on is a field
+ * that can silently disagree with the one the trader typed.
+ */
+export type NativeQuoteInput =
+  | { kind:'ORDER'; symbol:string; side:'LONG'|'SHORT'; quantity:string; price:string; leverage:string; maker?:boolean; market?:boolean }
+  | { kind:'POSITION'; symbol:string; side:'LONG'|'SHORT'; quantity:string; entryPrice:string; markPrice:string; leverage:string; allocatedMargin?:string }
+  | { kind:'TARGET'; symbol:string; side:'LONG'|'SHORT'; quantity:string; entryPrice:string; leverage:string; basis:'GROSS'|'NET';
+      targetPnl?:string; targetRoiPercent?:string; allocatedMargin?:string; maker?:boolean }
+  | { kind:'FUNDING'; symbol:string; side:'LONG'|'SHORT'; quantity:string; markPrice:string; rate:string; intervals?:number }
+  | { kind:'PNL'; symbol:string; side:'LONG'|'SHORT'; quantity:string; entryPrice:string; exitPrice:string; leverage:string; maker?:boolean };
+
+/** Which contract rule an order broke, in the engine's own words. */
+export interface NativeQuoteViolation { code:string; limit:string; allowed:string; actual:string }
+
+export type NativeQuoteResult =
+  | { kind:'ORDER'; entryNotional:string|null; baseInitialMargin:string|null; closeFeeReserve:string|null; openingFee:string|null;
+      positionMargin:string|null; totalCost:string|null; violation:NativeQuoteViolation|null;
+      rules:ReturnType<typeof contractRules>; takerFeeRate:string; makerFeeRate:string }
+  | ({ kind:'POSITION'; takerFeeRate:string; makerFeeRate:string } & ReturnType<typeof calculatePosition>)
+  | { kind:'TARGET'; exitPrice:string|null; targetPnl:string; roiMarginBasis:string; openingFee:string; closingFeeRate:string;
+      takerFeeRate:string; makerFeeRate:string }
+  | { kind:'FUNDING'; perInterval:string; intervals:number; total:string; takerFeeRate:string; makerFeeRate:string }
+  | { kind:'PNL'; entryNotional:string; baseInitialMargin:string; positionMargin:string; openingFee:string; closingFee:string;
+      grossPnl:string; netPnl:string; roiMarginBasis:string; roiPercent:string|null; roiPercentNet:string|null;
+      takerFeeRate:string; makerFeeRate:string };
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
 import { applyLatestQuotes, BarRequest, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
@@ -428,8 +458,8 @@ export class NativeDemoService {
     return{initialized:true,revision:projection.revision,executionMode:projection.executionMode,source:projection.source,asOf:at,model:NATIVE_DEMO_MODEL,
       account:crossAccount(demoAccount(snapshot),valuation,snapshot.positions.length>0),
       ledger:{...projection.ledger,entries:[]},
-      positions:snapshot.positions.map(p=>demoPositionView(snapshot,p)),orders:snapshot.orders,
-      history:[],events:[],entries:[],historyDeferred:true};
+      positions:snapshot.positions.map(p=>({...demoPositionView(snapshot,p),...(p.entryTimestamp?{openedAt:p.entryTimestamp}:{})})),orders:snapshot.orders,
+      history:[],events:[],entries:projection.entryMarkers??[],historyDeferred:true};
   }
   async state(actor:OwnerSession){
     const row=await commandRead('repository.read',()=>this.repository.read(actor));
@@ -447,6 +477,94 @@ export class NativeDemoService {
    * relaxes one. `actor` is required so this stays behind the same
    * owner+ADMIN+session gate as every other native route.
    */
+  /**
+   * PRICED, NOT PLACED — the calculator's only server call.
+   *
+   * Every figure the Futures calculator shows comes from here, computed by
+   * the same functions the engine itself uses to admit and settle an order.
+   * The frontend owns no copy of this arithmetic, because a second
+   * implementation is a second set of answers: the moment the fee model or
+   * the risk ladder moves, a mirrored formula keeps quoting the old one and
+   * the trader is shown a margin the server will not accept.
+   *
+   * This method is READ-ONLY and structurally so, not by convention:
+   *   - it never touches `this.repository`, so nothing is persisted;
+   *   - it issues no command, so no revision and no idempotency key exist;
+   *   - it reads exactly one thing, the instrument, for its contract rules
+   *     and fee/risk profile.
+   * The only reason it is a server call at all is that `frontend/Dockerfile`
+   * builds from `frontend/` alone — `src/` is not in that image, so the
+   * shared module the frontend would otherwise import is not reachable.
+   */
+  async priceQuote(actor:OwnerSession,input:NativeQuoteInput):Promise<NativeQuoteResult>{
+    void actor;
+    const instrument=await this.market.instrument(input.symbol);
+    const profile=simulationProfile(instrument);
+    const rules=contractRules(instrument);
+    if(input.kind==='ORDER'){
+      // The rule check is REPORTED, not thrown: a calculator is a place to
+      // discover that a size is out of bounds, and the numbers beside that
+      // warning are still worth showing.
+      let violation:NativeQuoteViolation|null=null;
+      try{
+        validateContractOrder({rules,profile,quantity:input.quantity,price:input.price,leverage:input.leverage,market:input.market??false});
+      }catch(error){
+        violation=error instanceof ContractRuleError
+          ? {code:error.message,...error.detail}
+          : {code:error instanceof Error?error.message:'INVALID_ORDER',limit:'',allowed:'',actual:''};
+      }
+      try{
+        const cost=quoteOrderCost({side:input.side,quantity:input.quantity,price:input.price,leverage:input.leverage,profile,maker:input.maker});
+        return {kind:'ORDER',...cost,violation,rules,takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
+      }catch(error){
+        // A cost that cannot be quoted at all (tier leverage, bad input) is
+        // still an answer: the violation explains it and the figures are null.
+        return {kind:'ORDER',entryNotional:null,baseInitialMargin:null,closeFeeReserve:null,openingFee:null,positionMargin:null,totalCost:null,
+          violation:violation??{code:error instanceof Error?error.message:'INVALID_ORDER',limit:'',allowed:'',actual:''},
+          rules,takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
+      }
+    }
+    if(input.kind==='POSITION'){
+      const snapshot=calculatePosition({side:input.side,quantity:input.quantity,entryPrice:input.entryPrice,markPrice:input.markPrice,
+        leverage:input.leverage,profile,...(input.allocatedMargin===undefined?{}:{allocatedMargin:input.allocatedMargin})});
+      return {kind:'POSITION',...snapshot,takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
+    }
+    if(input.kind==='TARGET'){
+      // ROI is resolved against the engine's OWN basis, taken from the same
+      // snapshot the position panel reads, so "+200%" here and "+200%" there
+      // are the same number rather than two conventions.
+      const basisSnapshot=calculatePosition({side:input.side,quantity:input.quantity,entryPrice:input.entryPrice,markPrice:input.entryPrice,
+        leverage:input.leverage,profile,...(input.allocatedMargin===undefined?{}:{allocatedMargin:input.allocatedMargin})});
+      const targetPnl=input.targetPnl!==undefined?input.targetPnl:pnlForRoi(input.targetRoiPercent??'0',basisSnapshot.roiMarginBasis);
+      const opening=quoteOrderCost({side:input.side,quantity:input.quantity,price:input.entryPrice,leverage:input.leverage,profile,maker:input.maker});
+      const exitPrice=targetExitPrice({side:input.side,quantity:input.quantity,entryPrice:input.entryPrice,targetPnl,
+        basis:input.basis,openingFee:opening.openingFee,closingFeeRate:profile.takerFeeRate});
+      return {kind:'TARGET',exitPrice,targetPnl,roiMarginBasis:basisSnapshot.roiMarginBasis,openingFee:opening.openingFee,
+        closingFeeRate:profile.takerFeeRate,takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
+    }
+    if(input.kind==='PNL'){
+      // Nothing is computed here. The opening side comes from the same
+      // function that admits an order; the closing side from the same
+      // function that settles one, asked for a FULL close at the exit price
+      // — which is what a "what if I close here" question actually is.
+      const opening=quoteOrderCost({side:input.side,quantity:input.quantity,price:input.entryPrice,leverage:input.leverage,profile,maker:input.maker});
+      const closed=closePositionAllocation({side:input.side,quantity:input.quantity,closeQuantity:input.quantity,
+        entryPrice:input.entryPrice,exitPrice:input.exitPrice,allocatedMargin:opening.positionMargin,
+        openingFeesRemaining:opening.openingFee,feeRate:profile.takerFeeRate});
+      const basis=calculatePosition({side:input.side,quantity:input.quantity,entryPrice:input.entryPrice,markPrice:input.entryPrice,
+        leverage:input.leverage,profile}).roiMarginBasis;
+      return {kind:'PNL',entryNotional:opening.entryNotional,baseInitialMargin:opening.baseInitialMargin,
+        positionMargin:opening.positionMargin,openingFee:opening.openingFee,closingFee:closed.closingFee,
+        grossPnl:closed.realizedGross,netPnl:closed.netRealized,roiMarginBasis:basis,
+        roiPercent:roiPercent(closed.realizedGross,basis),roiPercentNet:roiPercent(closed.netRealized,basis),
+        takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
+    }
+    const perInterval=fundingCashflow(input.side,input.quantity,input.markPrice,input.rate);
+    const intervals=input.intervals??1;
+    return {kind:'FUNDING',perInterval,intervals,
+      total:new BigNumber(perInterval).times(intervals).toFixed(),
+      takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
+  }
   async contract(actor:OwnerSession,symbol:string){
     void actor;
     const instrument=await commandRead('market.instrument',()=>this.market.instrument(symbol,commandSignal()));

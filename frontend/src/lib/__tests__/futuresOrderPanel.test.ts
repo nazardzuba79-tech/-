@@ -117,7 +117,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   };
 
 
-  const react = { ...React, memo: (fn: any) => fn,
+  const react = { ...React, useId: () => 'test-id', memo: (fn: any) => fn,
     useState(initial: any) {
       const i = index++;
       if (!(i in hooks)) hooks[i] = typeof initial === 'function' ? initial() : initial;
@@ -275,6 +275,15 @@ async function pricedForm(overrides: Record<string, any> = {}) {
   await tick();
   return { ...f, tree: f.render() };
 }
+
+test('BTC percentage sizing uses three decimals and the 0.001 step without contract metadata', async () => {
+  const f = await pricedForm();
+  const slider = nodes(f.tree).find(n => n.type === f.form.components.PercentSlider);
+  slider.props.onChange(37);
+  const quantity = nodes(f.render()).find(n => n.type === 'input' && n.props.placeholder === '0.00000').props.value;
+  expect(quantity).toMatch(/^\d+\.\d{3}$/);
+  expect(Number(quantity)).toBeGreaterThan(0);
+});
 
 const submit = (tree: any) =>
   nodes(tree).find((n) => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() });
@@ -704,6 +713,8 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
     const f = await pricedForm();
     sideButton(f.tree, 'buy').props.onClick();
     await tick();
+    f.change(f.render(), '0.00', '50000');
+    f.change(f.render(), '0.00000', '1');
     sideButton(f.render(), 'sell').props.onClick();
     await tick();
     expect(f.placed).toHaveBeenCalledTimes(2);
@@ -744,6 +755,10 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
 
     release();
     await tick();
+    // A successful order clears its draft; a new quantity is required.
+    expect(submitButton(f.render()).props.disabled).toBe(true);
+    f.change(f.render(), '0.00', '50000');
+    f.change(f.render(), '0.00000', '1');
     expect(submitButton(f.render()).props.disabled).toBe(false);
   });
 
@@ -789,8 +804,12 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
 
   test('button and guard read one expression, not two copies', () => {
     const code = source(FORM);
-    expect(code).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}");
-    expect(code).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}");
+    // `protectionBreachFor` is per-direction by necessity: a take-profit
+    // above the price is right for a long and wrong for a short, so each
+    // button carries its own reading of the SAME function. `canSubmit` is
+    // still the one shared guard, and `place` still re-reads it.
+    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}");
+    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}");
     expect(code).toContain("if (activeCloseTarget && orderSide !== (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY')) return;");
     expect(code).toContain('if (!canSubmit) return;');
     // The old visual-only condition is gone.
@@ -804,15 +823,40 @@ describe('L. the panel references no spot conditional-order machinery', () => {
   const code = source(FORM);
 
   test('no spot trigger endpoint is referenced', () => {
-    for (const forbidden of ['PENDING_TRIGGER', 'updateOrderTrigger', 'getMyOrders', 'ocoGroupId', 'triggerPrice']) {
+    for (const forbidden of ['PENDING_TRIGGER', 'updateOrderTrigger', 'getMyOrders', 'ocoGroupId']) {
       expect(code).not.toContain(forbidden);
     }
+    // `triggerPrice` is banned as MACHINERY — a field set on a request or
+    // read off a response — not as a word. The panel names the futures
+    // translation key `futures.orderError.triggerPrice` for its own
+    // preflight refusal, and a translation key sends nothing anywhere.
+    expect(code).not.toContain('triggerPrice:');
+    expect(code).not.toContain('triggerPrice=');
+    // Stronger than a substring ban: EVERY occurrence of the word in this
+    // file is that one translation key, so none of them is a field.
+    const occurrences = [...code.matchAll(/triggerPrice/g)].length;
+    const asKey = [...code.matchAll(/'futures\.orderError\.triggerPrice'/g)].length;
+    expect({ occurrences, asKey }).toEqual({ occurrences: asKey, asKey: 1 });
   });
 
-  test('no TP/SL controls were invented on top of a contract that has none', () => {
-    for (const forbidden of ['takeProfit', 'stopLoss', 'takeProfitPrice', 'stopLossPrice']) {
-      expect(code).not.toContain(forbidden);
-    }
+  test('TP/SL at entry exists only where the engine takes it with the order', () => {
+    // The old shape of this test banned the words outright, because no
+    // engine behind this panel accepted protection at all. One does now:
+    // `placeDemoOrder` carries `protection` on the order, validates the
+    // levels against the order's own price and applies them to the position
+    // the fill creates. So the ban becomes a CONDITION — the fields render
+    // behind `execution.entryProtection`, which is false for the real
+    // futures engine, whose POST /futures/orders has no such field.
+    expect(code).toContain('execution.entryProtection');
+    expect(code).toContain('{execution.entryProtection && (');
+    // Reduce Only takes the fields away rather than greying them out: the
+    // engine throws REDUCE_ORDER_PROTECTION for that input, and a disabled
+    // input invites a trader to hunt for the switch that turns it on.
+    expect(code).toContain('const entryProtectionAvailable = execution.entryProtection && !reduceOnly;');
+    // Nothing is armed by this panel outside placeOrder: no PUT, no second
+    // request that could fail after the order already succeeded.
+    expect(code).not.toContain('setProtection');
+    expect(code).not.toContain('setFuturesPositionProtection');
   });
 
   test('the account store from PR #14 is still the only source of account data', () => {
@@ -967,14 +1011,14 @@ describe('the size slider sizes for the leverage the order will really use', () 
   });
 
   test('the size is floored, never rounded up past the margin that bought it', async () => {
-    // 10 000 / 60 000 rounds to 0.16666667 and costs 10 000.0002.
+    // BTC's 0.001 step: rounding up to 0.167 would cost 10 020.
     const f = await sizingForm({ ...margin('10000'), extraApi: {} });
     f.change(f.tree(), '0.00', '60000');
     f.leverageControl(f.tree()).props.onLeverageChange(1);
     f.slider(f.tree()).props.onChange(100);
     const quantity = f.quantity(f.tree());
     expect(quantity * 60000).toBeLessThanOrEqual(10_000);
-    expect(quantity).toBeCloseTo(10_000 / 60_000, 7);
+    expect(quantity).toBe(0.166);
   });
 
   test('changing leverage re-sizes a percentage-chosen order, and only that', async () => {

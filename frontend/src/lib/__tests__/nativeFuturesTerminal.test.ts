@@ -70,8 +70,8 @@ describe('the terminal is the terminal, for every account', () => {
     // lives in a menu that only exists while it is open.
     expect(page).toContain('<ChartTradingMenu');
     expect(page).not.toContain('<ChartTradingToggle');
-    // Off -> the chart's trading interaction is not passed at all.
-    expect(page).toContain('privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}');
+    // Existing positions stay visible when the candle picker is off; history demand remains lazy.
+    expect(page).toContain('privateTrading={nativeExecution ? native.interaction : undefined}');
     // Off -> an unsent selection is cancelled...
     expect(page).toContain('native.interaction.onCancelSelection()');
     // ...and nothing about the account is reset with it.
