@@ -1,0 +1,71 @@
+{
+  "codeCommit": "0066a611aa999a9250cc79aaa74d368cef59f0fd",
+  "runs": [
+    {
+      "name": "Native test account access",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217070"
+    },
+    {
+      "name": "Analytics live data",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217188"
+    },
+    {
+      "name": "Private reference UI evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217115"
+    },
+    {
+      "name": "Markets 7d/30d movers",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217067"
+    },
+    {
+      "name": "Futures design and Pro integration",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217238"
+    },
+    {
+      "name": "Futures ticker label visibility",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217327"
+    },
+    {
+      "name": "Futures bottom panel geometry",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217134"
+    },
+    {
+      "name": "Private trading and replay",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217153"
+    },
+    {
+      "name": "Copy Trading card regression",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217083"
+    },
+    {
+      "name": "Native demo engine and browser",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217337"
+    },
+    {
+      "name": "Customer-facing error wording",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35508217214"
+    }
+  ]
+}
