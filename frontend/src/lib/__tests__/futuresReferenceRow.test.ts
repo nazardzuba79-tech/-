@@ -223,7 +223,14 @@ describe('3. the account summary under the order buttons', () => {
     // engine has not opened yet has no available margin, and printing
     // `0.00` over a wallet the server says holds demo funds is the same
     // fake zero in a different disguise.
-    expect(SUMMARY).toContain("value === null || unopened ? '—' : mask(format(value))");
+    //
+    // `Number.isFinite` joined it third, and it is the same rule again.
+    // These figures are sums of parsed decimal strings; a payload missing a
+    // field parses to NaN, and what reached the screen was the literal text
+    // "NaN.undefined" — `groupAmount` splitting a non-number on its decimal
+    // point. NaN and Infinity are not amounts, so they are what this card
+    // already calls not knowing.
+    expect(SUMMARY).toContain("value === null || unopened || !Number.isFinite(value) ? '—' : mask(format(value))");
     expect(SUMMARY).toContain('const unopened = activation !== null;');
     // And the percentages take the same route rather than a second one:
     // one function, same `null`/`unopened` test as `show`, still no zero.

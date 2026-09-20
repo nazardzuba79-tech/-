@@ -337,8 +337,8 @@ const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
 beforeEach(() => { jest.useFakeTimers(); jest.setSystemTime(new Date('2026-09-08T03:22:43Z')); });
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
-test('visible metrics follow price, index, market, derivatives order without base volume', async () => {
-  // INDEX IS NOW A VISIBLE METRIC, and this test changed to say so.
+test('visible metrics follow price, market, derivatives order, with index beside the mark', async () => {
+  // INDEX IS NOW A VISIBLE FIGURE, and this test changed to say so.
   //
   // It used to assert the opposite: the index was fetched with the mark
   // price and then dropped, on the reasoning that one anchor figure under
@@ -348,37 +348,45 @@ test('visible metrics follow price, index, market, derivatives order without bas
   // a mark quoted without it cannot be judged. The figure was already in
   // this component's state; nothing new is fetched for it.
   //
+  // It shares the PRICE BLOCK with the mark rather than taking a cell of
+  // its own, so the cell count is unchanged at seven. As a ninth labelled
+  // cell it pushed the funding rate 100px past the right edge at 1366 —
+  // measured, not guessed, by scripts/qa-futures-pro-terminal.cjs.
+  //
   // Everything else this test guards is unchanged: no venue is named, base
   // volume is still not shown, and an unknown figure is still a dash.
   const component = mount(); component.render(); await flush();
   const tree = component.render();
   const blocks = nodes(tree).filter(n => n.props.className?.split(' ').includes('ticker-item'));
-  expect(blocks).toHaveLength(8);
-  // Last price, then mark price as the NUMBER ALONE. The owner's terminal
-  // pack drops the "Маркировочная цена:" prefix from the face of the header:
-  // the figure directly under the last price is the mark, and the label only
-  // repeated what the position of the cell already says.
-  expect(text(blocks[0])).toBe('72,345.6772,340.12');
-  // It is dropped from the VISIBLE text only. The cell still carries the
-  // label for assistive tech and on hover, so the number is never anonymous.
+  expect(blocks).toHaveLength(7);
+  // Last price, then mark and index as the NUMBERS ALONE. The owner's
+  // terminal pack drops the "Маркировочная цена:" prefix from the face of
+  // the header: the figures directly under the last price are the mark and
+  // the index, and the labels only repeated what their position says.
+  expect(text(blocks[0])).toBe('72,345.6772,340.12·71,999.88');
+  // They are dropped from the VISIBLE text only. Each figure still carries
+  // its label for assistive tech and on hover, so neither is anonymous.
   const markCell = nodes(blocks[0]).find(n => n.props.className === 'futures-secondary-price');
-  expect(markCell.props.title).toBe('futures.markPrice');
+  expect(markCell).toBeDefined();
   expect(nodes(markCell).find(n => n.props['aria-label'])?.props['aria-label']).toBe('futures.markPrice');
   expect(blocks.slice(1).map(b => text(nodes(b).find(n => n.props.className === 'label')))).toEqual([
-    'futures.indexPrice',
     'futures.headerChange24h', 'futures.headerHigh24h', 'futures.headerLow24h',
     // The two market-reference cells name the unit they actually show —
     // the contract's quote currency for turnover — and nothing else. No
     // upstream venue is named anywhere in this header.
     'futures.headerTurnover24h (USDT)', 'futures.openInterest (BTC)', 'futures.headerFunding',
   ]);
-  // The index VALUE now renders, under its own label. Base volume still
-  // does not, and no upstream venue is named anywhere in the strip.
-  expect(text(blocks[1])).toBe('futures.indexPrice71,999.88');
+  // Last, mark and index, in that order, in the one price block. Both
+  // secondary figures keep an accessible name, so neither is anonymous.
+  expect(text(blocks[0])).toBe('72,345.6772,340.12·71,999.88');
+  const index = nodes(blocks[0]).find(n => n.props['data-metric'] === 'index');
+  expect(index.props['aria-label']).toBe('futures.indexPrice');
+  expect(index.props.title).toBe('futures.indexPrice');
+  // Base volume still does not render, and no upstream venue is named.
   expect(text(tree)).not.toMatch(/volume24h|123,456/);
   expect(text(tree)).toContain('987.65M');
-  expect(text(blocks[7])).toContain('0.0030% / ');
-  expect(nodes(blocks[7]).find(n => typeof n.type === 'function')?.props.intervalHours).toBe(8);
+  expect(text(blocks[6])).toContain('0.0030% / ');
+  expect(nodes(blocks[6]).find(n => typeof n.type === 'function')?.props.intervalHours).toBe(8);
 });
 const oiStats = (value: Record<string, unknown>) =>
   jest.fn(async () => ({ available: true, source: 'binance', fetchedAt: 0, stale: false,
