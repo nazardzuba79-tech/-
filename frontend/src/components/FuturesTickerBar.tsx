@@ -45,8 +45,8 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  * Futures-only styles reflow these blocks on narrow screens without
  * hiding metrics or changing the shared Spot ticker styles.
  */
-export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }:
-  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean }) {
+export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, onOpenCalculator }:
+  { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean; onOpenCalculator?: () => void }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
   /**
@@ -279,6 +279,15 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
           </span>
         </span>
       </div>
+      {/* INDEX PRICE. It was already being fetched and then dropped on the
+          floor — `indexPrice` has been in this component's state since the
+          mark price arrived, with nothing rendering it. A perpetual's index
+          is what its mark is anchored to, so a professional strip shows
+          both; unknown stays a dash, never a zero. */}
+      <div className="ticker-item">
+        <span className="label">{t('futures.indexPrice')}</span>
+        <span className="value">{indexPrice !== null ? formatPrice(indexPrice) : '—'}</span>
+      </div>
       <div className="ticker-item">
         <span className="label">{t('futures.headerChange24h')}</span>
         <span className={`value change ${dir}`}>
@@ -350,6 +359,23 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false }
           <NextFundingCountdown intervalHours={fundingIntervalHours} />
         </span>
       </div>
+      {onOpenCalculator ? (
+        <button
+          type="button"
+          className="ticker-calc-btn"
+          data-open-calculator="true"
+          onClick={onOpenCalculator}
+          title={t('calc.title')}
+          aria-label={t('calc.title')}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2" />
+            <path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15v4M8 19h4" />
+          </svg>
+          <span className="ticker-calc-label">{t('calc.open')}</span>
+        </button>
+      ) : null}
     </div>
   );
 }

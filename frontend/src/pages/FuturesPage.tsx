@@ -7,6 +7,7 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
+import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
 import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
@@ -187,6 +188,14 @@ export function FuturesPage() {
   /** A reduce-only close the trader started from the positions table. The
    *  form fills itself from it; nothing is placed until they submit. */
   const [closeTicket, setCloseTicket] = useState<FuturesCloseTicket | null>(null);
+  /**
+   * The calculator is a panel over the terminal, not a route: it is opened
+   * to answer a question about the market already on screen, and closing it
+   * must leave that market exactly as it was.
+   */
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  /** The last hand-over from the calculator. An UNSENT draft — see the order form. */
+  const [calculatorDraft, setCalculatorDraft] = useState<(CalculatorDraft & { seq: number }) | null>(null);
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => {
@@ -320,6 +329,17 @@ export function FuturesPage() {
     return Number.isFinite(value) && value > 0 ? value : null;
   }, [tape, symbol]);
 
+  /**
+   * The same price the ticker prints, as a string, for surfaces that hand
+   * numbers back to the engine. Kept as text on purpose: the engine parses
+   * decimal strings, and a round trip through a JS number is exactly where a
+   * tick-sized figure loses its last digit.
+   */
+  const livePrice = useMemo(() => {
+    const value = tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null;
+    return value === null ? null : String(value);
+  }, [tapeLastPrice, reference, symbol]);
+
   const handleOrderPlaced = useCallback(() => {
     setCloseTicket(null);
     setPositionsRefreshKey((k) => k + 1);
@@ -364,7 +384,7 @@ export function FuturesPage() {
       <FuturesExecutionProvider value={execution}>
       <FuturesAccountSourceContext.Provider value={execution.account}>
       <div className="terminal" data-account-compact={accountPanel.compact}>
-        <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} />
+        <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} onOpenCalculator={() => setCalculatorOpen(true)} />
 
         <div className="main-grid">
           {/* NO PERMANENT MARKET RAIL.
@@ -527,6 +547,7 @@ export function FuturesPage() {
                  available whenever the book is. */
               lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null}
               closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
+              calculatorDraft={calculatorDraft ?? undefined}
             />
           </div>
         </div>
@@ -599,6 +620,27 @@ export function FuturesPage() {
       </dialog>}
       {nativeExecution&&<NativeDemoDialogs controller={native}/>}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
+      {/* The calculator sits at the page level, not inside the ticket, because
+          it is the one surface that is allowed to know the whole terminal:
+          the symbol on screen, the price the trader last clicked, the tape's
+          last print. It hands back a DRAFT — `setCalculatorDraft` fills the
+          order form's fields and nothing else; the trader still presses the
+          order button. */}
+      <FuturesCalculator
+        open={calculatorOpen}
+        onClose={() => setCalculatorOpen(false)}
+        symbol={symbol}
+        initial={{
+          price: (pickedPrice?.symbol === symbol ? pickedPrice.value : undefined)
+            ?? livePrice ?? undefined,
+          markPrice: livePrice,
+        }}
+        onUseValues={draft => {
+          pickedSeq.current += 1;
+          setCalculatorDraft({ ...draft, seq: pickedSeq.current });
+          setCalculatorOpen(false);
+        }}
+      />
     </div>
   );
 }

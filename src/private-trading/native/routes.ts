@@ -39,6 +39,7 @@ export const nativeQuoteSchema=z.discriminatedUnion('kind',[
   z.object({kind:z.literal('TARGET'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,entryPrice:positive,leverage:positive,
     basis:z.enum(['GROSS','NET']),targetPnl:signed.optional(),targetRoiPercent:signed.optional(),allocatedMargin:signed.optional(),maker:z.boolean().optional()}).strict(),
   z.object({kind:z.literal('FUNDING'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,markPrice:positive,rate:signed,intervals:z.number().int().positive().max(1000).optional()}).strict(),
+  z.object({kind:z.literal('PNL'),symbol,side:z.enum(['LONG','SHORT']),quantity:positive,entryPrice:positive,exitPrice:positive,leverage:positive,maker:z.boolean().optional()}).strict(),
 ]).superRefine((x,c)=>{
   // A target needs something to aim at. Checked on the union rather than the
   // member because `discriminatedUnion` only accepts plain object members.

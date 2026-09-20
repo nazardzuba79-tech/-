@@ -6,7 +6,7 @@ import type { CollateralHolding } from './collateral';
 import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PrivateValuationMark, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote, assertPrivateFreshMark } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
-import { calculatePosition, fundingCashflow, pnlForRoi, quoteOrderCost, targetExitPrice, validateContractOrder, ContractRuleError } from '../math';
+import { calculatePosition, closePositionAllocation, fundingCashflow, pnlForRoi, quoteOrderCost, roiPercent, targetExitPrice, validateContractOrder, ContractRuleError } from '../math';
 import { NativeAccount, NativeRepository, commandHash } from './store';
 import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, executeObservedBook, protectionTrigger, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
@@ -23,7 +23,8 @@ export type NativeQuoteInput =
   | { kind:'POSITION'; symbol:string; side:'LONG'|'SHORT'; quantity:string; entryPrice:string; markPrice:string; leverage:string; allocatedMargin?:string }
   | { kind:'TARGET'; symbol:string; side:'LONG'|'SHORT'; quantity:string; entryPrice:string; leverage:string; basis:'GROSS'|'NET';
       targetPnl?:string; targetRoiPercent?:string; allocatedMargin?:string; maker?:boolean }
-  | { kind:'FUNDING'; symbol:string; side:'LONG'|'SHORT'; quantity:string; markPrice:string; rate:string; intervals?:number };
+  | { kind:'FUNDING'; symbol:string; side:'LONG'|'SHORT'; quantity:string; markPrice:string; rate:string; intervals?:number }
+  | { kind:'PNL'; symbol:string; side:'LONG'|'SHORT'; quantity:string; entryPrice:string; exitPrice:string; leverage:string; maker?:boolean };
 
 /** Which contract rule an order broke, in the engine's own words. */
 export interface NativeQuoteViolation { code:string; limit:string; allowed:string; actual:string }
@@ -35,7 +36,10 @@ export type NativeQuoteResult =
   | ({ kind:'POSITION'; takerFeeRate:string; makerFeeRate:string } & ReturnType<typeof calculatePosition>)
   | { kind:'TARGET'; exitPrice:string|null; targetPnl:string; roiMarginBasis:string; openingFee:string; closingFeeRate:string;
       takerFeeRate:string; makerFeeRate:string }
-  | { kind:'FUNDING'; perInterval:string; intervals:number; total:string; takerFeeRate:string; makerFeeRate:string };
+  | { kind:'FUNDING'; perInterval:string; intervals:number; total:string; takerFeeRate:string; makerFeeRate:string }
+  | { kind:'PNL'; entryNotional:string; baseInitialMargin:string; positionMargin:string; openingFee:string; closingFee:string;
+      grossPnl:string; netPnl:string; roiMarginBasis:string; roiPercent:string|null; roiPercentNet:string|null;
+      takerFeeRate:string; makerFeeRate:string };
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
 import { applyLatestQuotes, BarRequest, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
@@ -492,6 +496,23 @@ export class NativeDemoService {
         basis:input.basis,openingFee:opening.openingFee,closingFeeRate:profile.takerFeeRate});
       return {kind:'TARGET',exitPrice,targetPnl,roiMarginBasis:basisSnapshot.roiMarginBasis,openingFee:opening.openingFee,
         closingFeeRate:profile.takerFeeRate,takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
+    }
+    if(input.kind==='PNL'){
+      // Nothing is computed here. The opening side comes from the same
+      // function that admits an order; the closing side from the same
+      // function that settles one, asked for a FULL close at the exit price
+      // — which is what a "what if I close here" question actually is.
+      const opening=quoteOrderCost({side:input.side,quantity:input.quantity,price:input.entryPrice,leverage:input.leverage,profile,maker:input.maker});
+      const closed=closePositionAllocation({side:input.side,quantity:input.quantity,closeQuantity:input.quantity,
+        entryPrice:input.entryPrice,exitPrice:input.exitPrice,allocatedMargin:opening.positionMargin,
+        openingFeesRemaining:opening.openingFee,feeRate:profile.takerFeeRate});
+      const basis=calculatePosition({side:input.side,quantity:input.quantity,entryPrice:input.entryPrice,markPrice:input.entryPrice,
+        leverage:input.leverage,profile}).roiMarginBasis;
+      return {kind:'PNL',entryNotional:opening.entryNotional,baseInitialMargin:opening.baseInitialMargin,
+        positionMargin:opening.positionMargin,openingFee:opening.openingFee,closingFee:closed.closingFee,
+        grossPnl:closed.realizedGross,netPnl:closed.netRealized,roiMarginBasis:basis,
+        roiPercent:roiPercent(closed.realizedGross,basis),roiPercentNet:roiPercent(closed.netRealized,basis),
+        takerFeeRate:profile.takerFeeRate,makerFeeRate:profile.makerFeeRate};
     }
     const perInterval=fundingCashflow(input.side,input.quantity,input.markPrice,input.rate);
     const intervals=input.intervals??1;

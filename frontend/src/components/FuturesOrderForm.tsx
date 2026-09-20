@@ -42,6 +42,7 @@ export function FuturesOrderForm({
   pickedPriceSequence,
   executionEnabled = true,
   closeTicket,
+  calculatorDraft,
   lastPrice = null,
 }: {
   symbol: string;
@@ -59,6 +60,13 @@ export function FuturesOrderForm({
    *  is placed until they press the button, exactly as for any other
    *  order. */
   closeTicket?: FuturesCloseTicket;
+  /**
+   * Values handed over by the calculator. This FILLS THE FORM AND NOTHING
+   * ELSE: no order is created, nothing is submitted, and the trader still
+   * has to press the order button. `seq` is what makes a repeat of the same
+   * numbers register as a new hand-over.
+   */
+  calculatorDraft?: { side: 'LONG' | 'SHORT'; price: string; quantity: string; leverage: string; seq: number };
   /**
    * The last TRADED price for this contract.
    *
@@ -134,6 +142,23 @@ export function FuturesOrderForm({
    * chosen and could not get back without reloading the page.
    */
   const [requestedLeverage, setRequestedLeverage] = useState(10);
+  /**
+   * THE CALCULATOR HANDS OVER AN UNSENT DRAFT.
+   *
+   * It fills price, quantity, side and the requested leverage, and then
+   * stops. It does not submit, it does not switch the form into a state the
+   * trader did not choose, and it clears no error it did not cause — the
+   * whole point of the button is that the numbers arrive where the trader
+   * can still look at them and change their mind.
+   */
+  useEffect(() => {
+    if (!calculatorDraft) return;
+    setSide(calculatorDraft.side === 'LONG' ? 'BUY' : 'SELL');
+    if (calculatorDraft.price) { setPrice(calculatorDraft.price); setType('LIMIT'); setFamily('LIMIT'); }
+    if (calculatorDraft.quantity) setQuantity(calculatorDraft.quantity);
+    if (calculatorDraft.leverage) setRequestedLeverage(Number(calculatorDraft.leverage));
+    setPercent(0);
+  }, [calculatorDraft?.seq]);
   /**
    * CROSS IS THE DEFAULT, because this account is a Cross account.
    *
