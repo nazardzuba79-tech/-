@@ -606,6 +606,7 @@ export function FuturesPage() {
               lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null}
               closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
               calculatorDraft={calculatorDraft ?? undefined}
+              onOpenCalculator={() => setCalculatorOpen(true)}
             />
           </div>
         </div>

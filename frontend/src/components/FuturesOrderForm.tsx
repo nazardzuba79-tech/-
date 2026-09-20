@@ -43,10 +43,12 @@ export function FuturesOrderForm({
   executionEnabled = true,
   closeTicket,
   calculatorDraft,
+  onOpenCalculator,
   lastPrice = null,
   archive = false,
 }: {
   archive?: boolean;
+  onOpenCalculator?: () => void;
   symbol: string;
   onPlaced: () => void;
   onOpenTransfer?: () => void;
@@ -1032,6 +1034,12 @@ export function FuturesOrderForm({
           </button>
         </div>
       </form>
+      {archive && onOpenCalculator && <div className="archive-calculator-slot">
+        <button type="button" className="archive-calculator-trigger" onClick={onOpenCalculator}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8M8 10h2m4 0h2M8 14h2m4 0h2M8 18h2m4 0h2" /></svg>
+          {t('calc.title')}
+        </button>
+      </div>}
 
       {/* The compact account summary sits directly under the order buttons,
           and it is the ONE place the account's margin figures are stated —

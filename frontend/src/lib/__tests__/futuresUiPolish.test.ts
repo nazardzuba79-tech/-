@@ -164,7 +164,8 @@ test.each([
     // bounds and the order payload are byte-unchanged — which
     // futuresOrderPanel's 40 behavioural tests assert directly and still
     // pass unmodified.
-    "ba1d60f26a740964bfd7ccc26468f51368628821f59a4cf91d9c2148a4cc942e"
+    // Both existing calculator triggers open the same page-owned dialog.
+    "4216665bcfc690266c0fcf6db01fd084c053c673314295e9542f6065cc5f7bc0"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -211,7 +212,7 @@ test.each([
     // listing still comes from the backend and nowhere else, and the
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
-    "717fc8e92d952d08facdf13e4b50b9f380cff1830cef8518c8345e4650cb77c3"
+    "e5f357baa87eb317ca8f438dfeee6714f16f63200672c9d0acc5fe676d621792"
   ],
   [
     "components/FuturesPairList.tsx",

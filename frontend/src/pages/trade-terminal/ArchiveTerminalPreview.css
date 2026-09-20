@@ -245,6 +245,14 @@
 }
 
 /* Functional additions retain the approved compact trading rail. */
+@media(max-width:600px) {
+  #archive-terminal-preview .global-header { padding-inline:10px; gap:8px; }
+  #archive-terminal-preview .global-header .header-left { flex:1 0 auto; min-width:max-content; }
+  #archive-terminal-preview .global-header .header-actions { flex:0 0 auto; gap:6px; }
+  /* Wallet and position tabs remain available in mobile navigation below. */
+  #archive-terminal-preview .global-header :is(.nav-wallet-link,.header-extra-action) { display:none; }
+  #archive-terminal-preview .global-header .deposit-button { padding-inline:10px; }
+}
 #archive-terminal-preview .fts-bar { margin:0; padding:6px 14px; min-height:26px; border:0; border-bottom:1px solid var(--border); background:var(--panel); font-size:10px; }
 #archive-terminal-preview .fts-connText { font-size:10px; }
 #archive-terminal-preview .archive-mark-index { font-size:12px !important; }
