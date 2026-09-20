@@ -117,6 +117,76 @@ export function fundingCashflow(side: Side, quantity: string, markPrice: string,
   const payment = nonnegative(quantity, 'quantity').times(decimal(markPrice, 'mark_price', true)).times(decimal(rate, 'funding_rate'));
   return amount(side === 'LONG' ? payment.negated() : payment);
 }
+/**
+ * The PnL a chosen ROI stands for — the inverse of `roiPercent`, and the only
+ * honest way to turn "I want +200%" into a price.
+ *
+ * ROI here is the engine's own ROI: a percentage of `roiMarginBasis`, the
+ * contribution-based collateral `calculatePosition` reports. Deriving the
+ * basis any other way (equity, notional, margin-after-funding) produces a
+ * different number from the one the position panel shows for the same move,
+ * which is the bug this function exists to prevent.
+ */
+export function pnlForRoi(roiPercentValue: string, roiMarginBasis: string): string {
+  const basis = nonnegative(roiMarginBasis, 'roi_basis');
+  return amount(basis.times(decimal(roiPercentValue, 'roi_percent')).div(100));
+}
+
+/**
+ * The exit price a position has to reach for a chosen result: the inverse of
+ * `linearPnl`, and the one piece of calculator arithmetic the engine did not
+ * already own.
+ *
+ * GROSS is the plain inverse — LONG `entry + target/q`, SHORT `entry - target/q`.
+ *
+ * NET has to carry the fee model, and the closing fee is itself a function of
+ * the exit price being solved for, so it is SOLVED rather than approximated by
+ * subtracting a fee computed at some other price:
+ *
+ *   LONG   net = q(exit - entry) - openFee - q·exit·r
+ *          exit = (net + openFee + q·entry) / (q(1 - r))
+ *   SHORT  net = q(entry - exit) - openFee - q·exit·r
+ *          exit = (q·entry - net - openFee) / (q(1 + r))
+ *
+ * `r` is the rate actually charged on the close. A LONG at a fee rate of 1 or
+ * more has no solution (the denominator vanishes or inverts), and neither does
+ * any solve that lands at or below zero: both return null, which the panel
+ * renders as a dash. A negative price presented as a target is the one outcome
+ * that reads as information and is not.
+ */
+export function targetExitPrice(input: {
+  side: Side;
+  quantity: string;
+  entryPrice: string;
+  targetPnl: string;
+  basis: 'GROSS' | 'NET';
+  openingFee?: string;
+  closingFeeRate?: string;
+}): string | null {
+  sideCheck(input.side);
+  // `nonnegative`, not `decimal(..., positive)`: a calculator field the trader
+  // has cleared is zero, and zero has no target price — that is a dash, not a
+  // thrown INVALID_QUANTITY. A NEGATIVE quantity is still refused.
+  const q = nonnegative(input.quantity, 'quantity');
+  const entry = decimal(input.entryPrice, 'entry_price', true);
+  if (q.isZero()) return null;
+  const target = decimal(input.targetPnl, 'target_pnl');
+  if (input.basis === 'GROSS') {
+    const move = target.div(q);
+    const price = input.side === 'LONG' ? entry.plus(move) : entry.minus(move);
+    return price.gt(0) ? amount(price) : null;
+  }
+  const rate = nonnegative(input.closingFeeRate ?? '0', 'closing_fee_rate');
+  const openingFee = nonnegative(input.openingFee ?? '0', 'opening_fee');
+  const denominator = q.times(input.side === 'LONG' ? new D(1).minus(rate) : new D(1).plus(rate));
+  if (denominator.lte(0)) return null;
+  const numerator = input.side === 'LONG'
+    ? target.plus(openingFee).plus(q.times(entry))
+    : q.times(entry).minus(target).minus(openingFee);
+  const price = numerator.div(denominator);
+  return price.gt(0) ? amount(price) : null;
+}
+
 export function closePositionAllocation(input: { side: Side; quantity: string; closeQuantity: string; entryPrice: string; exitPrice: string; allocatedMargin: string; openingFeesRemaining?: string; fundingRemaining?: string; feeRate: string }) {
   const q = decimal(input.quantity, 'quantity', true), closed = decimal(input.closeQuantity, 'close_quantity', true);
   if (closed.gt(q)) throw new Error('CLOSE_EXCEEDS_POSITION');
