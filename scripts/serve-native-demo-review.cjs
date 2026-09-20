@@ -6,8 +6,8 @@ const express=require('express'),fs=require('node:fs'),path=require('node:path')
 const{randomBytes,createHash}=require('node:crypto');
 const{NativeDemoService}=require('../dist/private-trading/native/service');
 const{nativeDemoRoutes}=require('../dist/private-trading/native/routes');
-const{emptyDemoState}=require('../dist/private-trading/native/engine');
-const{commandHash}=require('../dist/private-trading/native/store');
+const{ReviewRepository}=require('./native-demo-review-repository.cjs');
+const{NativeLimitPass}=require('../dist/private-trading/native/limitPass');
 const{PrivateTradingMarketData,CollectorPrivateTradingSource}=require('../dist/private-trading/marketData');
 const{CopyPerformanceService}=require('../dist/services/copyTrading/CopyPerformanceService');
 const root=path.resolve(__dirname,'..'),dist=path.join(root,'frontend/dist');
@@ -54,25 +54,6 @@ const sessions=new Map();
 function session(token){if(!/^[a-f0-9]{48}$/.test(token??''))return null;let s=sessions.get(token);if(s)return s;const file=path.join(dataDir,token+'.json');if(fs.existsSync(file)){try{s=JSON.parse(fs.readFileSync(file,'utf8'));sessions.set(token,s);return s;}catch{}}return null;}
 function save(token,s){sessions.set(token,s);const file=path.join(dataDir,token+'.json'),tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(s));fs.renameSync(tmp,file);}
 function requestSession(req){const token=req.headers.authorization?.replace(/^Bearer /,'');return session(token);}
-class ReviewRepository{
-  account(actor){const s=session(actor.sessionId);if(!s||s.userId!==actor.userId)throw new Error('Denied');return s;}
-  async read(actor){return structuredClone(this.account(actor).row);}
-  async available(actor){return this.account(actor).row?'0':'10000000';}
-  /** EVERY asset this preview session holds, exactly as the production repository
-   *  reports the owner's DemoBalance rows — the settle row, which initialization
-   *  DEBITS into the simulation ledger, plus a non-settle holding so the Cross
-   *  collateral valuation is genuinely exercised here. Its price comes from the
-   *  SAME market-data path the positions are priced on; nothing is valued by a
-   *  number written into this file. */
-  async holdings(actor){const s=this.account(actor);return[
-    {asset:'USDT',available:s.row?'0':'10000000',locked:'0'},
-    {asset:'BTC',available:PREVIEW_WALLET_BTC,locked:'0'},
-  ];}
-  async revision(actor,revision){return structuredClone(this.account(actor).revisions[revision]??null);}
-  async prior(actor,key,hash){const entry=this.account(actor).commands[key];if(!entry)return null;if(entry.hash!==hash)throw new Error('IDEMPOTENCY_CONFLICT');return structuredClone(entry.row);}
-  async initialize(actor,key){const s=this.account(actor);if(s.row)return structuredClone(s.row);const t=now(),row={revision:1,deposit:'10000000',commands:[],snapshot:emptyDemoState('10000000',t),createdAt:t,source:'PREVIEW_FIXTURE'};s.row=row;s.revisions[1]=row;s.commands[key]={hash:commandHash({kind:'INITIALIZE'}),row};save(actor.sessionId,s);return structuredClone(row);}
-  async commit(actor,expected,next,key,hash){const s=this.account(actor),prior=await this.prior(actor,key,hash);if(prior)return prior;if(s.row?.revision!==expected)throw new Error('ACCOUNT_CHANGED');const row=structuredClone({...next,revision:expected+1});s.row=row;s.revisions[row.revision]=row;s.commands[key]={hash,row};save(actor.sessionId,s);return structuredClone(row);}
-}
 // Copy Trading preview uses the exact canonical synthetic performance service,
 // but an in-memory persistence adapter: no production DB, users, balances,
 // copy execution or admin data are reachable from this review server.
@@ -83,7 +64,13 @@ const performanceDb={copyPerformanceScenario:{
   async updateMany({where,data}){const row=performanceRows.get(where.id);if(!row||row.revision!==where.revision)return{count:0};performanceRows.set(where.id,{...row,revision:row.revision+1,stateText:data.stateText,simulatedAt:data.simulatedAt});return{count:1};},
 }};
 const copyPerformance=new CopyPerformanceService(performanceDb,()=>new Date());
-const service=new NativeDemoService(new ReviewRepository(),market);
+const service=new NativeDemoService(new ReviewRepository({session,save,now,walletBtc:PREVIEW_WALLET_BTC}),market);
+// The review uses the same executor after UI refresh became read-only. Only
+// admitted, per-browser synthetic accounts are eligible; no database exists here.
+const executor=new NativeLimitPass(service,async()=>[...sessions.values()].filter(s=>s.row&&(
+  s.row.snapshot.positions.some(p=>p.status==='OPEN')||s.row.snapshot.orders.some(o=>['OPEN','PARTIALLY_FILLED'].includes(o.status))
+)).map(s=>s.executionSession??s.row.executionSession).filter(actor=>actor&&actor.expiresAt>now()));
+executor.start();
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
 app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,commit:process.env.RENDER_GIT_COMMIT??null}));
 app.use('/api/v1/private-trading',(req,res,next)=>{const token=req.headers.authorization?.replace(/^Bearer /,''),s=session(token);if(!s)return res.status(401).json({error:'Preview session required'});res.locals.actor={userId:s.userId,sessionId:token,expiresAt:now()+3600000};next();});
