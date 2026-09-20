@@ -6,7 +6,7 @@ const express=require('express'),fs=require('node:fs'),path=require('node:path')
 const{randomBytes,createHash}=require('node:crypto');
 const{NativeDemoService}=require('../dist/private-trading/native/service');
 const{nativeDemoRoutes}=require('../dist/private-trading/native/routes');
-const{ReviewRepository}=require('./native-demo-review-repository.cjs');
+const{ReviewRepository,reviewExecutionActor}=require('./native-demo-review-repository.cjs');
 const{NativeLimitPass}=require('../dist/private-trading/native/limitPass');
 const{PrivateTradingMarketData,CollectorPrivateTradingSource}=require('../dist/private-trading/marketData');
 const{CopyPerformanceService}=require('../dist/services/copyTrading/CopyPerformanceService');
@@ -67,9 +67,7 @@ const copyPerformance=new CopyPerformanceService(performanceDb,()=>new Date());
 const service=new NativeDemoService(new ReviewRepository({session,save,now,walletBtc:PREVIEW_WALLET_BTC}),market);
 // The review uses the same executor after UI refresh became read-only. Only
 // admitted, per-browser synthetic accounts are eligible; no database exists here.
-const executor=new NativeLimitPass(service,async()=>[...sessions.values()].filter(s=>s.row&&(
-  s.row.snapshot.positions.some(p=>p.status==='OPEN')||s.row.snapshot.orders.some(o=>['OPEN','PARTIALLY_FILLED'].includes(o.status))
-)).map(s=>s.executionSession??s.row.executionSession).filter(actor=>actor&&actor.expiresAt>now()));
+const executor=new NativeLimitPass(service,async()=>[...sessions.values()].map(s=>reviewExecutionActor(s,now())).filter(Boolean));
 executor.start();
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
 app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,commit:process.env.RENDER_GIT_COMMIT??null}));

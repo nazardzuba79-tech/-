@@ -6,6 +6,12 @@ const {historyQuery}=require('../dist/private-trading/native/historyPage');
 const {PrivateTradingError}=require('../dist/private-trading/serviceTypes');
 const {z}=require('zod');
 const cursorSchema=z.object({revision:z.number().int(),kind:historyQuery.shape.kind,symbol:z.string(),time:z.number().finite(),ordinal:z.number().int().positive()});
+function reviewExecutionActor(session,now){
+  const active=session.row&&(session.row.snapshot.positions.some(p=>p.status==='OPEN')||session.row.snapshot.orders.some(o=>['OPEN','PARTIALLY_FILLED'].includes(o.status)));
+  if(!active)return null;
+  const actor=(session.executionSession?.expiresAt??0)>=(session.row.executionSession?.expiresAt??0)?session.executionSession:session.row.executionSession;
+  return actor&&actor.userId===session.userId&&actor.expiresAt>now?actor:null;
+}
 /** Same keyset/cursor contract as PostgreSQL, over this fixture's immutable revision. */
 function reviewHistoryPage(row,input,{positionViews=false}={}){
   const query=historyQuery.parse(input);
@@ -52,4 +58,4 @@ class ReviewRepository{
   async commit(actor,expected,next,key,hash){const s=this.account(actor),prior=await this.prior(actor,key,hash);if(prior)return prior;if(s.row?.revision!==expected)throw new Error('ACCOUNT_CHANGED');const row=structuredClone({...next,revision:expected+1});s.row=row;s.revisions[row.revision]=row;s.commands[key]={hash,row};this.save(actor.sessionId,s);return structuredClone(row);}
 }
 
-module.exports={ReviewRepository,reviewHistoryPage};
+module.exports={ReviewRepository,reviewHistoryPage,reviewExecutionActor};

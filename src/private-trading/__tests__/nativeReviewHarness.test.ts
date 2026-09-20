@@ -1,6 +1,6 @@
 import { resolve } from 'path';
 // Exercise the actual isolated adapter against the same built helpers as its server.
-const { ReviewRepository } = require(resolve('scripts/native-demo-review-repository.cjs'));
+const { ReviewRepository, reviewExecutionActor } = require(resolve('scripts/native-demo-review-repository.cjs'));
 const { deriveNativeLiveProjection } = require(resolve('dist/private-trading/native/liveProjection'));
 const { setup, actor, key } = require(resolve('dist/private-trading/native/testing/liveFixture'));
 
@@ -28,6 +28,14 @@ describe('isolated review repository live contract',()=>{
     expect(save).toHaveBeenCalledTimes(1);
     await expect(repo.live({...actor,sessionId:'another'})).rejects.toThrow('Denied');
     session.row=null;await repo.activate(actor);expect(save).toHaveBeenCalledTimes(1);
+  });
+  test('executor selects the newest admitted session, excludes expired and idle accounts',()=>{
+    session.row.snapshot.positions[0].status='OPEN';
+    session.executionSession={...actor,expiresAt:10};session.row.executionSession={...actor,expiresAt:30};
+    expect(reviewExecutionActor(session,20)).toEqual(session.row.executionSession);
+    expect(reviewExecutionActor(session,40)).toBeNull();
+    session.executionSession={...actor,expiresAt:50};expect(reviewExecutionActor(session,40)).toEqual(session.executionSession);
+    session.row.snapshot.positions=[];expect(reviewExecutionActor(session,40)).toBeNull();
   });
   test.each(['events','positions','orders','entries'])('%s pages are pinned, complete and ordered with production cursors',async(kind:string)=>{
     const row=session.row,revision=row.revision;
