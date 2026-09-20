@@ -81,6 +81,8 @@ const forward=(stored:NativeAccount):NativeAccount=>{
 };
 export const commandHash=(v:unknown):string=>createHash('sha256').update(JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x)).digest('hex');
 export interface NativeRepository {
+  /** Repositories using the same DB client share scheduling, never financial state. */
+  readonly commandLaneScope?: object;
   live?(actor:OwnerSession):Promise<NativeLiveProjection|null>;
   history?(actor:OwnerSession,query:HistoryQuery):ReturnType<typeof nativeHistoryPage>;
   activate?(actor:OwnerSession):Promise<void>;
@@ -104,6 +106,7 @@ export class PrismaNativeRepository implements NativeRepository {
   // A clone protects the cached authoritative transcript from replay mutation.
   private readonly executionCache=new Map<string,NativeAccount>();
   constructor(private readonly db:PrismaClient,private readonly config:()=>PrivateTradingConfig=privateTradingConfig,private readonly cacheExecution=false){}
+  get commandLaneScope(): object { return this.db; }
   private remember(userId:string,row:NativeAccount){
     if(!this.cacheExecution)return;
     this.executionCache.delete(userId);

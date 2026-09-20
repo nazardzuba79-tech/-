@@ -59,7 +59,11 @@ export const NATIVE_FRAME_MARK_MAX_AGE_MS=4000;
 export const NATIVE_COMMIT_ATTEMPTS=3;
 /** Upstream quotes requested in parallel while valuing many open contracts. */
 export const NATIVE_QUOTE_BATCH=8;
-interface CommandLane{chain:Promise<unknown>;depth:number;/** The most recently queued plain REFRESH, while nothing was queued after it. */tailRefresh:Promise<unknown>|null}
+interface CommandLane{chain:Promise<unknown>;depth:number;/** The most recently queued plain REFRESH, while nothing was queued after it. */tailRefresh:Promise<unknown>|null;tailRefreshOwner?:object}
+// HTTP routes and the cached executor construct different services over the
+// same Prisma client. Coordinate before reading/replaying, outside DB locks.
+// Separate clients/replicas still use the unchanged transactional CAS guard.
+const repositoryLanes=new WeakMap<object,Map<string,CommandLane>>();
 /** The three fields of a valuation the engine acts on. */
 export const externalCollateral=(v:CollateralValuation):ExternalCollateral=>({priced:v.collateralPriced,complete:v.complete,asOf:v.asOf});
 /** A copy of the snapshot valued on `valuation`, or the snapshot itself when it already carries the same figure. */
@@ -94,10 +98,14 @@ export class NativeDemoService {
    * revision, so a double spend across processes remains impossible — the
    * lane only stops one process from refusing its own trader.
    */
-  private lanes=new Map<string,CommandLane>();
+  private readonly lanes:Map<string,CommandLane>;
   private quotes=new Map<string,{at:number;quote:PrivateFreshQuote}>();
   private marks=new Map<string,{at:number;mark:PrivateMark}>();
-  constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now){}
+  constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now){
+    const scope=repository.commandLaneScope;
+    this.lanes=(scope&&repositoryLanes.get(scope))||new Map<string,CommandLane>();
+    if(scope)repositoryLanes.set(scope,this.lanes);
+  }
   /** A reused snapshot that no longer passes the freshness check is replaced by a fresh fetch, not reported as stale. */
   private async valuationQuote(symbol:string):Promise<PrivateFreshQuote>{
     const cached=await this.quote(symbol);
@@ -474,13 +482,15 @@ export class NativeDemoService {
     const plainRefresh=request.kind==='REFRESH'&&!options.persist;
     // A refresh queued behind a refresh would read the same state twice.
     // Only the TAIL is shared: a refresh queued after a CLOSE must observe it.
-    if(plainRefresh&&lane.tailRefresh)return lane.tailRefresh as Promise<T>;
+    // Share ordering across services, not responses/authorization envelopes.
+    if(plainRefresh&&lane.tailRefresh&&lane.tailRefreshOwner===this)return lane.tailRefresh as Promise<T>;
     if(lane.depth>=NATIVE_COMMAND_QUEUE_LIMIT)return Promise.reject(new PrivateTradingError('native_queue_full','Слишком много операций в очереди. Повторите через секунду',429));
     lane.depth+=1;this.lanes.set(userId,lane);
     const predecessor=lane.chain;
     const run=(async()=>{await commandRead('lane.wait',()=>predecessor.catch(()=>undefined));commandCheck();return task();})();
     lane.chain=Promise.allSettled([predecessor,run]);
     lane.tailRefresh=plainRefresh?run:null;
+    lane.tailRefreshOwner=plainRefresh?this:undefined;
     const settle=()=>{lane.depth-=1;if(lane.tailRefresh===run)lane.tailRefresh=null;if(lane.depth===0)this.lanes.delete(userId);};
     run.then(settle,settle);
     return run;

@@ -84,6 +84,7 @@ jobs:
           src/private-trading/__tests__/nativeDemo.integration.test.ts
           src/private-trading/__tests__/nativeCommandAcceptance.integration.test.ts
           src/private-trading/__tests__/nativeCommandDeadline.test.ts
+          src/private-trading/__tests__/nativeSharedLane.test.ts
           frontend/src/lib/__tests__/nativeRequestDeadline.test.ts
           src/private-trading/__tests__/nativeOptimization.test.ts
           src/private-trading/__tests__/nativeJournalFinal.test.ts
