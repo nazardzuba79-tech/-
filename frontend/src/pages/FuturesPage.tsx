@@ -8,6 +8,7 @@ import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
+import { FuturesTerminalStatus } from '../components/FuturesTerminalStatus';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
 import type { ChartPositionLine } from '../lib/chartTrading';
@@ -153,8 +154,11 @@ export function FuturesPage() {
   // `status` rides with the levels so the panel can tell "this is the book"
   // from "this WAS the book" from "we do not know" — three different things
   // that all used to render as an empty table.
-  const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[]; status: FuturesDepthStatus }>(
-    { symbol, bids: [], asks: [], status: 'connecting' });
+  // `asOf` rides along with them: it is the LOCAL arrival time of the
+  // newest accepted frame, which is the only honest way to say how old the
+  // numbers on screen are. The status line reads it; the book does not.
+  const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[]; status: FuturesDepthStatus; asOf: number | null }>(
+    { symbol, bids: [], asks: [], status: 'connecting', asOf: null });
   const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
   /**
    * "Торговля с графика" — a CHART TOOL switch, not an account switch.
@@ -564,6 +568,14 @@ export function FuturesPage() {
 
           <div className="order-form-area">
             <h2 className="reference-order-heading">{t('nav.trade')}</h2>
+            {/* Feed state and what trading costs, above the ticket they
+                both bear on. Both figures are measured or published; there
+                is no latency number here because nothing in this client
+                measures a round trip. See FuturesTerminalStatus. */}
+            <FuturesTerminalStatus
+              status={book.symbol === symbol ? book.status : 'connecting'}
+              asOf={book.symbol === symbol ? book.asOf : null}
+            />
             <FuturesOrderForm
               key={symbol}
               symbol={symbol}
