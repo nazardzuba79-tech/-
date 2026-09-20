@@ -18,15 +18,19 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  *
  * Order runs price -> market -> derivatives:
  *
- *   Last with Mark underneath, Index, 24h change, High, Low,
- *   Turnover (quote), Open interest (base), Funding rate / Next funding.
+ *   Last with Mark and Index underneath, 24h change, High, Low,
+ *   Turnover (quote), Open interest (base), Funding rate / Next funding,
+ *   and the calculator trigger pinned to the right edge.
  *
  * Index used to be fetched and then dropped — in the data flow, not on the
  * strip. It is shown now because a mark price quoted without the index it
  * is anchored to cannot be judged: the gap between the two is the whole
- * question a perpetual trader is asking when they look at either. Nothing
- * new is fetched for it; it arrives on the same /futures/mark-price
- * response the mark does.
+ * question a perpetual trader is asking when they look at either. It
+ * shares the price block with the mark rather than taking a cell of its
+ * own, because the strip has no room for a ninth labelled cell — measured,
+ * not guessed: as one it pushed funding 100px past the right edge at 1366.
+ * Nothing new is fetched for it; it arrives on the same
+ * /futures/mark-price response the mark does.
  *
  * Funding sits at the end deliberately. It is important, but it is a
  * once-per-8h settlement, and putting it immediately after mark price
@@ -279,20 +283,28 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
             is the mark everywhere this design is used — but it stays in the
             accessible name, so the cell is still self-describing to a
             screen reader. */}
-        <span className="futures-secondary-price" title={t('futures.markPrice')}>
-          <span className="value" aria-label={t('futures.markPrice')}>
+        {/* MARK AND INDEX, ON ONE LINE UNDER THE LAST PRICE.
+            Index was fetched and then dropped on the floor — the state has
+            held it since the mark arrived, with nothing rendering it — and
+            a mark quoted without the index it is anchored to cannot be
+            judged: the gap between the two is the question a perpetual
+            trader is asking when they look at either.
+
+            It sits HERE rather than in a cell of its own because the strip
+            has no room for a ninth labelled cell: at 1366 that cell pushed
+            the funding rate 100px past the right edge. Three readings of
+            one price in one block is also the truer shape — and the labels
+            survive in `title` and `aria-label`, so neither figure is
+            anonymous on hover or to a screen reader. */}
+        <span className="futures-secondary-price">
+          <span className="value" title={t('futures.markPrice')} aria-label={t('futures.markPrice')}>
             {markPrice !== null ? formatPrice(markPrice) : '—'}
           </span>
+          <span className="futures-price-sep" aria-hidden="true">·</span>
+          <span className="value" data-metric="index" title={t('futures.indexPrice')} aria-label={t('futures.indexPrice')}>
+            {indexPrice !== null ? formatPrice(indexPrice) : '—'}
+          </span>
         </span>
-      </div>
-      {/* INDEX PRICE. It was already being fetched and then dropped on the
-          floor — `indexPrice` has been in this component's state since the
-          mark price arrived, with nothing rendering it. A perpetual's index
-          is what its mark is anchored to, so a professional strip shows
-          both; unknown stays a dash, never a zero. */}
-      <div className="ticker-item">
-        <span className="label">{t('futures.indexPrice')}</span>
-        <span className="value">{indexPrice !== null ? formatPrice(indexPrice) : '—'}</span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('futures.headerChange24h')}</span>

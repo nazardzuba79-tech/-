@@ -118,6 +118,26 @@
   justify-content:flex-start;
   gap:clamp(16px,1.35vw,24px);
 }
+/* THE SAME CLUSTER AT 1366, MEASURED.
+ *
+ * `1.35vw` resolves to 18.4px there, and eight of those is 147px of air on
+ * a 1052px bar carrying 1092px of content — so the funding rate ended up
+ * underneath the pinned calculator trigger, which is the one control on
+ * this strip. 13.7px recovers 38px and brings the strip inside its own box
+ * without touching a label.
+ *
+ * Scoped to <=1400 deliberately: 1440 and 1920 already fit, and tightening
+ * a bar that fits costs the composition the clamp above exists to protect.
+ * Measured before and after at all three widths by
+ * scripts/qa-futures-pro-terminal.cjs, which prints `overflowPx` on every
+ * run. This rule is here, at this selector, because THIS is the one that
+ * wins the cascade for `.futures-ticker-bar` — a tidier-looking rule in
+ * ReferenceFuturesTerminal.css loses to it silently. */
+@media(min-width:1025px) and (max-width:1400px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar {
+    gap:10px;
+  }
+}
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-selector {
   margin-right:0;
   min-width:auto;

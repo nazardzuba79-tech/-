@@ -114,8 +114,20 @@ export function FuturesAccountSummary({
 
   const mask = (s: string) => (showBalance ? s : '****');
   /** The one place an unknown becomes visible text. Never a zero. */
+  /**
+   * `Number.isFinite` is not belt and braces here; it is the same rule as
+   * `null`.
+   *
+   * These figures are sums of parsed decimal strings, and a payload missing
+   * a field parses to NaN. What reached the screen then was the literal
+   * text "NaN.undefined" — `groupAmount` splitting a non-number on its
+   * decimal point — which is a fake figure of the worst kind: it looks like
+   * a bug to an engineer and like a lost balance to a trader. NaN and
+   * Infinity are not amounts, so they are what this card already calls not
+   * knowing: a dash.
+   */
   const show = (value: number | null, format: (n: number) => string) =>
-    value === null || unopened ? '—' : mask(format(value));
+    value === null || unopened || !Number.isFinite(value) ? '—' : mask(format(value));
   /**
    * A percentage, at the precision this row can print.
    *

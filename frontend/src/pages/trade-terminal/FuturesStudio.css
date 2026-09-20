@@ -37,6 +37,7 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .pair-name { font-size:var(--terminal-pair-size); font-weight:600; letter-spacing:-.2px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .pair-selector { border:0; padding:0; margin:0; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item { min-width:0; gap:4px; border:0; padding:0; }
+
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item > .label { font-size:10px; color:#90a1b4; line-height:15px; white-space:normal; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item .value { color:#dbe6f0; font-size:12px; font-weight:500; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item .value.price { font-size:var(--terminal-last-size); line-height:var(--terminal-last-line); font-weight:600; letter-spacing:-.2px; }
