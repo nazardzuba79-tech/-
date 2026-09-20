@@ -256,7 +256,12 @@ test('every new stylesheet selector is Futures-scoped',()=>{
 });
 test('form uses styled real inputs and accessible selected-side/type state',()=>{
  const source=read('components/FuturesOrderForm.tsx');
- expect(source.match(/className="mono fo-input"/g)).toHaveLength(2);
+ // FOUR real inputs now, not two: price and quantity, plus the two TP/SL
+ // levels the ticket arms with the order on an engine that accepts them
+ // there. The point of the count was never the number — it was that every
+ // field in this form is a real styled <input> rather than an inline-styled
+ // div, so the count moves with the form and `styles.` stays banned.
+ expect(source.match(/className="mono fo-input"/g)).toHaveLength(4);
  expect(source).not.toContain('styles.');
  // The ORDER TYPE is still a selected mode, so it still reports pressed
  // state. The SIDE no longer is: there is nothing above the form to press,
@@ -281,8 +286,8 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  // would refuse is misleading in a trading interface. `submitting` is still
  // one of the conditions, so "disabled while sending" stays pinned, and the
  // button and the guard are pinned to ONE expression rather than two copies.
- expect(source).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}");
- expect(source).toContain("disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}");
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}");
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}");
  expect(source).toContain('if (!canSubmit) return;');
  expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });

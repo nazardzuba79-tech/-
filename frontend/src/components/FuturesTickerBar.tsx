@@ -18,9 +18,15 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  *
  * Order runs price -> market -> derivatives:
  *
- *   Last with Mark underneath, 24h change, High, Low, Turnover (quote),
- *   Open interest (base), Funding rate / Next funding.
- *   Index remains in the data flow, but is not a separate visible metric.
+ *   Last with Mark underneath, Index, 24h change, High, Low,
+ *   Turnover (quote), Open interest (base), Funding rate / Next funding.
+ *
+ * Index used to be fetched and then dropped — in the data flow, not on the
+ * strip. It is shown now because a mark price quoted without the index it
+ * is anchored to cannot be judged: the gap between the two is the whole
+ * question a perpetual trader is asking when they look at either. Nothing
+ * new is fetched for it; it arrives on the same /futures/mark-price
+ * response the mark does.
  *
  * Funding sits at the end deliberately. It is important, but it is a
  * once-per-8h settlement, and putting it immediately after mark price

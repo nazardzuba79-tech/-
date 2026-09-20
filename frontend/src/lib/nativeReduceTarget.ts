@@ -23,6 +23,10 @@ interface NativeOrderParams {
   reduceOnly?: boolean;
   /** An explicit table target. Never inferred from quantity. */
   positionId?: string;
+  /** TP/SL to arm with this order. The engine refuses protection on a
+   *  reducing order (`REDUCE_ORDER_PROTECTION`); so does this builder,
+   *  one round trip earlier. */
+  protection?: { takeProfit: string | null; stopLoss: string | null };
 }
 
 type TargetParams = Pick<NativeOrderParams, 'symbol' | 'side' | 'marginType'>;
@@ -66,6 +70,24 @@ export function nativeOrderDraft(
     throw new PrivateTradingError('Закрытие выбранной позиции должно быть Reduce-only.', 409);
   }
   const reducing = !!params.reduceOnly || chartExitId !== null;
+  const armed = params.protection
+    && (params.protection.takeProfit !== null || params.protection.stopLoss !== null);
+  /**
+   * Refused here, not dropped here.
+   *
+   * `placeDemoOrder` throws REDUCE_ORDER_PROTECTION for exactly this input,
+   * and protection on an order that only ever shrinks a position is a
+   * contradiction rather than a typo: the thing being protected is the
+   * position, and it is the positions table that sets it. Quietly stripping
+   * the levels would place the order and arm nothing, which is the one
+   * outcome a trader must never get from a filled-in TP/SL field.
+   */
+  if (reducing && armed) {
+    throw new PrivateTradingError(
+      'Ордер «только уменьшение» не принимает TP/SL. Установите защиту на самой позиции.',
+      409,
+    );
+  }
   const candle = tableTarget ? null : pickedCandle;
   if (!reducing) return terminalOrderToNativeDraft({ ...params, candle });
 

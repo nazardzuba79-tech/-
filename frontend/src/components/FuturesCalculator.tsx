@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { nativeDemoApi, type NativeQuoteInput, type NativeQuoteResult } from '../lib/nativeDemoApi';
 import { useLanguage } from '../lib/i18n';
+import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import './FuturesCalculator.css';
 
 /**
@@ -204,7 +205,13 @@ export function FuturesCalculator({ open, onClose, symbol, initial, onUseValues 
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
         apply(null);
-        setError(e instanceof Error ? e.message : t('calc.unavailable'));
+        // The server's own sentence never reaches this panel. `body.code` is
+        // a closed vocabulary — INVALID_QUANTITY, TIER_LEVERAGE_EXCEEDED,
+        // MIN_NOTIONAL — and `futuresOrderErrorMessage` is the one module
+        // allowed to turn it into words, the same module the order ticket
+        // uses. A quote refused for a reason the ticket would refuse it for
+        // should say the same thing in both places.
+        setError(futuresOrderErrorMessage(e, t, t('calc.unavailable')));
       });
   }, [t]);
 

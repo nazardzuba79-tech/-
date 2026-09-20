@@ -91,6 +91,11 @@
 .trade-terminal.trade-terminal.futures-reference .fo-infoBox { order:1; border:0; border-block:1px solid var(--border-color); border-radius:0; padding:12px 0; gap:7px; }
 .trade-terminal.trade-terminal.futures-reference .fo-infoRow { font-size:13px; line-height:19px; }
 .trade-terminal.trade-terminal.futures-reference .fo-reduceOnlyRow { order:2; font-size:13px; min-height:24px; }
+/* Straight after the Reduce Only row it reacts to. Both carry order:2, so
+   the DOM settles the tie — the toggle, then the levels it governs. */
+.trade-terminal.trade-terminal.futures-reference .fo-tpslBox { order:2; gap:7px; }
+.trade-terminal.trade-terminal.futures-reference .fo-tpslCaption { font-size:13px; }
+.trade-terminal.trade-terminal.futures-reference .fo-tpslBox .fo-input { min-height:36px; height:36px; font-size:13px; }
 .trade-terminal.trade-terminal.futures-reference .fo-submitPair { order:3; gap:12px; padding-top:6px; }
 .trade-terminal.trade-terminal.futures-reference .fo-submitPair .submit-btn { min-height:44px; font-size:13px; padding:10px 5px; white-space:nowrap; }
 .trade-terminal.trade-terminal.futures-reference .fo-form > :not(.fo-infoBox,.fo-reduceOnlyRow,.fo-submitPair) { order:0; }
