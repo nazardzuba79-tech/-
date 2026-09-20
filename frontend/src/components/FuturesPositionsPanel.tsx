@@ -24,8 +24,13 @@ export function FuturesPositionsPanel({
   tab: controlledTab,
   onCount,
   onLimitClose,
+  onEditLeverage,
+  leverageBusy = false,
 }: {
   refreshKey: number;
+  /** Optional native position editor; the order form only configures new orders. */
+  onEditLeverage?: (positionId: string) => void;
+  leverageBusy?: boolean;
   /** Hand this position to the order form as a reduce-only LIMIT ticket.
    *  Absent means the terminal offers no limit close, and the button is
    *  not rendered rather than rendered dead. */
@@ -223,7 +228,14 @@ export function FuturesPositionsPanel({
                           <small className={p.side === 'LONG' ? 'text-buy' : 'text-sell'}>
                             {t('futures.marginTrading')}{' '}
                             {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}{' '}
-                            {Number(p.leverage).toFixed(2)}x
+                            {onEditLeverage ? <button
+                              type="button"
+                              className="futures-position-leverage"
+                              aria-label={`${t('futures.leverage')} · ${p.symbol} · ${p.side}`}
+                              disabled={leverageBusy}
+                              onClick={() => onEditLeverage(p.id)}
+                              style={{ font: 'inherit', color: 'inherit', background: 'transparent', border: 0, borderBottom: '1px dotted currentColor', padding: '0 2px' }}
+                            >{Number(p.leverage).toFixed(2)}x</button> : `${Number(p.leverage).toFixed(2)}x`}
                           </small>
                         </div>
                       </Td>

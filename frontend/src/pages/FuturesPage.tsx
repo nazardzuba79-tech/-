@@ -561,6 +561,11 @@ export function FuturesPage() {
               <FuturesPositionsPanel
                 refreshKey={positionsRefreshKey}
                 tab="open"
+                leverageBusy={native.busy}
+                onEditLeverage={nativeExecution?.ready ? (positionId) => {
+                  const position = native.getState()?.positions.find(p => p.id === positionId && p.status === 'OPEN');
+                  if (position && !native.busy) native.setDialog({ kind: 'leverage', position });
+                } : undefined}
                 /* "Лимитный" hands the position to the ORDINARY order form
                    as a reduce-only ticket, priced at the level the trader
                    then types. It is the form that places it, so this is a

@@ -52,6 +52,16 @@ function controls(){
 }
 
 describe('native demo frontend',()=>{
+  test('the existing position leverage dialog sends only the authoritative LEVERAGE command',async()=>{
+    const {module,h}=controls();const p=position({historical:true,executionMode:'HISTORICAL_DEMO'});
+    const {c,calls}=controller({dialog:{kind:'leverage',position:p}});
+    h.reset();let tree=expand(module.NativeDemoDialogs({controller:c}));
+    nodes(tree).find(n=>n.type==='input').props.onChange({target:{value:'5'}});
+    h.reset();tree=expand(module.NativeDemoDialogs({controller:c}));
+    await nodes(tree).find(n=>n.type==='form').props.onSubmit({preventDefault(){}});
+    expect(calls).toEqual([['run',{kind:'LEVERAGE',positionId:'native-p1',leverage:'5'}],['dialog',null]]);
+    expect(p).toMatchObject({leverage:'20',quantity:'2',entryPrice:'50000',unrealizedPnl:'2000'});
+  });
   test('custom funding coefficients are shown as percent without floating point drift',()=>{
     expect(nativeApi.nativeFundingPercent('-0.001')).toBe('−0.1%');
     expect(nativeApi.nativeFundingPercent('0.004')).toBe('+0.4%');

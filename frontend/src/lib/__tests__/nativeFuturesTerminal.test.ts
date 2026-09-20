@@ -47,6 +47,12 @@ describe('the terminal is the terminal, for every account', () => {
     expect(page).toContain('BOTTOM_TABS.map');
   });
 
+  test('existing-position leverage opens the existing native dialog only for a ready native account', () => {
+    expect(page).toContain('onEditLeverage={nativeExecution?.ready ?');
+    expect(page).toContain("native.getState()?.positions.find(p => p.id === positionId && p.status === 'OPEN')");
+    expect(page).toContain("if (position && !native.busy) native.setDialog({ kind: 'leverage', position })");
+  });
+
   test('the page supplies the engine and the account source through the adapter', () => {
     expect(page).toContain('useNativeFuturesExecution(native, nativeContract)');
     expect(page).toContain('<FuturesExecutionProvider value={execution}>');
