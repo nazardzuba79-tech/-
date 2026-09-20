@@ -25,6 +25,9 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - run: npx prisma generate
+      # The isolated review harness exercises the compiled production engine.
+      - run: npm run build
+      - run: npm run build --prefix frontend
       - name: Financial engine, calculator, transport and terminal regressions
         run: >-
           npm test -- --runInBand --silent --json --outputFile=futures-integration-tests.json

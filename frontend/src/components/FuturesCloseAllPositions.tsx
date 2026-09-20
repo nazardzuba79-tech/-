@@ -3,7 +3,7 @@ import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
-import { closeConfirmedPositions, formatPositionQuantity, positionSelectionKey, type CloseCandidate } from '../lib/futuresPositionActions';
+import { closeConfirmedPositions, formatPositionQuantity, positionSelectionKey, PositionChangedBeforeClose, type CloseCandidate } from '../lib/futuresPositionActions';
 
 /** Uses the same engine-aware close command as each position's Market button. */
 export function FuturesCloseAllPositions({ visible }: { visible: boolean }) {
@@ -49,7 +49,7 @@ export function FuturesCloseAllPositions({ visible }: { visible: boolean }) {
           !!match && positionSelectionKey([match]) === positionSelectionKey([candidate]);
       });
       setResult({ closed: outcome.closed.length, errors: outcome.failed.map(({ position, error }) =>
-        `${position.symbol} ${position.side}: ${error instanceof Error && error.message === 'POSITION_CHANGED'
+        `${position.symbol} ${position.side}: ${error instanceof PositionChangedBeforeClose
           ? (ru ? 'Позиция изменилась — проверьте её состояние.' : 'Position changed — check its current state.')
           : futuresOrderErrorMessage(error, t, t('futures.closePositionError'))}`) });
     } finally {

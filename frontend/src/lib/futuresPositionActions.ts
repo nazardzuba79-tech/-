@@ -6,6 +6,9 @@ export function formatPositionQuantity(size: string, symbol: string): string {
 }
 
 export type CloseCandidate = { id: string; symbol: string; side: string; size: string };
+export class PositionChangedBeforeClose extends Error {
+  constructor() { super('POSITION_CHANGED'); this.name = 'PositionChangedBeforeClose'; }
+}
 
 /** P&L/mark updates do not invalidate consent; changes to exposure do. */
 export function positionSelectionKey(positions: readonly CloseCandidate[]): string {
@@ -21,7 +24,7 @@ export async function closeConfirmedPositions(
   const failed: { position: CloseCandidate; error: unknown }[] = [];
   for (const position of positions) {
     try {
-      if (!isCurrent(position)) throw new Error('POSITION_CHANGED');
+      if (!isCurrent(position)) throw new PositionChangedBeforeClose();
       await close(position.id);
       closed.push(position.id);
     } catch (error) {
