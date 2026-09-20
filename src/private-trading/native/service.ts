@@ -44,6 +44,7 @@ import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
 import { applyLatestQuotes, BarRequest, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 import type { PrivateFreshQuote } from '../marketData';
+import { markDemoAccount } from './engine';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export type NativeCommand = {idempotencyKey:string} & (
   | {kind:'REFRESH'}
@@ -415,6 +416,34 @@ export class NativeDemoService {
 
     const committed=await this.repository.commit(actor,row.revision,next,idempotencyKey,hash);
     return this.walletForRow(actor,committed,valuation);
+  }
+  /** Display revaluation only: never replay, settle, trigger, execute or commit. */
+  async live(actor:OwnerSession){
+    if(!this.repository.live)throw new PrivateTradingError('live_unavailable','Счёт временно недоступен',503);
+    const projection=await this.repository.live(actor);
+    if(!projection)return{...this.view(null),demoAvailable:await this.repository.available(actor)};
+    const snapshot=structuredClone(projection.state);
+    const row:NativeAccount={revision:projection.revision,deposit:snapshot.initialDeposit,commands:[],snapshot,
+      source:projection.source,createdAt:projection.createdAt,disabledCollateralAssets:projection.disabledCollateralAssets};
+    const valuation=await this.collateral(actor,row);
+    setDemoCollateral(snapshot,externalCollateral(valuation));
+    const symbols=[...new Set(snapshot.positions.map(p=>p.symbol))].sort();
+    const frame=await this.frameMarks(symbols);
+    const latest:Record<string,{mark:string;last:string;time:number}>={};
+    for(const symbol of symbols){
+      const mark=frame.get(symbol);
+      if(mark&&this.now()-mark.markProviderTimestamp<=NATIVE_FRAME_MARK_MAX_AGE_MS)
+        latest[symbol]={mark:mark.markPrice,last:mark.lastPrice,time:mark.markProviderTimestamp};
+      else{const quote=await this.valuationQuote(symbol);latest[symbol]={mark:quote.markPrice,last:quote.lastPrice,time:quote.markProviderTimestamp};}
+    }
+    const at=Math.max(this.now(),snapshot.time);
+    if(Object.values(latest).some(q=>at-q.time>PRIVATE_QUOTE_MAX_AGE_MS||q.time>at+1000))throw new PrivateMarketDataError('quote_stale');
+    markDemoAccount(snapshot,latest,at);
+    return{initialized:true,revision:projection.revision,source:projection.source,asOf:at,model:NATIVE_DEMO_MODEL,
+      account:crossAccount(demoAccount(snapshot),valuation,snapshot.positions.length>0),
+      ledger:{...projection.ledger,entries:[]},
+      positions:snapshot.positions.map(p=>demoPositionView(snapshot,p)),orders:snapshot.orders,
+      history:[],events:[],entries:[],historyDeferred:true};
   }
   async state(actor:OwnerSession){
     const row=await this.repository.read(actor);

@@ -26,9 +26,26 @@ import type { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, Pr
 const H0 = Date.UTC(2026, 8, 20, 0, 0, 0);
 const actor: OwnerSession = { userId: 'quote', sessionId: 's', expiresAt: Number.MAX_SAFE_INTEGER };
 
-/** Every write is fatal. Reads that a quote legitimately needs stay harmless. */
+/**
+ * Every write is fatal. Reads that a quote legitimately needs stay harmless.
+ *
+ * THE WRITE SURFACE IS ENUMERATED FROM THE INTERFACE, not from memory —
+ * `writeMethods` below is asserted against `NativeRepository` itself, so a
+ * mutating method added to the repository in future cannot quietly escape
+ * this proof by never being listed here.
+ *
+ * PR #156 widened that surface: `activate` opens an account, and `commit`
+ * now also writes the derived live projection inside the SAME transaction
+ * as the account row, the immutable receipt and the ledger. Both throw.
+ * A projection write therefore cannot happen without going through a
+ * method that is fatal here — which is what makes "the quote does not
+ * touch the projection" a structural claim rather than an observation.
+ */
 class NoWriteRepository implements NativeRepository {
   reads = 0;
+  /** Reads #156 added. Legitimate for a display path; a quote uses neither. */
+  liveCalls = 0;
+  historyCalls = 0;
   private fail(method: string): never {
     throw new Error(`QUOTE_ATTEMPTED_WRITE:${method}`);
   }
@@ -37,6 +54,11 @@ class NoWriteRepository implements NativeRepository {
   async holdings() { this.reads++; return []; }
   async revision() { this.reads++; return null; }
   async prior() { this.reads++; return null; }
+  async live() { this.liveCalls++; return null; }
+  async history(): Promise<never> { this.historyCalls++; throw new Error('a quote must not page history'); }
+  async commandContext() { this.reads++; return { prior: null, row: null, holdings: [] }; }
+  // ── every mutating method, and all of them fatal ──
+  async activate(): Promise<void> { return this.fail('activate'); }
   async initialize(): Promise<NativeAccount> { return this.fail('initialize'); }
   async commit(): Promise<NativeAccount> { return this.fail('commit'); }
 }
@@ -101,6 +123,80 @@ describe('the quote route performs no financial write', () => {
     const { service, market } = build();
     await service.priceQuote(actor, { kind: 'POSITION', symbol: 'BTCUSDT', side: 'LONG', quantity: '0.45', entryPrice: '79650', markPrice: '81485.5', leverage: '20' });
     expect(market.instrumentCalls).toBe(1);
+  });
+
+  /**
+   * THE ENUMERATION CANNOT GO STALE.
+   *
+   * The proof above is only as good as the list of methods that throw. A
+   * mutating method added to `NativeRepository` later — as PR #156 added
+   * `activate` — would otherwise slip past it silently, because a method
+   * nobody listed is a method nobody made fatal.
+   *
+   * So the list is checked against the interface itself. `commandContext`
+   * is named as a READ on purpose: it is one authorization envelope around
+   * the three reads a command needs, and the commit that follows it still
+   * rechecks access and CAS.
+   */
+  it('every mutating repository method is fatal, and the list is checked against the interface', async () => {
+    const repo = new NoWriteRepository();
+    const WRITES = ['activate', 'initialize', 'commit'] as const;
+    const READS = ['read', 'available', 'holdings', 'revision', 'prior', 'live', 'history', 'commandContext'] as const;
+
+    for (const method of WRITES) {
+      // They are `async`, so the failure arrives as a rejection. Awaiting it
+      // is the difference between proving the write is refused and proving
+      // only that a promise was returned.
+      await expect((repo as never as Record<string, () => Promise<unknown>>)[method]())
+        .rejects.toThrow(`QUOTE_ATTEMPTED_WRITE:${method}`);
+    }
+    // Reads and writes together are the WHOLE interface. If `NativeRepository`
+    // grows a method, this fails until it has been classified.
+    const implemented = Object.getOwnPropertyNames(NoWriteRepository.prototype)
+      .filter((n) => n !== 'constructor' && n !== 'fail')
+      .sort();
+    expect(implemented).toEqual([...WRITES, ...READS].sort());
+  });
+
+  /**
+   * #156's PROJECTION IS NOT TOUCHED, and the reason is structural.
+   *
+   * The derived live projection is written inside `commit`'s transaction,
+   * atomically with the account row, the receipt and the ledger — there is
+   * no separate projection writer to call. `commit` throws here, so a quote
+   * that wrote a projection would have to have called a fatal method.
+   *
+   * The read side is checked too: a quote does not consult `/native/live`
+   * or page history either. It prices from the instrument and its inputs,
+   * which is why it costs the database nothing at all.
+   */
+  it('touches neither the live projection nor the history pages', async () => {
+    const { service, repo } = build();
+    for (const input of [
+      { kind: 'ORDER', symbol: 'BTCUSDT', side: 'LONG', quantity: '0.25', price: '81480', leverage: '50' },
+      { kind: 'PNL', symbol: 'BTCUSDT', side: 'LONG', quantity: '0.45', entryPrice: '79650', exitPrice: '81485.5', leverage: '20' },
+    ] as const) {
+      await expect(service.priceQuote(actor, input)).resolves.toBeDefined();
+    }
+    expect({ live: repo.liveCalls, history: repo.historyCalls }).toEqual({ live: 0, history: 0 });
+  });
+
+  /**
+   * NO ACCOUNT READ AT ALL, which is the strongest form of the claim.
+   *
+   * A quote that never loads the account cannot mutate one, cannot bump a
+   * revision and cannot record an idempotency key. It also means the
+   * calculator adds nothing to the DB egress PR #156 spent its whole
+   * effort reducing: repeated quotes cost zero database reads.
+   */
+  it('never loads the account, so it can neither read nor raise a revision', async () => {
+    const { service, repo } = build();
+    for (let i = 0; i < 5; i += 1) {
+      await service.priceQuote(actor, {
+        kind: 'ORDER', symbol: 'BTCUSDT', side: 'LONG', quantity: '0.25', price: '81480', leverage: '50',
+      });
+    }
+    expect(repo.reads).toBe(0);
   });
 });
 

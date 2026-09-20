@@ -6,10 +6,12 @@ import { PrivateTradingError,privateTradingApi,privateErrorText,type PrivateResu
 import { NativeCommandLane,acceptsRevision } from '../../lib/nativeCommandLane';
 import { chartExits } from '../../lib/nativeChartExits';
 import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCandleLoader } from '../../lib/chartTrading';
+import { compactNativeUiState,shouldPollNativeLive,NATIVE_LIVE_POLL_MS } from '../../lib/nativeLivePolicy';
+import { useNativeHistory } from './useNativeHistory';
 
-const NATIVE_WARM_PREFIX='voltex:native-state:v1:';
+const NATIVE_WARM_PREFIX='voltex:native-state:v2:';
 const NATIVE_WARM_MAX_AGE_MS=2*60_000;
-const NATIVE_WARM_MAX_BYTES=900_000;
+const NATIVE_WARM_MAX_BYTES=50_000;
 
 /** Scope browser warm state to the exact authenticated session. The token is
  * already stored by the app, but it is never copied into a cache key/value. */
@@ -54,7 +56,9 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
    *  to learn that the mode is gone. */
   const[params]=useSearchParams();
   const initialWarm=useRef<NativeState|null>(readWarmState(getToken()));
-  const[allowed,setAllowed]=useState(false),[checked,setChecked]=useState(false),[state,setState]=useState<NativeState|null>(()=>initialWarm.current);
+  const[allowed,setAllowed]=useState(false),[checked,setChecked]=useState(false),[liveState,setState]=useState<NativeState|null>(()=>initialWarm.current);
+  const history=useNativeHistory(liveState,allowed,symbol.replace(/[^A-Z0-9]/gi,'').toUpperCase(),sessionScope(getToken())??'');
+  const state=history.state;
   // A cached transcript may paint immediately, but can NEVER authorize a
   // write. `stateLoaded` becomes true only after this session hears back from
   // the server (state/command/initialize).
@@ -84,6 +88,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     // over a newer one. Same revision (a refresh that changed nothing) is
     // still applied, because its marks are fresher.
     if(!acceptsRevision(stateRef.current,next))return;
+    next=compactNativeUiState(next);
     stateRef.current=next;writeWarmState(getToken(),next);setStateLoaded(true);if(alive.current)setState(next);
   },[]);
   /** A temporary access/control-plane outage makes the cached account
@@ -114,9 +119,8 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     void check();const timer=window.setInterval(check,15000),off=onSessionChange(()=>{resetSession();setBinding('unknown');setChecked(false);void check();});
     return()=>{cancelled=true;alive.current=false;controller.abort();clearInterval(timer);off();};
   },[resetSession,suspend]);
-  const refreshOnLoad=useRef(false);
   useEffect(()=>{if(!requested||!allowed)return;let cancelled=false;const controller=new AbortController();
-    nativeDemoApi.state(controller.signal).then(s=>{if(cancelled)return;commitState(s);refreshOnLoad.current=s.initialized;}).catch(e=>{if(!cancelled)fail(e);});
+    nativeDemoApi.activate(controller.signal).then(()=>nativeDemoApi.live(controller.signal)).then(s=>{if(!cancelled)commitState(s);}).catch(e=>{if(!cancelled)fail(e);});
     return()=>{cancelled=true;controller.abort();};
   },[requested,allowed,fail,commitState]);
   useEffect(()=>{setCandle(null);setSelecting(pendingExit.current?'exit':null);setExitId(pendingExit.current);pendingExit.current=null;},[symbol,requested]);
@@ -136,7 +140,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
       if(orphaned())throw new PrivateTradingError('Сессия завершена',401,'session_ended');
       if(!refresh){errorRef.current='';setError('');}
       let key=attempts.current.get(fingerprint);if(!key){key=crypto.randomUUID();attempts.current.set(fingerprint,key);}
-      const next=await nativeDemoApi.command(draft,key);
+      const next=refresh?await nativeDemoApi.live():await nativeDemoApi.command(draft,key);
       if(orphaned())throw new PrivateTradingError('Сессия завершена',401,'session_ended');
       attempts.current.delete(fingerprint);commitState(next);return next;
     };
@@ -146,13 +150,13 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     finally{if(lane.current.pending===0&&alive.current)setBusy(false);}
   },[allowed,fail,commitState]);
   const run=useCallback(async(draft:NativeDraft)=>{try{await execute(draft);return true;}catch{return false;}},[execute]);
-  // Paint the last verified server state first; then silently revalue it.
-  useEffect(()=>{if(refreshOnLoad.current&&state?.initialized&&requested&&allowed){refreshOnLoad.current=false;void run({kind:'REFRESH'});}},[state,requested,allowed,run]);
-  useEffect(()=>{if(!requested||!allowed||!state?.initialized)return;
+  useEffect(()=>{if(!requested||!allowed)return;
     // A command in flight answers with fresh state anyway; the timer only fills quiet time.
-    const timer=window.setInterval(()=>{if(!document.hidden&&lane.current.pending===0&&!dialog&&!candle)void run({kind:'REFRESH'});},30000);
-    return()=>clearInterval(timer);
-  },[requested,allowed,state?.initialized,run,dialog,candle]);
+    const timer=window.setInterval(()=>{if(shouldPollNativeLive(stateRef.current,document.hidden,lane.current.pending))void run({kind:'REFRESH'});},NATIVE_LIVE_POLL_MS);
+    const visible=()=>{if(!document.hidden)void nativeDemoApi.activate().then(()=>run({kind:'REFRESH'})).catch(fail);};
+    document.addEventListener('visibilitychange',visible);
+    return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
+  },[requested,allowed,run,fail]);
   useEffect(()=>{const id=params.get('nativeCard');if(requested&&allowed&&id)nativeDemoApi.getCard(id).then(setCard).catch(fail);},[params,requested,allowed,fail]);
   const initialize=useCallback(async()=>{
     if(!state||!allowed)return;
@@ -164,13 +168,13 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   },[state,allowed,fail,commitState]);
   async function showCard(id:string){try{const result=await nativeDemoApi.card(id);if(alive.current)setCard(result);}catch(e){fail(e);}}
   const normalized=symbol.replace(/[^A-Z0-9]/gi,'').toUpperCase();
-  const positions=[...(state?.positions??[]),...(state?.history??[])];
+  const positions=[...(state?.positions??[]),...history.overlay.positions];
   const trades:ChartTradeOverlay[]=positions.filter(p=>p.symbol===normalized).map(p=>{
-    const entry=state?.entries?.find(e=>e.positionId===p.id)?.candle;
+    const entry=history.overlay.entries.find(e=>e.positionId===p.id)?.candle;
     return{id:p.id,symbol:p.symbol,side:p.side,leverage:Number(p.leverage),entryPrice:Number(p.entryPrice),quantity:Number(p.quantity),pnl:Number(p.status==='OPEN'?p.unrealizedPnl:p.netPnl),status:p.status,
       entryTime:p.openedAt,entryCandleOpenTime:entry?.openTime,entryInterval:entry?.interval,entryModel:entry?.pricePoint,
       takeProfit:p.protection.takeProfit===null?null:Number(p.protection.takeProfit),stopLoss:p.protection.stopLoss===null?null:Number(p.protection.stopLoss),liquidationPrice:p.status==='OPEN'&&p.liquidationPrice!==null?Number(p.liquidationPrice):null,
-      exits:chartExits(state?.events??[],p.id)};
+      exits:chartExits(history.overlay.events,p.id)};
   });
   const loader=useCallback<ChartCandleLoader>((pair,interval,limit,signal,endTime)=>privateTradingApi.candles(pair,interval,limit,signal,endTime),[]);
   const interaction:ChartTradingInteraction={enabled:requested&&allowed&&stateLoaded,selecting,selectedCandle:candle,trades,selectedTradeId:selectedId,focus,
@@ -182,6 +186,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   function exitOnChart(p:NativePosition){if(p.symbol!==normalized){pendingExit.current=p.id;onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));}setSelectedId(p.id);setExitId(p.id);setCandle(null);setSelecting('exit');}
   const getState=useCallback(()=>stateRef.current,[]),getError=useCallback(()=>errorRef.current,[]);
   return{requested,allowed,checked,binding,state,stateLoaded,getState,getError,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,run,execute,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
+    setHistoryDemand:history.setHistoryDemand,historyHasMore:history.historyHasMore,loadMoreHistory:history.loadMoreHistory,
     pickEntry:()=>{setCandle(null);setExitId(null);setSelecting('entry');}};
 }
 export type NativeDemoController=ReturnType<typeof useNativeDemo>;
