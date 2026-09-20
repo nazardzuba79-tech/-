@@ -37,7 +37,7 @@ import {
   type StoredDrawing,
 } from '../lib/chartDrawings';
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
-import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction } from '../lib/chartTrading';
+import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
 import './DrawingTools.css';
 import { PrivatePositionLines } from './PrivatePositionLines';
 
@@ -196,6 +196,7 @@ export function PriceChart({
   candleLoader,
   compactTools = false,
   privateTrading,
+  positionLines,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
@@ -206,6 +207,26 @@ export function PriceChart({
   market?: DrawingMarket;
   candleLoader?: ChartCandleLoader;
   privateTrading?: ChartTradingInteraction;
+  /**
+   * Open positions to draw on the price scale: entry, take profit, stop
+   * loss and the liquidation boundary.
+   *
+   * Every figure is the SERVER'S. `entryPrice` and `liquidationPrice` come
+   * off /futures/positions, and the two protection levels are the armed
+   * triggers the protection service holds — not an echo of anything typed
+   * into an editor. Nothing here is derived, and nothing is approximated:
+   * `previewLiquidationPrice` in lib/futuresMath is a form-time estimate
+   * and must never back a line a trader reads as their liquidation level.
+   *
+   * `liquidationPrice: null` is the engine saying NO PRICE IS REACHABLE
+   * with the account's current collateral. There is then no line, because
+   * a line drawn at some plausible number would be a boundary the engine
+   * does not recognize.
+   *
+   * Undefined where `privateTrading` already draws the same lines from the
+   * simulation transcript, so a position never gets two entry lines.
+   */
+  positionLines?: ChartPositionLine[];
 }) {
   const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
@@ -265,6 +286,12 @@ export function PriceChart({
   tradingRef.current = privateTrading;
   const privateMarkersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const privateLinesRef = useRef<IPriceLine[]>([]);
+  /** Position overlay lines. A ref of their own: the simulation
+   *  transcript's effect owns `privateLinesRef` and clears it wholesale,
+   *  and two effects sharing one list means whichever runs second erases
+   *  the other's work. */
+  const positionLinesRef = useRef<IPriceLine[]>([]);
+  const positionLineOwnerRef = useRef<ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | ISeriesApi<'Area'> | null>(null);
   const privateLineOwnerRef = useRef<ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | ISeriesApi<'Area'> | null>(null);
   const privateHistoryRef = useRef<((time: number) => Promise<void>) | null>(null);
   const [candlesRevision, setCandlesRevision] = useState(0);
@@ -802,6 +829,61 @@ export function PriceChart({
     }
     if (window.confirm(confirmClearRef.current)) clearDrawings();
   }, [drawingToolsOn, clearDrawings, locked]);
+
+  /**
+   * THE POSITION OVERLAY: entry, take profit, stop loss, liquidation.
+   *
+   * Every one of these four is a figure the SERVER holds. Entry and the
+   * liquidation boundary arrive on /futures/positions; the two protection
+   * levels are the triggers `FuturesProtectionService` has armed, which is
+   * why a level typed into the positions editor and not yet saved draws
+   * nothing here. A line on a price scale reads as a commitment, and a
+   * commitment nobody made is the one thing this overlay must not draw.
+   *
+   * NO LIQUIDATION LINE WHEN THE PRICE IS NULL. `null` is the engine
+   * saying no liquidation price is reachable with the account's current
+   * collateral — a fully hedged Cross position, or one the whole balance
+   * backs. `previewLiquidationPrice` in lib/futuresMath could always
+   * produce SOME number, and that is exactly why it is not consulted: it
+   * is a form-time estimate for an order that does not exist yet, not the
+   * boundary this position will actually be closed at.
+   *
+   * One effect owns the whole lifecycle, same discipline as `horizontals`
+   * below: it removes every line it previously made and recreates them, so
+   * the chart objects and the data can never drift apart.
+   */
+  useEffect(() => {
+    const visible = chartType === 'line' ? lineSeriesRef.current
+      : chartType === 'area' ? areaSeriesRef.current : seriesRef.current;
+    const previousOwner = positionLineOwnerRef.current;
+    for (const line of positionLinesRef.current) previousOwner?.removePriceLine(line);
+    positionLinesRef.current = [];
+    positionLineOwnerRef.current = visible;
+    if (!chartReady || !visible || !positionLines?.length) return;
+
+    const here = positionLines.filter(p => chartSymbol(p.symbol) === chartSymbol(pair));
+    const add = (raw: string | null, title: string, color: string, style: LineStyle) => {
+      if (raw === null) return;
+      const price = Number(raw);
+      if (!Number.isFinite(price) || price <= 0) return;
+      positionLinesRef.current.push(visible.createPriceLine({
+        price, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true,
+      }));
+    };
+    for (const position of here) {
+      // Entry carries the direction in its colour, the way the positions
+      // table does — the line is the position, so it should read as one.
+      add(position.entryPrice, position.side === 'LONG' ? 'Long' : 'Short',
+        position.side === 'LONG' ? '#13ad75' : '#f33b57', LineStyle.Solid);
+      add(position.takeProfit, 'TP', '#00c79a', LineStyle.Dashed);
+      add(position.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
+      add(position.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
+    }
+    return () => {
+      for (const line of positionLinesRef.current) positionLineOwnerRef.current?.removePriceLine(line);
+      positionLinesRef.current = [];
+    };
+  }, [positionLines, chartReady, chartType, pair]);
 
   /**
    * Native price lines, derived from `horizontals`.

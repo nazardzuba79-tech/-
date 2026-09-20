@@ -10,6 +10,7 @@ import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
+import type { ChartPositionLine } from '../lib/chartTrading';
 import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
@@ -340,6 +341,41 @@ export function FuturesPage() {
     return value === null ? null : String(value);
   }, [tapeLastPrice, reference, symbol]);
 
+  /**
+   * The open positions the chart draws, and ONLY when the chart is not
+   * already drawing them from somewhere else.
+   *
+   * `privateTrading` gives the chart the simulation transcript, which
+   * already puts an entry line on every open trade and TP/SL/LIQ on the
+   * selected one. Handing it this list as well would draw a second entry
+   * line over the first for the same position — the duplicate the brief
+   * explicitly rules out. So this is the REAL engine's equivalent of that
+   * path, not a second copy of it.
+   *
+   * Every figure travels through untouched, as the server's own string:
+   * parsing it here would round it once before the chart rounds it again.
+   *
+   * No status filtering is needed on the protection legs. /futures/positions
+   * builds them with `activeProtectionByPosition`, which selects only the
+   * ARMED statuses (PENDING, FAILED — which is re-armed — and TRIGGERING).
+   * An executed or cancelled trigger never reaches this list, so a TP line
+   * on the chart is always a trigger that is still standing.
+   */
+  const chartPositionLines = useMemo<ChartPositionLine[] | undefined>(() => {
+    if (nativeExecution && chartTrading) return undefined;
+    const rows = visibleAccount.positions.data;
+    if (!rows?.length) return undefined;
+    return rows.map(row => ({
+      id: row.id,
+      symbol: row.symbol,
+      side: row.side,
+      entryPrice: row.entryPrice,
+      liquidationPrice: row.liquidationPrice,
+      takeProfit: row.protection?.takeProfit?.triggerPrice ?? null,
+      stopLoss: row.protection?.stopLoss?.triggerPrice ?? null,
+    }));
+  }, [nativeExecution, chartTrading, visibleAccount.positions.data]);
+
   const handleOrderPlaced = useCallback(() => {
     setCloseTicket(null);
     setPositionsRefreshKey((k) => k + 1);
@@ -467,6 +503,7 @@ export function FuturesPage() {
             >
               <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
                 privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}
+                positionLines={chartPositionLines}
                 candleLoader={nativeExecution?native.loader:undefined} />
               {nativeExecution && <button
                 type="button"
