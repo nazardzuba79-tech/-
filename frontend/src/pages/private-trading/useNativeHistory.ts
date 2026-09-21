@@ -1,4 +1,4 @@
-import { useCallback,useEffect,useState } from 'react';
+import { useCallback,useEffect,useState,useMemo } from 'react';
 import { nativeDemoApi,type NativeState,type NativeHistoryItems } from '../../lib/nativeDemoApi';
 
 export interface NativeHistoryDemand { positions:boolean;orders:boolean;chart:boolean }
@@ -61,7 +61,10 @@ export function useNativeHistory(state:NativeState|null,enabled:boolean,symbol:s
     return()=>controller.abort();
   },[enabled,revision,demand.chart,symbol,session]);
   const current=enabled&&pages.session===session&&pages.revision===revision?pages:empty(revision,'');
-  const overlay=enabled&&chart.session===session&&chart.revision===revision&&chart.symbol===symbol?chart:empty(revision,symbol);
+  // The empty lazy overlay is data too: allocating it on every book tick would
+  // invalidate chart consumers even while no history has been requested.
+  const overlay=useMemo(()=>enabled&&chart.session===session&&chart.revision===revision&&chart.symbol===symbol?chart:blank(revision,symbol,session),
+    [enabled,chart,session,revision,symbol]);
   const setHistoryDemand=useCallback((next:NativeHistoryDemand)=>setDemand(previous=>
     previous.positions===next.positions&&previous.orders===next.orders&&previous.chart===next.chart?previous:next),[]);
   return{setHistoryDemand,overlay,
