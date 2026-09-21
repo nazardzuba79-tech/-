@@ -1,5 +1,42 @@
 import BigNumber from 'bignumber.js';
-import { bankingProgram, type BankingProgramConfig } from './config';
+import { bankingProgram } from './config';
+
+/**
+ * The four facts that decide what a placement pays.
+ *
+ * This exists so that nothing downstream has to know WHERE the rate came from — and,
+ * more to the point, so that today's program config and a placement's own agreed terms
+ * have the same SHAPE and can never be silently swapped for one another. The config
+ * object satisfies this structurally, so a preview for a not-yet-opened placement still
+ * passes straight in.
+ */
+export interface BankingTerms {
+  id: string;
+  monthlyRate: string;
+  termMonths: number;
+  compound: boolean;
+}
+
+/**
+ * The terms a placement was actually opened under, read off its own row.
+ *
+ * banking_placements.monthly_rate is a snapshot taken at open time, and it is the only
+ * rate that may ever be applied to that placement. Before this existed, the service
+ * looked the program up by id and used TODAY'S configured rate, so editing a number in
+ * config.ts silently rewrote the payout of every placement already in the table — a
+ * contract repriced after the fact, with nothing recording that it had happened.
+ * Read terms from the row. Always.
+ */
+export function placementTerms(row: {
+  program_id: string; monthly_rate: string; term_months: number; compound: boolean;
+}): BankingTerms {
+  return {
+    id: row.program_id,
+    monthlyRate: row.monthly_rate,
+    termMonths: row.term_months,
+    compound: row.compound,
+  };
+}
 
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const utcDate = (value: string | Date) => value instanceof Date ? new Date(value.getTime()) : new Date(`${value}T00:00:00.000Z`);
@@ -38,7 +75,7 @@ export interface BankingCalculation {
 }
 
 export function calculateBankingProgram(params: {
-  program: BankingProgramConfig | string;
+  program: BankingTerms | string;
   amount: string;
   startDate: string | Date;
   endDate: string | Date;
@@ -72,7 +109,7 @@ export function calculateBankingProgram(params: {
   };
 }
 
-export function rewardForMonth(program: BankingProgramConfig, principalValue: string, month: number): string {
+export function rewardForMonth(program: BankingTerms, principalValue: string, month: number): string {
   if (month < 1 || month > program.termMonths) throw new Error('invalid_period_index');
   const principal = new BigNumber(principalValue), rate = new BigNumber(program.monthlyRate);
   if (!program.compound) return principal.times(rate).toFixed();

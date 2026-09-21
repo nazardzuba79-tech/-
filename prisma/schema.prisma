@@ -94,6 +94,15 @@ model User {
   /// Rewards a referrer earned FROM this user's own deposits — the other
   /// side of the same rows as referralRewardsEarned above.
   referralRewardsGenerated ReferralReward[] @relation("ReferralRewardsFromDeposits")
+  /// Banking commissions this user has EARNED as a referrer. A SEPARATE
+  /// product from the deposit rewards above: paid on a referral's realised
+  /// Banking PROFIT, not on any deposit, at a different rate, and never
+  /// mixed into the same totals. See BankingReferralReward.
+  bankingReferralRewardsEarned BankingReferralReward[] @relation("BankingReferralRewardsEarned")
+  /// The other side of those rows — Banking profit THIS user realised that
+  /// paid their referrer a commission. This user's own profit is untouched
+  /// by it; the commission is funded by VOLTEX, not deducted from them.
+  bankingReferralRewardsGenerated BankingReferralReward[] @relation("BankingReferralRewardsFromProfit")
   /// LEGACY / INFORMATIONAL. Nothing in authentication reads this column.
   ///
   /// It records the moment an account proved control of its email address,
@@ -333,6 +342,56 @@ model ReferralReward {
   createdAt      DateTime @default(now())
 
   @@index([referrerId])
+}
+
+/// A 20%-of-PROFIT commission credited to a referrer when a user they
+/// referred (User.referredById) has Banking profit actually SETTLED — see
+/// BankingService.settlePlacement.
+///
+/// Four things distinguish this from ReferralReward above, and each of them
+/// is a deliberate product rule rather than an implementation detail:
+///
+///  * The base is realised PROFIT, never principal and never a deposit. A
+///    1,000 USDT placement that has earned 120 USDT pays the referrer 24,
+///    not 200. sourceProfitAmount records the base the rate was applied to,
+///    so the arithmetic stays auditable years later.
+///  * It is funded by VOLTEX. The referred user keeps their full Banking
+///    terms; nothing is deducted from their side.
+///  * It is paid in the SAME asset the profit was earned in — 0.01 BTC of
+///    profit pays 0.002 BTC, never a USD conversion. USD is display only.
+///  * It can only arise from profit that has actually been paid out. Accrual
+///    alone is not enough, which is why this points at a settled ledger
+///    entry rather than at a placement.
+///
+/// bankingRewardLedgerEntryId is @unique, and that is what makes exactly-once
+/// a hard guarantee rather than an intent: one settled Banking reward can
+/// fund at most one commission, no matter how many times a settlement is
+/// retried, replayed concurrently, or resumed after a restart.
+model BankingReferralReward {
+  id             String   @id @default(uuid())
+  referrerId     String
+  referrer       User     @relation("BankingReferralRewardsEarned", fields: [referrerId], references: [id])
+  referredUserId String
+  referredUser   User     @relation("BankingReferralRewardsFromProfit", fields: [referredUserId], references: [id])
+  /// banking_placements.id — the referred user's placement that produced the
+  /// profit. Not a Prisma relation: the banking_* tables are raw-SQL only and
+  /// have no model to point at.
+  placementId    String
+  /// banking_ledger_entries.id of the SETTLED reward this commission was paid
+  /// on. The unique key, and the whole of the exactly-once guarantee.
+  bankingRewardLedgerEntryId String @unique
+  asset          String
+  /// The referred user's profit this commission was calculated from.
+  sourceProfitAmount Decimal @db.Decimal(36, 18)
+  /// The rate applied, stored per row so a future change to the product's
+  /// headline rate cannot restate what was already paid.
+  commissionRate Decimal  @db.Decimal(18, 10)
+  amount         Decimal  @db.Decimal(36, 18)
+  createdAt      DateTime @default(now())
+
+  @@index([referrerId])
+  @@index([referredUserId])
+  @@index([placementId])
 }
 
 /// A transfer surfaced by a deposit-verifier's listIncoming() (see
