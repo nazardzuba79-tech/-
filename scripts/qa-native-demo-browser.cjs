@@ -559,6 +559,41 @@ async function mobileTicketLayout(width, height) {
     return g;
   } finally { await s.context.close(); }
 }
+async function mobileCloseAllFailure(width, height) {
+  const s = await session(width, async s => {
+    for (const side of ['LONG', 'SHORT']) await api(s.context, s.token, 'commands', {
+      kind:'OPEN', symbol:'BTCUSDT', side, type:'MARKET', quantity:'0.002', leverage:'10',
+      idempotencyKey:`qa-close-all-${side}`,
+    });
+  });
+  try {
+    await s.page.setViewportSize({width,height}); await ready(s); await accountTab(s.page,'positions');
+    await s.page.locator('.archive-close-all').click();
+    const dialog = s.page.locator('.archive-close-all-dialog');
+    await dialog.getByRole('button',{name:'Отмена',exact:true}).click();
+    assert.equal(s.drafts.filter(x=>x.kind==='CLOSE').length,0,'Cancel submitted a close');
+    let closes=0;
+    await s.page.route('**/native/commands',route=>{
+      if(route.request().postDataJSON()?.kind==='CLOSE' && ++closes===2)
+        return route.fulfill({status:503,json:{code:'native_command_timeout',error:'Operation deadline expired'}});
+      return route.continue();
+    });
+    await s.page.locator('.archive-close-all').click();
+    await dialog.getByRole('button',{name:'Подтвердить закрытие',exact:true}).click();
+    await dialog.getByRole('status').waitFor();
+    assert((await dialog.innerText()).includes('1 / 2'),'Partial result missing');
+    const g=await dialog.evaluate(e=>{
+      const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,scroll:e.scrollHeight,client:e.clientHeight,overflow:getComputedStyle(e).overflowY};
+    });
+    assert(g.left>=0 && g.right<=g.width && g.top>=0 && g.bottom<=g.height,'Partial failure dialog leaves viewport');
+    if(g.scroll>g.client+1) assert(['auto','scroll'].includes(g.overflow),'Partial result cannot scroll');
+    await s.page.screenshot({path:path.join(out,`mobile-close-all-partial-${width}.png`)});
+    await dialog.getByRole('button',{name:'Закрыть',exact:true}).click();
+    assert.equal(closes,2,'Failed close retried automatically');
+    assert.equal((await api(s.context,s.token,'state')).positions.length,1,'Remaining position hidden or closed');
+    return {...g,cancelNoSubmit:true,closed:1,failed:1,noAutomaticRetry:true};
+  } finally {await s.context.close();}
+}
 async function main() {
   // Observation only: no components, layout, prices or routing are replaced by the build shim.
   const chartModule = path.join(front, 'node_modules/lightweight-charts/dist/lightweight-charts.production.mjs');
@@ -569,7 +604,9 @@ async function main() {
   await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });
   if (!largeOnly) for (const [width, height] of [[320,700],[390,844],[393,852],[430,932],[768,1024]]) {
     await check(`mobile-ticket-layout-${width}`, () => mobileTicketLayout(width, height));
+    await check(`mobile-close-all-partial-${width}`, () => mobileCloseAllFailure(width, height));
   }
+  if (largeOnly) await check('large-values-320', () => largeValues(320));
   for (const width of [1440, 390]) {
     if (largeOnly) { await check(`large-values-${width}`, () => largeValues(width)); continue; }
     await check(`normal-owner-flow-${width}`, () => normalFlow(width));
