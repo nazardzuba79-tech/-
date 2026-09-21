@@ -299,6 +299,18 @@ export function PriceChart({
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [interval, setInterval_] = useState<Interval>('1h');
   const [empty, setEmpty] = useState(false);
+  /**
+   * The instrument whose candles are currently ON SCREEN — "market|pair|interval".
+   *
+   * Held in a ref, not state, because it must survive the candle effect being
+   * torn down and rebuilt. It is what lets a re-run tell "the user switched
+   * instrument" from "the loader identity changed underneath me".
+   */
+  const paintedSeriesRef = useRef<string | null>(null);
+  /** An initial load genuinely failed and there is nothing to show. */
+  const [loadFailed, setLoadFailed] = useState(false);
+  /** Retries the candle request alone — never a page reload. */
+  const retryCandlesRef = useRef<(() => void) | null>(null);
   const [chartType, setChartType] = useState<ChartType>('candles');
   const [showMA, setShowMA] = useState(true);
   const [showBollinger, setShowBollinger] = useState(false);
@@ -1042,7 +1054,28 @@ export function PriceChart({
       setEmpty(true);
       if (privateMode) setCandlesRevision(value => value + 1);
     };
-    clearSeries();
+    /**
+     * WHICH SERIES IS ON SCREEN — not which function fetched it.
+     *
+     * This effect re-runs whenever `candleLoader` or `privateTrading.enabled`
+     * changes, and at cold open both change exactly once, as the native
+     * binding resolves from unknown to owner. Clearing unconditionally here
+     * therefore wiped a chart that had already painted perfectly good futures
+     * candles, purely because the function fetching them had been swapped —
+     * and whatever ran next was left staring at a canvas it had emptied
+     * itself. If the replacement request was then slow, superseded again, or
+     * failed, the blank simply stayed. That is the intermittent blank chart.
+     *
+     * Candles only go stale when the INSTRUMENT changes, so that is the only
+     * thing that clears them. BTC->ETH and 1h->15m still wipe first, which is
+     * what stops one instrument's bars being shown under another's name.
+     */
+    const seriesKey = `${market}|${pair}|${interval}`;
+    if (paintedSeriesRef.current !== seriesKey) {
+      clearSeries();
+      paintedSeriesRef.current = seriesKey;
+    }
+    setLoadFailed(false);
     if (privateMode) setHistoryState('idle');
 
     function display(res: { candles: Candle[] }) {
@@ -1116,16 +1149,29 @@ export function PriceChart({
       loading=true;
       const requestController = new AbortController();
       controller=requestController;
-      const timeout=setTimeout(()=>requestController.abort(),12000);
+      // Distinguishes OUR deadline from every other reason a request aborts.
+      // A supersession and a timeout both surface as `signal.aborted`, but one
+      // is bookkeeping and the other is a failure the user needs told about.
+      let timedOut = false;
+      const timeout=setTimeout(()=>{timedOut=true;requestController.abort();},12000);
       try {
         const res = candleLoader ? await candleLoader(pair, interval, CANDLE_FETCH_LIMIT,requestController.signal)
           : await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
-        if (cancelled || requestController.signal.aborted) return;
+        // `controller` is the newest request. If it is no longer this one, a
+        // later request owns the chart and this answer is history.
+        if (cancelled || controller !== requestController) return;
         display(privateMode ? { candles: mergeChartCandles(candlesRef.current, res.candles) } : res);
+        setLoadFailed(false);
       } catch {
-        // Historical bars remain immutable and usable during a transient tail
-        // refresh failure; public chart failure behaviour is unchanged.
-        if (!cancelled && !requestController.signal.aborted && (!privateMode || !candlesRef.current.length)) clearSeries();
+        // A superseded or cleanup-aborted request is not evidence of anything.
+        // It must never clear candles and never raise an error over a chart
+        // that is perfectly fine.
+        if (cancelled || controller !== requestController) return;
+        if (requestController.signal.aborted && !timedOut) return;
+        // Last good wins: bars already on screen stay on screen through a
+        // failed tail refresh. Only a chart with nothing to show reports the
+        // failure, and it says so out loud instead of leaving a silent blank.
+        if (!candlesRef.current.length) { clearSeries(); setLoadFailed(true); }
       } finally {
         clearTimeout(timeout);
         loading=false;
@@ -1198,10 +1244,12 @@ export function PriceChart({
       chartRef.current?.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
     }
 
+    retryCandlesRef.current = () => { setLoadFailed(false); void load(); };
     load();
     const poll = window.setInterval(load, 5000);
     return () => {
       cancelled = true;
+      retryCandlesRef.current = null;
       controller?.abort();
       historyController?.abort();
       clearTimeout(backfillTimer);
@@ -1713,7 +1761,14 @@ export function PriceChart({
           onToggleStay={() => setStayInDrawMode((v) => !v)}
         />
 
-        <div style={styles.chartArea}>
+        {/*
+          * What the chart is actually showing, in one word, derived purely
+          * from the state that already drives the overlays below. No new
+          * state, no behaviour — it exists so acceptance tooling can measure
+          * "time to first visible candle" against the real page instead of
+          * guessing at canvas pixels.
+          */}
+        <div style={styles.chartArea} data-chart-state={loadFailed ? 'error' : empty ? 'empty' : 'candles'}>
           <div ref={containerRef} style={styles.chart} />
           {privateTrading?.enabled && chartReady && <PrivatePositionLines chart={chartRef.current} series={seriesRef.current} interaction={privateTrading} pair={pair}/>}
           {terminal && <div className="voltex-plot-title">{pair} · {interval}</div>}
@@ -1955,7 +2010,24 @@ export function PriceChart({
             );
           })}
 
-          {empty && (
+          {/*
+            * A blank canvas must never be the whole message.
+            *
+            * `loadFailed` is only set when an initial load really failed AND
+            * there is nothing on screen to fall back to, so this never covers
+            * a chart that still has usable bars. Retry re-runs the candle
+            * request alone — no page reload — and the wording stays on the
+            * customer's side of the line: what happened, not which provider
+            * said what.
+            */}
+          {loadFailed ? (
+            <div style={styles.chartErrorOverlay}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('trade.chartLoadFailed')}</span>
+              <button type="button" style={styles.chartRetryButton} onClick={() => retryCandlesRef.current?.()}>
+                {t('trade.chartRetry')}
+              </button>
+            </div>
+          ) : empty && (
             <div style={styles.emptyOverlay}>
               <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noChartData', { pair })}</span>
             </div>
@@ -2800,5 +2872,27 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none',
     textAlign: 'center',
     padding: 24,
+  },
+  // Unlike emptyOverlay this one must take clicks — it carries the retry.
+  chartErrorOverlay: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    textAlign: 'center',
+    padding: 24,
+  },
+  chartRetryButton: {
+    padding: '7px 18px',
+    borderRadius: 8,
+    border: '1px solid var(--border-color)',
+    background: 'var(--panel)',
+    color: 'var(--text-primary)',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
   },
 };

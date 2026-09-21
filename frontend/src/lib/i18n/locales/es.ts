@@ -212,6 +212,8 @@ export const ES: Record<Key, string> = {
   'trade.loadingTrades': 'Cargando operaciones...',
   'trade.noTrades': 'Aún no hay operaciones para este par.',
   'trade.noChartData': 'No hay datos de gráfico para {pair}',
+  'trade.chartLoadFailed': 'No se pudo cargar el gráfico',
+  'trade.chartRetry': 'Reintentar',
   'trade.side': 'Lado',
   'trade.remaining': 'Restante',
   'trade.status': 'Estado',

@@ -214,6 +214,8 @@ export const EN: Record<Key, string> = {
   'trade.loadingTrades': 'Loading trades...',
   'trade.noTrades': 'No trades for this pair yet.',
   'trade.noChartData': 'No chart data for {pair}',
+  'trade.chartLoadFailed': 'Could not load the chart',
+  'trade.chartRetry': 'Retry',
   'trade.side': 'Side',
   'trade.remaining': 'Remaining',
   'trade.status': 'Status',

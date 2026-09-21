@@ -212,6 +212,8 @@ export const KO: Record<Key, string> = {
   'trade.loadingTrades': '체결 내역을 불러오는 중...',
   'trade.noTrades': '이 페어에 대한 체결 내역이 아직 없습니다.',
   'trade.noChartData': '{pair}에 대한 차트 데이터가 없습니다',
+  'trade.chartLoadFailed': '차트를 불러오지 못했습니다',
+  'trade.chartRetry': '다시 시도',
   'trade.side': '방향',
   'trade.remaining': '잔여 수량',
   'trade.status': '상태',
