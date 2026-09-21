@@ -1,0 +1,138 @@
+{
+  "scope": "Reduced Chromium viewport and actual focus; no real iOS keyboard, no nonzero device safe-area inset emulated",
+  "beforeFix": [
+    {
+      "actions": {
+        "bottom": 344.00001525878906,
+        "height": 68.66667175292969,
+        "left": 8,
+        "right": 302,
+        "top": 275.3333435058594,
+        "width": 294,
+        "x": 8,
+        "y": 275.3333435058594
+      },
+      "active": "Тейк-профит",
+      "font": "16px",
+      "height": 420,
+      "rect": {
+        "bottom": 230.3333396911621,
+        "height": 40.66666793823242,
+        "left": 12,
+        "right": 151,
+        "top": 189.6666717529297,
+        "width": 139,
+        "x": 12,
+        "y": 189.6666717529297
+      },
+      "visualHeight": 420
+    },
+    {
+      "actions": {
+        "bottom": 344.00001525878906,
+        "height": 68.66667175292969,
+        "left": 8,
+        "right": 302,
+        "top": 275.3333435058594,
+        "width": 294,
+        "x": 8,
+        "y": 275.3333435058594
+      },
+      "active": "Стоп-лосс",
+      "font": "16px",
+      "height": 420,
+      "rect": {
+        "bottom": 230.3333396911621,
+        "height": 40.66666793823242,
+        "left": 159,
+        "right": 298,
+        "top": 189.6666717529297,
+        "width": 139,
+        "x": 159,
+        "y": 189.6666717529297
+      },
+      "visualHeight": 420
+    },
+    {
+      "body": {
+        "height": 64,
+        "scrollHeight": 720
+      },
+      "font": "13px",
+      "foot": {
+        "bottom": 343.33333587646484,
+        "height": 96.61458587646484,
+        "left": 8.666666984558105,
+        "right": 301.33335399627686,
+        "top": 246.71875,
+        "width": 292.66668701171875,
+        "x": 8.666666984558105,
+        "y": 246.71875
+      },
+      "height": 420,
+      "panel": {
+        "bottom": 344,
+        "height": 344,
+        "left": 8,
+        "right": 302,
+        "top": 0,
+        "width": 294,
+        "x": 8,
+        "y": 0
+      },
+      "rect": {
+        "bottom": 344,
+        "height": 344,
+        "left": 8,
+        "right": 302,
+        "top": 0,
+        "width": 294,
+        "x": 8,
+        "y": 0
+      }
+    }
+  ],
+  "finalCalculator": {
+    "body": {
+      "height": 64,
+      "scroll": 720
+    },
+    "dialog": {
+      "bottom": 344,
+      "height": 344,
+      "left": 8,
+      "right": 302,
+      "top": 0,
+      "width": 294,
+      "x": 8,
+      "y": 0
+    },
+    "field": {
+      "bottom": 235.4166679382324,
+      "height": 41.19791793823242,
+      "left": 35.333335876464844,
+      "right": 237.95833587646484,
+      "top": 194.21875,
+      "width": 202.625,
+      "x": 35.333335876464844,
+      "y": 194.21875
+    },
+    "font": "16px",
+    "footer": {
+      "bottom": 343.33333587646484,
+      "height": 96.61458587646484,
+      "left": 8.666666984558105,
+      "right": 301.33335399627686,
+      "top": 246.71875,
+      "width": 292.66668701171875,
+      "x": 8.666666984558105,
+      "y": 246.71875
+    },
+    "tag": "INPUT",
+    "viewport": {
+      "h": 420,
+      "visual": 420,
+      "w": 320
+    }
+  }
+}

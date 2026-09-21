@@ -1,0 +1,90 @@
+{
+  "testedRuntime": "974a5e68ae9b484431b3279c6215ed155c4a3f24",
+  "integration": {
+    "passed": 1575,
+    "failed": 0,
+    "skipped": 0,
+    "suites": 87,
+    "run": 35599273737
+  },
+  "native": {
+    "passed": 242,
+    "run": 35599273846
+  },
+  "browser": {
+    "passed": 40,
+    "largeValuesPassed": 87
+  },
+  "workflow_runs": [
+    {
+      "id": 35599273698,
+      "name": "Private reference UI evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 126,
+      "jobs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273698/jobs",
+      "logs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273698/logs",
+      "workflow_id": 357806108
+    },
+    {
+      "id": 35599273838,
+      "name": "Futures bottom panel geometry",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 43,
+      "jobs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273838/jobs",
+      "logs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273838/logs",
+      "workflow_id": 361855236
+    },
+    {
+      "id": 35599273737,
+      "name": "Futures design and Pro integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 12,
+      "jobs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273737/jobs",
+      "logs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273737/logs",
+      "workflow_id": 362607006
+    },
+    {
+      "id": 35599273706,
+      "name": "Private trading and replay",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 167,
+      "jobs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273706/jobs",
+      "logs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273706/logs",
+      "workflow_id": 357768496
+    },
+    {
+      "id": 35599273846,
+      "name": "Native demo engine and browser",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 240,
+      "jobs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273846/jobs",
+      "logs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273846/logs",
+      "workflow_id": 358075664
+    },
+    {
+      "id": 35599273649,
+      "name": "Futures ticker label visibility",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 63,
+      "jobs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273649/jobs",
+      "logs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273649/logs",
+      "workflow_id": 361343095
+    },
+    {
+      "id": 35599273673,
+      "name": "Customer-facing error wording",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 54,
+      "jobs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273673/jobs",
+      "logs_url": "https://api.github.com/repos/nazardzuba79-tech/-/actions/runs/35599273673/logs",
+      "workflow_id": 362030390
+    }
+  ]
+}

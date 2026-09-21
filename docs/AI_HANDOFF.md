@@ -3157,3 +3157,13 @@ withdrawal was placed.
 - Preserved Claude calculator, Close All sequencing/confirmation/partial failures, calm book and all #152/#156 backend/execution/math/projection/history code. No financial source edits.
 - Local backend TypeScript/build and frontend TypeScript/build PASS. Broad regressions 1,542 PASS, 0 FAIL, 33 DB-gated SKIP; final stylesheet scope/protection 2/2 PASS. Browser runner adapted to select mobile tabs; syntax check only, no local browser run.
 - Browser local-preview access was policy-blocked. Required viewport QA and six screenshots remain outstanding; desktop pixel stability and iPhone keyboard behaviour NOT verified. Draft must remain unmerged; not READY FOR OWNER REVIEW. See README for exact test scope and continuation commands.
+
+### 2026-09-21 — Codex — PR #159 final mobile browser QA
+
+- Continued owner-specified codex/futures-mobile-ux / draft PR #159; fresh main 2bc51d54a60a86778d9c50164291dd2f282c9239, 0 behind. No merge/deploy/production trades.
+- Runtime commits: f3200bb5 (three browser-proven mobile layout defects), 5a34738d (Close All partial-failure/320px large-value browser coverage), 974a5e68ae9b484431b3279c6215ed155c4a3f24 (calculator focus retained across live refreshes). This entry's commit is evidence only.
+- Material code: FuturesMobile.css, FuturesCalculator.tsx, scripts/qa-native-demo-browser.cjs. Evidence: docs/qa/futures-mobile. Preserved approved #158 desktop geometry and Claude calculator architecture, all #152/#156 engine/execution/projection/history behavior.
+- Actual rendered manual matrix: 320x700, 390x844, 393x852, 430x932, 768x1024; desktop 1366x768,1440x900,1920x1080. No horizontal overflow. Exact primary-panel geometry equal to #158/main baseline. Historical Entry/TP/SL/nonnull LIQ, position actions, book price draft, four calculator tabs and Apply verified. Isolated disposable Close All completed 2/2; fixture account left flat.
+- Final code CI 7/7 GREEN: integration 1575/1575 (87 suites, zero skips), native 242/242, native rendered browser 40/40, large values 87/87. Local broad 1542 PASS /33 DB-gated SKIP; final calculator-focused 55 PASS, scope2 PASS; frontend build and backend checks PASS.
+- Real iOS keyboard unavailable. Actual focus and reduced 320x420 viewport verified, 16px inputs and safe-area/visualViewport mechanics inspected; no physical iOS/notch PASS claimed. Global support bubble may overlap Profile; not a Futures form regression. Preview public summary feed limitations explicitly documented.
+- READY FOR OWNER REVIEW within documented browser/tooling scope. Keep draft. Recommended owner follow-up: physical iPhone Safari decimal keyboard/rotation/home-indicator check. No merge or deploy authorized.
