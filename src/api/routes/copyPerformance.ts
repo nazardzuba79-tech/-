@@ -7,12 +7,47 @@ import { summarizeStrategy } from '../../services/copyTrading/marketplaceSummary
 import { withKseniaReportedTrade } from '../../services/copyTrading/kseniaReportedTrade';
 import { redactTradeHistory } from '../../services/copyTrading/tradeHistoryVisibility';
 import { withKseniaReportedWeek } from '../../services/copyTrading/kseniaReportedWeek';
+import { randomUUID } from 'crypto';
 
-/** Server-side only, and deliberately not exported to the response. */
-function logSectionFailures(results: PromiseSettledResult<unknown>[]) {
+const SECTIONS = ['nazar', 'ksenia', 'identities'] as const;
+
+/**
+ * ONE STRUCTURED LINE PER SECTION, EVERY REQUEST — INCLUDING THE GOOD ONES.
+ *
+ * A card that went blank used to leave one clue in the logs and only when
+ * the server itself had failed: if the response was fine and the BROWSER
+ * refused it, or the response was fine and simply slow, there was nothing
+ * written down at all. So "both traders are stuck loading" could not be
+ * answered from the logs — it had to be reproduced, and the production path
+ * is the one path we cannot reproduce here.
+ *
+ * These lines close that. Each names the section, whether it was produced,
+ * how long it took, and — when it failed — the error's CLASS, never its
+ * text. Grep `copy_marketplace.` and the shape of an incident is immediate:
+ * `copy_marketplace.ksenia.error` with a duration near the client's fifteen
+ * seconds is a timeout on our side; `copy_marketplace.nazar.ok` on every
+ * request while the card is blank means the payload is being refused by the
+ * browser, which is a frontend validator problem and nothing to do with
+ * this file.
+ *
+ * WHAT MAY NOT BE WRITTEN. No token, no Authorization header, no account or
+ * user id, no email, no request body, no section payload and no figure. The
+ * request id is generated here and correlates the three lines of ONE
+ * response to each other; it identifies nothing and nobody outside this log.
+ * The error class is the constructor name, which is ours, not user input.
+ */
+function logSections(requestId: string, results: PromiseSettledResult<unknown>[], durationMs: number) {
   results.forEach((result, index) => {
-    if (result.status !== 'rejected') return;
-    const section = ['nazar', 'ksenia', 'identities'][index];
+    const section = SECTIONS[index];
+    if (result.status === 'fulfilled') {
+      console.info(`copy_marketplace.${section}.ok request_id=${requestId} duration_ms=${durationMs}`);
+      return;
+    }
+    const errorClass = result.reason?.constructor?.name ?? 'unknown';
+    console.error(`copy_marketplace.${section}.error request_id=${requestId} `
+      + `duration_ms=${durationMs} error_class=${errorClass}`);
+    // The message is a developer's and stays a developer's: it is the only
+    // thing that distinguishes a decode failure from an unreachable database.
     const reason = result.reason instanceof Error ? result.reason.message : 'unknown';
     console.error(`[copy-trading] section "${section}" unavailable: ${reason}`);
   });
@@ -28,6 +63,8 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
   // Identity/KYC is read afresh: it can legitimately change within the day.
   router.get('/copy-trading/marketplace', requireAuth(prisma), async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
+    const requestId = randomUUID();
+    const startedAt = Date.now();
     // Statistics from the COMPLETE history; the wire carries the latest ten
     // trade rows for the history table and nothing more. `summarizeStrategy`
     // reads every trade to build `tradeStats`, so no figure is derived from
@@ -52,7 +89,7 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     // the append hit contention, or the database was simply unreachable.
     // Only the strategy name and the error's own message are logged; no
     // token, account, request header or payload goes anywhere near this.
-    logSectionFailures(results);
+    logSections(requestId, results, Date.now() - startedAt);
     res.status(results.every(result => result.status === 'rejected') ? 503 : 200)
       .json({ nazar, ksenia, identities, generatedAt: new Date().toISOString(), errors });
   });

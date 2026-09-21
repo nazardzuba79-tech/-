@@ -211,6 +211,12 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
     || reportedKseniaPerformance(value, id);
   const visibleTrades = Array.isArray(value.trades)
     && (!hidden || (value.trades.length === 0 && value.reportedPerformance === undefined))
+    // Rows may be ABSENT only for a stated reason. Without this, a response
+    // truncated on the way out is indistinguishable from a redacted one —
+    // the card would show «сделки скрыты» over a payload that simply lost
+    // them. A strategy that has genuinely never traded is the one honest
+    // way to have no rows and no declaration, and it says so in its count.
+    && (hidden || value.trades.length > 0 || value.tradeHistoryCount === 0)
     && value.trades.length <= VISIBLE_TRADE_ROWS
     && value.trades.every((trade: unknown) => visibleTrade(trade, id))
     && value.trades.every((trade: any, index: number) => index === 0
@@ -339,7 +345,35 @@ export class CopyMarketplaceStore {
     // Leaving a session takes its snapshot with it. A logout must not leave
     // one account's figures readable on a shared machine.
     if (previous !== null && session === null) clearSnapshot(previous, this.storage);
-    this.state = session === null ? empty() : this.hydrate(session);
+    /**
+     * THE LAST EXIT THAT USED TO LEAVE A SKELETON WITH NOTHING BEHIND IT.
+     *
+     * `onSessionChange` is an in-memory list, so it only fires in the tab
+     * that called `setToken`/`clearToken`. Every other tab shares the same
+     * localStorage and learns of the change HERE — from `getState()`, which
+     * React calls as its snapshot getter on every render. The same is true
+     * when storage is cleared by the browser, by an extension, or by a
+     * second window.
+     *
+     * Swapping the state and returning is what put both cards in «Загрузка…»
+     * for good: the new session's state is empty and unsettled, the previous
+     * session's request has just been aborted, and nothing was scheduled to
+     * replace it. The sixty-second poll or a window focus would eventually
+     * rescue it, but on a tab the viewer is already looking at, neither is
+     * guaranteed to come — while every demo trader beside them, needing no
+     * request at all, renders normally. That is the shape of the bug.
+     *
+     * So this exit now closes itself, on the same terms as every other:
+     * no session means there is nothing to ask with, which is a verdict and
+     * is settled immediately; a new session means a real request, and one is
+     * put on the wire — but only for a page someone is actually on, so a
+     * login elsewhere in the app does not fetch a marketplace nobody opened.
+     * An unmounted store is asked by its next `subscribe`. The microtask
+     * keeps the emit out of React's render, exactly as the late-response
+     * path already does.
+     */
+    this.state = session === null ? { ...empty(), settled: true } : this.hydrate(session);
+    if (session !== null && this.listeners.size) queueMicrotask(() => { void this.refresh(); });
   }
 
   /**

@@ -1,3 +1,11 @@
+# PR #159 — sync after PR #162
+
+Main: `7027d4904b9c15ec201f164f3ece60601e93c0c5`; previous head: `b140f2e0457d0e4d83f727f450601784c1de7261`. Only the handoff log conflicted. All 29 non-handoff #162 files exactly match main, and Futures runtime/CSS match the previous head. No redesign or Copy Trading edits. Archive Close All remains removed.
+
+Existing screenshots/evidence below are retained unchanged. The current-head CI gate (Futures integration, native/browser, mobile/desktop regression and Copy Trading) and final SHA are recorded in [PR #159](https://github.com/nazardzuba79-tech/-/pull/159) after CI completes. No READY status is assumed by this pre-CI documentation. Keep DRAFT; NO MERGE; NO DEPLOY.
+
+---
+
 # PR #159 — sync with main after #161
 
 Sync runtime: `5c88c7fdf1b9721edda71fa8fcef4b0a526ece6e`.
