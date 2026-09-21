@@ -194,7 +194,11 @@ test.each([
     : read(path);
   // Only the CFD read-response TYPE changes: nullable price + quote metadata.
   // Restore that exact line for this fingerprint of all existing API behavior.
-  const source = path === 'frontend/src/lib/api.ts' ? read(path).replace(
+  // Deposit-only contract additions are approved separately. Restore their
+  // exact text here so every Futures/Spot API method remains byte-pinned.
+  const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
+    .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
     'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
   ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '') : normalized;

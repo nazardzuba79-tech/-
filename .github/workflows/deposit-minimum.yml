@@ -48,6 +48,8 @@ jobs:
           src/services/deposit-verifiers/__tests__/BitcoinDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/SolanaDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/TonDepositVerifier.test.ts
+          frontend/src/lib/__tests__/depositAllWallets.test.ts
+          frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
           frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
       - name: Install isolated PostgreSQL and browser tools

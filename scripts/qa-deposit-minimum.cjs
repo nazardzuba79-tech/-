@@ -5,6 +5,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const net = require('node:net');
 const { once } = require('node:events');
 const { spawn, spawnSync } = require('node:child_process');
@@ -29,7 +30,13 @@ async function main() {
   const probe = net.createServer().listen(0, '127.0.0.1'); await once(probe, 'listening');
   const port = probe.address().port; await new Promise(resolve => probe.close(resolve));
   const bin = qa(process.platform === 'win32' ? '@embedded-postgres/windows-x64' : '@embedded-postgres/linux-x64');
-  const dataDir = fs.mkdtempSync(path.resolve('node_modules/.cache/deposit-qa/cluster-'));
+  // Windows initdb drops the Administrators SID. A pre-created directory on
+  // the Actions checkout drive can be owned by Administrators, so the reduced
+  // process cannot chmod it. Use the runner's user-owned temp area and let
+  // initdb itself create its data directory with the correct ownership.
+  const scratch = process.platform === 'win32' ? path.join(os.homedir(), 'AppData', 'Local', 'Temp') : os.tmpdir();
+  fs.mkdirSync(scratch, { recursive: true });
+  const dataDir = path.join(fs.mkdtempSync(path.join(scratch, 'voltex-deposit-qa-')), 'data');
   const init = spawnSync(bin.initdb, ['-D', dataDir, '-U', 'postgres', '-A', 'trust', '--encoding=UTF8', '--locale=C'], { windowsHide: true, encoding: 'utf8' });
   assert.equal(init.status, 0, init.stderr);
   const child = spawn(bin.postgres, ['-D', dataDir, '-h', '127.0.0.1', '-p', String(port)], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });

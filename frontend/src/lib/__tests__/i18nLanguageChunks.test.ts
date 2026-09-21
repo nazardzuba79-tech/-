@@ -111,7 +111,8 @@ describe('translation integrity', () => {
     // connection/fee status strip. Both groups are asserted by name below,
     // so this re-take cannot quietly cover anything else.
     const digests: Record<string, string> = {
-      "ru": "64ed186f97b37487",
+      // Owner-approved BELOW_MINIMUM label now explicitly says manual processing.
+      "ru": "5ebdb41cbb4ffafa",
       "en": "e611d3497c9b1a2d",
       "zh": "cedb45e34ebeb4ce",
       "es": "d9605794d278083e",

@@ -11,5 +11,10 @@
     "newFailures": []
   },
   "backendBuild": "PASS",
-  "frontendBuild": "PASS"
+  "frontendBuild": "PASS",
+  "additionalIntegrity": {
+    "suites": 2,
+    "tests": 53,
+    "failed": 0
+  }
 }
