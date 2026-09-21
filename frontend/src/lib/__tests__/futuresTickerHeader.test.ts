@@ -344,35 +344,36 @@ const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
 beforeEach(() => { jest.useFakeTimers(); jest.setSystemTime(new Date('2026-09-08T03:22:43Z')); });
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
-test('visible metrics follow price, market, derivatives order, with index beside the mark', async () => {
-  // INDEX IS NOW A VISIBLE FIGURE, and this test changed to say so.
+test('visible metrics follow price, market, derivatives order, with the mark as the only secondary price', async () => {
+  // ONE SECONDARY REFERENCE PRICE, and this test changed to say so.
   //
-  // It used to assert the opposite: the index was fetched with the mark
-  // price and then dropped, on the reasoning that one anchor figure under
-  // the last price was enough. The Futures terminal brief asks for the
-  // strip a derivatives trader actually reads, and on every venue that is
-  // last, mark AND index — the index is what the mark is anchored to, so
-  // a mark quoted without it cannot be judged. The figure was already in
-  // this component's state; nothing new is fetched for it.
+  // It previously required the index beside the mark, on the reasoning that
+  // a mark quoted without the index it is anchored to cannot be judged. In
+  // practice the two agree to within a few ticks, so on the face of the
+  // terminal they read as the same number printed twice — noise in the row
+  // a trader scans most often. The mark is what a position is actually
+  // marked against, so the mark is the figure that keeps the slot.
   //
-  // It shares the PRICE BLOCK with the mark rather than taking a cell of
-  // its own, so the cell count is unchanged at seven. As a ninth labelled
-  // cell it pushed the funding rate 100px past the right edge at 1366 —
-  // measured, not guessed, by scripts/qa-futures-pro-terminal.cjs.
+  // PRESENTATION ONLY. `indexPrice` is still fetched and still held in the
+  // component's state; /futures/mark-price returns both and MarkPriceService
+  // still computes both. The byte-for-byte source guard over this file's
+  // reads (see the derivatives-reads test above) is unchanged and still
+  // passes, which is what proves the data path was not touched.
   //
-  // Everything else this test guards is unchanged: no venue is named, base
-  // volume is still not shown, and an unknown figure is still a dash.
+  // Everything else this test guards is unchanged: seven cells, no venue is
+  // named, base volume is still not shown, an unknown figure is still a
+  // dash, and the funding countdown still carries its interval.
   const component = mount(); component.render(); await flush();
   const tree = component.render();
   const blocks = nodes(tree).filter(n => n.props.className?.split(' ').includes('ticker-item'));
   expect(blocks).toHaveLength(7);
-  // Last price, then mark and index as the NUMBERS ALONE. The owner's
-  // terminal pack drops the "Маркировочная цена:" prefix from the face of
-  // the header: the figures directly under the last price are the mark and
-  // the index, and the labels only repeated what their position says.
-  expect(text(blocks[0])).toBe('72,345.6772,340.12·71,999.88');
-  // They are dropped from the VISIBLE text only. Each figure still carries
-  // its label for assistive tech and on hover, so neither is anonymous.
+  // Last price, then the mark as the NUMBER ALONE. The owner's terminal
+  // pack drops the "Маркировочная цена:" prefix from the face of the
+  // header: the figure directly under the last price is the mark, and the
+  // label only repeated what its position says.
+  expect(text(blocks[0])).toBe('72,345.6772,340.12');
+  // Dropped from the VISIBLE text only. It still carries its label for
+  // assistive tech and on hover, so the figure is not anonymous.
   const markCell = nodes(blocks[0]).find(n => n.props.className === 'futures-secondary-price');
   expect(markCell).toBeDefined();
   expect(nodes(markCell).find(n => n.props['aria-label'])?.props['aria-label']).toBe('futures.markPrice');
@@ -383,12 +384,12 @@ test('visible metrics follow price, market, derivatives order, with index beside
     // upstream venue is named anywhere in this header.
     'futures.headerTurnover24h (USDT)', 'futures.openInterest (BTC)', 'futures.headerFunding',
   ]);
-  // Last, mark and index, in that order, in the one price block. Both
-  // secondary figures keep an accessible name, so neither is anonymous.
-  expect(text(blocks[0])).toBe('72,345.6772,340.12·71,999.88');
-  const index = nodes(blocks[0]).find(n => n.props['data-metric'] === 'index');
-  expect(index.props['aria-label']).toBe('futures.indexPrice');
-  expect(index.props.title).toBe('futures.indexPrice');
+  // AND THE INDEX IS NOT ANYWHERE IN THE HEADER — a stronger statement
+  // than the one it replaces, because it forbids the figure coming back in
+  // any cell rather than only describing where it used to sit.
+  expect(nodes(tree).find(n => n.props['data-metric'] === 'index')).toBeUndefined();
+  expect(text(tree)).not.toContain('71,999.88');
+  expect(text(tree)).not.toContain('futures.indexPrice');
   // Base volume still does not render, and no upstream venue is named.
   expect(text(tree)).not.toMatch(/volume24h|123,456/);
   expect(text(tree)).toContain('987.65M');
