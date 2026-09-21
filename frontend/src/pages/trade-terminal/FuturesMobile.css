@@ -147,10 +147,6 @@
   #archive-terminal-preview .fut-tpslTrigger { min-height:44px; min-width:44px; }
   #archive-terminal-preview .fut-tpslPopover { left:12px !important; top:auto !important; bottom:calc(var(--mobile-nav-space) + var(--mobile-keyboard-inset,0px) + 12px); width:calc(100% - 24px) !important; max-height:calc(var(--mobile-viewport-height,100dvh) - var(--mobile-nav-space) - 36px); overflow-y:auto; z-index:100; }
   #archive-terminal-preview .fut-tpslPopover :is(input,button) { min-height:44px; }
-  #archive-terminal-preview :is(.archive-close-all,.archive-close-all-actions button) { min-height:44px; }
-  #archive-terminal-preview .archive-close-all-dialog { width:calc(100% - 24px); max-height:calc(var(--mobile-viewport-height,100dvh) - 24px); overflow-y:auto; }
-  #archive-terminal-preview .archive-close-all-actions { flex-wrap:wrap; }
-  #archive-terminal-preview .archive-close-all-actions button { white-space:normal; }
 }
 @media (max-width:359px) {
   /* Language remains available in the mobile menu; reserve space for the brand. */

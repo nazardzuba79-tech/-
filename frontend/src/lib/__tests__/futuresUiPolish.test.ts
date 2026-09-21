@@ -3,7 +3,7 @@
 // Mobile follow-up: page fingerprint refreshed for workspace state, viewport inset and draft handoffs.
 // Mounted mobile handoff tests in futuresFinalPolish assert no second ticket or submission.
 // Financial behavior is independently covered by nativeHistoricalCurrent, nativeLiveProjection,
-// calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order/close-all tests.
+// calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order tests.
 
 import {readFileSync} from 'fs';
 import {resolve} from 'path';
@@ -200,6 +200,8 @@ test.each([
     // Final pass: dynamic book opt-in, symbol-bound read lifecycle and repeat picks.
     // futuresFinalPolish covers exact selection and stale-response rejection.
     // Explicit Futures wallet source; other terminal wiring remains unchanged.
+    // Close All removed from the archive toolbar at the owner's request:
+    // one import and one render site dropped, nothing else in this page touched.
     // Re-taken for the shared drawing rail. ONE LINE differs: the PriceChart
     // element gained `drawingTools market="futures"`, opting this page into
     // the SAME rail Spot already used. No other byte changed — the contract
@@ -214,7 +216,8 @@ test.each([
     // listing still comes from the backend and nowhere else, and the
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
-    "5ee718724b5e5069969979d2730f0938ea8c3d20e0b761104a713a20b3f215ed"
+    // PR #159 sync: keep mobile workspaces; remove only the archive Close All import/render from #161.
+    "bd65fcfabb9511c57773cad470b3bf249458fd31fa253eaee451dca2de1e4f40"
   ],
   [
     "components/FuturesPairList.tsx",

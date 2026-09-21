@@ -566,39 +566,35 @@ async function mobileTicketLayout(width, height) {
     return g;
   } finally { await s.context.close(); }
 }
-async function mobileCloseAllFailure(width, height) {
+// PR #161 removes archive Close All. Verify that sync retains per-position actions.
+async function archivePositionActions(width, height) {
   const s = await session(width, async s => {
     for (const side of ['LONG', 'SHORT']) await api(s.context, s.token, 'commands', {
       kind:'OPEN', symbol:'BTCUSDT', side, type:'MARKET', quantity:'0.002', leverage:'10',
-      idempotencyKey:`qa-close-all-${side}`,
+      idempotencyKey:'qa-position-actions-'+side,
     });
   });
   try {
-    await s.page.setViewportSize({width,height}); await ready(s); await accountTab(s.page,'positions');
-    await s.page.locator('.archive-close-all').click();
-    const dialog = s.page.locator('.archive-close-all-dialog');
-    await dialog.getByRole('button',{name:'Отмена',exact:true}).click();
-    assert.equal(s.drafts.filter(x=>x.kind==='CLOSE').length,0,'Cancel submitted a close');
-    let closes=0;
-    await s.page.route('**/native/commands',route=>{
-      if(route.request().postDataJSON()?.kind==='CLOSE' && ++closes===2)
-        return route.fulfill({status:503,json:{code:'native_command_timeout',error:'Operation deadline expired'}});
-      return route.continue();
-    });
-    await s.page.locator('.archive-close-all').click();
-    await dialog.getByRole('button',{name:'Подтвердить закрытие',exact:true}).click();
-    await dialog.getByRole('status').waitFor();
-    assert((await dialog.innerText()).includes('1 / 2'),'Partial result missing');
-    const g=await dialog.evaluate(e=>{
-      const r=e.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,scroll:e.scrollHeight,client:e.clientHeight,overflow:getComputedStyle(e).overflowY};
-    });
-    assert(g.left>=0 && g.right<=g.width && g.top>=0 && g.bottom<=g.height,'Partial failure dialog leaves viewport');
-    if(g.scroll>g.client+1) assert(['auto','scroll'].includes(g.overflow),'Partial result cannot scroll');
-    await s.page.screenshot({path:path.join(out,`mobile-close-all-partial-${width}.png`)});
-    await dialog.getByRole('button',{name:'Закрыть',exact:true}).click();
-    assert.equal(closes,2,'Failed close retried automatically');
-    assert.equal((await api(s.context,s.token,'state')).positions.length,1,'Remaining position hidden or closed');
-    return {...g,cancelNoSubmit:true,closed:1,failed:1,noAutomaticRetry:true};
+    const p=s.page;
+    await p.setViewportSize({width,height}); await ready(s); await accountTab(p,'positions');
+    await rows(p).first().waitFor();
+    assert.equal(await p.locator('.archive-close-all, .archive-close-all-dialog').count(),0,'Removed archive Close All returned');
+    assert.equal(await p.getByRole('button',{name:'Закрыть все',exact:true}).count(),0,'Archive bulk close returned under another selector');
+    assert.equal(await rows(p).count(),2,'Seeded positions are missing');
+    for(const side of ['LONG','SHORT']) {
+      const actions=positionRow(p,side).locator('.futures-position-close');
+      assert.equal(await actions.count(),2,'Individual Limit/Market actions missing');
+      for(let i=0;i<2;i++) assert(await actions.nth(i).isVisible(),'Individual close action hidden');
+    }
+    const g=await p.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+    assert(g.scroll<=g.width+1,'Positions workspace creates horizontal page overflow');
+    await p.screenshot({path:path.join(out,'sync-position-actions-'+width+'.png')});
+    const state=(await command(s,'CLOSE',()=>positionRow(p,'SHORT').locator('.futures-position-close').nth(1).click())).state;
+    assert.equal(state.positions.length,1,'Individual close affected the wrong number of positions');
+    assert.equal(state.positions[0].side,'LONG','Individual close changed another position');
+    assert.equal(s.drafts.filter(x=>x.kind==='CLOSE').length,1,'Individual close submitted multiple commands');
+    assert.deepEqual(s.realRequests,[],'Regression touched real-account endpoints');
+    return {...g,archiveCloseAllAbsent:true,individualActionsVisible:true,individualMarketClose:true};
   } finally {await s.context.close();}
 }
 async function main() {
@@ -611,7 +607,10 @@ async function main() {
   await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });
   if (!largeOnly) for (const [width, height] of [[320,700],[390,844],[393,852],[430,932],[768,1024]]) {
     await check(`mobile-ticket-layout-${width}`, () => mobileTicketLayout(width, height));
-    await check(`mobile-close-all-partial-${width}`, () => mobileCloseAllFailure(width, height));
+    await check(`mobile-position-actions-${width}`, () => archivePositionActions(width, height));
+  }
+  if (!largeOnly) for (const [width,height] of [[1366,768],[1440,900],[1920,1080]]) {
+    await check(`desktop-position-actions-${width}`, () => archivePositionActions(width,height));
   }
   if (largeOnly) await check('large-values-320', () => largeValues(320));
   for (const width of [1440, 390]) {

@@ -1,3 +1,9 @@
+# PR #159 main sync — validation in progress
+
+Main `5477adb7c314b24a15ba5451079039884961431b` removes archive Close All via #161. The sync preserves that removal and the mobile UX. The browser regression now checks absence plus individual position actions at five mobile and three desktop sizes. The report below is historical evidence for the pre-sync runtime; its Close All results are superseded by #161. Existing screenshots are retained, not recreated as new evidence. See the upcoming sync report for current-head validation.
+
+---
+
 # Futures mobile — final browser QA
 
 **READY FOR OWNER REVIEW — keep PR #159 draft. NO MERGE. NO DEPLOY.**
