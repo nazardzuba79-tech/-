@@ -131,24 +131,55 @@ interface KrakenAssetPair {
   quote: string;
 }
 
+/** Kraken's Ticker row: ask, bid, close, high, low, volume, VWAP, open.
+ *  Each is [today, last 24h] except `c` (price, lot volume) and `o`. */
+interface RawTicker {
+  c: [string, string];
+  b: [string, string, string];
+  a: [string, string, string];
+  h: [string, string];
+  l: [string, string];
+  v: [string, string];
+  p: [string, string];
+  o: string;
+}
+
+/** Unchanged from the batched walk this replaced — same fields, same
+ *  rounding, same VWAP fallback. Only where the row comes FROM changed. */
+function toMarketTicker(pair: string, raw: RawTicker): MarketTicker {
+  const lastPrice = Number(raw.c[0]);
+  const openPrice = Number(raw.o);
+  const changePercent24h = openPrice === 0 ? '0' : (((lastPrice - openPrice) / openPrice) * 100).toFixed(4);
+  // Prefer the real 24h VWAP for turnover, but fall back to last price if
+  // Kraken ever returns a missing/zero VWAP (illiquid pair, API quirk) —
+  // better an approximation than a silent "0".
+  const vwap = Number(raw.p?.[1]);
+  const effectivePrice = vwap > 0 ? vwap : lastPrice;
+  return {
+    pair,
+    lastPrice: raw.c[0],
+    bidPrice: raw.b[0],
+    askPrice: raw.a[0],
+    high24h: raw.h[1],
+    low24h: raw.l[1],
+    volume24h: raw.v[1],
+    quoteVolume24h: (Number(raw.v[1]) * effectivePrice).toFixed(2),
+    changePercent24h,
+  };
+}
+
 interface SymbolInfo {
   pair: string;
   baseAsset: string;
   quoteAsset: string;
   krakenName: string; // altname — what we pass as the "pair" query param
+  // Kraken's OWN key for this pair in AssetPairs (XXBTZUSD, where the
+  // altname is XBTUSD). A Ticker response is keyed by this, not by the
+  // altname we asked under, and for 44 pairs — the legacy-prefixed majors,
+  // BTC and ETH among them — the two differ. Keeping it is what lets a
+  // ticker be found without a second request per pair.
+  krakenCanonicalName: string;
 }
-
-// Kraken's public endpoints cap how many pairs can be requested in one
-// call; batch ticker lookups to stay well under that.
-const TICKER_BATCH_SIZE = 40;
-// Kraken lists several hundred tradeable pairs, so a full ticker refresh is
-// many dozens of these batches. Running them one at a time (the original
-// approach) meant a full walk could take tens of seconds — long enough to
-// outlive TICKERS_TTL_MS itself, so the pair list could sit empty while a
-// fresh walk kept restarting under it. This caps how many batches run
-// concurrently: fast enough to comfortably finish inside the cache TTL,
-// without firing every batch at once against Kraken's public API.
-const TICKER_CONCURRENCY = 6;
 
 export class KrakenMarketDataService {
   // Every cache below is a ProviderCache: TTL + in-flight deduplication +
@@ -367,7 +398,7 @@ export class KrakenMarketDataService {
   private async fetchSymbolsMap(): Promise<Map<string, SymbolInfo>> {
     const body = await this.request('/0/public/AssetPairs');
     const byPair = new Map<string, SymbolInfo>();
-    for (const [, raw] of Object.entries(body.result as Record<string, KrakenAssetPair>)) {
+    for (const [krakenCanonicalName, raw] of Object.entries(body.result as Record<string, KrakenAssetPair>)) {
       if (!raw.wsname) continue; // pairs without a wsname aren't tradeable spot pairs (e.g. dark pool)
       const [rawBase, rawQuote] = raw.wsname.split('/');
       if (!rawBase || !rawQuote) continue;
@@ -377,7 +408,7 @@ export class KrakenMarketDataService {
       // Prefer the first mapping seen for a given normalized pair (Kraken
       // sometimes lists both a spot pair and its ".d" dark-pool twin).
       if (!byPair.has(pair)) {
-        byPair.set(pair, { pair, baseAsset, quoteAsset, krakenName: raw.altname });
+        byPair.set(pair, { pair, baseAsset, quoteAsset, krakenName: raw.altname, krakenCanonicalName });
       }
     }
 
@@ -409,7 +440,13 @@ export class KrakenMarketDataService {
       // USDT itself produces a self-pair under a "/USDT" label.
       if (info.baseAsset === 'USDT') continue;
       const usdtPair = `${info.baseAsset}/USDT`;
-      byPair.set(usdtPair, { pair: usdtPair, baseAsset: info.baseAsset, quoteAsset: 'USDT', krakenName: info.krakenName });
+      byPair.set(usdtPair, {
+        pair: usdtPair,
+        baseAsset: info.baseAsset,
+        quoteAsset: 'USDT',
+        krakenName: info.krakenName,
+        krakenCanonicalName: info.krakenCanonicalName,
+      });
     }
 
     return byPair;
@@ -427,82 +464,41 @@ export class KrakenMarketDataService {
 
   private async fetchTickersMap(): Promise<Map<string, MarketTicker>> {
     const symbolsByPair = await this.getSymbolsMap();
-    const infos = Array.from(symbolsByPair.values());
 
-    const batches: SymbolInfo[][] = [];
-    for (let i = 0; i < infos.length; i += TICKER_BATCH_SIZE) {
-      batches.push(infos.slice(i, i + TICKER_BATCH_SIZE));
-    }
+    // ONE request for the whole board. Omitting the `pair` parameter is
+    // Kraken's documented way of asking for every tradeable pair at once,
+    // and measured against the live API it answers in ~0.2-0.4s — no slower
+    // than a single 40-pair batch, for all ~1,450 pairs.
+    //
+    // What this replaces, and why it had to go: the previous walk cut the
+    // pair list into 52 batches of 40 and ran them six at a time, then —
+    // for every pair whose response key did not match the altname it had
+    // asked under — issued ANOTHER single-pair request, sequentially,
+    // inside the batch loop. Kraken keys a Ticker response by its canonical
+    // pair name (XXBTZUSD) while the altname is XBTUSD, and the two differ
+    // for 44 pairs, which are precisely the majors. Measured against
+    // production the whole walk took 13-17s while TICKERS_TTL_MS is 5s, so
+    // the cache could not stay warm: any caller arriving more than five
+    // seconds after the last completed walk paid for the next one, and a
+    // first visit sat on a loading state for ~19s. Looking a pair up by the
+    // name Kraken actually keys by removes the retry path altogether.
+    const body = await this.request('/0/public/Ticker');
+    // A Map, not the raw object: the keys are provider-supplied, and a Map
+    // cannot be confused by one that happens to name an Object member.
+    const board = new Map(Object.entries(body.result as Record<string, RawTicker>));
 
     const byPair = new Map<string, MarketTicker>();
-    for (let i = 0; i < batches.length; i += TICKER_CONCURRENCY) {
-      const group = batches.slice(i, i + TICKER_CONCURRENCY);
-      const groupResults = await Promise.all(
-        group.map(async (batch) => ({
-          batch,
-          body: await this.request(`/0/public/Ticker?pair=${batch.map((b) => b.krakenName).join(',')}`),
-        }))
-      );
-      for (const { batch, body } of groupResults) {
-        const resultByKrakenName = new Map(Object.entries(body.result)) as Map<
-          string,
-          {
-            c: [string, string];
-            b: [string, string, string];
-            a: [string, string, string];
-            h: [string, string];
-            l: [string, string];
-            v: [string, string];
-            p: [string, string]; // volume-weighted average price: [today, last 24h]
-            o: string;
-          }
-        >;
-        type RawTicker = { c: [string, string]; b: [string, string, string]; a: [string, string, string]; h: [string, string]; l: [string, string]; v: [string, string]; p: [string, string]; o: string };
-        for (const info of batch) {
-          let raw: RawTicker | undefined = resultByKrakenName.get(info.krakenName);
-          if (!raw) {
-            // A batched request keys its response by whatever pair
-            // identifier Kraken's Ticker endpoint chooses to echo back —
-            // for most pairs that's the altname we requested, but for a
-            // handful of legacy-prefixed majors (this is what the "prefer
-            // the deeper USD market" substitution above tends to select
-            // for) it can differ, so the exact-key lookup above misses
-            // them even though the pair is perfectly valid. Every other
-            // endpoint here (Depth/OHLC/Trades) already sidesteps this by
-            // not caring about the response key at all — a single-pair
-            // retry can do the same (Object.values(...)[0] is
-            // unambiguous when only one pair was asked for), rather than
-            // silently dropping a pair that's actually fine.
-            try {
-              const singleBody = await this.request(`/0/public/Ticker?pair=${info.krakenName}`);
-              raw = Object.values(singleBody.result)[0] as RawTicker | undefined;
-            } catch {
-              // still unavailable — fall through to the skip below
-            }
-          }
-          if (!raw) continue; // Kraken didn't return this pair (delisted/suspended) — just skip it
-          const lastPrice = Number(raw.c[0]);
-          const openPrice = Number(raw.o);
-          const changePercent24h = openPrice === 0 ? '0' : (((lastPrice - openPrice) / openPrice) * 100).toFixed(4);
-          // Prefer the real 24h VWAP for turnover, but fall back to last
-          // price if Kraken ever returns a missing/zero VWAP (illiquid pair,
-          // API quirk) — better an approximation than a silent "0".
-          const vwap = Number(raw.p?.[1]);
-          const effectivePrice = vwap > 0 ? vwap : lastPrice;
-          const quoteVolume24h = (Number(raw.v[1]) * effectivePrice).toFixed(2);
-          byPair.set(info.pair, {
-            pair: info.pair,
-            lastPrice: raw.c[0],
-            bidPrice: raw.b[0],
-            askPrice: raw.a[0],
-            high24h: raw.h[1],
-            low24h: raw.l[1],
-            volume24h: raw.v[1],
-            quoteVolume24h,
-            changePercent24h,
-          });
-        }
-      }
+    for (const info of symbolsByPair.values()) {
+      // Canonical first, altname second. Kraken echoes the canonical key
+      // for the legacy-prefixed pairs and the altname for everything else,
+      // so a board keyed either way resolves without a second request.
+      const raw = board.get(info.krakenCanonicalName) ?? board.get(info.krakenName);
+      // Kraken didn't return this pair (delisted/suspended) — skip it
+      // rather than invent a price. Note several pairs legitimately share
+      // one Kraken market: every synthetic "/USDT" mirror reads the same
+      // row as its "/USD" original, which is the point of the mirror.
+      if (!raw) continue;
+      byPair.set(info.pair, toMarketTicker(info.pair, raw));
     }
     return byPair;
   }

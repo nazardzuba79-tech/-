@@ -191,26 +191,29 @@ describe('KrakenMarketDataService', () => {
     });
   });
 
-  it('retries as a single pair when a batched Ticker response keys an entry differently than the requested altname', async () => {
-    // The exact real-world quirk this guards against: Kraken's batched
-    // Ticker response can key an entry using its own canonical form (e.g.
-    // "XXBTZUSDT") instead of echoing back the altname we requested
-    // ("XBTUSDT") — an exact-key lookup in the batch then misses a pair
-    // that is perfectly valid. ETH is included alongside BTC in the same
-    // batch, keyed by its plain altname, to prove the mismatch is handled
-    // per-pair rather than by falling back for the whole batch.
-    const batchBody = {
+  it('resolves an entry Kraken keys by its own canonical form rather than the requested altname', async () => {
+    // The exact real-world quirk this guards against: a Kraken Ticker
+    // response keys an entry using its own canonical form ("XXBTZUSDT")
+    // instead of the altname ("XBTUSDT"), so a lookup by altname misses a
+    // pair that is perfectly valid. ETH sits beside it keyed by its plain
+    // altname, to prove both spellings resolve in the same response.
+    //
+    // This used to be recovered with an extra single-pair request per
+    // miss, issued sequentially — which is what made a full refresh take
+    // 13-17s against a 5s cache TTL, because the 44 pairs that need it are
+    // the legacy-prefixed majors. The pair is now found by the name Kraken
+    // keys by, so the assertion is stronger than it was: it must resolve
+    // with NO recovery request at all.
+    const board = {
       error: [],
       result: {
         ETHUSDT: TICKER_BODY.result.XBTUSDT,
         XXBTZUSDT: TICKER_BODY.result.XBTUSDT,
       },
     };
-    const fetchFn = jest.fn().mockImplementation((url: string) => {
-      if (url.includes('AssetPairs')) return Promise.resolve(jsonResponse(ASSET_PAIRS_BODY));
-      if (url.includes('pair=XBTUSDT,ETHUSDT')) return Promise.resolve(jsonResponse(batchBody));
-      return Promise.resolve(jsonResponse(TICKER_BODY)); // single-pair retry
-    });
+    const fetchFn = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(jsonResponse(url.includes('AssetPairs') ? ASSET_PAIRS_BODY : board))
+    );
     const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
 
     const tickers = await service.getTickers();
@@ -226,7 +229,8 @@ describe('KrakenMarketDataService', () => {
       quoteVolume24h: '73699650.00',
       changePercent24h: '2.0408',
     });
-    expect(fetchFn.mock.calls.some(([url]) => url.includes('Ticker?pair=XBTUSDT') && !url.includes(','))).toBe(true);
+    expect(tickers.find((t) => t.pair === 'ETH/USDT')?.lastPrice).toBe('60000');
+    expect(fetchFn.mock.calls.filter(([url]) => String(url).includes('/Ticker'))).toHaveLength(1);
   });
 
   it('falls back to last price for turnover when Kraken omits the VWAP', async () => {
@@ -423,5 +427,115 @@ describe('KrakenMarketDataService candle caching', () => {
     // final close rather than the value it had while still forming.
     expect(merged.map((c) => c.time)).toEqual([t0, t1, t2]);
     expect(merged.find((c) => c.time === t1)?.close).toBe(109);
+  });
+});
+
+/**
+ * The ticker refresh is ONE request, and it resolves a pair by the name
+ * Kraken actually keys its answer by.
+ *
+ * These pin the two properties that made the old batched walk take 13-17s
+ * against a 5s cache TTL in production: it asked in 40-pair batches, and it
+ * looked each row up by the altname it had asked under, while Kraken keys a
+ * Ticker response by its canonical pair name. The 44 pairs where those
+ * differ are the legacy-prefixed majors — BTC and ETH among them — and each
+ * miss cost an extra sequential round trip.
+ */
+describe('KrakenMarketDataService ticker refresh', () => {
+  // XXBTZUSD/XBTUSD and XETHZUSD/ETHUSD are Kraken's real spellings: the
+  // AssetPairs KEY differs from the altname, which is the whole point.
+  const LEGACY_ASSET_PAIRS = {
+    error: [],
+    result: {
+      XXBTZUSD: { altname: 'XBTUSD', wsname: 'XBT/USD', base: 'XXBT', quote: 'ZUSD' },
+      XETHZUSD: { altname: 'ETHUSD', wsname: 'ETH/USD', base: 'XETH', quote: 'ZUSD' },
+      SOLUSD: { altname: 'SOLUSD', wsname: 'SOL/USD', base: 'SOL', quote: 'ZUSD' },
+    },
+  };
+
+  const row = (last: string, open: string) => ({
+    a: ['1', '1', '1'], b: ['1', '1', '1'], c: [last, '0.5'],
+    h: ['1', '1'], l: ['1', '1'], v: ['10', '20'], p: ['1', last], o: open,
+  });
+
+  /** A board keyed the way Kraken really keys it: canonical names. */
+  const CANONICAL_BOARD = {
+    error: [],
+    result: { XXBTZUSD: row('60000', '50000'), XETHZUSD: row('3000', '3000'), SOLUSD: row('200', '100') },
+  };
+
+  function serviceWith(assetPairs: any, board: any) {
+    const fetchFn = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(jsonResponse(String(url).includes('AssetPairs') ? assetPairs : board))
+    );
+    return { fetchFn, service: new KrakenMarketDataService('https://mock-kraken', fetchFn as any) };
+  }
+
+  it('asks for the whole board in a single request, with no pair parameter', async () => {
+    const { fetchFn, service } = serviceWith(LEGACY_ASSET_PAIRS, CANONICAL_BOARD);
+
+    await service.getTickers();
+
+    const tickerUrls = fetchFn.mock.calls.map(([u]: [string]) => String(u)).filter((u) => u.includes('/Ticker'));
+    expect(tickerUrls).toHaveLength(1);
+    expect(tickerUrls[0]).not.toContain('pair=');
+  });
+
+  it('resolves a pair whose response key is the canonical name, not the altname', async () => {
+    // The old walk asked under `pair=XBTUSD`, looked the answer up under
+    // `XBTUSD`, missed, and spent another request per pair to recover.
+    const { fetchFn, service } = serviceWith(LEGACY_ASSET_PAIRS, CANONICAL_BOARD);
+
+    const tickers = await service.getTickers();
+
+    expect(tickers.find((t) => t.pair === 'BTC/USD')?.lastPrice).toBe('60000');
+    expect(tickers.find((t) => t.pair === 'ETH/USD')?.lastPrice).toBe('3000');
+    // and it cost no recovery request
+    expect(fetchFn.mock.calls.filter(([u]: [string]) => String(u).includes('/Ticker'))).toHaveLength(1);
+  });
+
+  it('still resolves a pair whose response key is the altname', async () => {
+    // Kraken echoes the altname for everything that has no legacy prefix,
+    // so a board keyed that way must keep working.
+    const altnameBoard = { error: [], result: { XBTUSD: row('61000', '60000'), SOLUSD: row('200', '100') } };
+    const { service } = serviceWith(LEGACY_ASSET_PAIRS, altnameBoard);
+
+    const tickers = await service.getTickers();
+
+    expect(tickers.find((t) => t.pair === 'BTC/USD')?.lastPrice).toBe('61000');
+  });
+
+  it('skips a pair the board does not carry rather than inventing a price', async () => {
+    const partial = { error: [], result: { XXBTZUSD: row('60000', '50000') } };
+    const { service } = serviceWith(LEGACY_ASSET_PAIRS, partial);
+
+    const tickers = await service.getTickers();
+
+    expect(tickers.find((t) => t.pair === 'BTC/USD')).toBeDefined();
+    expect(tickers.find((t) => t.pair === 'ETH/USD')).toBeUndefined();
+    expect(tickers.some((t) => t.lastPrice === '0')).toBe(false);
+  });
+
+  it("gives a synthetic /USDT mirror the same row as the /USD market it stands in for", async () => {
+    const { service } = serviceWith(LEGACY_ASSET_PAIRS, CANONICAL_BOARD);
+
+    const tickers = await service.getTickers();
+
+    const usd = tickers.find((t) => t.pair === 'BTC/USD');
+    const usdt = tickers.find((t) => t.pair === 'BTC/USDT');
+    expect(usdt).toBeDefined();
+    expect(usdt?.lastPrice).toBe(usd?.lastPrice);
+    expect(usdt?.volume24h).toBe(usd?.volume24h);
+  });
+
+  it('derives change percent and quote volume from the row, unchanged by the rewrite', async () => {
+    const { service } = serviceWith(LEGACY_ASSET_PAIRS, CANONICAL_BOARD);
+
+    const btc = (await service.getTickers()).find((t) => t.pair === 'BTC/USD');
+
+    // last 60000 against open 50000 is +20%, and turnover is the 24h
+    // volume (20) times the 24h VWAP (60000).
+    expect(btc?.changePercent24h).toBe('20.0000');
+    expect(btc?.quoteVolume24h).toBe('1200000.00');
   });
 });
