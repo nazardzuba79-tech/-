@@ -1,7 +1,7 @@
 // @ts-nocheck
 // Integration baseline: fresh main ac2d583 + approved archive f1836a7 + Pro 0a76da5.
 // Financial behavior is independently covered by nativeHistoricalCurrent, nativeLiveProjection,
-// calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order/close-all tests.
+// calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order tests.
 
 import {readFileSync} from 'fs';
 import {resolve} from 'path';
@@ -198,6 +198,8 @@ test.each([
     // Final pass: dynamic book opt-in, symbol-bound read lifecycle and repeat picks.
     // futuresFinalPolish covers exact selection and stale-response rejection.
     // Explicit Futures wallet source; other terminal wiring remains unchanged.
+    // Close All removed from the archive toolbar at the owner's request:
+    // one import and one render site dropped, nothing else in this page touched.
     // Re-taken for the shared drawing rail. ONE LINE differs: the PriceChart
     // element gained `drawingTools market="futures"`, opting this page into
     // the SAME rail Spot already used. No other byte changed — the contract
@@ -212,7 +214,7 @@ test.each([
     // listing still comes from the backend and nowhere else, and the
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
-    "e5f357baa87eb317ca8f438dfeee6714f16f63200672c9d0acc5fe676d621792"
+    "1f0e472847519527a0d457214600da477db7f2ab98a0c87fb30843dbb81506c6"
   ],
   [
     "components/FuturesPairList.tsx",
