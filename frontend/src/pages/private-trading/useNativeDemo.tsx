@@ -1,4 +1,4 @@
-import { useCallback,useEffect,useRef,useState } from 'react';
+import { useCallback,useEffect,useRef,useState,useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getToken,onSessionChange } from '../../lib/api';
 import { nativeDemoApi,type NativeState,type NativeDraft,type NativePosition,type NativeEvent } from '../../lib/nativeDemoApi';
@@ -172,19 +172,22 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   },[state,allowed,fail,commitState]);
   async function showCard(id:string){try{const result=await nativeDemoApi.card(id);if(alive.current)setCard(result);}catch(e){fail(e);}}
   const normalized=symbol.replace(/[^A-Z0-9]/gi,'').toUpperCase();
-  const positions=[...(state?.positions??[]),...history.overlay.positions];
-  const trades:ChartTradeOverlay[]=positions.filter(p=>p.symbol===normalized).map(p=>{
+  // Book/ticker renders do not change account overlays. Keep their identity
+  // until the actual account, selected contract or lazy history changes.
+  const positions=useMemo(()=>[...(state?.positions??[]),...history.overlay.positions],[state?.positions,history.overlay.positions]);
+  const trades:ChartTradeOverlay[]=useMemo<ChartTradeOverlay[]>(()=>positions.filter(p=>p.symbol===normalized).map(p=>{
     const entry=(state?.entries??[]).find(e=>e.positionId===p.id)?.candle??history.overlay.entries.find(e=>e.positionId===p.id)?.candle;
     return{id:p.id,symbol:p.symbol,side:p.side,leverage:Number(p.leverage),entryPrice:Number(p.entryPrice),quantity:Number(p.quantity),pnl:Number(p.status==='OPEN'?p.unrealizedPnl:p.netPnl),status:p.status,
       entryTime:p.openedAt,entryCandleOpenTime:entry?.openTime,entryInterval:entry?.interval,entryModel:entry?.pricePoint,
       takeProfit:p.protection.takeProfit===null?null:Number(p.protection.takeProfit),stopLoss:p.protection.stopLoss===null?null:Number(p.protection.stopLoss),liquidationPrice:p.status==='OPEN'&&p.liquidationPrice!==null?Number(p.liquidationPrice):null,
       exits:chartExits(history.overlay.events,p.id)};
-  });
+  }),[positions,normalized,state?.entries,history.overlay.entries,history.overlay.events]);
   const loader=useCallback<ChartCandleLoader>((pair,interval,limit,signal,endTime)=>privateTradingApi.candles(pair,interval,limit,signal,endTime),[]);
-  const interaction:ChartTradingInteraction={enabled:requested&&allowed&&stateLoaded,selecting,selectedCandle:candle,trades,selectedTradeId:selectedId,focus,
+  const interaction=useMemo<ChartTradingInteraction>(()=>({enabled:requested&&allowed&&stateLoaded,selecting,selectedCandle:candle,trades,selectedTradeId:selectedId,focus,
     onCandleSelect:c=>{setCandle(c);setSelecting(null);},onCancelSelection:()=>{setCandle(null);setSelecting(null);setExitId(null);setEntryIntent(false);},onTradeSelect:setSelectedId,
     onTradeClose:id=>{const p=positions.find(p=>p.id===id&&p.status==='OPEN');if(p)setDialog({kind:'close',position:p});},
-    onSelectionModeChange:mode=>{setSelecting(mode);setCandle(null);setEntryIntent(mode==='entry');if(mode==='entry')setExitId(null);}};
+    onSelectionModeChange:mode=>{setSelecting(mode);setCandle(null);setEntryIntent(mode==='entry');if(mode==='entry')setExitId(null);}}),
+    [requested,allowed,stateLoaded,selecting,candle,trades,selectedId,focus,positions]);
 
   function selectEntry(p:NativePosition){onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));setSelectedId(p.id);setFocus(f=>({tradeId:p.id,time:p.openedAt,sequence:(f?.sequence??0)+1}));}
   function exitOnChart(p:NativePosition){if(p.symbol!==normalized){pendingExit.current=p.id;onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));}setSelectedId(p.id);setExitId(p.id);setCandle(null);setSelecting('exit');}

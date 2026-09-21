@@ -58,6 +58,25 @@ describe('actual React native hook live lifecycle',()=>{
     expect(api.history).toHaveBeenCalledTimes(1);expect(api.history.mock.calls[0].slice(0,2)).toEqual(['positions',7]);
     await tick(30_000);expect(api.history).toHaveBeenCalledTimes(1);
   });
+  test('unrelated local UI renders preserve chart interaction; live and selection changes still update it',async()=>{
+    const before=current.interaction,trade=before.trades[0];
+    await React.act(async()=>current.setDialog({kind:'leverage',position:state.positions[0]}));
+    expect(current.interaction).toBe(before);
+    await React.act(async()=>current.setDialog(null));
+    expect(current.interaction).toBe(before);
+    state={...state,positions:[{...state.positions[0],unrealizedPnl:'123',markPrice:'50500'}]};
+    await tick(30_000);
+    expect(current.interaction).not.toBe(before);
+    expect(current.interaction.trades[0]).toMatchObject({id:trade.id,pnl:123});
+    // The memoized close callback must see the NEW authoritative position.
+    await React.act(async()=>current.interaction.onTradeClose('p'));
+    expect(current.dialog.position.markPrice).toBe('50500');
+    await React.act(async()=>current.interaction.onSelectionModeChange('entry'));
+    expect(current.interaction.selecting).toBe('entry');
+    await React.act(async()=>current.interaction.onCancelSelection());
+    expect(current.interaction.selecting).toBe(null);
+    expect(api.history).not.toHaveBeenCalled();expect(api.command).not.toHaveBeenCalled();
+  });
   test('chart history is selected-symbol only, exhausts pages, and keeps entry metadata',async()=>{
     api.history.mockImplementation(async(kind:string,_revision:number,options:any)=>({items:kind==='entries'?[{positionId:'p',candle:{openTime:123,interval:'15',pricePoint:'OPEN'}}]:[],nextCursor:kind==='events'&&!options.cursor?'page2':null}));
     await React.act(async()=>{current.setHistoryDemand({positions:false,orders:false,chart:true});});

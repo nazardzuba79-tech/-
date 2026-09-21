@@ -56,7 +56,7 @@ async function main(){
  await build({root:front,define:{'import.meta.env.VITE_API_URL':JSON.stringify('/api/v1')}});
  report.bundles=fs.readdirSync(path.join(front,'dist/assets')).filter(f=>f.endsWith('.js')).map(file=>{const b=fs.readFileSync(path.join(front,'dist/assets',file));return{file,raw:b.length,gzip:gzipSync(b).length}}).sort((a,b)=>b.raw-a.raw);
  await build({root:front,plugins:[instrument()],resolve:{alias:{'lightweight-charts':shim}},define:{'import.meta.env.VITE_API_URL':JSON.stringify('/api/v1')}});
- qa=loadQA();await qa.startServer();browser=await qaRequire('playwright').chromium.launch({headless:true,channel:'msedge'});qa.setBrowser(browser);
+ qa=loadQA();await qa.startServer();browser=await qaRequire('playwright').chromium.launch({headless:true,...(process.platform==='win32'?{channel:'msedge'}:{})});qa.setBrowser(browser);
  const s=await qa.session(1440);observer=await observe(s);await fixtureSocket(s.context);
  await stage(s,'fresh-authenticated-open',async()=>{await s.page.reload();await qa.ready(s)});
  await stage(s,'visible-empty-60s',()=>delay(60000));

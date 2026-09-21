@@ -272,6 +272,25 @@ describe('private chart native interaction and history', () => {
     chart.unmount();
   });
 
+  test('near-live overlay changes never rewrite historical candles; selecting and clearing still repaint the exact bar', async () => {
+    const state = { ...interaction(), selecting: null, selectedCandle: null as any };
+    const chart = mount({ ...FUTURES, privateTrading: state, candleLoader: jest.fn().mockResolvedValue({ candles: [candle] }) });
+    chart.render(); await flush(); chart.render();
+    const series = chart.chartHarness.series[0], count = series.setData.mock.calls.length;
+    for (let i = 0; i < 100; i++) chart.render({ privateTrading: { ...state, trades: [{ id:'p',symbol:'BTCUSDT',side:'LONG',status:'OPEN',entryPrice:72000,leverage:10,entryTime:time*1000,pnl:i,exits:[] }] } });
+    expect(series.setData).toHaveBeenCalledTimes(count);
+    const selected = { ...state, selectedCandle: { symbol:'BTCUSDT',openTime:time*1000 } };
+    chart.render({privateTrading:selected});
+    expect(series.setData).toHaveBeenCalledTimes(count+1);
+    expect(series.setData.mock.calls.at(-1)[0]).toEqual([expect.objectContaining({time,color:'#61b9ff',open:72000,close:73000})]);
+    chart.render({privateTrading:{...selected}});
+    expect(series.setData).toHaveBeenCalledTimes(count+1);
+    chart.render({privateTrading:state});
+    expect(series.setData).toHaveBeenCalledTimes(count+2);
+    expect(series.setData.mock.calls.at(-1)[0][0]).not.toHaveProperty('color');
+    chart.unmount();
+  });
+
   test('late history from a replaced pair is aborted and cannot repaint new contract', async () => {
     let resolveHistory!: (value: unknown) => void;
     const loader = jest.fn().mockResolvedValueOnce({ candles: [candle] }).mockImplementationOnce(() => new Promise(resolve => { resolveHistory = resolve; })).mockResolvedValueOnce({ candles: [{ ...candle, close: 74000 }] });

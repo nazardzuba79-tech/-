@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "financial": [
+    {
+      "file": "live-values.json",
+      "cycles": 120,
+      "excluded": "random fixture position id only",
+      "sha256": "3523c15859d27f422c8f805d6ec4135f4e852dd18f0ef776bc6a19b69bd8b0ae"
+    },
+    {
+      "file": "executor-values.json",
+      "cycles": 120,
+      "excluded": "random fixture position id only",
+      "sha256": "3523c15859d27f422c8f805d6ec4135f4e852dd18f0ef776bc6a19b69bd8b0ae"
+    }
+  ],
+  "chart": {
+    "before": {
+      "render.FuturesPage": 152,
+      "render.FuturesTickerBar": 153,
+      "render.TerminalChart": 152,
+      "render.PriceChart": 163,
+      "render.FuturesReferenceBook": 152,
+      "render.FuturesOrderForm": 154,
+      "render.FuturesPositionsPanel": 152,
+      "render.FuturesCalculator": 152,
+      "markers.setMarkers": 163,
+      "markers.ms": 29.300000010058284,
+      "candles.removePriceLine": 163,
+      "candles.ms": 102.40000000782311,
+      "candles.createPriceLine": 163,
+      "candles.setData": 175,
+      "candles.points": 91000,
+      "indicator.setData": 132,
+      "indicator.points": 64212,
+      "indicator.ms": 51.09999999962747
+    },
+    "after": {
+      "render.FuturesPage": 157,
+      "render.FuturesTickerBar": 158,
+      "render.TerminalChart": 157,
+      "render.PriceChart": 169,
+      "render.FuturesReferenceBook": 157,
+      "render.FuturesOrderForm": 159,
+      "render.FuturesPositionsPanel": 157,
+      "render.FuturesCalculator": 157,
+      "candles.setData": 24,
+      "candles.points": 12480,
+      "candles.ms": 13.999999998137355,
+      "indicator.setData": 132,
+      "indicator.points": 64212,
+      "indicator.ms": 48.40000000409782,
+      "markers.setMarkers": 14,
+      "markers.ms": 2.700000001117587,
+      "candles.removePriceLine": 14,
+      "candles.createPriceLine": 14
+    }
+  },
+  "backendEgressUnchanged": true,
+  "liveCadenceUnchanged": true,
+  "emptyAndHiddenLiveIdle": true
+}

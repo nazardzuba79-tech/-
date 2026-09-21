@@ -15,11 +15,13 @@ async function main(){
  const init=spawnSync(bin.initdb,['-D',dir,'-U','postgres','-A','trust','--encoding=UTF8','--locale=C'],{windowsHide:true,encoding:'utf8'});assert.equal(init.status,0,init.stderr);
  const fd=fs.openSync(path.join(out,'pg-control.log'),'w');let start;
  try{start=spawnSync(bin.pg_ctl,['-D',dir,'-l',path.join(out,'pg.log'),'-o',`-h 127.0.0.1 -p ${port}`,'start','-w'],{windowsHide:true,stdio:['ignore',fd,fd]})}finally{fs.closeSync(fd)}assert.equal(start.status,0);
- const client=new(qa('pg').Client)({host:'127.0.0.1',port,user:'postgres',database:'postgres'});let db,proxy,wire=0,queries=[],sockets=new Set();
+ let client=new(qa('pg').Client)({host:'127.0.0.1',port,user:'postgres',database:'postgres'});let db,proxy,wire=0,queries=[],sockets=new Set();
  try{
-  await client.connect();for(const d of fs.readdirSync('prisma/migrations').sort()){const f=path.join('prisma/migrations',d,'migration.sql');if(fs.existsSync(f))await client.query(fs.readFileSync(f,'utf8'))}
+  await client.connect();await client.query('CREATE DATABASE voltex_native_egress_test');await client.end();
+  client=new(qa('pg').Client)({host:'127.0.0.1',port,user:'postgres',database:'voltex_native_egress_test'});await client.connect();
+  for(const d of fs.readdirSync('prisma/migrations').sort()){const f=path.join('prisma/migrations',d,'migration.sql');if(fs.existsSync(f))await client.query(fs.readFileSync(f,'utf8'))}
   proxy=net.createServer(c=>{const u=net.connect(port,'127.0.0.1');for(const s of[c,u]){sockets.add(s);s.on('close',()=>sockets.delete(s));s.on('error',()=>{c.destroy();u.destroy()})}u.on('data',b=>wire+=b.length);c.pipe(u);u.pipe(c)}).listen(0,'127.0.0.1');await once(proxy,'listening');
-  db=new PrismaClient({datasources:{db:{url:`postgresql://postgres@127.0.0.1:${proxy.address().port}/postgres?connection_limit=1&sslmode=disable`}},log:[{emit:'event',level:'query'}]});db.$on('query',e=>queries.push(e.query));
+  db=new PrismaClient({datasources:{db:{url:`postgresql://postgres@127.0.0.1:${proxy.address().port}/voltex_native_egress_test?connection_limit=1&sslmode=disable`}},log:[{emit:'event',level:'query'}]});db.$on('query',e=>queries.push(e.query));
   const f=setup({deposit:'10000000'});await f.service.initialize(actor,key());let trades=0;
   while(Buffer.byteLength(JSON.stringify(compact(f.repo.row)))<350000){const v=await f.service.command(actor,{kind:'OPEN',symbol:'BTCUSDT',side:'LONG',type:'MARKET',quantity:'0.1',leverage:'10',idempotencyKey:key()});f.clock.t+=5001;await f.service.command(actor,{kind:'CLOSE',positionId:v.positions[0].id,idempotencyKey:key()});f.clock.t+=5001;if(++trades>500)throw Error('fixture cap')}
   await f.service.command(actor,{kind:'OPEN',symbol:'BTCUSDT',side:'LONG',type:'MARKET',quantity:'1',leverage:'10',idempotencyKey:key()});
@@ -43,6 +45,12 @@ async function main(){
    fs.writeFileSync(path.join(out,workerEnabled?'executor-values.json':'live-values.json'),JSON.stringify(values));
   }
   const report={commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),scope:'PostgreSQL protocol server-to-client bytes; local synthetic 350KB account; service + repository, HTTP auth excluded. No Neon billing claim.',fixtureBytes:Buffer.byteLength(JSON.stringify(compact(seed))),closedTrades:trades,measurements};fs.writeFileSync(path.join(out,'database.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));
+  if(process.argv.includes('--tests')){
+   const url=`postgresql://postgres@127.0.0.1:${port}/voltex_native_egress_test`;
+   const result=spawnSync(process.execPath,['node_modules/jest/bin/jest.js','--runInBand','--silent','--json',`--outputFile=${path.join(out,'postgres-tests.json')}`,'--runTestsByPath',
+    ...['nativeDemo.integration','nativeCommandAcceptance.integration','nativeLivePostgres','service.integration'].map(n=>`src/private-trading/__tests__/${n}.test.ts`)],
+    {env:{...process.env,DATABASE_URL:url,DIRECT_URL:url,NATIVE_EGRESS_TEST_DATABASE_URL:url,PRIVATE_TRADING_DB_TESTS:'1'},windowsHide:true,stdio:'inherit'});assert.equal(result.status,0,'PostgreSQL integration tests');
+  }
  }finally{await db?.$disconnect();for(const s of sockets)s.destroy();if(proxy)await new Promise(r=>proxy.close(r));await client.end();spawnSync(bin.pg_ctl,['-D',dir,'stop','-m','fast','-w'],{windowsHide:true,stdio:'ignore'});}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,0 +1,44 @@
+{
+  "commit": "eb22d3cf5cac7cf2f15a0e25ca5301c66bc1ee5b",
+  "scope": "PostgreSQL protocol server-to-client bytes; local synthetic 350KB account; service + repository, HTTP auth excluded. No Neon billing claim.",
+  "fixtureBytes": 352204,
+  "closedTrades": 118,
+  "measurements": [
+    {
+      "mode": "120 pure live",
+      "dbWireBytes": 438120,
+      "sqlReads": 1200,
+      "sqlWrites": 0,
+      "responseBytes": 340800,
+      "maxResponseBytes": 2840,
+      "p50Ms": 8.236699999999473,
+      "p95Ms": 11.366299999999683,
+      "maxMs": 13.832500000000437,
+      "cpuUserMs": 828,
+      "cpuSystemMs": 407,
+      "marketCalls": {
+        "quote": 0,
+        "history": 0,
+        "marks": 120
+      }
+    },
+    {
+      "mode": "120 live + 360 executor",
+      "dbWireBytes": 2550834,
+      "sqlReads": 3758,
+      "sqlWrites": 12,
+      "responseBytes": 340800,
+      "maxResponseBytes": 2840,
+      "p50Ms": 9.689900000001217,
+      "p95Ms": 13.477100000000064,
+      "maxMs": 14.963799999997718,
+      "cpuUserMs": 14437,
+      "cpuSystemMs": 1438,
+      "marketCalls": {
+        "quote": 0,
+        "history": 0,
+        "marks": 480
+      }
+    }
+  ]
+}
