@@ -554,6 +554,13 @@ async function mobileTicketLayout(width, height) {
     assert(g.launcher.left >= 0 && g.launcher.right <= g.page, 'Text calculator launcher leaves viewport');
     await p.locator('.fo-panel > .archive-calculator-slot button').click();
     assert(await p.locator('.fc-panel').isVisible(), 'Footer calculator cannot be opened');
+    const input = p.locator('.fc-input').first();
+    await input.fill('50000');
+    // Cross a live account/quote refresh while the trader is entering a value.
+    await p.waitForTimeout(5200);
+    assert(await input.evaluate(e=>document.activeElement===e),'Live refresh stole calculator input focus');
+    await input.press('End'); await input.press('1');
+    assert.equal(await input.inputValue(),'500001','Typing was interrupted by a live refresh');
     await p.locator('.fc-close').click();
     assert.equal(s.drafts.length, 0, 'Layout/calculator inspection submitted a command');
     return g;
