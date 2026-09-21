@@ -3,6 +3,8 @@ import BigNumber from 'bignumber.js';
 import { assertCfdFreshQuote, CfdQuoteUnavailable, type CfdQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
 import { computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
 import { LIQUIDATION_CHECK_INTERVAL_MS } from '../config/futuresConfig';
+import { IdleBackoffScheduler, type SweepOutcome } from '../services/IdleBackoffScheduler';
+import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 type TxClient = Prisma.TransactionClient;
 const MARGIN_ASSET = 'USDT';
@@ -16,13 +18,29 @@ const MARGIN_ASSET = 'USDT';
  * since a CFD loss can never exceed the position's own locked margin.
  */
 export class CfdLiquidationEngine {
-  private timer?: NodeJS.Timeout;
+  private scheduler: IdleBackoffScheduler | null = null;
+  /** Rows FOUND by the last sweep, never the count it liquidated. */
+  private lastSweepOutcome: SweepOutcome = 'found-work';
+
+  /**
+   * What the last sweep's query FOUND — `'found-work'` when it matched at
+   * least one open CFD position, `'idle'` only when it matched none.
+   * This, and never `checkAndLiquidate`'s return value, is what the
+   * backoff scheduler reads: that return value counts actions taken and is
+   * zero for a healthy book as well as an empty one.
+   */
+  get sweepOutcome(): SweepOutcome {
+    return this.lastSweepOutcome;
+  }
 
   constructor(private prisma: PrismaClient, private cfdMarketData: CfdQuoteSource) {}
 
   async checkAndLiquidate(): Promise<number> {
-    if (!this.cfdMarketData.isConfigured()) return 0;
+    // Unconfigured CFD never queries at all, so there is nothing for the
+    // sweep to be busy with — and nothing a wake could usefully find.
+    if (!this.cfdMarketData.isConfigured()) { this.lastSweepOutcome = 'idle'; return 0; }
     const positions = await this.prisma.cfdPosition.findMany({ where: { status: 'OPEN' } });
+    this.lastSweepOutcome = positions.length > 0 ? 'found-work' : 'idle';
     if (positions.length === 0) return 0;
 
     let tickers;
@@ -97,12 +115,24 @@ export class CfdLiquidationEngine {
   }
 
   startScheduler(intervalMs: number = LIQUIDATION_CHECK_INTERVAL_MS): void {
-    this.timer = setInterval(() => {
-      this.checkAndLiquidate().catch((err) => console.error('CFD liquidation check failed', err));
-    }, intervalMs);
+    this.scheduler = new IdleBackoffScheduler({
+      baseMs: intervalMs,
+      maxIdleMs: IDLE_SWEEP_MAX_MS,
+      sweep: async () => {
+        await this.checkAndLiquidate();
+        return this.lastSweepOutcome;
+      },
+      onError: (err) => console.error('CFD liquidation check failed', err),
+    });
+    this.scheduler.start();
+  }
+
+  /** A CFD position was just opened — resume the base cadence now. */
+  wake(): void {
+    this.scheduler?.wake();
   }
 
   stopScheduler(): void {
-    if (this.timer) clearInterval(this.timer);
+    this.scheduler?.stop();
   }
 }

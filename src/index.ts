@@ -97,7 +97,13 @@ const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY,
   creditsPerMinute: Number(process.env.CFD_CREDITS_PER_MINUTE ?? 8),
   creditsPerDay: Number(process.env.CFD_CREDITS_PER_DAY ?? 800),
 });
-const cfdPositionService = new CfdPositionService(prisma, cfdDataService);
+// The wake callbacks below are deliberately late-bound closures: each
+// engine is constructed further down, and the callback only ever runs at
+// request time, long after this module has finished evaluating. They carry
+// no correctness weight — every sweep still finds its work within
+// IDLE_SWEEP_MAX_MS — they just spare the first trade after a quiet spell
+// from waiting out a backed-off tick.
+const cfdPositionService = new CfdPositionService(prisma, cfdDataService, () => cfdLiquidationEngine.wake());
 const walletPortfolioService = new WalletPortfolioService(prisma, marketDataService, cfdDataService);
 const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
 const supportEmailService = new SupportEmailService();
@@ -105,7 +111,7 @@ const kycEmailService = new KycEmailService();
 
 const futuresEngine = new MatchingEngine();
 const markPriceService = new MarkPriceService(marketDataService);
-const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService);
+const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService, () => liquidationEngine.wake());
 
 const liveReferenceCollector = collectorFromEnv();
 const venueUniverseSource = liveReferenceCollector
@@ -119,7 +125,7 @@ const fundingRateService = new FundingRateService(prisma, markPriceService, () =
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 const futuresProtectionService = new FuturesProtectionService(prisma, futuresPositionService, markPriceService);
 
-const spotOrderService = new OrderService(prisma, engine, marketDataService);
+const spotOrderService = new OrderService(prisma, engine, marketDataService, () => priceWatcherService.wake());
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
 
 const demoEngine = new MatchingEngine();
