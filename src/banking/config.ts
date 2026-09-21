@@ -57,6 +57,23 @@ export const VOLTEX_CARD_YIELD = {
   basis: 'ACTUAL_AVAILABLE_CARD_BALANCE' as const, enabled: true,
 };
 
+/**
+ * Banking referral commission: 20% of a referral's REALISED Banking profit.
+ *
+ * Deliberately NOT src/config/limits.ts's REFERRAL_REWARD_PERCENT, which is a
+ * different product with a different base: that one pays 5% of a credited
+ * DEPOSIT, this one pays 20% of PROFIT that has actually been settled. One
+ * constant serving both would mean a commercial decision about deposits
+ * silently repricing Banking, and vice versa. They are separate numbers in
+ * separate files on purpose, and neither imports the other.
+ *
+ * The base is profit, never principal: 1,000 USDT that has earned 120 USDT
+ * pays the referrer 24 USDT, not 200. It is funded by VOLTEX — the referred
+ * user keeps their full Banking terms — and it is paid in the same asset the
+ * profit was earned in.
+ */
+export const BANKING_REFERRAL_REWARD_PERCENT = 20;
+
 export function bankingProgram(id: string): BankingProgramConfig | null {
   return BANKING_PROGRAMS.find(program => program.id === id) ?? null;
 }
@@ -80,5 +97,6 @@ export function bankingPublicConfig() {
     cardYield: VOLTEX_CARD_YIELD,
     rewardCurrencyRule: 'SAME_AS_DEPOSIT_ASSET' as const,
     usdValuesAreReferenceOnly: true,
+    referralPercent: BANKING_REFERRAL_REWARD_PERCENT,
   };
 }

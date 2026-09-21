@@ -43,5 +43,31 @@ export function bankingRouter(prisma: PrismaClient): Router {
     const parsed=placementSchema.safeParse(req.body);if(!parsed.success)return res.status(400).json({error:'invalid_placement_request',details:parsed.error.flatten()});
     try{res.status(201).json(await service.createPlacement(req.userId!,parsed.data));}catch(error){handle(res,error);}
   });
+  /**
+   * Settlement is a POST, and that is the whole design.
+   *
+   * GET /banking/state above accrues — it records what has been earned. It
+   * must never pay, because a page refresh is not a financial instruction.
+   * Paying out, and the referral commission that rides on it, happens only
+   * when someone explicitly asks for it here. Replays are safe: the ledger's
+   * partial unique index settles each period at most once, so a double-click,
+   * a retry or two concurrent requests credit the same money exactly one time.
+   */
+  router.post('/banking/placements/:id/settle',requireAuth(prisma),async(req:AuthedRequest,res)=>{
+    const id=z.string().min(1).max(80).safeParse(req.params.id);
+    if(!id.success)return res.status(400).json({error:'invalid_placement_id'});
+    try{res.json(await service.settlePlacement(req.userId!,id.data));}catch(error){handle(res,error);}
+  });
+  /**
+   * Banking referral facts, kept apart from GET /referral/me on purpose.
+   *
+   * That endpoint reports the 5%-of-deposit programme. This one reports 20% of
+   * realised Banking profit. They are different products with different bases,
+   * and one endpoint serving both would let a page label deposit rewards as
+   * "20% от прибыли". Same referral identity, separate accounting.
+   */
+  router.get('/banking/referral',requireAuth(prisma),async(req:AuthedRequest,res)=>{
+    try{res.json(await service.referralSummary(req.userId!));}catch(error){handle(res,error);}
+  });
   return router;
 }
