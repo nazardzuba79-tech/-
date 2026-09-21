@@ -72,11 +72,13 @@
   #archive-terminal-preview .rb-row { min-height:44px; }
   #archive-terminal-preview .order-form-area { order:1; width:100%; min-width:0; height:auto; overflow:visible; border:0; }
   #archive-terminal-preview .archive-trading-heading { min-height:48px; }
-  #archive-terminal-preview .archive-calculator-trigger { width:44px !important; height:44px !important; }
+  #archive-terminal-preview .archive-calculator-trigger { min-height:44px; }
+  #archive-terminal-preview .archive-trading-heading .archive-calculator-trigger { width:44px; height:44px; }
   #archive-terminal-preview .fo-panel { padding:12px; display:grid; grid-template-columns:minmax(0,1fr); gap:12px; }
-  #archive-terminal-preview .fo-panel > .order-family-tabs { grid-row:2; }
+  #archive-terminal-preview .fo-panel > .order-family-tabs { grid-row:2; margin-top:0; height:auto; }
   #archive-terminal-preview .fo-form { display:contents; }
-  #archive-terminal-preview .fo-form > .fo-mlWrap { grid-row:1; }
+  #archive-terminal-preview .fo-form > * { order:0; }
+  #archive-terminal-preview .fo-form > .fo-mlWrap { grid-row:1; position:relative; inset:auto; }
   #archive-terminal-preview .percent-slider-presets button { min-height:44px; }
   #archive-terminal-preview .percent-slider-track { min-height:44px; }
   #archive-terminal-preview .fo-reduceOnlyRow { min-height:44px; }
@@ -151,6 +153,8 @@
   #archive-terminal-preview .archive-close-all-actions button { white-space:normal; }
 }
 @media (max-width:359px) {
+  /* Language remains available in the mobile menu; reserve space for the brand. */
+  #archive-terminal-preview .header-actions .language-control { display:none; }
   #archive-terminal-preview .ticker-bar { padding-inline:8px; gap:4px; }
   #archive-terminal-preview .pair-selector > svg, #archive-terminal-preview .pair-selector > img { display:none; }
   #archive-terminal-preview .ticker-bar .value.price { font-size:17px; }

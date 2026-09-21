@@ -528,6 +528,37 @@ async function pendingDeadline(mode) {
     return{singleSubmit:true,pendingCleared:true,serverStateUnchanged:true};
   }finally{await held?.abort().catch(()=>{});await s.context.close();}
 }
+// Browser regressions for the three defects reproduced during PR #159 review.
+async function mobileTicketLayout(width, height) {
+  const s = await session(width), p = s.page;
+  try {
+    await p.setViewportSize({ width, height });
+    await ready(s); await family(p, 'LIMIT');
+    const g = await p.evaluate(() => {
+      const rect = selector => {
+        const r = document.querySelector(selector).getBoundingClientRect();
+        return { left:r.left, right:r.right, top:r.top, bottom:r.bottom };
+      };
+      return {
+        page:document.documentElement.clientWidth, scroll:document.documentElement.scrollWidth,
+        brand:rect('.header-brand'), deposit:rect('.header-actions .deposit-button'),
+        margin:rect('.fo-mlWrap'), tabs:rect('.order-family-tabs'), price:rect('.fo-priceField'),
+        info:rect('.fo-infoBox'), calculator:rect('.fo-panel > .archive-calculator-slot'),
+        launcher:rect('.fo-panel > .archive-calculator-slot .archive-calculator-trigger'),
+      };
+    });
+    assert(g.scroll <= g.page + 1, 'Mobile ticket creates page-level horizontal overflow');
+    assert(g.brand.right <= g.deposit.left, 'Deposit obscures the brand');
+    assert(g.margin.bottom <= g.tabs.top && g.tabs.bottom <= g.price.top, 'Margin/tabs overlap the price input');
+    assert(g.info.bottom <= g.calculator.top, 'Account/footer precedes the order summary');
+    assert(g.launcher.left >= 0 && g.launcher.right <= g.page, 'Text calculator launcher leaves viewport');
+    await p.locator('.fo-panel > .archive-calculator-slot button').click();
+    assert(await p.locator('.fc-panel').isVisible(), 'Footer calculator cannot be opened');
+    await p.locator('.fc-close').click();
+    assert.equal(s.drafts.length, 0, 'Layout/calculator inspection submitted a command');
+    return g;
+  } finally { await s.context.close(); }
+}
 async function main() {
   // Observation only: no components, layout, prices or routing are replaced by the build shim.
   const chartModule = path.join(front, 'node_modules/lightweight-charts/dist/lightweight-charts.production.mjs');
@@ -536,6 +567,9 @@ async function main() {
   const { build } = await import(pathToFileURL(path.join(front, 'node_modules/vite/dist/node/index.js')).href);
   await build({ root: front, resolve: { alias: { 'lightweight-charts': shim } }, define: { 'import.meta.env.VITE_API_URL': JSON.stringify('/api/v1') } });
   await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });
+  if (!largeOnly) for (const [width, height] of [[320,700],[390,844],[393,852],[430,932],[768,1024]]) {
+    await check(`mobile-ticket-layout-${width}`, () => mobileTicketLayout(width, height));
+  }
   for (const width of [1440, 390]) {
     if (largeOnly) { await check(`large-values-${width}`, () => largeValues(width)); continue; }
     await check(`normal-owner-flow-${width}`, () => normalFlow(width));
