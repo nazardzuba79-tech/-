@@ -1,0 +1,82 @@
+{
+  "viewports": {
+    "1920x1080": {
+      "markShown": true,
+      "indexShown": false,
+      "indexNode": false,
+      "slash": false,
+      "cells": 7,
+      "labels": [
+        "Маркировочная цена",
+        "Макс. за 24ч",
+        "Мин. за 24ч",
+        "Оборот за 24ч (USDT)",
+        "Открытый интерес (BTC)",
+        "Ставка финансирования",
+        "/"
+      ],
+      "barWidth": 1570,
+      "barScrollWidth": 1570,
+      "pageOverflow": 0
+    },
+    "1440x900": {
+      "markShown": true,
+      "indexShown": false,
+      "indexNode": false,
+      "slash": false,
+      "cells": 7,
+      "labels": [
+        "Маркировочная цена",
+        "Макс. за 24ч",
+        "Мин. за 24ч",
+        "Оборот за 24ч (USDT)",
+        "Открытый интерес (BTC)",
+        "Ставка финансирования",
+        "/"
+      ],
+      "barWidth": 1114,
+      "barScrollWidth": 1206,
+      "pageOverflow": 0
+    },
+    "1366x768": {
+      "markShown": true,
+      "indexShown": false,
+      "indexNode": false,
+      "slash": false,
+      "cells": 7,
+      "labels": [
+        "Маркировочная цена",
+        "Макс. за 24ч",
+        "Мин. за 24ч",
+        "Оборот за 24ч (USDT)",
+        "Открытый интерес (BTC)",
+        "Ставка финансирования",
+        "/"
+      ],
+      "barWidth": 1040,
+      "barScrollWidth": 1188,
+      "pageOverflow": 0
+    },
+    "390x844": {
+      "markShown": true,
+      "indexShown": false,
+      "indexNode": false,
+      "slash": false,
+      "cells": 7,
+      "labels": [
+        "Маркировочная цена",
+        "Макс. за 24ч",
+        "Мин. за 24ч",
+        "Оборот за 24ч (USDT)",
+        "Открытый интерес (BTC)",
+        "Ставка финансирования",
+        "/"
+      ],
+      "barWidth": 390,
+      "barScrollWidth": 390,
+      "pageOverflow": 0
+    }
+  },
+  "status": "PASS",
+  "findings": []
+}
