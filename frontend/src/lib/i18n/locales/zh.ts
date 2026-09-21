@@ -214,6 +214,8 @@ export const ZH: Record<Key, string> = {
   'trade.loadingTrades': '加载成交记录...',
   'trade.noTrades': '该交易对暂无成交记录。',
   'trade.noChartData': '{pair} 暂无图表数据',
+  'trade.chartLoadFailed': '无法加载图表',
+  'trade.chartRetry': '重试',
   'trade.side': '方向',
   'trade.remaining': '剩余',
   'trade.status': '状态',
