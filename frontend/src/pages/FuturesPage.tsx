@@ -18,7 +18,6 @@ import type { ChartPositionLine } from '../lib/chartTrading';
 import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
-import { FuturesCloseAllPositions } from '../components/FuturesCloseAllPositions';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
@@ -632,7 +631,6 @@ export function FuturesPage() {
             ))}
           </div>
           {archivePreview && <label className="archive-pair-filter"><input type="checkbox" checked={!onlyCurrentPair} onChange={e => setOnlyCurrentPair(!e.target.checked)} />{t('futures.allMarkets')}</label>}
-          {archivePreview && <FuturesCloseAllPositions visible={bottomTab === 'positions'} />}
           {accountPanel.canCompact && <AccountPanelToggle compact={accountPanel.compact} onToggle={accountPanel.toggle} controls="futures-bottom-content" />}
           </div>
 
