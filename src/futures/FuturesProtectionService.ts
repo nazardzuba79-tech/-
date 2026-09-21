@@ -7,6 +7,8 @@ import {
   PROTECTION_CHECK_INTERVAL_MS,
   PROTECTION_STALE_CLAIM_MS,
 } from '../config/futuresConfig';
+import { IdleBackoffScheduler, type SweepOutcome } from '../services/IdleBackoffScheduler';
+import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 export type ProtectionKind = 'TAKE_PROFIT' | 'STOP_LOSS';
 export const PROTECTION_KINDS: ProtectionKind[] = ['TAKE_PROFIT', 'STOP_LOSS'];
@@ -103,7 +105,25 @@ async function lockFuturesBook(tx: Prisma.TransactionClient): Promise<void> {
  * choice `LiquidationEngine` already makes for the same reason.
  */
 export class FuturesProtectionService {
-  private timer?: NodeJS.Timeout;
+  private scheduler: IdleBackoffScheduler | null = null;
+  /**
+   * Whether the last sweep found any ARMED protection row — not how many
+   * it executed. Armed stops nowhere near their trigger price execute
+   * nothing, and must still hold the base cadence: backing off while
+   * live TP/SL is armed is exactly the delay this must never cause.
+   */
+  private lastSweepOutcome: SweepOutcome = 'found-work';
+
+  /**
+   * What the last sweep's query FOUND — `'found-work'` when it matched at
+   * least one armed TP/SL row, `'idle'` only when it matched none.
+   * This, and never `checkAndTrigger`'s return value, is what the
+   * backoff scheduler reads: that return value counts actions taken and is
+   * zero for a healthy book as well as an empty one.
+   */
+  get sweepOutcome(): SweepOutcome {
+    return this.lastSweepOutcome;
+  }
 
   constructor(
     private prisma: PrismaClient,
@@ -236,6 +256,10 @@ export class FuturesProtectionService {
       }
     });
 
+    // After the commit, never inside it: a sweep woken before these rows are
+    // readable would query, find nothing armed and go back to sleep. Covers
+    // the re-arm above as well as a first arm — both leave a CLAIMABLE row.
+    this.wake();
     return this.getProtection(userId, positionId);
   }
 
@@ -291,6 +315,7 @@ export class FuturesProtectionService {
     const armed = await this.prisma.futuresPositionProtection.findMany({
       where: { status: { in: CLAIMABLE } },
     });
+    this.lastSweepOutcome = armed.length > 0 ? 'found-work' : 'idle';
     if (armed.length === 0) return 0;
 
     // One mark-price read per contract per sweep, not one per trigger.
@@ -559,13 +584,25 @@ export class FuturesProtectionService {
   }
 
   startScheduler(intervalMs: number = PROTECTION_CHECK_INTERVAL_MS): void {
-    this.timer = setInterval(() => {
-      this.checkAndTrigger().catch((err) => console.error('Futures protection sweep failed', err));
-    }, intervalMs);
+    this.scheduler = new IdleBackoffScheduler({
+      baseMs: intervalMs,
+      maxIdleMs: IDLE_SWEEP_MAX_MS,
+      sweep: async () => {
+        await this.checkAndTrigger();
+        return this.lastSweepOutcome;
+      },
+      onError: (err) => console.error('Futures protection sweep failed', err),
+    });
+    this.scheduler.start();
+  }
+
+  /** A stop or take-profit was just armed — resume the base cadence now. */
+  wake(): void {
+    this.scheduler?.wake();
   }
 
   stopScheduler(): void {
-    if (this.timer) clearInterval(this.timer);
+    this.scheduler?.stop();
   }
 }
 

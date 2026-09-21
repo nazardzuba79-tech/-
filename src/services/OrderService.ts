@@ -43,7 +43,20 @@ export interface PriceSource {
  * calls triggerOrder() after the real market price crosses its trigger.
  */
 export class OrderService {
-  constructor(private prisma: PrismaClient, private engine: MatchingEngine, private priceSource: PriceSource) {}
+  constructor(
+    private prisma: PrismaClient,
+    private engine: MatchingEngine,
+    private priceSource: PriceSource,
+    /**
+     * Called once a PENDING_TRIGGER order has COMMITTED, so the price
+     * watcher returns to its base cadence immediately rather than after a
+     * backed-off wait. Optional: without it the watcher still finds the
+     * order within its idle ceiling. Never called from inside the
+     * transaction — a watcher woken before the commit would query, find
+     * nothing and go back to sleep.
+     */
+    private onConditionalOrderCommitted: () => void = () => {}
+  ) {}
 
   async placeOrder(params: {
     userId: string;
@@ -95,7 +108,7 @@ export class OrderService {
       lockAmount = params.quantity.times(bestAsk).times(1.02); // 2% slippage buffer
     }
 
-    return this.prisma.$transaction(async (tx: TxClient) => {
+    const placed = await this.prisma.$transaction(async (tx: TxClient) => {
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
       const orderId = uuidv4();
@@ -155,6 +168,10 @@ export class OrderService {
 
       return this.matchAndSettle(tx, order, base, quote, lockAsset, lockAmount, params.price ?? null);
     });
+    // After the commit, never inside it: a watcher woken before this row
+    // is readable would query, find nothing and go back to sleep.
+    if (conditional) this.onConditionalOrderCommitted();
+    return placed;
   }
 
   /**
@@ -189,7 +206,7 @@ export class OrderService {
         ? BigNumber.maximum(params.takeProfitPrice.times(params.quantity), params.stopLimitPrice.times(params.quantity))
         : params.quantity;
 
-    return this.prisma.$transaction(async (tx: TxClient) => {
+    const oco = await this.prisma.$transaction(async (tx: TxClient) => {
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
       const ocoGroupId = uuidv4();
@@ -229,6 +246,10 @@ export class OrderService {
 
       return { ocoGroupId, takeProfitOrderId: takeProfitId, stopOrderId: stopId };
     });
+    // Both legs rest as PENDING_TRIGGER, so this always has work for the
+    // watcher — after the commit, for the same reason as above.
+    this.onConditionalOrderCommitted();
+    return oco;
   }
 
   /**

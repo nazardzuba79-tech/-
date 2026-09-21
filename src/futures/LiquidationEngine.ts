@@ -4,6 +4,8 @@ import { MarkPriceService } from './MarkPriceService';
 import { InsuranceFundService } from './InsuranceFundService';
 import { computeUnrealizedPnl, PositionSide } from './marginMath';
 import { LIQUIDATION_CHECK_INTERVAL_MS } from '../config/futuresConfig';
+import { IdleBackoffScheduler, type SweepOutcome } from '../services/IdleBackoffScheduler';
+import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 type TxClient = Prisma.TransactionClient;
 
@@ -21,14 +23,34 @@ type TxClient = Prisma.TransactionClient;
  * contribution, a loss beyond the margin becomes a fund payout.
  */
 export class LiquidationEngine {
-  private timer?: NodeJS.Timeout;
+  private scheduler: IdleBackoffScheduler | null = null;
   private insuranceFund = new InsuranceFundService();
+  /**
+   * Whether the LAST sweep's query matched any open position — which is not
+   * the same thing as `checkAndLiquidate`'s return value, that being how
+   * many it liquidated. Ten healthy positions liquidate none, and must
+   * still count as work, or the backoff would slow the liquidation check
+   * down exactly while real positions are open.
+   */
+  private lastSweepOutcome: SweepOutcome = 'found-work';
+
+  /**
+   * What the last sweep's query FOUND — `'found-work'` when it matched at
+   * least one open futures position, `'idle'` only when it matched none.
+   * This, and never `checkAndLiquidate`'s return value, is what the
+   * backoff scheduler reads: that return value counts actions taken and is
+   * zero for a healthy book as well as an empty one.
+   */
+  get sweepOutcome(): SweepOutcome {
+    return this.lastSweepOutcome;
+  }
 
   constructor(private prisma: PrismaClient, private markPriceService: MarkPriceService) {}
 
   /** Scans all open positions once. Returns how many were liquidated. */
   async checkAndLiquidate(): Promise<number> {
     const positions = await this.prisma.futuresPosition.findMany({ where: { status: 'OPEN' } });
+    this.lastSweepOutcome = positions.length > 0 ? 'found-work' : 'idle';
     let liquidatedCount = 0;
 
     for (const position of positions) {
@@ -157,12 +179,28 @@ export class LiquidationEngine {
   }
 
   startScheduler(intervalMs: number = LIQUIDATION_CHECK_INTERVAL_MS): void {
-    this.timer = setInterval(() => {
-      this.checkAndLiquidate().catch((err) => console.error('Liquidation check failed', err));
-    }, intervalMs);
+    this.scheduler = new IdleBackoffScheduler({
+      baseMs: intervalMs,
+      maxIdleMs: IDLE_SWEEP_MAX_MS,
+      sweep: async () => {
+        await this.checkAndLiquidate();
+        return this.lastSweepOutcome;
+      },
+      onError: (err) => console.error('Liquidation check failed', err),
+    });
+    this.scheduler.start();
+  }
+
+  /**
+   * A position was just opened — resume the base cadence now rather than
+   * after a backed-off wait. Safe to call inside the opening transaction:
+   * it touches nothing outside this object and never throws.
+   */
+  wake(): void {
+    this.scheduler?.wake();
   }
 
   stopScheduler(): void {
-    if (this.timer) clearInterval(this.timer);
+    this.scheduler?.stop();
   }
 }
