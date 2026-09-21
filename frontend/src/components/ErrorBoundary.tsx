@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { attemptChunkRecovery, isDynamicImportFailure, recoveryAvailable } from '../lib/chunkRecovery';
 
 interface Props {
   children: ReactNode;
@@ -6,6 +7,11 @@ interface Props {
 
 interface State {
   error: Error | null;
+  /** A stale-shell failure that this shell is still allowed to reload for.
+   *  Rendering nothing while the reload is on its way keeps «Что-то пошло не
+   *  так» off a screen that is about to fix itself — the viewer of a
+   *  successful recovery should never see a failure they did not have. */
+  recovering: boolean;
 }
 
 /**
@@ -18,19 +24,41 @@ interface State {
  * Text is inlined rather than pulled from useLanguage() — a broken render
  * tree is exactly the situation where depending on more app machinery
  * (context providers included) is the wrong bet.
+ *
+ * ONE CLASS OF FAILURE IS NOT A CRASH AND IS NOT SHOWN.
+ *
+ * Every route here is a lazy import and every asset is content-hashed, so a
+ * tab holding a shell from the previous deployment asks for chunk names the
+ * current deployment no longer has. That is not a bug in the page — the page
+ * is fine — and it is why the owner's manual «Перезагрузить страницу» always
+ * worked. Such a failure is reloaded ONCE, automatically, and only then.
+ * See lib/chunkRecovery.ts, which also explains why the guard cannot loop.
+ *
+ * Everything else — a genuine render exception — behaves exactly as before:
+ * the fallback, and a reload only if the viewer asks for one.
  */
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, recovering: false };
 
+  /** Pure, as React requires: it only READS the guard to decide whether the
+   *  viewer should be shown a failure that is about to be reloaded away. The
+   *  reload itself is a side effect and lives in componentDidCatch. */
   static getDerivedStateFromError(error: Error): State {
-    return { error };
+    return { error, recovering: isDynamicImportFailure(error) && recoveryAvailable() };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    // Spends the one attempt and reloads, or returns false and falls through
+    // to the ordinary boundary — including on the SECOND identical failure,
+    // which is what stops this becoming a loop.
+    if (attemptChunkRecovery(error)) return;
     console.error('Unhandled render error:', error, info.componentStack);
   }
 
   render() {
+    // A reload is already on its way. Painting the failure now would show the
+    // viewer an error that is about to disappear on its own.
+    if (this.state.error && this.state.recovering) return null;
     if (this.state.error) {
       return (
         <div style={styles.wrap}>
