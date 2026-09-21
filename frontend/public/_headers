@@ -1,0 +1,33 @@
+# CACHE CONTRACT FOR THE CLOUDFLARE PAGES DEPLOYMENT.
+#
+# This file exists because frontend/nginx.conf DOES NOT APPLY HERE. That file
+# is copied into an nginx image by frontend/Dockerfile for the container
+# deployment; it is not part of the build output, so the Pages project that
+# serves voltextech.net has never read a line of it. Its careful `no-cache`
+# on index.html has therefore had no effect on production, and this is the
+# supported way to state the same contract where it is actually served.
+#
+# Vite copies frontend/public/ verbatim into dist/, which is the directory
+# Pages publishes, so this lands at the root of the deployment where Pages
+# looks for it.
+#
+# ORDER IS LOAD-BEARING. Pages applies every rule whose pattern matches and
+# lets a LATER rule override an earlier one for the same header. `/*` matches
+# the hashed assets too, so the asset rule has to come second or everything
+# would end up `no-cache` — including the one class of file that is safe to
+# cache forever, and whose caching is what keeps the app fast.
+
+# Everything by default, and the SPA entry above all: the HTML is NOT
+# content-hashed, so a browser holding yesterday's copy asks for chunk names
+# that this deployment no longer has. That is the cold-open crash. `no-cache`
+# does not mean "do not store" — it means revalidate before reuse, so the
+# common case is a cheap 304 and the dangerous case cannot happen.
+/*
+  Cache-Control: no-cache
+
+# Hashed build output. The filename contains a hash of the contents, so a
+# changed file is a different URL and these can never go stale. Caching them
+# for a year is what makes a repeat visit instant, and it is exactly what
+# must NOT be weakened to `no-cache` while chasing the staleness above.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
