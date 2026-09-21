@@ -8,6 +8,15 @@ export interface BankingCalculation {programId:BankingProgramId;asset:BankingAss
 export interface BankingPlacement {id:string;programId:BankingProgramId;programName:string;asset:BankingAsset;principal:string;monthlyRate:string;termMonths:number;compound:boolean;payoutFrequency:string;lockRule:string;openedAt:string;maturityDate:string;completedMonths:number;status:'ACTIVE'|'MATURED';rewardAccrued:string;currentBalance:string;rewardCurrency:BankingAsset;priceUsd:string|null;principalUsd:string|null}
 export interface BankingState {placements:BankingPlacement[];ledger:{id:string;placement_id:string|null;entry_type:string;asset:string;amount:string;period_index:number|null;effectiveAt:string;createdAt:string}[];summary:{totalUsd:string|null;accruedUsd:string|null;activeCount:number};cardYield:BankingConfig['cardYield']}
 
+/**
+ * Banking referral facts. SEPARATE from the deposit referral that
+ * api.getReferralMe() reports: a different product, a different base (realised
+ * Banking profit, not a credited deposit) and a different rate. The two must
+ * never be summed into one figure, or the page ends up labelling deposit money
+ * as "20% от прибыли".
+ */
+export interface BankingReferral {referralCode:string;referralPercent:number;referredCount:number;rewardsByAsset:{asset:string;amount:string}[];recentRewards:{id:string;asset:string;amount:string;sourceProfitAmount:string;createdAt:string}[]}
+
 class BankingApiError extends Error{constructor(readonly status:number,readonly code:string){super(code)}}
 async function request<T>(path:string,init:RequestInit={}):Promise<T>{
   const token=getToken();if(!token)throw new BankingApiError(401,'auth_required');
@@ -19,6 +28,7 @@ export const bankingApi={
   state:()=>request<BankingState>('/banking/state'),
   calculate:(body:{programId:BankingProgramId;asset:BankingAsset;amount:string;startDate:string;periodMonths?:number;endDate?:string})=>request<BankingCalculation>('/banking/calculate',{method:'POST',body:JSON.stringify(body)}),
   createPlacement:(body:{programId:BankingProgramId;asset:BankingAsset;amount:string;idempotencyKey:string})=>request('/banking/placements',{method:'POST',body:JSON.stringify(body)}),
+  referral:()=>request<BankingReferral>('/banking/referral'),
 };
 export const bankingNumber=(value:string|null|undefined,digits=2)=>{if(value===null||value===undefined||value==='')return '—';const n=Number(value);return Number.isFinite(n)?new Intl.NumberFormat('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(n):'—'};
 export const bankingErrorText=(error:unknown)=>{const code=error instanceof BankingApiError?error.code:'';return ({below_minimum:'Сумма ниже минимального эквивалента $2,500.',insufficient_available_balance:'Недостаточно доступного баланса в выбранном активе.',asset_price_unavailable:'Текущая USD-цена недоступна. Размещение временно отключено.',program_unavailable:'Программа недоступна.',idempotency_key_reused:'Повторная команда не совпадает с исходной.',auth_required:'Войдите в аккаунт.'} as Record<string,string>)[code]||'Не удалось выполнить операцию.'};

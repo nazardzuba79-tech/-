@@ -48,3 +48,10 @@
   .banking-heading p,.banking-card-yield p{font-size:12.5px}
   .banking-program dl,.banking-form label,.banking-table-wrap table{font-size:12.5px}
 }
+/* Contrast pass for the referral block, same as every other surface here:
+   this file is imported AFTER BankingPage.css and must win. */
+.banking-referral-grid article span{color:#59645e;font-size:12.5px}
+.banking-referral-grid article strong{color:#1a231f}
+.banking-referral-link span{color:#59645e;font-size:12.5px}
+.banking-referral-link code{color:#1a231f}
+.banking-referral-assets small{color:#59645e}

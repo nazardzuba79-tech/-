@@ -5,6 +5,10 @@ dist/
 uploads/
 *.tsbuildinfo
 outputs/
+# Same category, singular: scripts/qa-*.cjs write regenerable browser-QA
+# screenshots and reports here (2.5 MB per run). The handoff entries already
+# refer to this folder as untracked evidence; only the plural spelling was
+# ever listed, so every QA run left the tree dirty.
 output/
 .qa-copy/
 .qa-live/
