@@ -1,0 +1,39 @@
+{
+  "scope": "Disposable localhost PostgreSQL; synthetic on-chain fixture, not production",
+  "checks": [
+    "299 USDT: recorded BELOW_MINIMUM, visible to admin, no automatic credit",
+    "Non-admin cannot override minimum",
+    "Concurrent manual approves: same row, exact verified 299, one audit/credit; frontend amount ignored",
+    "300 USDT auto-credits; concurrent first claims and case aliases create one Deposit",
+    "10 and 100 USDT TRC20: detected without claim, persisted unassigned BELOW_MINIMUM",
+    "Unassigned transfer admin approval updates original row",
+    "Insufficient confirmations cannot be overridden; later retry re-verifies",
+    "Recipient/asset/amount mismatch and provider outage fail closed",
+    "Financial write failure rolls back status and credit",
+    "Distinct simultaneous credits preserve both increments",
+    "Persisted incoming survives provider recent window",
+    "Known-owner pending 350 automatically credits when confirmations arrive",
+    "Existing 5% referral policy applies once to concurrent manual approvals",
+    "Fractional verified amount credits exactly; a different claimant cannot take the same hash"
+  ],
+  "browser": [
+    {
+      "width": 1440,
+      "manualCredit": "PASS",
+      "reload": "PASS",
+      "outage": "PASS",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "manualCredit": "PASS",
+      "reload": "PASS",
+      "outage": "PASS",
+      "overflow": false
+    },
+    {
+      "depositWarning": "PASS"
+    }
+  ],
+  "result": "PASS"
+}

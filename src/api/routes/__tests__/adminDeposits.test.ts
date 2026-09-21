@@ -19,7 +19,11 @@ function buildApp(prisma: any, priceSource: any = { getTicker: jest.fn().mockRes
 function adminPrisma(overrides: any = {}) {
   return {
     user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) },
-    deposit: { findMany: jest.fn().mockResolvedValue([]) },
+    deposit: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      upsert: jest.fn(async ({create}: any) => create),
+    },
     ignoredIncomingTransfer: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn().mockResolvedValue({}) },
     treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) },
     ...overrides,
@@ -51,7 +55,7 @@ describe('admin deposits routes', () => {
     it("lists every user's deposits with their email joined", async () => {
       const prisma = adminPrisma({
         deposit: {
-          findMany: jest.fn().mockResolvedValue([
+          findMany: jest.fn().mockImplementation(async ({where}: any) => where.status !== 'CREDITED' ? [] : [
             {
               id: 'd1',
               userId: 'user-1',
@@ -93,6 +97,7 @@ describe('admin deposits routes', () => {
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
 
       (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('/tx/')) return Promise.resolve({ ok: true, json: async () => ({ txid: url.split('/').pop(), vout: [{ scriptpubkey_address: 'bc1qtreasury', value: 100000 }], status: { confirmed: true, block_height: 100 } }) });
         if (url.includes('/address/')) {
           return Promise.resolve({
             ok: true,
@@ -108,7 +113,11 @@ describe('admin deposits routes', () => {
       });
 
       const prisma = adminPrisma({
-        deposit: { findMany: jest.fn().mockResolvedValue([{ chain: 'bitcoin', txHash: 'tx-old' }]) },
+        deposit: {
+          findUnique: jest.fn(async ({where}: any) => where.chain_txHash.txHash === 'tx-old' ? {status:'CREDITED'} : null),
+          upsert: jest.fn(async ({create}: any) => create),
+          findMany: jest.fn().mockResolvedValue([{ chain: 'bitcoin', txHash: 'tx-new', asset:'BTC', amount:'0.001', confirmations:6, status:'PENDING', createdAt:new Date() }]),
+        },
       });
       const app = buildApp(prisma);
       const res = await request(app).get('/api/v1/admin/deposits/incoming').set('Authorization', authHeader('admin-1'));
@@ -122,6 +131,7 @@ describe('admin deposits routes', () => {
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
 
       (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('/tx/')) return Promise.resolve({ok:true,json:async()=>({vout:[{scriptpubkey_address:'bc1qtreasury',value:100000}],status:{confirmed:true,block_height:100}})});
         if (url.includes('/address/')) {
           return Promise.resolve({
             ok: true,
@@ -138,6 +148,10 @@ describe('admin deposits routes', () => {
 
       const prisma = adminPrisma({
         ignoredIncomingTransfer: { findMany: jest.fn().mockResolvedValue([{ chain: 'bitcoin', txHash: 'tx-ignored' }]) },
+        deposit: {
+          findUnique: jest.fn().mockResolvedValue(null), upsert:jest.fn(async ({create}: any) => create),
+          findMany:jest.fn().mockResolvedValue(['tx-new','tx-ignored'].map(txHash=>({chain:'bitcoin',txHash,asset:'BTC',amount:'0.001',confirmations:6,status:'PENDING',createdAt:new Date()}))),
+        },
       });
       const app = buildApp(prisma);
       const res = await request(app).get('/api/v1/admin/deposits/incoming').set('Authorization', authHeader('admin-1'));
@@ -246,7 +260,7 @@ describe('admin deposits routes', () => {
         // Pre-existing Deposit row makes DepositService.claimDeposit take its
         // idempotent short-circuit — no real network call needed to prove
         // this route wires through to it correctly.
-        deposit: { findUnique: jest.fn().mockResolvedValue({ status: 'CREDITED', amount: '0.05', confirmations: 3 }) },
+        deposit: { findUnique: jest.fn().mockResolvedValue({ userId:'11111111-1111-1111-1111-111111111111', asset:'BTC', status: 'CREDITED', amount: '0.05', confirmations: 3 }) },
       });
       const app = buildApp(prisma);
 

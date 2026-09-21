@@ -1,0 +1,15 @@
+{
+  "base": "25db4e9873fe0af1dd7bf68b041486beb8791eba",
+  "focused": {
+    "suites": 14,
+    "tests": 168,
+    "failed": 0
+  },
+  "extendedWallet": {
+    "baselineFailed": 24,
+    "currentFailed": 24,
+    "newFailures": []
+  },
+  "backendBuild": "PASS",
+  "frontendBuild": "PASS"
+}

@@ -849,7 +849,7 @@ export const RU = {
   'wallet.history.viewExplorer': 'В обозревателе →',
   'wallet.history.status.CREDITED': 'Зачислено',
   'wallet.history.status.PENDING': 'Ожидает подтверждения',
-  'wallet.history.status.BELOW_MINIMUM': 'Ниже минимума',
+  'wallet.history.status.BELOW_MINIMUM': 'Ниже минимума · ручная обработка',
   'wallet.noSearchResults': 'По запросу ничего не найдено.',
 
   'support.title': 'Поддержка',

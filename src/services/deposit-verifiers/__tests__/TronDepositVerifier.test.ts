@@ -2,7 +2,7 @@ import { TronDepositVerifier } from '../TronDepositVerifier';
 import { DepositVerificationError } from '../errors';
 import { ChainConfig } from '../../../config/chains';
 
-const TREASURY = 'TTreasuryAddressXXXXXXXXXXXXXXXXXX';
+const TREASURY = '411111111111111111111111111111111111111111';
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const chainConfig: ChainConfig = {

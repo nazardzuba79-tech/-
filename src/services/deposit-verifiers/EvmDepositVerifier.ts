@@ -182,6 +182,7 @@ export class EvmDepositVerifier implements DepositVerifier {
       if (body.message === 'No transactions found') return [];
       throw new DepositVerificationError(`Block explorer API error: ${body.message}`);
     }
-    return Array.isArray(body.result) ? body.result : [];
+    if (body.status !== '1' || !Array.isArray(body.result)) throw new DepositVerificationError('Invalid block explorer response');
+    return body.result;
   }
 }

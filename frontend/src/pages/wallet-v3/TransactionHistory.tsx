@@ -20,7 +20,7 @@ import { MASK, decimalsFor, formatAmount } from './format';
  */
 
 type Kind = 'deposit' | 'withdraw' | 'trade';
-type Status = 'done' | 'pending' | 'rejected';
+type Status = 'done' | 'pending' | 'rejected' | 'belowMinimum';
 
 interface Row {
   id: string;
@@ -54,6 +54,7 @@ const KIND_LABEL: Record<Kind, Key> = {
 };
 
 const STATUS_STYLE: Record<Status, { className: string; dot: string; label: Key }> = {
+  belowMinimum: { className: 'bg-[#fbf3e3] text-[#96701e]', dot: 'bg-[#d9a441]', label: 'wallet.history.status.BELOW_MINIMUM' },
   done: { className: 'bg-[#eaf5f0] text-[#136f53]', dot: 'bg-[#168a65]', label: 'wallet.txDone' },
   pending: { className: 'bg-[#fbf3e3] text-[#96701e]', dot: 'bg-[#d9a441]', label: 'wallet.txPending' },
   rejected: { className: 'bg-[#fbecec] text-[#a93a43]', dot: 'bg-[#d94a56]', label: 'wallet.txRejected' },
@@ -61,7 +62,7 @@ const STATUS_STYLE: Record<Status, { className: string; dot: string; label: Key 
 
 function depositStatus(status: string): Status {
   if (status === 'CREDITED') return 'done';
-  if (status === 'BELOW_MINIMUM') return 'rejected';
+  if (status === 'BELOW_MINIMUM') return 'belowMinimum';
   return 'pending';
 }
 

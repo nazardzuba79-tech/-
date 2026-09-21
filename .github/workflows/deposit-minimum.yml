@@ -1,0 +1,65 @@
+name: Deposit minimum and manual credit
+on:
+  pull_request:
+    paths:
+      - 'src/services/DepositService.ts'
+      - 'src/services/deposit-verifiers/**'
+      - 'src/services/__tests__/DepositService.test.ts'
+      - 'src/api/routes/*Deposits*'
+      - 'src/api/routes/deposits.ts'
+      - 'src/api/routes/__tests__/*eposits*'
+      - 'src/config/limits.ts'
+      - 'src/config/chains.ts'
+      - 'prisma/**'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/i18n/locales/ru.ts'
+      - 'frontend/src/pages/admin/AdminDepositsPage.tsx'
+      - 'frontend/src/pages/wallet-v3/**'
+      - 'scripts/qa-deposit-minimum.cjs'
+      - '.github/workflows/deposit-minimum.yml'
+permissions:
+  contents: read
+jobs:
+  deposit-acceptance:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm run build --prefix frontend
+      - name: Deposit, provider, auth and admin regression tests
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/__tests__/DepositService.test.ts
+          src/api/routes/__tests__/adminDeposits.test.ts
+          src/api/routes/__tests__/deposits.test.ts
+          src/api/routes/__tests__/adminOverview.test.ts
+          src/config/__tests__/chains.test.ts
+          src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts
+          src/services/deposit-verifiers/__tests__/EvmDepositVerifier.test.ts
+          src/services/deposit-verifiers/__tests__/BitcoinDepositVerifier.test.ts
+          src/services/deposit-verifiers/__tests__/SolanaDepositVerifier.test.ts
+          src/services/deposit-verifiers/__tests__/TonDepositVerifier.test.ts
+          frontend/src/lib/__tests__/adminDepositRails.test.ts
+          frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
+      - name: Install isolated PostgreSQL and browser tools
+        run: npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - name: Real PostgreSQL concurrency and production-bundle browser acceptance
+        run: |
+          $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
+          node scripts/qa-deposit-minimum.cjs --browser
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deposit-minimum-acceptance
+          path: output/deposit-minimum
+          retention-days: 7

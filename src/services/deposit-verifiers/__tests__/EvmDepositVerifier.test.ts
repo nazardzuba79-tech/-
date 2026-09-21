@@ -165,5 +165,12 @@ describe('EvmDepositVerifier', () => {
       const verifier = new EvmDepositVerifier(chainConfig, fetchFn);
       await expect(verifier.listIncoming()).rejects.toThrow('Failed to reach block explorer API');
     });
+
+    it('does not turn malformed or quota-error provider responses into an empty feed', async () => {
+      for (const body of [{ status: '1', result: 'rate limited' }, { result: [] }, { status: '0', message: 'NOTOK', result: 'quota exceeded' }]) {
+        const verifier = new EvmDepositVerifier(chainConfig, jest.fn().mockResolvedValue(jsonResponse(body)));
+        await expect(verifier.listIncoming()).rejects.toThrow(DepositVerificationError);
+      }
+    });
   });
 });
