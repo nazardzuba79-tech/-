@@ -729,11 +729,20 @@ export function PriceChart({
       addLine(protectedTrade.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
       addLine(protectedTrade.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
     }
-    const selected = privateTrading.selectedCandle;
-    const selectedTime = selected && chartSymbol(selected.symbol) === chartSymbol(pair) ? chartEventBar(candlesRef.current, selected.openTime, interval) : null;
-    series.setData(candlesRef.current.map(candle => ({ time: candle.time as Time, open: candle.open, high: candle.high, low: candle.low, close: candle.close,
-      ...(candle.time === selectedTime ? { color: '#61b9ff', borderColor: '#b8e2ff', wickColor: '#b8e2ff' } : {}) })));
   }, [privateTrading, chartReady, candlesRevision, pair, interval, chartType]);
+
+  // Near-live marks/position overlays cannot invalidate historical OHLC.
+  // Reapply the existing selected-bar colors only when candles or the selected
+  // bar change. In particular, book ticks and PnL updates do not call setData.
+  const selectedCandleSymbol = privateTrading?.selectedCandle?.symbol;
+  const selectedCandleTime = privateTrading?.selectedCandle?.openTime;
+  useEffect(() => {
+    if (!privateTrading?.enabled || !chartReady || !seriesRef.current) return;
+    const selectedTime = selectedCandleSymbol && selectedCandleTime !== undefined && chartSymbol(selectedCandleSymbol) === chartSymbol(pair)
+      ? chartEventBar(candlesRef.current, selectedCandleTime, interval) : null;
+    seriesRef.current.setData(candlesRef.current.map(candle => ({ time: candle.time as Time, open: candle.open, high: candle.high, low: candle.low, close: candle.close,
+      ...(candle.time === selectedTime ? { color: '#61b9ff', borderColor: '#b8e2ff', wickColor: '#b8e2ff' } : {}) })));
+  }, [privateTrading?.enabled, selectedCandleSymbol, selectedCandleTime, chartReady, candlesRevision, pair, interval]);
 
   // Switching tools (or pairs) cancels any half-drawn shape so a stray
   // anchor point from a previous tool never leaks into the next drawing.

@@ -1,0 +1,53 @@
+name: Performance phase two preservation
+on:
+  pull_request:
+    paths:
+      - 'scripts/performance-phase2-*'
+      - 'frontend/src/pages/private-trading/useNativeDemo.tsx'
+      - 'frontend/src/pages/private-trading/useNativeHistory.ts'
+      - 'frontend/src/components/PriceChart.tsx'
+      - '.github/workflows/performance-phase2.yml'
+permissions:
+  contents: read
+jobs:
+  preservation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: performance_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_native_egress_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U performance_qa -d voltex_native_egress_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      DATABASE_URL: postgresql://performance_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_native_egress_test
+      DIRECT_URL: postgresql://performance_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_native_egress_test
+      NATIVE_EGRESS_TEST_DATABASE_URL: postgresql://performance_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_native_egress_test
+      PRIVATE_TRADING_DB_TESTS: '1'
+      VITE_API_URL: /api/v1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm run build --prefix frontend
+      - run: npx prisma migrate deploy
+      - run: mkdir -p output/performance-phase2
+      - name: Futures, replay, native, Copy, admin-only deposits, customer errors
+        run: node scripts/performance-phase2-regressions.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-phase2-preservation
+          path: output/performance-phase2/regressions.json

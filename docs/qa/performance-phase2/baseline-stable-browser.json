@@ -1,0 +1,1905 @@
+{
+  "label": "baseline-stable",
+  "commit": "eb22d3cf5cac7cf2f15a0e25ca5301c66bc1ee5b",
+  "scope": "Synthetic local native repository + real frontend/service. Not production latency or account data.",
+  "stages": [
+    {
+      "name": "fresh-authenticated-open",
+      "elapsedMs": 228,
+      "counters": {
+        "render.FuturesPage": 9,
+        "render.FuturesTickerBar": 9,
+        "render.TerminalChart": 9,
+        "render.PriceChart": 11,
+        "render.FuturesReferenceBook": 9,
+        "render.FuturesOrderForm": 10,
+        "render.FuturesPositionsPanel": 9,
+        "render.FuturesCalculator": 9,
+        "candles.setData": 7,
+        "candles.points": 2080,
+        "candles.ms": 3.399999998509884,
+        "indicator.setData": 44,
+        "indicator.points": 10702,
+        "indicator.ms": 3.7999999970197678,
+        "chart.resize": 1,
+        "chart.ms": 0,
+        "markers.setMarkers": 3,
+        "markers.ms": 0.09999999962747097
+      },
+      "network": {
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 27.263999998467625,
+          "p95Ms": 27.263999998467625,
+          "maxMs": 27.263999998467625
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 25.349999999889405,
+          "p95Ms": 25.349999999889405,
+          "maxMs": 25.349999999889405
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 25.57900000101654,
+          "p95Ms": 25.57900000101654,
+          "maxMs": 25.57900000101654
+        },
+        "GET /api/v1/futures/config": {
+          "calls": 1,
+          "bytes": 554,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 27.71299999949406,
+          "p95Ms": 27.71299999949406,
+          "maxMs": 27.71299999949406
+        },
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 2,
+          "bytes": 720,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 28.299999999944703,
+          "p95Ms": 28.299999999944703,
+          "maxMs": 28.299999999944703
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 28.53999999933876,
+          "p95Ms": 28.53999999933876,
+          "maxMs": 28.53999999933876
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 28.87899999950605,
+          "p95Ms": 28.87899999950605,
+          "maxMs": 28.87899999950605
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 2,
+          "bytes": 96658,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 19.335999999384512,
+          "p95Ms": 19.335999999384512,
+          "maxMs": 19.335999999384512
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 19.555000000764267,
+          "p95Ms": 19.555000000764267,
+          "maxMs": 19.555000000764267
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 1,
+          "bytes": 389,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 19.7889999999461,
+          "p95Ms": 19.7889999999461,
+          "maxMs": 19.7889999999461
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 20.418999998582876,
+          "p95Ms": 20.418999998582876,
+          "maxMs": 20.418999998582876
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 19.925000000512227,
+          "p95Ms": 19.925000000512227,
+          "maxMs": 19.925000000512227
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 20.087000000785338,
+          "p95Ms": 20.087000000785338,
+          "maxMs": 20.087000000785338
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 20.15700000083598,
+          "p95Ms": 20.15700000083598,
+          "maxMs": 20.15700000083598
+        },
+        "GET /api/v1/market/assets/icons": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 2.7960000006714836,
+          "p95Ms": 2.7960000006714836,
+          "maxMs": 2.7960000006714836
+        },
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 7.939999999507563,
+          "p95Ms": 7.939999999507563,
+          "maxMs": 7.939999999507563
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 8.358000000953325,
+          "p95Ms": 8.358000000953325,
+          "maxMs": 8.358000000953325
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 2197,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 4.380999998829793,
+          "p95Ms": 4.380999998829793,
+          "maxMs": 4.380999998829793
+        }
+      },
+      "frames": 2,
+      "streamBytes": 3870,
+      "fixtureWsFrames": 1,
+      "fixtureWsBytes": 819,
+      "taskMs": 176.367,
+      "heapStart": 7101816,
+      "heapEnd": 13869364
+    },
+    {
+      "name": "visible-empty-60s",
+      "elapsedMs": 60010,
+      "counters": {
+        "render.FuturesPage": 139,
+        "render.FuturesTickerBar": 140,
+        "render.TerminalChart": 139,
+        "render.PriceChart": 150,
+        "render.FuturesReferenceBook": 140,
+        "render.FuturesOrderForm": 140,
+        "render.FuturesPositionsPanel": 139,
+        "render.FuturesCalculator": 139,
+        "markers.setMarkers": 150,
+        "markers.ms": 26.399999998509884,
+        "candles.setData": 161,
+        "candles.points": 83720,
+        "candles.ms": 82.7000000141561,
+        "indicator.setData": 121,
+        "indicator.points": 58861,
+        "indicator.ms": 44.6999999973923
+      },
+      "network": {
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 27,
+          "bytes": 9720,
+          "statuses": {
+            "200": 27
+          },
+          "p50Ms": 5.822999999509193,
+          "p95Ms": 8.68099999934202,
+          "maxMs": 13.904999999795109
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 15,
+          "bytes": 5385,
+          "statuses": {
+            "403": 15
+          },
+          "p50Ms": 6.350999999995111,
+          "p95Ms": 14.353000000483007,
+          "maxMs": 14.353000000483007
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 11,
+          "bytes": 531619,
+          "statuses": {
+            "200": 11
+          },
+          "p50Ms": 33.77800000089337,
+          "p95Ms": 43.47500000039872,
+          "maxMs": 43.47500000039872
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 5.933000000368338,
+          "p95Ms": 6.895999998960178,
+          "maxMs": 6.895999998960178
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 4,
+          "bytes": 1556,
+          "statuses": {
+            "200": 4
+          },
+          "p50Ms": 7.9960000002756715,
+          "p95Ms": 8.295000001453445,
+          "maxMs": 8.295000001453445
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 6.506999998237006,
+          "p95Ms": 7.117999999536551,
+          "maxMs": 7.117999999536551
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 7.534000000305241,
+          "p95Ms": 7.750000000669388,
+          "maxMs": 7.750000000669388
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 7.630999998582411,
+          "p95Ms": 8.361000000149943,
+          "maxMs": 8.361000000149943
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 7.596999999805121,
+          "p95Ms": 7.596999999805121,
+          "maxMs": 7.596999999805121
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 7.639999999810243,
+          "p95Ms": 7.639999999810243,
+          "maxMs": 7.639999999810243
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 7.9829999995126855,
+          "p95Ms": 7.9829999995126855,
+          "maxMs": 7.9829999995126855
+        }
+      },
+      "frames": 12,
+      "streamBytes": 23223,
+      "fixtureWsFrames": 292,
+      "fixtureWsBytes": 239228,
+      "taskMs": 2498.1,
+      "heapStart": 15234644,
+      "heapEnd": 16873120
+    },
+    {
+      "name": "open-long",
+      "elapsedMs": 316,
+      "counters": {
+        "candles.setData": 6,
+        "candles.points": 3120,
+        "candles.ms": 3.699999997392297,
+        "indicator.setData": 11,
+        "indicator.points": 5351,
+        "indicator.ms": 3.8999999966472387,
+        "render.PriceChart": 5,
+        "markers.setMarkers": 5,
+        "markers.ms": 0.8000000026077032,
+        "render.FuturesOrderForm": 6,
+        "render.FuturesPage": 6,
+        "render.FuturesTickerBar": 4,
+        "render.TerminalChart": 4,
+        "render.FuturesReferenceBook": 4,
+        "render.FuturesPositionsPanel": 4,
+        "render.FuturesCalculator": 4,
+        "candles.createPriceLine": 2,
+        "candles.removePriceLine": 1
+      },
+      "network": {
+        "GET /api/v1/private-trading/candles": {
+          "calls": 1,
+          "bytes": 48329,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 29.47899999890069,
+          "p95Ms": 29.47899999890069,
+          "maxMs": 29.47899999890069
+        },
+        "POST /api/v1/private-trading/native/commands": {
+          "calls": 1,
+          "bytes": 4562,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 47.85199999969336,
+          "p95Ms": 47.85199999969336,
+          "maxMs": 47.85199999969336
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 3195,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 6.577000000106636,
+          "p95Ms": 6.577000000106636,
+          "maxMs": 6.577000000106636
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "fixtureWsFrames": 2,
+      "fixtureWsBytes": 1640,
+      "taskMs": 202.59099999999995,
+      "heapStart": 16881772,
+      "heapEnd": 12047796
+    },
+    {
+      "name": "visible-active-60s",
+      "elapsedMs": 60018,
+      "counters": {
+        "render.FuturesPage": 152,
+        "render.FuturesTickerBar": 153,
+        "render.TerminalChart": 152,
+        "render.PriceChart": 163,
+        "render.FuturesReferenceBook": 152,
+        "render.FuturesOrderForm": 154,
+        "render.FuturesPositionsPanel": 152,
+        "render.FuturesCalculator": 152,
+        "markers.setMarkers": 163,
+        "markers.ms": 29.300000010058284,
+        "candles.removePriceLine": 163,
+        "candles.ms": 102.40000000782311,
+        "candles.createPriceLine": 163,
+        "candles.setData": 175,
+        "candles.points": 91000,
+        "indicator.setData": 132,
+        "indicator.points": 64212,
+        "indicator.ms": 51.09999999962747
+      },
+      "network": {
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 27,
+          "bytes": 9720,
+          "statuses": {
+            "200": 27
+          },
+          "p50Ms": 5.542000000787084,
+          "p95Ms": 8.216000000174972,
+          "maxMs": 10.27799999974377
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 15,
+          "bytes": 5385,
+          "statuses": {
+            "403": 15
+          },
+          "p50Ms": 6.5300000005663605,
+          "p95Ms": 10.821999998370302,
+          "maxMs": 10.821999998370302
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 12,
+          "bytes": 579948,
+          "statuses": {
+            "200": 12
+          },
+          "p50Ms": 32.934999999270076,
+          "p95Ms": 41.8069999996078,
+          "maxMs": 41.8069999996078
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 5.218000000240863,
+          "p95Ms": 10.522999999011518,
+          "maxMs": 10.522999999011518
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 4,
+          "bytes": 1556,
+          "statuses": {
+            "200": 4
+          },
+          "p50Ms": 6.411999998817919,
+          "p95Ms": 9.602000000086264,
+          "maxMs": 9.602000000086264
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 6.005999999615597,
+          "p95Ms": 7.700000000113505,
+          "maxMs": 7.700000000113505
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 7.276000000274507,
+          "p95Ms": 7.97699999930046,
+          "maxMs": 7.97699999930046
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 7.2909999998955755,
+          "p95Ms": 8.77799999943818,
+          "maxMs": 8.77799999943818
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 10.873999999603257,
+          "p95Ms": 10.873999999603257,
+          "maxMs": 10.873999999603257
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 2,
+          "bytes": 6392,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 5.345999999917694,
+          "p95Ms": 5.345999999917694,
+          "maxMs": 5.345999999917694
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 8.86499999978696,
+          "p95Ms": 8.86499999978696,
+          "maxMs": 8.86499999978696
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 9.718000001157634,
+          "p95Ms": 9.718000001157634,
+          "maxMs": 9.718000001157634
+        }
+      },
+      "frames": 12,
+      "streamBytes": 23232,
+      "fixtureWsFrames": 291,
+      "fixtureWsBytes": 238620,
+      "taskMs": 5266.132,
+      "heapStart": 12057660,
+      "heapEnd": 28887268
+    },
+    {
+      "name": "hidden-active-60s",
+      "elapsedMs": 60013,
+      "counters": {
+        "render.FuturesPage": 14,
+        "render.FuturesTickerBar": 17,
+        "render.TerminalChart": 14,
+        "render.PriceChart": 14,
+        "render.FuturesReferenceBook": 14,
+        "render.FuturesOrderForm": 15,
+        "render.FuturesPositionsPanel": 14,
+        "render.FuturesCalculator": 14,
+        "markers.setMarkers": 14,
+        "markers.ms": 3.800000000745058,
+        "candles.removePriceLine": 14,
+        "candles.ms": 12.40000000409782,
+        "candles.createPriceLine": 14,
+        "candles.setData": 14,
+        "candles.points": 7280
+      },
+      "network": {
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 27,
+          "bytes": 9720,
+          "statuses": {
+            "200": 27
+          },
+          "p50Ms": 4.9980000003415626,
+          "p95Ms": 7.510999999794876,
+          "maxMs": 9.338999998362851
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 15,
+          "bytes": 5385,
+          "statuses": {
+            "403": 15
+          },
+          "p50Ms": 5.812999999761814,
+          "p95Ms": 9.920999998939806,
+          "maxMs": 9.920999998939806
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 5.0760000012815,
+          "p95Ms": 8.59400000081223,
+          "maxMs": 8.59400000081223
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 4,
+          "bytes": 1556,
+          "statuses": {
+            "200": 4
+          },
+          "p50Ms": 5.377999999836902,
+          "p95Ms": 10.473000000274624,
+          "maxMs": 10.473000000274624
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 5.957000001217239,
+          "p95Ms": 7.86800000059884,
+          "maxMs": 7.86800000059884
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 6.435999999666819,
+          "p95Ms": 8.471999999528634,
+          "maxMs": 8.471999999528634
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 7.708999999522348,
+          "p95Ms": 8.95200000013574,
+          "maxMs": 8.95200000013574
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 9.879999999611755,
+          "p95Ms": 9.879999999611755,
+          "maxMs": 9.879999999611755
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 9.996999999202671,
+          "p95Ms": 9.996999999202671,
+          "maxMs": 9.996999999202671
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 10.64800000131072,
+          "p95Ms": 10.64800000131072,
+          "maxMs": 10.64800000131072
+        }
+      },
+      "frames": 12,
+      "streamBytes": 23232,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 2097.015000000001,
+      "heapStart": 28897116,
+      "heapEnd": 16854612
+    },
+    {
+      "name": "history-scroll",
+      "elapsedMs": 1517,
+      "counters": {
+        "render.PriceChart": 10,
+        "render.FuturesPage": 5,
+        "render.FuturesTickerBar": 5,
+        "render.TerminalChart": 5,
+        "render.FuturesReferenceBook": 5,
+        "render.FuturesOrderForm": 5,
+        "render.FuturesPositionsPanel": 5,
+        "render.FuturesCalculator": 5,
+        "markers.setMarkers": 6,
+        "markers.ms": 1.4000000022351742,
+        "candles.removePriceLine": 6,
+        "candles.ms": 8.699999999254942,
+        "candles.createPriceLine": 6,
+        "candles.setData": 7,
+        "candles.points": 6240,
+        "chart.resize": 2,
+        "chart.ms": 0.10000000149011612,
+        "indicator.setData": 11,
+        "indicator.points": 11071,
+        "indicator.ms": 8.299999998882413
+      },
+      "network": {
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 11.246000000028289,
+          "p95Ms": 11.246000000028289,
+          "maxMs": 11.246000000028289
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 3196,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 7.0809999997436535,
+          "p95Ms": 7.0809999997436535,
+          "maxMs": 7.0809999997436535
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 1,
+          "bytes": 48313,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 23.232999999891035,
+          "p95Ms": 23.232999999891035,
+          "maxMs": 23.232999999891035
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "fixtureWsFrames": 7,
+      "fixtureWsBytes": 5712,
+      "taskMs": 230.94700000000046,
+      "heapStart": 16903336,
+      "heapEnd": 19921132
+    },
+    {
+      "name": "mobile-first-usable",
+      "elapsedMs": 291,
+      "counters": {
+        "render.FuturesPage": 13,
+        "render.FuturesTickerBar": 13,
+        "render.TerminalChart": 12,
+        "render.PriceChart": 16,
+        "render.FuturesReferenceBook": 12,
+        "render.FuturesOrderForm": 13,
+        "render.FuturesPositionsPanel": 11,
+        "render.FuturesCalculator": 11,
+        "candles.setData": 8,
+        "candles.points": 2600,
+        "candles.ms": 2.299999998882413,
+        "indicator.setData": 44,
+        "indicator.points": 10702,
+        "indicator.ms": 4.400000000372529,
+        "chart.resize": 2,
+        "chart.ms": 0,
+        "markers.setMarkers": 4,
+        "markers.ms": 0.2000000011175871
+      },
+      "network": {
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 46.51999999987311,
+          "p95Ms": 46.51999999987311,
+          "maxMs": 46.51999999987311
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 21.015000000261352,
+          "p95Ms": 21.015000000261352,
+          "maxMs": 21.015000000261352
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 21.730999998908374,
+          "p95Ms": 21.730999998908374,
+          "maxMs": 21.730999998908374
+        },
+        "GET /api/v1/futures/config": {
+          "calls": 1,
+          "bytes": 554,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 24.108999999953085,
+          "p95Ms": 24.108999999953085,
+          "maxMs": 24.108999999953085
+        },
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 2,
+          "bytes": 720,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 28.347999999823514,
+          "p95Ms": 28.347999999823514,
+          "maxMs": 28.347999999823514
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 28.889999999591964,
+          "p95Ms": 28.889999999591964,
+          "maxMs": 28.889999999591964
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 29.76899999885063,
+          "p95Ms": 29.76899999885063,
+          "maxMs": 29.76899999885063
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 2,
+          "bytes": 96658,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 28.06799999962095,
+          "p95Ms": 28.06799999962095,
+          "maxMs": 28.06799999962095
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 28.91499999896041,
+          "p95Ms": 28.91499999896041,
+          "maxMs": 28.91499999896041
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 1,
+          "bytes": 389,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 29.18399999907706,
+          "p95Ms": 29.18399999907706,
+          "maxMs": 29.18399999907706
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 32.015999999202904,
+          "p95Ms": 32.015999999202904,
+          "maxMs": 32.015999999202904
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 12.918999998873915,
+          "p95Ms": 12.918999998873915,
+          "maxMs": 12.918999998873915
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 13.090000000374857,
+          "p95Ms": 13.090000000374857,
+          "maxMs": 13.090000000374857
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 13.866999999663676,
+          "p95Ms": 13.866999999663676,
+          "maxMs": 13.866999999663676
+        },
+        "GET /api/v1/market/assets/icons": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 5.008000000088941,
+          "p95Ms": 5.008000000088941,
+          "maxMs": 5.008000000088941
+        },
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 8.50700000046345,
+          "p95Ms": 8.50700000046345,
+          "maxMs": 8.50700000046345
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 12.254999999640859,
+          "p95Ms": 12.254999999640859,
+          "maxMs": 12.254999999640859
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 2197,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 7.448000000294996,
+          "p95Ms": 7.448000000294996,
+          "maxMs": 7.448000000294996
+        }
+      },
+      "frames": 2,
+      "streamBytes": 3870,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 181.386,
+      "heapStart": 7086300,
+      "heapEnd": 18823320
+    },
+    {
+      "name": "mobile-workspaces-calculator",
+      "elapsedMs": 183,
+      "counters": {
+        "render.FuturesPage": 6,
+        "render.FuturesTickerBar": 6,
+        "render.TerminalChart": 6,
+        "render.PriceChart": 10,
+        "render.FuturesReferenceBook": 6,
+        "render.FuturesOrderForm": 6,
+        "render.FuturesPositionsPanel": 6,
+        "render.FuturesCalculator": 7,
+        "markers.setMarkers": 6,
+        "markers.ms": 0.49999999813735485,
+        "candles.setData": 6,
+        "candles.points": 3120,
+        "candles.ms": 1.3000000026077032,
+        "chart.resize": 4,
+        "chart.ms": 0.10000000149011612
+      },
+      "network": {},
+      "frames": 0,
+      "streamBytes": 0,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 83.37899999999998,
+      "heapStart": 18835340,
+      "heapEnd": 22157908
+    },
+    {
+      "name": "/wallet",
+      "elapsedMs": 8075,
+      "counters": {},
+      "network": {
+        "GET /api/v1/admin/deposits": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 19.90000000114378,
+          "p95Ms": 19.90000000114378,
+          "maxMs": 19.90000000114378
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 20.22400000169,
+          "p95Ms": 20.22400000169,
+          "maxMs": 20.22400000169
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 23.472999999285094,
+          "p95Ms": 23.472999999285094,
+          "maxMs": 23.472999999285094
+        },
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 23.787000000083935,
+          "p95Ms": 23.787000000083935,
+          "maxMs": 23.787000000083935
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 27.087000000392436,
+          "p95Ms": 27.087000000392436,
+          "maxMs": 27.087000000392436
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 52.0329999999376,
+          "p95Ms": 52.0329999999376,
+          "maxMs": 52.0329999999376
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 13.78399999885005,
+          "p95Ms": 13.78399999885005,
+          "maxMs": 13.78399999885005
+        },
+        "GET /api/v1/deposits/me": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 14.877999999953317,
+          "p95Ms": 14.877999999953317,
+          "maxMs": 14.877999999953317
+        },
+        "GET /api/v1/withdrawals/me": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 15.47500000015134,
+          "p95Ms": 15.47500000015134,
+          "maxMs": 15.47500000015134
+        },
+        "GET /api/v1/wallet/overview": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 15.37800000005518,
+          "p95Ms": 15.37800000005518,
+          "maxMs": 15.37800000005518
+        },
+        "GET /api/v1/private-trading/native/wallet": {
+          "calls": 1,
+          "bytes": 2210,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 18.091999998432584,
+          "p95Ms": 18.091999998432584,
+          "maxMs": 18.091999998432584
+        },
+        "GET /api/v1/wallet/performance": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 18.5380000002624,
+          "p95Ms": 18.5380000002624,
+          "maxMs": 18.5380000002624
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 18.956000001708162,
+          "p95Ms": 18.956000001708162,
+          "maxMs": 18.956000001708162
+        },
+        "POST /api/v1/wallet/portfolio-snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.175000001254375,
+          "p95Ms": 10.175000001254375,
+          "maxMs": 10.175000001254375
+        },
+        "GET /api/v1/market/assets/icons": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 5.616000000372878,
+          "p95Ms": 5.616000000372878,
+          "maxMs": 5.616000000372878
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 76.00899999999999,
+      "heapStart": 10468200,
+      "heapEnd": 11493224
+    },
+    {
+      "name": "/copy-trading",
+      "elapsedMs": 8088,
+      "counters": {},
+      "network": {
+        "GET /api/v1/copy-trading/marketplace": {
+          "calls": 2,
+          "bytes": 1527122,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 2828.60299999993,
+          "p95Ms": 2828.60299999993,
+          "maxMs": 2828.60299999993
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 2845.5979999998817,
+          "p95Ms": 2845.5979999998817,
+          "maxMs": 2845.5979999998817
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 17.32799999990675,
+          "p95Ms": 17.32799999990675,
+          "maxMs": 17.32799999990675
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 18.594999999550055,
+          "p95Ms": 18.594999999550055,
+          "maxMs": 18.594999999550055
+        },
+        "GET /api/v1/wallet/portfolio-history": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 19.024999999601278,
+          "p95Ms": 19.024999999601278,
+          "maxMs": 19.024999999601278
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.733999999705702,
+          "p95Ms": 11.733999999705702,
+          "maxMs": 11.733999999705702
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.521999998876709,
+          "p95Ms": 11.521999998876709,
+          "maxMs": 11.521999998876709
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.403999998947256,
+          "p95Ms": 11.403999998947256,
+          "maxMs": 11.403999998947256
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 407.48,
+      "heapStart": 7231880,
+      "heapEnd": 17227172
+    },
+    {
+      "name": "/banking",
+      "elapsedMs": 8112,
+      "counters": {},
+      "network": {
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 14.3740000003163,
+          "p95Ms": 14.3740000003163,
+          "maxMs": 14.3740000003163
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 15.860999999858905,
+          "p95Ms": 15.860999999858905,
+          "maxMs": 15.860999999858905
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 37.070000000312575,
+          "p95Ms": 37.070000000312575,
+          "maxMs": 37.070000000312575
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 12.344999999186257,
+          "p95Ms": 12.344999999186257,
+          "maxMs": 12.344999999186257
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 14.914999999746215,
+          "p95Ms": 14.914999999746215,
+          "maxMs": 14.914999999746215
+        },
+        "GET /api/v1/banking/config": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 15.336000000388594,
+          "p95Ms": 15.336000000388594,
+          "maxMs": 15.336000000388594
+        },
+        "GET /api/v1/banking/state": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 15.333999999711523,
+          "p95Ms": 15.333999999711523,
+          "maxMs": 15.333999999711523
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 6.847999999081367,
+          "p95Ms": 6.847999999081367,
+          "maxMs": 6.847999999081367
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 8.08599999982107,
+          "p95Ms": 8.08599999982107,
+          "maxMs": 8.08599999982107
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 8.606999999756226,
+          "p95Ms": 8.606999999756226,
+          "maxMs": 8.606999999756226
+        }
+      },
+      "frames": 1,
+      "streamBytes": 1935,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 131.94,
+      "heapStart": 7494936,
+      "heapEnd": 11293244
+    },
+    {
+      "name": "/markets",
+      "elapsedMs": 8083,
+      "counters": {},
+      "network": {
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 16.551000000617933,
+          "p95Ms": 16.551000000617933,
+          "maxMs": 16.551000000617933
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 17.997999999352032,
+          "p95Ms": 17.997999999352032,
+          "maxMs": 17.997999999352032
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 46.67599999993399,
+          "p95Ms": 46.67599999993399,
+          "maxMs": 46.67599999993399
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 11.070000000472646,
+          "p95Ms": 11.070000000472646,
+          "maxMs": 11.070000000472646
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 14.39099999879545,
+          "p95Ms": 14.39099999879545,
+          "maxMs": 14.39099999879545
+        },
+        "GET /api/v1/market/assets": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 14.697000000523985,
+          "p95Ms": 14.697000000523985,
+          "maxMs": 14.697000000523985
+        },
+        "GET /api/v1/futures/config": {
+          "calls": 1,
+          "bytes": 554,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 15.420999998241314,
+          "p95Ms": 15.420999998241314,
+          "maxMs": 15.420999998241314
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 15.584999999191496,
+          "p95Ms": 15.584999999191496,
+          "maxMs": 15.584999999191496
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 9.432000000742846,
+          "p95Ms": 9.432000000742846,
+          "maxMs": 9.432000000742846
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.667999999190215,
+          "p95Ms": 11.667999999190215,
+          "maxMs": 11.667999999190215
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 12.128000000302563,
+          "p95Ms": 12.128000000302563,
+          "maxMs": 12.128000000302563
+        }
+      },
+      "frames": 2,
+      "streamBytes": 3870,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 148.85399999999998,
+      "heapStart": 7592984,
+      "heapEnd": 11848420
+    },
+    {
+      "name": "/admin/deposits",
+      "elapsedMs": 8073,
+      "counters": {},
+      "network": {
+        "GET /api/v1/admin/deposits": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 5.337999999028398,
+          "p95Ms": 5.337999999028398,
+          "maxMs": 5.337999999028398
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 5.331000000296626,
+          "p95Ms": 5.331000000296626,
+          "maxMs": 5.331000000296626
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 5.548000000999309,
+          "p95Ms": 5.548000000999309,
+          "maxMs": 5.548000000999309
+        },
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 5.799000000479282,
+          "p95Ms": 5.799000000479282,
+          "maxMs": 5.799000000479282
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 6.013999998685904,
+          "p95Ms": 6.013999998685904,
+          "maxMs": 6.013999998685904
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.228999999526422,
+          "p95Ms": 10.228999999526422,
+          "maxMs": 10.228999999526422
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 5.627000000458793,
+          "p95Ms": 5.627000000458793,
+          "maxMs": 5.627000000458793
+        },
+        "GET /api/v1/admin/deposits/incoming": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 2.555999999458436,
+          "p95Ms": 2.555999999458436,
+          "maxMs": 2.555999999458436
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "fixtureWsFrames": 0,
+      "fixtureWsBytes": 0,
+      "taskMs": 106.296,
+      "heapStart": 7146372,
+      "heapEnd": 12126232
+    }
+  ],
+  "routes": [],
+  "checks": [],
+  "bundles": [
+    {
+      "file": "index-m-VYLGIZ.js",
+      "raw": 537752,
+      "gzip": 170811
+    },
+    {
+      "file": "TerminalPremium-BeB-n7Fp.js",
+      "raw": 259370,
+      "gzip": 84225
+    },
+    {
+      "file": "CardPage-BjSp4q1i.js",
+      "raw": 177409,
+      "gzip": 55533
+    },
+    {
+      "file": "FuturesPage-BrZGI1qW.js",
+      "raw": 136044,
+      "gzip": 40269
+    },
+    {
+      "file": "hi-C9yt5xXO.js",
+      "raw": 118293,
+      "gzip": 25411
+    },
+    {
+      "file": "CopyTradingPage-DrWMkNHw.js",
+      "raw": 97456,
+      "gzip": 30371
+    },
+    {
+      "file": "WalletPage-zvnOwjaa.js",
+      "raw": 90092,
+      "gzip": 23169
+    },
+    {
+      "file": "FuturesStudio-fFpDhwcq.js",
+      "raw": 90028,
+      "gzip": 57366
+    },
+    {
+      "file": "ja-CEYeDJTA.js",
+      "raw": 81292,
+      "gzip": 23288
+    },
+    {
+      "file": "LegalPage-NsNcMx9x.js",
+      "raw": 78467,
+      "gzip": 26075
+    },
+    {
+      "file": "SettingsPage-dUgJDqD6.js",
+      "raw": 77690,
+      "gzip": 20309
+    },
+    {
+      "file": "ko-wWiXh1cy.js",
+      "raw": 75410,
+      "gzip": 22337
+    },
+    {
+      "file": "es-DUmKJVcT.js",
+      "raw": 73569,
+      "gzip": 21664
+    },
+    {
+      "file": "MarketsPage-BNJC4krv.js",
+      "raw": 71803,
+      "gzip": 19316
+    },
+    {
+      "file": "en-BImMEZDC.js",
+      "raw": 67914,
+      "gzip": 20008
+    },
+    {
+      "file": "zh-CmdnILtQ.js",
+      "raw": 65301,
+      "gzip": 21612
+    },
+    {
+      "file": "TradePage-DvVOevRW.js",
+      "raw": 62414,
+      "gzip": 18429
+    },
+    {
+      "file": "PrivateTradingPage-CjLwvvOb.js",
+      "raw": 53702,
+      "gzip": 14964
+    },
+    {
+      "file": "index-i6tLBeHt.js",
+      "raw": 35621,
+      "gzip": 10132
+    },
+    {
+      "file": "Nav-cf3LtEtC.js",
+      "raw": 26567,
+      "gzip": 8953
+    },
+    {
+      "file": "TerminalAccountPanel-0_wLBKqi.js",
+      "raw": 16561,
+      "gzip": 5797
+    },
+    {
+      "file": "BankingPage-x7pM7rfe.js",
+      "raw": 14776,
+      "gzip": 4721
+    },
+    {
+      "file": "AdminUsersPage-DwFlgxf-.js",
+      "raw": 13076,
+      "gzip": 4498
+    },
+    {
+      "file": "AdminUserDetailPage-BGLyW-aO.js",
+      "raw": 10878,
+      "gzip": 3298
+    },
+    {
+      "file": "AdminDepositsPage-BqPA90x4.js",
+      "raw": 9159,
+      "gzip": 3146
+    },
+    {
+      "file": "catalogueStore-CPJTFChO.js",
+      "raw": 8431,
+      "gzip": 3125
+    },
+    {
+      "file": "AdminWalletsPage-B-6p9JF8.js",
+      "raw": 7308,
+      "gzip": 2613
+    },
+    {
+      "file": "adminStyles-Dao49S_q.js",
+      "raw": 6934,
+      "gzip": 1745
+    },
+    {
+      "file": "AdminWithdrawalsPage-DnoVREKX.js",
+      "raw": 6034,
+      "gzip": 2055
+    },
+    {
+      "file": "AdminKycPage-wA5fdEON.js",
+      "raw": 5869,
+      "gzip": 2232
+    },
+    {
+      "file": "useCfdTickers-CyrOncx2.js",
+      "raw": 5817,
+      "gzip": 2389
+    },
+    {
+      "file": "AdminLayout-ZhjgJn6D.js",
+      "raw": 5784,
+      "gzip": 2248
+    },
+    {
+      "file": "ArbitragePage-r_Ei38mt.js",
+      "raw": 4759,
+      "gzip": 1634
+    },
+    {
+      "file": "useFuturesAccount-BGgnDWbt.js",
+      "raw": 4626,
+      "gzip": 1740
+    },
+    {
+      "file": "RegisterPage-BX7eJ_J4.js",
+      "raw": 4257,
+      "gzip": 1830
+    },
+    {
+      "file": "AdminIcons-CZ6sUM3R.js",
+      "raw": 3661,
+      "gzip": 931
+    },
+    {
+      "file": "AdminAuditLogPage-DQgTTskM.js",
+      "raw": 3239,
+      "gzip": 1277
+    },
+    {
+      "file": "nativeDemoApi-C40fydv3.js",
+      "raw": 2914,
+      "gzip": 1478
+    },
+    {
+      "file": "Footer-Dg96od_E.js",
+      "raw": 2653,
+      "gzip": 1141
+    },
+    {
+      "file": "depositRails-BrauXpDQ.js",
+      "raw": 2307,
+      "gzip": 1258
+    },
+    {
+      "file": "AdminPrimitives-bEpqrV9A.js",
+      "raw": 1712,
+      "gzip": 951
+    },
+    {
+      "file": "OtcPage-D0HZ58le.js",
+      "raw": 1304,
+      "gzip": 661
+    },
+    {
+      "file": "useAdminAlerts-h2u3FS2X.js",
+      "raw": 1297,
+      "gzip": 715
+    },
+    {
+      "file": "chevron-right-DNeuaSuR.js",
+      "raw": 676,
+      "gzip": 343
+    },
+    {
+      "file": "star-B0NWy2ON.js",
+      "raw": 644,
+      "gzip": 404
+    },
+    {
+      "file": "arrow-up-CTC194ev.js",
+      "raw": 622,
+      "gzip": 316
+    },
+    {
+      "file": "privateTradingError-Ddfre3fS.js",
+      "raw": 555,
+      "gzip": 383
+    },
+    {
+      "file": "crown-C1L4fGBw.js",
+      "raw": 534,
+      "gzip": 364
+    },
+    {
+      "file": "refresh-cw-BQZxBKCq.js",
+      "raw": 493,
+      "gzip": 329
+    },
+    {
+      "file": "shield-check-CUBVbTrb.js",
+      "raw": 487,
+      "gzip": 353
+    },
+    {
+      "file": "Skeleton-pWpyQLbF.js",
+      "raw": 433,
+      "gzip": 305
+    },
+    {
+      "file": "LiveMetric-LphFPPoE.js",
+      "raw": 347,
+      "gzip": 280
+    },
+    {
+      "file": "arrow-down-right-8GELraZ9.js",
+      "raw": 341,
+      "gzip": 268
+    },
+    {
+      "file": "search-g_VZRHd5.js",
+      "raw": 341,
+      "gzip": 271
+    },
+    {
+      "file": "arrow-left-D-SkM1tN.js",
+      "raw": 337,
+      "gzip": 267
+    },
+    {
+      "file": "ReferralRedirectPage-BwIZY046.js",
+      "raw": 295,
+      "gzip": 253
+    },
+    {
+      "file": "check-fadI2YT2.js",
+      "raw": 291,
+      "gzip": 244
+    },
+    {
+      "file": "Badge-v_TZaWV9.js",
+      "raw": 171,
+      "gzip": 163
+    }
+  ],
+  "acceptance": {
+    "fixtureOnly": true,
+    "productionVerified": false,
+    "scope": "original terminal / isolated native engine",
+    "checks": [],
+    "errors": []
+  }
+}
