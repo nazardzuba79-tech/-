@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'src/services/CoinGeckoService.ts'
+      # AssetRegistry is constructed WITH the Kraken service and the
+      # catalogue is built from its pair list, so a change to how that
+      # list is fetched belongs to this workflow as much as CoinGecko's.
+      - 'src/services/KrakenMarketDataService.ts'
+      - 'src/services/__tests__/KrakenMarketDataService.test.ts'
       - 'src/services/marketData/AssetRegistry.ts'
       - 'src/services/marketData/__tests__/AssetRegistry.test.ts'
       - 'src/api/routes/marketData.ts'
@@ -44,6 +49,6 @@ jobs:
         env:
           VITE_API_URL: /api/v1
       - name: Catalogue backend regressions
-        run: npm test -- --runInBand --runTestsByPath src/services/marketData/__tests__/AssetRegistry.test.ts src/services/marketData/__tests__/CatalogueScale.test.ts
+        run: npm test -- --runInBand --runTestsByPath src/services/__tests__/KrakenMarketDataService.test.ts src/services/marketData/__tests__/AssetRegistry.test.ts src/services/marketData/__tests__/CatalogueScale.test.ts
       - name: Catalogue frontend and actual period-control regressions
         run: npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/cryptoCatalogue.test.ts frontend/src/lib/__tests__/marketsMoversControls.test.ts
