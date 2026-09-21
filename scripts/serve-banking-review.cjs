@@ -26,8 +26,8 @@ export function Nav(){return <header className="review-nav"><div className="revi
 fs.writeFileSync(apiMock, `
 export const PREVIEW_ONLY=true;
 const programs=[
- {id:'MONTHLY_17_24M',name:'Ежемесячные выплаты',monthlyRate:'0.17',termMonths:12,minUsd:'2500',assets:['USDT','USDC','BTC','ETH','SOL'],compound:false,payoutFrequency:'MONTHLY',lockRule:'PRINCIPAL_RETURN_UNDEFINED',enabled:true,availableFrom:null,availableUntil:null},
- {id:'COMPOUND_21_12M',name:'Накопление',monthlyRate:'0.21',termMonths:24,minUsd:'2500',assets:['USDT','USDC','BTC','ETH','SOL'],compound:true,payoutFrequency:'MATURITY',lockRule:'PRINCIPAL_AND_REWARDS_LOCKED_TO_MATURITY',enabled:true,availableFrom:null,availableUntil:null}
+ {id:'MONTHLY_17_24M',name:'Ежемесячные выплаты',monthlyRate:'0.12',termMonths:12,minUsd:'2500',assets:['USDT','USDC','BTC','ETH','SOL'],compound:false,payoutFrequency:'MONTHLY',lockRule:'PRINCIPAL_RETURN_UNDEFINED',enabled:true,availableFrom:null,availableUntil:null},
+ {id:'COMPOUND_21_12M',name:'Накопление',monthlyRate:'0.17',termMonths:24,minUsd:'2500',assets:['USDT','USDC','BTC','ETH','SOL'],compound:true,payoutFrequency:'MATURITY',lockRule:'PRINCIPAL_AND_REWARDS_LOCKED_TO_MATURITY',enabled:true,availableFrom:null,availableUntil:null}
 ];
 const assets=[
  {asset:'USDT',priceUsd:'1.002',minimumAssetQty:'2495.01'},
@@ -40,7 +40,13 @@ const config={programs,assets,rewardCurrencyRule:'SAME_AS_DEPOSIT_ASSET',usdValu
 const state={placements:[],ledger:[],summary:{totalUsd:'0',accruedUsd:'0',activeCount:0},cardYield:config.cardYield};
 function addMonths(dateText,n){const d=new Date(dateText+'T00:00:00Z'),day=d.getUTCDate(),target=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+n,1)),last=new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate();return new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth(),Math.min(day,last))).toISOString().slice(0,10)}
 function calc(body){const p=programs.find(x=>x.id===body.programId),a=assets.find(x=>x.asset===body.asset),principal=Number(body.amount),months=Math.min(body.periodMonths||6,p.termMonths),rate=Number(p.monthlyRate),monthly=p.compound?null:principal*rate,balance=p.compound?principal*Math.pow(1+rate,months):principal,rewards=p.compound?balance-principal:monthly*months,end=body.endDate||addMonths(body.startDate,months);return {programId:p.id,asset:body.asset,principal:String(principal),completedMonths:months,startDate:body.startDate,endDate:end,maturityDate:addMonths(body.startDate,p.termMonths),monthlyReward:monthly===null?null:String(monthly),totalRewards:String(rewards),balance:String(balance),profit:String(rewards),priceUsd:a.priceUsd,minimumAssetQty:a.minimumAssetQty,usdEquivalent:String(principal*Number(a.priceUsd)),rewardCurrency:body.asset}}
-export const bankingApi={config:async()=>config,state:async()=>state,calculate:async body=>calc(body),createPlacement:async()=>{throw new Error('preview_only')}};
+const referral={referralCode:'PREVIEW1',referralPercent:20,referredCount:2,
+ rewardsByAsset:[{asset:'USDT',amount:'48'},{asset:'BTC',amount:'0.002'}],
+ recentRewards:[
+  {id:'r1',asset:'USDT',amount:'24',sourceProfitAmount:'120',createdAt:'2026-09-01T00:00:00.000Z'},
+  {id:'r2',asset:'USDT',amount:'24',sourceProfitAmount:'120',createdAt:'2026-08-01T00:00:00.000Z'},
+  {id:'r3',asset:'BTC',amount:'0.002',sourceProfitAmount:'0.01',createdAt:'2026-07-01T00:00:00.000Z'}]};
+export const bankingApi={config:async()=>config,state:async()=>state,calculate:async body=>calc(body),referral:async()=>referral,createPlacement:async()=>{throw new Error('preview_only')}};
 export const bankingNumber=(value,digits=2)=>{if(value===null||value===undefined||value==='')return '—';const n=Number(value);return Number.isFinite(n)?new Intl.NumberFormat('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits}).format(n):'—'};
 export const bankingErrorText=()=> 'Preview mode: операции со средствами отключены.';
 `);

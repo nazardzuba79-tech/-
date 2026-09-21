@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Landmark, LockKeyhole, RefreshCw, WalletCards, X } from 'lucide-react';
+import { Copy, Landmark, LockKeyhole, RefreshCw, Users, WalletCards, X } from 'lucide-react';
 import { Nav } from '../components/Nav';
 import {
   bankingApi,
@@ -9,6 +9,7 @@ import {
   type BankingCalculation,
   type BankingConfig,
   type BankingProgramId,
+  type BankingReferral,
   type BankingState,
 } from '../lib/bankingApi';
 import './banking/BankingPage.css';
@@ -21,6 +22,8 @@ const programLabel = (id: BankingProgramId) => (id === 'MONTHLY_17_24M' ? 'Еж�
 export function BankingPage() {
   const [config, setConfig] = useState<BankingConfig | null>(null);
   const [state, setState] = useState<BankingState | null>(null);
+  const [referral, setReferral] = useState<BankingReferral | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [programId, setProgramId] = useState<BankingProgramId>('COMPOUND_21_12M');
@@ -40,6 +43,13 @@ export function BankingPage() {
   const minimumText = assetInfo?.minimumAssetQty ? `${assetInfo.minimumAssetQty} ${asset}` : '—';
   const precision = asset === 'USDT' || asset === 'USDC' ? 2 : 8;
 
+  /**
+   * The referral block is additive: if this call fails the rest of Banking is
+   * still correct, so it is fetched on its own and its failure is swallowed
+   * rather than raised into the page-level error banner.
+   */
+  const loadReferral = () => { void bankingApi.referral().then(setReferral).catch(() => setReferral(null)); };
+
   const refresh = async () => {
     setLoading(true);
     setError('');
@@ -56,6 +66,7 @@ export function BankingPage() {
 
   useEffect(() => {
     void refresh();
+    loadReferral();
   }, []);
 
   useEffect(() => {
@@ -152,7 +163,7 @@ export function BankingPage() {
           <div className="banking-heading"><div><h2>Калькулятор дохода</h2><p>Расчёт выполняется на сервере через BigNumber и учитывает только завершённые календарные месяцы.</p></div></div>
           <div className="banking-calculator">
             <div className="banking-form">
-              <label>Программа<select value={programId} onChange={(event) => setProgramId(event.target.value as BankingProgramId)}>{config?.programs.map((item) => <option key={item.id} value={item.id}>{programLabel(item.id)} · {percent(item.monthlyRate)}</option>)}</select></label>
+              <label>Программа<select value={programId} onChange={(event) => setProgramId(event.target.value as BankingProgramId)}>{config?.programs.map((item) => <option key={item.id} value={item.id}>{programLabel(item.id)} · {percent(item.monthlyRate)} в месяц</option>)}</select></label>
               <div className="banking-field-row">
                 <label>Актив<select value={asset} onChange={(event) => setAsset(event.target.value as BankingAsset)}>{(['USDT', 'USDC', 'BTC', 'ETH', 'SOL'] as BankingAsset[]).map((item) => <option key={item}>{item}</option>)}</select></label>
                 <label>Сумма<input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0.00" /></label>
@@ -183,8 +194,59 @@ export function BankingPage() {
 
         <section className="banking-card-yield">
           <div className="banking-card-icon"><WalletCards /></div>
-          <div><span className="banking-eyebrow">ОТДЕЛЬНЫЙ ПРОДУКТ</span><h2>VOLTEX Card Yield</h2><p><strong>12% годовых на USDT</strong> — на фактический доступный баланс карты. Средства не блокируются и могут быть потрачены в любой момент.</p></div>
+          <div><span className="banking-eyebrow">ОТДЕЛЬНЫЙ ПРОДУКТ</span><h2>VOLTEX Card Yield</h2><p><strong>{config ? percent(config.cardYield.annualRate) : '—'} годовых на USDT</strong> — на фактический доступный баланс карты. Средства не блокируются и могут быть потрачены в любой момент.</p></div>
           <div className="banking-card-metric"><span>Доступный баланс карты</span><strong>{state?.cardYield.availableCardBalance ?? '—'} USDT</strong><small>Не смешивается с балансом Earn</small></div>
+        </section>
+
+        {/*
+          * Banking referral. Sits between the products and the user's own
+          * placements because that is where it reads as part of the Banking
+          * ecosystem rather than as an advertisement.
+          *
+          * EVERY FIGURE HERE IS REAL. referredCount, the per-asset totals and
+          * the recent list all come from GET /banking/referral, which reports
+          * only settled Banking commissions — never the 5%-of-deposit rewards,
+          * which are a different product with a different base and have their
+          * own page in Settings. When there is nothing yet, this block says so
+          * rather than showing a persuasive number.
+          */}
+        <section className="banking-section banking-referral">
+          <div className="banking-heading"><div><h2>Реферальная программа</h2><p>Получайте {referral ? referral.referralPercent : 20}% от прибыли приглашённых пользователей в VOLTEX Banking. Комиссию выплачивает VOLTEX — доход самого реферала не уменьшается.</p></div></div>
+          <div className="banking-referral-grid">
+            <article className="banking-referral-headline">
+              <strong>{referral ? referral.referralPercent : 20}%</strong>
+              <span>от прибыли рефералов</span>
+            </article>
+            <article><span>Рефералов</span><strong>{referral ? referral.referredCount : '—'}</strong></article>
+            <article>
+              <span>Заработано</span>
+              {referral && referral.rewardsByAsset.length
+                ? <strong className="banking-referral-assets">{referral.rewardsByAsset.map((row) => <em key={row.asset}>{bankingNumber(row.amount, row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8)} <small>{row.asset}</small></em>)}</strong>
+                : <strong>{referral ? '0' : '—'}</strong>}
+            </article>
+          </div>
+          <div className="banking-referral-link">
+            <div>
+              <span>Ваша ссылка</span>
+              <code>{referral ? `${window.location.origin}/${referral.referralCode}` : '—'}</code>
+            </div>
+            <button type="button" className="banking-primary" disabled={!referral}
+              onClick={() => { if (!referral) return; void navigator.clipboard.writeText(`${window.location.origin}/${referral.referralCode}`).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 2000); }).catch(() => setCopied(false)); }}>
+              <Copy size={15} /> {copied ? 'Скопировано' : 'Копировать'}
+            </button>
+          </div>
+          {referral && referral.recentRewards.length > 0 && (
+            <div className="banking-table-wrap">
+              <table><thead><tr><th>Дата</th><th>Прибыль реферала</th><th>Ваша комиссия</th><th>Актив</th></tr></thead>
+                <tbody>{referral.recentRewards.map((row) => {
+                  const digits = row.asset === 'USDT' || row.asset === 'USDC' ? 2 : 8;
+                  return <tr key={row.id}><td>{row.createdAt.slice(0, 10)}</td><td>{bankingNumber(row.sourceProfitAmount, digits)}</td><td><b>{bankingNumber(row.amount, digits)}</b></td><td>{row.asset}</td></tr>;
+                })}</tbody></table>
+            </div>
+          )}
+          {referral && referral.referredCount === 0 && (
+            <div className="banking-empty"><Users size={18} /> Приглашённых пользователей пока нет. Комиссия начисляется с фактически выплаченной прибыли реферала, а не с суммы его размещения.</div>
+          )}
         </section>
 
         <section className="banking-section">
