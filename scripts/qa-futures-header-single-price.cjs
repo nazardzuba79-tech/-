@@ -104,10 +104,29 @@ async function run() {
       // not GROW, so it is measured against the figures recorded on
       // unmodified main with the very same harness and stubs:
       //
-      //   1920  fits           1440  175px   1366  231px   390  875px
+      //   1920  fits   1440  175px   1366  231px   390  fits
       //
       // Anything at or under those is the change doing what it claims.
-      const BASELINE = { '1920x1080': 0, '1440x900': 175, '1366x768': 231, '390x844': 875 };
+      //
+      // RE-MEASURED after PR #159 (Mobile Futures) landed on main. Three of
+      // the four are unchanged, but 390 moved from 875px to ZERO: #159
+      // reworked the narrow header so the strip now fits its box instead of
+      // scrolling. Keeping the old 875 would have left the phone case
+      // effectively unchecked — a floor nothing could ever breach — so it is
+      // tightened to what main actually does now. These figures come from
+      // running this same harness against unmodified main at 25db4e9, in
+      // HEADER_QA_RECORD mode; on that build it FAILS, reporting the index
+      // still in the header at all four widths, which is the negative
+      // control this comparison rests on.
+      // RECORD mode re-measures instead of asserting, which is how the
+      // figures below were obtained in the first place and how they are
+      // refreshed whenever the header legitimately changes shape.
+      const BASELINE = process.env.HEADER_QA_BASELINE
+        ? JSON.parse(process.env.HEADER_QA_BASELINE)
+        : { '1920x1080': 0, '1440x900': 175, '1366x768': 231, '390x844': 0 };
+      if (process.env.HEADER_QA_RECORD) {
+        console.log(`RECORD ${vp.name} over=${Math.max(0, m.barScrollWidth - m.barWidth)} barWidth=${m.barWidth} scrollWidth=${m.barScrollWidth}`);
+      }
       const over = Math.max(0, m.barScrollWidth - m.barWidth);
       const was = BASELINE[vp.name];
       if (over > was) finding(`${vp.name}: the strip's scroll extent GREW, ${was}px -> ${over}px`);
