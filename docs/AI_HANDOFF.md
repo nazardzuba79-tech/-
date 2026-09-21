@@ -3182,3 +3182,9 @@ withdrawal was placed.
 - Resolved both handoff histories and recomputed only the FuturesPage AST fingerprint after retaining mobile workspace code and removing the archive Close All import/render. Preserved all #161 component/helper/test removals and removed four now-dead mobile Close All selectors.
 - Updated browser regression to assert archive Close All stays absent, two per-position actions remain visible and individual Market close affects only the selected position: all five mobile widths plus 1366/1440/1920 desktop. Existing calculator focus/large-value/engine checks retained. No redesign or other mobile UX change.
 - Local focused regression: 47/47 PASS. CI and rendered sync evidence pending at this commit; previous report applies to the pre-sync runtime only. Historical screenshots retained; targeted positions evidence will cover the intentional runtime removal.
+
+### 2026-09-21 — Codex — PR #159 sync validation evidence
+
+- Sync runtime commit: 5c88c7fdf1b9721edda71fa8fcef4b0a526ece6e, main 5477adb7c314b24a15ba5451079039884961431b. This follow-up changes documentation/evidence only. GitHub reports mergeable; local behind count 0. No PR merge/deploy.
+- All seven runtime workflows PASS. Integration 1569/1569 (86 suites, zero skips), native 242, browser 43, large-values 87. Five mobile + three desktop position-action regressions PASS; archive Close All stays removed. Calculator focus and existing engine checks PASS. Local 47 focused tests and frontend TypeScript/build PASS.
+- Added docs/qa/futures-mobile/sync-main-161 reports and targeted position screenshots; original evidence preserved and labeled historical. No new runtime changes. Physical iOS remains outside available QA. Final evidence-head CI must pass before owner-review status.

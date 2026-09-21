@@ -1,0 +1,929 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "scope": "original terminal / isolated native engine",
+  "checks": [
+    {
+      "name": "mobile-ticket-layout-320",
+      "passed": true,
+      "evidence": {
+        "page": 320,
+        "scroll": 320,
+        "brand": {
+          "left": 48.046875,
+          "right": 178,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 186,
+          "right": 264,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 308,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 308,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 308,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 308,
+          "top": 728,
+          "bottom": 904
+        },
+        "calculator": {
+          "left": 12,
+          "right": 308,
+          "top": 997,
+          "bottom": 1047
+        },
+        "launcher": {
+          "left": 147.6875,
+          "right": 308,
+          "top": 1003,
+          "bottom": 1047
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-320",
+      "passed": true,
+      "evidence": {
+        "width": 320,
+        "scroll": 320,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-390",
+      "passed": true,
+      "evidence": {
+        "page": 390,
+        "scroll": 390,
+        "brand": {
+          "left": 50,
+          "right": 179.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 221,
+          "right": 299,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 378,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 378,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 378,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 378,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 378,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 217.6875,
+          "right": 378,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-390",
+      "passed": true,
+      "evidence": {
+        "width": 390,
+        "scroll": 390,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-393",
+      "passed": true,
+      "evidence": {
+        "page": 393,
+        "scroll": 393,
+        "brand": {
+          "left": 50,
+          "right": 179.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 224,
+          "right": 302,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 381,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 381,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 381,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 381,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 381,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 220.6875,
+          "right": 381,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-393",
+      "passed": true,
+      "evidence": {
+        "width": 393,
+        "scroll": 393,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-430",
+      "passed": true,
+      "evidence": {
+        "page": 430,
+        "scroll": 430,
+        "brand": {
+          "left": 54,
+          "right": 183.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 228,
+          "right": 306,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 418,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 418,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 418,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 418,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 418,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 257.6875,
+          "right": 418,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-430",
+      "passed": true,
+      "evidence": {
+        "width": 430,
+        "scroll": 430,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-768",
+      "passed": true,
+      "evidence": {
+        "page": 768,
+        "scroll": 768,
+        "brand": {
+          "left": 54,
+          "right": 183.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 509,
+          "right": 599,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 756,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 756,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 756,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 756,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 756,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 595.6875,
+          "right": 756,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-768",
+      "passed": true,
+      "evidence": {
+        "width": 768,
+        "scroll": 768,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "desktop-position-actions-1366",
+      "passed": true,
+      "evidence": {
+        "width": 1366,
+        "scroll": 1366,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "desktop-position-actions-1440",
+      "passed": true,
+      "evidence": {
+        "width": 1440,
+        "scroll": 1440,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "desktop-position-actions-1920",
+      "passed": true,
+      "evidence": {
+        "width": 1920,
+        "scroll": 1920,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "fields-limit-1440",
+      "passed": true,
+      "evidence": {
+        "price": {
+          "width": 297,
+          "height": 44,
+          "left": 1129,
+          "right": 1426,
+          "top": 246,
+          "bottom": 290
+        },
+        "quantity": {
+          "width": 297,
+          "height": 44,
+          "left": 1129,
+          "right": 1426,
+          "top": 304,
+          "bottom": 348
+        },
+        "long": {
+          "width": 144.5,
+          "height": 44,
+          "left": 1129,
+          "right": 1273.5,
+          "top": 723.84375,
+          "bottom": 767.84375
+        },
+        "short": {
+          "width": 144.5,
+          "height": 44,
+          "left": 1281.5,
+          "right": 1426,
+          "top": 723.84375,
+          "bottom": 767.84375
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 297,
+              "height": 44,
+              "left": 1129,
+              "right": 1426,
+              "top": 246,
+              "bottom": 290
+            },
+            "inner": {
+              "width": 81.203125,
+              "height": 42,
+              "left": 1343.796875,
+              "right": 1425,
+              "top": 247,
+              "bottom": 289
+            }
+          },
+          {
+            "outer": {
+              "width": 297,
+              "height": 44,
+              "left": 1129,
+              "right": 1426,
+              "top": 304,
+              "bottom": 348
+            },
+            "inner": {
+              "width": 54,
+              "height": 42,
+              "left": 1371,
+              "right": 1425,
+              "top": 305,
+              "bottom": 347
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "quantity-to-usdt-calculator-1440",
+      "passed": true,
+      "evidence": {
+        "price": 50882.3,
+        "quantity": 5,
+        "positionValue": "254411.50"
+      }
+    },
+    {
+      "name": "positions-reachable-1440",
+      "passed": true
+    },
+    {
+      "name": "fields-market-1440",
+      "passed": true,
+      "evidence": {
+        "price": {
+          "width": 297,
+          "height": 44,
+          "left": 1129,
+          "right": 1426,
+          "top": 246,
+          "bottom": 290
+        },
+        "quantity": {
+          "width": 297,
+          "height": 44,
+          "left": 1129,
+          "right": 1426,
+          "top": 304,
+          "bottom": 348
+        },
+        "long": {
+          "width": 144.5,
+          "height": 44,
+          "left": 1129,
+          "right": 1273.5,
+          "top": 748.84375,
+          "bottom": 792.84375
+        },
+        "short": {
+          "width": 144.5,
+          "height": 44,
+          "left": 1281.5,
+          "right": 1426,
+          "top": 748.84375,
+          "bottom": 792.84375
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 297,
+              "height": 44,
+              "left": 1129,
+              "right": 1426,
+              "top": 246,
+              "bottom": 290
+            },
+            "inner": {
+              "width": 54,
+              "height": 42,
+              "left": 1371,
+              "right": 1425,
+              "top": 247,
+              "bottom": 289
+            }
+          },
+          {
+            "outer": {
+              "width": 297,
+              "height": 44,
+              "left": 1129,
+              "right": 1426,
+              "top": 304,
+              "bottom": 348
+            },
+            "inner": {
+              "width": 54,
+              "height": 42,
+              "left": 1371,
+              "right": 1425,
+              "top": 305,
+              "bottom": 347
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "account-summary-1440",
+      "passed": true,
+      "evidence": {
+        "balance": "10 101 499.10 USDT",
+        "available": "10 050 329.21 USDT",
+        "im": "0.51%",
+        "mm": "0.03%",
+        "modeRowInCard": false,
+        "units": [
+          " USDT",
+          " USDT",
+          " USDT"
+        ],
+        "mode": "Кросс"
+      }
+    },
+    {
+      "name": "position-table-1440",
+      "passed": true,
+      "evidence": {
+        "mobileCards": false,
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Контракты",
+          "К-во",
+          "Стоим.",
+          "Цена Входа",
+          "Цена маркировки",
+          "Цена ликвид.",
+          "Нереализованный P&L(ROI)",
+          "Реализованный P&L",
+          "TP/SL",
+          "Закрыть как"
+        ],
+        "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t7.000 BTC\t356,230.00 USDT\t50,890.10\t50,890.00\t—\t\n-0.7000\n-0.00%\n\t\n-195.9269\n\t\n+ Добавить\n\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nShort · Кросс 10.00x\n\t3.000 BTC\t152,670.00 USDT\t50,889.90\t50,890.00\t—\t\n-0.3000\n-0.00%\n\t\n-83.9683\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+        "scroll": {
+          "client": 1114,
+          "full": 1206,
+          "overflow": "scroll"
+        }
+      }
+    },
+    {
+      "name": "limit-close-prefill-no-submit-1440",
+      "passed": true
+    },
+    {
+      "name": "pnl-card-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.5 USDT",
+        "href": "/futures?nativeCard=native%3A9%3Anative-758c0015-ce93-425f-b24a-da8b48c66cd6",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "owner-no-real-account-requests-1440",
+      "passed": true
+    },
+    {
+      "name": "normal-owner-flow-1440",
+      "passed": true,
+      "evidence": {
+        "openLongShort": true,
+        "add": true,
+        "cancel": true,
+        "protection": true,
+        "partialClose": true,
+        "fullClose": true,
+        "reload": true,
+        "fixtureRestart": true
+      }
+    },
+    {
+      "name": "access-outage-no-real-fallback-1440",
+      "passed": true
+    },
+    {
+      "name": "state-outage-no-real-fallback-1440",
+      "passed": true
+    },
+    {
+      "name": "reduce-only-limit-contract-1440",
+      "passed": true
+    },
+    {
+      "name": "chart-tool-selection-1440",
+      "passed": true
+    },
+    {
+      "name": "fields-limit-390",
+      "passed": true,
+      "evidence": {
+        "price": {
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 384,
+          "bottom": 432
+        },
+        "quantity": {
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 444,
+          "bottom": 492
+        },
+        "long": {
+          "width": 179,
+          "height": 52,
+          "left": 12,
+          "right": 191,
+          "top": 708,
+          "bottom": 760
+        },
+        "short": {
+          "width": 179,
+          "height": 52,
+          "left": 199,
+          "right": 378,
+          "top": 708,
+          "bottom": 760
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 384,
+              "bottom": 432
+            },
+            "inner": {
+              "width": 81.203125,
+              "height": 46,
+              "left": 295.796875,
+              "right": 377,
+              "top": 385,
+              "bottom": 431
+            }
+          },
+          {
+            "outer": {
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 444,
+              "bottom": 492
+            },
+            "inner": {
+              "width": 54,
+              "height": 46,
+              "left": 323,
+              "right": 377,
+              "top": 445,
+              "bottom": 491
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "quantity-to-usdt-calculator-390",
+      "passed": true,
+      "evidence": {
+        "price": 50890,
+        "quantity": 5,
+        "positionValue": "254450.00"
+      }
+    },
+    {
+      "name": "positions-reachable-390",
+      "passed": true
+    },
+    {
+      "name": "fields-market-390",
+      "passed": true,
+      "evidence": {
+        "price": {
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 384,
+          "bottom": 432
+        },
+        "quantity": {
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 444,
+          "bottom": 492
+        },
+        "long": {
+          "width": 179,
+          "height": 52,
+          "left": 12,
+          "right": 191,
+          "top": 708,
+          "bottom": 760
+        },
+        "short": {
+          "width": 179,
+          "height": 52,
+          "left": 199,
+          "right": 378,
+          "top": 708,
+          "bottom": 760
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 384,
+              "bottom": 432
+            },
+            "inner": {
+              "width": 54,
+              "height": 46,
+              "left": 323,
+              "right": 377,
+              "top": 385,
+              "bottom": 431
+            }
+          },
+          {
+            "outer": {
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 444,
+              "bottom": 492
+            },
+            "inner": {
+              "width": 54,
+              "height": 46,
+              "left": 323,
+              "right": 377,
+              "top": 445,
+              "bottom": 491
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "account-summary-390",
+      "passed": true,
+      "evidence": {
+        "balance": "10 101 499.10 USDT",
+        "available": "10 050 329.21 USDT",
+        "im": "0.51%",
+        "mm": "0.03%",
+        "modeRowInCard": false,
+        "units": [
+          " USDT",
+          " USDT",
+          " USDT"
+        ],
+        "mode": "Кросс"
+      }
+    },
+    {
+      "name": "position-table-390",
+      "passed": true,
+      "evidence": {
+        "mobileCards": true,
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Контракты",
+          "К-во",
+          "Стоим.",
+          "Цена Входа",
+          "Цена маркировки",
+          "Цена ликвид.",
+          "Нереализованный P&L(ROI)",
+          "Реализованный P&L",
+          "TP/SL",
+          "Закрыть как"
+        ],
+        "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n7.000\nBTC\n356,230.00\nUSDT\n50,890.10\n50,890.00\n—\n-0.7000\n-0.00%\n-195.9269\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nShort · Кросс\n10.00x\n3.000\nBTC\n152,670.00\nUSDT\n50,889.90\n50,890.00\n—\n-0.3000\n-0.00%\n-83.9683\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+        "scroll": {
+          "client": 390,
+          "full": 390,
+          "overflow": "visible"
+        }
+      }
+    },
+    {
+      "name": "limit-close-prefill-no-submit-390",
+      "passed": true
+    },
+    {
+      "name": "pnl-card-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.5 USDT",
+        "href": "/futures?nativeCard=native%3A9%3Anative-2d5df145-9fd6-4994-ac13-8e7cc00fe2f2",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "owner-no-real-account-requests-390",
+      "passed": true
+    },
+    {
+      "name": "normal-owner-flow-390",
+      "passed": true,
+      "evidence": {
+        "openLongShort": true,
+        "add": true,
+        "cancel": true,
+        "protection": true,
+        "partialClose": true,
+        "fullClose": true,
+        "reload": true,
+        "fixtureRestart": false
+      }
+    },
+    {
+      "name": "access-outage-no-real-fallback-390",
+      "passed": true
+    },
+    {
+      "name": "state-outage-no-real-fallback-390",
+      "passed": true
+    },
+    {
+      "name": "reduce-only-limit-contract-390",
+      "passed": true
+    },
+    {
+      "name": "chart-tool-selection-390",
+      "passed": true
+    },
+    {
+      "name": "server-deadline-refusal-clears-submit",
+      "passed": true,
+      "evidence": {
+        "singleSubmit": true,
+        "pendingCleared": true,
+        "serverStateUnchanged": true
+      }
+    },
+    {
+      "name": "lost-response-clears-submit-without-retry",
+      "passed": true,
+      "evidence": {
+        "singleSubmit": true,
+        "pendingCleared": true,
+        "serverStateUnchanged": true
+      }
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

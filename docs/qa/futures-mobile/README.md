@@ -1,6 +1,20 @@
-# PR #159 main sync — validation in progress
+# PR #159 — sync with main after #161
 
-Main `5477adb7c314b24a15ba5451079039884961431b` removes archive Close All via #161. The sync preserves that removal and the mobile UX. The browser regression now checks absence plus individual position actions at five mobile and three desktop sizes. The report below is historical evidence for the pre-sync runtime; its Close All results are superseded by #161. Existing screenshots are retained, not recreated as new evidence. See the upcoming sync report for current-head validation.
+Sync runtime: `5c88c7fdf1b9721edda71fa8fcef4b0a526ece6e`.
+Fresh-fetched main: `5477adb7c314b24a15ba5451079039884961431b`.
+**Runtime validation PASS.** The following evidence-only commit must also have green current-head CI before final owner-review status; the PR records that final gate.
+
+Semantic conflict resolution retains both handoff histories, recalculates only the FuturesPage AST fingerprint and preserves #161's complete archive Close All removal. Four dead mobile Close All CSS selectors were removed; no redesign or other mobile UX change. Backend, execution, calculator math and live projection are unchanged from the reviewed branch.
+
+- 7/7 runtime workflows PASS. Integration: **1,569/1,569**, 86 suites, zero skips (six tests/single suite removed by #161). Native math/auth: **242/242**.
+- Rendered browser: **43/43**, no runtime errors. Existing calculator input-focus/live-refresh checks PASS at five mobile widths; individual Limit/Market actions remain present and Market close affects exactly one selected position at all eight sizes.
+- Mobile: **320×700, 390×844, 393×852, 430×932, 768×1024 PASS**. Desktop: **1366×768, 1440×900, 1920×1080 PASS**. Archive Close All absent throughout; page overflow checks PASS. Desktop geometry workflow PASS.
+- Large financial values/cards: **87/87 PASS**. Local targeted regressions **47/47 PASS**, frontend TypeScript and production build PASS. CI backend/collector/frontend builds PASS.
+- Evidence: [CI manifest](sync-main-161/ci-results.json), [browser report](sync-main-161/browser-report.json), [large values](sync-main-161/large-values-report.json), and eight targeted `sync-position-actions-*.png` images in the same directory. Inspected 320px and 1440px captures. Fixture is isolated/synthetic; no production account operation.
+
+Runtime changes only through #161 removal required targeted positions evidence. Prior images and measurements were **not replaced or re-created**; the report below remains historical for its named pre-sync runtime. Its Close All evidence is superseded by #161. Real iOS Safari keyboard/notch remains unverified; this is Chromium regression coverage.
+
+Keep DRAFT. **NO MERGE. NO DEPLOY.**
 
 ---
 
