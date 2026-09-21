@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'src/services/CoinGeckoService.ts'
+      - 'src/services/KrakenMarketDataService.ts'
+      - 'src/services/__tests__/KrakenMarketDataService.test.ts'
+      - 'src/api/routes/market.ts'
+      - 'src/api/routes/__tests__/market.test.ts'
       - 'src/services/marketData/AssetRegistry.ts'
       - 'src/services/marketData/__tests__/AssetRegistry.test.ts'
       - 'src/api/routes/marketData.ts'
@@ -45,5 +49,11 @@ jobs:
           VITE_API_URL: /api/v1
       - name: Catalogue backend regressions
         run: npm test -- --runInBand --runTestsByPath src/services/marketData/__tests__/AssetRegistry.test.ts src/services/marketData/__tests__/CatalogueScale.test.ts
+      # The service behind /market/external/tickers and the Markets table's
+      # prices. It had no PR gate of its own: every workflow here is
+      # path-filtered and none listed it, so a change to it could only be
+      # checked by hand.
+      - name: Kraken ticker regressions
+        run: npm test -- --runInBand --runTestsByPath src/services/__tests__/KrakenMarketDataService.test.ts src/api/routes/__tests__/market.test.ts
       - name: Catalogue frontend and actual period-control regressions
         run: npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/cryptoCatalogue.test.ts frontend/src/lib/__tests__/marketsMoversControls.test.ts
