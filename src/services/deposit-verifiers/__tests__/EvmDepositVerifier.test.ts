@@ -94,6 +94,23 @@ describe('EvmDepositVerifier', () => {
       expect(result.amount.toString()).toBe('50');
     });
 
+    it('sums every matching treasury transfer without other recipients or assets', async () => {
+      const other = '0x2222222222222222222222222222222222222222';
+      const log = (amount: bigint, to = TREASURY, address = USDT_CONTRACT) => ({
+        address,
+        topics: [ethers.id('Transfer(address,address,uint256)'), ethers.zeroPadValue(other, 32), ethers.zeroPadValue(to, 32)],
+        data: ethers.toBeHex(amount, 32),
+      });
+      mockProvider({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100,
+          logs: [log(150_000_000n), log(150_123_456n), log(900_000_000n, other), log(900_000_000n, TREASURY, other)] }),
+        getBlockNumber: jest.fn().mockResolvedValue(111),
+      });
+      const result = await new EvmDepositVerifier(chainConfig).verify('0xbatch', 'USDT');
+      expect(result.amount.toString()).toBe('300.123456');
+      expect(result.confirmations).toBe(12);
+    });
+
     it('throws for a transaction that failed on-chain', async () => {
       mockProvider({ getTransactionReceipt: jest.fn().mockResolvedValue({ status: 0, blockNumber: 100 }) });
 
@@ -164,6 +181,13 @@ describe('EvmDepositVerifier', () => {
       const fetchFn = jest.fn().mockRejectedValue(new Error('DNS failure'));
       const verifier = new EvmDepositVerifier(chainConfig, fetchFn);
       await expect(verifier.listIncoming()).rejects.toThrow('Failed to reach block explorer API');
+    });
+
+    it('does not turn malformed or quota-error provider responses into an empty feed', async () => {
+      for (const body of [{ status: '1', result: 'rate limited' }, { result: [] }, { status: '0', message: 'NOTOK', result: 'quota exceeded' }]) {
+        const verifier = new EvmDepositVerifier(chainConfig, jest.fn().mockResolvedValue(jsonResponse(body)));
+        await expect(verifier.listIncoming()).rejects.toThrow(DepositVerificationError);
+      }
     });
   });
 });

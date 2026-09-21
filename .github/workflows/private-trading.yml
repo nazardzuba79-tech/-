@@ -114,6 +114,11 @@ jobs:
           ref: d3510b2b4601bbd09476f03c5ac98fb72537a2b7
           path: benchmark-before
           persist-credentials: false
+      - name: Generate baseline types from its own committed schema
+        working-directory: benchmark-before
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx prisma generate
       - name: Short before/after capacity test on disposable PostgreSQL
         timeout-minutes: 3
         env:

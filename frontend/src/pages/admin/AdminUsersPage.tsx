@@ -100,6 +100,7 @@ export function AdminUsersPage() {
         const map = new Map<string, { amount: string; asset: string; createdAt: string }>();
         const cutoff = Date.now() - ONE_DAY_MS;
         for (const d of deposits) {
+          if (!d.userId) continue;
           if (map.has(d.userId)) continue;
           if (new Date(d.createdAt).getTime() < cutoff) continue;
           map.set(d.userId, { amount: d.amount, asset: d.asset, createdAt: d.createdAt });

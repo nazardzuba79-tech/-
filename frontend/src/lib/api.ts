@@ -1199,8 +1199,8 @@ export const api = {
     request<
       {
         id: string;
-        userId: string;
-        userEmail: string;
+        userId: string | null;
+        userEmail: string | null;
         asset: string;
         chain: string;
         txHash: string;
@@ -1215,6 +1215,10 @@ export const api = {
     request<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null }[]>(
       '/admin/deposits/incoming'
     ),
+
+  getAdminIncomingDepositFeed: () =>
+    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];
+      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),
 
   creditDepositManually: (params: { userId: string; chain: string; txHash: string; asset: string }) =>
     request<{ status: string; amount: string; confirmations: number; minDepositUsd?: number }>(

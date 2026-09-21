@@ -1,187 +1,148 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, Deposit } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../config/chains';
-import { createVerifier } from './deposit-verifiers';
+import { createVerifier, DepositVerificationError } from './deposit-verifiers';
 import { MIN_DEPOSIT_USD, REFERRAL_REWARD_PERCENT, DEPOSIT_USD_PEGGED_ASSETS } from '../config/limits';
 
 export { DepositVerificationError } from './deposit-verifiers';
-
-const STABLECOINS = new Set<string>(DEPOSIT_USD_PEGGED_ASSETS);
-
-// Only what DepositService needs from KrakenMarketDataService — narrow
-// interface so tests can supply a plain mock instead of the real thing.
-export interface PriceSource {
-  getTicker(pair: string): Promise<{ lastPrice: string } | null>;
+export interface PriceSource { getTicker(pair: string): Promise<{ lastPrice: string } | null>; }
+export type DepositStatus = 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM';
+export interface DepositResult {
+  status: DepositStatus; amount: string; confirmations: number; minDepositUsd?: number; message?: string;
 }
 
-/**
- * Flow:
- *   1. User sends crypto from their own wallet (Trust Wallet, MetaMask, ...)
- *      to your treasury address, shown via GET /api/v1/deposit-address/:chain.
- *   2. User submits the resulting tx hash to POST /api/v1/deposits/claim.
- *   3. A chain-specific verifier (see deposit-verifiers/) independently
- *      checks ON-CHAIN (never trusts client input) that:
- *        - the transaction exists and is confirmed
- *        - it actually paid the configured treasury address
- *        - the asset/amount match what's claimed
- *   4. If the confirmed amount converts to at least MIN_DEPOSIT_USD, credits
- *      the user's internal available balance and stores an immutable
- *      Deposit row keyed by (chain, txHash) — the DB unique constraint makes
- *      replaying the same tx hash a no-op, not a double credit. Below the
- *      minimum, the deposit is still recorded (so there's a paper trail for
- *      support) but marked BELOW_MINIMUM and left uncredited — the minimum
- *      exists specifically to make shuffling dust-sized amounts back and
- *      forth (airdrop farming, wash-trading bots) not worth the trouble.
- *
- * This does NOT require a chain indexer running 24/7 — verification happens
- * on demand when a user claims a deposit, which is the right tradeoff for a
- * small internal team tool. For a public-facing exchange you'd add a
- * background watcher too, so balances update even if the user never clicks
- * "claim".
+/** Detection has no dollar threshold. Only automatic credit requires $300.
+ * A shared treasury cannot identify the owner of an unsolicited transfer:
+ * discovered transfers are persisted unassigned until claimed or assigned by admin.
+ * All credits re-verify the chain and atomically transition the same unique row.
  */
 export class DepositService {
   private verifier = createVerifier(this.chainConfig);
-
   constructor(private prisma: PrismaClient, private chainConfig: ChainConfig, private priceSource: PriceSource) {}
 
-  async claimDeposit(params: {
-    userId: string;
-    txHash: string;
-    asset: string;
-    // Set when an admin triggers this on the user's behalf (the manual
-    // deposit-crediting feed) rather than the user self-claiming — recorded
-    // in the audit log for accountability. Undefined for the normal
-    // self-service path.
-    performedByAdminId?: string;
-  }): Promise<{ status: 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM'; amount: string; confirmations: number; minDepositUsd?: number }> {
-    const { userId, performedByAdminId } = params;
-    // Verifiers accept case-insensitive asset symbols. Use that same canonical
-    // symbol for USD valuation and crediting, so "usdt" cannot bypass the peg.
-    const asset = params.asset.toUpperCase();
-    // TRON hashes are hexadecimal, unlike Solana's case-sensitive signatures.
-    const txHash = this.chainConfig.type === 'tron' ? params.txHash.toLowerCase() : params.txHash;
+  private hash(value: string): string {
+    if (this.chainConfig.type === 'solana') return value;
+    return this.chainConfig.type === 'ton' ? value.toLowerCase().replace(/^0x/, '') : value.toLowerCase();
+  }
 
-    // Idempotency: if we've already recorded this tx, don't re-verify or re-credit.
-    const existing = await this.prisma.deposit.findUnique({
-      where: { chain_txHash: { chain: this.chainConfig.chain, txHash } },
-    });
+  private result(row: Pick<Deposit, 'status' | 'amount' | 'confirmations'>): DepositResult {
+    return { status: row.status as DepositStatus, amount: row.amount.toString(), confirmations: row.confirmations,
+      ...(row.status === 'BELOW_MINIMUM' ? { minDepositUsd: MIN_DEPOSIT_USD,
+        message: 'Депозит ниже минимальной суммы и требует ручной обработки администратором.' } : {}) };
+  }
+
+  private async verified(txHash: string, asset: string) {
+    const verified = await this.verifier.verify(txHash, asset);
+    if (!verified.amount.isFinite() || !verified.amount.isGreaterThan(0) || verified.amount.decimalPlaces()! > 18
+      || !Number.isSafeInteger(verified.confirmations) || verified.confirmations < 0) {
+      throw new DepositVerificationError('Invalid verified transfer');
+    }
+    return verified;
+  }
+
+  private async status(asset: string, amount: BigNumber, confirmations: number): Promise<DepositStatus> {
+    const usd = await this.usdValueOf(asset, amount);
+    if (usd !== null && usd.isLessThan(MIN_DEPOSIT_USD)) return 'BELOW_MINIMUM';
+    // Unknown USD value must never bypass the automatic-credit threshold.
+    return usd !== null && confirmations >= this.chainConfig.minConfirmations ? 'CREDITED' : 'PENDING';
+  }
+
+  /** Persist an independently verified incoming transfer even without a known user.
+   * No balance mutation here. Repeated scans cannot overwrite credited or assigned rows.
+   */
+  async recordIncoming(params: { txHash: string; asset: string }): Promise<void> {
+    const txHash = this.hash(params.txHash), asset = params.asset.toUpperCase();
+    const where = { chain_txHash: { chain: this.chainConfig.chain, txHash } };
+    const existing = await this.prisma.deposit.findUnique({ where });
+    if (existing?.status === 'CREDITED') return;
+    if (existing && existing.asset !== asset) throw new DepositVerificationError('Transaction already recorded for another asset');
+    if (existing?.userId) {
+      // A known owner's pending transfer can reach its confirmation threshold
+      // during discovery. It uses the identical automatic-credit path.
+      await this.claimDeposit({ userId: existing.userId, txHash, asset });
+      return;
+    }
+    const { amount, confirmations } = await this.verified(txHash, asset);
+    if (existing && !amount.eq(existing.amount.toString())) throw new DepositVerificationError('Verified amount differs from recorded transfer');
+    const evaluated = await this.status(asset, amount, confirmations);
     if (existing) {
-      return {
-        status: existing.status as 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM',
-        amount: existing.amount.toString(),
-        confirmations: existing.confirmations,
-      };
+      // Do not overwrite a simultaneous admin assignment/credit.
+      await this.prisma.deposit.updateMany({ where: { id: existing.id, userId: null, status: { not: 'CREDITED' } },
+        data: { confirmations, status: evaluated === 'BELOW_MINIMUM' ? evaluated : 'PENDING' } });
+      return;
     }
+    await this.prisma.deposit.upsert({ where, update: { txHash }, create: {
+      chain: this.chainConfig.chain, txHash, asset, amount: amount.toString(), confirmations,
+      status: evaluated === 'BELOW_MINIMUM' ? evaluated : 'PENDING',
+    } });
+  }
 
-    const { amount, confirmations } = await this.verifier.verify(txHash, asset);
-    const isConfirmed = confirmations >= this.chainConfig.minConfirmations;
-
-    let status: 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM' = isConfirmed ? 'CREDITED' : 'PENDING';
-    if (isConfirmed) {
-      const usdValue = await this.usdValueOf(asset, amount);
-      // A price lookup failure (feed down) does NOT block a legitimate
-      // deposit — we only ever withhold credit when we positively know the
-      // value is below the threshold, never on "couldn't tell".
-      if (usdValue !== null && usdValue.isLessThan(MIN_DEPOSIT_USD)) {
-        status = 'BELOW_MINIMUM';
+  async claimDeposit(params: { userId: string; txHash: string; asset: string; performedByAdminId?: string }): Promise<DepositResult> {
+    const { userId, performedByAdminId } = params;
+    const asset = params.asset.toUpperCase(), txHash = this.hash(params.txHash);
+    const where = { chain_txHash: { chain: this.chainConfig.chain, txHash } };
+    const existing = await this.prisma.deposit.findUnique({ where });
+    const checkOwner = (row: Deposit) => {
+      if ((row.userId !== null && row.userId !== userId) || row.asset !== asset) {
+        throw new DepositVerificationError('Transaction already assigned to another user or asset');
       }
+    };
+    if (existing) {
+      checkOwner(existing);
+      if (existing.status === 'CREDITED') return this.result(existing);
     }
+    const { amount, confirmations } = await this.verified(txHash, asset);
+    const automaticStatus = await this.status(asset, amount, confirmations);
 
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const deposit = await tx.deposit.create({
-        data: {
-          userId,
-          asset,
-          chain: this.chainConfig.chain,
-          txHash,
-          amount: amount.toString(),
-          confirmations,
-          status,
-        },
-      });
-
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (performedByAdminId) {
+        const admin = await tx.user.findUnique({ where: { id: performedByAdminId }, select: { role: true } });
+        if (admin?.role !== 'ADMIN') throw new DepositVerificationError('Admin access required');
+      }
+      // The no-op UPDATE locks an existing row; the unique key arbitrates first
+      // insertion. Concurrent approves/claims then observe CREDITED and return.
+      const deposit = await tx.deposit.upsert({ where, update: { txHash }, create: {
+        userId, asset, chain: this.chainConfig.chain, txHash, amount: amount.toString(), confirmations, status: 'PENDING',
+      } });
+      checkOwner(deposit);
+      if (deposit.status === 'CREDITED') return this.result(deposit);
+      if (!amount.eq(deposit.amount.toString())) throw new DepositVerificationError('Verified amount differs from recorded transfer');
+      const status: DepositStatus = performedByAdminId && confirmations >= this.chainConfig.minConfirmations
+        ? 'CREDITED' : automaticStatus;
+      const updated = await tx.deposit.update({ where: { id: deposit.id }, data: { userId, status, confirmations } });
       if (status === 'CREDITED') {
-        const balance = await tx.balance.upsert({
-          where: { userId_asset: { userId, asset } },
-          create: { userId, asset, available: '0', locked: '0' },
-          update: {},
-        });
-        await tx.balance.update({
-          where: { userId_asset: { userId, asset } },
-          data: { available: new BigNumber(balance.available.toString()).plus(amount).toString() },
-        });
-        await tx.auditLog.create({
-          data: {
-            userId,
-            action: 'DEPOSIT_CREDITED',
-            metadata: {
-              txHash,
-              asset,
-              amount: amount.toString(),
-              ...(performedByAdminId ? { performedByAdminId } : {}),
-            },
-          },
-        });
-
-        // Referral reward: 5% of THIS deposit, in the same asset, straight
-        // to the referrer's own spot balance — see ReferralReward's schema
-        // doc comment. Only ever runs for a user who was actually referred
-        // (referredById set once, at registration); everyone else is a
-        // no-op here.
+        // Atomic increments also preserve two distinct deposits credited concurrently.
+        await tx.balance.upsert({ where: { userId_asset: { userId, asset } },
+          create: { userId, asset, available: amount.toString(), locked: '0' },
+          update: { available: { increment: amount.toString() } } });
+        await tx.auditLog.create({ data: { userId, action: 'DEPOSIT_CREDITED', metadata: {
+          depositId: deposit.id, txHash, asset, amount: amount.toString(),
+          ...(performedByAdminId ? { performedByAdminId, manual: true } : {}),
+        } } });
         const depositor = await tx.user.findUnique({ where: { id: userId }, select: { referredById: true } });
         if (depositor?.referredById) {
-          const rewardAmount = amount.times(REFERRAL_REWARD_PERCENT).dividedBy(100);
-          const referrerBalance = await tx.balance.upsert({
-            where: { userId_asset: { userId: depositor.referredById, asset } },
-            create: { userId: depositor.referredById, asset, available: '0', locked: '0' },
-            update: {},
-          });
-          await tx.balance.update({
-            where: { userId_asset: { userId: depositor.referredById, asset } },
-            data: { available: new BigNumber(referrerBalance.available.toString()).plus(rewardAmount).toString() },
-          });
-          await tx.referralReward.create({
-            data: {
-              referrerId: depositor.referredById,
-              referredUserId: userId,
-              depositId: deposit.id,
-              asset,
-              amount: rewardAmount.toString(),
-            },
-          });
-          await tx.auditLog.create({
-            data: {
-              userId: depositor.referredById,
-              action: 'REFERRAL_REWARD_CREDITED',
-              metadata: { referredUserId: userId, depositId: deposit.id, asset, amount: rewardAmount.toString() },
-            },
-          });
+          const reward = amount.times(REFERRAL_REWARD_PERCENT).dividedBy(100).toString();
+          await tx.balance.upsert({ where: { userId_asset: { userId: depositor.referredById, asset } },
+            create: { userId: depositor.referredById, asset, available: reward, locked: '0' },
+            update: { available: { increment: reward } } });
+          await tx.referralReward.create({ data: { referrerId: depositor.referredById, referredUserId: userId,
+            depositId: deposit.id, asset, amount: reward } });
+          await tx.auditLog.create({ data: { userId: depositor.referredById, action: 'REFERRAL_REWARD_CREDITED',
+            metadata: { referredUserId: userId, depositId: deposit.id, asset, amount: reward } } });
         }
-      } else if (status === 'BELOW_MINIMUM') {
-        await tx.auditLog.create({
-          data: { userId, action: 'DEPOSIT_BELOW_MINIMUM', metadata: { txHash, asset, amount: amount.toString() } },
-        });
+      } else if (status === 'BELOW_MINIMUM' && deposit.status !== status) {
+        await tx.auditLog.create({ data: { userId, action: 'DEPOSIT_BELOW_MINIMUM', metadata: { txHash, asset, amount: amount.toString() } } });
       }
+      return this.result(updated);
     });
-
-    return {
-      status,
-      amount: amount.toString(),
-      confirmations,
-      ...(status === 'BELOW_MINIMUM' ? { minDepositUsd: MIN_DEPOSIT_USD } : {}),
-    };
   }
 
   private async usdValueOf(asset: string, amount: BigNumber): Promise<BigNumber | null> {
-    if (STABLECOINS.has(asset)) return amount;
+    if ((DEPOSIT_USD_PEGGED_ASSETS as readonly string[]).includes(asset)) return amount;
     try {
       const ticker = await this.priceSource.getTicker(`${asset}/USDT`);
-      if (!ticker) return null;
-      const price = new BigNumber(ticker.lastPrice);
-      if (!price.isFinite() || price.isLessThanOrEqualTo(0)) return null;
-      return amount.times(price);
-    } catch {
-      return null;
-    }
+      const price = new BigNumber(ticker?.lastPrice ?? 'NaN');
+      return price.isFinite() && price.isGreaterThan(0) ? amount.times(price) : null;
+    } catch { return null; }
   }
 }

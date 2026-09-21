@@ -39,30 +39,21 @@ const chainConfig: ChainConfig = {
 // referral-reward path pass their own tx mock in via txOverrides instead of
 // reaching into this helper.
 function makePrismaMock(depositExists: any = null, txOverrides: any = {}) {
-  return {
-    deposit: {
-      findUnique: jest.fn().mockResolvedValue(depositExists),
-      create: jest.fn(),
-    },
-    balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
-    auditLog: { create: jest.fn() },
-    $transaction: jest.fn(async (fn: any) => fn({
-      deposit: { create: jest.fn().mockResolvedValue({ id: 'dep1' }) },
-      balance: {
-        upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }),
-        update: jest.fn(),
-      },
-      auditLog: { create: jest.fn() },
-      user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
-      referralReward: { create: jest.fn() },
-      ...txOverrides,
-    })),
-  } as any;
+  let row = depositExists;
+  const deposit = {
+    findUnique: jest.fn(async () => row),
+    upsert: jest.fn(async ({ create }: any) => row ?? (row = { id: 'dep1', ...create })),
+    update: jest.fn(async ({ data }: any) => (row = { ...row, ...data })),
+  };
+  const tx = { deposit, balance: { upsert: jest.fn(), update: jest.fn() },
+    auditLog: { create: jest.fn() }, user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN', referredById: null }) },
+    referralReward: { create: jest.fn() }, ...txOverrides };
+  return { deposit, ...tx, $transaction: jest.fn(async (fn: any) => fn(tx)) } as any;
 }
 
 // Stablecoin asset (ETH's chainConfig.nativeAsset used across these tests
 // is ETH, not a stablecoin) — a price source is required by the new
-// minimum-deposit check. Defaults to a price well above $1000/ETH so
+// minimum-deposit check. Defaults to a price well above $300/ETH so
 // existing tests (written before that check existed) keep passing; tests
 // for the new behavior override it explicitly.
 function makePriceSource(lastPrice = '3000') {
@@ -105,13 +96,13 @@ describe('DepositService', () => {
   });
 
   it('is idempotent: replaying the same tx hash does not re-verify or double count', async () => {
-    const prisma = makePrismaMock({ status: 'CREDITED', amount: '2.5', confirmations: 5 });
+    const prisma = makePrismaMock({ userId: 'u1', asset: 'ETH', status: 'CREDITED', amount: '2.5', confirmations: 5 });
     const service = new DepositService(prisma, chainConfig, makePriceSource());
     const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '3'.repeat(64), asset: 'ETH' });
 
     expect(result.status).toBe('CREDITED');
     expect(prisma.deposit.findUnique).toHaveBeenCalled();
-    expect(mockJsonRpcProvider).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('marks as PENDING when confirmations are below threshold', async () => {
@@ -139,7 +130,7 @@ describe('DepositService', () => {
       const prisma = makePrismaMock(null, {
         user: { findUnique: jest.fn().mockResolvedValue({ referredById: 'referrer-1' }) },
         balance: {
-          upsert: jest.fn().mockResolvedValue({ available: '10', locked: '0' }),
+          upsert: referrerBalanceUpdate,
           update: referrerBalanceUpdate,
         },
         referralReward: { create: referralRewardCreate },
@@ -150,13 +141,13 @@ describe('DepositService', () => {
 
       expect(result.status).toBe('CREDITED');
       // Depositor's own credit (2 ETH) then the referrer's reward (0.1 ETH,
-      // 5% of 2) — both go through the same balance.update mock here since
+      // 5% of 2) — both go through the same balance.upsert mock here since
       // this test overrides it for both calls, so assert the second (last)
       // call is the referrer's.
       expect(referrerBalanceUpdate).toHaveBeenCalledTimes(2);
       expect(referrerBalanceUpdate.mock.calls[1][0]).toMatchObject({
         where: { userId_asset: { userId: 'referrer-1', asset: 'ETH' } },
-        data: { available: '10.1' },
+        update: { available: { increment: '0.1' } },
       });
       expect(referralRewardCreate).toHaveBeenCalledWith({
         data: {
@@ -180,7 +171,7 @@ describe('DepositService', () => {
       const referralRewardCreate = jest.fn();
       const prisma = makePrismaMock(null, {
         user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
-        balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: balanceUpdate },
+        balance: { upsert: balanceUpdate },
         referralReward: { create: referralRewardCreate },
       });
 
@@ -194,24 +185,24 @@ describe('DepositService', () => {
     });
   });
 
-  describe('minimum deposit ($1000 USD-equivalent)', () => {
-    it('does not credit a confirmed deposit worth less than $1000', async () => {
+  describe('minimum deposit ($300 USD-equivalent)', () => {
+    it('does not credit a confirmed deposit worth less than $300', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
         getBlockNumber: jest.fn().mockResolvedValue(102),
-        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('0.1') }), // 0.1 ETH
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('0.099') }), // 0.099 ETH
       }));
 
       const prisma = makePrismaMock();
-      // 0.1 ETH @ $3000/ETH = $300, below the $1000 minimum.
+      // 0.099 ETH @ $3000/ETH = $297, below the $300 minimum.
       const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
       const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '5'.repeat(64), asset: 'ETH' });
 
       expect(result.status).toBe('BELOW_MINIMUM');
-      expect(result.minDepositUsd).toBe(1000);
+      expect(result.minDepositUsd).toBe(300);
     });
 
-    it('still credits a confirmed deposit at or above $1000', async () => {
+    it('still credits a confirmed deposit at or above $300', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
         getBlockNumber: jest.fn().mockResolvedValue(102),
@@ -233,18 +224,7 @@ describe('DepositService', () => {
       }));
 
       const auditLogCreate = jest.fn();
-      const prisma = {
-        deposit: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
-        $transaction: jest.fn(async (fn: any) =>
-          fn({
-            deposit: { create: jest.fn().mockResolvedValue({ id: 'dep1' }) },
-            balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
-            auditLog: { create: auditLogCreate },
-            user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
-            referralReward: { create: jest.fn() },
-          })
-        ),
-      } as any;
+      const prisma = makePrismaMock(null, { auditLog: { create: auditLogCreate } });
 
       const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
       await service.claimDeposit({
@@ -267,18 +247,7 @@ describe('DepositService', () => {
       }));
 
       const auditLogCreate = jest.fn();
-      const prisma = {
-        deposit: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
-        $transaction: jest.fn(async (fn: any) =>
-          fn({
-            deposit: { create: jest.fn().mockResolvedValue({ id: 'dep1' }) },
-            balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
-            auditLog: { create: auditLogCreate },
-            user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
-            referralReward: { create: jest.fn() },
-          })
-        ),
-      } as any;
+      const prisma = makePrismaMock(null, { auditLog: { create: auditLogCreate } });
 
       const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
       await service.claimDeposit({ userId: 'u1', txHash: '0x' + '9'.repeat(64), asset: 'ETH' });
@@ -287,7 +256,7 @@ describe('DepositService', () => {
       expect(metadata.performedByAdminId).toBeUndefined();
     });
 
-    it('does not block a deposit when the price feed is unavailable', async () => {
+    it('records without automatic credit when the price feed is unavailable', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
         getBlockNumber: jest.fn().mockResolvedValue(102),
@@ -298,9 +267,8 @@ describe('DepositService', () => {
       const service = new DepositService(makePrismaMock(), chainConfig, priceSource);
       const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '7'.repeat(64), asset: 'ETH' });
 
-      // Can't verify the value is below minimum, so it errs toward crediting
-      // rather than silently withholding a possibly-large legitimate deposit.
-      expect(result.status).toBe('CREDITED');
+      // Unknown USD value cannot authorize automatic credit.
+      expect(result.status).toBe('PENDING');
     });
   });
 });

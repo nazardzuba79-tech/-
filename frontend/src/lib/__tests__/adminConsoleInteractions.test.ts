@@ -38,6 +38,38 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); });
 async function mountWallets() { const { AdminWalletsPage } = load(resolve(frontend, 'src/pages/admin/AdminWalletsPage')); await act(async () => { root.render(React.createElement(AdminWalletsPage)); await flush(); }); }
+async function mountDeposits() {
+  const { AdminDepositsPage } = load(resolve(frontend, 'src/pages/admin/AdminDepositsPage'));
+  const { MemoryRouter } = req('react-router-dom');
+  await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminDepositsPage))); await flush(); });
+}
+
+test('below-minimum history exposes manual credit, sends no amount, and removes action after authoritative CREDITED', async () => {
+  const deposit = { id: 'local-deposit', userId: 'local-user', userEmail: 'owner@example.invalid', asset: 'USDT', chain: 'tron',
+    txHash: 'a'.repeat(64), amount: '299', confirmations: 25, status: 'BELOW_MINIMUM', createdAt: new Date().toISOString() };
+  Object.assign(api, {
+    getAdminIncomingDepositFeed: jest.fn(async () => ({ transfers: [], failedChains: [] })),
+    getAdminDeposits: jest.fn(async () => [{ ...deposit }]), getAllClients: jest.fn(async () => []),
+    creditDepositManually: jest.fn(async () => { deposit.status = 'CREDITED'; return { status: 'CREDITED', amount: '299', confirmations: 25 }; }),
+  });
+  await mountDeposits();
+  expect(host.textContent).toContain('BELOW_MINIMUM'); expect(host.textContent).toContain('299');
+  await click('Зачислить вручную');
+  expect(api.creditDepositManually).toHaveBeenCalledTimes(1);
+  expect(api.creditDepositManually).toHaveBeenCalledWith({ userId: 'local-user', chain: 'tron', txHash: deposit.txHash, asset: 'USDT' });
+  expect(host.querySelector('[role="status"]')!.textContent).toBe('Депозит зачислен.');
+  expect(Array.from(host.querySelectorAll('button')).some(b => b.textContent === 'Зачислить вручную')).toBe(false);
+});
+
+test('provider partial failure cannot render the empty incoming success message', async () => {
+  Object.assign(api, {
+    getAdminIncomingDepositFeed: jest.fn(async () => ({ transfers: [], failedChains: ['tron'] })),
+    getAdminDeposits: jest.fn(async () => []), getAllClients: jest.fn(async () => []),
+  });
+  await mountDeposits();
+  expect(host.querySelector('[role="alert"]')!.textContent).toContain('загружены не полностью');
+  expect(host.textContent).not.toContain('В доступной ленте нет непривязанных переводов.');
+});
 async function click(text: string) {
   const button = Array.from(host.querySelectorAll('button')).find(b => b.textContent === text)!;
   expect(button).toBeDefined();

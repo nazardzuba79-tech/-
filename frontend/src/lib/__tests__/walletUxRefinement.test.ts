@@ -665,7 +665,10 @@ test.each([
   // out of a list. No option, value, label, disabled rule, focus order or
   // ARIA role changed, and no other export in this file was touched.
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
-  [wallet + 'TransactionHistory.tsx', '3650f07956b54e5451e945d6d3e4561cfa0247bfd00d3549d6770374545037d5'],
+  // Owner-approved deposit minimum policy: BELOW_MINIMUM is an amber manual
+  // processing state, not rejected. Only its union, style and mapping changed;
+  // quantity/format/filter/financial meaning remain pinned by this fingerprint.
+  [wallet + 'TransactionHistory.tsx', 'b9b0b0c274bef595780cf7b748685b6486a72765af6af575a170f307a5b999b3'],
   ['frontend/src/lib/api.ts', '364345bc08c0084e09387aaad375b185ca0c854d88ffe782c396b59617705d19'],
   // Re-taken for the same change, on the server side: the presentation
   // profile and its 80/20 display split are gone, so every account is now

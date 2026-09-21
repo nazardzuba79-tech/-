@@ -23,70 +23,74 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   const router = Router();
   const treasuryWallets = new TreasuryWalletService(prisma);
 
-  // Every deposit ever recorded, across every user — GET /deposits/me is
-  // deliberately scoped to the caller only, this is the admin-wide view.
+  // Every unresolved deposit, plus recent credited history. A burst of credited
+  // transfers must never push an older BELOW_MINIMUM out of the work queue.
   router.get('/admin/deposits', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
-    const deposits = await prisma.deposit.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-      include: { user: { select: { email: true } } },
-    });
-    res.json(
-      deposits.map((d) => ({
-        id: d.id,
-        userId: d.userId,
-        userEmail: d.user.email,
-        asset: d.asset,
-        chain: d.chain,
-        txHash: d.txHash,
-        amount: d.amount.toString(),
-        confirmations: d.confirmations,
-        status: d.status,
-        createdAt: d.createdAt,
-      }))
-    );
+    try {
+      const [unresolved, credited] = await Promise.all([
+        prisma.deposit.findMany({ where: { status: { not: 'CREDITED' } }, orderBy: { createdAt: 'desc' }, include: { user: { select: { email: true } } } }),
+        prisma.deposit.findMany({ where: { status: 'CREDITED' }, orderBy: { createdAt: 'desc' }, take: 200, include: { user: { select: { email: true } } } }),
+      ]);
+      const deposits = [...unresolved, ...credited];
+      res.json(
+        deposits.map((d) => ({
+          id: d.id,
+          userId: d.userId,
+          userEmail: d.user?.email ?? null,
+          asset: d.asset,
+          chain: d.chain,
+          txHash: d.txHash,
+          amount: d.amount.toString(),
+          confirmations: d.confirmations,
+          status: d.status,
+          createdAt: d.createdAt,
+        }))
+      );
+    } catch { res.status(503).json({ error: 'Failed to load deposit history' }); }
   });
 
   // Recent transfers to the treasury address that aren't recorded as a
   // Deposit yet — real on-chain data (see each verifier's listIncoming),
   // not anything the client submitted.
-  router.get('/admin/deposits/incoming', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
-    const results: Array<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number }> = [];
-
+  router.get('/admin/deposits/incoming', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+    const failedChains = new Set<string>();
+    const configuredChains: string[] = [];
     for (const chain of KNOWN_CHAINS) {
       let config: ChainConfig;
-      try {
-        config = await resolveChainConfig(treasuryWallets, chain);
-      } catch {
-        continue; // not configured on this deployment
+      try { config = await resolveChainConfig(treasuryWallets, chain); }
+      catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        if (!message.startsWith('No treasury address configured') && !message.startsWith('Missing required env var:')) failedChains.add(chain);
+        continue;
       }
+      configuredChains.push(chain);
       try {
         const transfers = await createVerifier(config).listIncoming();
-        for (const t of transfers) results.push({ chain, ...t });
-      } catch (err) {
-        // One chain's provider being unreachable shouldn't blank the whole
-        // feed — the admin still sees whatever chains DID respond.
-        console.error(`Failed to list incoming transfers for ${chain}:`, err);
-      }
+        const service = new DepositService(prisma, config, priceSource);
+        for (const transfer of transfers) {
+          try { await service.recordIncoming(transfer); }
+          catch { failedChains.add(chain); }
+        }
+      } catch { failedChains.add(chain); }
     }
-
-    if (results.length === 0) return res.json([]);
-
-    const [existing, ignored] = await Promise.all([
-      prisma.deposit.findMany({
-        where: { OR: results.map((r) => ({ chain: r.chain, txHash: r.txHash })) },
-        select: { chain: true, txHash: true },
-      }),
-      prisma.ignoredIncomingTransfer.findMany({
-        where: { OR: results.map((r) => ({ chain: r.chain, txHash: r.txHash })) },
-        select: { chain: true, txHash: true },
-      }),
-    ]);
-    const excludedKeys = new Set([...existing, ...ignored].map((d) => `${d.chain}:${d.txHash}`));
-
-    res.json(results.filter((r) => !excludedKeys.has(`${r.chain}:${r.txHash}`)));
+    try {
+      // Persisted observations survive provider outages and recent-feed windows.
+      // No amount/minimum filter, and ignored transfers still remain in history.
+      const [deposits, ignored] = await Promise.all([
+        prisma.deposit.findMany({ where: { userId: null, status: { not: 'CREDITED' } }, orderBy: { createdAt: 'desc' } }),
+        prisma.ignoredIncomingTransfer.findMany({ select: { chain: true, txHash: true } }),
+      ]);
+      const ignoredKeys = new Set(ignored.map(d => `${d.chain}:${d.txHash}`));
+      const transfers = deposits.filter(d => !ignoredKeys.has(`${d.chain}:${d.txHash}`)).map(d => ({
+        chain: d.chain, txHash: d.txHash, asset: d.asset, amount: d.amount.toString(),
+        confirmations: d.confirmations, status: d.status, timestamp: d.createdAt.toISOString(),
+      }));
+      if (req.query.includeStatus === 'true') return res.json({ transfers, failedChains: [...failedChains], configuredChains });
+      // Older clients must not interpret a failed provider as an empty success.
+      if (failedChains.size) return res.status(503).json({ error: 'Incoming transfers are temporarily incomplete' });
+      res.json(transfers);
+    } catch { res.status(503).json({ error: 'Failed to load recorded incoming transfers' }); }
   });
-
   const ignoreSchema = z.object({
     chain: z.string().min(1),
     txHash: z.string().min(1),

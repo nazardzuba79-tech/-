@@ -210,7 +210,7 @@ describe('deposits routes', () => {
       process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
       process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
 
-      const app = buildApp({ deposit: { findUnique: jest.fn().mockResolvedValue({ status: 'PENDING', amount: '1', confirmations: 0 }) } });
+      const app = buildApp({ deposit: { findUnique: jest.fn().mockResolvedValue({ userId: 'user-1', asset: 'ETH', status: 'CREDITED', amount: '1', confirmations: 3 }) } });
       const res = await request(app)
         .post('/api/v1/deposits/claim/ethereum')
         .set('Authorization', authHeader('user-1'))
@@ -236,7 +236,7 @@ describe('deposits routes', () => {
       process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
 
-      const app = buildApp({ deposit: { findUnique: jest.fn().mockResolvedValue({ status: 'PENDING', amount: '1', confirmations: 0 }) } });
+      const app = buildApp({ deposit: { findUnique: jest.fn().mockResolvedValue({ userId: 'user-1', asset: 'BTC', status: 'CREDITED', amount: '1', confirmations: 3 }) } });
       const res = await request(app)
         .post('/api/v1/deposits/claim/bitcoin')
         .set('Authorization', authHeader('user-1'))

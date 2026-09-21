@@ -16,7 +16,7 @@ import { MASK, decimalsFor, formatAmount } from './format';
  *
  * An account with no flows yet shows an empty state, never sample rows.
  */
-type Status = 'done' | 'pending' | 'rejected';
+type Status = 'done' | 'pending' | 'rejected' | 'belowMinimum';
 
 interface Flow {
   id: string;
@@ -31,7 +31,7 @@ const LIMIT = 6;
 
 function depositStatus(status: string): Status {
   if (status === 'CREDITED') return 'done';
-  if (status === 'BELOW_MINIMUM') return 'rejected';
+  if (status === 'BELOW_MINIMUM') return 'belowMinimum';
   return 'pending';
 }
 
@@ -42,6 +42,7 @@ function withdrawalStatus(status: string): Status {
 }
 
 const STATUS_TONE: Record<Status, string> = {
+  belowMinimum: 'text-gold-deep',
   done: 'text-pos',
   pending: 'text-gold-deep',
   rejected: 'text-neg',
@@ -86,7 +87,7 @@ export function RecentActivity({ hidden, onAll }: { hidden: boolean; onAll: () =
     };
   }, []);
 
-  const statusLabel = (s: Status) => (s === 'done' ? t('wallet.txDone') : s === 'pending' ? t('wallet.txPending') : t('wallet.txRejected'));
+  const statusLabel = (s: Status) => (s === 'belowMinimum' ? t('wallet.history.status.BELOW_MINIMUM') : s === 'done' ? t('wallet.txDone') : s === 'pending' ? t('wallet.txPending') : t('wallet.txRejected'));
 
   return (
     <section aria-label={t('wallet.recentActivity')} className="wallet-recent-activity wallet-card">

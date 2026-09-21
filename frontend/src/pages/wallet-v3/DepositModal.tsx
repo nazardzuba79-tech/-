@@ -52,6 +52,7 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
       }
     >
       <div className="space-y-4">
+        {minDepositUsd !== null && <p className="text-[12px] font-medium text-ink-2">{t('deposit.minAmountHint', { amount: minDepositUsd })}</p>}
         {error && (
           <p className="rounded-w border border-[#f0d0d3] bg-[#fbecec] px-3 py-2.5 text-[11.5px] leading-[17px] text-[#a93a43]">
             {error}

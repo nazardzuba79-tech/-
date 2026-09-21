@@ -297,14 +297,14 @@ model Wallet {
 
 model Deposit {
   id            String   @id @default(uuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
   asset         String
   chain         String
   txHash        String
   amount        Decimal  @db.Decimal(36, 18)
   confirmations Int      @default(0)
-  status        String   // PENDING | CONFIRMED | CREDITED
+  status        String   // PENDING | CONFIRMED | BELOW_MINIMUM | CREDITED
   createdAt     DateTime @default(now())
 
   referralReward ReferralReward?
