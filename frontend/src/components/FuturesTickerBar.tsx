@@ -18,19 +18,23 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  *
  * Order runs price -> market -> derivatives:
  *
- *   Last with Mark and Index underneath, 24h change, High, Low,
+ *   Last with Mark underneath, 24h change, High, Low,
  *   Turnover (quote), Open interest (base), Funding rate / Next funding,
  *   and the calculator trigger pinned to the right edge.
  *
- * Index used to be fetched and then dropped — in the data flow, not on the
- * strip. It is shown now because a mark price quoted without the index it
- * is anchored to cannot be judged: the gap between the two is the whole
- * question a perpetual trader is asking when they look at either. It
- * shares the price block with the mark rather than taking a cell of its
- * own, because the strip has no room for a ninth labelled cell — measured,
- * not guessed: as one it pushed funding 100px past the right edge at 1366.
- * Nothing new is fetched for it; it arrives on the same
- * /futures/mark-price response the mark does.
+ * ONE SECONDARY REFERENCE PRICE. The index was shown beside the mark for a
+ * while, on the reasoning that a mark quoted without the index it is
+ * anchored to cannot be judged. In practice the two agree to within a few
+ * ticks, so on the face of the terminal they read as the same number
+ * printed twice — noise in the row a trader scans most often. The mark is
+ * the figure a position is actually marked against, so the mark is the one
+ * that keeps the slot.
+ *
+ * INDEX IS STILL FETCHED AND STILL HELD in this component's state, and that
+ * is deliberate rather than an oversight: /futures/mark-price returns both,
+ * MarkPriceService still computes both, and the funding and analytics
+ * readers that need the index are untouched. What changed is which figure
+ * occupies a permanent slot in the header — presentation, not data.
  *
  * Funding sits at the end deliberately. It is important, but it is a
  * once-per-8h settlement, and putting it immediately after mark price
@@ -287,18 +291,32 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
         {archive ? <span className={`archive-price-change ${dir}`} title={t('futures.headerChange24h')}>
           {stats?.changePercent != null ? `${absoluteChange24h !== null ? `${positive ? '+' : ''}${formatPrice(absoluteChange24h)} ` : ''}(${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)` : '—'}
         </span> : (<span className="futures-secondary-price">
+          {/* ONE SECONDARY REFERENCE PRICE, NOT TWO.
+              The strip carried the mark and the index side by side, and at
+              a glance they are the same number — they only diverge by a few
+              ticks, so the pair read as noise rather than as two readings.
+              The mark is the one a position is actually marked against, so
+              it is the one that stays.
+
+              `indexPrice` is deliberately still fetched and still held in
+              this component's state. Nothing about the data path changed:
+              /futures/mark-price returns both, MarkPriceService still
+              computes both, and the funding and analytics readers that need
+              the index are untouched. This is which figure occupies a
+              permanent slot in the header, and nothing else. */}
           <span className="value" title={t('futures.markPrice')} aria-label={t('futures.markPrice')}>
             {markPrice !== null ? formatPrice(markPrice) : '—'}
           </span>
-          <span className="futures-price-sep" aria-hidden="true">·</span>
-          <span className="value" data-metric="index" title={t('futures.indexPrice')} aria-label={t('futures.indexPrice')}>
-            {indexPrice !== null ? formatPrice(indexPrice) : '—'}
-          </span>
         </span>)}
       </div>
+      {/* The same cleanup in the archive layout: one label, one figure. The
+          cell and both class names are kept so the header's geometry is
+          untouched — it simply carries less, and the row's own gap absorbs
+          the width the second number used to take. No cell is removed, so
+          nothing shifts and no gap opens. */}
       {archive ? <div className="ticker-item archive-index-mark">
-        <span className="label">{t('futures.markPrice')} / {t('futures.indexPrice')}</span>
-        <span className="value archive-mark-index"><span aria-label={t('futures.markPrice')}>{markPrice !== null ? formatPrice(markPrice) : '—'}</span><span aria-hidden="true"> / </span><span data-metric="index" aria-label={t('futures.indexPrice')}>{indexPrice !== null ? formatPrice(indexPrice) : '—'}</span></span>
+        <span className="label">{t('futures.markPrice')}</span>
+        <span className="value archive-mark-index" aria-label={t('futures.markPrice')}>{markPrice !== null ? formatPrice(markPrice) : '—'}</span>
       </div> : <div className="ticker-item">
         <span className="label">{t('futures.headerChange24h')}</span>
         <span className={`value change ${dir}`}>
