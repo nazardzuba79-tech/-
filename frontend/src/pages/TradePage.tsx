@@ -32,6 +32,10 @@ import './trade-terminal/TerminalPresentationPolish.css';
 import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
 import './trade-terminal/TerminalPremium.css';
+// The one VOLTEX terminal design system, shared with the approved Futures
+// composition. Imported last so its tokens win over the older market-reference
+// sheets this page has carried, which is exactly the drift it exists to end.
+import './trade-terminal/VoltexTerminalSystem.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
@@ -261,7 +265,7 @@ export function TradePage() {
   // CFD uses the same shell, with three columns and deliberately no order book.
   if (marketType === 'cfd') {
     return (
-      <div className="trade-terminal cfd-terminal market-reference terminal-studio">
+      <div className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal">
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner />
         <div className="terminal">
@@ -287,7 +291,7 @@ export function TradePage() {
   }
 
   return (
-    <div className="trade-terminal spot-terminal market-reference terminal-studio">
+    <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal">
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
