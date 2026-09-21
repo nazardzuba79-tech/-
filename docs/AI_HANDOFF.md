@@ -3148,6 +3148,25 @@ withdrawal was placed.
 - Evidence and precise scope/preview limitations: `docs/qa/futures-pro-integration/README.md`, ci-results.json and screenshots. Production acceptance/egress not rerun. Owner review is next; no deploy authorization implied.
 - Verification follow-up: the original 33 DB-gated skips include 9 nativeLivePostgres tests guarded by NATIVE_EGRESS_TEST_DATABASE_URL, which the private-trading workflow did not supply. Those 9 passed locally on a fresh disposable PostgreSQL DB with zero skips. The new integration workflow now provisions its own loopback PostgreSQL, migrates it and enables both DB guards so the full suite runs in CI. Earlier ci-results.json remains explicitly scoped to runtime commit 0066a611; the final PR workflow results are authoritative for the subsequent CI-only change.
 
+### 2026-09-20 — Codex — Futures mobile workspaces (`codex/futures-mobile-ux`)
+
+- Owner explicitly requested a fresh-main branch and Draft PR, overriding the normal shared integration branch workflow. Fetched main `2bc51d54a60a86778d9c50164291dd2f282c9239`, rechecked unchanged. No merge/deploy/production actions.
+- Implementation commit `3880230b0b2826af5e04bb39391ee28685599c2d`, stylesheet follow-up `e3e2b89a0392fb21d46debe2f6c5e630870397c3`.
+- Material files: FuturesPage, FuturesMobile.css, FuturesTickerBar, PriceChart, FuturesPositionsPanel, FuturesPositionProtection; three regression suites, native browser runner and `docs/qa/futures-mobile/`.
+- Mobile Chart/Trade/Positions workspaces reuse mounted components and the existing execution layer; disclosure stats, More tools, position cards, server TP/SL values, direct draft handoffs, keyboard/safe-area styles. Desktop CSS unchanged; mobile overrides scoped to <=900px.
+- Preserved Claude calculator, Close All sequencing/confirmation/partial failures, calm book and all #152/#156 backend/execution/math/projection/history code. No financial source edits.
+- Local backend TypeScript/build and frontend TypeScript/build PASS. Broad regressions 1,542 PASS, 0 FAIL, 33 DB-gated SKIP; final stylesheet scope/protection 2/2 PASS. Browser runner adapted to select mobile tabs; syntax check only, no local browser run.
+- Browser local-preview access was policy-blocked. Required viewport QA and six screenshots remain outstanding; desktop pixel stability and iPhone keyboard behaviour NOT verified. Draft must remain unmerged; not READY FOR OWNER REVIEW. See README for exact test scope and continuation commands.
+
+### 2026-09-21 — Codex — PR #159 final mobile browser QA
+
+- Continued owner-specified codex/futures-mobile-ux / draft PR #159; fresh main 2bc51d54a60a86778d9c50164291dd2f282c9239, 0 behind. No merge/deploy/production trades.
+- Runtime commits: f3200bb5 (three browser-proven mobile layout defects), 5a34738d (Close All partial-failure/320px large-value browser coverage), 974a5e68ae9b484431b3279c6215ed155c4a3f24 (calculator focus retained across live refreshes). This entry's commit is evidence only.
+- Material code: FuturesMobile.css, FuturesCalculator.tsx, scripts/qa-native-demo-browser.cjs. Evidence: docs/qa/futures-mobile. Preserved approved #158 desktop geometry and Claude calculator architecture, all #152/#156 engine/execution/projection/history behavior.
+- Actual rendered manual matrix: 320x700, 390x844, 393x852, 430x932, 768x1024; desktop 1366x768,1440x900,1920x1080. No horizontal overflow. Exact primary-panel geometry equal to #158/main baseline. Historical Entry/TP/SL/nonnull LIQ, position actions, book price draft, four calculator tabs and Apply verified. Isolated disposable Close All completed 2/2; fixture account left flat.
+- Final code CI 7/7 GREEN: integration 1575/1575 (87 suites, zero skips), native 242/242, native rendered browser 40/40, large values 87/87. Local broad 1542 PASS /33 DB-gated SKIP; final calculator-focused 55 PASS, scope2 PASS; frontend build and backend checks PASS.
+- Real iOS keyboard unavailable. Actual focus and reduced 320x420 viewport verified, 16px inputs and safe-area/visualViewport mechanics inspected; no physical iOS/notch PASS claimed. Global support bubble may overlap Profile; not a Futures form regression. Preview public summary feed limitations explicitly documented.
+- READY FOR OWNER REVIEW within documented browser/tooling scope. Keep draft. Recommended owner follow-up: physical iPhone Safari decimal keyboard/rotation/home-indicator check. No merge or deploy authorized.
 ### 2026-09-21 — Claude — Close All removed from the archive Futures toolbar
 
 - Owner pointed at the greyed "Закрыть все" control beside the "Все рынки" filter on production `voltextech.net/futures` and asked for it to go. Branched from main `2bc51d54` (PR #158, which carries the Pro terminal into the archive design) because that is what production runs.
@@ -3157,6 +3176,18 @@ withdrawal was placed.
 - Preserved from Codex: the whole #158 archive integration, the native engine, financial math, CAS/rollback/idempotency and #156 live projection are untouched. This change is frontend-only and removes no financial code path — the per-position Market close is unaffected.
 - Validation: frontend TypeScript PASS, production build PASS. Full frontend jest measured against clean main: baseline 16 failed suites / 84 failed tests of 2088; after the change 16 / 84 of 2082. Zero new failures; the deltas are exactly the deleted suite and its six tests. No browser QA was run for this removal.
 
+### 2026-09-21 — Codex — PR #159 sync with merged PR #161
+
+- Fresh-fetched main `5477adb7c314b24a15ba5451079039884961431b`; syncing into owner-specified PR #159 from `a6a0328b65b19bdec6c113df2eaa25a5116cbcb0`. Commit: this merge commit (see git history). No PR merge or deployment.
+- Resolved both handoff histories and recomputed only the FuturesPage AST fingerprint after retaining mobile workspace code and removing the archive Close All import/render. Preserved all #161 component/helper/test removals and removed four now-dead mobile Close All selectors.
+- Updated browser regression to assert archive Close All stays absent, two per-position actions remain visible and individual Market close affects only the selected position: all five mobile widths plus 1366/1440/1920 desktop. Existing calculator focus/large-value/engine checks retained. No redesign or other mobile UX change.
+- Local focused regression: 47/47 PASS. CI and rendered sync evidence pending at this commit; previous report applies to the pre-sync runtime only. Historical screenshots retained; targeted positions evidence will cover the intentional runtime removal.
+
+### 2026-09-21 — Codex — PR #159 sync validation evidence
+
+- Sync runtime commit: 5c88c7fdf1b9721edda71fa8fcef4b0a526ece6e, main 5477adb7c314b24a15ba5451079039884961431b. This follow-up changes documentation/evidence only. GitHub reports mergeable; local behind count 0. No PR merge/deploy.
+- All seven runtime workflows PASS. Integration 1569/1569 (86 suites, zero skips), native 242, browser 43, large-values 87. Five mobile + three desktop position-action regressions PASS; archive Close All stays removed. Calculator focus and existing engine checks PASS. Local 47 focused tests and frontend TypeScript/build PASS.
+- Added docs/qa/futures-mobile/sync-main-161 reports and targeted position screenshots; original evidence preserved and labeled historical. No new runtime changes. Physical iOS remains outside available QA. Final evidence-head CI must pass before owner-review status.
 ### 2026-09-21 — Claude — Copy Trading Nazar + Ksenia permanent contract and regression gate
 
 - Fresh main re-fetched and confirmed `2bc51d54a60a86778d9c50164291dd2f282c9239` (merge of PR #158, Codex `codex/futures-design-pro-integration`). New branch `claude/copy-trading-nazar-ksenia-hardening` from that SHA. No merge, no deploy.
@@ -3172,3 +3203,10 @@ withdrawal was placed.
 - Regression check: full Jest on this branch and on unmodified main both give 23 failing suites / 101 failing tests — **zero new failures**. Those 23 are pre-existing on main and were not touched. Among them `copyFirstLoad.test.ts` fails on a brittle source-text regex expecting `l.to === '/copy-trading'` where `Nav.tsx` now reads `l.to==='/copy-trading'`; the prefetch wiring itself is present and correct, and that suite is not in the workflow's run list, which is why it went unnoticed.
 - Documented: `docs/COPY_TRADING_INVARIANTS.md` — the twelve invariants against what enforces each, the latency measurements, how to read the new log lines, an eight-step by-hand production smoke gate, and the cross-module review rule.
 - Unresolved / not done: production frontend SHA, production backend SHA and the live endpoint result (egress blocked, stated above, not guessed); the three pre-existing `copyFirstLoad.test.ts` failures; the deposit modal title «Пополнение» under a «Депозит» button and `DepositModal`'s missing Escape handler; three measured order-book differences from Bybit left unchanged. No merge, no deploy, no redesign, no change to the reported ROI, the Copy button, the $5,000 eligibility rule or hidden-trade policy.
+
+### 2026-09-21 — Codex — PR #159 sync with main after PR #162
+
+- Owner-specified branch codex/futures-mobile-ux; starting head b140f2e0457d0e4d83f727f450601784c1de7261, fresh main 7027d4904b9c15ec201f164f3ece60601e93c0c5. Commit: this merge commit (git history). No PR merge or deploy.
+- Only conflict was this handoff; both histories retained. All 29 non-handoff files delivered by #162 verified byte-identical to main. No Copy Trading logic or test changes, no Futures runtime/CSS changes versus the prior head. #161 archive Close All stays removed; #152/#156/#158 ancestry retained.
+- Local focused run: 71 PASS; one unchanged Copy Trading coverage test fails on Windows path separators/CRLF while comparing POSIX workflow globs. Do not alter #162 for this sync; Linux CI is the authoritative gate. Futures focused 47/47 and Copy critical path/HTTP contract pass locally.
+- Current-head Futures integration/native-browser/mobile/desktop and Copy Trading CI are required after push. Final run URLs/status are recorded in PR #159 after completion, not assumed in this pre-CI entry. Existing screenshots/reports preserved because Futures runtime did not change. Physical iOS QA remains outside available Chromium coverage.

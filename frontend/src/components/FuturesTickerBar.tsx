@@ -57,6 +57,7 @@ import { useAssetMetadata } from '../lib/assetMetadataStore';
  */
 export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, archive = false, onOpenCalculator }:
   { symbol: string; onSelectSymbol?: () => void; marketsOpen?: boolean; archive?: boolean; onOpenCalculator?: () => void }) {
+  const [mobileDetails, setMobileDetails] = useState(false);
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
   /**
@@ -214,7 +215,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
   const dir = positive ? 'up' : 'down';
 
   return (
-    <div className="ticker-bar futures-ticker-bar">
+    <div className="ticker-bar futures-ticker-bar" data-mobile-details={mobileDetails}>
       {/* Two ways in, on purpose. The caret on the pair is the one this
           terminal always had; a trader who has not met it reads the pair as
           a label, not a control. The list glyph beside it is the affordance
@@ -284,6 +285,9 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
             is the mark everywhere this design is used — but it stays in the
             accessible name, so the cell is still self-describing to a
             screen reader. */}
+        {archive && <span className={`futures-mobile-price-change ${dir}`} aria-label={t('futures.headerChange24h')}>
+          {stats?.changePercent != null ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'}
+        </span>}
         {archive ? <span className={`archive-price-change ${dir}`} title={t('futures.headerChange24h')}>
           {stats?.changePercent != null ? `${absoluteChange24h !== null ? `${positive ? '+' : ''}${formatPrice(absoluteChange24h)} ` : ''}(${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)` : '—'}
         </span> : (<span className="futures-secondary-price">
@@ -371,6 +375,9 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
         </span>
       </div>
       </div>
+      <button type="button" className="futures-mobile-stats-toggle" aria-expanded={mobileDetails}
+        aria-label={`${t('futures.headerChange24h')} · ${t('futures.markPrice')} · ${t('futures.openInterest')}`}
+        onClick={() => setMobileDetails(value => !value)}>24h <span aria-hidden="true">{mobileDetails ? '−' : '+'}</span></button>
       {onOpenCalculator ? (
         <button
           type="button"

@@ -1,5 +1,7 @@
 // @ts-nocheck
 // Integration baseline: fresh main ac2d583 + approved archive f1836a7 + Pro 0a76da5.
+// Mobile follow-up: page fingerprint refreshed for workspace state, viewport inset and draft handoffs.
+// Mounted mobile handoff tests in futuresFinalPolish assert no second ticket or submission.
 // Financial behavior is independently covered by nativeHistoricalCurrent, nativeLiveProjection,
 // calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order tests.
 
@@ -214,7 +216,8 @@ test.each([
     // listing still comes from the backend and nowhere else, and the
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
-    "1f0e472847519527a0d457214600da477db7f2ab98a0c87fb30843dbb81506c6"
+    // PR #159 sync: keep mobile workspaces; remove only the archive Close All import/render from #161.
+    "bd65fcfabb9511c57773cad470b3bf249458fd31fa253eaee451dca2de1e4f40"
   ],
   [
     "components/FuturesPairList.tsx",

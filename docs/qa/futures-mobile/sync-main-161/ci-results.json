@@ -1,0 +1,71 @@
+{
+  "date": "2026-09-21",
+  "runtimeHead": "5c88c7fdf1b9721edda71fa8fcef4b0a526ece6e",
+  "baseMain": "5477adb7c314b24a15ba5451079039884961431b",
+  "workflows": [
+    {
+      "id": 35602288241,
+      "name": "Private reference UI evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35602288241"
+    },
+    {
+      "id": 35602288349,
+      "name": "Futures ticker label visibility",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35602288349"
+    },
+    {
+      "id": 35602288305,
+      "name": "Futures bottom panel geometry",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35602288305"
+    },
+    {
+      "id": 35602288263,
+      "name": "Customer-facing error wording",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35602288263"
+    },
+    {
+      "id": 35602288240,
+      "name": "Futures design and Pro integration",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35602288240"
+    },
+    {
+      "id": 35602288260,
+      "name": "Private trading and replay",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35602288260"
+    },
+    {
+      "id": 35602288271,
+      "name": "Native demo engine and browser",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/35602288271"
+    }
+  ],
+  "local": {
+    "focusedTests": 47,
+    "frontendTypeScript": "PASS",
+    "frontendBuild": "PASS"
+  },
+  "ci": {
+    "integration": {
+      "tests": 1569,
+      "suites": 86,
+      "skipped": 0
+    },
+    "nativeTests": 242,
+    "browserChecks": 43,
+    "largeValuesChecks": 87
+  }
+}
