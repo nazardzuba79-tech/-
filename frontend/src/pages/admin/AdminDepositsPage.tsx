@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
 import { CopyValue, RailLabel } from './AdminPrimitives';
@@ -16,6 +16,8 @@ export function AdminDepositsPage() {
   const { hash } = useLocation();
   const [incoming, setIncoming] = useState<Incoming[]>([]);
   const [incomingLoaded, setIncomingLoaded] = useState(false);
+  const incomingRequest = useRef(false);
+  const [incomingLoading, setIncomingLoading] = useState(false);
   const [incomingError, setIncomingError] = useState(false);
   const [failedChains, setFailedChains] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -32,6 +34,9 @@ export function AdminDepositsPage() {
   const [filterDate, setFilterDate] = useState('');
 
   function reloadIncoming() {
+    if (incomingRequest.current) return;
+    incomingRequest.current = true;
+    setIncomingLoading(true);
     api
       .getAdminIncomingDepositFeed()
       .then((res) => {
@@ -41,7 +46,7 @@ export function AdminDepositsPage() {
         api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
       })
       .catch(() => setIncomingError(true))
-      .finally(() => setIncomingLoaded(true));
+      .finally(() => { incomingRequest.current = false; setIncomingLoading(false); setIncomingLoaded(true); });
   }
 
   useEffect(() => {
@@ -111,7 +116,7 @@ export function AdminDepositsPage() {
       {error && <div role="alert" style={{ ...styles.errorBox, marginBottom: 16 }}>{error}</div>}
       {message && <p role="status">{message}</p>}
 
-      <p style={styles.hint}>Лента недавних переводов: недоступные провайдеры и старые транзакции могут не отображаться. Зачисление повторно проверяется перед подтверждением.</p>
+      <p style={styles.hint}>Все пополнения зачисляются только после ручного подтверждения администратором. Лента содержит недавние переводы; недоступные провайдеры и старые транзакции могут не отображаться.</p>
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>Непривязанные входящие переводы</h3>
       <div style={{ ...styles.table, marginBottom: 20 }}>
         <div style={{ ...styles.tableHeader, gridTemplateColumns: '110px 155px 0.8fr 70px 1fr 1.2fr 150px 105px', minWidth: 980 }}>
@@ -155,7 +160,7 @@ export function AdminDepositsPage() {
         )}
         {incomingError && <p style={{ padding: 14, color: 'var(--sell)', fontSize: 12 }}>Не удалось загрузить входящие переводы.</p>}
         {failedChains.length > 0 && <p role="alert" style={styles.errorBox}>Входящие переводы загружены не полностью ({failedChains.join(', ')}). Сохранённые переводы доступны в истории. Повторите проверку позже.</p>}
-        <button onClick={reloadIncoming} style={styles.neutralBtn}>Обновить входящие</button>
+        <button onClick={reloadIncoming} disabled={incomingLoading} style={styles.neutralBtn}>Обновить входящие</button>
         {!incomingLoaded && <Skeleton height={80} />}
       </div>
 

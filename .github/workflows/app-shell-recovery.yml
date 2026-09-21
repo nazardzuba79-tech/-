@@ -1,0 +1,106 @@
+name: App shell and chunk recovery
+
+# Every route in this app is a lazy import and every asset is content-hashed,
+# so a tab holding the previous deployment's shell asks for chunk names the
+# current deployment no longer serves. That is the intermittent «Что-то пошло
+# не так» on a cold /futures in a new tab, and it is a property of the
+# BOOTSTRAP — the shell, the boundary, the route table and the host's cache
+# contract — rather than of any page. These are the files that can break it.
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/main.tsx'
+      - 'frontend/src/App.tsx'
+      - 'frontend/src/components/ErrorBoundary.tsx'
+      - 'frontend/src/lib/chunkRecovery.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/RouteShell.tsx'
+      - 'frontend/public/_headers'
+      - 'frontend/nginx.conf'
+      - 'frontend/vite.config.ts'
+      - 'frontend/index.html'
+      - 'frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts'
+      - 'scripts/qa-futures-cold-open.cjs'
+      - '.github/workflows/app-shell-recovery.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/src/main.tsx'
+      - 'frontend/src/App.tsx'
+      - 'frontend/src/components/ErrorBoundary.tsx'
+      - 'frontend/src/lib/chunkRecovery.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/RouteShell.tsx'
+      - 'frontend/public/_headers'
+      - 'frontend/nginx.conf'
+      - 'frontend/vite.config.ts'
+      - 'frontend/index.html'
+      - 'frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts'
+      - 'scripts/qa-futures-cold-open.cjs'
+      - '.github/workflows/app-shell-recovery.yml'
+
+permissions:
+  contents: read
+concurrency:
+  group: app-shell-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cold-open:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Backend dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Prisma client
+        run: npx prisma generate
+      - name: Frontend dependencies
+        run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Recovery classification, the one-shot guard and the cache contract
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts
+      # TWO REAL BUILDS, because the bug only exists between them. Build A is
+      # the shell a tab is still holding; build B is what the host now serves.
+      # The marker is a rendered attribute rather than a comment: Vite hashes
+      # the OUTPUT, and a comment is stripped before hashing, so a comment
+      # would leave both builds byte-identical and the simulation would prove
+      # nothing.
+      - name: Build A (the shell a stale tab is still holding)
+        run: |
+          npm run build --prefix frontend
+          cp -r frontend/dist /tmp/buildA
+      - name: Build B (what the host now serves)
+        run: |
+          sed -i 's|className="futures-mobile-tabs" ref={mobileTabsRef} role="tablist"|className="futures-mobile-tabs" ref={mobileTabsRef} data-build="b" role="tablist"|' frontend/src/pages/FuturesPage.tsx
+          git diff --quiet frontend/src/pages/FuturesPage.tsx && { echo "build-B marker did not apply; the simulation would be a no-op"; exit 1; }
+          npm run build --prefix frontend
+          cp -r frontend/dist /tmp/buildB
+          git checkout -- frontend/src/pages/FuturesPage.tsx
+          test "$(grep -o 'index-[A-Za-z0-9]*\.js' /tmp/buildA/index.html)" != "$(grep -o 'index-[A-Za-z0-9]*\.js' /tmp/buildB/index.html)" \
+            || { echo "both builds emitted the same entry hash; nothing would be stale"; exit 1; }
+      - name: Restore the shipped build
+        run: npm run build --prefix frontend
+      - name: Install disposable browser
+        run: |
+          npm install --prefix /tmp/voltex-shell-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-shell-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Browser QA - new tab, stale deployment, no reload loop
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-shell-qa/node_modules/playwright
+          BUILD_A: /tmp/buildA
+          BUILD_B: /tmp/buildB
+        run: node scripts/qa-futures-cold-open.cjs
+      - name: Preserve browser evidence
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: futures-cold-open
+          path: docs/qa/futures-cold-open/
+          retention-days: 7

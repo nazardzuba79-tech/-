@@ -1,0 +1,103 @@
+{
+  "startedAt": "2026-09-21T15:17:44.532Z",
+  "scenarios": {
+    "D_paste_new_tab": {
+      "boundary": false,
+      "futures": true,
+      "rootChildren": 3,
+      "path": "/futures",
+      "guards": []
+    },
+    "A_same_tab": {
+      "boundary": false,
+      "futures": true,
+      "rootChildren": 3,
+      "path": "/futures",
+      "guards": []
+    },
+    "B_new_tab": {
+      "boundary": false,
+      "futures": true,
+      "rootChildren": 3,
+      "path": "/futures",
+      "guards": []
+    },
+    "C_duplicate_tab": {
+      "boundary": false,
+      "futures": true,
+      "rootChildren": 3,
+      "path": "/futures",
+      "guards": []
+    },
+    "spa_routing": {
+      "/futures": {
+        "status": 200,
+        "isAppShell": true
+      },
+      "/wallet": {
+        "status": 200,
+        "isAppShell": true
+      },
+      "/copy-trading": {
+        "status": 200,
+        "isAppShell": true
+      },
+      "/markets": {
+        "status": 200,
+        "isAppShell": true
+      }
+    },
+    "auth": {
+      "authenticatedPath": "/futures",
+      "anonymousPath": "/login"
+    },
+    "fresh_js_404s": [],
+    "E_stale_shell": {
+      "boundary": false,
+      "futures": true,
+      "rootChildren": 3,
+      "path": "/futures",
+      "guards": [
+        "voltex.chunk-recovery.index-Bt9DzFvA.js./futures"
+      ],
+      "htmlRequests": 2,
+      "navigations": 3,
+      "staleChunk404s": 20,
+      "recoveryLines": [
+        "voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-OrwXzKrE.js"
+      ]
+    },
+    "E2_permanently_stale": {
+      "boundary": true,
+      "futures": false,
+      "rootChildren": 1,
+      "path": "/futures",
+      "guards": [
+        "voltex.chunk-recovery.index-Bt9DzFvA.js./futures"
+      ],
+      "navigations": 3,
+      "htmlRequests": 4
+    },
+    "F_ordinary_crash": {
+      "boundary": true,
+      "futures": false,
+      "rootChildren": 1,
+      "path": "/futures",
+      "guards": [],
+      "navigations": 1
+    },
+    "G_offline": {
+      "boundary": true,
+      "futures": false,
+      "rootChildren": 1,
+      "path": "/futures",
+      "guards": [
+        "voltex.chunk-recovery.index-BFSI9gAI.js./futures"
+      ],
+      "navigations": 3
+    }
+  },
+  "findings": [],
+  "environment": "LOCAL QA ONLY — two real production builds, static host model, no backend writes",
+  "status": "PASS"
+}

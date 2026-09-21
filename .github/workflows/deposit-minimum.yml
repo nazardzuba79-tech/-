@@ -1,4 +1,4 @@
-name: Deposit minimum and manual credit
+name: Deposits require admin approval
 on:
   pull_request:
     paths:
@@ -14,6 +14,8 @@ on:
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/i18n/locales/ru.ts'
       - 'frontend/src/pages/admin/AdminDepositsPage.tsx'
+      - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
+      - 'frontend/src/lib/__tests__/adminDepositRails.test.ts'
       - 'frontend/src/pages/wallet-v3/**'
       - 'scripts/qa-deposit-minimum.cjs'
       - '.github/workflows/deposit-minimum.yml'
@@ -48,6 +50,7 @@ jobs:
           src/services/deposit-verifiers/__tests__/BitcoinDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/SolanaDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/TonDepositVerifier.test.ts
+          src/services/deposit-verifiers/__tests__/incomingBudget.test.ts
           frontend/src/lib/__tests__/depositAllWallets.test.ts
           frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
@@ -63,5 +66,5 @@ jobs:
         if: always()
         with:
           name: deposit-minimum-acceptance
-          path: output/deposit-minimum
+          path: output/deposit-admin-only
           retention-days: 7

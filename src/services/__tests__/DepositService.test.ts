@@ -77,7 +77,7 @@ describe('DepositService', () => {
     ).rejects.toThrow(DepositVerificationError);
   });
 
-  it('credits balance when confirmations meet the threshold', async () => {
+  it('keeps a fully confirmed self-claim pending without balance or referral writes', async () => {
     mockJsonRpcProvider.mockImplementation(() => ({
       getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
       getBlockNumber: jest.fn().mockResolvedValue(102), // 3 confirmations, meets minConfirmations
@@ -91,8 +91,11 @@ describe('DepositService', () => {
     const service = new DepositService(prisma, chainConfig, makePriceSource());
     const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '2'.repeat(64), asset: 'ETH' });
 
-    expect(result.status).toBe('CREDITED');
+    expect(result.status).toBe('PENDING');
     expect(result.amount).toBe('2.5');
+    expect(prisma.balance.upsert).not.toHaveBeenCalled();
+    expect(prisma.referralReward.create).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it('is idempotent: replaying the same tx hash does not re-verify or double count', async () => {
@@ -128,7 +131,7 @@ describe('DepositService', () => {
       const referrerBalanceUpdate = jest.fn();
       const referralRewardCreate = jest.fn();
       const prisma = makePrismaMock(null, {
-        user: { findUnique: jest.fn().mockResolvedValue({ referredById: 'referrer-1' }) },
+        user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN', referredById: 'referrer-1' }) },
         balance: {
           upsert: referrerBalanceUpdate,
           update: referrerBalanceUpdate,
@@ -137,7 +140,11 @@ describe('DepositService', () => {
       });
 
       const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
-      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + 'a'.repeat(64), asset: 'ETH' });
+      const pending = await service.claimDeposit({ userId: 'u1', txHash: '0x' + 'a'.repeat(64), asset: 'ETH' });
+      expect(pending.status).toBe('PENDING');
+      expect(referrerBalanceUpdate).not.toHaveBeenCalled();
+      expect(referralRewardCreate).not.toHaveBeenCalled();
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + 'a'.repeat(64), asset: 'ETH', performedByAdminId: 'admin-1' });
 
       expect(result.status).toBe('CREDITED');
       // Depositor's own credit (2 ETH) then the referrer's reward (0.1 ETH,
@@ -170,13 +177,13 @@ describe('DepositService', () => {
       const balanceUpdate = jest.fn();
       const referralRewardCreate = jest.fn();
       const prisma = makePrismaMock(null, {
-        user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
+        user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN', referredById: null }) },
         balance: { upsert: balanceUpdate },
         referralReward: { create: referralRewardCreate },
       });
 
       const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
-      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + 'b'.repeat(64), asset: 'ETH' });
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + 'b'.repeat(64), asset: 'ETH', performedByAdminId: 'admin-1' });
 
       expect(result.status).toBe('CREDITED');
       // Only the depositor's own credit — no second call for a referrer.
@@ -202,18 +209,22 @@ describe('DepositService', () => {
       expect(result.minDepositUsd).toBe(300);
     });
 
-    it('still credits a confirmed deposit at or above $300', async () => {
+    it.each(['100', '299', '300', '5000', '10000'])('self-claim of %s USDT never credits even with sufficient confirmations', async (amount) => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
         getBlockNumber: jest.fn().mockResolvedValue(102),
-        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('1') }), // 1 ETH
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther(amount) }),
       }));
 
-      // 1 ETH @ $3000/ETH = $3000, above the minimum.
-      const service = new DepositService(makePrismaMock(), chainConfig, makePriceSource('3000'));
-      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '6'.repeat(64), asset: 'ETH' });
+      const prisma = makePrismaMock();
+      const service = new DepositService(prisma, { ...chainConfig, nativeAsset: 'USDT' }, makePriceSource());
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '6'.repeat(64), asset: 'USDT' });
 
-      expect(result.status).toBe('CREDITED');
+      expect(result.status).toBe(Number(amount) < 300 ? 'BELOW_MINIMUM' : 'PENDING');
+      expect(result.amount).toBe(amount);
+      expect(prisma.balance.upsert).not.toHaveBeenCalled();
+      expect(prisma.referralReward.create).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create.mock.calls.some(([args]: any[]) => args.data.action === 'DEPOSIT_CREDITED')).toBe(false);
     });
 
     it('records performedByAdminId in the audit log when an admin credits on the user\'s behalf', async () => {
@@ -239,7 +250,7 @@ describe('DepositService', () => {
       );
     });
 
-    it('omits performedByAdminId from the audit log for a normal self-claim', async () => {
+    it('does not write a credit audit for a normal self-claim', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
         getBlockNumber: jest.fn().mockResolvedValue(102),
@@ -252,8 +263,7 @@ describe('DepositService', () => {
       const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
       await service.claimDeposit({ userId: 'u1', txHash: '0x' + '9'.repeat(64), asset: 'ETH' });
 
-      const metadata = auditLogCreate.mock.calls[0][0].data.metadata;
-      expect(metadata.performedByAdminId).toBeUndefined();
+      expect(auditLogCreate).not.toHaveBeenCalled();
     });
 
     it('records without automatic credit when the price feed is unavailable', async () => {
