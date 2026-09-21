@@ -22,24 +22,36 @@ export const BANKING_ASSET_STEPS: Record<BankingAsset, string> = {
   USDT: '0.01', USDC: '0.01', BTC: '0.00000001', ETH: '0.00000001', SOL: '0.00000001',
 };
 
-// Stable program IDs are retained for compatibility inside this still-unmerged PR.
-// The current commercial terms are authoritative here: 17% monthly for 12 months,
-// 21% monthly with compounding for 24 months.
+// THE PROGRAM IDS ARE FROZEN AND THEY LIE. 'MONTHLY_17_24M' is a 12-month program
+// and 'COMPOUND_21_12M' is a 24-month one; the rates in both names are now stale too.
+// They are kept exactly as they are because banking_placements.program_id already
+// carries these strings for real rows, and renaming a persisted key to make it read
+// nicely would orphan every existing placement. They are internal identifiers and are
+// never shown to a customer — customer-facing copy comes from `name` and from the
+// rate fields below.
+//
+// The rates here are authoritative for NEW placements ONLY. An existing placement
+// accrues at banking_placements.monthly_rate, the snapshot taken when it was opened;
+// see placementTerms() in ./math. Changing a number in this file must never move money
+// under a contract that was already signed.
 export const BANKING_PROGRAMS: readonly BankingProgramConfig[] = [
   {
-    id: 'MONTHLY_17_24M', name: 'Ежемесячные выплаты', monthlyRate: '0.17', termMonths: 12,
+    id: 'MONTHLY_17_24M', name: 'Ежемесячные выплаты', monthlyRate: '0.12', termMonths: 12,
     minUsd: '2500', assets: ['USDT','USDC','BTC','ETH','SOL'], compound: false,
     payoutFrequency: 'MONTHLY', lockRule: 'PRINCIPAL_RETURN_UNDEFINED', enabled: true,
     availableFrom: null, availableUntil: null,
   },
   {
-    id: 'COMPOUND_21_12M', name: 'Накопление', monthlyRate: '0.21', termMonths: 24,
+    id: 'COMPOUND_21_12M', name: 'Накопление', monthlyRate: '0.17', termMonths: 24,
     minUsd: '2500', assets: ['USDT','USDC','BTC','ETH','SOL'], compound: true,
     payoutFrequency: 'MATURITY', lockRule: 'PRINCIPAL_AND_REWARDS_LOCKED_TO_MATURITY', enabled: true,
     availableFrom: null, availableUntil: null,
   },
 ] as const;
 
+// ANNUAL, not monthly. It shares the digits 0.12 with Program 1's MONTHLY rate purely
+// by coincidence, which is exactly why every surface that renders either one must print
+// its period word ("в месяц" / "годовых") rather than a bare percentage.
 export const VOLTEX_CARD_YIELD = {
   id: 'VOLTEX_CARD_USDT_YIELD', asset: 'USDT' as const, annualRate: '0.12', locked: false,
   basis: 'ACTUAL_AVAILABLE_CARD_BALANCE' as const, enabled: true,

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { BANKING_PROGRAMS, VOLTEX_CARD_YIELD, bankingAsset, bankingProgram, minimumAssetQuantity, type BankingAsset } from './config';
-import { addCalendarMonthsClamped, calculateBankingProgram, completedCalendarMonths, rewardForMonth } from './math';
+import { addCalendarMonthsClamped, calculateBankingProgram, completedCalendarMonths, placementTerms, rewardForMonth } from './math';
 
 export class BankingError extends Error {
   constructor(readonly code: string, readonly status = 400) { super(code); }
@@ -118,15 +118,24 @@ export class BankingService {
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
+  /**
+   * Accrue whatever months have completed, at the rate the placement was OPENED at.
+   *
+   * Terms come from the row, never from bankingProgram(). The lookup used to decide the
+   * rate here, which meant a config edit repriced every placement already in the table;
+   * it also meant a placement whose program had been retired from config stopped
+   * accruing entirely, because `if(!program) continue` skipped it. A row carries
+   * everything this needs, so neither failure is reachable any more.
+   */
   private async syncAccruals(userId:string, placements:PlacementRow[], now=new Date()) {
     for (const placement of placements) {
-      const program=bankingProgram(placement.program_id); if(!program) continue;
-      const completed=completedCalendarMonths(placement.opened_at, now, program.termMonths);
+      const terms=placementTerms(placement);
+      const completed=completedCalendarMonths(placement.opened_at, now, terms.termMonths);
       for(let month=1;month<=completed;month+=1){
-        const reward=rewardForMonth(program,placement.principal,month),effective=addCalendarMonthsClamped(placement.opened_at,month);
+        const reward=rewardForMonth(terms,placement.principal,month),effective=addCalendarMonthsClamped(placement.opened_at,month);
         await this.prisma.$executeRaw`
           INSERT INTO banking_ledger_entries(id,user_id,placement_id,entry_type,asset,amount,period_index,effective_at,metadata,created_at)
-          VALUES(${randomUUID()},${userId},${placement.id},'REWARD_ACCRUED',${placement.asset},${reward}::numeric,${month},${effective},${JSON.stringify({monthlyRate:program.monthlyRate,compound:program.compound})}::jsonb,NOW())
+          VALUES(${randomUUID()},${userId},${placement.id},'REWARD_ACCRUED',${placement.asset},${reward}::numeric,${month},${effective},${JSON.stringify({monthlyRate:terms.monthlyRate,compound:terms.compound})}::jsonb,NOW())
           ON CONFLICT (placement_id,entry_type,period_index) WHERE period_index IS NOT NULL DO NOTHING`;
       }
     }
@@ -142,11 +151,14 @@ export class BankingService {
       FROM banking_ledger_entries WHERE user_id=${userId} ORDER BY effective_at DESC,created_at DESC LIMIT 500`;
     let prices:PriceMap={}; try{prices=await this.priceService.prices();}catch{}
     const rows=placements.map(row=>{
-      const program=bankingProgram(row.program_id)!;
-      const months=completedCalendarMonths(row.opened_at,now,program.termMonths);
-      const calc=calculateBankingProgram({program,amount:row.principal,startDate:row.opened_at,endDate:now});
+      // Every commercial figure below is the placement's own, from its own row. The
+      // program config is consulted for ONE thing — the display name — and even that
+      // falls back rather than throwing, so a retired program still renders.
+      const terms=placementTerms(row);
+      const months=completedCalendarMonths(row.opened_at,now,terms.termMonths);
+      const calc=calculateBankingProgram({program:terms,amount:row.principal,startDate:row.opened_at,endDate:now});
       const price=prices[row.asset as BankingAsset]??null;
-      return {id:row.id,programId:row.program_id,programName:program.name,asset:row.asset,principal:row.principal,monthlyRate:program.monthlyRate,termMonths:program.termMonths,compound:program.compound,payoutFrequency:program.payoutFrequency,lockRule:program.lockRule,openedAt:row.opened_at.toISOString(),maturityDate:isoDay(row.matures_at),completedMonths:months,status:months>=program.termMonths?'MATURED':'ACTIVE',rewardAccrued:calc.totalRewards,currentBalance:calc.balance,rewardCurrency:row.asset,priceUsd:price,principalUsd:price?new BigNumber(row.principal).times(price).toFixed(2):null};
+      return {id:row.id,programId:row.program_id,programName:bankingProgram(row.program_id)?.name??row.program_id,asset:row.asset,principal:row.principal,monthlyRate:terms.monthlyRate,termMonths:terms.termMonths,compound:terms.compound,payoutFrequency:row.payout_frequency,lockRule:row.lock_rule,openedAt:row.opened_at.toISOString(),maturityDate:isoDay(row.matures_at),completedMonths:months,status:months>=terms.termMonths?'MATURED':'ACTIVE',rewardAccrued:calc.totalRewards,currentBalance:calc.balance,rewardCurrency:row.asset,priceUsd:price,principalUsd:price?new BigNumber(row.principal).times(price).toFixed(2):null};
     });
     const active=rows.filter(row=>row.status==='ACTIVE');
     const totalUsd=active.length===0?'0':active.every(row=>row.priceUsd)?active.reduce((sum,row)=>sum.plus(new BigNumber(row.currentBalance).times(row.priceUsd!)),new BigNumber(0)).toFixed(2):null;
