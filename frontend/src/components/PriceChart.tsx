@@ -296,6 +296,7 @@ export function PriceChart({
   const privateHistoryRef = useRef<((time: number) => Promise<void>) | null>(null);
   const [candlesRevision, setCandlesRevision] = useState(0);
   const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'unavailable' | 'limit'>('idle');
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [interval, setInterval_] = useState<Interval>('1h');
   const [empty, setEmpty] = useState(false);
   const [chartType, setChartType] = useState<ChartType>('candles');
@@ -1647,8 +1648,10 @@ export function PriceChart({
   return (
     <div className={drawingToolsOn ? 'drawing-tools' : undefined} data-chart-trade-selecting={tradingSelection || undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
       {terminal ? (
-        <div className="chart-toolbar">
+        <div className="chart-toolbar" data-mobile-tools={mobileToolsOpen}>
           <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}{privateTrading?.enabled && <button type="button" className="chart-history-now" onClick={() => void privateHistoryRef.current?.(0)}>{lang === 'ru' ? 'Сейчас' : 'Now'}</button>}</div>
+          <button type="button" className="futures-mobile-tools-toggle" aria-label={t('chart.group.indicators')}
+            aria-expanded={mobileToolsOpen} onClick={() => setMobileToolsOpen(open => !open)}>•••</button>
           <div className="chart-tools">
             <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
             <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>

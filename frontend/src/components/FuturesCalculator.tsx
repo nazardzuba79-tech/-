@@ -159,9 +159,14 @@ export function FuturesCalculator({ open, onClose, symbol, initial, onUseValues 
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
-    dialogRef.current?.focus();
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // Live quotes re-render the parent and replace onClose. Focus only when
+  // opening; re-focusing on each callback change interrupts field entry.
+  useEffect(() => {
+    if (open) dialogRef.current?.focus();
+  }, [open]);
 
   /** The request this tab's answer depends on — or null when the inputs cannot form one. */
   const request = useMemo((): NativeQuoteInput | null => {

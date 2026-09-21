@@ -131,17 +131,6 @@
 #archive-terminal-preview .archive-protection-fields input { min-width:0; width:100%; border:1px solid #2a3948; background:#172432; color:var(--text-primary); padding:10px; border-radius:7px; font-size:13px; }
 #archive-terminal-preview .archive-order-protection small { font-size:11px; line-height:16px; color:var(--text-secondary); }
 #archive-terminal-preview .archive-pair-filter { margin-left:auto; padding:0 12px; display:flex; align-items:center; gap:6px; font-size:11px; white-space:nowrap; color:var(--text-secondary); }
-#archive-terminal-preview .archive-close-all { flex-shrink:0; height:26px; padding:0 12px; border:0; border-radius:14px; background:#454b55; color:#fff; font:600 12px var(--font-family); white-space:nowrap; cursor:pointer; }
-#archive-terminal-preview .archive-close-all[hidden] { display:none; }
-#archive-terminal-preview .archive-close-all:disabled { opacity:.45; cursor:default; }
-#archive-terminal-preview .archive-close-all-body { padding:18px 22px; font-size:13px; line-height:1.5; }
-#archive-terminal-preview .archive-close-all-body p { margin:0 0 16px; }
-#archive-terminal-preview .archive-close-all-list { list-style:none; padding:0; margin:0 0 18px; max-height:240px; overflow:auto; }
-#archive-terminal-preview .archive-close-all-list li { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #29344a; }
-#archive-terminal-preview .archive-close-all-actions { display:flex; justify-content:flex-end; gap:10px; }
-#archive-terminal-preview .archive-close-all-actions button { padding:8px 14px; border:0; border-radius:18px; background:#454b55; color:#fff; font:600 12px var(--font-family); cursor:pointer; }
-#archive-terminal-preview .archive-close-all-actions .archive-close-all-confirm { background:#bb334c; }
-#archive-terminal-preview .archive-close-all-actions button:disabled { opacity:.45; cursor:default; }
 #archive-terminal-preview .bottom-tabs { padding:0; gap:18px; }
 #archive-terminal-preview .bottom-tab .reference-tab-count { background:transparent; padding:0 0 0 4px; font-size:inherit; color:inherit; }
 #archive-terminal-preview .bottom-tabs .bottom-tab { font-size:13px; font-weight:550; color:#dce3ed; }

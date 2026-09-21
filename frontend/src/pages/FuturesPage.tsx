@@ -18,7 +18,6 @@ import type { ChartPositionLine } from '../lib/chartTrading';
 import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
-import { FuturesCloseAllPositions } from '../components/FuturesCloseAllPositions';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
@@ -53,6 +52,7 @@ import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
 import './trade-terminal/TerminalPremium.css';
 import './trade-terminal/ArchiveTerminalPreview.css';
+import './trade-terminal/FuturesMobile.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately
@@ -151,6 +151,35 @@ export function FuturesPage() {
   const visibleAccount = nativeExecution?.account ?? account;
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'positions'>('chart');
+  const [mobileChartTab, setMobileChartTab] = useState<'chart' | 'book'>('chart');
+  const mobileScroll = useRef<Record<string, number>>({});
+  const mobileTabsRef = useRef<HTMLDivElement>(null);
+  const [mobileViewport, setMobileViewport] = useState<{ height: number; inset: number } | null>(null);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const update = () => {
+      if (!window.matchMedia('(max-width: 900px)').matches) { setMobileViewport(null); return; }
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      setMobileViewport({ height: viewport.height, inset: inset > 140 ? inset : 0 });
+    };
+    update();
+    viewport.addEventListener('resize', update);
+    viewport.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      viewport.removeEventListener('resize', update);
+      viewport.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
+  const selectMobileTab = useCallback((next: 'chart' | 'trade' | 'positions', resetScroll = false) => {
+    if (!window.matchMedia('(max-width: 900px)').matches || (next === mobileTab && !resetScroll)) return;
+    mobileScroll.current[mobileTab] = window.scrollY;
+    setMobileTab(next);
+    window.requestAnimationFrame(() => window.scrollTo({ top: resetScroll ? 0 : mobileScroll.current[next] ?? 0, behavior: 'instant' }));
+  }, [mobileTab]);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
   const accountPanel = useCompactAccountPanel(
     (bottomTab === 'orders' || bottomTab === 'positions')
@@ -403,7 +432,9 @@ export function FuturesPage() {
   }
 
   return (
-    <div id={archivePreview ? 'archive-terminal-preview' : undefined} className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-terminal-design={archivePreview ? 'archive' : design ?? undefined}>
+    <div id={archivePreview ? 'archive-terminal-preview' : undefined} className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-mobile-keyboard={Boolean(mobileViewport?.inset)}
+      style={mobileViewport ? { '--mobile-viewport-height': `${mobileViewport.height}px`, '--mobile-keyboard-inset': `${mobileViewport.inset}px` } as React.CSSProperties : undefined}
+      data-terminal-design={archivePreview ? 'archive' : design ?? undefined}>
       {requestedDesign && !archivePreview && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
         {([['studio', 'A · Studio'], ['graphite', 'B · Graphite'], ['focus', 'C · Focus']] as const).map(([id, label]) =>
           <button key={id} type="button" aria-pressed={design === id} onClick={() => {
@@ -432,8 +463,32 @@ export function FuturesPage() {
 
       <FuturesExecutionProvider value={execution}>
       <FuturesAccountSourceContext.Provider value={execution.account}>
-      <div className="terminal" data-account-compact={accountPanel.compact}>
+      <div className="terminal" data-account-compact={accountPanel.compact} data-mobile-tab={mobileTab} data-mobile-chart={mobileChartTab}>
         <FuturesTickerBar archive={archivePreview} symbol={symbol} onSelectSymbol={openMarkets} marketsOpen={chooserOpen} onOpenCalculator={archivePreview ? undefined : () => setCalculatorOpen(true)} />
+
+        <div className="futures-mobile-tabs" ref={mobileTabsRef} role="tablist" aria-label={t('nav.futures')}>
+          {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['positions', 'futures.positions']] as const).map(([id, label]) =>
+            <button type="button" role="tab" key={id} id={`mobile-futures-${id}`}
+              aria-selected={mobileTab === id} aria-controls={`mobile-futures-panel-${id}`}
+              tabIndex={mobileTab === id ? 0 : -1}
+              onKeyDown={event => {
+                const tabs = ['chart', 'trade', 'positions'] as const;
+                const offset = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+                if (!offset && event.key !== 'Home' && event.key !== 'End') return;
+                event.preventDefault();
+                const next = tabs[event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(id) + offset + 3) % 3];
+                selectMobileTab(next);
+                if (next === 'positions') accountPanel.reveal();
+                mobileTabsRef.current?.querySelector<HTMLButtonElement>(`#mobile-futures-${next}`)?.focus();
+              }}
+              onClick={() => { selectMobileTab(id); if (id === 'positions') accountPanel.reveal(); }}>
+              {t(label)}{id === 'positions' && <span>{visibleAccount.positions.data?.length ?? '—'}</span>}
+            </button>)}
+        </div>
+        <div className="futures-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
+          <button type="button" aria-pressed={mobileChartTab === 'chart'} onClick={() => setMobileChartTab('chart')}>{t('futures.chart')}</button>
+          <button type="button" aria-pressed={mobileChartTab === 'book'} onClick={() => setMobileChartTab('book')}>{t('trade.orderBook')}</button>
+        </div>
 
         <div className="main-grid">
           {/* NO PERMANENT MARKET RAIL.
@@ -464,7 +519,7 @@ export function FuturesPage() {
               />
             </div>
           )}
-          <div className="chart-area" role="region" aria-label={t('futures.chart')}>
+          <div id="mobile-futures-panel-chart" className="chart-area" role="region" aria-label={t('futures.chart')}>
             {/* The double click is captured on this wrapper rather than on
                 the chart itself: the chart owns no dblclick handler, so
                 nothing is being overridden, and stopping it here keeps a
@@ -571,11 +626,12 @@ export function FuturesPage() {
               onPickPrice={(value) => {
                 pickedSeq.current += 1;
                 setPickedPrice({ symbol, value, seq: pickedSeq.current });
+                selectMobileTab('trade', true);
               }}
             />
           </div>
 
-          <div className="order-form-area">
+          <div id="mobile-futures-panel-trade" className="order-form-area">
             {archivePreview ? <div className="archive-trading-heading">
               <h2 className="reference-order-heading">{t('nav.trade')}</h2>
               <button type="button" className="archive-calculator-trigger" data-open-calculator="true" title={t('calc.title')} aria-label={t('calc.title')} onClick={() => setCalculatorOpen(true)}><Calculator size={19} /></button>
@@ -611,7 +667,7 @@ export function FuturesPage() {
           </div>
         </div>
 
-        <div className="bottom-panel" data-account-compact={accountPanel.compact}>
+        <div id="mobile-futures-panel-positions" className="bottom-panel" data-account-compact={accountPanel.compact}>
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (
@@ -632,7 +688,6 @@ export function FuturesPage() {
             ))}
           </div>
           {archivePreview && <label className="archive-pair-filter"><input type="checkbox" checked={!onlyCurrentPair} onChange={e => setOnlyCurrentPair(!e.target.checked)} />{t('futures.allMarkets')}</label>}
-          {archivePreview && <FuturesCloseAllPositions visible={bottomTab === 'positions'} />}
           {accountPanel.canCompact && <AccountPanelToggle compact={accountPanel.compact} onToggle={accountPanel.toggle} controls="futures-bottom-content" />}
           </div>
 
@@ -662,6 +717,7 @@ export function FuturesPage() {
                   setPickedPrice(null);
                   setSymbol(target.symbol);
                   pickedSeq.current += 1;
+                  selectMobileTab('trade', true);
                   setCloseTicket({ id: target.id, symbol: target.symbol, side: target.side,
                     size: target.size, marginType: target.marginType, seq: pickedSeq.current });
                 }}
@@ -709,6 +765,7 @@ export function FuturesPage() {
           pickedSeq.current += 1;
           setCalculatorDraft({ ...draft, seq: pickedSeq.current });
           setCalculatorOpen(false);
+          selectMobileTab('trade', true);
         }}
       />
     </div>

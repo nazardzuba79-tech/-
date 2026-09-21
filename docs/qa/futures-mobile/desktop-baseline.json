@@ -1,0 +1,215 @@
+[
+  {
+    "w": 1366,
+    "h": 768,
+    "actual": {
+      "h": 768,
+      "w": 1366
+    },
+    "geometry": {
+      ".archive-top-assets": {
+        "bottom": 768,
+        "height": 28,
+        "left": 0,
+        "right": 1366,
+        "top": 740,
+        "width": 1366,
+        "x": 0,
+        "y": 740
+      },
+      ".bottom-panel": {
+        "bottom": 740,
+        "height": 230,
+        "left": 0,
+        "right": 1040,
+        "top": 510,
+        "width": 1040,
+        "x": 0,
+        "y": 510
+      },
+      ".chart-area": {
+        "bottom": 510,
+        "height": 406,
+        "left": 0,
+        "right": 770,
+        "top": 104,
+        "width": 770,
+        "x": 0,
+        "y": 104
+      },
+      ".fc-panel": null,
+      ".order-form-area": {
+        "bottom": 740,
+        "height": 692,
+        "left": 1040,
+        "right": 1366,
+        "top": 48,
+        "width": 326,
+        "x": 1040,
+        "y": 48
+      },
+      ".orderbook-area": {
+        "bottom": 510,
+        "height": 406,
+        "left": 770,
+        "right": 1040,
+        "top": 104,
+        "width": 270,
+        "x": 770,
+        "y": 104
+      },
+      ".ticker-bar": {
+        "bottom": 104,
+        "height": 56,
+        "left": 0,
+        "right": 1040,
+        "top": 48,
+        "width": 1040,
+        "x": 0,
+        "y": 48
+      }
+    }
+  },
+  {
+    "w": 1440,
+    "h": 900,
+    "actual": {
+      "h": 900,
+      "w": 1440
+    },
+    "geometry": {
+      ".archive-top-assets": {
+        "bottom": 900,
+        "height": 28,
+        "left": 0,
+        "right": 1440,
+        "top": 872,
+        "width": 1440,
+        "x": 0,
+        "y": 872
+      },
+      ".bottom-panel": {
+        "bottom": 872,
+        "height": 230,
+        "left": 0,
+        "right": 1114,
+        "top": 642,
+        "width": 1114,
+        "x": 0,
+        "y": 642
+      },
+      ".chart-area": {
+        "bottom": 642,
+        "height": 538,
+        "left": 0,
+        "right": 844,
+        "top": 104,
+        "width": 844,
+        "x": 0,
+        "y": 104
+      },
+      ".fc-panel": null,
+      ".order-form-area": {
+        "bottom": 872,
+        "height": 824,
+        "left": 1114,
+        "right": 1440,
+        "top": 48,
+        "width": 326,
+        "x": 1114,
+        "y": 48
+      },
+      ".orderbook-area": {
+        "bottom": 642,
+        "height": 538,
+        "left": 844,
+        "right": 1114,
+        "top": 104,
+        "width": 270,
+        "x": 844,
+        "y": 104
+      },
+      ".ticker-bar": {
+        "bottom": 104,
+        "height": 56,
+        "left": 0,
+        "right": 1114,
+        "top": 48,
+        "width": 1114,
+        "x": 0,
+        "y": 48
+      }
+    }
+  },
+  {
+    "w": 1920,
+    "h": 1080,
+    "actual": {
+      "h": 1080,
+      "w": 1920
+    },
+    "geometry": {
+      ".archive-top-assets": {
+        "bottom": 1080,
+        "height": 28,
+        "left": 0,
+        "right": 1920,
+        "top": 1052,
+        "width": 1920,
+        "x": 0,
+        "y": 1052
+      },
+      ".bottom-panel": {
+        "bottom": 1052,
+        "height": 230,
+        "left": 0,
+        "right": 1570,
+        "top": 822,
+        "width": 1570,
+        "x": 0,
+        "y": 822
+      },
+      ".chart-area": {
+        "bottom": 822,
+        "height": 718,
+        "left": 0,
+        "right": 1278,
+        "top": 104,
+        "width": 1278,
+        "x": 0,
+        "y": 104
+      },
+      ".fc-panel": null,
+      ".order-form-area": {
+        "bottom": 1052,
+        "height": 1004,
+        "left": 1570,
+        "right": 1920,
+        "top": 48,
+        "width": 350,
+        "x": 1570,
+        "y": 48
+      },
+      ".orderbook-area": {
+        "bottom": 822,
+        "height": 718,
+        "left": 1278,
+        "right": 1570,
+        "top": 104,
+        "width": 292,
+        "x": 1278,
+        "y": 104
+      },
+      ".ticker-bar": {
+        "bottom": 104,
+        "height": 56,
+        "left": 0,
+        "right": 1570,
+        "top": 48,
+        "width": 1570,
+        "x": 0,
+        "y": 48
+      }
+    }
+  }
+]
