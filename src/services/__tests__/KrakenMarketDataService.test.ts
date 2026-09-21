@@ -191,15 +191,15 @@ describe('KrakenMarketDataService', () => {
     });
   });
 
-  it('retries as a single pair when a batched Ticker response keys an entry differently than the requested altname', async () => {
-    // The exact real-world quirk this guards against: Kraken's batched
-    // Ticker response can key an entry using its own canonical form (e.g.
-    // "XXBTZUSDT") instead of echoing back the altname we requested
-    // ("XBTUSDT") — an exact-key lookup in the batch then misses a pair
-    // that is perfectly valid. ETH is included alongside BTC in the same
-    // batch, keyed by its plain altname, to prove the mismatch is handled
-    // per-pair rather than by falling back for the whole batch.
-    const batchBody = {
+  it('resolves a differently-keyed entry straight from the bulk document, with NO extra request', async () => {
+    // The exact real-world quirk this guards against: Kraken keys an entry
+    // by its own canonical form ("XXBTZUSDT") rather than the altname
+    // ("XBTUSDT"). This used to cost a single-pair retry PER affected pair
+    // — 55 of them on the live board. The bulk document is keyed by
+    // AssetPairs' own key, which the service now carries, so the same pair
+    // resolves with nothing extra fetched at all. ETH rides along, keyed by
+    // its plain altname, to prove both spellings resolve in one pass.
+    const bulkBody = {
       error: [],
       result: {
         ETHUSDT: TICKER_BODY.result.XBTUSDT,
@@ -208,8 +208,7 @@ describe('KrakenMarketDataService', () => {
     };
     const fetchFn = jest.fn().mockImplementation((url: string) => {
       if (url.includes('AssetPairs')) return Promise.resolve(jsonResponse(ASSET_PAIRS_BODY));
-      if (url.includes('pair=XBTUSDT,ETHUSDT')) return Promise.resolve(jsonResponse(batchBody));
-      return Promise.resolve(jsonResponse(TICKER_BODY)); // single-pair retry
+      return Promise.resolve(jsonResponse(bulkBody));
     });
     const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
 
@@ -226,7 +225,94 @@ describe('KrakenMarketDataService', () => {
       quoteVolume24h: '73699650.00',
       changePercent24h: '2.0408',
     });
-    expect(fetchFn.mock.calls.some(([url]) => url.includes('Ticker?pair=XBTUSDT') && !url.includes(','))).toBe(true);
+    expect(tickers.find((t) => t.pair === 'ETH/USDT')?.lastPrice).toBe('60000');
+    // The point of the change: no per-pair retry, and no batching either.
+    const tickerCalls = fetchFn.mock.calls.filter(([url]) => String(url).includes('Ticker'));
+    expect(tickerCalls).toHaveLength(1);
+    expect(String(tickerCalls[0][0])).not.toContain('pair=');
+  });
+
+  it('asks for the whole board in ONE request instead of batching the pair list', async () => {
+    // A board wide enough that the old 40-per-batch walk would have needed
+    // several requests; one is all it may take now.
+    const pairCount = 250;
+    const assetPairs: Record<string, unknown> = {};
+    const bulk: Record<string, unknown> = {};
+    for (let i = 0; i < pairCount; i += 1) {
+      const base = `C${i}`;
+      assetPairs[`X${base}ZUSD`] = { altname: `${base}USD`, wsname: `${base}/USD`, base, quote: 'ZUSD' };
+      bulk[`${base}USD`] = TICKER_BODY.result.XBTUSDT;
+    }
+    const fetchFn = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(jsonResponse(url.includes('AssetPairs') ? { error: [], result: assetPairs } : { error: [], result: bulk }))
+    );
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const tickers = await service.getTickers();
+
+    // Every pair survives, and each one also gets its USDT alias.
+    expect(tickers.filter((t) => t.pair.endsWith('/USD'))).toHaveLength(pairCount);
+    expect(tickers.filter((t) => t.pair.endsWith('/USDT'))).toHaveLength(pairCount);
+    expect(fetchFn.mock.calls.filter(([url]) => String(url).includes('Ticker'))).toHaveLength(1);
+  });
+
+  it('keeps the fallback for genuinely missing symbols BOUNDED, whatever the size of the gap', async () => {
+    // Kraken lists 400 pairs in AssetPairs and returns none of them in the
+    // bulk document. The old shape would answer with one request per 40
+    // pairs plus a retry each; the bound here is a constant.
+    const assetPairs: Record<string, unknown> = {};
+    for (let i = 0; i < 400; i += 1) {
+      const base = `M${i}`;
+      assetPairs[`X${base}ZUSD`] = { altname: `${base}USD`, wsname: `${base}/USD`, base, quote: 'ZUSD' };
+    }
+    const fetchFn = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(jsonResponse(url.includes('AssetPairs') ? { error: [], result: assetPairs } : { error: [], result: {} }))
+    );
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const tickers = await service.getTickers();
+
+    // Nothing is invented for a pair Kraken will not price.
+    expect(tickers).toHaveLength(0);
+    // 1 bulk + at most 2 bounded follow-ups. Never one-per-pair.
+    const tickerCalls = fetchFn.mock.calls.filter(([url]) => String(url).includes('Ticker'));
+    expect(tickerCalls.length).toBeLessThanOrEqual(3);
+  });
+
+  it('does not turn one failed bulk request into a request storm', async () => {
+    const fetchFn = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('AssetPairs')) return Promise.resolve(jsonResponse(ASSET_PAIRS_BODY));
+      return Promise.resolve(jsonResponse({ error: ['EGeneral:Temporary lockout'], result: {} }));
+    });
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    await expect(service.getTickers()).rejects.toBeInstanceOf(ExternalMarketDataError);
+
+    // The shared HTTP policy may retry a failure a bounded number of times;
+    // what must NOT happen is the failure fanning out per pair.
+    const tickerCalls = fetchFn.mock.calls.filter(([url]) => String(url).includes('Ticker'));
+    expect(tickerCalls.length).toBeLessThanOrEqual(4);
+  });
+
+  it('dedupes concurrent callers onto one in-flight bulk request', async () => {
+    let release: (v: unknown) => void = () => {};
+    const gate = new Promise((resolve) => { release = resolve; });
+    // A complete board, so the bounded fallback has no reason to fire and
+    // the count below is purely about deduplication.
+    const wholeBoard = { error: [], result: { XBTUSDT: TICKER_BODY.result.XBTUSDT, ETHUSDT: TICKER_BODY.result.XBTUSDT } };
+    const fetchFn = jest.fn().mockImplementation(async (url: string) => {
+      if (url.includes('AssetPairs')) return jsonResponse(ASSET_PAIRS_BODY);
+      await gate;
+      return jsonResponse(wholeBoard);
+    });
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const all = Promise.all([service.getTickers(), service.getTickers(), service.getTickers(), service.getTickers()]);
+    release(undefined);
+    const results = await all;
+
+    results.forEach((r) => expect(r.find((t) => t.pair === 'BTC/USDT')?.lastPrice).toBe('60000'));
+    expect(fetchFn.mock.calls.filter(([url]) => String(url).includes('Ticker'))).toHaveLength(1);
   });
 
   it('falls back to last price for turnover when Kraken omits the VWAP', async () => {
