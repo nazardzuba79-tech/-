@@ -67,7 +67,13 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
       try {
         const transfers = await createVerifier(config).listIncoming();
         const service = new DepositService(prisma, config, priceSource);
+        const seen = new Set<string>();
         for (const transfer of transfers) {
+          // Multiple events for the same transaction/asset need one verification.
+          // The verifier supplies the authoritative total; list amounts do not.
+          const key = `${transfer.txHash}:${transfer.asset}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
           try { await service.recordIncoming(transfer); }
           catch { failedChains.add(chain); }
         }

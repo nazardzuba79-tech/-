@@ -105,7 +105,7 @@ export class TronDepositVerifier implements DepositVerifier {
       const res = await this.request<TronGridTrc20Response>(
         `/v1/accounts/${treasury}/transactions/trc20?limit=${INCOMING_FEED_LIMIT}&only_to=true&contract_address=${tokenConfig.contractAddress}`
       );
-      for (const t of res.data) {
+      for (const t of res.data.slice(0, INCOMING_FEED_LIMIT)) {
         if (!tronAddressHex(treasury) || tronAddressHex(t.to) !== tronAddressHex(treasury)) continue;
         results.push({
           txHash: t.transaction_id,
