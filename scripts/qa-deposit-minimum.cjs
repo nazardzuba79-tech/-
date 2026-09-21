@@ -16,7 +16,7 @@ const request = require('supertest');
 const { PrismaClient } = require('@prisma/client');
 const BigNumber = require('bignumber.js');
 const qa = createRequire(path.resolve('node_modules/.cache/deposit-qa/package.json'));
-const output = path.resolve('output/deposit-minimum');
+const output = path.resolve('output/deposit-admin-only');
 fs.mkdirSync(output, { recursive: true });
 const treasury = '41' + '11'.repeat(20);
 const contract = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
@@ -71,7 +71,7 @@ async function main() {
     }
     const chain = express();
     chain.use((req, res, next) => providerDown ? res.status(503).json({ error: 'local fixture outage' }) : next());
-    chain.get('/v1/accounts/:address/transactions/trc20', (_req, res) => res.json({ success: true, data: [...transfers].map(([txHash, t]) => ({
+    chain.get('/v1/accounts/:address/transactions/trc20', (_req, res) => res.json({ success: true, data: [...transfers].reverse().slice(0, 20).map(([txHash, t]) => ({
       transaction_id: txHash, to: t.to, value: new BigNumber(t.amount).shiftedBy(6).toFixed(0), block_timestamp: Date.now(), token_info: { address: t.asset },
     })) }));
     chain.get('/v1/transactions/:hash/events', (req, res) => {
@@ -120,9 +120,11 @@ async function main() {
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_CREDITED' } }), 1);
       const again = await approve(below); assert.equal(again.body.amount, '299'); assert.equal(await balance(), '299');
     });
-    await test('300 USDT auto-credits; concurrent first claims and case aliases create one Deposit', async () => {
+    await test('300 USDT concurrent self-claims stay PENDING; one canonical row; admin alone credits', async () => {
       const txHash = transfer(10, '300');
-      for (const r of await Promise.all([claim(txHash), claim(txHash.toUpperCase()), claim(txHash)])) assert.equal(r.body.status, 'CREDITED', JSON.stringify(r.body));
+      for (const r of await Promise.all([claim(txHash), claim(txHash.toUpperCase()), claim(txHash)])) assert.equal(r.body.status, 'PENDING', JSON.stringify(r.body));
+      assert.equal(await balance(), '299');
+      assert.equal((await approve(txHash)).body.status, 'CREDITED');
       assert.equal(await balance(), '599'); assert.equal(await prisma.deposit.count({ where: { txHash } }), 1);
     });
     await test('10 and 100 USDT TRC20: detected without claim, persisted unassigned BELOW_MINIMUM', async () => {
@@ -162,18 +164,20 @@ async function main() {
     });
     await test('Distinct simultaneous credits preserve both increments', async () => {
       const a = transfer(50, '350'), b = transfer(51, '400');
-      assert.equal((await Promise.all([claim(a), claim(b)])).every(r => r.body.status === 'CREDITED'), true);
+      assert.equal((await Promise.all([claim(a), claim(b)])).every(r => r.body.status === 'PENDING'), true);
+      assert.equal(await balance(), '659');
+      assert.equal((await Promise.all([approve(a), approve(b)])).every(r => r.body.status === 'CREDITED'), true);
       assert.equal(await balance(), '1409');
     });
     await test('Persisted incoming survives provider recent window', async () => {
       const txHash = transfer(60, '10'); await incoming(); transfers.delete(txHash);
       assert.ok((await incoming()).body.transfers.some(d => d.txHash === txHash));
     });
-    await test('Known-owner pending 350 automatically credits when confirmations arrive', async () => {
+    await test('Known-owner 350 stays PENDING after confirmations arrive and discovery runs', async () => {
       const txHash = transfer(70, '350', { confirmations: 2 }); const before = Number(await balance());
       assert.equal((await claim(txHash)).body.status, 'PENDING'); assert.equal(Number(await balance()), before);
       transfer(70, '350'); await incoming();
-      assert.equal((await row(txHash)).status, 'CREDITED'); assert.equal(Number(await balance()), before + 350);
+      assert.equal((await row(txHash)).status, 'PENDING'); assert.equal(Number(await balance()), before);
     });
     await test('Existing 5% referral policy applies once to concurrent manual approvals', async () => {
       await prisma.user.update({ where: { id: userId }, data: { referredById: adminId } });
@@ -193,6 +197,37 @@ async function main() {
       const other = await request(app).post('/api/v1/deposits/claim/tron').set('Authorization', auth(adminId)).send({ txHash, asset: 'USDT' });
       assert.equal(other.status, 400); assert.equal(await balance(), before.plus('299.123456').toString());
     });
+    await test('100/299/300/5000/10000 detected and self-claimed: exact admin amounts, zero balance/referral changes', async () => {
+      await prisma.user.update({ where: { id: userId }, data: { referredById: adminId } });
+      const before = await balance(), rewards = await prisma.referralReward.count();
+      const refBefore = (await prisma.balance.findUniqueOrThrow({ where: { userId_asset: { userId: adminId, asset: 'USDT' } } })).available.toString();
+      const cases = ['100', '299', '300', '5000', '10000'];
+      cases.forEach((amount, i) => transfer(100 + i, amount));
+      const detected = await incoming(); assert.equal(detected.status, 200); assert.deepEqual(detected.body.failedChains, []);
+      for (const [i, amount] of cases.entries()) {
+        const txHash = hash(100 + i), status = Number(amount) < 300 ? 'BELOW_MINIMUM' : 'PENDING';
+        assert.ok(detected.body.transfers.some(d => d.txHash === txHash && d.amount === amount && d.status === status));
+        // A forged approval field on the public route must be ignored.
+        const r = await claim(txHash, { performedByAdminId: adminId, status: 'CREDITED', amount: '99999999' });
+        assert.equal(r.body.status, status); assert.equal(r.body.amount, amount);
+        assert.equal((await row(txHash)).userId, userId);
+      }
+      await incoming(); // discovery of now-attributed, fully confirmed transfers still cannot credit
+      assert.equal(await balance(), before); assert.equal(await prisma.referralReward.count(), rewards);
+      assert.equal((await prisma.balance.findUniqueOrThrow({ where: { userId_asset: { userId: adminId, asset: 'USDT' } } })).available.toString(), refBefore);
+      const history = await request(app).get('/api/v1/admin/deposits').set('Authorization', auth(adminId));
+      for (const [i, amount] of cases.entries()) {
+        assert.ok(history.body.some(d => d.txHash === hash(100 + i) && d.amount === amount && d.userEmail === 'user@deposit.invalid'));
+      }
+      for (const [i, amount] of cases.entries()) {
+        const txHash = hash(100 + i), start = new BigNumber(await balance());
+        for (const r of await Promise.all([approve(txHash), approve(txHash)])) assert.equal(r.body.status, 'CREDITED');
+        assert.equal(await balance(), start.plus(amount).toString());
+        assert.equal(await prisma.referralReward.count({ where: { depositId: (await row(txHash)).id } }), 1);
+        assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_CREDITED', metadata: { path: ['txHash'], equals: txHash } } }), 1);
+      }
+      await prisma.user.update({ where: { id: userId }, data: { referredById: null } });
+    });
     if (process.argv.includes('--browser')) {
       const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
       const fixtureUser = { id: adminId, email: 'admin@deposit.invalid', role: 'ADMIN', isAdmin: true, displayName: 'LOCAL QA' };
@@ -209,25 +244,37 @@ async function main() {
       const page = await context.newPage(); const errors = []; page.on('pageerror', error => errors.push(error.message));
       for (const width of [1440, 390]) {
         const txHash = transfer(width, '299'); await claim(txHash);
+        const pendingHash = transfer(width + 1, '350.123456'); await claim(pendingHash);
+        const detectedHash = transfer(width + 2, '100');
         await page.setViewportSize({ width, height: 900 });
         const loaded = page.waitForResponse(r => r.url().includes('/admin/deposits/incoming'));
         await page.goto(origin + '/admin/deposits'); await loaded;
         const item = page.locator('.admin-history-grid').filter({ has: page.locator(`[title="${txHash}"]`) });
+        const pending = page.locator('.admin-history-grid').filter({ has: page.locator(`[title="${pendingHash}"]`) });
         // Full hash is carried in the copy control's title; no force clicks.
         await item.getByText('BELOW_MINIMUM', { exact: true }).waitFor();
+        await item.getByText('299', { exact: true }).waitFor();
+        await pending.getByText('350.123456', { exact: true }).waitFor();
+        await pending.getByText('PENDING', { exact: true }).waitFor();
+        const detected = page.locator('.admin-history-grid').filter({ has: page.locator(`[title="${detectedHash}"]`) });
+        await detected.last().getByText('100', { exact: true }).waitFor();
         await page.screenshot({ path: path.join(output, `below-minimum-${width}.png`), fullPage: true });
-        const before = Number(await balance());
+        const before = new BigNumber(await balance());
         await item.getByRole('button', { name: 'Зачислить вручную', exact: true }).click();
         await page.getByRole('status').filter({ hasText: 'Депозит зачислен.' }).waitFor();
-        await item.getByText('CREDITED', { exact: true }).waitFor(); assert.equal(Number(await balance()), before + 299);
+        await item.getByText('CREDITED', { exact: true }).waitFor(); assert.equal(await balance(), before.plus(299).toString());
         await page.reload(); await item.getByText('CREDITED', { exact: true }).waitFor();
         assert.equal(await item.getByRole('button', { name: 'Зачислить вручную', exact: true }).count(), 0);
+        const beforePending = new BigNumber(await balance());
+        await pending.getByRole('button', { name: 'Зачислить вручную', exact: true }).click();
+        await pending.getByText('CREDITED', { exact: true }).waitFor();
+        assert.equal(await balance(), beforePending.plus('350.123456').toString());
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
         providerDown = true; await page.getByRole('button', { name: 'Обновить входящие' }).click();
         await page.getByRole('alert').filter({ hasText: 'загружены не полностью' }).waitFor();
         assert.equal(await page.getByText('В доступной ленте нет непривязанных переводов.').count(), 0);
         await page.screenshot({ path: path.join(output, `provider-outage-${width}.png`), fullPage: true });
-        providerDown = false; report.browser.push({ width, manualCredit: 'PASS', reload: 'PASS', outage: 'PASS', overflow: false });
+        providerDown = false; report.browser.push({ width, belowMinimumApproval: 'PASS', pendingApproval: 'PASS', exactAmounts: ['100', '299', '350.123456'], reload: 'PASS', outage: 'PASS', overflow: false });
       }
       await page.goto(origin + '/wallet?action=deposit');
       await page.getByText('Минимальная сумма пополнения — от 300 $ в эквиваленте.', { exact: true }).waitFor();
@@ -235,6 +282,23 @@ async function main() {
       report.browser.push({ depositWarning: 'PASS' });
       assert.deepEqual(errors, []); console.log('PASS browser 1440 + 390');
     }
+    await test('Every credited row has exactly one admin approval audit; balances and referrals reconcile', async () => {
+      const credited = await prisma.deposit.findMany({ where: { status: 'CREDITED' } });
+      const logs = await prisma.auditLog.findMany({ where: { action: 'DEPOSIT_CREDITED' } });
+      assert.equal(logs.length, credited.length);
+      for (const d of credited) {
+        const matching = logs.filter(l => l.metadata.depositId === d.id);
+        assert.equal(matching.length, 1); assert.equal(matching[0].metadata.manual, true);
+        assert.equal(matching[0].metadata.performedByAdminId, adminId);
+        assert.equal(matching[0].metadata.amount, d.amount.toString());
+      }
+      const creditedTotal = credited.reduce((sum, d) => sum.plus(d.amount.toString()), new BigNumber(0));
+      assert.equal(await balance(), creditedTotal.toString());
+      const rewards = await prisma.referralReward.findMany();
+      const rewardTotal = rewards.reduce((sum, r) => sum.plus(r.amount.toString()), new BigNumber(0));
+      assert.equal((await prisma.balance.findUniqueOrThrow({ where: { userId_asset: { userId: adminId, asset: 'USDT' } } })).available.toString(), rewardTotal.toString());
+      report.reconciliation = { creditedDeposits: credited.length, manualCreditAudits: logs.length, userBalance: creditedTotal.toString(), referralBalance: rewardTotal.toString() };
+    });
     report.result = 'PASS';
   } finally {
     fs.writeFileSync(path.join(output, 'report.json'), JSON.stringify(report, null, 2));

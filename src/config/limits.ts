@@ -1,5 +1,5 @@
-// Authoritative credited-deposit policy. DepositService enforces it at credit
-// time; deposit-chains?includeConfig=true supplies it to both deposit UIs.
+// Business minimum/warning, not permission to credit. Every deposit requires
+// admin approval; deposit-chains?includeConfig=true supplies this to both UIs.
 export const MIN_DEPOSIT_USD = 300;
 export const DEPOSIT_USD_PEGGED_ASSETS = ['USDT', 'USDC', 'USD', 'DAI'] as const;
 

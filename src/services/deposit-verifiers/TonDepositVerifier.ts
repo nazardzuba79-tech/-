@@ -119,7 +119,7 @@ export class TonDepositVerifier implements DepositVerifier {
     const res = await this.request<TonApiEventsResponse>(`/v2/accounts/${treasury}/events?limit=${INCOMING_FEED_LIMIT}`);
 
     const results: IncomingTransfer[] = [];
-    for (const event of res.events) {
+    for (const event of res.events.slice(0, INCOMING_FEED_LIMIT)) {
       const timestamp = new Date(event.timestamp * 1000).toISOString();
 
       for (const action of event.actions) {

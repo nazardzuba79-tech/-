@@ -163,7 +163,7 @@ export class EvmDepositVerifier implements DepositVerifier {
         'No Etherscan-style API key configured for this chain — set its *_API_KEY env var'
       );
     }
-    const query = new URLSearchParams({ ...params, apikey: this.chainConfig.apiKey });
+    const query = new URLSearchParams({ ...params, page: '1', offset: String(INCOMING_FEED_LIMIT), apikey: this.chainConfig.apiKey });
     const baseUrl = this.chainConfig.apiUrl ?? 'https://api.etherscan.io/api';
 
     let res: Response;

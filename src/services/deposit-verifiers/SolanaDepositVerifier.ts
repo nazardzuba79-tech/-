@@ -136,17 +136,14 @@ export class SolanaDepositVerifier implements DepositVerifier {
     const signatures = await this.rpc<SignatureInfo[]>('getSignaturesForAddress', [treasury, { limit: INCOMING_FEED_LIMIT }]);
 
     const results: IncomingTransfer[] = [];
-    for (const sig of signatures) {
+    for (const sig of signatures.slice(0, INCOMING_FEED_LIMIT)) {
       if (sig.err) continue;
-      let tx: GetTransactionResult | null;
-      try {
-        tx = await this.rpc<GetTransactionResult | null>('getTransaction', [
-          sig.signature,
-          { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 },
-        ]);
-      } catch {
-        continue; // one bad tx shouldn't blank out the whole feed
-      }
+      // A provider failure is an incomplete scan, not proof of an empty feed.
+      // The admin route reports it and retains already-persisted observations.
+      const tx = await this.rpc<GetTransactionResult | null>('getTransaction', [
+        sig.signature,
+        { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 },
+      ]);
       if (!tx?.meta || tx.meta.err) continue;
 
       const timestamp = sig.blockTime != null ? new Date(sig.blockTime * 1000).toISOString() : null;

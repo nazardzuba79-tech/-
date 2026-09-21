@@ -11,7 +11,7 @@ export interface DepositResult {
   status: DepositStatus; amount: string; confirmations: number; minDepositUsd?: number; message?: string;
 }
 
-/** Detection has no dollar threshold. Only automatic credit requires $300.
+/** Detection has no dollar threshold. Every credit requires admin approval.
  * A shared treasury cannot identify the owner of an unsolicited transfer:
  * discovered transfers are persisted unassigned until claimed or assigned by admin.
  * All credits re-verify the chain and atomically transition the same unique row.
@@ -40,11 +40,11 @@ export class DepositService {
     return verified;
   }
 
-  private async status(asset: string, amount: BigNumber, confirmations: number): Promise<DepositStatus> {
+  private async awaitingStatus(asset: string, amount: BigNumber): Promise<Exclude<DepositStatus, 'CREDITED'>> {
     const usd = await this.usdValueOf(asset, amount);
     if (usd !== null && usd.isLessThan(MIN_DEPOSIT_USD)) return 'BELOW_MINIMUM';
-    // Unknown USD value must never bypass the automatic-credit threshold.
-    return usd !== null && confirmations >= this.chainConfig.minConfirmations ? 'CREDITED' : 'PENDING';
+    // The minimum is a warning/classification only, never permission to credit.
+    return 'PENDING';
   }
 
   /** Persist an independently verified incoming transfer even without a known user.
@@ -57,23 +57,23 @@ export class DepositService {
     if (existing?.status === 'CREDITED') return;
     if (existing && existing.asset !== asset) throw new DepositVerificationError('Transaction already recorded for another asset');
     if (existing?.userId) {
-      // A known owner's pending transfer can reach its confirmation threshold
-      // during discovery. It uses the identical automatic-credit path.
+      // Refresh attribution/confirmations only, even when fully confirmed.
+      // Discovery must never supply admin approval or mutate balances.
       await this.claimDeposit({ userId: existing.userId, txHash, asset });
       return;
     }
     const { amount, confirmations } = await this.verified(txHash, asset);
     if (existing && !amount.eq(existing.amount.toString())) throw new DepositVerificationError('Verified amount differs from recorded transfer');
-    const evaluated = await this.status(asset, amount, confirmations);
+    const status = await this.awaitingStatus(asset, amount);
     if (existing) {
       // Do not overwrite a simultaneous admin assignment/credit.
       await this.prisma.deposit.updateMany({ where: { id: existing.id, userId: null, status: { not: 'CREDITED' } },
-        data: { confirmations, status: evaluated === 'BELOW_MINIMUM' ? evaluated : 'PENDING' } });
+        data: { confirmations, status } });
       return;
     }
     await this.prisma.deposit.upsert({ where, update: { txHash }, create: {
       chain: this.chainConfig.chain, txHash, asset, amount: amount.toString(), confirmations,
-      status: evaluated === 'BELOW_MINIMUM' ? evaluated : 'PENDING',
+      status,
     } });
   }
 
@@ -92,7 +92,7 @@ export class DepositService {
       if (existing.status === 'CREDITED') return this.result(existing);
     }
     const { amount, confirmations } = await this.verified(txHash, asset);
-    const automaticStatus = await this.status(asset, amount, confirmations);
+    const pendingStatus = await this.awaitingStatus(asset, amount);
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (performedByAdminId) {
@@ -108,7 +108,7 @@ export class DepositService {
       if (deposit.status === 'CREDITED') return this.result(deposit);
       if (!amount.eq(deposit.amount.toString())) throw new DepositVerificationError('Verified amount differs from recorded transfer');
       const status: DepositStatus = performedByAdminId && confirmations >= this.chainConfig.minConfirmations
-        ? 'CREDITED' : automaticStatus;
+        ? 'CREDITED' : pendingStatus;
       const updated = await tx.deposit.update({ where: { id: deposit.id }, data: { userId, status, confirmations } });
       if (status === 'CREDITED') {
         // Atomic increments also preserve two distinct deposits credited concurrently.
