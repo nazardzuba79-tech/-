@@ -112,13 +112,18 @@ describe('translation integrity', () => {
     // so this re-take cannot quietly cover anything else.
     const digests: Record<string, string> = {
       // Owner-approved BELOW_MINIMUM label now explicitly says manual processing.
-      "ru": "5ebdb41cbb4ffafa",
-      "en": "e611d3497c9b1a2d",
-      "zh": "cedb45e34ebeb4ce",
-      "es": "d9605794d278083e",
-      "hi": "10a0df5aea5646bd",
-      "ja": "bf3412c19a5e6421",
-      "ko": "c40904a685b833e1"
+      // Re-taken for two added keys, 'trade.chartLoadFailed' and
+      // 'trade.chartRetry': the futures chart no longer answers a failed
+      // candle load with a silent blank canvas, so it needs words and a retry
+      // button. Both are asserted by name below, in every locale, so this
+      // re-take cannot quietly carry anything else with it.
+      "ru": "1cbc2d0510f8fe80",
+      "en": "cd7df3710063e69d",
+      "zh": "b01f5dd13300295b",
+      "es": "ef696d11c7dd65a3",
+      "hi": "09afc54d4ff75384",
+      "ja": "e8c8e3fec993d832",
+      "ko": "9ad9d0bb758e026b"
 };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
@@ -188,6 +193,25 @@ describe('translation integrity', () => {
       const lines = LOCALES.map((code) => (dicts[code] as any)[key]);
       expect({ key, distinct: new Set(lines).size }).toEqual({ key, distinct: LOCALES.length });
     }
+  });
+
+  it('gives the chart failure its own words and its own button, in every language', () => {
+    // The futures chart used to answer a failed candle load with a blank
+    // canvas and nothing else. These two keys are what replaced that, so they
+    // have to exist and be genuinely translated everywhere — an untranslated
+    // retry button is a dead end for anyone not reading Russian.
+    const CHART_ERROR = ['trade.chartLoadFailed', 'trade.chartRetry'];
+    for (const code of LOCALES) {
+      for (const key of CHART_ERROR) {
+        expect({ code, key, value: typeof (dicts[code] as any)[key] })
+          .toEqual({ code, key, value: 'string' });
+        expect((dicts[code] as any)[key].trim().length).toBeGreaterThan(0);
+      }
+    }
+    // Distinct per language: the message is prose, so seven identical strings
+    // would mean six of them were never translated.
+    const messages = LOCALES.map((code) => (dicts[code] as any)['trade.chartLoadFailed']);
+    expect(new Set(messages).size).toBe(LOCALES.length);
   });
 
   it('carries the read-only calculator vocabulary in all seven languages', () => {

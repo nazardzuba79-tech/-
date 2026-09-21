@@ -212,6 +212,8 @@ export const JA: Record<Key, string> = {
   'trade.loadingTrades': '約定履歴を読み込み中...',
   'trade.noTrades': 'このペアの約定履歴はまだありません。',
   'trade.noChartData': '{pair} のチャートデータがありません',
+  'trade.chartLoadFailed': 'チャートを読み込めませんでした',
+  'trade.chartRetry': '再試行',
   'trade.side': '売買方向',
   'trade.remaining': '残数量',
   'trade.status': 'ステータス',

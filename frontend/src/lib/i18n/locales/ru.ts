@@ -217,6 +217,8 @@ export const RU = {
   'trade.loadingTrades': 'Загрузка сделок...',
   'trade.noTrades': 'Пока нет сделок по этой паре.',
   'trade.noChartData': 'Нет данных графика для {pair}',
+  'trade.chartLoadFailed': 'Не удалось загрузить график',
+  'trade.chartRetry': 'Повторить',
   'trade.side': 'Сторона',
   'trade.remaining': 'Остаток',
   'trade.status': 'Статус',

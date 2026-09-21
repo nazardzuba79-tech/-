@@ -212,6 +212,8 @@ export const HI: Record<Key, string> = {
   'trade.loadingTrades': 'ट्रेड्स लोड हो रहे हैं...',
   'trade.noTrades': 'इस पेयर के लिए अभी तक कोई ट्रेड नहीं है।',
   'trade.noChartData': '{pair} के लिए कोई चार्ट डेटा नहीं',
+  'trade.chartLoadFailed': 'चार्ट लोड नहीं हो सका',
+  'trade.chartRetry': 'पुनः प्रयास करें',
   'trade.side': 'साइड',
   'trade.remaining': 'शेष',
   'trade.status': 'स्थिति',
