@@ -1,0 +1,5395 @@
+{
+  "label": "baseline",
+  "commit": "fdad6f6def1613dc249e3f09f47dc7f7c138e196",
+  "scope": "Synthetic local native repository + real frontend/service. Not production latency or account data.",
+  "stages": [
+    {
+      "name": "fresh-authenticated-open",
+      "elapsedMs": 232,
+      "counters": {
+        "render.FuturesPage": 7,
+        "render.FuturesTickerBar": 7,
+        "render.TerminalChart": 7,
+        "render.PriceChart": 11,
+        "render.FuturesReferenceBook": 8,
+        "render.FuturesOrderForm": 8,
+        "render.FuturesPositionsPanel": 7,
+        "render.FuturesCalculator": 7,
+        "candles.setData": 7,
+        "candles.points": 2080,
+        "candles.ms": 3.499999998137355,
+        "indicator.setData": 44,
+        "indicator.points": 10702,
+        "indicator.ms": 4,
+        "chart.resize": 1,
+        "chart.ms": 0,
+        "markers.setMarkers": 3,
+        "markers.ms": 0.19999999925494194
+      },
+      "network": {
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 28.018999999403604,
+          "p95Ms": 28.018999999403604,
+          "maxMs": 28.018999999403604
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 14.024000000063097,
+          "p95Ms": 14.024000000063097,
+          "maxMs": 14.024000000063097
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 14.186999998855754,
+          "p95Ms": 14.186999998855754,
+          "maxMs": 14.186999998855754
+        },
+        "GET /api/v1/futures/config": {
+          "calls": 1,
+          "bytes": 554,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 16.93399999930989,
+          "p95Ms": 16.93399999930989,
+          "maxMs": 16.93399999930989
+        },
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 2,
+          "bytes": 720,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 17.42000000012922,
+          "p95Ms": 17.42000000012922,
+          "maxMs": 17.42000000012922
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 17.643999999563675,
+          "p95Ms": 17.643999999563675,
+          "maxMs": 17.643999999563675
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 17.762000001312117,
+          "p95Ms": 17.762000001312117,
+          "maxMs": 17.762000001312117
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 2,
+          "bytes": 96658,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 16.577000000324915,
+          "p95Ms": 16.577000000324915,
+          "maxMs": 16.577000000324915
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 16.718000000764732,
+          "p95Ms": 16.718000000764732,
+          "maxMs": 16.718000000764732
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 1,
+          "bytes": 389,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 17.032000001563574,
+          "p95Ms": 17.032000001563574,
+          "maxMs": 17.032000001563574
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 17.07400000123016,
+          "p95Ms": 17.07400000123016,
+          "maxMs": 17.07400000123016
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 8.436000000074273,
+          "p95Ms": 8.436000000074273,
+          "maxMs": 8.436000000074273
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 8.458000000246102,
+          "p95Ms": 8.458000000246102,
+          "maxMs": 8.458000000246102
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 8.558999999877415,
+          "p95Ms": 8.558999999877415,
+          "maxMs": 8.558999999877415
+        },
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 9.634000000005472,
+          "p95Ms": 9.634000000005472,
+          "maxMs": 9.634000000005472
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 10.403000000223983,
+          "p95Ms": 10.403000000223983,
+          "maxMs": 10.403000000223983
+        },
+        "GET /api/v1/market/assets/icons": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 3.357999999934691,
+          "p95Ms": 3.357999999934691,
+          "maxMs": 3.357999999934691
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 2189,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 4.347000000052503,
+          "p95Ms": 4.347000000052503,
+          "maxMs": 4.347000000052503
+        }
+      },
+      "frames": 2,
+      "streamBytes": 3846,
+      "taskMs": 178.54899999999998,
+      "heapStart": 7082836,
+      "heapEnd": 13661516
+    },
+    {
+      "name": "visible-empty-60s",
+      "elapsedMs": 60022,
+      "counters": {
+        "render.FuturesPage": 134,
+        "render.FuturesTickerBar": 135,
+        "render.TerminalChart": 134,
+        "render.PriceChart": 145,
+        "render.FuturesReferenceBook": 135,
+        "render.FuturesOrderForm": 135,
+        "render.FuturesPositionsPanel": 134,
+        "render.FuturesCalculator": 134,
+        "markers.setMarkers": 145,
+        "markers.ms": 25.00000000372529,
+        "candles.setData": 156,
+        "candles.points": 81120,
+        "candles.ms": 84.60000000707805,
+        "indicator.setData": 121,
+        "indicator.points": 58861,
+        "indicator.ms": 54.59999999590218
+      },
+      "network": {
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 27,
+          "bytes": 9720,
+          "statuses": {
+            "200": 27
+          },
+          "p50Ms": 6.435999999666819,
+          "p95Ms": 8.154999999533175,
+          "maxMs": 12.924000000566593
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 15,
+          "bytes": 5385,
+          "statuses": {
+            "403": 15
+          },
+          "p50Ms": 7.368999999016523,
+          "p95Ms": 9.629000000131782,
+          "maxMs": 9.629000000131782
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 11,
+          "bytes": 531619,
+          "statuses": {
+            "200": 11
+          },
+          "p50Ms": 36.15999999965425,
+          "p95Ms": 67.2469999990426,
+          "maxMs": 67.2469999990426
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 6.317000001217821,
+          "p95Ms": 6.4819999988685595,
+          "maxMs": 6.4819999988685595
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 4,
+          "bytes": 1556,
+          "statuses": {
+            "200": 4
+          },
+          "p50Ms": 7.175999999162741,
+          "p95Ms": 13.539999999920838,
+          "maxMs": 13.539999999920838
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 5.885000000489526,
+          "p95Ms": 7.8210000010585645,
+          "maxMs": 7.8210000010585645
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 6.717000000207918,
+          "p95Ms": 9.066000000530039,
+          "maxMs": 9.066000000530039
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 7.182999999713502,
+          "p95Ms": 9.08000000163156,
+          "maxMs": 9.08000000163156
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 12.553000000480097,
+          "p95Ms": 12.553000000480097,
+          "maxMs": 12.553000000480097
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 13.800999999148189,
+          "p95Ms": 13.800999999148189,
+          "maxMs": 13.800999999148189
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 14.654000000518863,
+          "p95Ms": 14.654000000518863,
+          "maxMs": 14.654000000518863
+        }
+      },
+      "frames": 12,
+      "streamBytes": 23223,
+      "taskMs": 2581.1450000000004,
+      "heapStart": 14914120,
+      "heapEnd": 14319384
+    },
+    {
+      "name": "open-long",
+      "elapsedMs": 332,
+      "counters": {
+        "candles.setData": 5,
+        "candles.points": 2600,
+        "candles.ms": 3.500000001862645,
+        "indicator.setData": 11,
+        "indicator.points": 5351,
+        "indicator.ms": 4.699999997392297,
+        "render.PriceChart": 5,
+        "markers.setMarkers": 4,
+        "markers.ms": 0.900000000372529,
+        "render.FuturesOrderForm": 6,
+        "render.FuturesPage": 6,
+        "render.FuturesTickerBar": 4,
+        "render.TerminalChart": 4,
+        "render.FuturesReferenceBook": 4,
+        "render.FuturesPositionsPanel": 4,
+        "render.FuturesCalculator": 4,
+        "candles.createPriceLine": 2,
+        "candles.removePriceLine": 1
+      },
+      "network": {
+        "GET /api/v1/private-trading/candles": {
+          "calls": 1,
+          "bytes": 48329,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 37.19699999965087,
+          "p95Ms": 37.19699999965087,
+          "maxMs": 37.19699999965087
+        },
+        "POST /api/v1/private-trading/native/commands": {
+          "calls": 1,
+          "bytes": 4546,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 54.131999999299296,
+          "p95Ms": 54.131999999299296,
+          "maxMs": 54.131999999299296
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 3183,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 10.512000000744592,
+          "p95Ms": 10.512000000744592,
+          "maxMs": 10.512000000744592
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "taskMs": 205.8119999999999,
+      "heapStart": 14328036,
+      "heapEnd": 12357532
+    },
+    {
+      "name": "visible-active-60s",
+      "elapsedMs": 60008,
+      "counters": {
+        "render.FuturesPage": 142,
+        "render.FuturesTickerBar": 143,
+        "render.TerminalChart": 142,
+        "render.PriceChart": 154,
+        "render.FuturesReferenceBook": 142,
+        "render.FuturesOrderForm": 144,
+        "render.FuturesPositionsPanel": 142,
+        "render.FuturesCalculator": 142,
+        "markers.setMarkers": 154,
+        "markers.ms": 27.699999999254942,
+        "candles.removePriceLine": 154,
+        "candles.ms": 95.199999993667,
+        "candles.createPriceLine": 154,
+        "candles.setData": 166,
+        "candles.points": 86320,
+        "indicator.setData": 132,
+        "indicator.points": 64212,
+        "indicator.ms": 47.599999994039536
+      },
+      "network": {
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 27,
+          "bytes": 9720,
+          "statuses": {
+            "200": 27
+          },
+          "p50Ms": 5.9469999996508704,
+          "p95Ms": 9.2449999992823,
+          "maxMs": 10.258000000249012
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 15,
+          "bytes": 5385,
+          "statuses": {
+            "403": 15
+          },
+          "p50Ms": 6.558999999469961,
+          "p95Ms": 9.900999999445048,
+          "maxMs": 9.900999999445048
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 12,
+          "bytes": 579948,
+          "statuses": {
+            "200": 12
+          },
+          "p50Ms": 34.05200000088371,
+          "p95Ms": 44.6300000003248,
+          "maxMs": 44.6300000003248
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 4.982999998901505,
+          "p95Ms": 8.111999999528052,
+          "maxMs": 8.111999999528052
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 4,
+          "bytes": 1556,
+          "statuses": {
+            "200": 4
+          },
+          "p50Ms": 6.6210000004502945,
+          "p95Ms": 10.785000000396394,
+          "maxMs": 10.785000000396394
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 7.907000001068809,
+          "p95Ms": 8.581000000049244,
+          "maxMs": 8.581000000049244
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 8.20699999894714,
+          "p95Ms": 8.528000000296743,
+          "maxMs": 8.528000000296743
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 9.219999999913853,
+          "p95Ms": 9.819999999308493,
+          "maxMs": 9.819999999308493
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 9.677000000010594,
+          "p95Ms": 9.677000000010594,
+          "maxMs": 9.677000000010594
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 2,
+          "bytes": 6366,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 11.2410000001546,
+          "p95Ms": 11.2410000001546,
+          "maxMs": 11.2410000001546
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.560000000623404,
+          "p95Ms": 10.560000000623404,
+          "maxMs": 10.560000000623404
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 10.883000000831089,
+          "p95Ms": 10.883000000831089,
+          "maxMs": 10.883000000831089
+        }
+      },
+      "frames": 12,
+      "streamBytes": 23232,
+      "taskMs": 5134.397,
+      "heapStart": 13045092,
+      "heapEnd": 15711876
+    },
+    {
+      "name": "hidden-active-60s",
+      "elapsedMs": 60014,
+      "counters": {
+        "render.FuturesOrderForm": 15,
+        "render.FuturesPage": 14,
+        "render.FuturesTickerBar": 18,
+        "render.TerminalChart": 14,
+        "render.PriceChart": 14,
+        "render.FuturesReferenceBook": 14,
+        "render.FuturesPositionsPanel": 14,
+        "render.FuturesCalculator": 14,
+        "markers.setMarkers": 14,
+        "markers.ms": 2.5999999959021807,
+        "candles.removePriceLine": 14,
+        "candles.ms": 10.799999998882413,
+        "candles.createPriceLine": 14,
+        "candles.setData": 14,
+        "candles.points": 7280
+      },
+      "network": {
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 27,
+          "bytes": 9720,
+          "statuses": {
+            "200": 27
+          },
+          "p50Ms": 5.994999999529682,
+          "p95Ms": 8.753000000069733,
+          "maxMs": 10.592000000542612
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 15,
+          "bytes": 5385,
+          "statuses": {
+            "403": 15
+          },
+          "p50Ms": 6.3559999998688,
+          "p95Ms": 10.322000000087428,
+          "maxMs": 10.322000000087428
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 6.562999999005115,
+          "p95Ms": 8.187999999790918,
+          "maxMs": 8.187999999790918
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 4,
+          "bytes": 1556,
+          "statuses": {
+            "200": 4
+          },
+          "p50Ms": 9.2400000012276,
+          "p95Ms": 11.46599999992759,
+          "maxMs": 11.46599999992759
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 8.877999998730957,
+          "p95Ms": 9.398999998666113,
+          "maxMs": 9.398999998666113
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 9.519000001091626,
+          "p95Ms": 9.524999999484862,
+          "maxMs": 9.524999999484862
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 4,
+          "bytes": 1436,
+          "statuses": {
+            "403": 4
+          },
+          "p50Ms": 10.110000001077424,
+          "p95Ms": 10.267999999996391,
+          "maxMs": 10.267999999996391
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 10.291000000506756,
+          "p95Ms": 10.291000000506756,
+          "maxMs": 10.291000000506756
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.354000000210362,
+          "p95Ms": 11.354000000210362,
+          "maxMs": 11.354000000210362
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 12.241000000358326,
+          "p95Ms": 12.241000000358326,
+          "maxMs": 12.241000000358326
+        }
+      },
+      "frames": 12,
+      "streamBytes": 23232,
+      "taskMs": 2487.0459999999994,
+      "heapStart": 15721712,
+      "heapEnd": 16564448
+    },
+    {
+      "name": "history-scroll",
+      "elapsedMs": 1522,
+      "counters": {
+        "render.PriceChart": 10,
+        "render.FuturesPage": 5,
+        "render.FuturesTickerBar": 5,
+        "render.TerminalChart": 5,
+        "render.FuturesReferenceBook": 5,
+        "render.FuturesOrderForm": 5,
+        "render.FuturesPositionsPanel": 5,
+        "render.FuturesCalculator": 5,
+        "markers.setMarkers": 6,
+        "markers.ms": 2.000000001862645,
+        "candles.removePriceLine": 6,
+        "candles.ms": 9.200000001117587,
+        "candles.createPriceLine": 6,
+        "candles.setData": 7,
+        "candles.points": 6240,
+        "chart.resize": 2,
+        "chart.ms": 0.30000000074505806,
+        "indicator.setData": 11,
+        "indicator.points": 11071,
+        "indicator.ms": 10.800000002607703
+      },
+      "network": {
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 7.551000000603381,
+          "p95Ms": 7.551000000603381,
+          "maxMs": 7.551000000603381
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 3186,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 5.903000001126202,
+          "p95Ms": 5.903000001126202,
+          "maxMs": 5.903000001126202
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 1,
+          "bytes": 48313,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 33.75400000004447,
+          "p95Ms": 33.75400000004447,
+          "maxMs": 33.75400000004447
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "taskMs": 266.30800000000045,
+      "heapStart": 16602952,
+      "heapEnd": 18579900
+    },
+    {
+      "name": "mobile-first-usable",
+      "elapsedMs": 350,
+      "counters": {
+        "render.FuturesPage": 10,
+        "render.FuturesTickerBar": 10,
+        "render.TerminalChart": 10,
+        "render.PriceChart": 14,
+        "render.FuturesReferenceBook": 10,
+        "render.FuturesOrderForm": 11,
+        "render.FuturesPositionsPanel": 10,
+        "render.FuturesCalculator": 10,
+        "candles.setData": 8,
+        "candles.points": 2600,
+        "candles.ms": 3.1999999936670065,
+        "indicator.setData": 44,
+        "indicator.points": 10702,
+        "indicator.ms": 6.000000001862645,
+        "chart.resize": 2,
+        "chart.ms": 0,
+        "markers.setMarkers": 4,
+        "markers.ms": 0.19999999925494194
+      },
+      "network": {
+        "GET /api/v1/admin/deposits": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 26.080000001456938,
+          "p95Ms": 26.080000001456938,
+          "maxMs": 26.080000001456938
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 26.524000000790693,
+          "p95Ms": 26.524000000790693,
+          "maxMs": 26.524000000790693
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 28.411000001142384,
+          "p95Ms": 28.411000001142384,
+          "maxMs": 28.411000001142384
+        },
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 2,
+          "bytes": 620,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 20.202000001518172,
+          "p95Ms": 20.202000001518172,
+          "maxMs": 20.202000001518172
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 2,
+          "bytes": 1400,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 20.674999999755528,
+          "p95Ms": 20.674999999755528,
+          "maxMs": 20.674999999755528
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 48.00799999975425,
+          "p95Ms": 48.00799999975425,
+          "maxMs": 48.00799999975425
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 23.63599999989674,
+          "p95Ms": 23.63599999989674,
+          "maxMs": 23.63599999989674
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 23.976000000402564,
+          "p95Ms": 23.976000000402564,
+          "maxMs": 23.976000000402564
+        },
+        "GET /api/v1/futures/config": {
+          "calls": 1,
+          "bytes": 554,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 25.142000000414555,
+          "p95Ms": 25.142000000414555,
+          "maxMs": 25.142000000414555
+        },
+        "GET /api/v1/futures/mark-price/BTC-USDT": {
+          "calls": 2,
+          "bytes": 720,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 55.62099999951897,
+          "p95Ms": 55.62099999951897,
+          "maxMs": 55.62099999951897
+        },
+        "GET /api/v1/futures/funding-rate/BTC-USDT": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 27.85799999946903,
+          "p95Ms": 27.85799999946903,
+          "maxMs": 27.85799999946903
+        },
+        "GET /api/v1/market/derivatives/BTC": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 28.621999999813852,
+          "p95Ms": 28.621999999813852,
+          "maxMs": 28.621999999813852
+        },
+        "GET /api/v1/private-trading/candles": {
+          "calls": 2,
+          "bytes": 96658,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 54.46200000005774,
+          "p95Ms": 54.46200000005774,
+          "maxMs": 54.46200000005774
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 56.067999999868334,
+          "p95Ms": 56.067999999868334,
+          "maxMs": 56.067999999868334
+        },
+        "GET /api/v1/private-trading/access": {
+          "calls": 1,
+          "bytes": 389,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 57.0609999995213,
+          "p95Ms": 57.0609999995213,
+          "maxMs": 57.0609999995213
+        },
+        "GET /api/v1/market/universe": {
+          "calls": 1,
+          "bytes": 688,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 55.920000000696746,
+          "p95Ms": 55.920000000696746,
+          "maxMs": 55.920000000696746
+        },
+        "GET /api/v1/market/assets/icons": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 16.077999998742598,
+          "p95Ms": 16.077999998742598,
+          "maxMs": 16.077999998742598
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 2197,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 6.53500000044005,
+          "p95Ms": 6.53500000044005,
+          "maxMs": 6.53500000044005
+        }
+      },
+      "frames": 1,
+      "streamBytes": 1935,
+      "taskMs": 231.24599999999998,
+      "heapStart": 9193180,
+      "heapEnd": 20082208
+    },
+    {
+      "name": "mobile-workspaces-calculator",
+      "elapsedMs": 214,
+      "counters": {
+        "render.FuturesPage": 6,
+        "render.FuturesTickerBar": 6,
+        "render.TerminalChart": 6,
+        "render.PriceChart": 10,
+        "render.FuturesReferenceBook": 6,
+        "render.FuturesOrderForm": 6,
+        "render.FuturesPositionsPanel": 6,
+        "render.FuturesCalculator": 7,
+        "markers.setMarkers": 6,
+        "markers.ms": 0.6999999992549419,
+        "candles.setData": 6,
+        "candles.points": 3120,
+        "candles.ms": 2.200000001117587,
+        "chart.resize": 4,
+        "chart.ms": 0.09999999962747097
+      },
+      "network": {},
+      "frames": 0,
+      "streamBytes": 0,
+      "taskMs": 127.65299999999996,
+      "heapStart": 20171488,
+      "heapEnd": 23760720
+    },
+    {
+      "name": "/wallet",
+      "elapsedMs": 8105,
+      "counters": {},
+      "network": {
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 13.47399999940535,
+          "p95Ms": 13.47399999940535,
+          "maxMs": 13.47399999940535
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 17.092000000047847,
+          "p95Ms": 17.092000000047847,
+          "maxMs": 17.092000000047847
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 43.491000000358326,
+          "p95Ms": 43.491000000358326,
+          "maxMs": 43.491000000358326
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 6.653999998889049,
+          "p95Ms": 6.653999998889049,
+          "maxMs": 6.653999998889049
+        },
+        "GET /api/v1/deposits/me": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 7.005000001299777,
+          "p95Ms": 7.005000001299777,
+          "maxMs": 7.005000001299777
+        },
+        "GET /api/v1/withdrawals/me": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.365999998612097,
+          "p95Ms": 10.365999998612097,
+          "maxMs": 10.365999998612097
+        },
+        "GET /api/v1/wallet/overview": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.41500000085216,
+          "p95Ms": 11.41500000085216,
+          "maxMs": 11.41500000085216
+        },
+        "GET /api/v1/private-trading/native/wallet": {
+          "calls": 1,
+          "bytes": 2210,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 14.22900000034133,
+          "p95Ms": 14.22900000034133,
+          "maxMs": 14.22900000034133
+        },
+        "GET /api/v1/wallet/performance": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 14.232999999876483,
+          "p95Ms": 14.232999999876483,
+          "maxMs": 14.232999999876483
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 14.465000000200234,
+          "p95Ms": 14.465000000200234,
+          "maxMs": 14.465000000200234
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 6.676000000879867,
+          "p95Ms": 6.676000000879867,
+          "maxMs": 6.676000000879867
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 9.185999999317573,
+          "p95Ms": 9.185999999317573,
+          "maxMs": 9.185999999317573
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 9.645999998610932,
+          "p95Ms": 9.645999998610932,
+          "maxMs": 9.645999998610932
+        },
+        "POST /api/v1/wallet/portfolio-snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.496999999304535,
+          "p95Ms": 10.496999999304535,
+          "maxMs": 10.496999999304535
+        },
+        "GET /api/v1/market/assets/icons": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 5.189999999856809,
+          "p95Ms": 5.189999999856809,
+          "maxMs": 5.189999999856809
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "taskMs": 139.02399999999997,
+      "heapStart": 9159832,
+      "heapEnd": 11364036
+    },
+    {
+      "name": "/copy-trading",
+      "elapsedMs": 8103,
+      "counters": {},
+      "network": {
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 18.986999999469845,
+          "p95Ms": 18.986999999469845,
+          "maxMs": 18.986999999469845
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 19.629999998869607,
+          "p95Ms": 19.629999998869607,
+          "maxMs": 19.629999998869607
+        },
+        "GET /api/v1/private-trading/native/live": {
+          "calls": 1,
+          "bytes": 2197,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 7.8220000013971,
+          "p95Ms": 7.8220000013971,
+          "maxMs": 7.8220000013971
+        },
+        "GET /api/v1/copy-trading/marketplace": {
+          "calls": 2,
+          "bytes": 1527122,
+          "statuses": {
+            "200": 2
+          },
+          "p50Ms": 2842.916999999943,
+          "p95Ms": 2842.916999999943,
+          "maxMs": 2842.916999999943
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 2860.2960000007442,
+          "p95Ms": 2860.2960000007442,
+          "maxMs": 2860.2960000007442
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 165.64499999913096,
+          "p95Ms": 165.64499999913096,
+          "maxMs": 165.64499999913096
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 166.16199999953096,
+          "p95Ms": 166.16199999953096,
+          "maxMs": 166.16199999953096
+        },
+        "GET /api/v1/wallet/portfolio-history": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 165.5640000008134,
+          "p95Ms": 165.5640000008134,
+          "maxMs": 165.5640000008134
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.190000000875443,
+          "p95Ms": 10.190000000875443,
+          "maxMs": 10.190000000875443
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.117000000012922,
+          "p95Ms": 11.117000000012922,
+          "maxMs": 11.117000000012922
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.04000000123051,
+          "p95Ms": 11.04000000123051,
+          "maxMs": 11.04000000123051
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "taskMs": 428.057,
+      "heapStart": 7753292,
+      "heapEnd": 18949140
+    },
+    {
+      "name": "/banking",
+      "elapsedMs": 8111,
+      "counters": {},
+      "network": {
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 32.044999999925494,
+          "p95Ms": 32.044999999925494,
+          "maxMs": 32.044999999925494
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 12.958999999682419,
+          "p95Ms": 12.958999999682419,
+          "maxMs": 12.958999999682419
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 13.15699999940989,
+          "p95Ms": 13.15699999940989,
+          "maxMs": 13.15699999940989
+        },
+        "GET /api/v1/banking/config": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 13.603000001239707,
+          "p95Ms": 13.603000001239707,
+          "maxMs": 13.603000001239707
+        },
+        "GET /api/v1/banking/state": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 13.833000000886386,
+          "p95Ms": 13.833000000886386,
+          "maxMs": 13.833000000886386
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 4.930000000967993,
+          "p95Ms": 4.930000000967993,
+          "maxMs": 4.930000000967993
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 6.620000000111759,
+          "p95Ms": 6.620000000111759,
+          "maxMs": 6.620000000111759
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 6.812999999965541,
+          "p95Ms": 6.812999999965541,
+          "maxMs": 6.812999999965541
+        }
+      },
+      "frames": 1,
+      "streamBytes": 1935,
+      "taskMs": 153.01700000000002,
+      "heapStart": 7060244,
+      "heapEnd": 11421004
+    },
+    {
+      "name": "/markets",
+      "elapsedMs": 8089,
+      "counters": {},
+      "network": {
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 59.15300000015122,
+          "p95Ms": 59.15300000015122,
+          "maxMs": 59.15300000015122
+        },
+        "GET /api/v1/market/snapshot": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 7.792999998855521,
+          "p95Ms": 7.792999998855521,
+          "maxMs": 7.792999998855521
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 10.095999999975902,
+          "p95Ms": 10.095999999975902,
+          "maxMs": 10.095999999975902
+        },
+        "GET /api/v1/market/assets": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 11.57000000057451,
+          "p95Ms": 11.57000000057451,
+          "maxMs": 11.57000000057451
+        },
+        "GET /api/v1/futures/config": {
+          "calls": 1,
+          "bytes": 554,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 12.056999999913387,
+          "p95Ms": 12.056999999913387,
+          "maxMs": 12.056999999913387
+        },
+        "GET /api/v1/market/external/rankings": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 12.620999999853666,
+          "p95Ms": 12.620999999853666,
+          "maxMs": 12.620999999853666
+        },
+        "GET /api/v1/admin/deposits": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 7.889000000432134,
+          "p95Ms": 7.889000000432134,
+          "maxMs": 7.889000000432134
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.037000000011176,
+          "p95Ms": 10.037000000011176,
+          "maxMs": 10.037000000011176
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 10.374000001320383,
+          "p95Ms": 10.374000001320383,
+          "maxMs": 10.374000001320383
+        }
+      },
+      "frames": 2,
+      "streamBytes": 3870,
+      "taskMs": 139.428,
+      "heapStart": 6951884,
+      "heapEnd": 11223552
+    },
+    {
+      "name": "/admin/deposits",
+      "elapsedMs": 8090,
+      "counters": {},
+      "network": {
+        "GET /api/v1/admin/deposits": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 17.835999999078922,
+          "p95Ms": 17.835999999078922,
+          "maxMs": 17.835999999078922
+        },
+        "GET /api/v1/admin/withdrawals": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 21.631000001434586,
+          "p95Ms": 21.631000001434586,
+          "maxMs": 21.631000001434586
+        },
+        "GET /api/v1/admin/clients": {
+          "calls": 2,
+          "bytes": 718,
+          "statuses": {
+            "403": 2
+          },
+          "p50Ms": 22.06300000034389,
+          "p95Ms": 22.06300000034389,
+          "maxMs": 22.06300000034389
+        },
+        "POST /api/v1/private-trading/native/execution-session": {
+          "calls": 1,
+          "bytes": 310,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 24.74400000028254,
+          "p95Ms": 24.74400000028254,
+          "maxMs": 24.74400000028254
+        },
+        "GET /api/v1/private-trading/native/contracts/BTCUSDT": {
+          "calls": 1,
+          "bytes": 700,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 25.322999999843887,
+          "p95Ms": 25.322999999843887,
+          "maxMs": 25.322999999843887
+        },
+        "GET /api/v1/support/conversations/mine": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 28.752000000167754,
+          "p95Ms": 28.752000000167754,
+          "maxMs": 28.752000000167754
+        },
+        "GET /api/v1/me": {
+          "calls": 1,
+          "bytes": 527,
+          "statuses": {
+            "200": 1
+          },
+          "p50Ms": 23.59699999942677,
+          "p95Ms": 23.59699999942677,
+          "maxMs": 23.59699999942677
+        },
+        "GET /api/v1/admin/deposits/incoming": {
+          "calls": 1,
+          "bytes": 359,
+          "statuses": {
+            "403": 1
+          },
+          "p50Ms": 6.898999999975786,
+          "p95Ms": 6.898999999975786,
+          "maxMs": 6.898999999975786
+        }
+      },
+      "frames": 0,
+      "streamBytes": 0,
+      "taskMs": 108.95800000000001,
+      "heapStart": 11125576,
+      "heapEnd": 11942128
+    }
+  ],
+  "routes": [],
+  "checks": [
+    {
+      "name": "normalFlow-1440",
+      "pass": true,
+      "ms": 5517
+    },
+    {
+      "name": "chartFlow-1440",
+      "pass": true,
+      "ms": 31317
+    },
+    {
+      "name": "limitCloseContract-1440",
+      "pass": true,
+      "ms": 933
+    },
+    {
+      "name": "largeValues-1440",
+      "pass": true,
+      "ms": 5837
+    },
+    {
+      "name": "normalFlow-390",
+      "pass": true,
+      "ms": 2920
+    },
+    {
+      "name": "chartFlow-390",
+      "pass": true,
+      "ms": 8869
+    },
+    {
+      "name": "limitCloseContract-390",
+      "pass": true,
+      "ms": 994
+    },
+    {
+      "name": "largeValues-390",
+      "pass": true,
+      "ms": 12582
+    }
+  ],
+  "bundles": [
+    {
+      "file": "index-m-VYLGIZ.js",
+      "raw": 537752,
+      "gzip": 170811
+    },
+    {
+      "file": "TerminalPremium-BeB-n7Fp.js",
+      "raw": 259370,
+      "gzip": 84225
+    },
+    {
+      "file": "CardPage-BjSp4q1i.js",
+      "raw": 177409,
+      "gzip": 55533
+    },
+    {
+      "file": "FuturesPage-BrZGI1qW.js",
+      "raw": 136044,
+      "gzip": 40269
+    },
+    {
+      "file": "hi-C9yt5xXO.js",
+      "raw": 118293,
+      "gzip": 25411
+    },
+    {
+      "file": "CopyTradingPage-DrWMkNHw.js",
+      "raw": 97456,
+      "gzip": 30371
+    },
+    {
+      "file": "WalletPage-zvnOwjaa.js",
+      "raw": 90092,
+      "gzip": 23169
+    },
+    {
+      "file": "FuturesStudio-fFpDhwcq.js",
+      "raw": 90028,
+      "gzip": 57366
+    },
+    {
+      "file": "ja-CEYeDJTA.js",
+      "raw": 81292,
+      "gzip": 23288
+    },
+    {
+      "file": "LegalPage-NsNcMx9x.js",
+      "raw": 78467,
+      "gzip": 26075
+    },
+    {
+      "file": "SettingsPage-dUgJDqD6.js",
+      "raw": 77690,
+      "gzip": 20309
+    },
+    {
+      "file": "ko-wWiXh1cy.js",
+      "raw": 75410,
+      "gzip": 22337
+    },
+    {
+      "file": "es-DUmKJVcT.js",
+      "raw": 73569,
+      "gzip": 21664
+    },
+    {
+      "file": "MarketsPage-BNJC4krv.js",
+      "raw": 71803,
+      "gzip": 19316
+    },
+    {
+      "file": "en-BImMEZDC.js",
+      "raw": 67914,
+      "gzip": 20008
+    },
+    {
+      "file": "zh-CmdnILtQ.js",
+      "raw": 65301,
+      "gzip": 21612
+    },
+    {
+      "file": "TradePage-DvVOevRW.js",
+      "raw": 62414,
+      "gzip": 18429
+    },
+    {
+      "file": "PrivateTradingPage-CjLwvvOb.js",
+      "raw": 53702,
+      "gzip": 14964
+    },
+    {
+      "file": "index-i6tLBeHt.js",
+      "raw": 35621,
+      "gzip": 10132
+    },
+    {
+      "file": "Nav-cf3LtEtC.js",
+      "raw": 26567,
+      "gzip": 8953
+    },
+    {
+      "file": "TerminalAccountPanel-0_wLBKqi.js",
+      "raw": 16561,
+      "gzip": 5797
+    },
+    {
+      "file": "BankingPage-x7pM7rfe.js",
+      "raw": 14776,
+      "gzip": 4721
+    },
+    {
+      "file": "AdminUsersPage-DwFlgxf-.js",
+      "raw": 13076,
+      "gzip": 4498
+    },
+    {
+      "file": "AdminUserDetailPage-BGLyW-aO.js",
+      "raw": 10878,
+      "gzip": 3298
+    },
+    {
+      "file": "AdminDepositsPage-BqPA90x4.js",
+      "raw": 9159,
+      "gzip": 3146
+    },
+    {
+      "file": "catalogueStore-CPJTFChO.js",
+      "raw": 8431,
+      "gzip": 3125
+    },
+    {
+      "file": "AdminWalletsPage-B-6p9JF8.js",
+      "raw": 7308,
+      "gzip": 2613
+    },
+    {
+      "file": "adminStyles-Dao49S_q.js",
+      "raw": 6934,
+      "gzip": 1745
+    },
+    {
+      "file": "AdminWithdrawalsPage-DnoVREKX.js",
+      "raw": 6034,
+      "gzip": 2055
+    },
+    {
+      "file": "AdminKycPage-wA5fdEON.js",
+      "raw": 5869,
+      "gzip": 2232
+    },
+    {
+      "file": "useCfdTickers-CyrOncx2.js",
+      "raw": 5817,
+      "gzip": 2389
+    },
+    {
+      "file": "AdminLayout-ZhjgJn6D.js",
+      "raw": 5784,
+      "gzip": 2248
+    },
+    {
+      "file": "ArbitragePage-r_Ei38mt.js",
+      "raw": 4759,
+      "gzip": 1634
+    },
+    {
+      "file": "useFuturesAccount-BGgnDWbt.js",
+      "raw": 4626,
+      "gzip": 1740
+    },
+    {
+      "file": "RegisterPage-BX7eJ_J4.js",
+      "raw": 4257,
+      "gzip": 1830
+    },
+    {
+      "file": "AdminIcons-CZ6sUM3R.js",
+      "raw": 3661,
+      "gzip": 931
+    },
+    {
+      "file": "AdminAuditLogPage-DQgTTskM.js",
+      "raw": 3239,
+      "gzip": 1277
+    },
+    {
+      "file": "nativeDemoApi-C40fydv3.js",
+      "raw": 2914,
+      "gzip": 1478
+    },
+    {
+      "file": "Footer-Dg96od_E.js",
+      "raw": 2653,
+      "gzip": 1141
+    },
+    {
+      "file": "depositRails-BrauXpDQ.js",
+      "raw": 2307,
+      "gzip": 1258
+    },
+    {
+      "file": "AdminPrimitives-bEpqrV9A.js",
+      "raw": 1712,
+      "gzip": 951
+    },
+    {
+      "file": "OtcPage-D0HZ58le.js",
+      "raw": 1304,
+      "gzip": 661
+    },
+    {
+      "file": "useAdminAlerts-h2u3FS2X.js",
+      "raw": 1297,
+      "gzip": 715
+    },
+    {
+      "file": "chevron-right-DNeuaSuR.js",
+      "raw": 676,
+      "gzip": 343
+    },
+    {
+      "file": "star-B0NWy2ON.js",
+      "raw": 644,
+      "gzip": 404
+    },
+    {
+      "file": "arrow-up-CTC194ev.js",
+      "raw": 622,
+      "gzip": 316
+    },
+    {
+      "file": "privateTradingError-Ddfre3fS.js",
+      "raw": 555,
+      "gzip": 383
+    },
+    {
+      "file": "crown-C1L4fGBw.js",
+      "raw": 534,
+      "gzip": 364
+    },
+    {
+      "file": "refresh-cw-BQZxBKCq.js",
+      "raw": 493,
+      "gzip": 329
+    },
+    {
+      "file": "shield-check-CUBVbTrb.js",
+      "raw": 487,
+      "gzip": 353
+    },
+    {
+      "file": "Skeleton-pWpyQLbF.js",
+      "raw": 433,
+      "gzip": 305
+    },
+    {
+      "file": "LiveMetric-LphFPPoE.js",
+      "raw": 347,
+      "gzip": 280
+    },
+    {
+      "file": "arrow-down-right-8GELraZ9.js",
+      "raw": 341,
+      "gzip": 268
+    },
+    {
+      "file": "search-g_VZRHd5.js",
+      "raw": 341,
+      "gzip": 271
+    },
+    {
+      "file": "arrow-left-D-SkM1tN.js",
+      "raw": 337,
+      "gzip": 267
+    },
+    {
+      "file": "ReferralRedirectPage-BwIZY046.js",
+      "raw": 295,
+      "gzip": 253
+    },
+    {
+      "file": "check-fadI2YT2.js",
+      "raw": 291,
+      "gzip": 244
+    },
+    {
+      "file": "Badge-v_TZaWV9.js",
+      "raw": 171,
+      "gzip": 163
+    }
+  ],
+  "acceptance": {
+    "fixtureOnly": true,
+    "productionVerified": false,
+    "scope": "original terminal / isolated native engine",
+    "checks": [
+      {
+        "name": "fields-limit-1440",
+        "passed": true,
+        "evidence": {
+          "price": {
+            "width": 297,
+            "height": 44,
+            "left": 1129,
+            "right": 1426,
+            "top": 246,
+            "bottom": 290
+          },
+          "quantity": {
+            "width": 297,
+            "height": 44,
+            "left": 1129,
+            "right": 1426,
+            "top": 304,
+            "bottom": 348
+          },
+          "long": {
+            "width": 144.5,
+            "height": 44,
+            "left": 1129,
+            "right": 1273.5,
+            "top": 723.84375,
+            "bottom": 767.84375
+          },
+          "short": {
+            "width": 144.5,
+            "height": 44,
+            "left": 1281.5,
+            "right": 1426,
+            "top": 723.84375,
+            "bottom": 767.84375
+          },
+          "trailing": [
+            {
+              "outer": {
+                "width": 297,
+                "height": 44,
+                "left": 1129,
+                "right": 1426,
+                "top": 246,
+                "bottom": 290
+              },
+              "inner": {
+                "width": 82.03125,
+                "height": 42,
+                "left": 1342.96875,
+                "right": 1425,
+                "top": 247,
+                "bottom": 289
+              }
+            },
+            {
+              "outer": {
+                "width": 297,
+                "height": 44,
+                "left": 1129,
+                "right": 1426,
+                "top": 304,
+                "bottom": 348
+              },
+              "inner": {
+                "width": 54,
+                "height": 42,
+                "left": 1371,
+                "right": 1425,
+                "top": 305,
+                "bottom": 347
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "quantity-to-usdt-calculator-1440",
+        "passed": true,
+        "evidence": {
+          "price": 49377.1,
+          "quantity": 5,
+          "positionValue": "246885.50"
+        }
+      },
+      {
+        "name": "positions-reachable-1440",
+        "passed": true
+      },
+      {
+        "name": "fields-market-1440",
+        "passed": true,
+        "evidence": {
+          "price": {
+            "width": 297,
+            "height": 44,
+            "left": 1129,
+            "right": 1426,
+            "top": 246,
+            "bottom": 290
+          },
+          "quantity": {
+            "width": 297,
+            "height": 44,
+            "left": 1129,
+            "right": 1426,
+            "top": 304,
+            "bottom": 348
+          },
+          "long": {
+            "width": 144.5,
+            "height": 44,
+            "left": 1129,
+            "right": 1273.5,
+            "top": 748.84375,
+            "bottom": 792.84375
+          },
+          "short": {
+            "width": 144.5,
+            "height": 44,
+            "left": 1281.5,
+            "right": 1426,
+            "top": 748.84375,
+            "bottom": 792.84375
+          },
+          "trailing": [
+            {
+              "outer": {
+                "width": 297,
+                "height": 44,
+                "left": 1129,
+                "right": 1426,
+                "top": 246,
+                "bottom": 290
+              },
+              "inner": {
+                "width": 54,
+                "height": 42,
+                "left": 1371,
+                "right": 1425,
+                "top": 247,
+                "bottom": 289
+              }
+            },
+            {
+              "outer": {
+                "width": 297,
+                "height": 44,
+                "left": 1129,
+                "right": 1426,
+                "top": 304,
+                "bottom": 348
+              },
+              "inner": {
+                "width": 54,
+                "height": 42,
+                "left": 1371,
+                "right": 1425,
+                "top": 305,
+                "bottom": 347
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "account-summary-1440",
+        "passed": true,
+        "evidence": {
+          "balance": "10 098 481.63 USDT",
+          "available": "10 048 832.95 USDT",
+          "im": "0.49%",
+          "mm": "0.03%",
+          "modeRowInCard": false,
+          "units": [
+            " USDT",
+            " USDT",
+            " USDT"
+          ],
+          "mode": "Кросс"
+        }
+      },
+      {
+        "name": "position-table-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t7.000 BTC\t345,639.70 USDT\t49,377.20\t49,377.10\t—\t\n-0.7000\n-0.00%\n\t\n-190.1022\n\t\n+ Добавить\n\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nShort · Кросс 10.00x\n\t3.000 BTC\t148,131.30 USDT\t49,377.00\t49,377.10\t—\t\n-0.3000\n-0.00%\n\t\n-81.4721\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1204,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "limit-close-prefill-no-submit-1440",
+        "passed": true
+      },
+      {
+        "name": "pnl-card-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.5 USDT",
+          "href": "/futures?nativeCard=native%3A9%3Anative-64aa876e-29c5-4415-8dd7-ccdf1a14666f",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "owner-no-real-account-requests-1440",
+        "passed": true
+      },
+      {
+        "name": "large-table-profit-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t1250.500 BTC\t2,500,999,987.50 USDT\t1,875,000.50\t1,999,999.99\t—\t\n1,200,000.0000\n2400.00%\n\t\n1,200,000.0000\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1320,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-profit-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+2,400.00%",
+              "left": 80,
+              "right": 572.125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "+2,400.00",
+              "left": 80,
+              "right": 485.453125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 489.453125,
+              "right": 572.125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-profit-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-2017e986-d796-477d-a3c0-9eb26fe8d444",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-profit-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t1200000.00\tCLOSED",
+          "scroll": {
+            "client": 1114,
+            "full": 1114,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-profit-10m-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t1250.500 BTC\t2,500,999,987.50 USDT\t1,875,000.50\t1,999,999.99\t—\t\n10,000,000.0000\n20000.00%\n\t\n10,000,000.0000\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1336,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-profit-10m-1440",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+20,000.00%",
+              "left": 80,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "+20,000.00",
+              "left": 80,
+              "right": 536.15625,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 540.15625,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-profit-10m-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-2017e986-d796-477d-a3c0-9eb26fe8d444",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-profit-10m-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t10000000.00\tCLOSED",
+          "scroll": {
+            "client": 1114,
+            "full": 1114,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-loss-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t1250.500 BTC\t2,500,999,987.50 USDT\t1,875,000.50\t1,999,999.99\t—\t\n-1,200,000.0000\n-2400.00%\n\t\n-1,200,000.0000\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1320,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-loss-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "-2,400.00%",
+              "left": 80,
+              "right": 548.03125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "-2,400.00",
+              "left": 80,
+              "right": 461.359375,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 465.359375,
+              "right": 548.03125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-loss-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-2017e986-d796-477d-a3c0-9eb26fe8d444",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-loss-1_2m-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-1200000.00\tCLOSED",
+          "scroll": {
+            "client": 1114,
+            "full": 1114,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-roi-20000-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t1250.500 BTC\t2,500,999,987.50 USDT\t1,875,000.50\t1,999,999.99\t—\t\n250,000.0000\n20000.00%\n\t\n250,000.0000\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1298,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-roi-20000-1440",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+20,000.00%",
+              "left": 80,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "+20,000.00",
+              "left": 80,
+              "right": 536.15625,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 540.15625,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-roi-20000-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-2017e986-d796-477d-a3c0-9eb26fe8d444",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-roi-20000-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t250000.00\tCLOSED",
+          "scroll": {
+            "client": 1114,
+            "full": 1114,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-roi-128450-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t1250.500 BTC\t2,500,999,987.50 USDT\t1,875,000.50\t1,999,999.99\t—\t\n4,820,000.5000\n128450.75%\n\t\n4,820,000.5000\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1320,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-roi-128450-1440",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+128,450.75%",
+              "left": 80,
+              "right": 634.640625,
+              "top": 403,
+              "bottom": 503
+            },
+            {
+              "name": "roi-number",
+              "text": "+128,450.75",
+              "left": 80,
+              "right": 553.9443664550781,
+              "top": 403,
+              "bottom": 503
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 557.3125,
+              "right": 634.640625,
+              "top": 403,
+              "bottom": 503
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+128,450.75%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-roi-128450-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-2017e986-d796-477d-a3c0-9eb26fe8d444",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-roi-128450-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t4820000.50\tCLOSED",
+          "scroll": {
+            "client": 1114,
+            "full": 1114,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-roi-negative-99999-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t1250.500 BTC\t2,500,999,987.50 USDT\t1,875,000.50\t1,999,999.99\t—\t\n-8,750,000.2500\n-99999.99%\n\t\n-8,750,000.2500\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1320,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-roi-negative-99999-1440",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "-99,999.99%",
+              "left": 80,
+              "right": 598.734375,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "-99,999.99",
+              "left": 80,
+              "right": 512.0625,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 516.0625,
+              "right": 598.734375,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-99,999.99%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-roi-negative-99999-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-2017e986-d796-477d-a3c0-9eb26fe8d444",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-roi-negative-99999-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-8750000.25\tCLOSED",
+          "scroll": {
+            "client": 1114,
+            "full": 1114,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-real-zero-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nLong · Кросс 10.00x\n\t1250.500 BTC\t2,500,999,987.50 USDT\t1,875,000.50\t1,999,999.99\t—\t\n0.0000\n0.00%\n\t\n0.0000\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 1114,
+            "full": 1278,
+            "overflow": "scroll"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-real-zero-1440",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "0.00%",
+              "left": 80,
+              "right": 342.71875,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "0.00",
+              "left": 80,
+              "right": 256.046875,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 260.046875,
+              "right": 342.71875,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n0.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-real-zero-1440",
+        "passed": true,
+        "evidence": {
+          "width": 330,
+          "height": 371.25,
+          "top": 247.953125,
+          "bottom": 752.046875,
+          "dialogHeight": 504.09375,
+          "vh": 1000,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-2017e986-d796-477d-a3c0-9eb26fe8d444",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-real-zero-1440",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 1440,
+          "viewport": 1440,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t0.00\tCLOSED",
+          "scroll": {
+            "client": 1114,
+            "full": 1114,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "fields-limit-390",
+        "passed": true,
+        "evidence": {
+          "price": {
+            "width": 366,
+            "height": 48,
+            "left": 12,
+            "right": 378,
+            "top": 384,
+            "bottom": 432
+          },
+          "quantity": {
+            "width": 366,
+            "height": 48,
+            "left": 12,
+            "right": 378,
+            "top": 444,
+            "bottom": 492
+          },
+          "long": {
+            "width": 179,
+            "height": 52,
+            "left": 12,
+            "right": 191,
+            "top": 708,
+            "bottom": 760
+          },
+          "short": {
+            "width": 179,
+            "height": 52,
+            "left": 199,
+            "right": 378,
+            "top": 708,
+            "bottom": 760
+          },
+          "trailing": [
+            {
+              "outer": {
+                "width": 366,
+                "height": 48,
+                "left": 12,
+                "right": 378,
+                "top": 384,
+                "bottom": 432
+              },
+              "inner": {
+                "width": 82.03125,
+                "height": 46,
+                "left": 294.96875,
+                "right": 377,
+                "top": 385,
+                "bottom": 431
+              }
+            },
+            {
+              "outer": {
+                "width": 366,
+                "height": 48,
+                "left": 12,
+                "right": 378,
+                "top": 444,
+                "bottom": 492
+              },
+              "inner": {
+                "width": 54,
+                "height": 46,
+                "left": 323,
+                "right": 377,
+                "top": 445,
+                "bottom": 491
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "quantity-to-usdt-calculator-390",
+        "passed": true,
+        "evidence": {
+          "price": 49364.1,
+          "quantity": 5,
+          "positionValue": "246820.50"
+        }
+      },
+      {
+        "name": "positions-reachable-390",
+        "passed": true
+      },
+      {
+        "name": "fields-market-390",
+        "passed": true,
+        "evidence": {
+          "price": {
+            "width": 366,
+            "height": 48,
+            "left": 12,
+            "right": 378,
+            "top": 384,
+            "bottom": 432
+          },
+          "quantity": {
+            "width": 366,
+            "height": 48,
+            "left": 12,
+            "right": 378,
+            "top": 444,
+            "bottom": 492
+          },
+          "long": {
+            "width": 179,
+            "height": 52,
+            "left": 12,
+            "right": 191,
+            "top": 708,
+            "bottom": 760
+          },
+          "short": {
+            "width": 179,
+            "height": 52,
+            "left": 199,
+            "right": 378,
+            "top": 708,
+            "bottom": 760
+          },
+          "trailing": [
+            {
+              "outer": {
+                "width": 366,
+                "height": 48,
+                "left": 12,
+                "right": 378,
+                "top": 384,
+                "bottom": 432
+              },
+              "inner": {
+                "width": 54,
+                "height": 46,
+                "left": 323,
+                "right": 377,
+                "top": 385,
+                "bottom": 431
+              }
+            },
+            {
+              "outer": {
+                "width": 366,
+                "height": 48,
+                "left": 12,
+                "right": 378,
+                "top": 444,
+                "bottom": 492
+              },
+              "inner": {
+                "width": 54,
+                "height": 46,
+                "left": 323,
+                "right": 377,
+                "top": 445,
+                "bottom": 491
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "account-summary-390",
+        "passed": true,
+        "evidence": {
+          "balance": "10 098 455.70 USDT",
+          "available": "10 048 820.09 USDT",
+          "im": "0.49%",
+          "mm": "0.03%",
+          "modeRowInCard": false,
+          "units": [
+            " USDT",
+            " USDT",
+            " USDT"
+          ],
+          "mode": "Кросс"
+        }
+      },
+      {
+        "name": "position-table-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n7.000\nBTC\n345,548.70\nUSDT\n49,364.20\n49,364.10\n—\n-0.7000\n-0.00%\n-190.0522\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nShort · Кросс\n10.00x\n3.000\nBTC\n148,092.30\nUSDT\n49,364.00\n49,364.10\n—\n-0.3000\n-0.00%\n-81.4506\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "limit-close-prefill-no-submit-390",
+        "passed": true
+      },
+      {
+        "name": "pnl-card-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.5 USDT",
+          "href": "/futures?nativeCard=native%3A9%3Anative-7f44f7ac-cd01-476a-a2f5-9a41ef7f8680",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "owner-no-real-account-requests-390",
+        "passed": true
+      },
+      {
+        "name": "large-table-profit-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n1250.500\nBTC\n2,500,999,987.50\nUSDT\n1,875,000.50\n1,999,999.99\n—\n1,200,000.0000\n2400.00%\n1,200,000.0000\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-profit-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+2,400.00%",
+              "left": 80,
+              "right": 572.125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "+2,400.00",
+              "left": 80,
+              "right": 485.453125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 489.453125,
+              "right": 572.125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-profit-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-e0ade171-885c-4817-a7ed-40ace2549961",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-profit-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t1200000.00\tCLOSED",
+          "scroll": {
+            "client": 390,
+            "full": 433,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-profit-10m-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n1250.500\nBTC\n2,500,999,987.50\nUSDT\n1,875,000.50\n1,999,999.99\n—\n10,000,000.0000\n20000.00%\n10,000,000.0000\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-profit-10m-390",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+20,000.00%",
+              "left": 80,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "+20,000.00",
+              "left": 80,
+              "right": 536.15625,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 540.15625,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-profit-10m-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-e0ade171-885c-4817-a7ed-40ace2549961",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-profit-10m-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t10000000.00\tCLOSED",
+          "scroll": {
+            "client": 390,
+            "full": 440,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-loss-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n1250.500\nBTC\n2,500,999,987.50\nUSDT\n1,875,000.50\n1,999,999.99\n—\n-1,200,000.0000\n-2400.00%\n-1,200,000.0000\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-loss-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "-2,400.00%",
+              "left": 80,
+              "right": 548.03125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "-2,400.00",
+              "left": 80,
+              "right": 461.359375,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 465.359375,
+              "right": 548.03125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-loss-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-e0ade171-885c-4817-a7ed-40ace2549961",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-loss-1_2m-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-1200000.00\tCLOSED",
+          "scroll": {
+            "client": 390,
+            "full": 440,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-roi-20000-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n1250.500\nBTC\n2,500,999,987.50\nUSDT\n1,875,000.50\n1,999,999.99\n—\n250,000.0000\n20000.00%\n250,000.0000\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-roi-20000-390",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+20,000.00%",
+              "left": 80,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "+20,000.00",
+              "left": 80,
+              "right": 536.15625,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 540.15625,
+              "right": 622.828125,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-roi-20000-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-e0ade171-885c-4817-a7ed-40ace2549961",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-roi-20000-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t250000.00\tCLOSED",
+          "scroll": {
+            "client": 390,
+            "full": 425,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-roi-128450-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n1250.500\nBTC\n2,500,999,987.50\nUSDT\n1,875,000.50\n1,999,999.99\n—\n4,820,000.5000\n128450.75%\n4,820,000.5000\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-roi-128450-390",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "+128,450.75%",
+              "left": 80,
+              "right": 634.640625,
+              "top": 403,
+              "bottom": 503
+            },
+            {
+              "name": "roi-number",
+              "text": "+128,450.75",
+              "left": 80,
+              "right": 553.9443664550781,
+              "top": 403,
+              "bottom": 503
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 557.3125,
+              "right": 634.640625,
+              "top": 403,
+              "bottom": 503
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+128,450.75%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-roi-128450-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-e0ade171-885c-4817-a7ed-40ace2549961",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-roi-128450-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t4820000.50\tCLOSED",
+          "scroll": {
+            "client": 390,
+            "full": 433,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-roi-negative-99999-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n1250.500\nBTC\n2,500,999,987.50\nUSDT\n1,875,000.50\n1,999,999.99\n—\n-8,750,000.2500\n-99999.99%\n-8,750,000.2500\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-roi-negative-99999-390",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "-99,999.99%",
+              "left": 80,
+              "right": 598.734375,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "-99,999.99",
+              "left": 80,
+              "right": 512.0625,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 516.0625,
+              "right": 598.734375,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-99,999.99%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-roi-negative-99999-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-e0ade171-885c-4817-a7ed-40ace2549961",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-roi-negative-99999-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-8750000.25\tCLOSED",
+          "scroll": {
+            "client": 390,
+            "full": 440,
+            "overflow": "auto"
+          }
+        }
+      },
+      {
+        "name": "large-table-real-zero-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": true,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Контракты",
+            "К-во",
+            "Стоим.",
+            "Цена Входа",
+            "Цена маркировки",
+            "Цена ликвид.",
+            "Нереализованный P&L(ROI)",
+            "Реализованный P&L",
+            "TP/SL",
+            "Закрыть как"
+          ],
+          "text": "BTCUSDT\nБесср.\nLong · Кросс\n10.00x\n1250.500\nBTC\n2,500,999,987.50\nUSDT\n1,875,000.50\n1,999,999.99\n—\n0.0000\n0.00%\n0.0000\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+          "scroll": {
+            "client": 390,
+            "full": 390,
+            "overflow": "visible"
+          }
+        }
+      },
+      {
+        "name": "large-card-glyphs-real-zero-390",
+        "passed": true,
+        "evidence": {
+          "fields": [
+            {
+              "name": "symbol",
+              "text": "BTCUSDT",
+              "left": 80,
+              "right": 277.9931640625,
+              "top": 210,
+              "bottom": 257
+            },
+            {
+              "name": "side",
+              "text": "Long",
+              "left": 93,
+              "right": 146.390625,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "leverage",
+              "text": "10x",
+              "left": 162.390625,
+              "right": 202.0859375,
+              "top": 282,
+              "bottom": 309
+            },
+            {
+              "name": "roi-label",
+              "text": "ROI",
+              "left": 80,
+              "right": 120.890625,
+              "top": 363,
+              "bottom": 389
+            },
+            {
+              "name": "roi-line",
+              "text": "0.00%",
+              "left": 80,
+              "right": 342.71875,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-number",
+              "text": "0.00",
+              "left": 80,
+              "right": 256.046875,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "roi-unit",
+              "text": "%",
+              "left": 260.046875,
+              "right": 342.71875,
+              "top": 403,
+              "bottom": 510
+            },
+            {
+              "name": "profit-label",
+              "text": "Profit",
+              "left": 80,
+              "right": 134.29150390625,
+              "top": 531,
+              "bottom": 557
+            },
+            {
+              "name": "profit-line",
+              "text": "-0.10USDT",
+              "left": 80,
+              "right": 287.8644256591797,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-number",
+              "text": "-0.10",
+              "left": 80,
+              "right": 195.28125,
+              "top": 569,
+              "bottom": 627
+            },
+            {
+              "name": "profit-unit",
+              "text": "USDT",
+              "left": 217.28125,
+              "right": 287.8644256591797,
+              "top": 593,
+              "bottom": 621
+            },
+            {
+              "name": "entry-label",
+              "text": "Цена Входа",
+              "left": 80,
+              "right": 206.7197265625,
+              "top": 729,
+              "bottom": 755
+            },
+            {
+              "name": "entry-price",
+              "text": "1,875,000.50",
+              "left": 80,
+              "right": 278.53125,
+              "top": 763,
+              "bottom": 801
+            },
+            {
+              "name": "valuation-label",
+              "text": "Рыночная цена",
+              "left": 80,
+              "right": 244.5888671875,
+              "top": 835,
+              "bottom": 861
+            },
+            {
+              "name": "valuation-price",
+              "text": "1,999,999.99",
+              "left": 80,
+              "right": 278.53125,
+              "top": 869,
+              "bottom": 907
+            }
+          ],
+          "bags": [
+            {
+              "left": 879.7384397474043,
+              "right": 1065.7238743788248,
+              "top": 670.594495867239,
+              "bottom": 896.5552783952135
+            },
+            {
+              "left": 633.3521223967814,
+              "right": 786.0188463566915,
+              "top": 924.0842030324884,
+              "bottom": 1109.5648159650436
+            }
+          ],
+          "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n0.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+        }
+      },
+      {
+        "name": "large-card-png-real-zero-390",
+        "passed": true,
+        "evidence": {
+          "width": 352,
+          "height": 396,
+          "top": 161.578125,
+          "bottom": 682.421875,
+          "dialogHeight": 520.84375,
+          "vh": 844,
+          "clipped": false,
+          "text": "Карточка результата\nОткрыть\nСохранить PNG",
+          "alt": "BTCUSDT · P&L -0.1 USDT",
+          "href": "/futures?nativeCard=native%3A3%3Anative-e0ade171-885c-4817-a7ed-40ace2549961",
+          "exported": "1080x1215"
+        }
+      },
+      {
+        "name": "large-history-real-zero-390",
+        "passed": true,
+        "evidence": {
+          "mobileCards": false,
+          "pageWidth": 390,
+          "viewport": 390,
+          "clipped": [],
+          "overlap": [],
+          "old": 0,
+          "headers": [
+            "Рынок",
+            "Сторона",
+            "Цена входа",
+            "Реализ. PnL",
+            "Статус"
+          ],
+          "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t0.00\tCLOSED",
+          "scroll": {
+            "client": 390,
+            "full": 400,
+            "overflow": "auto"
+          }
+        }
+      }
+    ],
+    "errors": []
+  }
+}
