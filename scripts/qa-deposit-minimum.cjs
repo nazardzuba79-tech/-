@@ -8,7 +8,7 @@ const path = require('node:path');
 const os = require('node:os');
 const net = require('node:net');
 const { once } = require('node:events');
-const { spawn, spawnSync } = require('node:child_process');
+const { spawnSync } = require('node:child_process');
 const { createRequire } = require('node:module');
 const express = require('express');
 const jwt = require('jsonwebtoken');
@@ -39,11 +39,20 @@ async function main() {
   const dataDir = path.join(fs.mkdtempSync(path.join(scratch, 'voltex-deposit-qa-')), 'data');
   const init = spawnSync(bin.initdb, ['-D', dataDir, '-U', 'postgres', '-A', 'trust', '--encoding=UTF8', '--locale=C'], { windowsHide: true, encoding: 'utf8' });
   assert.equal(init.status, 0, init.stderr);
-  const child = spawn(bin.postgres, ['-D', dataDir, '-h', '127.0.0.1', '-p', String(port)], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-  await new Promise((resolve, reject) => {
-    child.once('error', reject); child.once('exit', code => reject(Error(`PostgreSQL exited ${code}`)));
-    child.stderr.on('data', value => { if (String(value).includes('ready to accept connections')) resolve(); });
-  });
+  // pg_ctl starts Windows postgres with a restricted token, including on
+  // elevated Actions runners. Starting postgres directly is rejected there.
+  const postgresLog = path.join(output, 'postgres.log');
+  const controlLog = path.join(output, 'pg-ctl.log');
+  const controlFd = fs.openSync(controlLog, 'w');
+  let start;
+  try {
+    // File descriptors avoid keeping Node's output pipes open in the detached
+    // Windows server after pg_ctl has exited.
+    start = spawnSync(bin.pg_ctl, ['-D', dataDir, '-l', postgresLog,
+      '-o', `-h 127.0.0.1 -p ${port}`, 'start', '-w'], { windowsHide: true, stdio: ['ignore', controlFd, controlFd] });
+  } finally { fs.closeSync(controlFd); }
+  assert.equal(start.status, 0, [fs.readFileSync(controlLog, 'utf8'),
+    fs.existsSync(postgresLog) ? fs.readFileSync(postgresLog, 'utf8') : 'No PostgreSQL log'].join('\n'));
   const db = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres' });
   let prisma, chainServer, appServer, browser;
   try {

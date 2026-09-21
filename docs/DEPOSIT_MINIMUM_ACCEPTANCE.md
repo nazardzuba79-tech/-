@@ -95,6 +95,10 @@ and repeatable acceptance are also in `.github/workflows/deposit-minimum.yml`.
   remain visible for assignment. On-chain provider availability and a legitimate treasury
   configuration are prerequisites; errors never authorize credit.
 - No production transfer or production database was touched. No merge or deploy.
+- ERC-20 verification now totals all matching token/treasury Transfer events in a
+  transaction, instead of taking only the first. Previously recorded partial amounts
+  fail the exact-amount re-verification guard and need reconciliation; credited rows
+  are never credited again or silently adjusted.
 
 ## Recorded local result
 
@@ -107,3 +111,12 @@ Base: 25db4e9873fe0af1dd7bf68b041486beb8791eba.
 - Admin browser acceptance at 1440/390 and exact deposit warning: PASS.
 - Extended wallet comparison: **24 pre-existing failures** on both clean base and this branch, identical failing test names; no new failures. These are not reported as a green full repository suite.
 - Evidence: [compact test summary](qa/deposit-minimum/tests.json), [PostgreSQL/browser report](qa/deposit-minimum/report.json), [desktop below-minimum queue](qa/deposit-minimum/below-minimum-1440.png), [mobile provider outage](qa/deposit-minimum/provider-outage-390.png), [public warning](qa/deposit-minimum/deposit-warning.png).
+
+Follow-up after syncing main `6897c1f05b41dd57013a7757f3b86b3f78ddf289`:
+169 deposit tests plus 53 existing integrity tests PASS (222 total). Backend rebuild
+PASS; frontend runtime unchanged from the successful post-sync production build.
+PostgreSQL 14/14 and browser 1440/390 rerun PASS with pg_ctl startup, which supports
+restricted Windows server processes and writes startup diagnostics to the QA artifact.
+The pre-optimization capacity benchmark now generates Prisma types from its own
+pinned schema/dependencies, instead of incorrectly borrowing the candidate's new
+nullable Deposit owner contract. No baseline source or benchmark assertion changed.

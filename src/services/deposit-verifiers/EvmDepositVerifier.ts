@@ -90,18 +90,20 @@ export class EvmDepositVerifier implements DepositVerifier {
     const tokenConfig = this.chainConfig.tokens[asset.toUpperCase()];
     if (!tokenConfig) throw new DepositVerificationError(`Unsupported asset: ${asset}`);
 
-    const matchingLog = receipt.logs.find(
+    const matchingLogs = receipt.logs.filter(
       (log) =>
         log.address.toLowerCase() === tokenConfig.contractAddress.toLowerCase() &&
         log.topics[0] === ERC20_TRANSFER_TOPIC &&
         log.topics.length === 3 &&
         ethers.getAddress('0x' + log.topics[2].slice(26)).toLowerCase() === treasury
     );
-    if (!matchingLog) {
+    if (!matchingLogs.length) {
       throw new DepositVerificationError('No matching token transfer to treasury address found in this transaction');
     }
 
-    const rawAmount = BigInt(matchingLog.data);
+    // One Deposit per transaction: include every transfer of this exact token
+    // to our treasury, not just the first event in a batched transaction.
+    const rawAmount = matchingLogs.reduce((sum, log) => sum + BigInt(log.data), 0n);
     return new BigNumber(rawAmount.toString()).dividedBy(new BigNumber(10).pow(tokenConfig.decimals));
   }
 

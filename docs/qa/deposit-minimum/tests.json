@@ -1,11 +1,12 @@
 {
-  "base": "25db4e9873fe0af1dd7bf68b041486beb8791eba",
+  "base": "6897c1f05b41dd57013a7757f3b86b3f78ddf289",
   "focused": {
     "suites": 14,
-    "tests": 168,
+    "tests": 169,
     "failed": 0
   },
   "extendedWallet": {
+    "comparisonBase": "25db4e9873fe0af1dd7bf68b041486beb8791eba",
     "baselineFailed": 24,
     "currentFailed": 24,
     "newFailures": []
