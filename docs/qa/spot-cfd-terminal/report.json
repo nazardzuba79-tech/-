@@ -1,0 +1,458 @@
+{
+  "startedAt": "2026-09-21T16:50:48.905Z",
+  "widths": {
+    "1920x1080": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 23,
+        "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 23,
+        "pageErrors": []
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 7,
+        "pageErrors": []
+      }
+    },
+    "1440x900": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 23,
+        "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 23,
+        "pageErrors": []
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 7,
+        "pageErrors": []
+      }
+    },
+    "1366x768": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 23,
+        "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 23,
+        "pageErrors": []
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 7,
+        "pageErrors": []
+      }
+    },
+    "390x844": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 80,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 1,
+        "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 57,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "8px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 0,
+        "pageErrors": []
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 0,
+        "pageErrors": []
+      }
+    },
+    "430x932": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 80,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 1,
+        "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 57,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "8px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 0,
+        "pageErrors": []
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#080a0f",
+          "--bg-secondary": "#10141e",
+          "--bg-tertiary": "#161c2b",
+          "--border-color": "#232b40",
+          "--text-primary": "#e2e8f0",
+          "--text-secondary": "#a6b2c8",
+          "--accent-yellow": "#f0b90b",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#10141e",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgb(16, 20, 30)",
+          "border": "rgb(35, 43, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargets": 0,
+        "pageErrors": []
+      }
+    }
+  },
+  "findings": [],
+  "environment": "LOCAL QA ONLY - production bundle, stubbed read-only API",
+  "preExisting": [
+    "futures @390x844: 1 tap target(s) under 28px tall (pre-existing on main, out of scope)",
+    "futures @430x932: 1 tap target(s) under 28px tall (pre-existing on main, out of scope)"
+  ],
+  "futuresDrift": [],
+  "status": "PASS"
+}

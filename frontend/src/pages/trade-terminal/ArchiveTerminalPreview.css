@@ -1,18 +1,20 @@
-/* Owner-approved Futures composition. Scoped to the Futures terminal. */
-#archive-terminal-preview {
-  --studio-canvas:#080a0f; --workspace-bg:#10141e; --studio-panel:#10141e;
-  --panel:#10141e; --panel-alt:#161c2b; --studio-raised:#161c2b;
-  --bg-primary:#080a0f; --bg-secondary:#10141e; --bg-tertiary:#161c2b;
-  --toolbar-bg:#10141e; --chart-bg:#10141e; --voltex-plot-background:#0b1019;
-  --border:#232b40; --border-color:#232b40; --panel-border:#232b40; --layer-border:#232b40;
-  --text-primary:#e2e8f0; --text-secondary:#a6b2c8; --text-tertiary:#8c9bb3;
-  --archive-label:#b8c2d1;
-  --accent:#f0b90b; --accent-yellow:#f0b90b; --color-accent:#f0b90b;
-  --color-buy:#0ecb81; --buy:#0ecb81; --color-sell:#f6465d; --sell:#f6465d;
-  --font-family:'Inter Terminal',Inter,system-ui,sans-serif;
-  color:var(--text-primary); background:var(--studio-canvas); font-family:var(--font-family);
-  font-variant-numeric:tabular-nums;
-}
+/* Owner-approved Futures composition. Scoped to the Futures terminal.
+ *
+ * THE PALETTE AND TYPE TOKENS ARE NO LONGER DECLARED HERE. They moved, whole
+ * and unedited, to VoltexTerminalSystem.css, where one block now serves this
+ * terminal and the Spot and CFD shells — the three had drifted onto three
+ * different palettes because this one was reachable only through this ID.
+ *
+ * Nothing about THIS terminal changed. That block is selected by
+ * `:is(#archive-terminal-preview, .trade-terminal.vx-terminal)`, and `:is()`
+ * carries the highest specificity among its arguments, so the ID branch still
+ * weighs exactly what these declarations weighed when they sat here — which
+ * matters, because ten stylesheets in this folder define `--bg-primary` and
+ * the winner has always been decided by that weight.
+ *
+ * The composition below — the grid, the track map, the areas — stays here,
+ * because it is written against this terminal's DOM and belongs to it alone.
+ */
 #archive-terminal-preview .global-header { background:#181a20; --bg:#181a20; height:48px; min-height:48px; padding-inline:20px; border-bottom:1px solid var(--border); }
 #archive-terminal-preview .header-brand { color:#f1f5f9; }
 #archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:550; }

@@ -51,6 +51,7 @@ import './trade-terminal/FuturesDesignVariants.css';
 import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
 import './trade-terminal/TerminalPremium.css';
+import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/ArchiveTerminalPreview.css';
 import './trade-terminal/FuturesMobile.css';
 
