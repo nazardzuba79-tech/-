@@ -317,8 +317,21 @@ describe('Spot orders truthful dense presentation', () => {
     expect(rules.length).toBeGreaterThan(20);
     expect(rules.every(selector => selector.startsWith('.trade-terminal.spot-terminal'))).toBe(true);
     expect(spot).toContain('.bottom-tab .badge::before { display: none; content: none; }');
-    expect(pageSource('TradePage.tsx')).toContain('className="trade-terminal spot-terminal market-reference terminal-studio"');
+    // Spot now also carries `vx-terminal`, the marker that opts a shell into
+    // the shared VOLTEX terminal design system. Pinned exactly rather than
+    // loosened to a substring: the class is what makes Spot read the approved
+    // palette, and silently losing it would put Spot back on the palette it
+    // had drifted onto — the whole thing this marker exists to end.
+    expect(pageSource('TradePage.tsx'))
+      .toContain('className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal"');
+    expect(pageSource('TradePage.tsx'))
+      .toContain('className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal"');
     expect(pageSource('FuturesPage.tsx')).toContain('trade-terminal futures-terminal futures-reference terminal-studio');
     expect(pageSource('FuturesPage.tsx')).not.toContain('spot-terminal');
+    // And Futures must NOT carry it. Every rule in the shared sheet below the
+    // token block is scoped to `.vx-terminal`, so keeping the marker off this
+    // root is what makes "Futures cannot break" structural rather than hoped.
+    expect(pageSource('FuturesPage.tsx')).not.toContain('vx-terminal"');
+    expect(pageSource('FuturesPage.tsx')).not.toMatch(/className=\{`trade-terminal[^`]*vx-terminal/);
   });
 });

@@ -1,0 +1,212 @@
+/**
+ * THE ONE VOLTEX TERMINAL DESIGN SYSTEM — Futures, Spot and CFD.
+ *
+ * The owner-approved Futures composition lives in ArchiveTerminalPreview.css,
+ * scoped to `#archive-terminal-preview`. That ID is set whenever no `?design=`
+ * override is present, which is every ordinary visit, so it IS the production
+ * Futures terminal rather than a preview of one.
+ *
+ * Its palette used to be reachable only from that ID, which is why Spot and
+ * CFD drifted onto a different one: ten stylesheets in this folder define
+ * `--bg-primary` and friends, and whichever loaded last for a given page won.
+ * Measured before this file existed, ten of the eleven core tokens differed
+ * between Futures and Spot/CFD.
+ *
+ * So the TOKENS now live here once, and both selectors below read the same
+ * declarations. `:is()` takes the HIGHEST specificity of its arguments, so the
+ * ID branch still weighs 100 exactly as it did when these lines sat in
+ * ArchiveTerminalPreview.css — Futures' cascade is unchanged by construction,
+ * and futuresTerminalTokens.test.ts pins that with the measured values.
+ *
+ * WHAT IS DELIBERATELY NOT SHARED: layout. The Futures terminal is a three
+ * column CSS grid whose track map is written against its own DOM. Spot's
+ * shell and CFD's shell are flex compositions with different children — CFD
+ * has no order book at all — so applying that grid to them would not make
+ * them consistent, it would break them. Everything below the token block is
+ * therefore either DOM-agnostic (colour, type, density, control shape) or
+ * scoped to `.vx-terminal`, which only Spot and CFD carry.
+ */
+
+/* ── TOKENS ──────────────────────────────────────────────────────────────
+   One definition, read by the approved Futures composition and by the Spot
+   and CFD shells. Changing a value here changes all three, which is the
+   whole point of it being one block. */
+:is(#archive-terminal-preview, .trade-terminal.vx-terminal) {
+  --studio-canvas:#080a0f; --workspace-bg:#10141e; --studio-panel:#10141e;
+  --panel:#10141e; --panel-alt:#161c2b; --studio-raised:#161c2b;
+  --bg-primary:#080a0f; --bg-secondary:#10141e; --bg-tertiary:#161c2b;
+  --toolbar-bg:#10141e; --chart-bg:#10141e; --voltex-plot-background:#0b1019;
+  --border:#232b40; --border-color:#232b40; --panel-border:#232b40; --layer-border:#232b40;
+  --text-primary:#e2e8f0; --text-secondary:#a6b2c8; --text-tertiary:#8c9bb3;
+  --archive-label:#b8c2d1;
+  --accent:#f0b90b; --accent-yellow:#f0b90b; --color-accent:#f0b90b;
+  --color-buy:#0ecb81; --buy:#0ecb81; --color-sell:#f6465d; --sell:#f6465d;
+  --font-family:'Inter Terminal',Inter,system-ui,sans-serif;
+  color:var(--text-primary); background:var(--studio-canvas); font-family:var(--font-family);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── EVERYTHING BELOW IS SPOT AND CFD ONLY ───────────────────────────────
+   `.vx-terminal` is not on the Futures root, so nothing here can reach it.
+   That is a deliberate safety property, not an accident of selectors: the
+   brief says Futures must not break, and the cheapest way to guarantee that
+   is to make it unreachable.
+
+   THE MARKER IS REPEATED SEVEN TIMES, AND THAT IS NOT A TYPO.
+   Two things make it necessary, both measured rather than assumed. First,
+   this folder settled long ago on specificity as its layering mechanism:
+   MarketReferenceTerminal.css writes `.trade-terminal.trade-terminal.
+   market-reference`, FuturesStudio and FuturesDesignVariants trip their
+   marker three times, and TerminalStudio.css goes to five. Second, both
+   pages import this file, so Vite hoists it into a SHARED chunk, and a
+   shared chunk is served BEFORE the page chunk that depends on it — which
+   means every tie is lost to the sheet that loads later. With a two-class
+   prefix Spot's strip measured 70px tall and transparent, unchanged, for
+   exactly that reason.
+   Seven clears the highest weight in the folder with room to spare. The
+   honest alternative — rewriting ten stylesheets down to sane weights — is a
+   far larger change than this task, and one that would touch Futures. */
+
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .global-header {
+  background:#181a20; --bg:#181a20; height:48px; min-height:48px;
+  padding-inline:20px; border-bottom:1px solid var(--border);
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .header-brand { color:#f1f5f9; }
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:550; }
+
+/* THE TOP STRIP. Futures settled on 56px with a 11px label over a 17px
+   figure, and the lesson from the mark/index pair is carried over: one
+   reading per slot, nothing printed twice. Spot and CFD each pass their own
+   metrics — this only fixes the rhythm they are drawn in. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar {
+  height:56px; min-height:56px; padding:6px 16px;
+  border:0; border-bottom:1px solid var(--border); border-radius:0;
+  background:var(--panel); box-shadow:none;
+  overflow-x:auto; scrollbar-width:thin;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .ticker-item {
+  display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0; padding:0; border:0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .label {
+  font-size:11px; line-height:16px; color:var(--archive-label); white-space:nowrap;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .value:not(.price) {
+  font-size:13px; line-height:19px; font-weight:550; color:var(--text-primary); white-space:nowrap;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .value.price {
+  font-size:17px; line-height:21px; font-weight:600; color:var(--text-primary);
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-name {
+  display:flex; gap:6px; align-items:center; font-size:16px; font-weight:650;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .value.up { color:var(--buy); }
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .value.down { color:var(--sell); }
+
+/* CFD draws its strip with its own element names — `.cfd-ticker-bar` holding
+   `.cfd-ticker-metric` — so the same rhythm is restated for them rather than
+   renaming CFD's DOM to match Futures'. CFD shows four readings and no more:
+   instrument, price, 24h change, market state. The mark/index lesson applies
+   here too — nothing earns a permanent slot by being available. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-ticker-bar {
+  min-height:56px; height:auto; padding:6px 16px; gap:24px;
+  background:var(--panel); border:0; border-bottom:1px solid var(--border); border-radius:0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-ticker-metric {
+  display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0; padding:0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-ticker-metric > span:first-child {
+  font-size:11px; line-height:16px; color:var(--archive-label); white-space:nowrap;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-ticker-price {
+  font-size:17px; line-height:21px; font-weight:600; color:var(--text-primary);
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-ticker-change {
+  font-size:13px; line-height:19px; font-weight:550;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-symbol {
+  font-size:16px; font-weight:650; color:var(--text-primary);
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-instrument-name {
+  font-size:11px; line-height:16px; color:var(--archive-label);
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-selected-instrument {
+  display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0;
+}
+
+/* PANEL SURFACES. Flat, seamed rather than floated — the approved terminal
+   has no rounded cards and no shadows between regions; the 1px seam is what
+   separates them. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.chart-area,.orderbook-area,.order-form-area,.bottom-panel,
+  .cfd-chart-area,.cfd-form-area,.cfd-instruments-area,.cfd-bottom-panel,.market-panel) {
+  min-width:0; border-radius:0; box-shadow:none; background:var(--panel); border:0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .terminal { background:var(--panel); gap:0; }
+
+/* SECTION AND PANEL HEADERS. One voice across every panel on the page. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.panel-title,.orderbook-title,.panel-header,.cfd-panel-title,.section-title) {
+  font-size:13px; font-weight:600; letter-spacing:0; color:var(--text-primary);
+}
+
+/* TABS. The bottom section and the mobile switcher read as the same control:
+   quiet until chosen, then a solid accent underline rather than a filled pill. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-tabs,.cfd-tabs) button,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .terminal-tab {
+  appearance:none; background:transparent; border:0; border-bottom:2px solid transparent;
+  padding:10px 14px; font-family:inherit; font-size:13px; font-weight:550;
+  color:var(--text-secondary); cursor:pointer; white-space:nowrap;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-tabs,.cfd-tabs) button:hover,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .terminal-tab:hover { color:var(--text-primary); }
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-tabs,.cfd-tabs) button:is(.active,[aria-selected=true]),
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .terminal-tab:is(.active,[aria-selected=true]) {
+  color:var(--text-primary); border-bottom-color:var(--accent-yellow); background:transparent;
+}
+
+/* CONTROLS. Inputs and buttons share one height, one radius and one focus
+   ring, so a Spot order form and a CFD order form feel like the same desk. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(input[type=text],input[type=number],select,.fo-input) {
+  background:var(--bg-tertiary); border:1px solid var(--border); border-radius:4px;
+  color:var(--text-primary); font-family:inherit; font-variant-numeric:tabular-nums;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(input[type=text],input[type=number],select,.fo-input):focus {
+  border-color:var(--accent-yellow); outline:0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal button:focus-visible { outline:2px solid var(--accent-yellow); outline-offset:-2px; }
+
+/* BUY AND SELL. The only two saturated surfaces in the terminal; everything
+   else stays quiet so these read instantly. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.btn-buy,.side-buy.active,.cfd-side-buy.active) {
+  background:var(--color-buy); border-color:var(--color-buy); color:#06120d; font-weight:600;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.btn-sell,.side-sell.active,.cfd-side-sell.active) {
+  background:var(--color-sell); border-color:var(--color-sell); color:#1a0508; font-weight:600;
+}
+
+/* SCROLLBARS. Thin and dark, so a scrolling book or a long instrument list
+   does not paint a bright rail down the middle of the workspace. */
+@supports selector(::-webkit-scrollbar) {
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal ::-webkit-scrollbar { width:6px; height:6px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal ::-webkit-scrollbar-thumb { background:#2a3347; border-radius:3px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal ::-webkit-scrollbar-track { background:transparent; }
+}
+
+/* ── MOBILE ──────────────────────────────────────────────────────────────
+   The principles Futures arrived at, applied to shells that are laid out
+   differently: nothing clipped off the top, targets big enough to hit, and
+   no horizontal page scroll. The workspace switching itself stays each
+   shell's own — Spot and CFD do not have Futures' three workspaces. */
+@media (max-width:1024px) {
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar {
+    height:auto; min-height:52px; padding:8px 12px;
+    /* The top stats are the one thing that must never be cut off: the strip
+       scrolls sideways by design rather than truncating what it cannot fit. */
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+  }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .value.price { font-size:16px; line-height:20px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-tabs,.cfd-tabs) button,
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .terminal-tab { padding:12px 14px; min-height:44px; }
+  /* A finger is about 44px. Anything smaller is a control the owner will
+     miss on the first try, which on a trading screen is worse than ugly. */
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(button,.btn-buy,.btn-sell):not(.ticker-item) { min-height:40px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(input[type=text],input[type=number],select) { min-height:40px; font-size:16px; }
+}
