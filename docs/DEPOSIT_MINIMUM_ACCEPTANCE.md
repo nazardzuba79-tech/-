@@ -95,3 +95,15 @@ and repeatable acceptance are also in `.github/workflows/deposit-minimum.yml`.
   remain visible for assignment. On-chain provider availability and a legitimate treasury
   configuration are prerequisites; errors never authorize credit.
 - No production transfer or production database was touched. No merge or deploy.
+
+## Recorded local result
+
+Implementation commit: ea37e441c53a42e50ebef94cb5d5e9783082b175.
+Base: 25db4e9873fe0af1dd7bf68b041486beb8791eba.
+
+- Backend TypeScript and frontend production build: PASS.
+- Focused Jest: **168/168**, 14 suites.
+- Real disposable PostgreSQL acceptance: **14/14**.
+- Admin browser acceptance at 1440/390 and exact deposit warning: PASS.
+- Extended wallet comparison: **24 pre-existing failures** on both clean base and this branch, identical failing test names; no new failures. These are not reported as a green full repository suite.
+- Evidence: [compact test summary](qa/deposit-minimum/tests.json), [PostgreSQL/browser report](qa/deposit-minimum/report.json), [desktop below-minimum queue](qa/deposit-minimum/below-minimum-1440.png), [mobile provider outage](qa/deposit-minimum/provider-outage-390.png), [public warning](qa/deposit-minimum/deposit-warning.png).
