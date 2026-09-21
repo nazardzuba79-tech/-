@@ -44,21 +44,42 @@ async function mountDeposits() {
   await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminDepositsPage))); await flush(); });
 }
 
-test('below-minimum history exposes manual credit, sends no amount, and removes action after authoritative CREDITED', async () => {
+test.each([['BELOW_MINIMUM', '299'], ['PENDING', '350.123456'], ['PENDING', '10000']])('%s history shows exact %s and credits only on admin action without sending amount', async (status, amount) => {
   const deposit = { id: 'local-deposit', userId: 'local-user', userEmail: 'owner@example.invalid', asset: 'USDT', chain: 'tron',
-    txHash: 'a'.repeat(64), amount: '299', confirmations: 25, status: 'BELOW_MINIMUM', createdAt: new Date().toISOString() };
+    txHash: 'a'.repeat(64), amount, confirmations: 25, status, createdAt: new Date().toISOString() };
   Object.assign(api, {
     getAdminIncomingDepositFeed: jest.fn(async () => ({ transfers: [], failedChains: [] })),
     getAdminDeposits: jest.fn(async () => [{ ...deposit }]), getAllClients: jest.fn(async () => []),
-    creditDepositManually: jest.fn(async () => { deposit.status = 'CREDITED'; return { status: 'CREDITED', amount: '299', confirmations: 25 }; }),
+    creditDepositManually: jest.fn(async () => { deposit.status = 'CREDITED'; return { status: 'CREDITED', amount, confirmations: 25 }; }),
   });
   await mountDeposits();
-  expect(host.textContent).toContain('BELOW_MINIMUM'); expect(host.textContent).toContain('299');
+  expect(host.textContent).toContain(status); expect(host.textContent).toContain(amount);
+  expect(api.creditDepositManually).not.toHaveBeenCalled();
   await click('Зачислить вручную');
   expect(api.creditDepositManually).toHaveBeenCalledTimes(1);
   expect(api.creditDepositManually).toHaveBeenCalledWith({ userId: 'local-user', chain: 'tron', txHash: deposit.txHash, asset: 'USDT' });
   expect(host.querySelector('[role="status"]')!.textContent).toBe('Депозит зачислен.');
   expect(Array.from(host.querySelectorAll('button')).some(b => b.textContent === 'Зачислить вручную')).toBe(false);
+});
+
+test('deposit discovery is on demand, coalesces overlapping clicks and never polls', async () => {
+  let release: (value: any) => void = () => {};
+  Object.assign(api, {
+    getAdminIncomingDepositFeed: jest.fn(() => new Promise(resolve => { release = resolve; })),
+    getAdminDeposits: jest.fn(async () => []), getAllClients: jest.fn(async () => []),
+  });
+  jest.useFakeTimers({ doNotFake: ['setImmediate'] });
+  try {
+    await mountDeposits();
+    await click('Обновить входящие'); await click('Обновить входящие');
+    expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(1);
+    await act(async () => { release({ transfers: [], failedChains: [] }); await flush(); });
+    await act(async () => { jest.advanceTimersByTime(60 * 60_000); await flush(); });
+    expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(1);
+    await click('Обновить входящие');
+    expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(2);
+    await act(async () => { release({ transfers: [], failedChains: [] }); await flush(); });
+  } finally { jest.useRealTimers(); }
 });
 
 test('provider partial failure cannot render the empty incoming success message', async () => {

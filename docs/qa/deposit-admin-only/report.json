@@ -1,0 +1,59 @@
+{
+  "scope": "Disposable localhost PostgreSQL; synthetic on-chain fixture, not production",
+  "checks": [
+    "299 USDT: recorded BELOW_MINIMUM, visible to admin, no automatic credit",
+    "Non-admin cannot override minimum",
+    "Concurrent manual approves: same row, exact verified 299, one audit/credit; frontend amount ignored",
+    "300 USDT concurrent self-claims stay PENDING; one canonical row; admin alone credits",
+    "10 and 100 USDT TRC20: detected without claim, persisted unassigned BELOW_MINIMUM",
+    "Unassigned transfer admin approval updates original row",
+    "Insufficient confirmations cannot be overridden; later retry re-verifies",
+    "Recipient/asset/amount mismatch and provider outage fail closed",
+    "Financial write failure rolls back status and credit",
+    "Distinct simultaneous credits preserve both increments",
+    "Persisted incoming survives provider recent window",
+    "Known-owner 350 stays PENDING after confirmations arrive and discovery runs",
+    "Existing 5% referral policy applies once to concurrent manual approvals",
+    "Fractional verified amount credits exactly; a different claimant cannot take the same hash",
+    "100/299/300/5000/10000 detected and self-claimed: exact admin amounts, zero balance/referral changes",
+    "Every credited row has exactly one admin approval audit; balances and referrals reconcile"
+  ],
+  "browser": [
+    {
+      "width": 1440,
+      "belowMinimumApproval": "PASS",
+      "pendingApproval": "PASS",
+      "exactAmounts": [
+        "100",
+        "299",
+        "350.123456"
+      ],
+      "reload": "PASS",
+      "outage": "PASS",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "belowMinimumApproval": "PASS",
+      "pendingApproval": "PASS",
+      "exactAmounts": [
+        "100",
+        "299",
+        "350.123456"
+      ],
+      "reload": "PASS",
+      "outage": "PASS",
+      "overflow": false
+    },
+    {
+      "depositWarning": "PASS"
+    }
+  ],
+  "reconciliation": {
+    "creditedDeposits": 17,
+    "manualCreditAudits": 17,
+    "userBalance": "19004.370368",
+    "referralBalance": "799.9"
+  },
+  "result": "PASS"
+}

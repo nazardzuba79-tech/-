@@ -1,5 +1,8 @@
 # Deposit minimum: detection, automatic credit, manual credit
 
+> Historical PR #163 policy, now superseded. Every deposit now requires ADMIN
+> approval. See [current policy and evidence](DEPOSIT_ADMIN_APPROVAL.md).
+
 ## Policy
 
 `MIN_DEPOSIT_USD` remains **300**. The public warning remains
