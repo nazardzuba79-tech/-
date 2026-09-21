@@ -2874,6 +2874,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 24,
   },
   // Unlike emptyOverlay this one must take clicks — it carries the retry.
+  // Which is exactly why it needs the z-index the `overlay` comment above
+  // explains: at z-index:auto the chart's own crosshair canvas paints over
+  // it and swallows the press, so the button is visible but dead. Above
+  // the drawing overlay's 3 and any drawing label's 4, so nothing the
+  // chart draws can cover the one control the customer has left.
   chartErrorOverlay: {
     position: 'absolute',
     inset: 0,
@@ -2884,6 +2889,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 12,
     textAlign: 'center',
     padding: 24,
+    zIndex: 5,
   },
   chartRetryButton: {
     padding: '7px 18px',

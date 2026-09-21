@@ -127,14 +127,19 @@ async function main() {
     } catch { /* recorded below as a failure */ }
     await page.screenshot({ path: path.join(OUT, 'candle-failure-error-state.png') });
 
-    let recovered = false;
+    // A real press, not `element.click()` from inside the page. A scripted
+    // click skips hit-testing, so it happily "presses" a button that the
+    // chart's own canvas is painted over — which is exactly the state this
+    // button was in when the check was first written, and the check said
+    // it had recovered. Playwright's click waits for the element to be
+    // hittable, so a covered button fails here instead of passing.
+    let recovered = false, pressable = false;
     if (retryLabel) {
       failing = false;
-      await page.evaluate(() => {
-        const host = document.querySelector('[data-chart-state]');
-        const button = host && [...host.querySelectorAll('button')].find(b => /Повторить|Retry|重试|Reintentar|再試行|다시|पुनः/.test(b.textContent || ''));
-        button?.click();
-      });
+      try {
+        await page.click('[data-chart-state] button', { timeout: 5000 });
+        pressable = true;
+      } catch { /* recorded below: the button is on screen but cannot be pressed */ }
       try {
         await page.waitForFunction(
           () => document.querySelector('[data-chart-state]')?.getAttribute('data-chart-state') === 'candles',
@@ -143,9 +148,9 @@ async function main() {
       } catch { /* recorded below */ }
       await page.screenshot({ path: path.join(OUT, 'candle-failure-after-retry.png') });
     }
-    report.candleFailure = { errorShown, retryLabel, recovered };
-    console.log(`\ncandle request failing: error state shown = ${errorShown}, retry button = ${JSON.stringify(retryLabel)}, recovered after retry = ${recovered}`);
-    if (!errorShown || !retryLabel || !recovered) report.blankOutcomes.push({ scenario: 'candle-failure', errorShown, retryLabel, recovered });
+    report.candleFailure = { errorShown, retryLabel, pressable, recovered };
+    console.log(`\ncandle request failing: error state shown = ${errorShown}, retry button = ${JSON.stringify(retryLabel)}, really pressable = ${pressable}, recovered after retry = ${recovered}`);
+    if (!errorShown || !retryLabel || !pressable || !recovered) report.blankOutcomes.push({ scenario: 'candle-failure', errorShown, retryLabel, pressable, recovered });
     await context.close();
   }
 

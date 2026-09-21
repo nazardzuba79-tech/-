@@ -356,4 +356,27 @@ describe('futures chart never goes blank on a loader or binding change', () => {
     expect(loader).toHaveBeenCalledTimes(1);
     chart.unmount();
   });
+
+  // 14 — A control the customer cannot press is not error recovery. The
+  // chart's own crosshair canvas is painted at z-index 2 inside the chart
+  // div, and a positioned z-index:auto sibling loses hit-testing to it
+  // however late it appears in the DOM — the `overlay` style in the
+  // component carries the same warning. This overlay was written without a
+  // z-index, and a real browser click on the retry button was refused with
+  // "canvas intercepts pointer events" while the button sat there looking
+  // perfectly normal. Nothing in a stubbed DOM can catch that, so the guard
+  // is on the declaration: the error overlay must out-rank the canvas and
+  // the drawing overlay above it.
+  test('the retry button is declared above the chart canvas that would swallow it', () => {
+    const block = source.match(/chartErrorOverlay:\s*\{[\s\S]*?\n  \}/);
+    expect(block).not.toBeNull();
+    const declared = block![0].match(/zIndex:\s*(\d+)/);
+    expect(declared).not.toBeNull();
+    const overlay = source.match(/\n  overlay:\s*\{[\s\S]*?\n  \}/);
+    const overlayZ = Number(overlay![0].match(/zIndex:\s*(\d+)/)![1]);
+    // Above the drawing overlay, which is itself above the canvas's 2.
+    expect(Number(declared![1])).toBeGreaterThan(overlayZ);
+    // And it must stay clickable: pointerEvents:'none' would be the same bug.
+    expect(block![0]).not.toMatch(/pointerEvents:\s*'none'/);
+  });
 });
