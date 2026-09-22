@@ -169,14 +169,16 @@ it('3 — a redacted payload with the executions withheld is legitimate, not mal
   expect(validStrategy(undeclared, 'VX-001')).toBe(false);
 });
 
-it('4 — the owner-reported weekly result is 61.9%, from one place only', () => {
+it('4 — the owner-reported weekly result is historical-only, from one place', () => {
   expect(KSENIA_REPORTED_WEEK.returnPct).toBe(61.9);
   expect(KSENIA_REPORTED_WEEK.source).toBe('OWNER_REPORTED');
-  // It reaches the card through the payload, not through a component's own copy.
   const k = SECTIONS.ksenia as any;
-  expect(k.analytics.roi7).toBe(61.9);
-  expect(k.economics.periods['7D'].roi).toBe(61.9);
+  // The historical weekly row carries 61.9. Rolling 7D remains ledger-derived.
   expect(k.reportedWeeks?.[0]?.returnPct).toBe(61.9);
+  expect(k.reportedWeeks?.[0]?.appliedToVisibleWeeklyRoi).toBe(false);
+  expect(k.weekly.find((row: any) => row.period === '2026-09-13')?.roi).toBe(61.9);
+  expect(k.analytics.roi7).not.toBe(61.9);
+  expect(k.economics.periods['7D'].roi).not.toBe(61.9);
 
   // ONE VALUE, ONE PLACE. A second hardcoded production copy is the way this
   // number drifts, so a second one fails here. Tests, QA harnesses and docs
@@ -211,7 +213,7 @@ it('5 — cold load: one request, real figures, settled', async () => {
   expect(state.settled).toBe(true);
   expect(state.diagnosis).toEqual({ nazar: 'ok', ksenia: 'ok', identities: 'rejected_by_client' });
   expect(state.nazar!.analytics.roi7).toBeCloseTo((SECTIONS.nazar as any).analytics.roi7, 6);
-  expect(state.ksenia!.analytics.roi7).toBe(61.9);
+  expect(state.ksenia!.analytics.roi7).toBeCloseTo((SECTIONS.ksenia as any).analytics.roi7, 6);
   stop();
 });
 
@@ -292,7 +294,7 @@ it('8 — the session changes while a request is in flight', async () => {
   const state = await noEternalLoading(h, 'session switched mid-flight');
   expect(state.settled).toBe(true);
   expect(state.nazar).not.toBeNull();
-  expect(state.ksenia!.analytics.roi7).toBe(61.9);
+  expect(state.ksenia!.analytics.roi7).toBeCloseTo((SECTIONS.ksenia as any).analytics.roi7, 6);
   stop();
 });
 
@@ -340,7 +342,6 @@ it('11 — a later failure keeps the last validated figures instead of blanking 
   expect(after.settled).toBe(true);
   expect(after.nazar!.analytics.roi7).toBe(roi);          // real, not re-skeletoned
   expect(after.ksenia!.analytics.roi7).toBe(kseniaRoi);
-  expect(after.ksenia!.analytics.roi7).toBe(61.9);        // and still the reported one
   expect(after.stale.nazar).toBe(true);                   // shown as what it is
   expect(after.stale.ksenia).toBe(true);
   stop();
@@ -404,7 +405,7 @@ it('12a — another tab logs in; this tab is mounted and learns of it through ge
   expect(h.probe.calls).toBe(2);                  // a REAL request for B
   expect(state.settled).toBe(true);
   expect(state.nazar).not.toBeNull();
-  expect(state.ksenia!.analytics.roi7).toBe(61.9);
+  expect(state.ksenia!.analytics.roi7).toBeCloseTo((SECTIONS.ksenia as any).analytics.roi7, 6);
   stop();
 });
 
@@ -459,7 +460,7 @@ it('13 — leaving the route and coming back repaints the real figures at once',
   const stop2 = reloaded.subscribe(() => { seen.push(reloaded.getState().nazar !== null); });
   // Before any response: the validated snapshot is already on screen.
   expect(reloaded.getState().nazar!.analytics.roi7).toBe(roi);
-  expect(reloaded.getState().ksenia!.analytics.roi7).toBe(61.9);
+  expect(reloaded.getState().ksenia!.analytics.roi7).toBeCloseTo((SECTIONS.ksenia as any).analytics.roi7, 6);
   await quiesce();
   expect(reloaded.getState().settled).toBe(true);
   stop2();
