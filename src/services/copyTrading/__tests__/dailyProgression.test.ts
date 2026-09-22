@@ -13,8 +13,9 @@ import { DAILY_PROGRESSION_EFFECTIVE_FROM } from '../canonical/dailyProgression'
  * — against a controllable clock and an in-memory scenario table, so what is
  * asserted is what the endpoint would serve on that date.
  *
- * Not 0: a quiet session used to emit no execution at all, leaving the newest
- * trade days behind the chart. Not 2: the generators used to add a second row
+ * Not 0 executions: a quiet session used to emit no row at all, leaving the
+ * newest trade days behind the chart. A genuine 0% day is allowed: it is one
+ * BREAKEVEN trade with 0 net PnL. Not 2: the generators used to add a second row
  * for a win-rate ratio. Exactly 1, every day, for both strategies.
  */
 
@@ -152,10 +153,11 @@ describe.each(STRATEGIES)('%s', (strategy) => {
     const last = data.dailyResults[data.dailyResults.length - 1];
     const trade = data.trades.find((row: any) => day(row.closedAt) === last.date);
     expect(last.numberOfTrades).toBe(1);
-    expect(last.wins + last.losses).toBe(1);
     expect(last.realizedPnl).toBeCloseTo(trade.netPnl, 4);
     expect(last.fees).toBeCloseTo(trade.fees, 4);
-    expect(trade.netPnl).not.toBe(0);                     // a closed trade, never a placeholder
+    expect(['WIN', 'LOSS', 'BREAKEVEN']).toContain(trade.result);
+    expect(last.wins).toBe(trade.result === 'WIN' ? 1 : 0);
+    expect(last.losses).toBe(trade.result === 'LOSS' ? 1 : 0);
     expect(Number.isFinite(data.analytics.allTime.totalTrades)).toBe(true);
     expect(data.analytics.allTime.totalTrades).toBe(data.trades.length);
   });
@@ -184,4 +186,20 @@ describe.each(STRATEGIES)('%s', (strategy) => {
     expect(wire.dailyResults[wire.dailyResults.length - 1].date).toBe('2026-09-26');
     expect(JSON.stringify(wire)).not.toContain('entryPrice');
   });
+});
+
+
+it('preserves a genuine zero-return Nazar day as one breakeven trade', async () => {
+  // This deterministic quiet day is produced by the unchanged weekly regime.
+  // The cadence may add the missing execution row; it may not manufacture ROI.
+  const { service } = clocked('2027-01-17T09:00:00Z');
+  const data: any = await service.get('nazar');
+  const trade = data.trades.find((row: any) => day(row.closedAt) === '2027-01-17');
+  const daily = data.dailyResults.find((row: any) => row.date === '2027-01-17');
+  expect(closedOn(data, '2027-01-17')).toBe(1);
+  expect(trade.result).toBe('BREAKEVEN');
+  expect(trade.netPnl).toBe(0);
+  expect(daily.numberOfTrades).toBe(1);
+  expect(daily.realizedPnl).toBe(0);
+  expect(daily.dailyReturn).toBe(0);
 });
