@@ -1106,12 +1106,13 @@ describe('a selected historical candle is not admitted by the venue', () => {
     return { ...f, tree: f.render() };
   }
 
-  test('the price field shows the bar\'s price, read-only, and the entry row names it', async () => {
+  test('the price field shows the bar\'s price, read-only; the bar is not announced in a row but travels on the form', async () => {
     const f = await orderForm({ execution: native(true), props: { symbol: 'AKE/USDT', onPlaced: jest.fn() } });
     const input = priceInput(f.tree);
     expect(input.props.value).toBe('0.05');
     expect(input.props.readOnly).toBe(true);
-    expect(text(f.tree)).toContain('· 0.05');
+    expect(text(f.tree)).not.toContain('Вход');
+    expect(nodes(f.tree).find((n: any) => n.type === 'form').props['data-entry-reference']).toBe(JSON.stringify(candle));
     // The same form with no bar picked is the ordinary editable field.
     const g = await orderForm({ execution: native(false), props: { symbol: 'AKE/USDT', onPlaced: jest.fn() } });
     expect(priceInput(g.tree).props.readOnly).toBe(false);

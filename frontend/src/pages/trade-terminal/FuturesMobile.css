@@ -108,8 +108,8 @@
   #archive-terminal-preview .futures-position-row td::before { content:attr(data-mobile-label); display:block; margin-bottom:5px; color:var(--text-tertiary); font-size:11px; font-weight:400; }
   #archive-terminal-preview .futures-position-row td:first-child { grid-column:1 / -1; }
   #archive-terminal-preview .futures-position-row td:first-child::before { display:none; }
-  #archive-terminal-preview .futures-position-row td:nth-child(9),
-  #archive-terminal-preview .futures-position-row td:nth-child(10) { grid-column:1 / -1; }
+  #archive-terminal-preview .futures-position-row td:nth-child(10),
+  #archive-terminal-preview .futures-position-row td:nth-child(11) { grid-column:1 / -1; }
   #archive-terminal-preview .futures-position-contract { width:100%; }
   #archive-terminal-preview .futures-position-contract small { display:flex; align-items:center; gap:4px; white-space:normal; min-height:44px; font-size:13px; }
   #archive-terminal-preview .futures-position-leverage { min-height:44px; padding:0 10px !important; }

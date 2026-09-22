@@ -258,6 +258,18 @@ export function FuturesOrderForm({
    *  that the account holds no position and no working order, which is a
    *  strictly optimistic guess, not a safe default. */
   const positions = account.positions.data;
+  /**
+   * A close ticket lives only as long as the position it was opened for.
+   * Once the account no longer lists that position — closed from the
+   * table, by a stop, or liquidated — «Только уменьшение» and the
+   * «Закрыть …» buttons would otherwise stay armed against nothing, and
+   * the next bar picked on the chart would not be treated as an entry.
+   * Known positions only: an unanswered list is not "gone".
+   */
+  useEffect(() => {
+    if (!closeTarget || positions === null) return;
+    if (!positions.some(p => p.id === closeTarget.id)) { setCloseTarget(null); setReduceOnly(false); }
+  }, [closeTarget, positions]);
   const activeOrders = account.orders.data;
 
   useEffect(() => {
@@ -648,6 +660,11 @@ export function FuturesOrderForm({
         // nothing, which is what leaving the key out already means.
         ...(armedProtection ? { protection: armedProtection } : {}),
       });
+      // A ticket from the positions table ticked «Только уменьшение» itself;
+      // it releases it with the ticket, or the next order — a bar picked on
+      // the chart included — would still be sized and priced as a close.
+      // A reduce-only the trader ticked by hand is theirs and stays.
+      if (activeCloseTarget) setReduceOnly(false);
       setCloseTarget(null);
       setPrice('');
       setPriceEdited(false);
@@ -754,12 +771,15 @@ export function FuturesOrderForm({
         setPercent(0); setError(null);
       }} />
 
-      <form onSubmit={handleSubmit} className="fo-form" data-close-position-id={activeCloseTarget?.id}>
-        {execution.engine === 'NATIVE' && !reduceOnly && (execution.candle || execution.historicalEntryPending) && <div className="fo-infoRow" role="status" aria-label="Точка входа"
-          data-entry-reference={execution.candle ? JSON.stringify(execution.candle) : undefined}>
-          <span>Вход</span><strong>{execution.candle
-            ? `${new Date(execution.candle.openTime).toISOString().slice(0,16).replace('T',' ')} UTC · ${execution.candle.interval} · ${execution.candle.pricePoint === 'OPEN' ? 'Открытие' : 'Закрытие'}${execution.candlePrice ? ` · ${execution.candlePrice}` : ''}`
-            : 'Выберите свечу на графике'}</strong>
+      {/* The selected bar is not announced here: the chart marks it and the
+          read-only price field carries its price (owner, 2026-09-22). The
+          reference the order will submit stays on the form as data for the
+          browser checks. Only the armed-but-empty picker still says what
+          the disabled buttons are waiting for. */}
+      <form onSubmit={handleSubmit} className="fo-form" data-close-position-id={activeCloseTarget?.id}
+        data-entry-reference={execution.engine === 'NATIVE' && !reduceOnly && execution.candle ? JSON.stringify(execution.candle) : undefined}>
+        {execution.engine === 'NATIVE' && !reduceOnly && !execution.candle && execution.historicalEntryPending && <div className="fo-infoRow" role="status" aria-label="Точка входа">
+          <span>Вход</span><strong>Выберите свечу на графике</strong>
         </div>}
         {/* One compact control where a margin-mode toggle and a full
             leverage slider used to stack. The panel now has exactly ONE
@@ -943,10 +963,13 @@ export function FuturesOrderForm({
               {orderSizeKnown ? `${notional.toFixed(2)} ${quoteAsset}` : '—'}
             </span>
           </div>
+          {/* A reducing order posts nothing: it releases the position's
+              margin instead. Quoting a margin for it printed 80 369 USDT
+              under a close, which is not a number the trader pays. */}
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.margin')}</span>
             <span className="mono">
-              {orderSizeKnown ? `${requiredMargin.toFixed(2)} ${quoteAsset}` : '—'}
+              {orderSizeKnown && !reduceOnly ? `${requiredMargin.toFixed(2)} ${quoteAsset}` : '—'}
             </span>
           </div>
           {/* Long and short, in that order, coloured the same as the two

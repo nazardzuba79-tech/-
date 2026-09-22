@@ -181,7 +181,19 @@ test.each([
     // value, guard and payload is what it was — the sibling suites that
     // drive this form with no bar (futuresOrderPanel, unknown-state, final
     // polish, protection) pass unchanged, which is the evidence.
-    "25972367390be0c00509df0b59e7d221b01a28a8eb88fe9a5a679cba923456a9"
+    //
+    // RE-TAKEN (owner, 2026-09-22): the «Вход · date · interval · price» row
+    // is gone — the chart marks the selected bar and the read-only price
+    // field carries its price; the order's candle reference now travels as
+    // `data-entry-reference` on the form itself. Only the armed-but-empty
+    // picker still prints «Выберите свечу на графике». The margin row
+    // prints a dash for a reduce-only order, which posts nothing. And a
+    // close ticket drops itself once the account no longer lists its
+    // position, and releases the «Только уменьшение» it ticked when its
+    // order succeeds — so neither stays armed against nothing and the next
+    // bar picked on the chart is an entry again. No payload, guard or
+    // calculation changed.
+    "a9c12d654e548de9ca348c14794d4ac04d5303cb54cdc6550a6d00b6f43dc150"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -199,7 +211,11 @@ test.each([
     // reduce over the same fields, same getLeverageTier lookup, same
     // maintenanceMarginRate. A real 0 (a funded account with no position)
     // is still 0, not a dash.
-    "53bc334a13b3d6fe8c705ad45a24a6fd1e5225835db8b585ac85b424dbd4c7f1"
+    //
+    // Re-taken for `groupAmount`'s separator: a comma between thousands
+    // instead of a space, the one rule the rest of the terminal follows.
+    // Digits, decimals, masking and every sum are untouched.
+    "31ae908d97cfdc9e3f21a3bff3e81307783956d9dfb175185b7fd822d4228a05"
   ],
   [
     "components/LeverageSlider.tsx",

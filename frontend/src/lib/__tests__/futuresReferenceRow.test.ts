@@ -135,7 +135,9 @@ describe('2. the positions row carries the reference columns', () => {
 
   test('unrealized carries ROI under it, and realized is its OWN column', () => {
     expect(PANEL).toContain('futures-position-pnl');
-    expect(PANEL).toMatch(/futures-position-pnl[\s\S]{0,700}roe\.toFixed\(2\)/);
+    // ROI is grouped like every other figure in the row now (`12,009.96%`),
+    // the same `group()` the money columns use, so the guard follows it.
+    expect(PANEL).toMatch(/futures-position-pnl[\s\S]{0,700}group\(roe, 2\)/);
     expect(PANEL).toContain('const realized = parseFloat(p.realizedPnl);');
     // The two are NEVER summed: adding them would double-count the fees and
     // funding already inside the realized figure, on a size that is no

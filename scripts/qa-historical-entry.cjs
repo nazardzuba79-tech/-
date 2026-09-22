@@ -178,10 +178,16 @@ async function tradeSide(s, width, side, counts) {
   // 1. A bar. The selection survives a completed trade, so only the first side arms the picker.
   await workspace(p, 'trade');
   if (!(await p.locator('[data-entry-reference]').count())) { await armChartPicker(p); await pickOldCandle(p); await workspace(p, 'trade'); }
+  try { await p.locator('[data-entry-reference]').waitFor({ timeout: 10000 }); }
+  catch {
+    const dump = await p.evaluate(() => ({ formAttrs: [...(document.querySelector('.fo-form')?.attributes ?? [])].map(a => `${a.name}=${a.value.slice(0, 40)}`), reduceOnly: document.querySelector('.fo-form input[type=checkbox]')?.checked, picking: !!document.querySelector('[data-chart-picking]'), toolsOn: !!document.querySelector('.chart-surface[data-drawing-tools]'), buttons: [...document.querySelectorAll('.fo-submitPair button')].map(b => `${b.textContent?.trim()}:${b.disabled ? 'off' : 'on'}`), price: document.querySelector('.fo-priceInputRow input')?.value, form: document.querySelector('.fo-form')?.innerText.slice(0, 160).replace(/\s+/g, ' ') }));
+    await p.screenshot({ path: path.join(out, `no-entry-reference-${side.toLowerCase()}-${width}.png`) });
+    throw Error(`${side}: no entry reference after the pick: ${JSON.stringify(dump)}`);
+  }
   const reference = JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference'));
-  const entryRow = await p.locator('[data-entry-reference]').innerText();
   if (!SERVER_ONLY) {
-    assert(entryRow.includes(String(ENTRY)), `Entry row does not show the selected price: ${entryRow}`);
+    // The bar is not announced in the panel any more (owner): the chart marks it, the price field carries it.
+    assert(!(await p.locator('.fo-form').innerText()).includes('Вход'), 'The removed «Вход» row is still rendered');
     assert.equal(Number(await priceField(p).inputValue()), ENTRY, 'Price field does not show the selected historical price');
     assert.equal(await priceField(p).getAttribute('readonly'), '', 'Price field is editable while a bar is selected');
   }
@@ -230,7 +236,46 @@ async function tradeSide(s, width, side, counts) {
   assert(/3\.00x|3x/.test(rowText), `Position row does not show 3x: ${rowText}`);
   // The sign is styled (a class), not always in the text: a LONG shows 74,700 without a leading minus, a SHORT with one.
   assert((side === 'LONG' ? /(^|[^-−])74[,\u00a0 ]?700/ : /[-−]74[,\u00a0 ]?700/).test(rowText), `Position row does not show the ${side} P&L: ${rowText}`);
+  // One number format across the row — comma between thousands, dot before decimals — and the trader's own money in the trade.
+  const cell = async n => (await row.locator(`td:nth-child(${n})`).innerText()).replace(/\s+/g, ' ').trim();
+  assert.equal(await cell(2), '1,500,000 AKE', 'Quantity is not grouped');
+  assert.equal(await cell(3), '80,700.00 USDT', 'Position value is not grouped to two decimals');
+  assert.equal(await cell(4), '2,000.00 USDT', 'Margin column does not show size × entry ÷ leverage');
+  assert((await cell(8)).includes('74,700.00') && (await cell(8)).includes('3,735.00%'), `Unrealized/ROI not grouped: ${await cell(8)}`);
   await p.screenshot({ path: path.join(out, `position-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
+  // 6b. «Лимитный» on the row: a partial close as a resting LIMIT, then one that fills at the near-live price.
+  let remaining = Number(QUANTITY);
+  if (!SERVER_ONLY && side === 'LONG') {
+    await row.locator('.futures-position-close').nth(0).click();
+    await workspace(p, 'trade');
+    await p.waitForFunction(() => document.querySelector('.fo-form input[type=checkbox]')?.checked === true);
+    assert.equal(await qty(p).inputValue(), QUANTITY, 'Limit close did not prefill the position size');
+    assert.equal(await priceField(p).getAttribute('readonly'), null, 'Price field is read-only in the limit-close ticket');
+    assert(!(await p.locator('.fo-form').innerText()).includes('Вход'), 'The «Вход» row came back in the close ticket');
+    await priceField(p).fill('0.06'); await qty(p).fill('500000');
+    const resting = await command(s, 'OPEN', () => p.locator('.fo-submitPair .sell').click());
+    assert.equal(resting.draft.reduceOnly, true); assert.equal(resting.draft.type, 'LIMIT'); assert.equal(resting.draft.candle, undefined, 'A close carried the historical bar');
+    const open = activeOrders(resting.state);
+    assert.equal(open.length, counts.orders + 1, 'Reduce-only LIMIT above the mark did not rest');
+    assert.equal(resting.state.positions.find(x => x.id === position.id).quantity, QUANTITY, 'A resting close changed the position');
+    await workspace(p, 'positions');
+    await p.waitForFunction(o => document.querySelector('#futures-tab-orders .reference-tab-count')?.textContent?.trim() === `(${o})`, counts.orders + 1);
+    await p.locator('#futures-tab-orders').click();
+    const cancelled = await command(s, 'CANCEL', () => p.locator('.futures-orders-table .cancel-btn').first().click());
+    assert.equal(activeOrders(cancelled.state).length, counts.orders, 'Cancel did not remove the resting close');
+    await p.locator('#futures-tab-positions').click();
+    await row.locator('.futures-position-close').nth(0).click();
+    await workspace(p, 'trade');
+    await p.waitForFunction(() => document.querySelector('.fo-form input[type=checkbox]')?.checked === true);
+    await priceField(p).fill(String(CURRENT)); await qty(p).fill('500000');
+    const partial = await command(s, 'OPEN', () => p.locator('.fo-submitPair .sell').click());
+    remaining = Number(QUANTITY) - 500000;
+    assert.equal(activeOrders(partial.state).length, counts.orders, 'A reduce-only LIMIT at the near-live price did not fill');
+    assert.equal(Number(partial.state.positions.find(x => x.id === position.id).quantity), remaining, 'Partial limit close did not reduce the position');
+    await workspace(p, 'positions');
+    await p.waitForFunction(() => /1,000,000/.test(document.querySelector('.futures-position-row')?.innerText || ''));
+    await p.screenshot({ path: path.join(out, `partial-limit-close-${width}.png`), fullPage: width === 390 });
+  }
   // 7. Close at the current near-live price from the table (the "Рыночный" close), no book involved.
   const closed = await command(s, 'CLOSE', () => row.locator('.futures-position-close').nth(1).click());
   assert.equal(closed.draft.positionId, position.id); assert.equal(closed.draft.candle, undefined, 'A close reused the historical selection');
@@ -238,6 +283,8 @@ async function tradeSide(s, width, side, counts) {
   assert.equal(activeOrders(closed.state).length, counts.orders);
   const done = closed.state.history.find(x => x.id === position.id);
   assert(done && done.status === 'CLOSED', `Closed position missing from history: ${JSON.stringify(done)}`);
+  // The partial LIMIT close and the market close of the rest both settled at the near-live price, on the same position.
+  void remaining;
   const gross = sign * (CURRENT - ENTRY) * Number(QUANTITY);
   assert(Math.abs(Number(done.realizedGross) - gross) < 1e-6, `Realized gross ${done.realizedGross} is not ${gross}`);
   const fees = Number(QUANTITY) * ENTRY * 0.00055 + Number(QUANTITY) * CURRENT * 0.00055;
@@ -275,7 +322,7 @@ async function main() {
   const { build } = await import(pathToFileURL(path.join(front, 'node_modules/vite/dist/node/index.js')).href);
   await build({ root: front, resolve: { alias: { 'lightweight-charts': shim } }, define: { 'import.meta.env.VITE_API_URL': JSON.stringify('/api/v1') }, logLevel: 'error' });
   await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });
-  for (const width of [1440, 390]) await check(`historical-entry-${width}`, () => historicalEntry(width));
+  for (const width of (process.env.HISTORICAL_QA_WIDTHS || '1440,390').split(',').map(Number)) await check(`historical-entry-${width}`, () => historicalEntry(width));
   assert.deepEqual(report.errors, [], 'Browser runtime errors');
   assert(report.checks.every(x => x.passed), `${report.checks.filter(x => !x.passed).length} QA checks failed; see report.json`);
   report.passed = true;
