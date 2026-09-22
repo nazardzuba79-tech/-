@@ -140,7 +140,13 @@ describe('translation integrity', () => {
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
-        return !key || (!restoredEcosystemKeys.includes(key) && key !== 'futures.allMarkets');
+        // Keys ADDED since the digests were taken are excluded by name
+        // rather than by re-taking seven digests — that is what keeps the
+        // guard meaningful: every OTHER byte of every dictionary still has
+        // to match. `futures.openContract` is the label on the contract
+        // name in an open position, which now opens that contract.
+        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract'];
+        return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'");
