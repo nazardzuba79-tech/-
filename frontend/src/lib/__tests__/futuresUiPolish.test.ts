@@ -247,7 +247,19 @@ test.each([
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
     // PR #159 sync: keep mobile workspaces; remove only the archive Close All import/render from #161.
-    "bd65fcfabb9511c57773cad470b3bf249458fd31fa253eaee451dca2de1e4f40"
+    //
+    // RE-TAKEN so a refresh keeps the contract the trader was on. The
+    // selection itself is unchanged — same state, same value, same single
+    // source — but every caller that used to call `setSymbol` now calls one
+    // `selectSymbol`, which additionally writes `?pair=` into the address
+    // (replace, never push) and remembers the pair for a bare `/futures`.
+    // The initial value reads that address first, then the remembered pair,
+    // then BTC/USDT; the catalogue reconcile keeps a listed contract exactly
+    // as restored and only replaces one the venue has dropped. Also on this
+    // page: the positions panel is handed `onSelectSymbol`, so a position's
+    // contract name selects that contract. No order, execution, account,
+    // depth, chart-wiring or layout byte changed.
+    "b680ca37d0a6e12f8a0de57ad1bf2e58598d9bf581c47f5280f37fbbb4c5877e"
   ],
   [
     "components/FuturesPairList.tsx",

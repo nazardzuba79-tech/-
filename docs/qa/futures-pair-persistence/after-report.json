@@ -1,0 +1,623 @@
+{
+  "1440x900": {
+    "refresh-AKE": {
+      "before": "AKE/USDT",
+      "after": "AKE/USDT",
+      "url": "/futures?pair=AKE%2FUSDT",
+      "bookColumns": [
+        "USDT",
+        "AKE",
+        "AKE"
+      ],
+      "ticketUnits": [
+        "AKE"
+      ]
+    },
+    "refresh-ETH": {
+      "before": "ETH/USDT",
+      "after": "ETH/USDT",
+      "url": "/futures?pair=ETH%2FUSDT",
+      "bookColumns": [
+        "USDT",
+        "ETH",
+        "ETH"
+      ],
+      "ticketUnits": [
+        "ETH"
+      ]
+    },
+    "pick-then-refresh": {
+      "picked": "AKE/USDT",
+      "pickedUrl": "/futures?pair=AKE%2FUSDT",
+      "afterRefresh": "AKE/USDT",
+      "afterUrl": "/futures?pair=AKE%2FUSDT",
+      "book": [
+        "USDT",
+        "AKE",
+        "AKE"
+      ],
+      "ticket": [
+        "AKE"
+      ]
+    },
+    "bare-futures": {
+      "pair": "AKE/USDT",
+      "url": "/futures?pair=AKE%2FUSDT"
+    },
+    "delisted": {
+      "pair": "BTC/USDT",
+      "url": "/futures?pair=BTC%2FUSDT"
+    },
+    "header-markets": {
+      "admin": {
+        "left": 927,
+        "right": 1027,
+        "top": 16,
+        "bottom": 48,
+        "width": 100,
+        "height": 32,
+        "background": "linear-gradient(rgb(35, 33, 60), rgb(26, 25, 48))",
+        "color": "rgb(195, 193, 255)",
+        "boxShadow": "rgb(58, 56, 104) 0px 0px 0px 1px inset",
+        "borderRadius": "6px",
+        "display": "flex"
+      },
+      "wallet": {
+        "left": 1035,
+        "right": 1115,
+        "top": 16,
+        "bottom": 48,
+        "width": 80,
+        "height": 32,
+        "background": "linear-gradient(rgb(55, 48, 31), rgb(41, 35, 26))",
+        "color": "rgb(236, 220, 180)",
+        "boxShadow": "rgb(74, 63, 40) 0px 0px 0px 1px inset",
+        "borderRadius": "6px",
+        "display": "flex"
+      },
+      "deposit": {
+        "left": 1123,
+        "right": 1203,
+        "top": 14,
+        "bottom": 49,
+        "width": 80,
+        "height": 34,
+        "background": "linear-gradient(rgb(243, 206, 113), rgb(240, 201, 100))",
+        "color": "rgb(11, 14, 17)",
+        "boxShadow": "rgba(240, 201, 100, 0.18) 0px 2px 8px 0px",
+        "borderRadius": "6px",
+        "display": "flex"
+      },
+      "bar": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 64,
+        "width": 1440,
+        "height": 64,
+        "background": "linear-gradient(rgb(12, 16, 24), rgb(10, 14, 21))",
+        "color": "rgb(61, 67, 77)",
+        "boxShadow": "rgba(255, 255, 255, 0.02) 0px 1px 0px 0px, rgba(0, 0, 0, 0.18) 0px 6px 24px 0px",
+        "borderRadius": "0px",
+        "display": "flex"
+      },
+      "clusterOrder": [
+        "nav-admin-chip",
+        "nav-wallet-link",
+        "deposit-button",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "adminInDrawer": true,
+      "navFit": {
+        "scroll": 722,
+        "client": 722,
+        "clipped": 0,
+        "visible": [
+          "Рынки",
+          "Торговля",
+          "Фьючерсы",
+          "Banking & Earn",
+          "Копитрейдинг",
+          "Арбитраж",
+          "Crypto Card",
+          "OTC"
+        ]
+      },
+      "clipped": []
+    },
+    "ticker-buttons-present": 2,
+    "ticker-click": {
+      "startedOn": "BTC/USDT",
+      "buttons": [
+        {
+          "symbol": "AKE/USDT",
+          "tag": "BUTTON",
+          "label": "Открыть AKE/USDT в терминале",
+          "text": "AKEUSDT",
+          "cursor": "pointer"
+        },
+        {
+          "symbol": "BTC/USDT",
+          "tag": "BUTTON",
+          "label": "Открыть BTC/USDT в терминале",
+          "text": "BTCUSDT",
+          "cursor": "pointer"
+        }
+      ],
+      "afterAke": {
+        "pair": "AKE/USDT",
+        "url": "/futures?pair=AKE%2FUSDT",
+        "book": [
+          "USDT",
+          "AKE",
+          "AKE"
+        ],
+        "ticket": [
+          "AKE"
+        ],
+        "mobileTab": "chart",
+        "candles": [
+          "/api/v1/market/futures/candles/AKE-USDT?interval=1h&limit=520"
+        ]
+      },
+      "afterBtc": {
+        "pair": "BTC/USDT",
+        "url": "/futures?pair=BTC%2FUSDT",
+        "book": [
+          "USDT",
+          "BTC",
+          "BTC"
+        ],
+        "ticket": [
+          "BTC"
+        ],
+        "mobileTab": "chart",
+        "candles": [
+          "/api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520"
+        ]
+      },
+      "positionsBefore": [
+        {
+          "symbol": "AKE/USDT",
+          "cells": [
+            "AKEUSDTБесср.Long · Кросс 3.00x",
+            "1,500,000 AKE",
+            "80,700.00 USDT",
+            "2,000.00 USDT",
+            "0.004",
+            "0.0538",
+            "0.00266",
+            "74,700.003,735.00%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        },
+        {
+          "symbol": "BTC/USDT",
+          "cells": [
+            "BTCUSDTБесср.Short · Кросс 10.00x",
+            "0.250 BTC",
+            "19,460.03 USDT",
+            "1,931.51 USDT",
+            "77,260.40",
+            "77,840.10",
+            "84,986.44",
+            "-144.93-7.50%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        }
+      ],
+      "positionsAfter": [
+        {
+          "symbol": "AKE/USDT",
+          "cells": [
+            "AKEUSDTБесср.Long · Кросс 3.00x",
+            "1,500,000 AKE",
+            "80,700.00 USDT",
+            "2,000.00 USDT",
+            "0.004",
+            "0.0538",
+            "0.00266",
+            "74,700.003,735.00%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        },
+        {
+          "symbol": "BTC/USDT",
+          "cells": [
+            "BTCUSDTБесср.Short · Кросс 10.00x",
+            "0.250 BTC",
+            "19,460.03 USDT",
+            "1,931.51 USDT",
+            "77,260.40",
+            "77,840.10",
+            "84,986.44",
+            "-144.93-7.50%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        }
+      ]
+    },
+    "header": {
+      "admin": {
+        "left": 792,
+        "right": 904,
+        "top": 8,
+        "bottom": 40,
+        "width": 112,
+        "height": 32,
+        "background": "rgb(28, 26, 46)",
+        "color": "rgb(201, 199, 255)",
+        "boxShadow": "none",
+        "borderRadius": "5px",
+        "display": "flex"
+      },
+      "wallet": {
+        "left": 912,
+        "right": 1028,
+        "top": 8,
+        "bottom": 40,
+        "width": 116,
+        "height": 32,
+        "background": "rgb(22, 28, 43)",
+        "color": "rgb(226, 232, 240)",
+        "boxShadow": "none",
+        "borderRadius": "5px",
+        "display": "flex"
+      },
+      "deposit": {
+        "left": 1036,
+        "right": 1126,
+        "top": 8,
+        "bottom": 40,
+        "width": 90,
+        "height": 32,
+        "background": "linear-gradient(rgb(243, 206, 113), rgb(240, 201, 100))",
+        "color": "rgb(11, 14, 17)",
+        "boxShadow": "none",
+        "borderRadius": "6px",
+        "display": "flex"
+      },
+      "bar": {
+        "left": 0,
+        "right": 1440,
+        "top": 0,
+        "bottom": 48,
+        "width": 1440,
+        "height": 48,
+        "background": "rgb(24, 26, 32)",
+        "color": "rgb(226, 232, 240)",
+        "boxShadow": "none",
+        "borderRadius": "0px",
+        "display": "flex"
+      },
+      "clusterOrder": [
+        "nav-admin-chip",
+        "nav-wallet-link",
+        "deposit-button",
+        "div",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "adminInDrawer": true,
+      "navFit": null,
+      "clipped": []
+    },
+    "pageErrors": [
+      "[pick-then-refresh] Error: Object is disposed",
+      "[click-BTC] Error: Object is disposed"
+    ],
+    "knownPreexistingChartTeardown": 2
+  },
+  "390x844": {
+    "refresh-AKE": {
+      "before": "AKE/USDT",
+      "after": "AKE/USDT",
+      "url": "/futures?pair=AKE%2FUSDT",
+      "bookColumns": [
+        "USDT",
+        "AKE",
+        "AKE"
+      ],
+      "ticketUnits": [
+        "AKE"
+      ]
+    },
+    "refresh-ETH": {
+      "before": "ETH/USDT",
+      "after": "ETH/USDT",
+      "url": "/futures?pair=ETH%2FUSDT",
+      "bookColumns": [
+        "USDT",
+        "ETH",
+        "ETH"
+      ],
+      "ticketUnits": [
+        "ETH"
+      ]
+    },
+    "pick-then-refresh": {
+      "picked": "AKE/USDT",
+      "pickedUrl": "/futures?pair=AKE%2FUSDT",
+      "afterRefresh": "AKE/USDT",
+      "afterUrl": "/futures?pair=AKE%2FUSDT",
+      "book": [
+        "USDT",
+        "AKE",
+        "AKE"
+      ],
+      "ticket": [
+        "AKE"
+      ]
+    },
+    "bare-futures": {
+      "pair": "AKE/USDT",
+      "url": "/futures?pair=AKE%2FUSDT"
+    },
+    "delisted": {
+      "pair": "BTC/USDT",
+      "url": "/futures?pair=BTC%2FUSDT"
+    },
+    "header-markets": {
+      "admin": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0,
+        "width": 0,
+        "height": 0,
+        "background": "linear-gradient(rgb(35, 33, 60), rgb(26, 25, 48))",
+        "color": "rgb(195, 193, 255)",
+        "boxShadow": "rgb(58, 56, 104) 0px 0px 0px 1px inset",
+        "borderRadius": "6px",
+        "display": "none"
+      },
+      "wallet": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0,
+        "width": 0,
+        "height": 0,
+        "background": "linear-gradient(rgb(55, 48, 31), rgb(41, 35, 26))",
+        "color": "rgb(236, 220, 180)",
+        "boxShadow": "rgb(74, 63, 40) 0px 0px 0px 1px inset",
+        "borderRadius": "6px",
+        "display": "none"
+      },
+      "deposit": {
+        "left": 217,
+        "right": 289,
+        "top": 12,
+        "bottom": 43,
+        "width": 72,
+        "height": 31,
+        "background": "linear-gradient(rgb(243, 206, 113), rgb(240, 201, 100))",
+        "color": "rgb(11, 14, 17)",
+        "boxShadow": "rgba(240, 201, 100, 0.18) 0px 2px 8px 0px",
+        "borderRadius": "6px",
+        "display": "flex"
+      },
+      "bar": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 56,
+        "width": 390,
+        "height": 56,
+        "background": "linear-gradient(rgb(12, 16, 24), rgb(10, 14, 21))",
+        "color": "rgb(61, 67, 77)",
+        "boxShadow": "rgba(255, 255, 255, 0.02) 0px 1px 0px 0px, rgba(0, 0, 0, 0.18) 0px 6px 24px 0px",
+        "borderRadius": "0px",
+        "display": "flex"
+      },
+      "clusterOrder": [
+        "nav-admin-chip",
+        "nav-wallet-link",
+        "deposit-button",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "adminInDrawer": true,
+      "navFit": null,
+      "clipped": []
+    },
+    "ticker-buttons-present": 2,
+    "ticker-click": {
+      "startedOn": "BTC/USDT",
+      "buttons": [
+        {
+          "symbol": "AKE/USDT",
+          "tag": "BUTTON",
+          "label": "Открыть AKE/USDT в терминале",
+          "text": "AKEUSDT",
+          "cursor": "pointer"
+        },
+        {
+          "symbol": "BTC/USDT",
+          "tag": "BUTTON",
+          "label": "Открыть BTC/USDT в терминале",
+          "text": "BTCUSDT",
+          "cursor": "pointer"
+        }
+      ],
+      "afterAke": {
+        "pair": "AKE/USDT",
+        "url": "/futures?pair=AKE%2FUSDT",
+        "book": [
+          "USDT",
+          "AKE",
+          "AKE"
+        ],
+        "ticket": [
+          "AKE"
+        ],
+        "mobileTab": "chart",
+        "candles": [
+          "/api/v1/market/futures/candles/AKE-USDT?interval=1h&limit=520"
+        ]
+      },
+      "afterBtc": {
+        "pair": "BTC/USDT",
+        "url": "/futures?pair=BTC%2FUSDT",
+        "book": [
+          "USDT",
+          "BTC",
+          "BTC"
+        ],
+        "ticket": [
+          "BTC"
+        ],
+        "mobileTab": "chart",
+        "candles": [
+          "/api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=520"
+        ]
+      },
+      "positionsBefore": [
+        {
+          "symbol": "AKE/USDT",
+          "cells": [
+            "AKEUSDTБесср.Long · Кросс 3.00x",
+            "1,500,000 AKE",
+            "80,700.00 USDT",
+            "2,000.00 USDT",
+            "0.004",
+            "0.0538",
+            "0.00266",
+            "74,700.003,735.00%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        },
+        {
+          "symbol": "BTC/USDT",
+          "cells": [
+            "BTCUSDTБесср.Short · Кросс 10.00x",
+            "0.250 BTC",
+            "19,460.03 USDT",
+            "1,931.51 USDT",
+            "77,260.40",
+            "77,840.10",
+            "84,986.44",
+            "-144.93-7.50%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        }
+      ],
+      "positionsAfter": [
+        {
+          "symbol": "AKE/USDT",
+          "cells": [
+            "AKEUSDTБесср.Long · Кросс 3.00x",
+            "1,500,000 AKE",
+            "80,700.00 USDT",
+            "2,000.00 USDT",
+            "0.004",
+            "0.0538",
+            "0.00266",
+            "74,700.003,735.00%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        },
+        {
+          "symbol": "BTC/USDT",
+          "cells": [
+            "BTCUSDTБесср.Short · Кросс 10.00x",
+            "0.250 BTC",
+            "19,460.03 USDT",
+            "1,931.51 USDT",
+            "77,260.40",
+            "77,840.10",
+            "84,986.44",
+            "-144.93-7.50%",
+            "0.00",
+            "+ ДобавитьTP —SL —",
+            "ЛимитныйРыночный"
+          ]
+        }
+      ]
+    },
+    "header": {
+      "admin": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0,
+        "width": 0,
+        "height": 0,
+        "background": "rgb(28, 26, 46)",
+        "color": "rgb(201, 199, 255)",
+        "boxShadow": "none",
+        "borderRadius": "5px",
+        "display": "none"
+      },
+      "wallet": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0,
+        "width": 0,
+        "height": 0,
+        "background": "rgb(22, 28, 43)",
+        "color": "rgb(226, 232, 240)",
+        "boxShadow": "none",
+        "borderRadius": "5px",
+        "display": "none"
+      },
+      "deposit": {
+        "left": 221,
+        "right": 299,
+        "top": 4,
+        "bottom": 48,
+        "width": 78,
+        "height": 44,
+        "background": "linear-gradient(rgb(243, 206, 113), rgb(240, 201, 100))",
+        "color": "rgb(11, 14, 17)",
+        "boxShadow": "none",
+        "borderRadius": "6px",
+        "display": "flex"
+      },
+      "bar": {
+        "left": 0,
+        "right": 390,
+        "top": 0,
+        "bottom": 52,
+        "width": 390,
+        "height": 52,
+        "background": "rgb(24, 26, 32)",
+        "color": "rgb(226, 232, 240)",
+        "boxShadow": "none",
+        "borderRadius": "0px",
+        "display": "flex"
+      },
+      "clusterOrder": [
+        "nav-admin-chip",
+        "nav-wallet-link",
+        "deposit-button",
+        "div",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "adminInDrawer": true,
+      "navFit": null,
+      "clipped": []
+    },
+    "pageErrors": [
+      "[pick-then-refresh] Error: Object is disposed"
+    ],
+    "knownPreexistingChartTeardown": 1
+  }
+}

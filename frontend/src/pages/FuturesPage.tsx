@@ -40,6 +40,7 @@ import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { discoverFuturesSymbols, type FuturesUniverse } from '../lib/futuresDiscovery';
 import { readFuturesSymbolCache, writeFuturesSymbolCache } from '../lib/terminalWarmCache';
+import { initialFuturesPair, resolveListedFuturesPair, writeLastFuturesPair } from '../lib/futuresPairRoute';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
@@ -87,7 +88,7 @@ export function FuturesPage() {
   const reference = useFuturesReference();
   const [initialParams] = useSearchParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedDesign = searchParams.get('terminalDesign');
   const archivePreview = requestedDesign === null || requestedDesign === 'archive';
   const [onlyCurrentPair, setOnlyCurrentPair] = useState(false);
@@ -97,8 +98,36 @@ export function FuturesPage() {
   // A warm symbol list is display-only and cannot grant execution permission.
   const [symbols, setSymbols] = useState<string[]>(() => readFuturesSymbolCache() ?? CORE_SYMBOLS);
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
-  const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
-  const native = useNativeDemo(symbol,setSymbol);
+  // The address is what survives F5, so the address is where the selected
+  // contract lives — falling back to this browser's last one, and only then
+  // to BTC/USDT. See lib/futuresPairRoute.
+  const [symbol, setSymbol] = useState(() => initialFuturesPair(searchParams.get('pair')));
+  /**
+   * Selecting a contract, everywhere. Every caller that used to call
+   * `setSymbol` calls this instead, so there is ONE place that keeps the
+   * three copies of "which contract" in step: React state, `?pair=` in the
+   * address, and the browser's remembered last pair.
+   *
+   * The history entry is REPLACED rather than pushed: switching contracts
+   * inside the terminal is not navigation, and pushing would turn the back
+   * button into an undo list of every symbol glanced at.
+   */
+  const selectSymbol = useCallback((next: string) => {
+    setSymbol(next);
+    writeLastFuturesPair(next);
+    setSearchParams((current) => {
+      if (current.get('pair') === next) return current;
+      const params = new URLSearchParams(current);
+      params.set('pair', next);
+      return params;
+    }, { replace: true });
+  }, [setSearchParams]);
+  // The catalogue reconcile below must read the CURRENT contract without
+  // re-running every time it changes — the reconcile is about the venue's
+  // list, not about the selection.
+  const symbolRef = useRef(symbol);
+  symbolRef.current = symbol;
+  const native = useNativeDemo(symbol,selectSymbol);
   /**
    * The selected contract's quantity rules, from the engine that will
    * enforce them. Loaded once per symbol — they are static instrument
@@ -339,17 +368,35 @@ export function FuturesPage() {
     const listed = discoverFuturesSymbols(executable, universe);
     setSymbols(listed);
     writeFuturesSymbolCache(listed);
-    // Only a successfully loaded catalogue can invalidate a discovery deep link.
-    setSymbol((current) => (listed.includes(current) ? current : listed[0]));
-  }, [futuresConfig, universe]);
+    // Only a successfully loaded catalogue can invalidate a discovery deep
+    // link. A pair it still lists is kept exactly as restored; one it no
+    // longer carries falls back to BTC/USDT — and goes through
+    // `selectSymbol`, so the address stops pointing at a contract that is
+    // gone instead of restoring it again on the next refresh.
+    // The updater itself stays PURE — React may run it twice — so the
+    // address is corrected outside it, and only when the pair really moved.
+    const resolved = resolveListedFuturesPair(symbolRef.current, listed);
+    if (resolved !== symbolRef.current) selectSymbol(resolved);
+  }, [futuresConfig, universe, selectSymbol]);
 
   // Same reason as the spot terminal: this page is not remounted when only
   // the query string changes, so without this a second deep-link into
   // /futures would leave the previous contract selected.
   useEffect(() => {
     const next = searchParams.get('pair');
-    if (next) setSymbol(next);
+    if (next) { setSymbol(next); writeLastFuturesPair(next); }
   }, [searchParams]);
+
+  // Arriving at a bare `/futures` — the header link, the post-login
+  // redirect — restores the remembered contract into React state above but
+  // leaves the address without it. Writing it back once is what makes the
+  // NEXT refresh keep that contract too, and it is a replace, so no history
+  // entry is added for simply opening the terminal.
+  useEffect(() => {
+    if (!searchParams.get('pair')) selectSymbol(symbol);
+    // Mount only: afterwards `selectSymbol` is the one that keeps them in step.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Landing here is itself the signal that futures is this user's current
   // trading mode — see lib/tradingMode.
@@ -428,7 +475,7 @@ export function FuturesPage() {
   // the strip shows but futures doesn't list sends the trader to spot
   // instead of pretending a futures market exists for it.
   function handleTickerSelect(pair: string) {
-    if (symbols.includes(pair)) setSymbol(pair);
+    if (symbols.includes(pair)) selectSymbol(pair);
     else navigate(`/trade?pair=${encodeURIComponent(pair)}`);
   }
 
@@ -516,7 +563,7 @@ export function FuturesPage() {
                 onDismiss={() => setChooserOpen(false)}
                 symbols={symbols}
                 symbol={symbol}
-                onChange={next => { setSymbol(next); setChooserOpen(false); }}
+                onChange={next => { selectSymbol(next); setChooserOpen(false); }}
               />
             </div>
           )}
@@ -701,6 +748,14 @@ export function FuturesPage() {
                 refreshKey={positionsRefreshKey}
                 tab="open"
                 leverageBusy={native.busy}
+                /* The contract name in a position row selects that contract
+                   in the terminal — chart, book and order form follow it,
+                   the same path the market list uses. The POSITION is not
+                   touched: this changes what is on screen, never what is
+                   open. On mobile the chart is a separate tab, so it is
+                   brought forward; `selectMobileTab` is a no-op on desktop,
+                   where the chart is already visible. */
+                onSelectSymbol={(next) => { selectSymbol(next); selectMobileTab('chart', true); }}
                 onEditLeverage={nativeExecution?.ready ? (positionId) => {
                   const position = native.getState()?.positions.find(p => p.id === positionId && p.status === 'OPEN');
                   if (position && !native.busy) native.setDialog({ kind: 'leverage', position });
@@ -716,7 +771,7 @@ export function FuturesPage() {
                   if (!target) return;
                   native.interaction.onCancelSelection();
                   setPickedPrice(null);
-                  setSymbol(target.symbol);
+                  selectSymbol(target.symbol);
                   pickedSeq.current += 1;
                   selectMobileTab('trade', true);
                   setCloseTicket({ id: target.id, symbol: target.symbol, side: target.side,
@@ -733,7 +788,7 @@ export function FuturesPage() {
       </div>
       </FuturesAccountSourceContext.Provider>
       </FuturesExecutionProvider>
-      {archivePreview && <ArchiveTopAssets symbols={symbols} onSelect={setSymbol} />}
+      {archivePreview && <ArchiveTopAssets symbols={symbols} onSelect={selectSymbol} />}
 
       {!desktopMarkets && <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
         onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
@@ -742,7 +797,7 @@ export function FuturesPage() {
         </div>
         <div className="left-panel">
           <FuturesPairList ref={pairListRef} searchable onDismiss={() => marketDialogRef.current?.close()}
-            symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
+            symbols={symbols} symbol={symbol} onChange={next => { selectSymbol(next); marketDialogRef.current?.close(); }} />
         </div>
       </dialog>}
       {nativeExecution&&<NativeDemoDialogs controller={native}/>}

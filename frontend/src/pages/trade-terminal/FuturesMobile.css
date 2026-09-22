@@ -113,6 +113,8 @@
   #archive-terminal-preview .futures-position-contract { width:100%; }
   #archive-terminal-preview .futures-position-contract small { display:flex; align-items:center; gap:4px; white-space:normal; min-height:44px; font-size:13px; }
   #archive-terminal-preview .futures-position-leverage { min-height:44px; padding:0 10px !important; }
+  /* Same 44px touch target the leverage editor beside it already has. */
+  #archive-terminal-preview .futures-position-symbol-link { min-height:44px; padding-right:6px; }
   #archive-terminal-preview .futures-position-actions { display:flex; width:100%; gap:8px; }
   #archive-terminal-preview .futures-position-close { flex:1; min-height:44px; padding:10px; font-size:13px; white-space:normal; }
   #archive-terminal-preview .futures-position-figure { display:flex; flex-wrap:wrap; min-width:0; max-width:100%; }

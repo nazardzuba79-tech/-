@@ -1062,6 +1062,7 @@ export const RU = {
   'futures.colRealized': 'Реализованный P&L',
   'futures.colCloseAs': 'Закрыть как',
   'futures.perpetual': 'Бесср.',
+  'futures.openContract': 'Открыть {symbol} в терминале',
   'futures.marginTrading': 'Марж. торговля',
   'futures.addTpsl': 'Добавить',
   'futures.closeMarket': 'Рыночный',

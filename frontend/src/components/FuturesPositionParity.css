@@ -33,3 +33,49 @@
    collapses into the width it is given. These are the values it had. */
 .futures-history-table th { padding: 10px 14px; }
 .futures-history-table td { padding: 8px 14px; }
+
+/* THE CONTRACT NAME IN AN OPEN POSITION IS A CONTROL.
+
+   A trader looking at BTC with an AKE position below it should be able to
+   press `AKEUSDT` and have the terminal follow — chart, book and order
+   form. It is a real <button> so it is reachable by keyboard and announced
+   as an action, which means the user-agent's own button styling has to be
+   taken off it completely: the row's rhythm was measured on text, and a
+   13.33px Arial control with a border and padding would change every
+   height in the cell.
+
+   Only three things are added to what the text already looked like: the
+   pointer, a hover tint, and an underline on hover and keyboard focus. The
+   whole ROW is deliberately NOT clickable — Close and the leverage editor
+   sit in the same row, and a row-wide target puts a mis-aimed press one
+   pixel away from an action on real money. */
+.futures-position-symbol-link {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+/* The <b> keeps every type rule the sheets already write for it; the press
+   belongs to the button around it. */
+.futures-position-symbol-link > b { pointer-events: none; }
+.futures-position-symbol-link:hover { color: var(--accent); }
+.futures-position-symbol-link:hover > b,
+.futures-position-symbol-link:focus-visible > b {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.futures-position-symbol-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

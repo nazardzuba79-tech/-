@@ -1019,6 +1019,7 @@ export const JA: Record<Key, string> = {
   'futures.colRealized': '実現損益',
   'futures.colCloseAs': '決済方法',
   'futures.perpetual': '無期限',
+  'futures.openContract': 'ターミナルで {symbol} を開く',
   'futures.marginTrading': '証拠金取引',
   'futures.addTpsl': '追加',
   'futures.closeMarket': '成行',
