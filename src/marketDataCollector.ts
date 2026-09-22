@@ -69,6 +69,10 @@ const runtime = collectorServer(
   options,
   () => collector.universe.snapshot(),
   cfdDisplay,
+  // Depth for the API region's fallback book, from the collector's own Bybit
+  // service — the same instance BybitOptions uses, so it shares that circuit
+  // breaker, request budget and ProviderCache rather than opening a second path.
+  (providerSymbol) => collector.rest.getOrderBook('linear', providerSymbol),
 );
 runtime.server.listen(Number(process.env.PORT || 10000), '0.0.0.0', () => {
   console.log('Market data collector listening');

@@ -8,6 +8,8 @@ import type { LiveSource, LiveFrame } from './contract';
 import type { MarketUniverseSnapshot } from '../bybit/MarketUniverse';
 import { BybitOptions, OptionsRequestError, optionQuerySchema } from '../bybit/BybitOptions';
 import type { CfdQuote } from '../cfd/CfdQuote';
+import type { DepthBook } from '../bybit/BybitMarketDataService';
+import type { CachedValue } from '../ProviderCache';
 import { CFD_OHLC_INTERVALS, type CfdOhlcInterval, type CfdOhlcSnapshot } from '../cfd/BiquoteCfdOhlcSource';
 
 export function collectorServer(
@@ -20,7 +22,11 @@ export function collectorServer(
     getQuotes: () => Promise<CfdQuote[]>;
     getOhlc?: (symbol:string,interval:CfdOhlcInterval,limit:number) => Promise<CfdOhlcSnapshot>;
     diagnostics?: () => unknown | Promise<unknown>;
-  }
+  },
+  /** Linear-perpetual depth, read through the collector's OWN Bybit service.
+   *  Frankfurt may reach the venue; Oregon may not. Without this the API
+   *  region has no depth path at all and the fallback book cannot work. */
+  depth?: (providerSymbol: string) => Promise<CachedValue<DepthBook>>
 ) {
   if (!token.trim()) throw new Error('MARKET_DATA_COLLECTOR_TOKEN is required');
   const authorized = (header?: string) => {
@@ -40,6 +46,27 @@ export function collectorServer(
     try {res.json(await futuresCandles.get(req.params.pair,String(req.query.interval??'15m'),Number(req.query.limit??520)));}
     catch(error) {res.status(error instanceof RangeError?400:503).json({error:'candles_unavailable'});}
   });
+  // The fallback order book's venue hop. The API region cannot call Bybit
+  // directly by policy, so it asks here instead; the source is unchanged —
+  // the same Bybit linear book, fetched from the region allowed to fetch it.
+  //
+  // The caller's own `ProviderCache` already coalesces and holds for a
+  // second, and so does this one, so a thousand fallback clients on one
+  // contract remain one upstream request per second.
+  if (depth) {
+    app.get('/internal/v1/futures/orderbook/:symbol', async (req, res) => {
+      const symbol = String(req.params.symbol ?? '').toUpperCase();
+      if (!/^[A-Z0-9]{2,32}$/.test(symbol)) { res.status(400).json({ error: 'invalid_symbol' }); return; }
+      try {
+        const book = await depth(symbol);
+        res.json({ value: book.value, fetchedAt: book.fetchedAt, stale: book.stale });
+      } catch {
+        // The venue's own words never cross this boundary.
+        res.status(503).json({ error: 'orderbook_unavailable' });
+      }
+    });
+  }
+
   // Private replay transport carries public market data only. No owner/account data,
   // database writes, or execution actions exist on the collector.
   const privateTrading = new CollectorPrivateTradingSource();
