@@ -245,22 +245,39 @@
    column (the contract) stays pinned to
    the panel's left edge while the rest scrolls; «Лимитный» / «Рыночный»
    are reached by that scroll, never cut at the panel's edge. */
-#archive-terminal-preview .futures-positions-table { width:100%; min-width:max-content; table-layout:auto; font-family:var(--font-family); }
-#archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px 12px; padding-inline:12px !important; white-space:nowrap; text-align:left; }
-/* `height:34px`: the studio sheet pins the heading to `height:30px` with
+#archive-terminal-preview .futures-positions-table { width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
+#archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px; padding-inline:8px !important; white-space:nowrap; text-align:left; }
+/* `height:40px`: the studio sheet pins the heading to `height:30px` with
    `padding:0 !important`; one explicit height keeps the band the same at
-   every width the geometry check measures. */
-#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:34px; font-size:12px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
+   every width the geometry check measures, with room for a two-line title. */
+#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:40px; font-size:12px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
+/* The five widest headings — «Цена Входа», «Цена маркировки», «Цена
+   ликвид.», «Нереализованный P&L(ROI)», «Реализованный P&L» — may take two
+   lines inside the same 40px band, and only when the panel cannot hold them
+   on one: auto layout never drops a column below its cells (every cell stays
+   on one line), so the column measures its figures, not its title, and on a
+   wide screen the titles sit on one line as before. `min-width:0` on the
+   table is what lets that happen; the table still never gets narrower than
+   its cells, it scrolls instead. */
+#archive-terminal-preview .futures-positions-table th:is(:nth-child(5),:nth-child(6),:nth-child(7),:nth-child(8),:nth-child(9)) { white-space:normal !important; } /* the terminal system sheet pins every heading to `nowrap !important` */
 #archive-terminal-preview .futures-positions-table td { height:64px; font-size:13px; font-weight:550; color:#f8fafc; vertical-align:middle; border-bottom:0; }
 #archive-terminal-preview .futures-position-unit { color:#bac5d5; }
 #archive-terminal-preview .futures-positions-table td:is(:nth-child(3),:nth-child(4),:nth-child(5)) { color:#f8fafc !important; }
-/* Only the contract column is pinned. The reference also pins its close
-   controls to the right edge, but a pinned right column COVERS the figures
-   that scroll under it — the overlap the owner's brief forbids — so here the
-   row scrolls as one and every figure stays whole; the scrollbar under the
-   rows reaches the pills. */
-#archive-terminal-preview .futures-positions-table :is(th,td):first-child { position:sticky; left:0; z-index:2; background:var(--panel); }
-#archive-terminal-preview .futures-positions-table th:first-child { z-index:3; }
+/* Both edges are pinned, as the reference pins them: the contract at the
+   left, «Закрыть как» at the right, both opaque, so the close pills are on
+   screen at every width and the figures scroll UNDER them — a scroll region
+   with a shadow, never a cut at the panel's edge (the owner's second report:
+   «Закрыть ка…» / «Лимитны…» sliced off at ~1600px). The panel flags
+   `data-overflow` while the row is wider than it; only then the pinned
+   actions cast their shadow, and the scrollbar below is always drawn. */
+#archive-terminal-preview .futures-positions-table :is(th,td):is(:first-child,:last-child) { position:sticky; z-index:2; background:var(--panel); }
+#archive-terminal-preview .futures-positions-table :is(th,td):first-child { left:0; }
+#archive-terminal-preview .futures-positions-table :is(th,td):last-child { right:0; }
+#archive-terminal-preview .futures-positions-table th:is(:first-child,:last-child) { z-index:3; }
+#archive-terminal-preview .futures-positions-scroll[data-overflow=true] .futures-positions-table :is(th,td):last-child { box-shadow:-10px 0 14px -10px #000c; }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar { height:10px; }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:#171e2a; }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:#657082; border-radius:5px; border:2px solid #171e2a; }
 #archive-terminal-preview .futures-position-row:hover td { background:var(--panel-alt); }
 #archive-terminal-preview .futures-position-realized { border-bottom:0; text-decoration:none; }
 #archive-terminal-preview .futures-positions-table td.text-buy { color:var(--buy) !important; }
@@ -280,7 +297,7 @@
 #archive-terminal-preview .futures-position-roi { grid-column:1; font-size:12px; line-height:16px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
 #archive-terminal-preview .futures-position-approx { grid-column:1; display:block; font-size:12px; line-height:16px; color:inherit; opacity:1; }
 /* Match protection and close pills, including the inherited inner chip dimensions. */
-#archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:84px; height:26px; min-height:26px; margin:0; padding:4px 6px !important; border:0 !important; border-radius:999px !important; background:#454b55 !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
+#archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:auto; min-width:72px; height:26px; min-height:26px; margin:0; padding:4px 10px !important; border:0 !important; border-radius:999px !important; background:#454b55 !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)):hover { background:#626c7a !important; }
 #archive-terminal-preview .futures-position-actions { gap:6px !important; flex-wrap:nowrap; }
 #archive-terminal-preview .fut-tpslAdd { display:inline; min-width:0; height:auto; min-height:0; padding:0; color:#fff !important; font-size:inherit !important; font-weight:inherit !important; line-height:inherit; }

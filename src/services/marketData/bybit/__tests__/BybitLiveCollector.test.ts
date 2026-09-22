@@ -50,7 +50,7 @@ describe('Bybit live collector', () => {
     const subscribed = sockets.flatMap(s => s.frames.filter(f => f.op === 'subscribe').flatMap(f => f.args));
     expect(subscribed).toHaveLength(12);
     expect(new Set(subscribed)).toEqual(new Set(liveBaseAssets.flatMap(a => [`tickers.${a}USDT`,`tickers.${a}USDT`])));
-    expect(c.diagnostics()).toMatchObject({liveInstruments:12,slowInstruments:1288,slowRefreshMs:60_000});
+    expect(c.diagnostics()).toMatchObject({liveInstruments:12,slowInstruments:1288,slowRefreshMs:20_000});
     const unsubscribers = Array.from({length:100}, () => c.feed.subscribe(() => {}));
     expect(sockets).toHaveLength(2); unsubscribers.forEach(unsub => unsub());
     expect(c.feed.status).toBe('live'); c.stop(); expect(jest.getTimerCount()).toBe(0);

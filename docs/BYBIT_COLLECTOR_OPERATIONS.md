@@ -29,6 +29,7 @@ The collector uses the repository's `BybitMarketDataService`, `MarketUniverse`, 
 | Default REST | `https://api.bybit.com` |
 | Default spot WS | `wss://stream.bybit.com/v5/public/spot` |
 | Default linear WS | `wss://stream.bybit.com/v5/public/linear` |
+| Slow catalogue refresh | `MARKET_DATA_SLOW_REFRESH_MS`, default 20 000 ms (was 60 000). Every contract outside the live sockets is priced from this REST snapshot, and a sampled-demo (historical account) command needs that price younger than 45 s; at a minute such contracts were unpriceable for the last quarter of every minute. Three REST calls per cycle. |
 
 Do not set `DATABASE_URL`, `DIRECT_URL`, exchange JWT keys, wallet keys, or provider trading keys. The collector entry does not load `.env` files. The Docker build and start commands do not run Prisma generation or migrations. The container runs as the unprivileged Node user. No Render Blueprint or existing deployment configuration was modified.
 
