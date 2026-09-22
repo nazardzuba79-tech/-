@@ -36,17 +36,21 @@ beforeEach(async () => {
     if(name.endsWith('/formatNumber'))return {formatPrice:String};
     if(name.endsWith('/useFavorites'))return {useFavorites:()=>({favorites,toggle:jest.fn()})};
     if(name.endsWith('/useWindowedRows'))return {useWindowedRows:(n:number)=>({start:0,end:n,padTop:0,padBottom:0,ref:()=>{}})};
-    // Deliberately still stubbed, and deliberately poisoned: the futures
-    // list no longer imports the catalogue at all, so if this is ever
-    // reached again the values below are wrong for these contracts and a
-    // cross-domain 7d would show up as an obviously false number.
-    if(name.endsWith('/catalogueStore'))return {catalogueStore:{subscribe:()=>{
-      throw new Error('futures pair list must not subscribe to the CoinGecko catalogue');
+    if(name.endsWith('/catalogueStore'))return {catalogueStore:{subscribe:(listener:any)=>{
+      listener({assets:[
+        {symbol:'BTC',ambiguous:false,collidingIds:[],market:{changePercent7d:8}},
+        {symbol:'ETH',ambiguous:false,collidingIds:[],market:{changePercent7d:-4}},
+        {symbol:'SOL',ambiguous:false,collidingIds:[],market:{changePercent7d:15}},
+        // A colliding catalogue ticker must never leak its attractive but
+        // unrelated return into the Futures row.
+        {symbol:'UNKNOWN',ambiguous:true,collidingIds:['cg:other'],market:{changePercent7d:190.545}},
+      ]});
+      return ()=>{};
     }}};
     return req(name);
   });
   pick.mockClear();
-  await act(async()=>root.render(React.createElement(output.FuturesPairList,{symbols,symbol:'SOL/USDT',onChange:pick})));
+  await act(async()=>root.render(React.createElement(output.FuturesPairList,{symbols,symbol:'SOL/USDT',onChange:pick,searchable:true})));
 });
 afterEach(async()=>{await act(async()=>root.unmount());dom.window.close();});
 const order=()=>Array.from(host.querySelectorAll('.pair-row')).map(n=>n.getAttribute('aria-label'));
@@ -70,4 +74,26 @@ test('changing column starts descending; default does not inject BTC into favori
   expect(order()).toEqual(['SOL/USDT','ETH/USDT']);
   await sort(1);await sort(1);
   expect(order()).toEqual(['ETH/USDT','SOL/USDT']);
+});
+
+
+test('7-day gainers/losers are restored; ambiguous catalogue tickers stay null and sort last',async()=>{
+  const gainers=host.querySelector('.pairs-7d-btn[data-kind="gainers"]') as HTMLButtonElement;
+  const losers=host.querySelector('.pairs-7d-btn[data-kind="losers"]') as HTMLButtonElement;
+  expect(gainers).not.toBeNull(); expect(losers).not.toBeNull();
+
+  await act(async()=>gainers.click());
+  await act(async()=>Promise.resolve());
+  expect(order()).toEqual(['SOL/USDT','BTC/USDT','ETH/USDT','UNKNOWN/USDT']);
+  expect(host.querySelector('.futures-pair-headers')?.textContent).toContain('markets.change7d');
+  const unknown=host.querySelector('.pair-row[aria-label="UNKNOWN/USDT"] .p-change');
+  expect(unknown?.textContent).toBe('—');
+
+  await act(async()=>losers.click());
+  await act(async()=>Promise.resolve());
+  expect(order()).toEqual(['ETH/USDT','BTC/USDT','SOL/USDT','UNKNOWN/USDT']);
+
+  // Pressing the active side returns to the default order.
+  await act(async()=>losers.click());
+  expect(order()).toEqual(['BTC/USDT','ETH/USDT','SOL/USDT','UNKNOWN/USDT']);
 });
