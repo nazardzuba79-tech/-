@@ -451,9 +451,9 @@
       "name": "quantity-to-usdt-calculator-1440",
       "passed": true,
       "evidence": {
-        "price": 49420.2,
+        "price": 49815.8,
         "quantity": 5,
-        "positionValue": "247101.00"
+        "positionValue": "249079.00"
       }
     },
     {
@@ -540,9 +540,9 @@
       "name": "account-summary-1440",
       "passed": true,
       "evidence": {
-        "balance": "10,098,567.59 USDT",
-        "available": "10,048,875.58 USDT",
-        "im": "0.49%",
+        "balance": "10,099,356.61 USDT",
+        "available": "10,049,266.83 USDT",
+        "im": "0.50%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -576,7 +576,7 @@
           "TP/SL",
           "Закрыть как"
         ],
-        "text": "Контракты\tК-во\tСтоим.\tМаржа\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t345,941.40 USDT\t34,594.21 USDT\t49,420.30\t49,420.20\t—\t\n-0.7000\n-0.00%\n≈-0.70 USD\n\t\n-190.2682\n≈-190.27 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t148,260.60 USDT\t14,826.03 USDT\t49,420.10\t49,420.20\t—\t\n-0.3000\n-0.00%\n≈-0.30 USD\n\t\n-81.5432\n≈-81.54 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
+        "text": "Контракты\tК-во\tСтоим.\tМаржа\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t348,710.60 USDT\t34,871.13 USDT\t49,815.90\t49,815.80\t—\t\n-0.7000\n-0.00%\n≈-0.70 USD\n\t\n-191.7912\n≈-191.79 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t149,447.40 USDT\t14,944.71 USDT\t49,815.70\t49,815.80\t—\t\n-0.3000\n-0.00%\n≈-0.30 USD\n\t\n-82.1959\n≈-82.20 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
         "scroll": {
           "client": 1114,
           "full": 1240,
@@ -600,8 +600,8 @@
         "vh": 1000,
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
-        "alt": "BTCUSDT · P&L 67.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-417c17fb-660f-49c5-b1cf-c970849475ab",
+        "alt": "BTCUSDT · P&L -0.5 USDT",
+        "href": "/futures?nativeCard=native%3A9%3Anative-06dfc186-dac6-41d2-870c-7206eef9b8c3",
         "exported": "1080x1215"
       }
     },
@@ -719,9 +719,9 @@
       "name": "quantity-to-usdt-calculator-390",
       "passed": true,
       "evidence": {
-        "price": 49433.8,
+        "price": 49832.3,
         "quantity": 5,
-        "positionValue": "247169.00"
+        "positionValue": "249161.50"
       }
     },
     {
@@ -808,9 +808,9 @@
       "name": "account-summary-390",
       "passed": true,
       "evidence": {
-        "balance": "10,098,594.71 USDT",
-        "available": "10,048,889.03 USDT",
-        "im": "0.49%",
+        "balance": "10,099,389.52 USDT",
+        "available": "10,049,283.14 USDT",
+        "im": "0.50%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -844,7 +844,7 @@
           "TP/SL",
           "Закрыть как"
         ],
-        "text": "BTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n346,036.60\nUSDT\n34,603.73\nUSDT\n49,433.90\n49,433.80\n—\n-0.7000\n-0.00%\n≈-0.70 USD\n-190.3205\n≈-190.32 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n148,301.40\nUSDT\n14,830.11\nUSDT\n49,433.70\n49,433.80\n—\n-0.3000\n-0.00%\n≈-0.30 USD\n-81.5656\n≈-81.57 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
+        "text": "BTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n348,826.10\nUSDT\n34,882.68\nUSDT\n49,832.40\n49,832.30\n—\n-0.7000\n-0.00%\n≈-0.70 USD\n-191.8547\n≈-191.85 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n149,496.90\nUSDT\n14,949.66\nUSDT\n49,832.20\n49,832.30\n—\n-0.3000\n-0.00%\n≈-0.30 USD\n-82.2231\n≈-82.22 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
         "scroll": {
           "client": 390,
           "full": 390,
@@ -869,7 +869,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-39e1c0bf-065b-4d3f-bf24-73ac2f4442af",
+        "href": "/futures?nativeCard=native%3A9%3Anative-54a6f81d-8390-4a8f-b7f9-3d6f13e767dc",
         "exported": "1080x1215"
       }
     },
