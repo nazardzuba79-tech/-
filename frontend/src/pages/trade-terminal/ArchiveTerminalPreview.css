@@ -195,6 +195,13 @@
 #archive-terminal-preview .nav-wallet-link { display:inline-flex; align-items:center; gap:7px; background:#161c2b; border:1px solid #293246; border-radius:5px; color:#e2e8f0; box-shadow:none; }
 #archive-terminal-preview .nav-wallet-link:hover { background:#202a3b; border-color:#45536a; color:#fff; }
 #archive-terminal-preview .nav-wallet-link svg { color:var(--accent); }
+/* The admin chip in the terminal's own header: the same construction this
+   sheet gives the wallet chip beside it — flat fill, real 1px border, 5px
+   radius — in the violet family rather than the neutral one, so the pair
+   reads as one cluster with two different departments in it. */
+#archive-terminal-preview .nav-admin-chip { display:inline-flex; align-items:center; gap:7px; background:#1c1a2e; border:1px solid #37345c; border-radius:5px; color:#c9c7ff; box-shadow:none; }
+#archive-terminal-preview .nav-admin-chip:hover { background:#252243; border-color:#4b4886; color:#fff; }
+#archive-terminal-preview .nav-admin-chip svg { color:#8b8af6; }
 #archive-terminal-preview .archive-calculator-slot { display:flex; align-items:center; justify-content:flex-end; padding:6px 0 0; }
 #archive-terminal-preview .archive-calculator-trigger { display:flex; align-items:center; gap:6px; border:0; border-radius:6px; background:transparent; color:var(--text-secondary); padding:7px 2px; font-size:11px; cursor:pointer; }
 #archive-terminal-preview .archive-calculator-trigger:hover { color:var(--accent); background:var(--panel-alt); }
@@ -259,7 +266,7 @@
   #archive-terminal-preview .global-header .header-left { flex:1 0 auto; min-width:max-content; }
   #archive-terminal-preview .global-header .header-actions { flex:0 0 auto; gap:6px; }
   /* Wallet and position tabs remain available in mobile navigation below. */
-  #archive-terminal-preview .global-header :is(.nav-wallet-link,.header-extra-action) { display:none; }
+  #archive-terminal-preview .global-header :is(.nav-wallet-link,.nav-admin-chip,.header-extra-action) { display:none; }
   #archive-terminal-preview .global-header .deposit-button { padding-inline:10px; }
 }
 #archive-terminal-preview .fts-bar { margin:0; padding:6px 14px; min-height:26px; border:0; border-bottom:1px solid var(--border); background:var(--panel); font-size:10px; }

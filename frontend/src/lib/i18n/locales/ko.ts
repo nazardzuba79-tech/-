@@ -1019,6 +1019,7 @@ export const KO: Record<Key, string> = {
   'futures.colRealized': '실현 손익',
   'futures.colCloseAs': '청산 방식',
   'futures.perpetual': '무기한',
+  'futures.openContract': '터미널에서 {symbol} 열기',
   'futures.marginTrading': '마진 거래',
   'futures.addTpsl': '추가',
   'futures.closeMarket': '시장가',

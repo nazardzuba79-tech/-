@@ -52,10 +52,21 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
           </div>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}
           <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{t('nav.card')}</Link>
           <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active==='/otc'?' nav-active is-active':''}`}>{t('nav.otc')}</Link>
-          {isAdmin&&<Link to="/admin" className={`nav-item nav-admin${active==='/admin'?' nav-active':''}`}><Landmark size={14}/>{t('nav.admin')}</Link>}{middle}
+          {/* Админка is NOT a product section. It used to sit here, after
+              OTC, reading as one more place to trade and getting lost
+              between Crypto Card and the wallet. It now renders once, in
+              the account cluster on the right, directly before «Кошелёк» —
+              see the header-actions block below. */}
+          {middle}
         </nav>
       </div>
       <div className="header-actions nav-desktop-right">
+        {/* Service, not navigation, and not a call to action: a dark
+            violet chip beside the wallet. Deliberately NOT the deposit
+            gold — one accent per header — and deliberately a chip rather
+            than a filled button, so the cluster still has exactly one
+            primary control in it. Admin-only, exactly as before. */}
+        {isAdmin&&<Link to="/admin" className={`nav-item nav-admin nav-admin-chip${active==='/admin'?' nav-active is-active':''}`}><Landmark size={14}/>{t('nav.admin')}</Link>}
         {WALLET_LINK&&<Link to={WALLET_LINK.to} className={`nav-item top-nav-link nav-wallet-link${active===WALLET_LINK.to?' nav-active is-active':''}`}>{quoteAsset&&<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 10h18M7 15h2m3 0h1"/></svg>}{WALLET_LINK.label}</Link>}
         <button onClick={()=>setShowDeposit(true)} className="deposit-button top-nav-fund-btn"><span>{t('wallet.deposit')}</span></button>
         {rightExtra&&<div className="header-extra-action">{rightExtra}</div>}<LanguageSwitcher variant="pill" quoteAsset={quoteAsset}/>
@@ -78,5 +89,5 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
 const styles:Record<string,React.CSSProperties>={
   logo:{display:'inline-flex',alignItems:'center',fontFamily:'var(--font-display)',fontSize:16,fontWeight:800,letterSpacing:'0.02em'},
   tradeMenuItem:{display:'flex',flexDirection:'column',gap:2,padding:'7px 8px',borderRadius:5},tradeMenuItemTitle:{fontSize:13,fontWeight:600,color:'#e8ecf3'},tradeMenuItemDesc:{fontSize:12,color:'var(--h-text-3)'},
-  mobileLink:{display:'flex',alignItems:'center',fontSize:13.5,fontWeight:500,color:'#d8dce6',padding:'11px 12px',borderRadius:6},mobileDivider:{height:1,background:'var(--border)',margin:'4px 0'},mobileRightExtra:{padding:'8px 0'},mobileLangRow:{padding:'10px 6px'},linkActive:{color:'#ffffff',background:'rgba(240,196,63,0.06)'},cardLink:{display:'flex',alignItems:'center',gap:8},adminBadge:{display:'flex',alignItems:'center',gap:6,background:'transparent',border:0,borderRadius:6,padding:'0 11px',fontSize:13,fontWeight:500,color:'#8b8af6'},adminBadgeActive:{background:'rgba(139,138,246,0.08)',color:'#b6b5ff'},logoutBtn:{display:'flex',alignItems:'center',justifyContent:'center',gap:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-secondary)',borderRadius:8,padding:'8px 16px',fontSize:12},
+  mobileLink:{display:'flex',alignItems:'center',fontSize:13.5,fontWeight:500,color:'#d8dce6',padding:'11px 12px',borderRadius:6},mobileDivider:{height:1,background:'var(--border)',margin:'4px 0'},mobileRightExtra:{padding:'8px 0'},mobileLangRow:{padding:'10px 6px'},linkActive:{color:'#ffffff',background:'rgba(240,196,63,0.06)'},cardLink:{display:'flex',alignItems:'center',gap:8},adminBadge:{display:'flex',alignItems:'center',gap:8,background:'linear-gradient(180deg,#22203a,#1a1930)',border:'1px solid #3a3868',borderRadius:6,padding:'11px 12px',fontSize:13.5,fontWeight:500,color:'#c3c1ff'},adminBadgeActive:{background:'linear-gradient(180deg,#2b2849,#201e3b)',borderColor:'#4b4886',color:'#dcdbff'},logoutBtn:{display:'flex',alignItems:'center',justifyContent:'center',gap:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-secondary)',borderRadius:8,padding:'8px 16px',fontSize:12},
 };
