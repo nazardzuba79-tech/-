@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-19T15:25:38.332Z",
+  "startedAt": "2026-09-22T14:17:19.912Z",
   "date": "2026-09-19",
   "environment": "LOCAL QA ONLY — real compiled router/service, in-memory persistence",
   "scenarios": {
@@ -235,7 +235,7 @@
         "nazar": {
           "name": "Nazar",
           "roi": "+70.7%",
-          "winRate": "83,3%",
+          "winRate": "75,0%",
           "button": "Копировать трейдера",
           "loading": false,
           "unavailable": false,
@@ -244,8 +244,8 @@
         },
         "ksenia": {
           "name": "Ksenia",
-          "roi": "+61.9%",
-          "winRate": "89,4%",
+          "roi": "+37.7%",
+          "winRate": "89,6%",
           "button": "Копировать трейдера",
           "loading": false,
           "unavailable": false,
@@ -253,10 +253,10 @@
           "chart": true
         }
       },
-      "cardLabel": "ROI за отчётную неделю",
+      "cardLabel": "ROI 7D",
       "profile": {
-        "readouts": "ROI · за отчётную неделю+61.9%Накопленный PnL · USDT+67 797 USDT",
-        "range": "Результат за неделю 13.09.2026 — 19.09.2026 · по данным управляющего"
+        "readouts": "ROI · 7D+37.7%Накопленный PnL · USDT+67 797 USDT",
+        "range": "7D · Скользящий период · 19.09.2026 — 26.09.2026 · 7 календарных дней"
       },
       "errors": []
     }

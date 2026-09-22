@@ -2,6 +2,7 @@ import type { CashflowReviewState } from './reviewEconomicsTypes';
 import type { SyntheticTrade } from './types';
 import { isReviewHoliday } from './reviewEconomicsConfig';
 import { REVIEW_PERFORMANCE_V8_CONFIG as C } from './reviewPerformanceV8Config';
+import { DAILY_PROGRESSION_MAX_RETURN, dailyProgressionApplies, quietSessionReturn } from './dailyProgression';
 
 const DAY_MS = 86_400_000;
 const MONEY_SCALE = 10_000;
@@ -394,6 +395,20 @@ function futurePlans(start: string): DayPlan[] {
 /** Date-derived immutable weekly regimes make serialized split/batch advances
  * identical. Only the newly appended day is emitted; past data is never fitted
  * to updated headlines or wall-clock randomness. */
+/**
+ * One session, one closed execution.
+ *
+ * The weekly regime still decides the day's RETURN — this only decides how
+ * many rows express it. A session the regime left at exactly zero cannot be
+ * expressed as a closed trade at all, so it draws a small positive return
+ * from the same date-derived stream instead. See canonical/dailyProgression.ts.
+ */
+function singleExecutionPlan(plan: DayPlan): DayPlan {
+  const drawn = plan.return !== 0 ? plan.return : quietSessionReturn(() => randomFor(plan.date, 0x1da17).next());
+  const value = Math.min(drawn, DAILY_PROGRESSION_MAX_RETURN.nazar);
+  return { date: plan.date, return: value, count: 1, losses: value < 0 ? 1 : 0, breakevens: 0 };
+}
+
 export function advanceSimpleReturnMasterState(original: CashflowReviewState, days: number): CashflowReviewState {
   if (original.version !== 8) throw new Error('The v8 generator cannot migrate an existing v7 history');
   if (!Number.isInteger(days) || days < 0 || days > 365) throw new Error('Advance must be 0–365 whole days');
@@ -403,6 +418,13 @@ export function advanceSimpleReturnMasterState(original: CashflowReviewState, da
     const date = addDays(state.simulatedAt.slice(0, 10), 1);
     const plans = futurePlans(weekStart(date));
     const plan = plans[weekday(date)];
+    // From the owner's cadence date onward a day is exactly one closed trade,
+    // so neither the mixed-session top-up nor a zero-execution quiet day
+    // below applies. Days before it keep the published behaviour untouched.
+    if (dailyProgressionApplies(date)) {
+      appendDay(state, singleExecutionPlan(plan), initialCapital);
+      continue;
+    }
     if (plan.return > 0) {
       const resolved = state.trades.filter(trade => trade.netPnl !== 0).length;
       const losses = state.trades.filter(trade => trade.netPnl < 0).length;

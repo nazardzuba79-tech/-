@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-09-19T15:25:06.765Z",
+  "startedAt": "2026-09-22T14:14:54.904Z",
   "date": "2026-09-19",
   "environment": "LOCAL QA ONLY — real compiled router/service, in-memory persistence",
   "widths": {
@@ -124,9 +124,11 @@
         "hasTradesPanel": true,
         "tradeRows": 0,
         "hasTable": false,
-        "hiddenNote": "Информация о сделках скрыта",
+        "hiddenNote": "Торговая информация этого трейдера скрыта",
         "hiddenNoteHasIcon": true,
-        "headingCount": "106 закрытых",
+        "headingCount": null,
+        "hasHeading": false,
+        "panelText": "Торговая информация этого трейдера скрыта",
         "heroMetrics": [
           [
             "Followers",
@@ -266,9 +268,11 @@
         "hasTradesPanel": true,
         "tradeRows": 0,
         "hasTable": false,
-        "hiddenNote": "Информация о сделках скрыта",
+        "hiddenNote": "Торговая информация этого трейдера скрыта",
         "hiddenNoteHasIcon": true,
-        "headingCount": "106 закрытых",
+        "headingCount": null,
+        "hasHeading": false,
+        "panelText": "Торговая информация этого трейдера скрыта",
         "heroMetrics": [
           [
             "Followers",
@@ -391,7 +395,9 @@
         "nazar": null,
         "ksenia": null
       },
-      "otherAccountStoredKeys": [],
+      "otherAccountStoredKeys": [
+        "voltex.copy.marketplace.v1.sr6a33"
+      ],
       "otherAccountSettled": {
         "nazar": {
           "name": "Nazar",
@@ -461,5 +467,5 @@
     "pageErrors": []
   },
   "status": "PASS",
-  "finishedAt": "2026-09-19T15:25:33.149Z"
+  "finishedAt": "2026-09-22T14:15:21.603Z"
 }

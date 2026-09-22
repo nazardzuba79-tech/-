@@ -153,11 +153,12 @@ describe('nothing is counted twice, and nothing is rewritten', () => {
     expect(cachedDay.realizedPnl).toBeCloseTo(sixteenth[0].realizedPnl - 1754, 4);
   }, 600_000);
 
-  it('makes the reported 61.9% the VISIBLE weekly return, and only that', async () => {
-    const before = await ksenia();
+  it('makes the reported 61.9% the VISIBLE weekly return while the week is current', async () => {
+    const before = await ksenia();                 // 2026-09-19: inside the week
     const after: any = withKseniaReportedWeek(before);
 
-    // What the owner asked for: the three places a weekly return is read.
+    // Inside its own week the reported figure IS the last seven days, so all
+    // three places a weekly return is read show it.
     expect(after.analytics.roi7).toBe(61.9);
     expect(after.economics.periods['7D'].roi).toBe(61.9);
     expect(after.weekly.find((w: any) => w.period === '2026-09-13').roi).toBe(61.9);
@@ -196,30 +197,40 @@ describe('nothing is counted twice, and nothing is rewritten', () => {
     expect(after.economics.periods.ALL.roi).toBe((before as any).economics.periods.ALL.roi);
   }, 600_000);
 
-  it('SURVIVES the week changing, and every later day, until the owner says otherwise', async () => {
-    // The owner pinned it. A new day, a new week and a model that has run
-    // on for weeks must all still show the reported figure — this is the
-    // requirement that replaced the original week anchor.
-    for (const day of ['2026-09-19T12:00:00Z', '2026-09-20T12:00:00Z', '2026-09-24T12:00:00Z',
-      '2026-10-05T12:00:00Z', '2026-11-02T12:00:00Z']) {
+  it('KEEPS 61.9% as the finished week\u2019s result and lets the current 7D move on', async () => {
+    // The owner reversed the pin: 61.9% is the result of ONE week, 13-19
+    // September, and the rolling seven days must keep rolling after it. The
+    // weekly row holds the reported figure forever; `roi7` does not.
+    const seen: number[] = [];
+    for (const day of ['2026-09-20T12:00:00Z', '2026-09-22T12:00:00Z', '2026-09-23T12:00:00Z',
+      '2026-09-24T12:00:00Z', '2026-10-05T12:00:00Z']) {
       const data: any = withKseniaReportedWeek(await ksenia(day));
-      expect(data.analytics.roi7).toBe(61.9);
-      expect(data.economics.periods['7D'].roi).toBe(61.9);
+      // The historical week is untouched.
       expect(data.weekly.find((w: any) => w.period === '2026-09-13').roi).toBe(61.9);
-      expect(data.reportedWeeks[0].appliedToVisibleWeeklyRoi).toBe(true);
+      // The current window is not the reported figure, and it is a real
+      // derivation of the ledger's own daily returns.
+      expect(data.analytics.roi7).not.toBe(61.9);
+      expect(data.economics.periods['7D'].roi).not.toBe(61.9);
+      expect(data.reportedWeeks[0].appliedToVisibleWeeklyRoi).toBe(false);
+      const end = data.simulation.simulatedAt.slice(0, 10);
+      const cutoff = new Date(Date.parse(`${end}T00:00:00Z`) - 7 * 86_400_000).toISOString().slice(0, 10);
+      const derived = sum(data.dailyResults.filter((r: any) => r.date > cutoff && r.date <= end));
+      expect(data.economics.periods['7D'].roi).toBeCloseTo(derived, 3);
+      // The window ends on the model's own latest day, never on 19 September.
+      expect(data.dailyResults[data.dailyResults.length - 1].date).toBe(end);
+      expect(end).toBe(day.slice(0, 10));
+      seen.push(data.analytics.roi7);
     }
+    // And it genuinely moves: five later days are not one frozen number.
+    expect(new Set(seen).size).toBe(seen.length);
   }, 600_000);
 
-  it('stops calling it a rolling week once the week has passed', async () => {
-    // Truthfulness is the condition attached to pinning it: the figure
-    // stays, but it must not be presented as a freshly computed last seven
-    // days when it no longer is. `stillInsideReportedWeek` is what the UI
-    // reads to change the wording.
+  it('says whether the model is still inside the reported week', async () => {
     const inside: any = withKseniaReportedWeek(await ksenia('2026-09-19T12:00:00Z'));
     expect(inside.reportedWeeks[0].stillInsideReportedWeek).toBe(true);
     const after: any = withKseniaReportedWeek(await ksenia('2026-09-24T12:00:00Z'));
     expect(after.reportedWeeks[0].stillInsideReportedWeek).toBe(false);
-    // The period it belongs to travels with it, so the label can name it.
+    // The period it belongs to travels with it, for the weekly row it wrote.
     expect(after.reportedWeeks[0].periodStart).toBe('2026-09-13');
     expect(after.reportedWeeks[0].periodEnd).toBe('2026-09-19');
     expect(reportedWeekIsCurrent('2026-09-19T23:59:59.999Z')).toBe(true);

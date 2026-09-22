@@ -2,6 +2,7 @@ import type { SyntheticTrade } from './types';
 import type { CashflowReviewState, ReviewFollower } from './reviewEconomicsTypes';
 import { toCashflowReviewResponse } from './reviewEconomics';
 import { refreshReviewFollowerLedgers } from './reviewFollowerLedger';
+import { DAILY_PROGRESSION_MAX_RETURN, dailyProgressionApplies, quietSessionReturn } from './dailyProgression';
 
 /** Explicitly synthetic review scenario. Never imports account, order, wallet,
  * matching, or database services. Prices below are simulation reference prices,
@@ -171,6 +172,16 @@ export function advanceKseniaReview(original: CashflowReviewState, days: number)
     const weights = Array.from({ length: 7 }, () => .6 + rng() * .8);
     const weight = weights[weekday] / weights.reduce((a, b) => a + b, 0);
     const dailyReturn = target * weight;
+    // From the owner's cadence date onward the session is exactly one closed
+    // execution: no second row for frequency, none for the loss ratio, and a
+    // session the regime left at zero draws a small genuine return instead of
+    // emitting nothing at all. See canonical/dailyProgression.ts.
+    if (dailyProgressionApplies(date)) {
+      const drawn = dailyReturn !== 0 ? dailyReturn : quietSessionReturn(random('quiet-session:' + date));
+      const value = Math.min(drawn, DAILY_PROGRESSION_MAX_RETURN.ksenia);
+      appendDay(state, { date, return: value, wins: value > 0 ? 1 : 0, losses: value < 0 ? 1 : 0, breakevens: 0 });
+      continue;
+    }
     const plan: Plan = { date, return: dailyReturn, wins: dailyReturn > 0 ? 1 : 0, losses: dailyReturn < 0 ? 1 : 0, breakevens: 0 };
     if (dailyReturn > 0 && random('future-frequency:' + date)() < .22) plan.wins++;
     const resolved = state.trades.filter(t => t.result !== 'BREAKEVEN').length;
