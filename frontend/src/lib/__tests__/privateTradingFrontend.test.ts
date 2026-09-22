@@ -14,7 +14,7 @@ function load(file:string,imports:Record<string,unknown>={}){
   return output;
 }
 const api=load('lib/privateTradingApi.ts',{'./api':{getToken:()=>null},'./privateTradingError':load('lib/privateTradingError.ts')});
-const cardRenderer=load('lib/privateResultCard.ts',{'./privateTradingApi':api,'./privateCardArtwork':load('lib/privateCardArtwork.ts')});
+const cardRenderer=load('lib/privateResultCard.ts',{'./privateTradingApi':api,'./privateCardArtwork':load('lib/privateCardArtwork.ts'),'./cardNumberFormat':load('lib/cardNumberFormat.ts')});
 const reply=(body:unknown,status=200)=>({ok:status>=200&&status<300,status,json:async()=>body}) as Response;
 
 function mount(file:string,name:string,initialProps:any,imports:Record<string,unknown>={}){
@@ -122,7 +122,7 @@ describe('private snapshot display and dates',()=>{
     const {svg,doc,field,visible}=rendered(snapshot);
     expect(field('profit-number').textContent).toBe('+123.45');expect(field('profit-unit').textContent).toBe('USDT');
     expect(field('roi-number').textContent).toBe('+12.35');expect(field('roi-unit').textContent).toBe('%');
-    expect(field('valuation-label').textContent).toBe('Рыночная цена');expect(field('valuation-price').textContent).toBe('220.00');
+    expect(field('valuation-label').textContent).toBe('Рыночная цена');expect(field('valuation-price').textContent).toBe('220');
     expect(field('historical-label')).toBeNull();expect(doc.querySelector('metadata,[display="none"]')).toBeNull();
     expect(visible).not.toMatch(/Simulation|Симуляция|snapshot|scenario net|Нереализованная|USD(?!T)/i);
     expect(svg).not.toContain('secret-resource-id');expect(svg).not.toContain(snapshot.asOf);expect(svg).not.toContain('-5.75');
@@ -162,10 +162,18 @@ describe('private snapshot display and dates',()=>{
     expect(card.entryPrice).toBe('77736.200000');expect(card.valuationPrice).toBe('78526.700000');
     expect(field('profit-number').textContent).toBe('+123.45');expect(field('roi-number').textContent).toBe('+12.35');
   });
-  test.each([['77736.199999','77,736.20'],['78526.7','78,526.70'],['12','12.00'],['0','0.00'],['1.239999','1.24'],['0.004','0.00']])('card price %s has exactly two display decimals', (value,expected)=>{
+  /* Prices carry the precision they HAVE, not a fixed two decimals.
+     The old rule printed a real AKE entry of 0.004 as `0.00` — a price that
+     is not merely ugly but wrong, and one that made a sub-cent contract
+     indistinguishable from a zero. Four-figure prices still show exactly
+     cents; below one, significant digits decide. See lib/cardNumberFormat. */
+  test.each([['77736.199999','77,736.20'],['78526.7','78,526.70'],['12','12'],['0','0'],['1.239999','1.239999'],['0.004','0.004'],['0.0040783','0.0040783'],['0.0000012345','0.0000012345']])('card price %s shows the precision it actually has', (value,expected)=>{
     const {field}=rendered({...snapshot,entryPrice:value,valuationPrice:value});
     expect(field('entry-price').textContent).toBe(expected);expect(field('valuation-price').textContent).toBe(expected);
-    expect(field('entry-price').textContent).toMatch(/\.\d{2}$/);
+    // The bug class itself: a non-zero price must never render as a zero,
+    // and no price may ever reach the card as an exponent.
+    if(Number(value)!==0)expect(Number(field('entry-price').textContent!.replace(/,/g,''))).not.toBe(0);
+    expect(field('entry-price').textContent).not.toMatch(/e/i);
   });
   test('ROI and profit form a compact block while the artwork remains decorative',()=>{
     const {doc,field}=rendered(snapshot);
@@ -181,7 +189,10 @@ describe('private snapshot display and dates',()=>{
   test('real zero remains zero with a percent unit',()=>{
     const {field}=rendered({...snapshot,pnl:'0',roiPercent:'0',entryPrice:'0',valuationPrice:'0'});
     expect(field('roi-number').textContent).toBe('0.00');expect(field('profit-number').textContent).toBe('0.00');expect(field('roi-unit').textContent).toBe('%');
-    expect(field('entry-price').textContent).toBe('0.00');expect(field('valuation-price').textContent).toBe('0.00');
+    // The guarantee here is the data rule — a REAL zero is a zero and never
+    // an em dash. PnL and ROI are currency figures and keep their two
+    // decimals; a zero PRICE is written plainly, as any other price is.
+    expect(field('entry-price').textContent).toBe('0');expect(field('valuation-price').textContent).toBe('0');
   });
   test('explicit frozen server result wins over all fallback fields without mutating or recalculating the snapshot',()=>{
     const card=Object.freeze({...snapshot,pnl:'321.09',pnlKind:'NET_REALIZED',roiPercent:'7.77',entryPrice:'1',valuationPrice:'9000',netPnl:'999999',unrealizedPnl:'888888'});
@@ -301,18 +312,42 @@ describe('actual private forms',()=>{
     let finishRender!:(blob:Blob)=>void;const onError=jest.fn();
     const snapshot={id:'card',symbol:'ETHUSDT',label:'Симуляция',mode:'DEMO_LIVE',status:'OPEN',unrealizedPnl:'10'};
     const getCard=jest.fn().mockResolvedValueOnce(snapshot).mockRejectedValueOnce(new api.PrivateTradingError('access_denied',403));
-    const png=jest.fn().mockResolvedValueOnce(new Blob(['preview'],{type:'image/png'})).mockImplementationOnce(()=>new Promise<Blob>(resolve=>{finishRender=resolve;}));
-    const ui=mount('pages/private-trading/PrivateResultCardDialog.tsx','PrivateResultCardDialog',{snapshot,onClose:jest.fn(),onError},{'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}},'../../lib/privateResultCard':{privateResultCardPng:png,privateResultCardDataUrl:async()=> 'data:image/png;base64,cG5n'}});
+    // The PREVIEW no longer rasterises anything, so the only PNG render in
+    // this flow is the export's — which is the one whose delivery a revoked
+    // permission must block. The guarantee under test is unchanged.
+    const png=jest.fn().mockImplementationOnce(()=>new Promise<Blob>(resolve=>{finishRender=resolve;}));
+    const ui=mount('pages/private-trading/PrivateResultCardDialog.tsx','PrivateResultCardDialog',{snapshot,onClose:jest.fn(),onError},{'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}},'../../lib/privateResultCard':{privateResultCardPng:png,privateResultCardDataUrl:async()=> 'data:image/png;base64,cG5n',privateResultCardPreviewUrl:()=>({url:'blob:preview',revoke:()=>{}})}});
     ui.render();await tick();const tree=ui.render();button(tree,'Сохранить PNG').props.onClick();await tick();
     finishRender(new Blob(['finished'],{type:'image/png'}));await tick();await tick();
     expect(getCard).toHaveBeenCalledTimes(2);expect(onError).toHaveBeenCalledWith(expect.objectContaining({status:403}));expect(text(ui.render())).toContain('Доступ к приватному режиму завершён');
+    expect(png).toHaveBeenCalledTimes(1);
   });
   test('Open uses a normal protected link with no asynchronous popup activation',async()=>{
     const snapshot={id:'card/owner?test',symbol:'ETHUSDT',label:'Симуляция',mode:'DEMO_LIVE',status:'OPEN'};
-    const getCard=jest.fn();const ui=mount('pages/private-trading/PrivateResultCardDialog.tsx','PrivateResultCardDialog',{snapshot,onClose:jest.fn(),onError:jest.fn()},{'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}},'../../lib/privateResultCard':{privateResultCardPng:async()=>new Blob(['png'],{type:'image/png'}),privateResultCardDataUrl:async()=> 'data:image/png;base64,cG5n'}});
+    const getCard=jest.fn();const ui=mount('pages/private-trading/PrivateResultCardDialog.tsx','PrivateResultCardDialog',{snapshot,onClose:jest.fn(),onError:jest.fn()},{'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}},'../../lib/privateResultCard':{privateResultCardPng:async()=>new Blob(['png'],{type:'image/png'}),privateResultCardDataUrl:async()=> 'data:image/png;base64,cG5n',privateResultCardPreviewUrl:()=>({url:'blob:preview',revoke:()=>{}})}});
     ui.render();await tick();await tick();const tree=ui.render(),link=find(tree,n=>n.type==='a'&&text(n)==='Открыть');
     expect(link.props.href).toBe('/futures?card=card%2Fowner%3Ftest');expect(link.props.target).toBe('_blank');expect(link.props.rel).toContain('noopener');expect(link.props.onClick).toBeUndefined();expect(getCard).not.toHaveBeenCalled();
-    expect(find(tree,n=>n.type==='img').props.src).toBe('data:image/png;base64,cG5n');
+    expect(find(tree,n=>n.type==='img').props.src).toBe('blob:preview');
+  });
+  test('opening the card shows a preview WITHOUT building a PNG, and the export still builds one',async()=>{
+    /* The speed fix, pinned. Viewing the card used to run the whole export
+       pipeline first — SVG, decode, canvas 1080x1215, toBlob, FileReader —
+       and only then show anything. Measured at 1440x900 that cost ~95ms at
+       p50 and ~287ms at p95 for a 1.5MB PNG behind a 2.07MB base64 string,
+       to satisfy a LOOK at the card. The preview is now the same SVG shown
+       directly; the PNG is built when the trader asks to save one. */
+    const snapshot={id:'card',symbol:'ETHUSDT',label:'Симуляция',mode:'DEMO_LIVE',status:'OPEN',unrealizedPnl:'10'};
+    const png=jest.fn().mockResolvedValue(new Blob(['png'],{type:'image/png'}));
+    const revoke=jest.fn();const preview=jest.fn(()=>({url:'blob:preview',revoke}));
+    const getCard=jest.fn().mockResolvedValue(snapshot);
+    const ui=mount('pages/private-trading/PrivateResultCardDialog.tsx','PrivateResultCardDialog',{snapshot,onClose:jest.fn(),onError:jest.fn()},{'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}},'../../lib/privateResultCard':{privateResultCardPng:png,privateResultCardDataUrl:async()=>'data:image/png;base64,cG5n',privateResultCardPreviewUrl:preview}});
+    ui.render();await tick();const tree=ui.render();
+    expect(preview).toHaveBeenCalledTimes(1);
+    expect(png).not.toHaveBeenCalled();
+    expect(find(tree,n=>n.type==='img').props.src).toBe('blob:preview');
+    // ...and saving still produces the PNG, from the same snapshot.
+    button(tree,'Сохранить PNG').props.onClick();await tick();await tick();await tick();
+    expect(png).toHaveBeenCalledTimes(1);
   });
   test('PNG save attaches its download anchor only after both owner checks and removes it after click',async()=>{
     const snapshot={id:'card',symbol:'ETHUSDT',label:'Симуляция',mode:'DEMO_LIVE',status:'OPEN'},getCard=jest.fn().mockResolvedValue(snapshot),onError=jest.fn();
