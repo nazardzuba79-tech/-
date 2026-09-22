@@ -106,6 +106,10 @@ async function command(s, kind, action) {
 const dialog = page => page.locator('[data-limit-close-dialog]');
 const cell = async (row, n) => (await row.locator(`td:nth-child(${n})`).innerText()).replace(/\s+/g, ' ').trim();
 const num = text => Number(String(text).replace(/[^\d.\-]/g, ''));
+/** The engine's own near-live mark for the position, read right before an order is priced off it. The dialog's
+ *  «Рыночная цена» is the same figure a few seconds older (ticker stream, positions poll); on a slow runner those
+ *  seconds are ticks of drift, so a limit meant to rest or to be marketable is priced off the engine's number. */
+const engineMark = async (s, id) => Number(position(await api(s.context, s.token, 'state'), id).markPrice);
 
 async function scenario(side, width) {
   const s = await session(width, side), { page: p, target } = s;
@@ -136,7 +140,7 @@ async function scenario(side, width) {
     await p.screenshot({ path: path.join(out, `dialog-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
     evidence.dialog = { entry, market, summary };
     // 2. Post-Only at a crossing price is refused here, nothing is sent.
-    const crossing = (market - sign * 0.001).toFixed(4);
+    const crossing = ((await engineMark(s, target.id)) - sign * 0.001).toFixed(4);
     await d.locator('[data-limit-close-post-only]').check();
     await d.locator('[data-limit-close-price]').fill(crossing);
     const sent = s.drafts.length;
@@ -146,7 +150,7 @@ async function scenario(side, width) {
     evidence.postOnlyRefusal = await d.locator('.flc-error').innerText();
     await d.locator('[data-limit-close-post-only]').uncheck();
     // 3. A far limit rests; the position does not move; cancel leaves it untouched.
-    const far = (market + sign * 0.01).toFixed(4);
+    const far = ((await engineMark(s, target.id)) + sign * 0.01).toFixed(4);
     await d.locator('[data-limit-close-price]').fill(far);
     const resting = await command(s, 'OPEN', () => d.locator('[data-limit-close-submit]').click());
     assert(resting.ok, `far limit refused: ${JSON.stringify(resting.state).slice(0, 200)}`);
@@ -170,13 +174,15 @@ async function scenario(side, width) {
     await positionsTab(p);
     await row.locator(`[data-limit-close-open="${target.id}"]`).click(); await dialog(p).waitFor();
     const market2 = Number(await dialog(p).locator('[data-limit-close-market]').getAttribute('data-limit-close-market'));
-    // Six ticks away: at 0.002 per minute the mark needs ~18s to reach it, so it rests through a slow runner's seconds between reading the market and pressing OK, and fills within the wait below.
-    const near = (market2 + sign * 0.0006).toFixed(4);
+    assert(Math.abs(market2 - (await engineMark(s, target.id))) < 0.002, `the dialog's market price ${market2} is not the engine's mark`);
     await dialog(p).locator('[data-limit-close-qty]').fill(PART);
+    // Eight ticks beyond the engine's mark, read a second before OK: at 0.002 per minute the mark needs ~24s
+    // to reach it, so it rests, and fills within the wait below.
+    const near = ((await engineMark(s, target.id)) + sign * 0.0008).toFixed(4);
     await dialog(p).locator('[data-limit-close-price]').fill(near);
     const placed = await command(s, 'OPEN', () => dialog(p).locator('[data-limit-close-submit]').click());
     assert(placed.ok, `near limit refused: ${JSON.stringify(placed.state).slice(0, 200)}`);
-    assert.equal(activeOrders(placed.state).length, 1, `the near limit did not rest (limit ${near}, market ${market2}, orders ${JSON.stringify(placed.state.orders.slice(-1).map(o => [o.status, o.price, o.averagePrice]))})`);
+    assert.equal(activeOrders(placed.state).length, 1, `the near limit did not rest (limit ${near}, dialog market ${market2}, orders ${JSON.stringify(placed.state.orders.slice(-1).map(o => [o.status, o.price, o.averagePrice]))})`);
     assert.equal(position(placed.state, target.id).quantity, QUANTITY, 'the near limit changed the position before the price reached it');
     const orderId = activeOrders(placed.state)[0].id;
     let filled = null;
@@ -205,13 +211,16 @@ async function scenario(side, width) {
     await row.locator(`[data-limit-close-open="${target.id}"]`).click(); await dialog(p).waitFor();
     await dialog(p).locator('[data-limit-close-stop="25"]').click();
     assert.equal(await dialog(p).locator('[data-limit-close-qty]').inputValue(), '2500000', '25% of the remaining position');
-    const market3 = Number(await dialog(p).locator('[data-limit-close-market]').getAttribute('data-limit-close-market'));
-    await dialog(p).locator('[data-limit-close-price]').fill((market3 - sign * 0.001).toFixed(4));
+    // Ten ticks inside the engine's mark: marketable. A historical account fills it at the near-live replay,
+    // which the OPEN itself or the terminal's next poll carries — so the check waits for the fill, briefly.
+    await dialog(p).locator('[data-limit-close-price]').fill(((await engineMark(s, target.id)) - sign * 0.001).toFixed(4));
     const quarter = await command(s, 'OPEN', () => dialog(p).locator('[data-limit-close-submit]').click());
     assert(quarter.ok); assert.equal(quarter.draft.quantity, '2500000');
-    assert.equal(position(quarter.state, target.id).quantity, '7500000', `the marketable 25% close left ${position(quarter.state, target.id).quantity}, not 7 500 000 (draft ${JSON.stringify(quarter.draft)}; orders: ${JSON.stringify(activeOrders(quarter.state).map(o => [o.status, o.price, o.remaining]))})`);
-    assert.equal(activeOrders(quarter.state).length, 0);
-    evidence.quarter = { quantityAfter: position(quarter.state, target.id).quantity };
+    let settled = quarter.state;
+    for (let i = 0; i < 10 && position(settled, target.id).quantity !== '7500000'; i++) { await delay(3000); settled = await api(s.context, s.token, 'state'); }
+    assert.equal(position(settled, target.id).quantity, '7500000', `the marketable 25% close left ${position(settled, target.id).quantity}, not 7 500 000 (draft ${JSON.stringify(quarter.draft)}; orders: ${JSON.stringify(activeOrders(settled).map(o => [o.status, o.price, o.remaining]))})`);
+    assert.equal(activeOrders(settled).length, 0);
+    evidence.quarter = { quantityAfter: position(settled, target.id).quantity, filledInOpen: position(quarter.state, target.id).quantity === '7500000' };
     // 6. The order form under «Только уменьшение»: only the side with something to reduce is live.
     if (width !== 390) {
       await workspace(p, 'trade');
