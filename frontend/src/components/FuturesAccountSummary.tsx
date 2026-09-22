@@ -311,7 +311,10 @@ function groupAmount(value: number): string {
   const fixed = value.toFixed(2);
   const negative = fixed.startsWith('-');
   const [whole, fraction] = (negative ? fixed.slice(1) : fixed).split('.');
-  return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}.${fraction}`;
+  // A comma between thousands and a dot before decimals — the one rule the
+  // header, the order book and the positions panel already follow; this
+  // card used a space, which read as a third convention on one screen.
+  return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
 }
 
 /**

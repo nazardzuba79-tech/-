@@ -697,16 +697,18 @@
     overflow-wrap: normal;
   }
 }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 12.4%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(2) { width: 7.1%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(3) { width: 8.4%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 6.9%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 9.3%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 7.4%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 13.4%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 10.2%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 9.6%; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 14%; }
+/* Eleven columns since «Маржа» joined as the fourth; the shares are re-cut to sum to 100. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 11.6%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(2) { width: 6.6%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(3) { width: 7.8%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 7%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 6.5%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 8.7%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 6.9%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 12.5%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 9.5%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 9.1%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(11) { width: 13.8%; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
   font-size: 12px;
   font-weight: 400;
@@ -724,16 +726,18 @@
      price headings 7-8%; at 12.5px those headings need 82-183px and expanded
      past their share, which is what pushed the table into a scroll. Measured
      heading ink: 69 / 31 / 46 / 72 / 113 / 84 / 173 / 125 / 37 / 78 px. */
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 10.5%; }
+  /* Eleven columns: «Маржа» fourth, shares re-cut to sum to 100. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 10%; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(2) { width: 4.5%; }
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(3) { width: 6%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 8%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 12.5%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 9.5%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 18.5%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 13%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 5%; }
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 12.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 6.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 7.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 11.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 8.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 17%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 12.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 4.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(11) { width: 11.5%; }
   /* No `font-size` here: the 11.5px this rule used to carry never reached a
      heading — a later unconditional 12.5px outranks it at every width
      (issue #148 measured the rendered value). Padding is what the rule is

@@ -459,15 +459,15 @@
    wide row scroll instead of crushing its columns — but the row now fills
    the panel when the columns do not need all of it, which is what removes
    the "narrow block floating in empty space" look. */
-.trade-terminal.trade-terminal.futures-reference .futures-positions-table { width: 100%; min-width: max-content; font-size: 13px; line-height: 1.45; }
-.trade-terminal.trade-terminal.futures-reference .futures-positions-table th { padding: 10px 14px; white-space: nowrap; font-size: 12px; font-weight: 500; letter-spacing: .01em; }
+.trade-terminal.trade-terminal.futures-reference .futures-positions-table { width: 100%; min-width: max-content; font-size: 14px; line-height: 1.45; }
+.trade-terminal.trade-terminal.futures-reference .futures-positions-table th { padding: 10px 14px; white-space: nowrap; font-size: 13px; font-weight: 500; letter-spacing: .01em; }
 .trade-terminal.trade-terminal.futures-reference .futures-positions-table td { padding: 11px 14px; white-space: nowrap; vertical-align: middle; font-variant-numeric: tabular-nums; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-row { border-top: 1px solid #2a2a31; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-row:hover { background: #ffffff05; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-contract { display: flex; flex-direction: column; gap: 2px; line-height: 15px; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-contract b { font-size: 12px; font-weight: 600; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-contract small { font-size: 10px; font-weight: 500; }
-.trade-terminal.trade-terminal.futures-reference .futures-position-unit { color: var(--text-tertiary); font-size: 11px; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-unit { color: var(--text-tertiary); font-size: 12px; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-pnl { display: flex; flex-direction: column; gap: 2px; line-height: 15px; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-pnl small { font-size: 10px; opacity: .85; }
 .trade-terminal.trade-terminal.futures-reference .futures-position-actions { display: flex; align-items: center; gap: 6px; }

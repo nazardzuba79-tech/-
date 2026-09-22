@@ -225,8 +225,10 @@ describe('4. sums, units and the right axis', () => {
 
   test('a large balance is grouped, with every digit still present', () => {
     const rendered = text(big());
-    expect(rendered).toContain('56 405 024.03');
-    expect(rendered).toContain('56 381 922.68');
+    // Grouped with the comma the header, the book and the positions panel
+    // use — this card was the one place on the screen grouping with a space.
+    expect(rendered).toContain('56,405,024.03');
+    expect(rendered).toContain('56,381,922.68');
   });
 
   test('it is never abbreviated or truncated', () => {

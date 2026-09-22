@@ -23,6 +23,16 @@ function group(value: number, digits: number): string {
   if (!Number.isFinite(value)) return '—';
   return value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
+/**
+ * A quantity, grouped like every other figure in the row — `15,000,000`,
+ * not `15000000` — at the precision the server sent it in. The same rule
+ * as the money columns: comma between thousands, dot before decimals.
+ */
+function groupQuantity(raw: string): string {
+  const value = Number(raw);
+  if (!raw.trim() || !Number.isFinite(value)) return raw;
+  return group(value, Math.min(raw.split('.')[1]?.length ?? 0, 8));
+}
 
 export function FuturesPositionsPanel({
   refreshKey,
@@ -303,6 +313,7 @@ export function FuturesPositionsPanel({
                   <Th>{t('futures.colContracts')}</Th>
                   <Th>{t('futures.colQty')}</Th>
                   <Th>{t('futures.colValue')}</Th>
+                  <Th>{t('futures.margin')}</Th>
                   <Th>{t('futures.colEntry')}</Th>
                   <Th>{t('futures.colMark')}</Th>
                   <Th>{t('futures.colLiq')}</Th>
@@ -374,12 +385,21 @@ export function FuturesPositionsPanel({
                         </div>
                       </Td>
                       <Td label={t('futures.colQty')} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
-                        {formatPositionQuantity(p.size, p.symbol)} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
+                        {groupQuantity(formatPositionQuantity(p.size, p.symbol))} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
                       </Td>
                       <Td label={t('futures.colValue')} className="mono">
                         {value === null ? '—' : (
                           <>{group(value, 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         )}
+                      </Td>
+                      {/* The trader's own money in the trade: the initial
+                          margin the position posts — size × entry ÷ leverage
+                          on Cross, the posted amount on Isolated. The
+                          server's figure, the same one ROI is measured on. */}
+                      <Td label={t('futures.margin')} className="mono">
+                        {Number.isFinite(parseFloat(p.initialMargin)) ? (
+                          <>{group(parseFloat(p.initialMargin), 2)} <span className="futures-position-unit">{quoteAsset}</span></>
+                        ) : '—'}
                       </Td>
                       <Td label={t('futures.colEntry')} className="mono">{archive ? formatPrice(Number(p.entryPrice)) : p.entryPrice}</Td>
                       <Td label={t('futures.colMark')} className="mono">{p.markPrice === null ? '—' : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
@@ -393,17 +413,14 @@ export function FuturesPositionsPanel({
                               className="futures-position-money"
                               data-unit={pnl !== null ? quoteAsset : undefined}
                               data-positive={pnl !== null && pnl > 0 ? 'true' : undefined}
-                            >{pnl !== null ? group(pnl, 4) : '—'}</span>
+                            >{pnl !== null ? group(pnl, 2) : '—'}</span>
                             <small
                               className="futures-position-roi"
                               data-positive={roe !== null && roe > 0 ? 'true' : undefined}
-                            >{roe !== null ? `${roe.toFixed(2)}%` : '—'}</small>
+                            >{roe !== null ? `${group(roe, 2)}%` : '—'}</small>
                             {archive && <button type="button" className="archive-pnl-open" title={t('futures.pnlCard')} aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
                               onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
                           </span>
-                          {!archive && pnl !== null && (
-                            <small className="futures-position-approx">≈{group(pnl, 2)} USD</small>
-                          )}
                         </div>
                       </Td>
                       <Td label={t('futures.colRealized')} className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
@@ -412,10 +429,7 @@ export function FuturesPositionsPanel({
                             className="futures-position-realized"
                             data-unit={Number.isFinite(realized) ? quoteAsset : undefined}
                             data-positive={Number.isFinite(realized) && realized > 0 ? 'true' : undefined}
-                          >{Number.isFinite(realized) ? group(realized, 4) : '—'}</span>
-                          {!archive && Number.isFinite(realized) && (
-                            <small className="futures-position-approx">≈{group(realized, 2)} USD</small>
-                          )}
+                          >{Number.isFinite(realized) ? group(realized, 2) : '—'}</span>
                         </div>
                       </Td>
                       <Td label={t('futures.tpsl')}>

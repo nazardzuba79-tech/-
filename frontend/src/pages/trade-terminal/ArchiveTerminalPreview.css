@@ -138,10 +138,15 @@
 #archive-terminal-preview .bottom-tabs .bottom-tab { font-size:13px; font-weight:550; color:#dce3ed; }
 #archive-terminal-preview .bottom-tabs .bottom-tab:hover { color:#fff; }
 #archive-terminal-preview .bottom-tabs .bottom-tab.active { color:#fff; border-bottom-color:#f0b90b; box-shadow:inset 0 -2px 0 #f0b90b; }
-#archive-terminal-preview .futures-positions-table { min-width:1120px; table-layout:auto; font-family:var(--font-family); }
-#archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px 12px; padding-inline:12px !important; white-space:nowrap; text-align:left; }
-#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; font-size:11px; font-weight:400; border-bottom:0; position:sticky; top:0; z-index:1; }
-#archive-terminal-preview .futures-positions-table td { height:64px; font-size:12px; font-weight:550; color:#f8fafc; vertical-align:middle; border-bottom:0; }
+/* One step larger (owner, 2026-09-22): td 12→13, th 11→12, the P&L figures
+   and ROI with them. The row now carries eleven columns («Маржа» joined
+   it), so below 1800px the two long P&L headings may take a second line
+   and the inline padding gives up two pixels — a figure is never clipped,
+   and the table stops asking for more width than the panel has at 1600+. */
+#archive-terminal-preview .futures-positions-table { min-width:0; table-layout:auto; font-family:var(--font-family); }
+#archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px 10px; padding-inline:10px !important; white-space:nowrap; text-align:left; }
+#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; font-size:12px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
+#archive-terminal-preview .futures-positions-table td { height:64px; font-size:13px; font-weight:550; color:#f8fafc; vertical-align:middle; border-bottom:0; }
 #archive-terminal-preview .futures-position-unit { color:#bac5d5; }
 #archive-terminal-preview .futures-positions-table td:is(:nth-child(3),:nth-child(4),:nth-child(5)) { color:#f8fafc !important; }
 #archive-terminal-preview .futures-positions-table th:first-child { left:auto; }
@@ -163,13 +168,13 @@
 #archive-terminal-preview .futures-position-contract small.text-sell { color:var(--sell); }
 #archive-terminal-preview .futures-position-perp { font-style:normal; font-size:11px; color:var(--text-primary); background:transparent; }
 #archive-terminal-preview .futures-position-figure { display:grid; grid-template-columns:max-content 22px; align-items:center; gap:2px 6px; }
-#archive-terminal-preview .futures-position-roi { grid-column:1; font-size:11px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
+#archive-terminal-preview .futures-position-roi { grid-column:1; font-size:12px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
 /* Match protection and close pills, including the inherited inner chip dimensions. */
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:84px; height:26px; min-height:26px; margin:0; padding:4px 6px !important; border:0 !important; border-radius:999px !important; background:#454b55 !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)):hover { background:#626c7a !important; }
 #archive-terminal-preview .futures-position-actions { gap:6px !important; flex-wrap:nowrap; }
 #archive-terminal-preview .fut-tpslAdd { display:inline; min-width:0; height:auto; min-height:0; padding:0; color:#fff !important; font-size:inherit !important; font-weight:inherit !important; line-height:inherit; }
-#archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized) { font-size:12px; line-height:17px; font-weight:500; }
+#archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized) { font-size:13px; line-height:18px; font-weight:500; }
 #archive-terminal-preview .fut-tpslTrigger > span { flex-direction:column; align-items:flex-start; gap:4px; }
 #archive-terminal-preview .fut-tpslChip { font-size:11px !important; font-weight:550 !important; background:transparent !important; padding:0 !important; }
 #archive-terminal-preview .archive-protection-fields input:disabled { opacity:.6; }
@@ -216,9 +221,25 @@
 #archive-terminal-preview .archive-top-assets-status { padding-inline:14px; color:var(--text-tertiary); font-size:11px; }
 @media(min-width:1800px) {
   #archive-terminal-preview .terminal { grid-template-columns:minmax(0,1fr) 292px 350px; }
-  #archive-terminal-preview .futures-positions-table th { font-size:12px; }
+  #archive-terminal-preview .futures-positions-table th { font-size:13px; }
 }
-@media(max-width:1599px) { #archive-terminal-preview .futures-positions-table :is(th,td) { padding-inline:8px !important; } }
+@media(max-width:1799px) {
+  /* The mark-price and the two P&L headings are the widest ink in the row;
+     on two lines they cost the header 14px of height and give every
+     narrower panel ~180px. `!important` because the studio sheet pins every
+     heading to one line the same way; the id wins the tie. */
+  #archive-terminal-preview .futures-positions-table th:is(:nth-child(6),:nth-child(8),:nth-child(9)) { white-space:normal !important; min-width:88px; }
+}
+@media(max-width:1599px) {
+  #archive-terminal-preview .futures-positions-table :is(th,td) { padding-inline:8px !important; }
+  /* Below 1600 the unit moves under its figure (`1,500,000` over `AKE`,
+     `80,700.00` over `USDT`) and two more price headings may wrap: measured,
+     that is what lets eleven columns fit a 1114px panel at 1440 with no
+     figure clipped and nothing hidden. The row keeps its 64px. */
+  #archive-terminal-preview .futures-position-unit { display:block; font-size:11px; line-height:14px; }
+  #archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized)[data-unit]::after { content:attr(data-unit); display:block; font-size:11px; line-height:14px; color:#bac5d5; }
+  #archive-terminal-preview .futures-positions-table th:is(:nth-child(5),:nth-child(7)) { white-space:normal !important; min-width:60px; }
+}
 @media(max-width:1400px) { #archive-terminal-preview .ticker-bar { gap:14px; padding-inline:12px; } }
 @media(max-width:1200px) {
   #archive-terminal-preview .terminal { grid-template-columns:minmax(0,1fr) 238px 290px; }
