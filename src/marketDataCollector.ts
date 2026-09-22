@@ -70,8 +70,9 @@ const runtime = collectorServer(
   () => collector.universe.snapshot(),
   cfdDisplay,
 );
-runtime.server.listen(Number(process.env.PORT || 10000), '0.0.0.0', () => {
-  console.log('Market data collector listening');
+const bindHost = process.env.MARKET_DATA_BIND_HOST?.trim() || '0.0.0.0';
+runtime.server.listen(Number(process.env.PORT || 10000), bindHost, () => {
+  console.log(`Market data collector listening on ${bindHost}:${process.env.PORT || 10000}`);
   collector.start();
   cfdDeriv.start();
   runCfdDisplaySelfTest();
