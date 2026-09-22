@@ -194,12 +194,26 @@ const state = (page) => page.evaluate(() => {
       // rather than as a page that scrolls.
       navFit: (() => {
         const nav = document.querySelector('.main-nav');
-        if (!nav || getComputedStyle(nav).display === 'none') return null;
-        return { scroll: nav.scrollWidth, client: nav.clientWidth,
+        const actions = document.querySelector('.header-actions');
+        if (!nav || !actions || getComputedStyle(nav).display === 'none') return null;
+        const links = [...nav.querySelectorAll(':scope > a, :scope > .nav-item-wrap')]
+          .filter(a => getComputedStyle(a).display !== 'none' && a.getBoundingClientRect().width > 0);
+        const navRight = nav.getBoundingClientRect().right;
+        const visible = links.filter(a => a.getBoundingClientRect().right <= navRight + 1);
+        const lastRight = links.length ? Math.max(...links.map(a => a.getBoundingClientRect().right)) : 0;
+        return {
           clipped: Math.max(0, nav.scrollWidth - nav.clientWidth),
-          visible: [...nav.querySelectorAll(':scope > a, :scope > .nav-item-wrap')]
-            .filter(a => a.getBoundingClientRect().right <= nav.getBoundingClientRect().right + 1)
-            .map(a => a.textContent.trim()) };
+          // THE REAL HEADROOM: the gap between the last product section and
+          // the account cluster. `scrollWidth - clientWidth` is useless for
+          // this — it reads 0 whenever the row fits at all, however barely.
+          //
+          // Recorded because "it fits" is not the same claim as "it fits
+          // with room to spare". The first cut of this tier left 10px here
+          // and came out 3px SHORT on the GitHub runner, whose font stack
+          // measures the same text slightly wider, and OTC fell off the end.
+          slack: Math.round(actions.getBoundingClientRect().left - lastRight),
+          visible: visible.map(a => a.textContent.trim()),
+        };
       })(),
       // Anything in the header whose text no longer fits its box, and any
       // control that has dropped onto a second row.
@@ -358,6 +372,12 @@ const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${LABEL}-${
         assert.ok(m.navFit, `${key}: /markets has no product nav to measure`);
         assert.equal(m.navFit.clipped, 0, `${key}: the product sections are cut off by ${m.navFit.clipped}px (${m.navFit.visible.join(' | ')})`);
         assert.ok(m.navFit.visible.includes('OTC'), `${key}: OTC fell off the header (${m.navFit.visible.join(' | ')})`);
+        // Fitting by a hair is how this broke the first time. 15px is
+        // comfortably more than the ~13px the runner's font stack differs
+        // by, and far less than the ~27px this tier actually leaves — so
+        // it catches a real narrowing without tripping on rendering noise.
+        assert.ok(m.navFit.slack >= 20,
+          `${key}: the sections clear the account cluster by only ${m.navFit.slack}px — too fine to survive another font stack`);
       }
 
       // ── 2. The contract name in a position opens that contract ─────────

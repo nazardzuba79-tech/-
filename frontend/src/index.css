@@ -2448,17 +2448,40 @@ a:hover > .nav-card-icon {
    Two steps, each gated on a header that ACTUALLY carries the chip, so a
    non-admin header is byte-for-byte unchanged at every width:
 
-     · below 1520 the sections tighten from 11px to 7px of side padding —
-       64px across the eight of them, which fits 722 into 732;
+     · below 1520 the row is given real headroom back — the sections drop
+       from 11px to 6px of side padding (80px across the eight of them),
+       the account cluster's own gap tightens 8px to 6px, and the chip
+       gives back 4px of its padding, which the sections receive because
+       `.header-actions` never shrinks;
      · below 1400 Crypto Card and OTC step into the drawer, exactly as they
-       already do below 1050, because 722 no longer fits either.
+       already do below 1050, because even that no longer fits.
 
-   The Futures terminal is not affected by either: it already sends its
+   THE FIRST ATTEMPT AT THIS TIER TOOK BACK EXACTLY WHAT WAS MISSING and
+   nothing more: 7px of padding fitted 722 into 732 here, and then the
+   GitHub runner — a different font stack, so slightly different intrinsic
+   text widths — came out 3px short and dropped OTC off the end. Ten pixels
+   of slack is not slack; a row tuned that finely is one font substitution
+   away from breaking on somebody's machine. These numbers leave ~40px on
+   this machine and ~27px on the runner, which is what makes the rule hold
+   rather than happen to hold. The QA run records the slack, not just the
+   pass, so the next drift is visible before it clips anything.
+
+   The Futures terminal is not affected by any of it: it already sends its
    whole product nav to the burger from 1519 down when the admin entry is
    present (see the `:has(.nav-admin)` tier further down). */
 @media (min-width: 1051px) and (max-width: 1519px) {
   .global-header:has(.nav-admin-chip) .main-nav .nav-item {
-    padding: 0 7px;
+    padding: 0 6px;
+  }
+  .global-header:has(.nav-admin-chip) .header-actions {
+    gap: 6px;
+  }
+  .global-header:has(.nav-admin-chip) .header-actions > .nav-admin-chip {
+    padding: 0 11px;
+    gap: 6px;
+  }
+  .global-header:has(.nav-admin-chip) .header-actions > .deposit-button + * {
+    margin-left: 6px;
   }
 }
 @media (min-width: 1051px) and (max-width: 1399px) {

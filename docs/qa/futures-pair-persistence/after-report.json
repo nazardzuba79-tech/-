@@ -50,11 +50,11 @@
     },
     "header-markets": {
       "admin": {
-        "left": 927,
-        "right": 1027,
+        "left": 942,
+        "right": 1037,
         "top": 16,
         "bottom": 48,
-        "width": 100,
+        "width": 95,
         "height": 32,
         "background": "linear-gradient(rgb(35, 33, 60), rgb(26, 25, 48))",
         "color": "rgb(195, 193, 255)",
@@ -63,8 +63,8 @@
         "display": "flex"
       },
       "wallet": {
-        "left": 1035,
-        "right": 1115,
+        "left": 1043,
+        "right": 1123,
         "top": 16,
         "bottom": 48,
         "width": 80,
@@ -76,8 +76,8 @@
         "display": "flex"
       },
       "deposit": {
-        "left": 1123,
-        "right": 1203,
+        "left": 1129,
+        "right": 1209,
         "top": 14,
         "bottom": 49,
         "width": 80,
@@ -110,9 +110,8 @@
       ],
       "adminInDrawer": true,
       "navFit": {
-        "scroll": 722,
-        "client": 722,
         "clipped": 0,
+        "slack": 41,
         "visible": [
           "Рынки",
           "Торговля",
@@ -248,11 +247,11 @@
     },
     "header": {
       "admin": {
-        "left": 792,
-        "right": 904,
+        "left": 808,
+        "right": 916,
         "top": 8,
         "bottom": 40,
-        "width": 112,
+        "width": 108,
         "height": 32,
         "background": "rgb(28, 26, 46)",
         "color": "rgb(201, 199, 255)",
@@ -261,8 +260,8 @@
         "display": "flex"
       },
       "wallet": {
-        "left": 912,
-        "right": 1028,
+        "left": 922,
+        "right": 1038,
         "top": 8,
         "bottom": 40,
         "width": 116,
@@ -274,8 +273,8 @@
         "display": "flex"
       },
       "deposit": {
-        "left": 1036,
-        "right": 1126,
+        "left": 1044,
+        "right": 1134,
         "top": 8,
         "bottom": 40,
         "width": 90,
