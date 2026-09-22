@@ -176,7 +176,7 @@ async function scenario(side, width) {
     await dialog(p).locator('[data-limit-close-price]').fill(near);
     const placed = await command(s, 'OPEN', () => dialog(p).locator('[data-limit-close-submit]').click());
     assert(placed.ok, `near limit refused: ${JSON.stringify(placed.state).slice(0, 200)}`);
-    assert.equal(activeOrders(placed.state).length, 1, 'the near limit did not rest');
+    assert.equal(activeOrders(placed.state).length, 1, `the near limit did not rest (limit ${near}, market ${market2}, orders ${JSON.stringify(placed.state.orders.slice(-1).map(o => [o.status, o.price, o.averagePrice]))})`);
     assert.equal(position(placed.state, target.id).quantity, QUANTITY, 'the near limit changed the position before the price reached it');
     const orderId = activeOrders(placed.state)[0].id;
     let filled = null;
@@ -187,7 +187,7 @@ async function scenario(side, width) {
     }
     assert(filled, 'the price reached the limit but the close did not fill within three minutes');
     const after = position(filled, target.id);
-    assert.equal(after.quantity, '10000000', 'the partial close did not leave 10 000 000');
+    assert.equal(after.quantity, '10000000', `the partial close left ${after.quantity}, not 10 000 000 (orders: ${JSON.stringify(filled.orders.map(o => [o.id, o.status, o.filled, o.remaining]))})`);
     assert.equal(after.side, side, 'the close flipped the position side');
     assert.equal(filled.positions.filter(x => x.symbol === 'AKEUSDT').length, 1, 'a second AKE position appeared');
     assert.equal(activeOrders(filled).length, 0, 'the filled order still shows as open');
@@ -209,7 +209,7 @@ async function scenario(side, width) {
     await dialog(p).locator('[data-limit-close-price]').fill((market3 - sign * 0.001).toFixed(4));
     const quarter = await command(s, 'OPEN', () => dialog(p).locator('[data-limit-close-submit]').click());
     assert(quarter.ok); assert.equal(quarter.draft.quantity, '2500000');
-    assert.equal(position(quarter.state, target.id).quantity, '7500000', 'the marketable 25% close did not leave 7 500 000');
+    assert.equal(position(quarter.state, target.id).quantity, '7500000', `the marketable 25% close left ${position(quarter.state, target.id).quantity}, not 7 500 000 (draft ${JSON.stringify(quarter.draft)}; orders: ${JSON.stringify(activeOrders(quarter.state).map(o => [o.status, o.price, o.remaining]))})`);
     assert.equal(activeOrders(quarter.state).length, 0);
     evidence.quarter = { quantityAfter: position(quarter.state, target.id).quantity };
     // 6. The order form under «Только уменьшение»: only the side with something to reduce is live.
