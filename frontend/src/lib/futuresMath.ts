@@ -269,7 +269,7 @@ export function fitQuantityToContract(
   quantity: number,
   price: number,
   rules: FuturesContractRules,
-  options: { market: boolean },
+  options: { market: boolean; historical?: boolean },
 ): ContractSizing {
   const none: ContractSizing = { quantity: 0, cappedBy: null, rejectedBy: null, limit: null };
   if (!Number.isFinite(quantity) || quantity <= 0) return none;
@@ -284,7 +284,15 @@ export function fitQuantityToContract(
 
   const ceiling = Number(options.market ? rules.maxMarketOrderQty : rules.maxOrderQty);
   let cappedBy: ContractSizing['cappedBy'] = null;
-  if (Number.isFinite(ceiling) && fitted > ceiling) {
+  // `historical` lifts THIS ceiling and nothing else. maxOrderQty and
+  // maxMarketOrderQty are the venue's per-order liquidity limits, and a
+  // HISTORICAL_DEMO entry fills at a price picked off a past candle: it
+  // takes no depth and competes with nobody, so the limit has nothing to
+  // bound. The step, the minimum size and the minimum notional below are
+  // contract arithmetic, not liquidity, and still apply. The engine
+  // (src/private-trading/math.ts) draws the same line server-side; this is
+  // the mirror of it, so the refusal is visible before the round trip.
+  if (!options.historical && Number.isFinite(ceiling) && fitted > ceiling) {
     // The ceiling itself has to land on the step, so floor it too.
     fitted = Math.floor(Number((ceiling * scale).toFixed(6))) / scale;
     fitted = Number((Math.floor(Number((fitted / step).toFixed(6))) * step).toFixed(decimals));

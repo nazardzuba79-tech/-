@@ -24,22 +24,38 @@ const now=()=>Date.now(),started=now();
    per symbol, so widening the list costs nothing at runtime.
    Fixture mode keeps a tiny deterministic set because it invents candles. */
 const FIXTURE_SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT'];
+/* A deliberately THIN market, added only when a QA run asks for it so the
+   default fixture universe above is untouched. Its point is the two limits a
+   live venue puts on a small-cap contract — a maxMarketOrderQty far below the
+   size a demo trader wants, and a risk ladder that caps leverage at 5x past
+   100 000 of notional. HISTORICAL_DEMO takes no real liquidity, so neither
+   limit may decide a historical entry; LIVE_EXECUTION is still bound by both. */
+const THIN_SYMBOL='AKEUSDT';
+const thin=process.env.NATIVE_PREVIEW_THIN_SYMBOL==='1';
 /* Synthetic preview capital, same category as the 10,000,000 settle deposit
    below: a non-settle holding that makes the multi-asset collateral path real
    in review and in CI. It is NOT an account value — it is priced every read
    from the market-data path, so the figure moves when the price moves. */
 const PREVIEW_WALLET_BTC='2';
-let symbols=FIXTURE_SYMBOLS;
-function fixtureCandle(t,interval=60000){const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}
+let symbols=thin?[...FIXTURE_SYMBOLS,THIN_SYMBOL]:FIXTURE_SYMBOLS;
+// The thin contract trades in fractions of a cent, so it carries its own base
+// price and tick precision; every other symbol keeps the series it always had.
+const fixtureBase=symbol=>symbol===THIN_SYMBOL?{price:0.5,dp:5,pad:0.0015,volume:'4200000'}:{price:50000,dp:1,pad:150,volume:'125'};
+function fixtureCandle(t,interval=60000,symbol='BTCUSDT'){const b=fixtureBase(symbol);const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=b.price*(1+x),c=b.price*(1+y);return{timestamp:t,open:o.toFixed(b.dp),high:(Math.max(o,c)+b.pad).toFixed(b.dp),low:(Math.min(o,c)-b.pad).toFixed(b.dp),close:c.toFixed(b.dp),volume:b.volume};}
 const sizes={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
-function fixtureInstrument(symbol){return{provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};}
+const THIN_FILTERS={tickSize:'0.00001',minPrice:'0.00001',maxPrice:'1000',qtyStep:'1',minOrderQty:'1',maxOrderQty:'500000',maxMarketOrderQty:'500000',minNotionalValue:'5'};
+// Continuous by construction: 0 + 100 000 x (0.015 - 0.005) = 1000, which the
+// engine's own ladder invariant checks.
+const THIN_TIERS=[{riskLimitValue:'100000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'},
+  {riskLimitValue:'1000000000',maintenanceMarginRate:'0.015',initialMarginRate:'0.2',maintenanceDeduction:'1000',maxLeverage:'5'}];
+function fixtureInstrument(symbol){return{provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:symbol===THIN_SYMBOL?THIN_FILTERS:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:symbol===THIN_SYMBOL?THIN_TIERS:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};}
 async function transport(url,options={}){
   const u=new URL(url);
   if(u.pathname==='/internal/v1/private-trading/marks'){
     const requested=[...new Set((u.searchParams.get('symbols')||'').split(','))];
     if(!requested.length||requested.length>64||requested.some(s=>!symbols.includes(s)))throw new Error('Invalid preview marks');
     const marks=await Promise.all(requested.map(async symbol=>{
-      if(fixture){const at=now(),price=fixtureCandle(Math.floor(at/60000)*60000).close;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
+      if(fixture){const at=now(),price=fixtureCandle(Math.floor(at/60000)*60000,60000,symbol).close;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
       const q=await source.freshQuote(symbol,options.signal);return{symbol,markPrice:q.markPrice,lastPrice:q.lastPrice,markProviderTimestamp:q.markProviderTimestamp,receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt};
     }));
     return new Response(JSON.stringify({status:'live',fetchedAt:now(),marks}),{status:200,headers:{'Content-Type':'application/json'}});
@@ -48,9 +64,9 @@ async function transport(url,options={}){
   const[kind,symbol]=m.slice(1),q=u.searchParams;let result;
   if(fixture){
     if(kind==='instruments')result=fixtureInstrument(symbol);
-    else if(kind==='quote'){const price=Number(fixtureCandle(Math.floor(now()/60000)*60000).close);result={provider:'bybit',symbol,bids:[{price:(price-.1).toFixed(1),quantity:'10'}],asks:[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:price.toFixed(1),lastPrice:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
-    else if(kind==='chart-candles'){const step=sizes[q.get('interval')],end=Number(q.get('endTime')||now()),limit=Number(q.get('limit')||520);const last=Math.floor(end/step)*step;result={source:'BYBIT_LINEAR',symbol,interval:q.get('interval'),candles:Array.from({length:limit},(_,i)=>fixtureCandle(last-(limit-i-1)*step,step)),fetchedAt:now(),providerTimestamp:now()};}
-    else if(kind==='candles'){const start=Number(q.get('startTime')),end=Number(q.get('endTime')),step=Number(q.get('intervalMinutes'))*60000;result={symbol,candles:Array.from({length:Math.floor((end-start)/step)+1},(_,i)=>fixtureCandle(start+i*step,step)),fetchedAt:now()};}
+    else if(kind==='quote'){const b=fixtureBase(symbol),price=Number(fixtureCandle(Math.floor(now()/60000)*60000,60000,symbol).close);result={provider:'bybit',symbol,bids:[{price:(price-b.pad).toFixed(b.dp),quantity:'10'}],asks:[{price:(price+b.pad).toFixed(b.dp),quantity:'10'}],markPrice:price.toFixed(b.dp),lastPrice:price.toFixed(b.dp),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
+    else if(kind==='chart-candles'){const step=sizes[q.get('interval')],end=Number(q.get('endTime')||now()),limit=Number(q.get('limit')||520);const last=Math.floor(end/step)*step;result={source:'BYBIT_LINEAR',symbol,interval:q.get('interval'),candles:Array.from({length:limit},(_,i)=>fixtureCandle(last-(limit-i-1)*step,step,symbol)),fetchedAt:now(),providerTimestamp:now()};}
+    else if(kind==='candles'){const start=Number(q.get('startTime')),end=Number(q.get('endTime')),step=Number(q.get('intervalMinutes'))*60000;result={symbol,candles:Array.from({length:Math.floor((end-start)/step)+1},(_,i)=>fixtureCandle(start+i*step,step,symbol)),fetchedAt:now()};}
     else result={symbol,events:[],fetchedAt:now()};
   }else if(kind==='instruments')result=await source.instrument(symbol,options.signal);
   else if(kind==='quote')result=await source.freshQuote(symbol,options.signal);
@@ -89,7 +105,7 @@ app.use('/api/v1/private-trading/native',nativeDemoRoutes(service,res=>res.local
 app.get('/api/v1/private-trading/candles',asyncRoute(async(req,res)=>res.json(await market.chartCandles({symbol:String(req.query.symbol).replace('/',''),interval:req.query.interval,limit:Number(req.query.limit||520),...(req.query.endTime?{endTime:Number(req.query.endTime)}:{})}))));
 let tickCache=null;
 async function tickers(){if(tickCache&&now()-tickCache.at<5000)return tickCache.rows;let list,time=now();
-  if(fixture)list=symbols.map(symbol=>({symbol,lastPrice:fixtureCandle(Math.floor(now()/60000)*60000).close,bid1Price:'50000',ask1Price:'50001',highPrice24h:'51000',lowPrice24h:'49000',volume24h:'1000',turnover24h:'50000000',price24hPcnt:'0.01',markPrice:fixtureCandle(Math.floor(now()/60000)*60000).close,indexPrice:'50000',fundingRate:'0.0001',openInterest:'10000',openInterestValue:'500000000'}));
+  if(fixture)list=symbols.map(symbol=>{const last=fixtureCandle(Math.floor(now()/60000)*60000,60000,symbol).close,b=fixtureBase(symbol);return{symbol,lastPrice:last,bid1Price:(Number(last)-b.pad).toFixed(b.dp),ask1Price:(Number(last)+b.pad).toFixed(b.dp),highPrice24h:(b.price*1.02).toFixed(b.dp),lowPrice24h:(b.price*0.98).toFixed(b.dp),volume24h:'1000',turnover24h:'50000000',price24hPcnt:'0.01',markPrice:last,indexPrice:b.price.toFixed(b.dp),fundingRate:'0.0001',openInterest:'10000',openInterestValue:'500000000'};});
   else{const r=await fetch('https://api.bybit.com/v5/market/tickers?category=linear',{signal:AbortSignal.timeout(8000)});const j=await r.json();if(!r.ok||j.retCode!==0)throw new Error('Public tickers unavailable');list=j.result.list;time=Number(j.time);}
   const number=x=>x===undefined||x===null||x===''?null:Number.isFinite(Number(x))?Number(x):null;
   // USDT linear perpetuals only: dated futures carry a delivery suffix and
@@ -109,7 +125,10 @@ app.get('/api/v1/market/universe',asyncRoute(async(_req,res)=>{
    preview among them — so the stand could not show what the real backend
    shows. The shape is the client's LeverageTier; the values are the
    instrument's own. */
-app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument('BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,highLeverageWarningThreshold:null,
+// In thin mode the shared config is taken from the THIN contract, because
+// that is what the terminal is trading in that run: its ladder is the one
+// whose 5x cap must not decide a historical entry.
+app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument(thin?THIN_SYMBOL:'BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,highLeverageWarningThreshold:null,
   leverageTiers:(i.riskTiers??[]).map((t,idx,all)=>({notionalCap:idx===all.length-1?null:Number(t.riskLimitValue),maxLeverage:Number(t.maxLeverage),maintenanceMarginRate:Number(t.maintenanceMarginRate),maintenanceAmount:Number(t.maintenanceDeduction??0)}))});}));
 app.get('/api/v1/futures/mark-price/:pair',asyncRoute(async(req,res)=>{const symbol=req.params.pair.replace('-',''),q=await market.freshQuote(symbol);res.json({symbol,markPrice:q.markPrice,indexPrice:null});}));
 app.get('/api/v1/market/external/tickers',asyncRoute(async(_req,res)=>res.json(await tickers())));

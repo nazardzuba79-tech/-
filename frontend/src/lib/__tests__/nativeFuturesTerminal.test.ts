@@ -320,6 +320,23 @@ describe('the terminal sizes to the contract it is trading', () => {
     expect(futuresMath.stepDecimals('0.001')).toBe(3);
   });
 
+  test('a HISTORICAL_DEMO size passes the liquidity ceiling and nothing else', () => {
+    // The owner's own case in miniature: a size well past the MARKET
+    // ceiling. A historical fill takes no depth, so the ceiling has nothing
+    // to ration and the size is admitted as typed.
+    const historical = futuresMath.fitQuantityToContract(500, 60000, rules, { market: true, historical: true });
+    expect(historical.quantity).toBe(500);
+    expect(historical.cappedBy).toBeNull();
+    expect(historical.rejectedBy).toBeNull();
+    // The same size LIVE is still capped — this lifts one rule, not the form.
+    expect(futuresMath.fitQuantityToContract(500, 60000, rules, { market: true }).cappedBy).toBe('maxMarketOrderQty');
+    // And the rules that are contract arithmetic rather than liquidity
+    // still bind historically: the step, the floor and the minimum notional.
+    expect(futuresMath.fitQuantityToContract(1.66666667, 60000, rules, { market: true, historical: true }).quantity).toBe(1.666);
+    expect(futuresMath.fitQuantityToContract(0.0005, 60000, rules, { market: true, historical: true }).rejectedBy).toBe('minOrderQty');
+    expect(futuresMath.fitQuantityToContract(0.001, 1, rules, { market: true, historical: true }).rejectedBy).toBe('minNotionalValue');
+  });
+
   test('no rules published means the terminal enforces none of its own', () => {
     // Every real account: the real engine has no contract step, so nothing
     // here may invent one.

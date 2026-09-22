@@ -515,7 +515,7 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   if (!price) throw new DemoEngineError('LIMIT_PRICE_REQUIRED');
   // A reducing order is held to every contract rule but the tier cap (see `validateContractOrder`); its own
   // checks — the named position, the side, the bucket, the size — follow right below.
-  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET',reduceOnly:!!input.reduceOnly});
+  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET',reduceOnly:!!input.reduceOnly,historical:!!input.historical});
   if (input.reduceOnly) {
     if (!input.positionId) throw new DemoEngineError('POSITION_ID_REQUIRED');
     const p=getPosition(s,input.positionId);
@@ -539,7 +539,15 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   if (!o.reduceOnly) { const a = demoAccount(s); if (a.liquidatable || n(o.reserved).gt(a.available)) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN'); }
   // A reducing order adds no exposure and is never refused by a tier: a
   // position that has outgrown the table must still be closable at a price.
-  if (!o.reduceOnly) {
+  //
+  // A HISTORICAL_DEMO order is exempt for a different reason, and it has to
+  // be exempt HERE as well as in `validateContractOrder`: this is the second
+  // tier gate, taken against AGGREGATE exposure rather than the single
+  // order, so lifting only the first one would still refuse the position on
+  // the way in. Historical leverage buys no real exposure — it is arithmetic
+  // over margin, ROI, the liquidation price, fees and PnL — so there is no
+  // ladder for it to climb.
+  if (!o.reduceOnly && !o.historical) {
     const tier=selectRiskTier(out(exposure(s,o,quote.mark).plus(n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
     if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
   }

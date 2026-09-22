@@ -1,0 +1,108 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "scope": "HISTORICAL_DEMO entry on a thin contract: no depth, no size ceiling, no tier leverage cap",
+  "contract": {
+    "pair": "AKE/USDT",
+    "quantity": "1200000",
+    "leverage": "10",
+    "maxMarketOrderQty": "500000",
+    "tierMaxLeverage": "5"
+  },
+  "checks": [
+    {
+      "name": "historical-entry-opens-1440",
+      "passed": true,
+      "evidence": {
+        "candle": {
+          "source": "BYBIT_LINEAR",
+          "interval": "1h",
+          "openTime": 1789041600000,
+          "pricePoint": "CLOSE"
+        },
+        "bar": {
+          "open": 0.50024,
+          "high": 0.51004,
+          "low": 0.49874,
+          "close": 0.50854
+        },
+        "blockedCosmeticHosts": [
+          "fonts.googleapis.com",
+          "cdn.jsdelivr.net"
+        ],
+        "entryPrice": "0.50854",
+        "quantity": "1200000",
+        "leverage": "10",
+        "markPrice": "0.50810"
+      }
+    },
+    {
+      "name": "live-execution-still-refused-1440",
+      "passed": true,
+      "evidence": {
+        "oversized": {
+          "code": "INVALID_ORDER_SIZE",
+          "limit": "maxMarketOrderQty",
+          "allowed": "500000",
+          "actual": "1200000",
+          "error": "Размер ордера вне лимитов контракта. Максимальное количество рыночного ордера: 500000. Запрошено: 1200000."
+        },
+        "overLevered": {
+          "code": "TIER_LEVERAGE_EXCEEDED",
+          "limit": "tierMaxLeverage",
+          "allowed": "5",
+          "actual": "10",
+          "error": "Плечо выше допустимого для такого размера позиции. Максимальное плечо для этого размера позиции: 5. Запрошено: 10."
+        }
+      }
+    },
+    {
+      "name": "historical-entry-opens-390",
+      "passed": true,
+      "evidence": {
+        "candle": {
+          "source": "BYBIT_LINEAR",
+          "interval": "1h",
+          "openTime": 1789160400000,
+          "pricePoint": "CLOSE"
+        },
+        "bar": {
+          "open": 0.50999,
+          "high": 0.51149,
+          "low": 0.50358,
+          "close": 0.50508
+        },
+        "blockedCosmeticHosts": [
+          "fonts.googleapis.com",
+          "cdn.jsdelivr.net"
+        ],
+        "entryPrice": "0.50508",
+        "quantity": "1200000",
+        "leverage": "10",
+        "markPrice": "0.50810"
+      }
+    },
+    {
+      "name": "live-execution-still-refused-390",
+      "passed": true,
+      "evidence": {
+        "oversized": {
+          "code": "INVALID_ORDER_SIZE",
+          "limit": "maxMarketOrderQty",
+          "allowed": "500000",
+          "actual": "1200000",
+          "error": "Размер ордера вне лимитов контракта. Максимальное количество рыночного ордера: 500000. Запрошено: 1200000."
+        },
+        "overLevered": {
+          "code": "TIER_LEVERAGE_EXCEEDED",
+          "limit": "tierMaxLeverage",
+          "allowed": "5",
+          "actual": "10",
+          "error": "Плечо выше допустимого для такого размера позиции. Максимальное плечо для этого размера позиции: 5. Запрошено: 10."
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

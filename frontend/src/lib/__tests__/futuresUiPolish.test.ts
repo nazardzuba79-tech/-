@@ -167,7 +167,18 @@ test.each([
     // futuresOrderPanel's 40 behavioural tests assert directly and still
     // pass unmodified.
     // Both existing calculator triggers open the same page-owned dialog.
-    "4216665bcfc690266c0fcf6db01fd084c053c673314295e9542f6065cc5f7bc0"
+    //
+    // RE-TAKEN, and this one IS a behaviour change rather than a visual
+    // reconciliation: a HISTORICAL_DEMO entry (`historicalEntry`) no longer
+    // has its leverage capped to the risk tier and no longer has its size
+    // clamped to the contract's market/limit ceiling. Those three limits
+    // ration REAL liquidity, and a historical fill takes a price off a past
+    // candle — it consumes no depth and adds no real exposure. A LIVE order
+    // is unchanged in every respect, which is what the `historicalEntry`
+    // condition is for, and the engine draws the same line server-side
+    // (src/private-trading/math.ts, historicalDemoNoLiveLiquidity.test.ts).
+    // Nothing else in the payload, the costing or the controls moved.
+    "88d6652d449e32377bd574c131f61f3c939a327ebebac5a0bddc3f1fd7cb5e8b"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -259,7 +270,12 @@ test.each([
   ],
   [
     "lib/futuresMath.ts",
-    "c9f14a3a796446543a4fbd30508639cdb38b9133a0fc8904b0003eca30739603"
+    // RE-TAKEN with the order form above, for the same reason and in the
+    // same direction: `fitQuantityToContract` takes a `historical` option
+    // that lifts the maxOrderQty/maxMarketOrderQty ceiling and NOTHING else
+    // — the step, the minimum size and the minimum notional still apply,
+    // and without the option every caller behaves exactly as before.
+    "8225f578889d21d4df97985776be5d69ae5606dbf32ff60f59380dd72629d4d7"
   ]
 ])('%s matches the audited integration fingerprint',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{

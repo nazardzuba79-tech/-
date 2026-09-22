@@ -230,8 +230,29 @@ export function validateLeverageRange(rules: ContractRules, leverage: string): v
  * not: that cap admits new exposure, and a reducing order adds none. A
  * position whose tier has tightened since it was opened (the market moved
  * its notional up the ladder) must still be closable at its own leverage.
+ *
+ * `historical`: the order belongs to HISTORICAL_DEMO, which fills at a
+ * price the trader picked off a past candle and never touches a book. Three
+ * of these rules exist to describe what the venue's LIVE liquidity would
+ * bear, and none of them can mean anything here:
+ *
+ *   - `maxMarketOrderQty` / `maxOrderQty` cap a single order against the
+ *     depth actually resting on the venue. A historical fill consumes no
+ *     depth, so there is nothing for the cap to protect.
+ *   - the risk-tier leverage cap ties allowed leverage to the size of live
+ *     exposure. In this mode leverage is a pure ARITHMETIC input — it
+ *     scales margin, ROI, the liquidation price, fees and PnL — and admits
+ *     no real risk to anyone.
+ *
+ * Everything that describes the CONTRACT rather than the venue's liquidity
+ * still applies, and deliberately so: quantity and price steps,
+ * `minOrderQty`, `minNotionalValue`, the instrument's own leverage range and
+ * the model profile. A historical position is still a well-formed position;
+ * it is simply not competing for anyone's depth.
+ *
+ * LIVE_EXECUTION passes neither flag and is therefore unchanged.
  */
-export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile; reduceOnly?: boolean }): void {
+export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile; reduceOnly?: boolean; historical?: boolean }): void {
   const { rules } = input, q = decimal(input.quantity, 'quantity', true), p = decimal(input.price, 'price', true), l = decimal(input.leverage, 'leverage', true);
   if (!q.mod(decimal(rules.qtyStep, 'quantity_step', true)).isZero()) {
     throw new ContractRuleError('INVALID_QUANTITY_STEP', { limit: 'qtyStep', allowed: rules.qtyStep, actual: input.quantity });
@@ -246,7 +267,9 @@ export function validateContractOrder(input: { rules: ContractRules; quantity: s
     throw new ContractRuleError('INVALID_ORDER_SIZE', { limit: 'minOrderQty', allowed: rules.minOrderQty, actual: input.quantity });
   }
   const maxQty = input.market ? rules.maxMarketOrderQty : rules.maxOrderQty;
-  if (q.gt(maxQty)) {
+  // Skipped for HISTORICAL_DEMO only: this is a liquidity cap, and a
+  // historical fill takes no liquidity. See the note above the signature.
+  if (!input.historical && q.gt(maxQty)) {
     throw new ContractRuleError('INVALID_ORDER_SIZE', {
       limit: input.market ? 'maxMarketOrderQty' : 'maxOrderQty', allowed: maxQty, actual: input.quantity,
     });
@@ -256,7 +279,9 @@ export function validateContractOrder(input: { rules: ContractRules; quantity: s
   }
   validateLeverageRange(rules, input.leverage);
   validateProfile(input.profile);
-  if (input.reduceOnly) return;
+  // A reducing order adds no exposure; a historical one adds no REAL
+  // exposure. Both leave the tier ladder with nothing to bound.
+  if (input.reduceOnly || input.historical) return;
   const tier = selectRiskTier(amount(q.times(p)), input.profile);
   if (tier.maxLeverage && l.gt(tier.maxLeverage)) {
     throw new ContractRuleError('TIER_LEVERAGE_EXCEEDED', { limit: 'tierMaxLeverage', allowed: tier.maxLeverage, actual: input.leverage });

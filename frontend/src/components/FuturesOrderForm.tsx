@@ -226,6 +226,16 @@ export function FuturesOrderForm({
   // `null`-until-known semantics, one request for the page instead of three.
   // See lib/futuresConfigStore.
   const { config } = useFuturesConfig();
+  /**
+   * A HISTORICAL_DEMO entry: the native engine, a chosen past candle, and
+   * an order that adds exposure. Its fill takes no real liquidity, so the
+   * three limits that exist to ration liquidity — the tier leverage cap,
+   * maxMarketOrderQty and maxOrderQty — do not decide it. Leverage is left
+   * as what it is there: a parameter of the margin, ROI, liquidation, fee
+   * and PnL arithmetic. Everything else on this form is unchanged, and a
+   * LIVE order (no candle) is bound by all three exactly as before.
+   */
+  const historicalEntry = execution.engine === 'NATIVE' && !reduceOnly && !!execution.candle;
   const balanceRow = account.balances.data?.find((x) => x.asset === quoteAsset);
   /** null = not known (never loaded, or the request failed). Never 0: a
    *  fake zero here would silently size every percentage order at nothing
@@ -363,8 +373,11 @@ export function FuturesOrderForm({
   // not actually seen, and the ceiling can only ever be too HIGH that way.
   // Null suspends the slider and the submit guard until the state is known,
   // which is what the backend would enforce anyway.
+  // A historical entry keeps the contract's own leverage ceiling and drops
+  // only the tier one: the ladder rations REAL exposure, which this order
+  // does not create. See `historicalEntry`.
   const effectiveMaxLeverage = config && exposureKnown
-    ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
+    ? (historicalEntry ? config.maxLeverage : Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage))
     : null;
   /** The leverage this order will really use: the request, under the live
    *  ceiling. Derived rather than clamped in an effect, so it rises again
@@ -545,7 +558,7 @@ export function FuturesOrderForm({
       const decimals = symbol.split('/')[0] === 'BTC' ? 3 : QUANTITY_DECIMALS;
       return floorToDecimals(raw, decimals).toFixed(decimals);
     }
-    const fitted = fitQuantityToContract(raw, effectivePrice, rules, { market: type === 'MARKET' });
+    const fitted = fitQuantityToContract(raw, effectivePrice, rules, { market: type === 'MARKET', historical: historicalEntry });
     return fitted.quantity.toFixed(stepDecimals(rules.qtyStep));
   }
 
@@ -556,7 +569,7 @@ export function FuturesOrderForm({
    * only reports the same one the engine would.
    */
   const contractCheck = execution.contract && orderSizeKnown && !reduceOnly
-    ? fitQuantityToContract(quantityNumber, effectivePrice, execution.contract, { market: type === 'MARKET' })
+    ? fitQuantityToContract(quantityNumber, effectivePrice, execution.contract, { market: type === 'MARKET', historical: historicalEntry })
     : null;
   const contractBreach = contractCheck && (
     contractCheck.rejectedBy !== null
