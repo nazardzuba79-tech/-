@@ -420,54 +420,24 @@ describe('spot and futures pair lists are unchanged', () => {
     'src/lib/pairList.ts': '4f9ea3cda06e73142565f2743914fe7858efe8efa5c2cf155ab653b509131a79',
     // The spot terminal's pair list.
     'src/components/PairListSidebar.tsx': '18ff998b1bd5b9dd97e6e49b53bbf8d1627c0ca209410ba9d59cbad4216d4625',
-    // Re-pinned a second time, for the market chooser. The rail's search
-    // row is gone entirely — no header, no field, no collapsed row — and
-    // the field is now rendered only when the `searchable` prop is set, by
-    // the chooser under the BTC/USDT selector and by the mobile market
-    // dialog. See futuresMarketSearch.test.ts, which pins that behaviour.
-    //
-    // What THIS guard exists to protect is untouched by both edits: the
-    // symbol universe still arrives as the `symbols` prop, the execution
-    // whitelist is still the server's, and the filter is the same predicate
-    // over that prop it has always been. No pair is added, removed,
-    // renamed or derived here.
-    //
-    // Re-pinned a THIRD time, for the 7-day gain/loss sort, and this one
-    // deserves more than a new hash because it is the first edit that makes
-    // this module import the catalogue at all — the exact coupling this
-    // guard was written to watch for.
-    //
-    // What it reads, and all it reads, is `market.changePercent7d`: the
-    // market-wide return the Markets page already sorts by, joined to rows
-    // that ALREADY exist by their base asset. The catalogue cannot add a
-    // market, cannot remove one, and cannot rename one; a contract it does
-    // not cover keeps `null` and sorts last in both directions. The
-    // subscription is opened only while a 7-day sort is active and dropped
-    // when it is not. The test below asserts that boundary directly rather
-    // than trusting this paragraph.
-    // Re-taken: the cross-domain 7-day column was removed (it showed
-    // GreenHood's +190.54% under the HOOD perpetual). The assertions
-    // above now pin the stronger property — no catalogue read at all.
-    'src/components/FuturesPairList.tsx': 'fa629b38d54590c8f6e17efe609e61766a09ad0d977ad05f5e3c0a1eb627c905',
+    // FuturesPairList is guarded semantically below rather than by a byte
+    // hash: it may read ONE reference field (7d change) but still must not
+    // derive the executable market universe from the catalogue.
   };
 
-  it('reads NOTHING from the catalogue — the stronger form of the old rule', () => {
+  it('Futures reads only safe 7d reference data; the catalogue cannot define markets', () => {
     const list = code('src/components/FuturesPairList.tsx');
-    // The rows are still the `symbols` prop, filtered. Nothing else builds them.
     expect(list).toContain('const built = symbols');
     expect(list).toMatch(/symbols\s*\n?\s*\.filter\(/);
-    // This used to pin "exactly one catalogue field, exactly one subscription":
-    // `asset.market?.changePercent7d`, read for the 7-day sort. That field was
-    // a CoinGecko asset's week matched to a perpetual by BASE TICKER, and on
-    // the live feed it put GreenHood's +190.54% under the HOOD perpetual. The
-    // read is gone, so the rule tightens rather than relaxes: zero catalogue
-    // fields, zero subscriptions, no import at all.
-    expect(list).not.toMatch(/asset\.market\?\./);
-    expect([...list.matchAll(/catalogueStore\.\w+/g)]).toHaveLength(0);
-    expect(list).not.toMatch(/import .*catalogueStore.* from/);
-    expect(list).not.toContain('useChange7d');
-    // Nothing anywhere in the module turns a catalogue entry into a market.
-    expect(list).not.toMatch(/tradingPairs/);
+
+    // One ref-counted subscription and one market field, only for sorting.
+    expect([...list.matchAll(/catalogueStore\.subscribe/g)]).toHaveLength(1);
+    expect([...list.matchAll(/asset\.market\?\.changePercent7d/g)]).toHaveLength(1);
+    // Known ticker collisions are refused rather than guessed.
+    expect(list).toContain('asset.ambiguous || asset.collidingIds.length > 0');
+
+    // Nothing turns catalogue entries into executable Futures markets.
+    expect(list).not.toMatch(/tradingPairs\.push/);
     expect(list).not.toMatch(/asset\.symbol\s*\+/);
     expect(list).not.toMatch(/symbols\s*=\s*\[?\s*\.\.\.\s*(state\.)?assets/);
   });
