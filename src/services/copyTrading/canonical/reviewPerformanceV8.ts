@@ -2,7 +2,7 @@ import type { CashflowReviewState } from './reviewEconomicsTypes';
 import type { SyntheticTrade } from './types';
 import { isReviewHoliday } from './reviewEconomicsConfig';
 import { REVIEW_PERFORMANCE_V8_CONFIG as C } from './reviewPerformanceV8Config';
-import { DAILY_PROGRESSION_MAX_RETURN, dailyProgressionApplies, quietSessionReturn } from './dailyProgression';
+import { dailyProgressionApplies } from './dailyProgression';
 
 const DAY_MS = 86_400_000;
 const MONEY_SCALE = 10_000;
@@ -399,14 +399,17 @@ function futurePlans(start: string): DayPlan[] {
  * One session, one closed execution.
  *
  * The weekly regime still decides the day's RETURN — this only decides how
- * many rows express it. A session the regime left at exactly zero cannot be
- * expressed as a closed trade at all, so it draws a small positive return
- * from the same date-derived stream instead. See canonical/dailyProgression.ts.
+ * many rows express it. A zero-return session becomes one priced BREAKEVEN
+ * trade, preserving the day's ROI and PnL exactly.
  */
 function singleExecutionPlan(plan: DayPlan): DayPlan {
-  const drawn = plan.return !== 0 ? plan.return : quietSessionReturn(() => randomFor(plan.date, 0x1da17).next());
-  const value = Math.min(drawn, DAILY_PROGRESSION_MAX_RETURN.nazar);
-  return { date: plan.date, return: value, count: 1, losses: value < 0 ? 1 : 0, breakevens: 0 };
+  return {
+    date: plan.date,
+    return: plan.return,
+    count: 1,
+    losses: plan.return < 0 ? 1 : 0,
+    breakevens: plan.return === 0 ? 1 : 0,
+  };
 }
 
 export function advanceSimpleReturnMasterState(original: CashflowReviewState, days: number): CashflowReviewState {
