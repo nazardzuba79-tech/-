@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { OrderService, PriceSource } from './OrderService';
+import { IdleBackoffScheduler, type SweepOutcome } from './IdleBackoffScheduler';
+import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 /**
  * Background trigger engine for conditional orders (STOP_LIMIT,
@@ -19,13 +21,32 @@ import { OrderService, PriceSource } from './OrderService';
  *   TAKE_PROFIT:  SELL fires when price >= trigger; BUY fires when price <= trigger
  */
 export class PriceWatcherService {
-  private timer?: NodeJS.Timeout;
+  private scheduler: IdleBackoffScheduler | null = null;
+  /**
+   * Whether the last sweep's query matched any resting conditional order —
+   * NOT how many it triggered. A book full of orders that are nowhere near
+   * their trigger price triggers none, and must still hold the base
+   * cadence, or a stop-loss would be checked far less often than it should.
+   */
+  private lastSweepOutcome: SweepOutcome = 'found-work';
+
+  /**
+   * What the last sweep's query FOUND — `'found-work'` when it matched at
+   * least one resting conditional order, `'idle'` only when it matched none.
+   * This, and never `checkAndTrigger`'s return value, is what the
+   * backoff scheduler reads: that return value counts actions taken and is
+   * zero for a healthy book as well as an empty one.
+   */
+  get sweepOutcome(): SweepOutcome {
+    return this.lastSweepOutcome;
+  }
 
   constructor(private prisma: PrismaClient, private orderService: OrderService, private priceSource: PriceSource) {}
 
   /** Scans all pending conditional orders once. Returns how many triggered. */
   async checkAndTrigger(): Promise<number> {
     const pending = await this.prisma.order.findMany({ where: { status: 'PENDING_TRIGGER' } });
+    this.lastSweepOutcome = pending.length > 0 ? 'found-work' : 'idle';
     if (pending.length === 0) return 0;
 
     const priceCache = new Map<string, BigNumber | null>();
@@ -66,12 +87,24 @@ export class PriceWatcherService {
   }
 
   startScheduler(intervalMs: number): void {
-    this.timer = setInterval(() => {
-      this.checkAndTrigger().catch((err) => console.error('[PriceWatcherService] Trigger check failed', err));
-    }, intervalMs);
+    this.scheduler = new IdleBackoffScheduler({
+      baseMs: intervalMs,
+      maxIdleMs: IDLE_SWEEP_MAX_MS,
+      sweep: async () => {
+        await this.checkAndTrigger();
+        return this.lastSweepOutcome;
+      },
+      onError: (err) => console.error('[PriceWatcherService] Trigger check failed', err),
+    });
+    this.scheduler.start();
+  }
+
+  /** A conditional order was just placed — resume the base cadence now. */
+  wake(): void {
+    this.scheduler?.wake();
   }
 
   stopScheduler(): void {
-    if (this.timer) clearInterval(this.timer);
+    this.scheduler?.stop();
   }
 }

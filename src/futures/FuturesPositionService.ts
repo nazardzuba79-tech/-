@@ -41,7 +41,16 @@ export class FuturesPositionService {
   constructor(
     private prisma: PrismaClient,
     private engine: MatchingEngine,
-    private markPriceService: MarkPriceService
+    private markPriceService: MarkPriceService,
+    /**
+     * Called once a placement has COMMITTED, so the liquidation sweep can
+     * drop back to its base cadence immediately instead of after a
+     * backed-off wait. Optional and defaulted: it is an optimisation, and
+     * the sweep still finds the position within its idle ceiling without
+     * it. Never called from inside the transaction — a sweep woken before
+     * the commit would query, see nothing, and go back to sleep.
+     */
+    private onPlacementCommitted: () => void = () => {}
   ) {}
 
   async placeOrder(params: {
@@ -312,6 +321,9 @@ export class FuturesPositionService {
     });
     // No uncommitted/rolled-back trade may influence mark prices.
     for (const trade of result.trades) this.markPriceService.recordFuturesTrade(params.symbol, trade.price);
+    // Same boundary, same reason: the sweep must not be woken until the
+    // position it is being woken for is actually readable.
+    this.onPlacementCommitted();
     return result;
   }
 

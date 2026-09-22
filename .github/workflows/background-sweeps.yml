@@ -1,0 +1,61 @@
+# The background sweeps that watch for liquidations, stop-losses and
+# conditional orders, and the idle backoff that decides how often they run.
+#
+# These files had no pull-request gate of their own: every workflow here is
+# path-filtered, and the only ones this change tripped did so incidentally,
+# through src/index.ts and src/config/limits.ts, without exercising any sweep.
+# The behaviour worth guarding is narrow and easy to break silently — a
+# backoff keyed off a sweep's return value instead of the rows it found would
+# slow the liquidation check down exactly while real positions are open — so
+# it gets a check that names it.
+name: Background sweeps and idle backoff
+on:
+  pull_request:
+    paths:
+      - 'src/services/IdleBackoffScheduler.ts'
+      - 'src/services/__tests__/IdleBackoffScheduler.test.ts'
+      - 'src/services/__tests__/idleSweepSafety.test.ts'
+      - 'src/services/PriceWatcherService.ts'
+      - 'src/services/OrderService.ts'
+      - 'src/futures/LiquidationEngine.ts'
+      - 'src/futures/FuturesProtectionService.ts'
+      - 'src/futures/FuturesPositionService.ts'
+      - 'src/cfd/CfdLiquidationEngine.ts'
+      - 'src/cfd/CfdPositionService.ts'
+      - 'src/config/limits.ts'
+      - '.github/workflows/background-sweeps.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: background-sweeps-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  sweeps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record tested commit and parents
+        run: git show -s --format='%H %P'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript
+        run: npm run build
+      - name: Idle backoff and sweep safety regressions
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/__tests__/IdleBackoffScheduler.test.ts
+          src/services/__tests__/idleSweepSafety.test.ts
+      - name: Sweep and placement suites
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/__tests__/PriceWatcherService.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/futures/__tests__/LiquidationEngine.test.ts

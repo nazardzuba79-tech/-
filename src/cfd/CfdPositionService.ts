@@ -30,7 +30,18 @@ const MARGIN_ASSET = 'USDT';
  * doesn't apply here anyway.
  */
 export class CfdPositionService {
-  constructor(private prisma: PrismaClient, private cfdMarketData: CfdQuoteSource) {}
+  constructor(
+    private prisma: PrismaClient,
+    private cfdMarketData: CfdQuoteSource,
+    /**
+     * Called once an open has COMMITTED, so the CFD liquidation sweep
+     * returns to its base cadence immediately. Optional: without it the
+     * sweep still finds the position within its idle ceiling. Never called
+     * from inside the transaction — a sweep woken before the commit would
+     * query, find nothing and go back to sleep.
+     */
+    private onPositionCommitted: () => void = () => {}
+  ) {}
 
   async open(params: { userId: string; symbol: string; side: 'BUY' | 'SELL'; quantity: BigNumber; leverage: number }) {
     if (!Number.isInteger(params.leverage) || params.leverage < MIN_LEVERAGE || params.leverage > MAX_LEVERAGE) {
@@ -51,7 +62,7 @@ export class CfdPositionService {
       throw new Error(`Max leverage for a ${notional.toFixed(2)} USDT position is ${tier.maxLeverage}x`);
     }
 
-    return this.prisma.$transaction(async (tx: TxClient) => {
+    const opened = await this.prisma.$transaction(async (tx: TxClient) => {
       const user = await tx.user.findUnique({ where: { id: params.userId } });
       if (!user) throw new Error('User not found');
       const accountAgeDays = (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -120,6 +131,10 @@ export class CfdPositionService {
         },
       });
     });
+    // After the commit, never inside it: a sweep woken early would query
+    // before this row is readable and go straight back to sleep.
+    this.onPositionCommitted();
+    return opened;
   }
 
   async close(params: { userId: string; positionId: string }) {
