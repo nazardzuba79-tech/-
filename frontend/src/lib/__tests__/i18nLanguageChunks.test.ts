@@ -117,13 +117,20 @@ describe('translation integrity', () => {
       // candle load with a silent blank canvas, so it needs words and a retry
       // button. Both are asserted by name below, in every locale, so this
       // re-take cannot quietly carry anything else with it.
-      "ru": "1cbc2d0510f8fe80",
-      "en": "cd7df3710063e69d",
-      "zh": "b01f5dd13300295b",
-      "es": "ef696d11c7dd65a3",
-      "hi": "09afc54d4ff75384",
-      "ja": "e8c8e3fec993d832",
-      "ko": "9ad9d0bb758e026b"
+      // Re-taken 2026-09-22 for «Закрытие по лимиту» (the limit-close
+      // dialog «Лимитный» opens) and the reduce-only side gating: fifteen
+      // `futures.limitClose*` / `futures.reduceOnlyNo*` keys per language
+      // (eighteen lines in Russian, which also carries a section comment).
+      // `git diff --numstat` over the locales directory reports `15 0` for
+      // six languages and `18 0` for Russian — additions only, not one
+      // deletion, so no existing string was retyped.
+      "ru": "3ce3b6f1abc1b02e",
+      "en": "11d08001890a29de",
+      "zh": "b4f23755028f5ced",
+      "es": "eb67e03f6199f5d2",
+      "hi": "68727d605dcfc10c",
+      "ja": "04bca3417a826554",
+      "ko": "82e145c73bc2f7ce"
 };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {

@@ -397,7 +397,7 @@ const tierConfig = { minLeverage: 1, maxLeverage: 100, highLeverageWarningThresh
   leverageTiers: JSON.parse(JSON.stringify(LEVERAGE_TIERS)) };
 const props = { symbol: 'BTC/USDT', onPlaced: jest.fn() };
 
-async function leverageForm() {
+async function leverageForm(positions: object[] = []) {
   const confirm = jest.fn((_message: string) => true), placed = jest.fn().mockResolvedValue({});
   const getMe = jest.fn().mockResolvedValue({ createdAt: new Date().toISOString() });
   const form = mount('components/FuturesOrderForm.tsx', { confirm, api: {
@@ -410,7 +410,7 @@ async function leverageForm() {
     // below are unchanged: an account that genuinely holds no position and
     // no working order projects exactly the candidate's own notional, the
     // same number the coercion used to produce.
-    getFuturesPositions: () => Promise.resolve([]),
+    getFuturesPositions: () => Promise.resolve(positions),
     getMyFuturesOrders: () => Promise.resolve([]),
     getFuturesMarkPrice: () => Promise.resolve({ markPrice: '50000' }), placeFuturesOrder: placed,
   } });
@@ -522,7 +522,13 @@ test('form leverage ceiling reflects the expected aggregate tier while reduction
 });
 
 test('high-leverage cancellation does not send an order; Market/Short/Cross/Reduce Only payload stays intact', async () => {
-  const f = await leverageForm(); f.part(f.tree, 'FuturesMarginLeverage').props.onLeverageChange(100);
+  // Since 2026-09-22 a reduce-only SELL is offered only while there is a
+  // long to reduce on this symbol, so the account holds one here; the
+  // payload that leaves the form is unchanged.
+  const f = await leverageForm([{
+    id: 'long-to-reduce', symbol: 'BTC/USDT', side: 'LONG', size: '1', entryPrice: '10000', leverage: 100, marginType: 'CROSS',
+    initialMargin: '100', liquidationPrice: '9900', markPrice: '10000', unrealizedPnl: '0', roe: '0', openedAt: new Date().toISOString(),
+  }]); f.part(f.tree, 'FuturesMarginLeverage').props.onLeverageChange(100);
   f.confirm.mockReturnValue(false);
   nodes(f.render()).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
   expect(f.placed).not.toHaveBeenCalled();
@@ -536,6 +542,22 @@ test('high-leverage cancellation does not send an order; Market/Short/Cross/Redu
   // submission. Same payload, reached the way a trader now reaches it.
   nodes(tree).find(n => n.type === 'button' && n.props.className === 'submit-btn sell').props.onClick(); await tick();
   expect(f.placed).toHaveBeenCalledWith({ symbol: 'BTC/USDT', side: 'SELL', type: 'MARKET', price: undefined, quantity: '1', leverage: 100, marginType: 'CROSS', reduceOnly: true });
+});
+
+test('reduce-only with nothing to reduce: the side is disabled with the reason, and pressing it sends nothing', async () => {
+  // Owner, 2026-09-22: under «Только уменьшение» a button that could open
+  // the opposite side must not look live, and a press never no-ops silently.
+  const f = await leverageForm();
+  let tree = f.render();
+  f.part(tree, 'OrderFamilyTabs').props.onChange('MARKET');
+  nodes(tree).find(n => n.type === 'input' && n.props.type === 'checkbox').props.onChange({ target: { checked: true } });
+  tree = f.render();
+  const sell = nodes(tree).find(n => n.type === 'button' && n.props.className === 'submit-btn sell');
+  const buy = nodes(tree).find(n => n.type === 'button' && n.props.className === 'submit-btn buy');
+  expect(sell.props.disabled).toBe(true); expect(sell.props['data-reduce-blocked']).toBe('true'); expect(sell.props.title).toContain('BTC/USDT');
+  expect(buy.props.disabled).toBe(true); expect(buy.props['data-reduce-blocked']).toBe('true');
+  sell.props.onClick(); await tick();
+  expect(f.placed).not.toHaveBeenCalled();
 });
 
 test('Futures Assets uses only Futures balances; compact Spot keeps its original API', async () => {
@@ -615,18 +637,25 @@ describe('mobile Futures workspace handoffs', () => {
     expect(placeFuturesOrder).not.toHaveBeenCalled();
   });
 
-  test('limit close hands the authoritative position to the same reduce-only ticket', async () => {
+  test('limit close is the positions panel\'s own dialog: the page lends prices, the form gets no ticket', async () => {
+    // Since 2026-09-22 «Лимитный» opens «Закрытие по лимиту» inside the
+    // panel (the reference's dialog) and places a reduce-only LIMIT for that
+    // one position from there. The page no longer hands the form a close
+    // ticket — its Long/Short pair could open the opposite side — and no
+    // order is placed by opening the dialog.
     const target = { id: 'mobile-position', symbol: 'BTC/USDT', side: 'LONG', size: '0.02', marginType: 'ISOLATED' };
     const cancelSelection = jest.fn(), placeFuturesOrder = jest.fn();
-    const { page, part, active, select } = workspace({ cancelSelection, api: {
+    const { page, part, select } = workspace({ cancelSelection, api: {
       getFuturesPositions: () => Promise.resolve([target]), placeFuturesOrder,
     } });
     page.render(); await tick();
     let tree = page.render(); select(tree, 'positions'); tree = page.render();
-    part(tree, 'FuturesPositionsPanel').props.onLimitClose(target); tree = page.render();
-    expect(active(tree)).toBe('trade');
-    expect(part(tree, 'FuturesOrderForm').props.closeTicket).toMatchObject(target);
-    expect(cancelSelection).toHaveBeenCalledTimes(1);
+    const panel = part(tree, 'FuturesPositionsPanel');
+    expect(panel.props.onLimitClose).toBeUndefined();
+    expect(typeof panel.props.lastPrice).toBe('function');
+    expect(panel.props.currentSymbol).toBe('BTC/USDT');
+    expect(part(tree, 'FuturesOrderForm').props.closeTicket).toBeUndefined();
+    expect(cancelSelection).not.toHaveBeenCalled();
     expect(placeFuturesOrder).not.toHaveBeenCalled();
   });
 

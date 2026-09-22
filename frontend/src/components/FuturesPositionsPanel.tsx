@@ -8,6 +8,7 @@ import { formatPrice } from '../lib/formatNumber';
 import { formatPositionQuantity } from '../lib/futuresPositionActions';
 import { ExternalLink } from 'lucide-react';
 import { ArchivePositionCard } from './ArchiveTerminalDialogs';
+import { FuturesLimitCloseDialog } from './FuturesLimitCloseDialog';
 import type { FuturesPosition } from '../lib/futuresAccountStore';
 import './FuturesPositionParity.css';
 
@@ -38,7 +39,8 @@ export function FuturesPositionsPanel({
   refreshKey,
   tab: controlledTab,
   onCount,
-  onLimitClose,
+  lastPrice,
+  currentSymbol,
   onEditLeverage,
   leverageBusy = false,
   archive = false,
@@ -57,10 +59,13 @@ export function FuturesPositionsPanel({
   /** Optional native position editor; the order form only configures new orders. */
   onEditLeverage?: (positionId: string) => void;
   leverageBusy?: boolean;
-  /** Hand this position to the order form as a reduce-only LIMIT ticket.
-   *  Absent means the terminal offers no limit close, and the button is
-   *  not rendered rather than rendered dead. */
-  onLimitClose?: (position: { id: string; symbol: string; side: 'LONG' | 'SHORT'; size: string; marginType: 'ISOLATED' | 'CROSS' }) => void;
+  /** The last traded price of a contract, for the limit-close dialog's
+   *  «Рыночная цена» and its seeded close price. Absent, or `null` for a
+   *  symbol, means the position's mark price stands in. */
+  lastPrice?: (symbol: string) => number | null;
+  /** The contract the page is on: the only one whose quantity rules and
+   *  fee rate `execution.contract` describes. */
+  currentSymbol?: string;
   /** When the page owns the tab row (the futures terminal does, so there is
    *  one row of tabs rather than two stacked), pass the active tab here and
    *  this panel renders content only. Left out, it keeps its own tabs and
@@ -95,6 +100,9 @@ export function FuturesPositionsPanel({
     | { phase: 'done'; total: number; closed: number; failed: number; reason: string | null }
   >({ phase: 'idle' });
   const [cardPosition, setCardPosition] = useState<FuturesPosition | null>(null);
+  /** The position «Лимитный» was pressed on: the limit-close dialog is open
+   *  for it. It closes itself once the account no longer lists that row. */
+  const [limitClose, setLimitClose] = useState<FuturesPosition | null>(null);
 
   // Open positions keep the 4s cadence this panel always polled at — it is
   // the fastest any component asks for, and the shared store honours the
@@ -119,6 +127,11 @@ export function FuturesPositionsPanel({
   useEffect(() => {
     if (tab === 'history') execution.refresh(['positionHistory']);
   }, [tab]);
+
+  useEffect(() => {
+    if (!limitClose || positions === null) return;
+    if (!positions.some(p => p.id === limitClose.id)) setLimitClose(null);
+  }, [limitClose, positions]);
 
   // `refreshKey` still means "the page says the account changed" — it now
   // asks the shared store rather than issuing this panel's own request.
@@ -220,6 +233,13 @@ export function FuturesPositionsPanel({
   return (
     <div className="futures-positions-panel" style={styles.wrap}>
       {archive && cardPosition && <ArchivePositionCard position={cardPosition} onClose={()=>setCardPosition(null)} />}
+      {limitClose && <FuturesLimitCloseDialog
+        position={limitClose}
+        marketPrice={lastPrice ? lastPrice(limitClose.symbol) : null}
+        rules={currentSymbol !== undefined && currentSymbol === limitClose.symbol ? execution.contract : null}
+        onClose={() => setLimitClose(null)}
+        onPlaced={() => { setLimitClose(null); execution.refresh(['positions', 'orders', 'balances']); }}
+      />}
       {controlledTab === undefined && <div style={styles.tabs}>
         <button
           onClick={() => setTab('open')}
@@ -390,9 +410,13 @@ export function FuturesPositionsPanel({
                             ) : <b>{p.symbol.replace('/', '')}</b>}
                             <i className="futures-position-perp">{t('futures.perpetual')}</i>
                           </span>
-                          <small className={p.side === 'LONG' ? 'text-buy' : 'text-sell'}>
-                            {p.side === 'LONG' ? 'Long' : 'Short'}{' · '}
-                            {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}{' '}
+                          <span className="futures-sr-only">{p.side === 'LONG' ? t('futures.long') : t('futures.short')}</span>
+                          {/* The reference's second line: the margin mode and
+                              the leverage — «Марж. торговля 10.00x». The side
+                              is the colour of the quantity and the bar on
+                              this cell, and is said aloud above. */}
+                          <small className="futures-position-mode">
+                            {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.marginTrading')}{' '}
                             {onEditLeverage ? <button
                               type="button"
                               className="futures-position-leverage"
@@ -433,11 +457,12 @@ export function FuturesPositionsPanel({
                               className="futures-position-money"
                               data-unit={pnl !== null ? quoteAsset : undefined}
                               data-positive={pnl !== null && pnl > 0 ? 'true' : undefined}
-                            >{pnl !== null ? group(pnl, 2) : '—'}</span>
+                            >{pnl !== null ? group(pnl, 4) : '—'}</span>
                             <small
                               className="futures-position-roi"
                               data-positive={roe !== null && roe > 0 ? 'true' : undefined}
                             >{roe !== null ? `${group(roe, 2)}%` : '—'}</small>
+                            {pnl !== null && <small className="futures-position-approx">≈{group(pnl, 2)} USD</small>}
                             {archive && <button type="button" className="archive-pnl-open" title={t('futures.pnlCard')} aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
                               onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
                           </span>
@@ -449,7 +474,8 @@ export function FuturesPositionsPanel({
                             className="futures-position-realized"
                             data-unit={Number.isFinite(realized) ? quoteAsset : undefined}
                             data-positive={Number.isFinite(realized) && realized > 0 ? 'true' : undefined}
-                          >{Number.isFinite(realized) ? group(realized, 2) : '—'}</span>
+                          >{Number.isFinite(realized) ? group(realized, 4) : '—'}</span>
+                          {Number.isFinite(realized) && <small className="futures-position-approx">≈{group(realized, 2)} USD</small>}
                         </div>
                       </Td>
                       <Td label={t('futures.tpsl')}>
@@ -465,17 +491,16 @@ export function FuturesPositionsPanel({
                       </Td>
                       <Td label={t('futures.colCloseAs')}>
                         <div className="futures-position-actions">
-                          {/* "Лимитный" is only offered where a limit close
-                              really exists — it hands the order form a
-                              reduce-only ticket for this position. Without
-                              that handler it is not rendered at all, because
-                              a button that does nothing is worse than an
-                              absent one. */}
-                          {onLimitClose && (
-                            <button type="button" className="futures-position-close" onClick={() => onLimitClose(p)}>
-                              {t('futures.closeLimit')}
-                            </button>
-                          )}
+                          {/* «Лимитный» opens «Закрытие по лимиту» for THIS
+                              position — the reference's dialog, which places
+                              a reduce-only LIMIT sized and priced there. The
+                              order form is not involved: its Long/Short pair
+                              could open the opposite side, and a close never
+                              should. */}
+                          <button type="button" className="futures-position-close" data-limit-close-open={p.id}
+                            onClick={() => setLimitClose(p)}>
+                            {t('futures.closeLimit')}
+                          </button>
                           <button
                             type="button"
                             className="futures-position-close"

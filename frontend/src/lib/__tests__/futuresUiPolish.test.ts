@@ -193,7 +193,14 @@ test.each([
     // order succeeds — so neither stays armed against nothing and the next
     // bar picked on the chart is an entry again. No payload, guard or
     // calculation changed.
-    "a9c12d654e548de9ca348c14794d4ac04d5303cb54cdc6550a6d00b6f43dc150"
+    // Re-taken 2026-09-22 (owner, production report): under «Только
+    // уменьшение» the Long/Short pair reads `reducible(side)` — the side with
+    // no position to reduce on this symbol and bucket is disabled with the
+    // reason as its title, and `place` sets that reason as the error rather
+    // than returning silently. Positions not yet known block nothing (the
+    // outage rule stands); the margin bucket is left to the engine. Payload
+    // unchanged.
+    "09e412107310db8e2fad8b5be4725873fac4587b03cdd1503465636a463c4815"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -259,7 +266,16 @@ test.each([
     // page: the positions panel is handed `onSelectSymbol`, so a position's
     // contract name selects that contract. No order, execution, account,
     // depth, chart-wiring or layout byte changed.
-    "b680ca37d0a6e12f8a0de57ad1bf2e58598d9bf581c47f5280f37fbbb4c5877e"
+    // Re-taken 2026-09-22: «Лимитный» no longer hands the order form a
+    // close ticket — the positions panel opens its own «Закрытие по лимиту»
+    // dialog (the reference's). The page now lends the panel the last
+    // traded price per contract and names the current symbol; the
+    // `closeTicket` state and its effects are gone. Routing, polling and
+    // the order payload are untouched.
+    //
+    // Re-taken once more over the merge of the two changes above: both
+    // landed on this page independently and the file now carries both.
+    "ccfe7ee398f9c48e1501e2654ab30508b47e715a3c0a5da707757377294f5ce3"
   ],
   [
     "components/FuturesPairList.tsx",
@@ -293,7 +309,7 @@ test.each([
     // GreenHood's +190.54% under the HOOD perpetual. Price, 24h change and
     // turnover all still come from `tickers.get(symbol)`, so the sentence
     // above is now true of every column rather than most of them.
-    "d8deab4b5f0304181c73f4354573bacb5ccca79b7310b1dd1fb3060a6e33bb1b"
+    "0bcf05430051f9ec9d75f9717c3658e1c20e57117a01cb68a85a9467ecc30bfa"
   ],
   [
     "components/OrderBookPanel.tsx",
@@ -350,8 +366,10 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  // would refuse is misleading in a trading interface. `submitting` is still
  // one of the conditions, so "disabled while sending" stays pinned, and the
  // button and the guard are pinned to ONE expression rather than two copies.
- expect(source).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}");
- expect(source).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}");
+ // Since 2026-09-22 the pair also reads `reducible(side)`: under reduce-only
+ // the side with nothing to reduce is disabled, with the reason as its title.
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}");
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}");
  expect(source).toContain('if (!canSubmit) return;');
  expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });

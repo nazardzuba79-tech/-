@@ -1,0 +1,237 @@
+{
+  "scope": "real /futures terminal, isolated native fixture (AKE drift lever)",
+  "checks": [
+    {
+      "name": "limit-close-LONG-1440",
+      "passed": true,
+      "evidence": {
+        "side": "LONG",
+        "width": 1440,
+        "positionId": "native-1d6ac8e1-3124-4d15-8d67-8f46edee8732",
+        "before": "15000000",
+        "realizedBefore": "-33",
+        "dialog": {
+          "entry": 0.004,
+          "market": 0.0538,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0538. Ожидаемая прибыль составит 248,852.0500 USDT (включая расчетную комиссию за закрытие)"
+        },
+        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену выше рыночной.",
+        "cancel": {
+          "restedAt": "0.0638",
+          "ordersAfterCancel": 0,
+          "quantityAfterCancel": "15000000"
+        },
+        "fill": {
+          "limit": "0.0547",
+          "fillPrice": 0.0548,
+          "quantityAfter": "10000000",
+          "realizedBefore": "-33",
+          "realizedAfter": "253912.2",
+          "realizedDelta": 253945.2,
+          "gross": 254000
+        },
+        "quarter": {
+          "quantityAfter": "7500000",
+          "filledInOpen": true
+        },
+        "formGating": {
+          "buyBlocked": "true",
+          "sellBlocked": null,
+          "blockedTitle": "Нет открытого шорта по AKE/USDT — закрывать нечего"
+        }
+      }
+    },
+    {
+      "name": "limit-close-LONG-1600",
+      "passed": true,
+      "evidence": {
+        "side": "LONG",
+        "width": 1600,
+        "positionId": "native-025d3c81-db0e-46af-af50-4ffd69ca5281",
+        "before": "15000000",
+        "realizedBefore": "-33",
+        "dialog": {
+          "entry": 0.004,
+          "market": 0.0548,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0548. Ожидаемая прибыль составит 253,849.3000 USDT (включая расчетную комиссию за закрытие)"
+        },
+        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену выше рыночной.",
+        "cancel": {
+          "restedAt": "0.0649",
+          "ordersAfterCancel": 0,
+          "quantityAfterCancel": "15000000"
+        },
+        "fill": {
+          "limit": "0.0558",
+          "fillPrice": 0.0558,
+          "quantityAfter": "10000000",
+          "realizedBefore": "-33",
+          "realizedAfter": "258911.2",
+          "realizedDelta": 258944.2,
+          "gross": 259000
+        },
+        "quarter": {
+          "quantityAfter": "7500000",
+          "filledInOpen": true
+        },
+        "formGating": {
+          "buyBlocked": "true",
+          "sellBlocked": null,
+          "blockedTitle": "Нет открытого шорта по AKE/USDT — закрывать нечего"
+        }
+      }
+    },
+    {
+      "name": "limit-close-LONG-390",
+      "passed": true,
+      "evidence": {
+        "side": "LONG",
+        "width": 390,
+        "positionId": "native-af0a2958-4890-4c1b-baf6-514782029781",
+        "before": "15000000",
+        "realizedBefore": "-33",
+        "dialog": {
+          "entry": 0.004,
+          "market": 0.0559,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0559. Ожидаемая прибыль составит 259,346.2750 USDT (включая расчетную комиссию за закрытие)"
+        },
+        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену выше рыночной.",
+        "cancel": {
+          "restedAt": "0.0659",
+          "ordersAfterCancel": 0,
+          "quantityAfterCancel": "15000000"
+        },
+        "fill": {
+          "limit": "0.0568",
+          "fillPrice": 0.0568,
+          "quantityAfter": "10000000",
+          "realizedBefore": "-33",
+          "realizedAfter": "263910.2",
+          "realizedDelta": 263943.2,
+          "gross": 264000
+        },
+        "quarter": {
+          "quantityAfter": "7500000",
+          "filledInOpen": true
+        }
+      }
+    },
+    {
+      "name": "limit-close-SHORT-1440",
+      "passed": true,
+      "evidence": {
+        "side": "SHORT",
+        "width": 1440,
+        "positionId": "native-e4440b02-4449-4b98-90a4-f2f65bc7fc8a",
+        "before": "15000000",
+        "realizedBefore": "-33",
+        "dialog": {
+          "entry": 0.004,
+          "market": 0.0538,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0538. Ожидаемый убыток составит 249,147.9500 USDT (включая расчетную комиссию за закрытие)"
+        },
+        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену ниже рыночной.",
+        "cancel": {
+          "restedAt": "0.0438",
+          "ordersAfterCancel": 0,
+          "quantityAfterCancel": "15000000"
+        },
+        "fill": {
+          "limit": "0.0529",
+          "fillPrice": 0.0528,
+          "quantityAfter": "10000000",
+          "realizedBefore": "-33",
+          "realizedAfter": "-244085.8",
+          "realizedDelta": -244052.8,
+          "gross": -243999.99999999997
+        },
+        "quarter": {
+          "quantityAfter": "7500000",
+          "filledInOpen": true
+        },
+        "formGating": {
+          "buyBlocked": null,
+          "sellBlocked": "true",
+          "blockedTitle": "Нет открытого лонга по AKE/USDT — закрывать нечего"
+        }
+      }
+    },
+    {
+      "name": "limit-close-SHORT-1600",
+      "passed": true,
+      "evidence": {
+        "side": "SHORT",
+        "width": 1600,
+        "positionId": "native-0fa6c3f8-3f18-40f5-84a5-11634308894b",
+        "before": "15000000",
+        "realizedBefore": "-33",
+        "dialog": {
+          "entry": 0.004,
+          "market": 0.0528,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0528. Ожидаемый убыток составит 244,145.2000 USDT (включая расчетную комиссию за закрытие)"
+        },
+        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену ниже рыночной.",
+        "cancel": {
+          "restedAt": "0.0427",
+          "ordersAfterCancel": 0,
+          "quantityAfterCancel": "15000000"
+        },
+        "fill": {
+          "limit": "0.0518",
+          "fillPrice": 0.0518,
+          "quantityAfter": "10000000",
+          "realizedBefore": "-33",
+          "realizedAfter": "-239084.8",
+          "realizedDelta": -239051.8,
+          "gross": -238999.99999999997
+        },
+        "quarter": {
+          "quantityAfter": "7500000",
+          "filledInOpen": true
+        },
+        "formGating": {
+          "buyBlocked": null,
+          "sellBlocked": "true",
+          "blockedTitle": "Нет открытого лонга по AKE/USDT — закрывать нечего"
+        }
+      }
+    },
+    {
+      "name": "limit-close-SHORT-390",
+      "passed": true,
+      "evidence": {
+        "side": "SHORT",
+        "width": 390,
+        "positionId": "native-901f5cdf-10b3-4003-a5d1-c3a6f718059f",
+        "before": "15000000",
+        "realizedBefore": "-33",
+        "dialog": {
+          "entry": 0.004,
+          "market": 0.0517,
+          "summary": "5,000,000 контракт(ов) будет закрыто по цене 0.0517. Ожидаемый убыток составит 238,642.1750 USDT (включая расчетную комиссию за закрытие)"
+        },
+        "postOnlyRefusal": "Post-Only: по этой цене ордер исполнился бы сразу как тейкер. Укажите цену ниже рыночной.",
+        "cancel": {
+          "restedAt": "0.0417",
+          "ordersAfterCancel": 0,
+          "quantityAfterCancel": "15000000"
+        },
+        "fill": {
+          "limit": "0.0508",
+          "fillPrice": 0.0508,
+          "quantityAfter": "10000000",
+          "realizedBefore": "-33",
+          "realizedAfter": "-234083.8",
+          "realizedDelta": -234050.8,
+          "gross": -233999.99999999997
+        },
+        "quarter": {
+          "quantityAfter": "7500000",
+          "filledInOpen": true
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

@@ -253,7 +253,10 @@ describe('position history is loaded, never polled', () => {
     // Closing is now offered BY METHOD, as on the reference: the market
     // close keeps the same handler and the same refresh, under the label
     // for the method it uses.
-    const closeButton = nodes(tree).find((n) => n.type === 'button' && n.props.className === 'futures-position-close');
+    // «Лимитный» (the limit-close dialog) comes first in the row since
+    // 2026-09-22; «Рыночный» — the one that closes here — is the last.
+    const closeButtons = nodes(tree).filter((n) => n.type === 'button' && n.props.className === 'futures-position-close');
+    const closeButton = closeButtons[closeButtons.length - 1];
     expect(closeButton).toBeDefined();
 
     await closeButton.props.onClick();

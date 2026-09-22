@@ -1,0 +1,49 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "scope": "P&L card: open latency, adaptive price precision, unchanged PNG download contract",
+  "checks": [
+    {
+      "name": "pnl-card-1440",
+      "passed": true,
+      "evidence": {
+        "clickToDialogMs": 109,
+        "clickToPreviewMs": 121,
+        "symbol": "AKEUSDT",
+        "side": "Long",
+        "leverage": "10x",
+        "roi": "+12,450.00",
+        "profit": "+59,760.00",
+        "entryPrice": "0.004",
+        "valuationPrice": "0.0538",
+        "width": "1080",
+        "height": "1215",
+        "pngBytes": 1557515,
+        "pngWidth": 1080,
+        "pngHeight": 1215
+      }
+    },
+    {
+      "name": "pnl-card-390",
+      "passed": true,
+      "evidence": {
+        "clickToDialogMs": 90,
+        "clickToPreviewMs": 102,
+        "symbol": "AKEUSDT",
+        "side": "Long",
+        "leverage": "10x",
+        "roi": "+12,450.00",
+        "profit": "+59,760.00",
+        "entryPrice": "0.004",
+        "valuationPrice": "0.0538",
+        "width": "1080",
+        "height": "1215",
+        "pngBytes": 1557515,
+        "pngWidth": 1080,
+        "pngHeight": 1215
+      }
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

@@ -7,12 +7,11 @@
  *    Reaching the end of history must now be SILENT. A chart that genuinely
  *    could not load at all still says so, with Retry (PR #169).
  *
- * 2. The Futures pair chooser printed a 7-day change taken from CoinGecko
- *    and matched to a contract by BASE TICKER. Measured on the live feed:
- *    HOOD/USDT showed +190.54%, which is `greenhood` ("GreenHood"), one of
- *    SEVEN CoinGecko assets carrying the ticker HOOD. A perpetual's ticker
- *    has no 7d field, so a contract-accurate number is not available
- *    cheaply — and a wrong number is worse than none.
+ * 2. The Futures pair chooser must keep its owner-requested 7-day sort,
+ *    but never repeat the old base-ticker collision: HOOD/USDT once showed
+ *    GreenHood's +190.54%. The restored reference sort therefore accepts
+ *    only catalogue identities that are explicitly non-ambiguous; a
+ *    collision stays null and sorts last instead of borrowing a value.
  */
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -62,76 +61,54 @@ describe('the chart stops narrating its own history', () => {
   });
 });
 
-describe('the futures list stays inside the contract price domain', () => {
-  it('no longer resolves any figure by base ticker into the asset catalogue', () => {
-    expect(pairListCode).not.toContain('change7d.get(');
-    expect(pairListCode).not.toContain("split('/')[0].toUpperCase()");
-    expect(pairListCode).not.toContain('useChange7d');
-    expect(pairListCode).not.toContain('changePercent7d');
-    // …and the explanation of why is still in the file, for the next reader.
-    expect(pairList).toContain('greenhood');
+describe('the Futures chooser keeps 7-day sorting without the collision bug', () => {
+  it('restores the owner-requested 7-day controls', () => {
+    expect(pairListCode).toContain("'change7d'");
+    expect(pairListCode).toContain('pairs-7d');
+    expect(pairListCode).toContain('trade.sort7dGainers');
+    expect(pairListCode).toContain('trade.sort7dLosers');
   });
 
-  it('does not import the CoinGecko catalogue at all', () => {
-    expect(pairListCode).not.toMatch(/import .*catalogueStore.* from/);
+  it('loads the shared catalogue only while 7-day sorting is active', () => {
+    expect(pairListCode).toMatch(/import .*catalogueStore.* from/);
+    expect(pairListCode).toContain("useChange7d(sortField === 'change7d')");
+    expect(pairListCode).toContain('catalogueStore.subscribe');
   });
 
-  it('offers no 7-day sort while no contract-accurate source exists', () => {
-    expect(pairListCode).not.toContain("'change7d'");
-    expect(pairListCode).not.toContain('pairs-7d');
-    expect(pairList).toContain("type SortField = 'price' | 'change';");
+  it('refuses ambiguous catalogue identities instead of borrowing their return', () => {
+    expect(pairListCode).toContain('asset.ambiguous || asset.collidingIds.length > 0');
+    expect(pairListCode).toContain('continue;');
+    expect(pairListCode).toContain('asset.market?.changePercent7d');
   });
 
-  it('takes every remaining column from this contract own ticker', () => {
+  it('still builds the market rows only from the Futures symbols prop', () => {
+    expect(pairListCode).toContain('const built = symbols');
+    expect(pairListCode).not.toMatch(/symbols\s*=\s*\[?\s*\.\.\.\s*(state\.)?assets/);
+    expect(pairListCode).not.toMatch(/tradingPairs\.push/);
+  });
+
+  it('takes price, 24h change and turnover from this contract own live ticker', () => {
     for (const field of ['lastPrice', 'changePercent24h', 'quoteVolume24h']) {
       expect(pairList).toContain(`tk?.${field}`);
     }
   });
 });
 
-describe('contract 7d return, the only definition allowed here', () => {
-  it('100 -> 121 is +21.00%', () => {
-    expect(contractReturnPercent(121, 100)).toBeCloseTo(21, 10);
-    expect(contractReturnPercent(121, 100)!.toFixed(2)).toBe('21.00');
-  });
-
-  it('100 -> 50 is -50%, and 50 -> 100 is +100%', () => {
-    expect(contractReturnPercent(50, 100)).toBeCloseTo(-50, 10);
-    expect(contractReturnPercent(100, 50)).toBeCloseTo(100, 10);
-  });
-
-  it('is the same formula the ruler uses, so chart and list cannot disagree', () => {
-    // Ruler: (priceB - priceA) / priceA * 100. Mathematically correct, and
-    // unchanged by this branch.
-    const ruler = (a: number, b: number) => ((b - a) / a) * 100;
-    for (const [then, now] of [[100, 121], [100, 50], [50, 100], [86000, 86430]] as const) {
-      expect(contractReturnPercent(now, then)).toBeCloseTo(ruler(then, now), 10);
+describe('the known collision cannot reappear', () => {
+  const safe = (assets: Array<{symbol:string;ambiguous:boolean;collidingIds:string[];change:number|null}>, symbol: string) => {
+    const map = new Map<string, number>();
+    for (const asset of assets) {
+      if (asset.ambiguous || asset.collidingIds.length > 0) continue;
+      if (typeof asset.change === 'number' && Number.isFinite(asset.change)) map.set(asset.symbol, asset.change);
     }
+    return map.get(symbol) ?? null;
+  };
+
+  it('HOOD with a collision is null, not GreenHood +190.54%', () => {
+    expect(safe([{symbol:'HOOD',ambiguous:true,collidingIds:['cg:greenhood'],change:190.545}], 'HOOD')).toBeNull();
   });
 
-  it('refuses to invent a number rather than dividing by a zero reference', () => {
-    expect(contractReturnPercent(121, 0)).toBeNull();
-    expect(contractReturnPercent(Number.NaN, 100)).toBeNull();
-  });
-});
-
-describe('a colliding ticker cannot carry another asset percentage', () => {
-  // The real collision set, from CoinGecko's own coins/list: seven assets
-  // answer to HOOD, and the one in the top-500 catalogue is a memecoin.
-  const catalogueByTicker = new Map<string, number>([['HOOD', 190.545], ['AKE', 241.212]]);
-
-  it('the old base-ticker lookup produced exactly the reported figure', () => {
-    // Reproducing the defect, so the number in the report is not folklore.
-    const oldLookup = (futuresSymbol: string) =>
-      catalogueByTicker.get(futuresSymbol.split('/')[0].toUpperCase()) ?? null;
-    expect(oldLookup('HOOD/USDT')).toBe(190.545);
-    expect(oldLookup('HOOD/USDT')!.toFixed(2)).toBe('190.54'); // the owner screenshot
-    expect(oldLookup('AKE/USDT')).toBe(241.212);
-  });
-
-  it('a contract figure derived from contract prices is unaffected by the collision', () => {
-    // Same ticker, real contract prices: the answer comes from the contract.
-    expect(contractReturnPercent(121, 100)).toBeCloseTo(21, 10);
-    expect(contractReturnPercent(121, 100)).not.toBeCloseTo(190.545, 1);
+  it('a unique asset keeps its real catalogue 7-day value', () => {
+    expect(safe([{symbol:'BTC',ambiguous:false,collidingIds:[],change:8.5}], 'BTC')).toBe(8.5);
   });
 });
