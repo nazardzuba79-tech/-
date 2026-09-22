@@ -1,0 +1,68 @@
+{
+  "viewports": {
+    "1440x900 BTCUSDT": {
+      "healthy": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "BTCUSDT"
+      },
+      "recovered": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "BTCUSDT"
+      },
+      "errors": []
+    },
+    "1440x900 ETHUSDT": {
+      "healthy": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "ETHUSDT"
+      },
+      "recovered": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "ETHUSDT"
+      },
+      "errors": []
+    },
+    "390x844 BTCUSDT": {
+      "healthy": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "BTCUSDT"
+      },
+      "recovered": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "BTCUSDT"
+      },
+      "errors": []
+    },
+    "390x844 ETHUSDT": {
+      "healthy": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "ETHUSDT"
+      },
+      "recovered": {
+        "bids": 3,
+        "asks": 3,
+        "firstBidQty": 1.25,
+        "symbol": "ETHUSDT"
+      },
+      "errors": []
+    }
+  },
+  "collectorHops": 12,
+  "directBybitRequests": 0,
+  "status": "PASS",
+  "findings": []
+}

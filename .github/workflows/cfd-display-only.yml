@@ -16,6 +16,11 @@ on:
       - 'frontend/src/pages/home/**'
       - 'frontend/src/pages/trade-terminal/CfdPractice.css'
       - 'scripts/qa-cfd-display-browser.cjs'
+      # The API-region Futures order book. Its depth must come from the
+      # collector, never from a direct venue call out of Oregon, and this
+      # workflow already owns both the collector paths above.
+      - 'src/api/routes/marketDepth.ts'
+      - 'scripts/qa-futures-orderbook-collector.cjs'
       - '.github/workflows/cfd-display-only.yml'
 permissions:
   contents: read
@@ -59,12 +64,18 @@ jobs:
         env:
           CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-display-qa/node_modules/playwright
         run: node scripts/qa-cfd-display-browser.cjs
+      - name: Browser QA — Futures order book routed through the collector
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-cfd-display-qa/node_modules/playwright
+        run: node scripts/qa-futures-orderbook-collector.cjs
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: cfd-working-terminal-browser
-          path: docs/qa/cfd-display-browser/
+          path: |
+            docs/qa/cfd-display-browser/
+            docs/qa/futures-orderbook-collector/
           retention-days: 7
   public-sources:
     runs-on: ubuntu-latest
