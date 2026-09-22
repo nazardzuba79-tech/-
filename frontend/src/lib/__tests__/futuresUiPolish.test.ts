@@ -244,7 +244,14 @@ test.each([
     //
     // No futures financial value is read here and none was added: this
     // component still shows reference price and 24h change only.
-    "b96f761510c087dce96a7048613801323fc50cc756a92ee9b5d0ac35902a5d58"
+    //
+    // RE-TAKEN. The 7-day column and its sort were removed. That column was
+    // the one value in this list that came from outside the contract's own
+    // price domain — a CoinGecko asset matched by BASE TICKER — and it put
+    // GreenHood's +190.54% under the HOOD perpetual. Price, 24h change and
+    // turnover all still come from `tickers.get(symbol)`, so the sentence
+    // above is now true of every column rather than most of them.
+    "d8deab4b5f0304181c73f4354573bacb5ccca79b7310b1dd1fb3060a6e33bb1b"
   ],
   [
     "components/OrderBookPanel.tsx",
