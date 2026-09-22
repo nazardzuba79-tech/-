@@ -193,7 +193,14 @@ test.each([
     // order succeeds — so neither stays armed against nothing and the next
     // bar picked on the chart is an entry again. No payload, guard or
     // calculation changed.
-    "a9c12d654e548de9ca348c14794d4ac04d5303cb54cdc6550a6d00b6f43dc150"
+    // Re-taken 2026-09-22 (owner, production report): under «Только
+    // уменьшение» the Long/Short pair reads `reducible(side)` — the side with
+    // no position to reduce on this symbol and bucket is disabled with the
+    // reason as its title, and `place` sets that reason as the error rather
+    // than returning silently. Positions not yet known block nothing (the
+    // outage rule stands); the margin bucket is left to the engine. Payload
+    // unchanged.
+    "09e412107310db8e2fad8b5be4725873fac4587b03cdd1503465636a463c4815"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -247,7 +254,13 @@ test.each([
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
     // PR #159 sync: keep mobile workspaces; remove only the archive Close All import/render from #161.
-    "bd65fcfabb9511c57773cad470b3bf249458fd31fa253eaee451dca2de1e4f40"
+    // Re-taken 2026-09-22: «Лимитный» no longer hands the order form a
+    // close ticket — the positions panel opens its own «Закрытие по лимиту»
+    // dialog (the reference's). The page now lends the panel the last
+    // traded price per contract and names the current symbol; the
+    // `closeTicket` state and its effects are gone. Routing, polling and
+    // the order payload are untouched.
+    "7f7af59da8e2a0045ca781406d39b4da86fc08d253798f6f1ebf65f202497bd5"
   ],
   [
     "components/FuturesPairList.tsx",
@@ -338,8 +351,10 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  // would refuse is misleading in a trading interface. `submitting` is still
  // one of the conditions, so "disabled while sending" stays pinned, and the
  // button and the guard are pinned to ONE expression rather than two copies.
- expect(source).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}");
- expect(source).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}");
+ // Since 2026-09-22 the pair also reads `reducible(side)`: under reduce-only
+ // the side with nothing to reduce is disabled, with the reason as its title.
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}");
+ expect(source).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}");
  expect(source).toContain('if (!canSubmit) return;');
  expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });

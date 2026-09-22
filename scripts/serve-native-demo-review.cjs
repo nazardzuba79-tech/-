@@ -38,7 +38,15 @@ let symbols=FIXTURE_SYMBOLS;
    no usable depth, so a 1 500 000-contract entry can only open if nothing
    reads the book. QA fixture only; the other three symbols are unchanged. */
 const AKE_RISE_END=started,AKE_RISE_START=started-6*3600000;
-function akePrice(t){return t<=AKE_RISE_START?0.004:t>=AKE_RISE_END?0.0538:0.004+(0.0538-0.004)*(t-AKE_RISE_START)/(AKE_RISE_END-AKE_RISE_START);}
+/* QA lever, off by default: a price drift per minute AFTER the start, so a
+   resting limit close can be seen to fill when the market reaches it
+   (positive drift for a long's close above the market, negative for a
+   short's below). The owner-flow QA leaves it unset and keeps the flat 0.0538. */
+const AKE_DRIFT_PER_MINUTE=Number(process.env.NATIVE_PREVIEW_AKE_DRIFT||0)||0;
+function akePrice(t){
+  if(t<=AKE_RISE_START)return 0.004;
+  if(t>=AKE_RISE_END)return Math.max(0.0001,0.0538+AKE_DRIFT_PER_MINUTE*((t-AKE_RISE_END)/60000));
+  return 0.004+(0.0538-0.004)*(t-AKE_RISE_START)/(AKE_RISE_END-AKE_RISE_START);}
 function fixtureCandle(t,interval=60000,symbol='BTCUSDT'){
   if(symbol==='AKEUSDT'){const o=akePrice(t),c=akePrice(t+interval);return{timestamp:t,open:o.toFixed(4),high:Math.max(o,c).toFixed(4),low:Math.min(o,c).toFixed(4),close:c.toFixed(4),volume:'125000'};}
   const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}

@@ -1,0 +1,43 @@
+/* «Закрытие по лимиту» — the reference's limit-close dialog, on every
+   futures design. The archive sheet restyles the frame (`.archive-tool-dialog`);
+   these are the parts inside it. */
+.futures-limit-close { position:fixed; inset:0; margin:auto; width:min(520px, calc(100vw - 32px)); max-height:92dvh; overflow:auto; padding:0; border:1px solid var(--border, #2a3444); border-radius:14px; background:var(--panel, #12161c); color:var(--text-primary, #e2e8f0); box-shadow:0 24px 100px #0008; }
+.futures-limit-close::backdrop { background:#03070bb8; }
+.futures-limit-close > header { display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid var(--border, #2a3444); font-size:16px; }
+.futures-limit-close > header button { display:flex; background:transparent; border:0; color:var(--text-secondary, #b7c6d7); padding:4px; cursor:pointer; }
+.flc-body { display:flex; flex-direction:column; gap:16px; padding:20px 24px 24px; }
+.flc-facts { display:flex; flex-direction:column; gap:10px; margin:0; }
+.flc-facts div { display:flex; justify-content:space-between; align-items:baseline; font-size:14px; }
+.flc-facts dt { color:var(--text-secondary, #98a2b3); }
+.flc-facts dd { margin:0; font-weight:600; font-variant-numeric:tabular-nums; }
+.flc-field { display:flex; flex-direction:column; gap:8px; }
+.flc-label { font-size:14px; font-weight:600; }
+.flc-input { display:flex; align-items:center; gap:0; border:1px solid var(--border, #2a3444); border-radius:8px; background:var(--panel-alt, #1a1f27); padding:0 8px 0 14px; }
+.flc-input:focus-within { border-color:var(--accent, #f0b90b); }
+.flc-input input { flex:1; min-width:0; height:46px; border:0; background:transparent; color:inherit; font:inherit; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums; outline:none; }
+.flc-step { width:34px; height:34px; border:0; border-radius:6px; background:transparent; color:var(--text-secondary, #98a2b3); font-size:18px; line-height:1; cursor:pointer; }
+.flc-step:hover { color:var(--text-primary, #fff); background:var(--panel, #12161c); }
+.flc-step + .flc-step { border-left:1px solid var(--border, #2a3444); border-radius:0 6px 6px 0; }
+.flc-fieldError, .flc-error { font-size:12px; color:var(--sell, #f6465d); }
+.flc-error { padding:10px 12px; border:1px solid #f6465d55; border-radius:8px; background:#f6465d12; }
+/* The track is 4px at 8px from the top of the block; the 14px thumb and the
+   10px stop marks are both centred on it (thumb: (4 − 14) / 2 = −5px). */
+.flc-slider { position:relative; padding:8px 6px 0; }
+.flc-slider input[type=range] { display:block; width:100%; height:4px; margin:0; appearance:none; -webkit-appearance:none; border-radius:2px; background:linear-gradient(90deg, var(--accent, #f0b90b) var(--flc-fill, 100%), var(--border, #2a3444) var(--flc-fill, 100%)); outline:none; }
+.flc-slider input[type=range]::-webkit-slider-runnable-track { height:4px; background:transparent; }
+.flc-slider input[type=range]::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:14px; height:14px; margin-top:-5px; border-radius:50%; background:var(--accent, #f0b90b); border:2px solid var(--panel, #12161c); box-shadow:0 0 0 1px var(--accent, #f0b90b); cursor:pointer; position:relative; z-index:1; }
+.flc-slider input[type=range]::-moz-range-thumb { width:14px; height:14px; border-radius:50%; background:var(--accent, #f0b90b); border:2px solid var(--panel, #12161c); cursor:pointer; }
+.flc-sliderStops { position:absolute; left:6px; right:6px; top:5px; display:flex; justify-content:space-between; pointer-events:none; }
+.flc-stop { width:10px; height:10px; margin:0; padding:0; border-radius:50%; border:2px solid var(--border, #2a3444); background:var(--panel, #12161c); pointer-events:auto; cursor:pointer; }
+.flc-stop--on { border-color:var(--accent, #f0b90b); }
+.flc-sliderScale { display:flex; justify-content:space-between; margin-top:8px; font-size:12px; color:var(--text-secondary, #98a2b3); }
+.flc-summary { margin:0; padding:14px 16px; border-radius:8px; background:var(--panel-alt, #1a1f27); color:var(--text-secondary, #b7c6d7); font-size:13px; line-height:1.5; }
+.flc-summary--loss { color:var(--sell, #f6465d); }
+.flc-postOnly { display:flex; align-items:center; gap:10px; font-size:14px; cursor:pointer; }
+.flc-postOnly input { width:16px; height:16px; margin:0; accent-color:var(--accent, #f0b90b); }
+.flc-actions { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:4px; }
+.flc-ok, .flc-cancel { height:50px; border-radius:999px; font-size:15px; font-weight:700; cursor:pointer; }
+.flc-ok { border:0; background:var(--accent, #f0b90b); color:#111; }
+.flc-ok:disabled { opacity:.5; cursor:not-allowed; }
+.flc-cancel { border:1px solid var(--border, #2a3444); background:transparent; color:var(--text-primary, #e2e8f0); }
+@media (max-width: 600px) { .flc-body { padding:16px; } .flc-actions { grid-template-columns:1fr; } }
