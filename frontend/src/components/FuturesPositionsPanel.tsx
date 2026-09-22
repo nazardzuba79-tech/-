@@ -521,7 +521,7 @@ export function FuturesPositionsPanel({
                       </span>
                     </Td>
                     <Td className="mono">{p.entryPrice}</Td>
-                    <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{pnl.toFixed(2)}</Td>
+                    <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{group(pnl, 2)}</Td>
                     <Td>{p.status === 'LIQUIDATED' ? <span style={{ color: 'var(--sell)' }}>{p.status}</span> : p.status}</Td>
                   </tr>
                 );

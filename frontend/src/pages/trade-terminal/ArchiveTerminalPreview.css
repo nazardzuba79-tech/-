@@ -145,7 +145,13 @@
    and the table stops asking for more width than the panel has at 1600+. */
 #archive-terminal-preview .futures-positions-table { min-width:0; table-layout:auto; font-family:var(--font-family); }
 #archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px 10px; padding-inline:10px !important; white-space:nowrap; text-align:left; }
-#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; font-size:12px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
+/* `height:34px`: the studio sheet pins the heading to `height:30px` with
+   `padding:0 !important`, so a band that wraps to two lines (15px × 2,
+   plus the half-pixel the collapsed border lends the cell) came out 30.5px
+   below 1800 and 30px above — two heights across the widths the geometry
+   check measures. 34px holds two lines at every width, so the band is one
+   height everywhere; the row keeps its 64px. */
+#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:34px; font-size:12px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
 #archive-terminal-preview .futures-positions-table td { height:64px; font-size:13px; font-weight:550; color:#f8fafc; vertical-align:middle; border-bottom:0; }
 #archive-terminal-preview .futures-position-unit { color:#bac5d5; }
 #archive-terminal-preview .futures-positions-table td:is(:nth-child(3),:nth-child(4),:nth-child(5)) { color:#f8fafc !important; }

@@ -223,10 +223,15 @@ async function card(page, filename, width) {
 /**
  * Every amount is rendered with group separators and a non-breaking space
  * before its unit. Those are display, not arithmetic, so the comparisons
- * below run on the digits: `56 405 024.03\u00a0USDT` -> `56405024.03 USDT`.
+ * below run on the digits: `56,405,024.03\u00a0USDT` -> `56405024.03 USDT`.
  * The separators themselves are asserted separately, right after.
+ *
+ * One rule across the terminal (owner, 2026-09-22): a comma between
+ * thousands, a dot before the decimals — the spelling the header and the
+ * order book already used. The account card grouped with a space before.
  */
-const plainAmount = (text) => (text || '').replace(/\u00a0/g, ' ').replace(/(?<=\d) (?=\d)/g, '').trim();
+const plainAmount = (text) => (text || '').replace(/\u00a0/g, ' ').replace(/(?<=\d)[ ,](?=\d)/g, '').trim();
+const grouped = (v, d) => Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 
 /**
  * What the card should print for a margin ratio.
@@ -269,7 +274,7 @@ async function accountSummary(page, state) {
   assert(g.units.length >= 2 && g.units.every(u => /^\u00a0/.test(u || '')), 'Currency is not separated from the amount: ' + JSON.stringify(g.units));
   // Group separators are present on any amount long enough to need them.
   const grouped = (g.balance || '').replace(/\u00a0USDT$/, '');
-  if (grouped.replace(/[^\d]/g, '').length > 5) assert(/\d \d/.test(grouped), 'Large balance is not grouped: ' + grouped);
+  if (grouped.replace(/[^\d]/g, '').length > 5) assert(/\d,\d{3}/.test(grouped), 'Large balance is not grouped: ' + grouped);
   assert(!/[KMB]\b|\u2026/.test(grouped), 'Balance was abbreviated or truncated: ' + grouped);
   return g;
 }
@@ -476,19 +481,17 @@ async function largeValues(width) {
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positions'); await rows(s.page).first().waitFor();
       await check(`large-table-${example.id}-${width}`, async () => {
-        // The reference prints the figure grouped and to four decimals, with
-        // the settle-currency approximation under it; the brackets and the
-        // unit are drawn by the stylesheet, so innerText carries neither.
-        const grouped = (v, d) => Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 4));
-        assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), Number(example.roi).toFixed(2) + '%');
+        // The row prints every USDT figure grouped and to two decimals, the
+        // ROI grouped with its percent sign (`+12,009.96%`, not `12009.96%`)
+        // — the one rule the owner asked for across the panel. The brackets
+        // and the unit are drawn by the stylesheet, so innerText carries
+        // neither, and the duplicate `≈ … USD` line is gone from every design.
+        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 2));
+        assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), grouped(example.roi, 2) + '%');
+        assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
         if (await s.page.locator('#archive-terminal-preview').count()) {
-          // The approved compact row retains the authoritative amount/unit;
-          // it deliberately omits the duplicate approximate USD line.
+          // The approved compact row retains the authoritative amount/unit.
           assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
-          assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
-        } else {
-          assert.equal((await s.page.locator('.futures-position-approx').first().innerText()).trim(), `≈${grouped(example.pnl, 2)} USD`);
         }
         return tableLayout(s.page, width);
       });
@@ -499,7 +502,8 @@ async function largeValues(width) {
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positionHistory');
       await s.page.locator('.futures-positions-panel tbody tr').waitFor();
       await check(`large-history-${example.id}-${width}`, async () => {
-        assert((await s.page.locator('.futures-positions-panel').innerText()).includes(Number(example.pnl).toFixed(2)), 'Closed P&L not rendered in full');
+        // The history tab follows the same rule as the open rows.
+        assert((await s.page.locator('.futures-positions-panel').innerText()).includes(grouped(example.pnl, 2)), 'Closed P&L not rendered in full');
         return tableLayout(s.page, width);
       });
     }
