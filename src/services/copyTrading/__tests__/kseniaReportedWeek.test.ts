@@ -153,23 +153,21 @@ describe('nothing is counted twice, and nothing is rewritten', () => {
     expect(cachedDay.realizedPnl).toBeCloseTo(sixteenth[0].realizedPnl - 1754, 4);
   }, 600_000);
 
-  it('makes the reported 61.9% the VISIBLE weekly return while the week is current', async () => {
-    const before = await ksenia();                 // 2026-09-19: inside the week
+  it('keeps 61.9% historical-only even on the reported week end', async () => {
+    const before = await ksenia();                 // 2026-09-19
     const after: any = withKseniaReportedWeek(before);
 
-    // Inside its own week the reported figure IS the last seven days, so all
-    // three places a weekly return is read show it.
-    expect(after.analytics.roi7).toBe(61.9);
-    expect(after.economics.periods['7D'].roi).toBe(61.9);
-    expect(after.weekly.find((w: any) => w.period === '2026-09-13').roi).toBe(61.9);
+    // Rolling 7D remains ledger-derived. Only the finished weekly row carries
+    // the owner-reported historical result.
+    expect(after.analytics.roi7).toBeCloseTo((before as any).analytics.roi7, 8);
+    expect(after.economics.periods['7D'].roi).toBeCloseTo((before as any).economics.periods['7D'].roi, 8);
+    expect(after.weekly.find((row: any) => row.period === '2026-09-13').roi).toBe(61.9);
 
-    // Declared, with its provenance and the figures it replaced, so the
-    // payload says out loud which number is the owner's word.
     expect(after.reportedWeeks).toHaveLength(1);
     expect(after.reportedWeeks[0]).toMatchObject({
       traderId: 'VX-KSENIA', periodStart: '2026-09-13', periodEnd: '2026-09-19', timezone: 'UTC',
       returnPct: 61.9, source: 'OWNER_REPORTED', includesReportedTradeOf20260916: false,
-      modeledReturnPct: 12.7094, publishedReturnPct: 20.5094, appliedToVisibleWeeklyRoi: true,
+      modeledReturnPct: 12.7094, publishedReturnPct: 20.5094, appliedToVisibleWeeklyRoi: false,
     });
     expect(after.provenance).toBe('SYNTHETIC_REVIEW');
   }, 600_000);
