@@ -6,3 +6,5 @@
 - `dist/` — final ZIP of `v1` + `snapshot`.
 
 Nothing here touches `src/`, `frontend/`, `prisma/`, deployments, wallets or trading accounts. Research-only; no trading signals.
+
+Note on packaging: `dist/` is git-ignored by the repository root `.gitignore`, so the ZIP is delivered in chat, not in git. The ZIP excludes `v1/raw/bitfinex/` (206 MB of 1-minute status pages, 1490 files); those raw files are tracked in this git branch, listed in `v1/raw/MANIFEST.csv` and hashed in `v1/raw/CHECKSUMS.csv`.
