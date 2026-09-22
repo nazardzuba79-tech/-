@@ -38,13 +38,10 @@
  * IT IS NO LONGER PINNED TO THE ROLLING SEVEN DAYS. It once was, and that
  * was wrong: the card and the profile then showed 61.9% forever, under a
  * date range frozen on 13–19 September, long after that week had ended. The
- * current 7D window is a rolling window and must keep rolling — 22 September
- * ends on 22 September, 23 September on 23 September, and so on. So
- * `analytics.roi7` and `economics.periods['7D'].roi` take the reported figure
- * ONLY while the model is genuinely inside the reported week, where the two
- * windows coincide and the figure is the last seven days. From 20 September
- * onward both are the engine's own derivation from the canonical ledger
- * again, and they move forward every day.
+ * current 7D window is a rolling window and stays ledger-derived at all
+ * times. The reported 61.9% is historical-only: it belongs to the finished
+ * weekly row and is never copied into `analytics.roi7` or
+ * `economics.periods['7D'].roi`.
  *
  * WHICH REMOVES THE LABELLING PROBLEM ENTIRELY. There is no longer a state in
  * which a figure is shown as a rolling window while being a held weekly
@@ -93,12 +90,9 @@ export const KSENIA_REPORTED_WEEK = Object.freeze({
 
 /** The figures this overlay writes. Named so the payload declares exactly
  *  what is the owner's word and what is still the engine's. The weekly row is
- *  written always; the two rolling-7D fields only while the model is still
- *  inside the reported week. */
+ *  written always; rolling-7D fields are never overwritten. */
 export const REPORTED_WEEK_FIELDS = Object.freeze(
   ['weekly[period=2026-09-13].roi'] as const);
-export const REPORTED_WEEK_CURRENT_ONLY_FIELDS = Object.freeze(
-  ['analytics.roi7', "economics.periods['7D'].roi"] as const);
 
 export interface ReportedWeek {
   traderId: string;
@@ -110,9 +104,7 @@ export interface ReportedWeek {
   includesReportedTradeOf20260916: boolean;
   modeledReturnPct: number;
   publishedReturnPct: number;
-  /** True when the reported figure is the one the rolling 7D window shows.
-   *  True only while the model is still inside the reported week, because
-   *  only then is that week the last seven days. */
+  /** Historical-only policy: this is always false for rolling 7D. */
   appliedToVisibleWeeklyRoi?: boolean;
   /** Whether the model is still inside the reported week. */
   stillInsideReportedWeek?: boolean;
@@ -147,7 +139,7 @@ export function withKseniaReportedWeek<T>(input: T): T {
   const inside = reportedWeekIsCurrent(source.simulation?.simulatedAt);
   const record: ReportedWeek = {
     ...KSENIA_REPORTED_WEEK,
-    appliedToVisibleWeeklyRoi: inside,
+    appliedToVisibleWeeklyRoi: false,
     stillInsideReportedWeek: inside,
   };
   // A shallow copy per level we touch: nothing else in the response is
@@ -155,15 +147,8 @@ export function withKseniaReportedWeek<T>(input: T): T {
   const data: any = { ...source, reportedWeeks: [record] };
 
   const roi = KSENIA_REPORTED_WEEK.returnPct;
-  // The rolling window takes it only while it IS that window. Once the week
-  // has passed, 7D is the engine's again and advances with every new day.
-  if (inside) {
-    if (data.analytics) data.analytics = { ...data.analytics, roi7: roi };
-    if (data.economics?.periods?.['7D']) {
-      data.economics = { ...data.economics, periods: { ...data.economics.periods,
-        '7D': { ...data.economics.periods['7D'], roi } } };
-    }
-  }
+  // Historical-only: never overwrite rolling 7D. The finished weekly row
+  // below carries 61.9%; analytics/economics stay ledger-derived.
   // The finished week keeps the owner's figure permanently: that row is a
   // statement about 13-19 September and about nothing else.
   if (Array.isArray(data.weekly)) {
