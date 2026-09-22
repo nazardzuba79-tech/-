@@ -44,6 +44,7 @@ import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
 import { VISIBLE_TRADE_ROWS } from '../../lib/copyMarketplaceStore';
+import { HIDDEN_TRADE_HISTORY_MESSAGE, tradeHistoryIsHidden } from '../../lib/copyMarketplacePrivacy';
 import { useCopyMarketplace } from '../../lib/useCopyMarketplace';
 import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
 import { dailyReturnChart } from '../../lib/dailyReturnChart';
@@ -258,11 +259,6 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
   const { following } = useFollowing();
   const isNazara = trader.id === nazarTrader.id;
   const visual = getTraderVisual(trader.id);
-  // The one place the card learns that this ROI is a held reported result.
-  // The value itself never appears here — only the period selector's answer.
-  const roiWindow = synthetic && (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA')
-    ? selectSyntheticPeriod(synthetic, period) : undefined;
-  const reportedWeek = !!roiWindow?.reportedPeriod && !roiWindow.reportedPeriod.stillCurrent;
   const selectedMetrics = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA'
     ? synthetic ? selectSyntheticPeriod(synthetic, trader.id === 'VX-KSENIA' ? 'ALL' : period) : undefined
     : selectDemoPerformance(trader, period);
@@ -298,11 +294,9 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
       {(isNazara || trader.id === 'VX-KSENIA') && <p className="nazara-strategy">{trader.strategy}</p>}
       <div className="card-return">
         <div className="card-roi-copy">
-          {/* When the figure is one the manager reported for a week that has
-              since passed, the «7Д» chip would be claiming a rolling window
-              the number is not. Name the week instead — one short line, no
-              jargon — and leave every other card and period untouched. */}
-          <span>ROI <small>{reportedWeek ? 'за отчётную неделю' : period}</small></span>
+          {/* Always the selected period, because the figure always IS that
+              period: nothing is held past the window it belongs to. */}
+          <span>ROI <small>{period}</small></span>
           <strong className={roiClass(periodRoi)}><LiveMetric value={formatPercent(periodRoi)} /></strong>
         </div>
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
@@ -457,20 +451,12 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
         </div>
       </div>
       {periodData && periodData.equity.length > 0 ? <p className="profile-period-range">
-        {/* A figure the manager reported is NOT a rolling window, and once
-            the week it belongs to has passed, describing it as the last
-            seven days would be untrue. So when this window is showing a
-            reported result, the line names the week it is for and says the
-            manager is its source — and goes back to the ordinary rolling
-            wording the moment it is showing a derived number again. */}
-        {periodData.reportedPeriod && !periodData.reportedPeriod.stillCurrent
-          ? <>Результат за неделю {formatSyntheticHistoryDate(periodData.reportedPeriod.start)} — {formatSyntheticHistoryDate(periodData.reportedPeriod.end)} · по данным управляющего</>
-          : <>{period === 'ALL' ? 'ALL · С момента запуска' : `${period} · Скользящий период`} · {formatSyntheticHistoryDate(periodData.equity[0].date)} — {formatSyntheticHistoryDate(periodData.equity[periodData.equity.length - 1].date)} · {periodData.calendarDays} календарных дней</>}
+        {/* One wording for every window, because every window is now what it
+            says it is: a rolling period ending on the latest session. */}
+        {period === 'ALL' ? 'ALL · С момента запуска' : `${period} · Скользящий период`} · {formatSyntheticHistoryDate(periodData.equity[0].date)} — {formatSyntheticHistoryDate(periodData.equity[periodData.equity.length - 1].date)} · {periodData.calendarDays} календарных дней
       </p> : (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && <p className="profile-period-range"><LiveMetric value="—" /></p>}
       <div className="chart-readouts" aria-label="Результат за выбранный период">
-        {/* Same rule, on the readout itself: «ROI · 7D» claims a window. */}
-        <div><span>{periodData?.reportedPeriod && !periodData.reportedPeriod.stillCurrent
-          ? 'ROI · за отчётную неделю' : `ROI · ${period}`}</span><strong className={roiClass(displayedRoi)}><LiveMetric value={formatPercent(displayedRoi)} /></strong></div>
+        <div><span>{`ROI · ${period}`}</span><strong className={roiClass(displayedRoi)}><LiveMetric value={formatPercent(displayedRoi)} /></strong></div>
         <div><span>Накопленный PnL · USDT</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}><LiveMetric value={periodData ? signedUsd(periodData.pnl) : '—'} /></strong></div>
       </div>
       {periodData && !simpleReturn && <div className="profile-equity-readouts" aria-label="Торговый оборот за выбранный период">
@@ -562,22 +548,29 @@ function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: Synt
   const visibleTrades = periodData?.trades.slice(0, VISIBLE_TRADE_ROWS);
   const cashflowHistory = periodData?.economics !== undefined;
 
-  // The executions were withheld by the server, so there is nothing to
-  // render and nothing in the payload to render it from. This block is what
-  // the visitor gets instead — a statement, not a teaser: it does not say
-  // the rows are available to anyone, because no server rule makes that
-  // true. The COUNT stays on screen, because a hidden history is still a
-  // real history and «скрыто» is not «ноль сделок».
-  if (periodData?.tradesHidden) {
+  // WHAT THE VISITOR GETS INSTEAD OF A TABLE.
+  //
+  // For these two strategies the server sends no executions at all, so there
+  // is nothing here to render and nothing in the payload to render it from.
+  // The tab stays — removing it would only raise the question it answers —
+  // and shows one centred icon and one centred sentence.
+  //
+  // It is keyed on the STRATEGY, not on the payload: `tradesHidden` is a
+  // property of a loaded response, and before one arrives, or if one is
+  // missing, the fallback path below would still build a table shell. It is
+  // keyed on nothing about the VIEWER either — copying, following,
+  // favourites and deposit size all leave it exactly as it is, because none
+  // of them makes the server send a row.
+  //
+  // No count, no heading, no explanation of where the data went: the owner
+  // asked for a clean locked state, and a trade count is still a statement
+  // about the trades.
+  if (tradeHistoryIsHidden(trader.id) || periodData?.tradesHidden) {
     return (
-      <section className="profile-panel profile-trades-panel">
-        <div className="profile-panel-heading">
-          <div><span>Исполнено стратегией</span><h2>История сделок</h2></div>
-          <strong>{`${periodData.totalTrades} закрытых`}</strong>
-        </div>
+      <section className="profile-panel profile-trades-panel profile-trades-locked">
         <div className="trades-hidden-note" role="note">
-          <EyeOff size={22} aria-hidden="true" />
-          <p>Информация о сделках скрыта</p>
+          <EyeOff size={30} aria-hidden="true" />
+          <p>{HIDDEN_TRADE_HISTORY_MESSAGE}</p>
         </div>
       </section>
     );

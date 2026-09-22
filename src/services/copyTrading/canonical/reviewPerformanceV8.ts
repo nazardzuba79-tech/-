@@ -2,6 +2,7 @@ import type { CashflowReviewState } from './reviewEconomicsTypes';
 import type { SyntheticTrade } from './types';
 import { isReviewHoliday } from './reviewEconomicsConfig';
 import { REVIEW_PERFORMANCE_V8_CONFIG as C } from './reviewPerformanceV8Config';
+import { dailyProgressionApplies } from './dailyProgression';
 
 const DAY_MS = 86_400_000;
 const MONEY_SCALE = 10_000;
@@ -394,6 +395,23 @@ function futurePlans(start: string): DayPlan[] {
 /** Date-derived immutable weekly regimes make serialized split/batch advances
  * identical. Only the newly appended day is emitted; past data is never fitted
  * to updated headlines or wall-clock randomness. */
+/**
+ * One session, one closed execution.
+ *
+ * The weekly regime still decides the day's RETURN — this only decides how
+ * many rows express it. A zero-return session becomes one priced BREAKEVEN
+ * trade, preserving the day's ROI and PnL exactly.
+ */
+function singleExecutionPlan(plan: DayPlan): DayPlan {
+  return {
+    date: plan.date,
+    return: plan.return,
+    count: 1,
+    losses: plan.return < 0 ? 1 : 0,
+    breakevens: plan.return === 0 ? 1 : 0,
+  };
+}
+
 export function advanceSimpleReturnMasterState(original: CashflowReviewState, days: number): CashflowReviewState {
   if (original.version !== 8) throw new Error('The v8 generator cannot migrate an existing v7 history');
   if (!Number.isInteger(days) || days < 0 || days > 365) throw new Error('Advance must be 0–365 whole days');
@@ -403,6 +421,13 @@ export function advanceSimpleReturnMasterState(original: CashflowReviewState, da
     const date = addDays(state.simulatedAt.slice(0, 10), 1);
     const plans = futurePlans(weekStart(date));
     const plan = plans[weekday(date)];
+    // From the owner's cadence date onward a day is exactly one closed trade,
+    // so neither the mixed-session top-up nor a zero-execution quiet day
+    // below applies. Days before it keep the published behaviour untouched.
+    if (dailyProgressionApplies(date)) {
+      appendDay(state, singleExecutionPlan(plan), initialCapital);
+      continue;
+    }
     if (plan.return > 0) {
       const resolved = state.trades.filter(trade => trade.netPnl !== 0).length;
       const losses = state.trades.filter(trade => trade.netPnl < 0).length;

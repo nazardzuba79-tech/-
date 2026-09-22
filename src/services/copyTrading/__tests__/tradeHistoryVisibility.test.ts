@@ -182,3 +182,51 @@ describe('the Ksenia overlay cannot put a trade back after redaction', () => {
     // asserted by the HTTP tests above.
   }, 600_000);
 });
+
+/**
+ * NO SECOND ROUTE.
+ *
+ * The cases above name the three endpoints we know about. This one refuses to
+ * rely on knowing: it walks the express stacks of BOTH Copy Trading routers,
+ * finds every public GET they register, and requests each one. A future
+ * endpoint that serves the same strategies is therefore covered the day it is
+ * added — it either redacts, or this fails.
+ */
+describe('every public Copy Trading route, enumerated from the routers themselves', () => {
+  const publicGets = (router: any): string[] => (router.stack ?? [])
+    .filter((layer: any) => layer.route?.methods?.get)
+    .map((layer: any) => layer.route.path as string)
+    .filter((path: string) => !path.startsWith('/admin/'));
+
+  it('finds no execution on any of them', async () => {
+    const { syntheticCopyTradingRouter } = require('../../../api/routes/syntheticCopyTrading');
+    const db = memoryDb();
+    db.syntheticCopyTradingState = { findUnique: async () => null, upsert: async () => ({}) };
+    const service = new CopyPerformanceService(db, () => new Date('2026-09-26T12:00:00Z'));
+    const performance = copyPerformanceRouter(db, service);
+    const synthetic = syntheticCopyTradingRouter(db);
+
+    const server = express();
+    server.use('/api/v1', performance);
+    server.use('/api/v1', synthetic);
+    const token = jwt.sign({ sub: 'u', sid: 's' }, process.env.JWT_SECRET!, { expiresIn: '10m' });
+
+    const paths = [...publicGets(performance), ...publicGets(synthetic)];
+    // If a route is ever added, it lands here rather than going unchecked.
+    expect(paths.sort()).toEqual([
+      '/copy-trading/identities', '/copy-trading/identity/:traderId', '/copy-trading/ksenia',
+      '/copy-trading/marketplace', '/copy-trading/nazar', '/copy-trading/synthetic',
+    ]);
+
+    for (const path of paths) {
+      const url = `/api/v1${path.replace(':traderId', 'VX-001')}`;
+      const response = await request(server).get(url).set('Authorization', `Bearer ${token}`);
+      expect(response.status).toBeLessThan(400);
+      expect(findExecutions(response.body)).toEqual([]);
+      const wire = JSON.stringify(response.body);
+      for (const marker of ['entryPrice', 'exitPrice', 'holdingTimeMinutes', 'KS-REV-', 'REV8-', 'SYN-']) {
+        expect(wire).not.toContain(marker);
+      }
+    }
+  }, 900_000);
+});
