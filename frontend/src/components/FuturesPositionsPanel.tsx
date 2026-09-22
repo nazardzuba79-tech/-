@@ -45,9 +45,16 @@ export function FuturesPositionsPanel({
   leverageBusy = false,
   archive = false,
   symbolFilter,
+  onSelectSymbol,
 }: {
   archive?: boolean;
   symbolFilter?: string;
+  /** Open this position's contract in the terminal — chart, book and order
+   *  form all follow. Selecting a contract NEVER touches the position: it
+   *  changes what the terminal is looking at, nothing else. Absent means
+   *  the panel is standalone and the ticker stays plain text rather than a
+   *  button that does nothing. */
+  onSelectSymbol?: (symbol: string) => void;
   refreshKey: number;
   /** Optional native position editor; the order form only configures new orders. */
   onEditLeverage?: (positionId: string) => void;
@@ -407,7 +414,20 @@ export function FuturesPositionsPanel({
                       <Td label={t('futures.colContracts')}>
                         <div className="futures-position-contract">
                           <span className="futures-position-ticker">
-                            <b>{p.symbol.replace('/', '')}</b>
+                            {/* The CONTRACT NAME is the control, not the
+                                row: a whole clickable row beside Close and
+                                the leverage editor is one slip away from an
+                                action the trader did not mean. */}
+                            {onSelectSymbol ? (
+                              <button
+                                type="button"
+                                className="futures-position-symbol-link"
+                                data-position-symbol={p.symbol}
+                                title={t('futures.openContract', { symbol: p.symbol })}
+                                aria-label={t('futures.openContract', { symbol: p.symbol })}
+                                onClick={() => onSelectSymbol(p.symbol)}
+                              ><b>{p.symbol.replace('/', '')}</b></button>
+                            ) : <b>{p.symbol.replace('/', '')}</b>}
                             <i className="futures-position-perp">{t('futures.perpetual')}</i>
                           </span>
                           <span className="futures-sr-only">{p.side === 'LONG' ? t('futures.long') : t('futures.short')}</span>
