@@ -172,82 +172,99 @@ async function command(s, kind, action) {
 }
 const activeOrders = state => state.orders.filter(o => ['OPEN', 'PARTIALLY_FILLED'].includes(o.status));
 
+/** One side, start to finish: pick a bar, open, verify the POSITION (not the toast), close at the near-live price, verify the ledger. */
+async function tradeSide(s, width, side, counts) {
+  const p = s.page, sign = side === 'LONG' ? 1 : -1;
+  // 1. A bar. The selection survives a completed trade, so only the first side arms the picker.
+  await workspace(p, 'trade');
+  if (!(await p.locator('[data-entry-reference]').count())) { await armChartPicker(p); await pickOldCandle(p); await workspace(p, 'trade'); }
+  const reference = JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference'));
+  const entryRow = await p.locator('[data-entry-reference]').innerText();
+  if (!SERVER_ONLY) {
+    assert(entryRow.includes(String(ENTRY)), `Entry row does not show the selected price: ${entryRow}`);
+    assert.equal(Number(await priceField(p).inputValue()), ENTRY, 'Price field does not show the selected historical price');
+    assert.equal(await priceField(p).getAttribute('readonly'), '', 'Price field is editable while a bar is selected');
+  }
+  let typedLimit = false;
+  if (SERVER_ONLY && LIMIT_PRICE && (await priceField(p).getAttribute('readonly')) === null) { await priceField(p).fill(LIMIT_PRICE); typedLimit = true; }
+  const limitTab = p.locator('.fo-panel .order-family-tabs [role=tab]').first();
+  assert.equal(await limitTab.getAttribute('aria-selected'), 'true', 'LIMIT tab is not the selected tab');
+  // 2. Same quantity / leverage controls, same Open Long / Open Short button.
+  await qty(p).fill(QUANTITY);
+  await setLeverage(p, LEVERAGE);
+  try { await p.waitForFunction(side => !document.querySelector(`.fo-submitPair .${side === 'LONG' ? 'buy' : 'sell'}`)?.disabled, side, { timeout: 8000 }); }
+  catch { throw Error(`Open ${side} stayed disabled before any request: ` + (await p.locator('.fo-form').innerText()).replace(/\s+/g, ' ').slice(0, 400)); }
+  await p.screenshot({ path: path.join(out, `armed-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
+  const { state, draft } = await command(s, 'OPEN', () => button(p, side).click());
+  // 3. The HTTP payload is the ordinary form's: a LIMIT with the bar attached. The server treated it as the entry.
+  assert.equal(draft.type, 'LIMIT'); assert.deepEqual(draft.candle, reference); assert.equal(draft.quantity, QUANTITY); assert.equal(draft.leverage, String(LEVERAGE)); assert.equal(draft.side, side);
+  assert.equal(draft.executionMode, 'HISTORICAL_DEMO');
+  if (typedLimit) assert.equal(Number(draft.price), Number(LIMIT_PRICE));
+  // 4. A position, immediately; nothing resting. The toast is not the evidence — the position is.
+  assert.equal(state.positions.length, counts.positions + 1, 'Positions count did not increase by one');
+  assert.equal(activeOrders(state).length, counts.orders, 'Open orders count changed');
+  const position = state.positions.find(x => x.symbol === SYMBOL && x.side === side);
+  assert(position, `No ${side} AKE position`);
+  assert.equal(Number(position.entryPrice), ENTRY, `Entry is ${position.entryPrice}, not the selected ${ENTRY}`);
+  assert.equal(position.quantity, QUANTITY); assert.equal(Number(position.leverage), LEVERAGE);
+  assert.equal(position.executionMode, 'HISTORICAL_DEMO');
+  const mark = Number(position.markPrice);
+  assert(Math.abs(mark - CURRENT) < 1e-9, `Mark ${position.markPrice} is not the near-live ${CURRENT}`);
+  const expectedPnl = sign * (CURRENT - ENTRY) * Number(QUANTITY), pnl = Number(position.unrealizedPnl);
+  assert(pnl !== 0 && Math.abs(pnl - expectedPnl) < 1e-6, `Unrealized P&L ${position.unrealizedPnl} is not ${side} entry→near-live (${expectedPnl})`);
+  const order = state.orders.find(o => o.positionId === position.id || o.id === position.id);
+  assert(order && order.status === 'FILLED' && Number(order.remaining ?? order.remainingQuantity) === 0 && order.filled === QUANTITY, `Order for the position is not filled in full: ${JSON.stringify(order)}`);
+  assert.equal(order.type, 'MARKET', 'A selected bar was journaled as a resting-capable order type'); assert.equal(order.price, null); assert.equal(Number(order.historicalPrice), ENTRY);
+  // 5. The bar stays selected after the submit, and the panel still shows ITS price — not today's.
+  await workspace(p, 'trade');
+  if (!SERVER_ONLY) await p.waitForFunction(entry => Number(document.querySelector('.fo-priceInputRow input')?.value) === entry, ENTRY);
+  // 6. The bottom panel shows the POSITION on this viewport: counts, then the row itself.
+  await workspace(p, 'positions');
+  await p.waitForFunction(([o, n]) => document.querySelector('#futures-tab-orders .reference-tab-count')?.textContent?.trim() === `(${o})` && document.querySelector('#futures-tab-positions .reference-tab-count')?.textContent?.trim() === `(${n})`, [counts.orders, counts.positions + 1]);
+  await p.locator('#futures-tab-positions').click();
+  const row = p.locator(`.futures-position-row[data-side="${side}"]`).filter({ hasText: 'AKE' }).first();
+  await row.waitFor();
+  const rowText = (await row.innerText()).replace(/\s+/g, ' ');
+  assert(/0[.,]0040?\b/.test(rowText), `Position row does not show the 0.004 entry: ${rowText}`);
+  assert(rowText.includes('1500000') || rowText.includes('1 500 000') || rowText.includes('1,500,000'), `Position row does not show the quantity: ${rowText}`);
+  assert(/3\.00x|3x/.test(rowText), `Position row does not show 3x: ${rowText}`);
+  // The sign is styled (a class), not always in the text: a LONG shows 74,700 without a leading minus, a SHORT with one.
+  assert((side === 'LONG' ? /(^|[^-−])74[,\u00a0 ]?700/ : /[-−]74[,\u00a0 ]?700/).test(rowText), `Position row does not show the ${side} P&L: ${rowText}`);
+  await p.screenshot({ path: path.join(out, `position-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
+  // 7. Close at the current near-live price from the table (the "Рыночный" close), no book involved.
+  const closed = await command(s, 'CLOSE', () => row.locator('.futures-position-close').nth(1).click());
+  assert.equal(closed.draft.positionId, position.id); assert.equal(closed.draft.candle, undefined, 'A close reused the historical selection');
+  assert.equal(closed.state.positions.filter(x => x.symbol === SYMBOL).length, 0, 'Position still open after close');
+  assert.equal(activeOrders(closed.state).length, counts.orders);
+  const done = closed.state.history.find(x => x.id === position.id);
+  assert(done && done.status === 'CLOSED', `Closed position missing from history: ${JSON.stringify(done)}`);
+  const gross = sign * (CURRENT - ENTRY) * Number(QUANTITY);
+  assert(Math.abs(Number(done.realizedGross) - gross) < 1e-6, `Realized gross ${done.realizedGross} is not ${gross}`);
+  const fees = Number(QUANTITY) * ENTRY * 0.00055 + Number(QUANTITY) * CURRENT * 0.00055;
+  assert(Math.abs(Number(done.realizedPnl) - (gross - fees)) < 1e-4, `Realized net ${done.realizedPnl} is not gross ${gross} minus fees ${fees}`);
+  await p.waitForFunction(n => document.querySelector('#futures-tab-positions .reference-tab-count')?.textContent?.trim() === `(${n})`, counts.positions);
+  await p.screenshot({ path: path.join(out, `closed-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
+  return { side, submittedType: draft.type, orderStatus: order.status, entry: position.entryPrice, quantity: position.quantity, leverage: position.leverage, mark: position.markPrice,
+    unrealizedPnl: position.unrealizedPnl, ordersBefore: counts.orders, ordersAfterOpen: activeOrders(state).length, positionsAfterOpen: state.positions.length,
+    closedAt: CURRENT, realizedGross: done.realizedGross, realizedNet: done.realizedPnl, positionsAfterClose: closed.state.positions.length };
+}
+
 async function historicalEntry(width) {
   const s = await session(width), p = s.page;
   try {
     await ready(s);
     const before = await api(s.context, s.token, 'state');
-    const ordersBefore = activeOrders(before).length, positionsBefore = before.positions.length;
+    const counts = { orders: activeOrders(before).length, positions: before.positions.length };
     await workspace(p, 'positions');
-    assert.equal(await tabCount(p, 'orders'), `(${ordersBefore})`); assert.equal(await tabCount(p, 'positions'), `(${positionsBefore})`);
-    // 1. Pick an old bar. The panel shows its price as the entry, read-only, on the ordinary form.
-    await armChartPicker(p);
-    const picked = await pickOldCandle(p);
-    await workspace(p, 'trade');
-    const reference = JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference'));
-    assert.equal(reference.openTime, picked.time * 1000, 'Displayed candle is not the bar that was clicked');
-    const entryRow = await p.locator('[data-entry-reference]').innerText();
-    if (!SERVER_ONLY) {
-      assert(entryRow.includes(String(ENTRY)), `Entry row does not show the selected price: ${entryRow}`);
-      assert.equal(Number(await priceField(p).inputValue()), ENTRY, 'Price field does not show the selected historical price');
-      assert.equal(await priceField(p).getAttribute('readonly'), '', 'Price field is editable while a bar is selected');
-    }
-    let typedLimit = false;
-    if (SERVER_ONLY && LIMIT_PRICE && (await priceField(p).getAttribute('readonly')) === null) { await priceField(p).fill(LIMIT_PRICE); typedLimit = true; }
-    // The ordinary LIMIT tab stays selected: the server, not the tab, decides what a selected bar means.
-    const limitTab = p.locator('.fo-panel .order-family-tabs [role=tab]').first();
-    assert.equal(await limitTab.getAttribute('aria-selected'), 'true', 'LIMIT tab is not the selected tab');
-    // 2. Same quantity / leverage controls, same Open Long button.
-    await qty(p).fill(QUANTITY);
-    await setLeverage(p, LEVERAGE);
-    // A form that refuses before the round trip is a finding in its own right; name what it says.
-    try { await p.waitForFunction(() => !document.querySelector('.fo-submitPair .buy')?.disabled, undefined, { timeout: 8000 }); }
-    catch { throw Error('Open Long stayed disabled before any request: ' + (await p.locator('.fo-form').innerText()).replace(/\s+/g, ' ').slice(0, 400)); }
-    await p.screenshot({ path: path.join(out, `armed-${width}.png`), fullPage: width === 390 });
-    const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
-    // 3. The HTTP payload is the ordinary form's: a LIMIT with the bar attached. The server treated it as the entry.
-    assert.equal(draft.type, 'LIMIT'); assert.deepEqual(draft.candle, reference); assert.equal(draft.quantity, QUANTITY); assert.equal(draft.leverage, String(LEVERAGE));
-    if (typedLimit) assert.equal(Number(draft.price), Number(LIMIT_PRICE));
-    assert.equal(draft.executionMode, 'HISTORICAL_DEMO');
-    // 4. A position, immediately; nothing resting.
-    assert.equal(state.positions.length, positionsBefore + 1, 'Positions count did not increase by one');
-    assert.equal(activeOrders(state).length, ordersBefore, 'Open orders count changed');
-    const position = state.positions.find(x => x.symbol === SYMBOL);
-    assert(position, 'No AKE position');
-    assert.equal(Number(position.entryPrice), ENTRY, `Entry is ${position.entryPrice}, not the selected ${ENTRY}`);
-    assert.equal(position.quantity, QUANTITY); assert.equal(Number(position.leverage), LEVERAGE);
-    assert.equal(position.executionMode, 'HISTORICAL_DEMO');
-    const mark = Number(position.markPrice);
-    assert(Math.abs(mark - CURRENT) < 1e-9, `Mark ${position.markPrice} is not the near-live ${CURRENT}`);
-    const pnl = Number(position.unrealizedPnl);
-    assert(pnl !== 0 && Math.abs(pnl - (CURRENT - ENTRY) * Number(QUANTITY)) < 1e-6, `Unrealized P&L ${position.unrealizedPnl} is not entry→near-live`);
-    const order = state.orders.find(o => o.positionId === position.id || o.id === position.id);
-    assert(order && order.status === 'FILLED' && Number(order.remaining ?? order.remainingQuantity) === 0 && order.filled === QUANTITY, `Order for the position is not filled in full: ${JSON.stringify(order)}`);
-    assert.equal(order.type, 'MARKET', 'A selected bar was journaled as a resting-capable order type'); assert.equal(order.price, null); assert.equal(Number(order.historicalPrice), ENTRY);
-    // 5. No liquidity dependency: the fixture book holds ONE contract per side, the fill is 1 500 000.
+    assert.equal(await tabCount(p, 'orders'), `(${counts.orders})`); assert.equal(await tabCount(p, 'positions'), `(${counts.positions})`);
+    const sides = SERVER_ONLY ? ['LONG'] : ['LONG', 'SHORT'];
+    const results = {};
+    for (const side of sides) results[side] = await tradeSide(s, width, side, counts);
+    // No liquidity dependency: the fixture quote holds ONE contract per side, every fill above was 1 500 000.
     const quote = await (await s.context.request.get(origin + '/api/v1/futures/mark-price/' + PAIR.replace('/', '-'))).json();
     assert(Math.abs(Number(quote.markPrice) - CURRENT) < 1e-9);
-    // 5b. The bar stays selected after the submit, and the panel still shows ITS price — not today's.
-    await workspace(p, 'trade');
-    if (!SERVER_ONLY && await p.locator('[data-entry-reference]').count()) {
-      await p.waitForFunction(entry => Number(document.querySelector('.fo-priceInputRow input')?.value) === entry, ENTRY);
-    }
-    // 6. The bottom panel agrees, on this viewport.
-    await workspace(p, 'positions');
-    await p.waitForFunction(([o, n]) => document.querySelector('#futures-tab-orders .reference-tab-count')?.textContent?.trim() === `(${o})` && document.querySelector('#futures-tab-positions .reference-tab-count')?.textContent?.trim() === `(${n})`, [ordersBefore, positionsBefore + 1]);
-    await p.locator('#futures-tab-positions').click();
-    const row = p.locator('.futures-positions-table tbody tr').first();
-    await row.waitFor();
-    const rowText = (await row.innerText()).replace(/\s+/g, ' ');
-    assert(rowText.includes('AKE'), `Position row is not AKE: ${rowText}`);
-    assert(/0[.,]0040?\b/.test(rowText), `Position row does not show the 0.004 entry: ${rowText}`);
-    await p.locator('#futures-tab-orders').click();
-    const ordersPanel = await p.locator('#futures-bottom-content').innerText();
-    assert(!/AKE.*(LIMIT|Лимит)/is.test(ordersPanel) || activeOrders(state).length === ordersBefore, `An AKE order is listed as open: ${ordersPanel}`);
-    await p.locator('#futures-tab-positions').click();
-    await p.screenshot({ path: path.join(out, `position-${width}.png`), fullPage: width === 390 });
     assert.deepEqual(report.errors, [], 'Browser runtime errors');
-    return { width, entry: position.entryPrice, mark: position.markPrice, unrealizedPnl: position.unrealizedPnl, quantity: position.quantity, leverage: position.leverage, ordersBefore, ordersAfter: activeOrders(state).length, positions: state.positions.length, submittedType: draft.type, orderStatus: order.status };
+    return { width, ...results };
   } finally { await s.context.close(); }
 }
 

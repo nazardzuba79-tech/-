@@ -8,16 +8,40 @@
       "passed": true,
       "evidence": {
         "width": 1440,
-        "entry": "0.004",
-        "mark": "0.0538",
-        "unrealizedPnl": "74700",
-        "quantity": "1500000",
-        "leverage": "3",
-        "ordersBefore": 0,
-        "ordersAfter": 0,
-        "positions": 1,
-        "submittedType": "LIMIT",
-        "orderStatus": "FILLED"
+        "LONG": {
+          "side": "LONG",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "74700",
+          "realizedNet": "74652.315",
+          "positionsAfterClose": 0
+        },
+        "SHORT": {
+          "side": "SHORT",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "-74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "-74700",
+          "realizedNet": "-74747.685",
+          "positionsAfterClose": 0
+        }
       }
     },
     {
@@ -25,16 +49,40 @@
       "passed": true,
       "evidence": {
         "width": 390,
-        "entry": "0.004",
-        "mark": "0.0538",
-        "unrealizedPnl": "74700",
-        "quantity": "1500000",
-        "leverage": "3",
-        "ordersBefore": 0,
-        "ordersAfter": 0,
-        "positions": 1,
-        "submittedType": "LIMIT",
-        "orderStatus": "FILLED"
+        "LONG": {
+          "side": "LONG",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "74700",
+          "realizedNet": "74652.315",
+          "positionsAfterClose": 0
+        },
+        "SHORT": {
+          "side": "SHORT",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "-74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "-74700",
+          "realizedNet": "-74747.685",
+          "positionsAfterClose": 0
+        }
       }
     }
   ],
