@@ -63,10 +63,13 @@ export function FuturesLimitCloseDialog({ position: p, marketPrice, rules, onClo
   const tick = Number((10 ** -priceDecimals).toFixed(priceDecimals));
   const step = rules ? Number(rules.qtyStep) : Number((10 ** -qtyDecimals).toFixed(qtyDecimals));
   const fixed = (value: number, decimals: number) => value.toFixed(decimals);
+  /** A quantity the way the engine spells it: `7`, `0.23`, `3750000` — the
+   *  step's precision without trailing zeros. */
+  const qtyText = (value: number) => fixed(value, qtyDecimals).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   const grouped = (value: number, decimals: number) => value.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
   const [price, setPrice] = useState(market === null ? '' : fixed(market, priceDecimals));
-  const [quantity, setQuantity] = useState(fixed(size, qtyDecimals));
+  const [quantity, setQuantity] = useState(p.size);
   const [percent, setPercent] = useState(100);
   const [postOnly, setPostOnly] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +89,7 @@ export function FuturesLimitCloseDialog({ position: p, marketPrice, rules, onClo
     setPercent(pct);
     const raw = size * (pct / 100);
     const stepped = step > 0 ? Math.floor(raw / step + 1e-9) * step : raw;
-    setQuantity(fixed(pct === 100 ? size : stepped, qtyDecimals));
+    setQuantity(pct === 100 ? p.size : qtyText(stepped));
     setError(null);
   }
   function typeQuantity(next: string) {
@@ -103,7 +106,7 @@ export function FuturesLimitCloseDialog({ position: p, marketPrice, rules, onClo
     } else {
       const base = qtyPositive ? qtyNumber : 0;
       const next = Math.min(size, Math.max(step, base + direction * step));
-      typeQuantity(fixed(next, qtyDecimals));
+      typeQuantity(qtyText(next));
     }
   }
 
@@ -155,7 +158,7 @@ export function FuturesLimitCloseDialog({ position: p, marketPrice, rules, onClo
     }
   }
 
-  const qtyMessage = qtyTooLarge ? t('futures.limitCloseQtyTooLarge') : qtyOffStep ? t('futures.limitCloseQtyStep', { step: fixed(step, qtyDecimals) }) : null;
+  const qtyMessage = qtyTooLarge ? t('futures.limitCloseQtyTooLarge') : qtyOffStep ? t('futures.limitCloseQtyStep', { step: qtyText(step) }) : null;
   const summary = expected === null ? null
     : t(expected >= 0 ? 'futures.limitCloseSummaryProfit' : 'futures.limitCloseSummaryLoss', {
       qty: grouped(qtyNumber, qtyDecimals), price: grouped(priceNumber, priceDecimals),

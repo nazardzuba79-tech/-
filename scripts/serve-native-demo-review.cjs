@@ -61,7 +61,8 @@ async function transport(url,options={}){
     const requested=[...new Set((u.searchParams.get('symbols')||'').split(','))];
     if(!requested.length||requested.length>64||requested.some(s=>!symbols.includes(s)))throw new Error('Invalid preview marks');
     const marks=await Promise.all(requested.map(async symbol=>{
-      if(fixture){const at=now(),price=fixtureCandle(Math.floor(at/60000)*60000,60000,symbol).close;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
+      // Under the QA drift the AKE mark moves with the clock rather than once a minute, so a limit a few ticks away rests for seconds, not a minute.
+      if(fixture){const at=now(),price=symbol==='AKEUSDT'&&AKE_DRIFT_PER_MINUTE?akePrice(at).toFixed(4):fixtureCandle(Math.floor(at/60000)*60000,60000,symbol).close;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
       const q=await source.freshQuote(symbol,options.signal);return{symbol,markPrice:q.markPrice,lastPrice:q.lastPrice,markProviderTimestamp:q.markProviderTimestamp,receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt};
     }));
     return new Response(JSON.stringify({status:'live',fetchedAt:now(),marks}),{status:200,headers:{'Content-Type':'application/json'}});

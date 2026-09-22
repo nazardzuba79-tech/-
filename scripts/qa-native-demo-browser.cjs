@@ -499,18 +499,15 @@ async function largeValues(width) {
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positions'); await rows(s.page).first().waitFor();
       await check(`large-table-${example.id}-${width}`, async () => {
-        // The row prints every USDT figure grouped and to two decimals, the
-        // ROI grouped with its percent sign (`+12,009.96%`, not `12009.96%`)
-        // — the one rule the owner asked for across the panel. The brackets
-        // and the unit are drawn by the stylesheet, so innerText carries
-        // neither, and the duplicate `≈ … USD` line is gone from every design.
-        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 2));
+        // The row prints the figure as the reference does (owner's Bybit
+        // screenshot, 2026-09-22): grouped and to four decimals with the unit,
+        // the ROI grouped in brackets, and the `≈ … USD` line under it. The
+        // brackets and the unit are drawn by the stylesheet, so innerText
+        // carries neither.
+        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 4));
         assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), grouped(example.roi, 2) + '%');
-        assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
-        if (await s.page.locator('#archive-terminal-preview').count()) {
-          // The approved compact row retains the authoritative amount/unit.
-          assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
-        }
+        assert.equal((await s.page.locator('.futures-position-approx').first().innerText()).trim(), `≈${grouped(example.pnl, 2)} USD`);
+        assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
         return tableLayout(s.page, width);
       });
       await check(`large-card-glyphs-${example.id}-${width}`, () => cardGlyphs(s.page, cardModel));

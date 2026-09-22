@@ -170,7 +170,8 @@ async function scenario(side, width) {
     await positionsTab(p);
     await row.locator(`[data-limit-close-open="${target.id}"]`).click(); await dialog(p).waitFor();
     const market2 = Number(await dialog(p).locator('[data-limit-close-market]').getAttribute('data-limit-close-market'));
-    const near = (market2 + sign * 0.0004).toFixed(4);
+    // Six ticks away: at 0.002 per minute the mark needs ~18s to reach it, so it rests through a slow runner's seconds between reading the market and pressing OK, and fills within the wait below.
+    const near = (market2 + sign * 0.0006).toFixed(4);
     await dialog(p).locator('[data-limit-close-qty]').fill(PART);
     await dialog(p).locator('[data-limit-close-price]').fill(near);
     const placed = await command(s, 'OPEN', () => dialog(p).locator('[data-limit-close-submit]').click());
