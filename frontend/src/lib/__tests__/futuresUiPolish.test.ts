@@ -294,7 +294,7 @@ test.each([
     // GreenHood's +190.54% under the HOOD perpetual. Price, 24h change and
     // turnover all still come from `tickers.get(symbol)`, so the sentence
     // above is now true of every column rather than most of them.
-    "d8deab4b5f0304181c73f4354573bacb5ccca79b7310b1dd1fb3060a6e33bb1b"
+    "0bcf05430051f9ec9d75f9717c3658e1c20e57117a01cb68a85a9467ecc30bfa"
   ],
   [
     "components/OrderBookPanel.tsx",
