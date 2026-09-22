@@ -23,7 +23,8 @@ const rows = page => page.locator('.futures-positions-table tbody tr');
 const qty = page => page.locator('.fo-qtyInputRow input');
 const price = page => page.locator('.fo-priceInputRow input');
 const button = (page, side) => page.locator(`.fo-submitPair .${side === 'LONG' ? 'buy' : 'sell'}`);
-const positionRow = (page, side) => rows(page).filter({ has: page.locator(`.futures-position-contract .text-${side === 'LONG' ? 'buy' : 'sell'}`) });
+// A row's side is its `data-side` (the reference's contract cell no longer spells «Long»/«Short»; the colour and the bar carry it).
+const positionRow = (page, side) => page.locator(`.futures-positions-table tbody tr[data-side=${side}]`);
 function realAccountRequest(request) {
   const p = new URL(request.url()).pathname;
   return p.startsWith('/api/v1/futures/') &&
@@ -191,7 +192,14 @@ async function tableLayout(page, width) {
     const panel = document.querySelector('.futures-positions-panel'), scroller = document.querySelector('.futures-positions-scroll') || panel?.querySelector('table')?.parentElement;
     const cells = [...(panel?.querySelectorAll('tbody td') || [])];
     const clipped = cells.filter(e => e.scrollWidth > e.clientWidth + 1).map(e => e.innerText);
+    // Two cells overlap only when both are in the flow. A cell pinned to
+    // the panel's edge (`position:sticky` — the contract on the left, the
+    // close controls on the right, as on the reference) COVERS the cells
+    // that scroll under it; that is the design, not a collision. Two pinned
+    // cells meeting each other, or two flow cells sharing pixels, still is.
+    const pinned = e => getComputedStyle(e).position === 'sticky';
     const overlap = [...(panel?.querySelectorAll('tbody tr') || [])].flatMap(tr => [...tr.children].flatMap((e, i) => [...tr.children].slice(i + 1).flatMap(other => {
+      if (pinned(e) !== pinned(other)) return [];
       const a = e.getBoundingClientRect(), b = other.getBoundingClientRect();
       return Math.min(a.right,b.right) > Math.max(a.left,b.left) + 1 && Math.min(a.bottom,b.bottom) > Math.max(a.top,b.top) + 1 ? [i] : [];
     })));
@@ -326,13 +334,20 @@ async function normalFlow(width) {
       'Take-profit trigger differs from the price that was set',
     );
     await check(`limit-close-prefill-no-submit-${width}`, async () => {
+      // «Лимитный» opens «Закрытие по лимиту» for THAT row (the reference's
+      // dialog, 2026-09-22): the whole position prefilled, a price to type,
+      // and nothing sent until OK.
       const before = s.drafts.filter(x => x.kind !== 'REFRESH').length;
       await row.locator('.futures-position-close').nth(0).click();
-      await p.waitForFunction(() => document.querySelector('.fo-reduceOnlyRow input')?.checked === true);
-      assert(await p.locator('.fo-reduceOnlyRow input').isChecked()); assert.equal(await qty(p).inputValue(), '7'); assert(await price(p).isVisible());
-      await delay(200); assert.equal(s.drafts.filter(x => x.kind !== 'REFRESH').length, before, 'Limit-close button automatically sent a trade');
+      const dialog = p.locator('[data-limit-close-dialog]'); await dialog.waitFor();
+      assert.equal(await dialog.getAttribute('data-limit-close-side'), 'LONG');
+      assert.equal(await dialog.locator('[data-limit-close-qty]').inputValue(), '7'); assert(await dialog.locator('[data-limit-close-price]').isVisible());
+      await delay(200); assert.equal(s.drafts.filter(x => x.kind !== 'REFRESH').length, before, 'Limit-close dialog automatically sent a trade');
+      await dialog.locator('[data-limit-close-cancel]').click();
+      await p.waitForFunction(() => !document.querySelector('[data-limit-close-dialog]'));
     });
     // Partial close through the ORIGINAL reduce-only market form.
+    await workspace(p, 'trade');
     await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').check(); await qty(p).fill('2');
     state = (await command(s, 'CLOSE', () => button(p, 'SHORT').click())).state;
     assert.equal(state.positions.find(x => x.id === longId).quantity, '5');
@@ -368,10 +383,13 @@ async function limitCloseContract(width) {
   try {
     await ready(s); const state = await open(s, 'LONG', '1'); await accountTab(s.page, 'positions');
     await positionRow(s.page, 'LONG').locator('.futures-position-close').nth(0).click();
-    const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1); await price(s.page).fill(limit);
+    const dialog = s.page.locator('[data-limit-close-dialog]'); await dialog.waitFor();
+    const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1); await dialog.locator('[data-limit-close-price]').fill(limit);
     const response = s.page.waitForResponse(r => r.url().endsWith('/native/commands') && r.request().method() === 'POST' && r.request().postDataJSON()?.kind !== 'REFRESH');
-    await button(s.page, 'SHORT').click(); const r = await response; const draft = r.request().postDataJSON(); const next = await r.json();
+    await dialog.locator('[data-limit-close-submit]').click(); const r = await response; const draft = r.request().postDataJSON(); const next = await r.json();
     assert(r.ok(), JSON.stringify(next)); assert.equal(draft.type, 'LIMIT', `Reduce-only LIMIT silently changed execution: ${JSON.stringify(draft)}`);
+    // The dialog names the position, closes on the opposite side, reduce-only, at the typed price.
+    assert.equal(draft.reduceOnly, true); assert.equal(draft.positionId, state.positions[0].id); assert.equal(draft.side, 'SHORT'); assert.equal(draft.quantity, '1');
     assert.equal(Number(draft.price), Number(limit)); assert(next.positions.some(x => x.id === state.positions[0].id), 'Nonmarketable limit close filled immediately');
   } finally { await s.context.close(); }
 }
@@ -481,18 +499,15 @@ async function largeValues(width) {
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positions'); await rows(s.page).first().waitFor();
       await check(`large-table-${example.id}-${width}`, async () => {
-        // The row prints every USDT figure grouped and to two decimals, the
-        // ROI grouped with its percent sign (`+12,009.96%`, not `12009.96%`)
-        // — the one rule the owner asked for across the panel. The brackets
-        // and the unit are drawn by the stylesheet, so innerText carries
-        // neither, and the duplicate `≈ … USD` line is gone from every design.
-        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 2));
+        // The row prints the figure as the reference does (owner's Bybit
+        // screenshot, 2026-09-22): grouped and to four decimals with the unit,
+        // the ROI grouped in brackets, and the `≈ … USD` line under it. The
+        // brackets and the unit are drawn by the stylesheet, so innerText
+        // carries neither.
+        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 4));
         assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), grouped(example.roi, 2) + '%');
-        assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
-        if (await s.page.locator('#archive-terminal-preview').count()) {
-          // The approved compact row retains the authoritative amount/unit.
-          assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
-        }
+        assert.equal((await s.page.locator('.futures-position-approx').first().innerText()).trim(), `≈${grouped(example.pnl, 2)} USD`);
+        assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
         return tableLayout(s.page, width);
       });
       await check(`large-card-glyphs-${example.id}-${width}`, () => cardGlyphs(s.page, cardModel));

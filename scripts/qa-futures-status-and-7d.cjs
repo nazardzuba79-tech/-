@@ -1,7 +1,7 @@
 /**
  * Browser QA for the two customer-facing fixes on /futures:
  *   1. no technical chart status text, while a real failure still offers Retry
- *   2. no 7-day column carrying another asset's percentage
+ *   2. the owner-requested 7-day gainers/losers control is present without restoring the old collision bug
  * Driven against the real production bundle, both viewports.
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
@@ -84,7 +84,26 @@ const check = (n, p, d = '') => { checks.push({ n, p, d }); console.log(`${p ? '
 
       const state = await page.evaluate(() => document.querySelector('[data-chart-state]')?.getAttribute('data-chart-state') ?? null);
       check(`${tag}: chart is in a normal state`, state === 'candles' || state === 'empty', `state=${state}`);
-      check(`${tag}: no 7д sort control in the pair chooser`, !(await page.evaluate(() => !!document.querySelector('.pairs-7d'))));
+      if (scenario.symbol === 'BTCUSDT' && scenario.interval === '1h') {
+        // Open the market chooser and prove both restored 7-day controls exist.
+        const opened = await page.evaluate(() => {
+          const button = [...document.querySelectorAll('button')].find((node) => {
+            const cls = String(node.className || '');
+            return cls.includes('pair-markets-btn') || cls.includes('futures-instrument-trigger')
+              || cls.includes('ticker-pair-button') || node.getAttribute('aria-haspopup') === 'dialog';
+          });
+          if (button) { button.click(); return true; }
+          return false;
+        });
+        await page.waitForTimeout(300);
+        const controls = await page.evaluate(() => ({
+          gainers: document.querySelectorAll('.pairs-7d-btn[data-kind="gainers"]').length,
+          losers: document.querySelectorAll('.pairs-7d-btn[data-kind="losers"]').length,
+        }));
+        check(`${tag}: market chooser opens for 7d controls`, opened);
+        check(`${tag}: 7д gainers control restored`, controls.gainers === 1, JSON.stringify(controls));
+        check(`${tag}: 7д losers control restored`, controls.losers === 1, JSON.stringify(controls));
+      }
       check(`${tag}: no console/page error`, errors.length === 0, errors[0] || '');
       check(`${tag}: no request storm`, requests < 120, `requests=${requests}`);
 

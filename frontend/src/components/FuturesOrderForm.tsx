@@ -355,6 +355,28 @@ export function FuturesOrderForm({
     (position) => position.symbol === symbol && position.marginType === marginType
       && (!activeCloseTarget || position.id === activeCloseTarget.id)
   );
+  /**
+   * Under «Только уменьшение» a BUY closes a short and a SELL closes a long,
+   * so once the positions ARE known each button is live only while there is
+   * such a position on this symbol, and the reason sits on the button. (The
+   * margin bucket is the engine's to match: a bucket refusal comes back
+   * with its own reason, and a Cross form must not hide the one button that
+   * can close an Isolated long.) A close button that looks pressable and does
+   * nothing — or worse, one that could open the opposite side — is exactly
+   * what a trader must never be shown.
+   *
+   * Positions not known yet (an outage, the worst moment to block a trader
+   * shedding risk — PR #14's rule) block nothing here: the engine still
+   * refuses a side with nothing to reduce, with its reason.
+   */
+  const reducible = (orderSide: 'BUY' | 'SELL'): boolean => {
+    if (!reduceOnly || positions === null) return true;
+    if (activeCloseTarget) return orderSide === (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY');
+    const closes = orderSide === 'BUY' ? 'SHORT' : 'LONG';
+    return positions.some(position => position.symbol === symbol && position.side === closes);
+  };
+  const reduceBlockedReason = (orderSide: 'BUY' | 'SELL'): string | undefined =>
+    reducible(orderSide) ? undefined : t(orderSide === 'BUY' ? 'futures.reduceOnlyNoShort' : 'futures.reduceOnlyNoLong', { symbol });
   const pendingExposureOrders = (activeOrders ?? [])
     .filter((order) =>
       order.symbol === symbol
@@ -733,7 +755,8 @@ export function FuturesOrderForm({
    *  the direction now arrives from the caller. */
   function place(orderSide: 'BUY' | 'SELL') {
     if (!canSubmit) return;
-    if (activeCloseTarget && orderSide !== (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY')) return;
+    const blocked = reduceBlockedReason(orderSide);
+    if (blocked) { setError(blocked); return; }
     /**
      * A MISSING THRESHOLD MEANS NO WARNING, NOT A WARNING ON EVERYTHING.
      *
@@ -1083,8 +1106,9 @@ export function FuturesOrderForm({
         <div className="fo-submitPair">
           <button
             type="button"
-            disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}
-            title={!connectedFamily ? t('analytics.unavailable') : undefined}
+            disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}
+            title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('BUY')}
+            data-reduce-blocked={reducible('BUY') ? undefined : 'true'}
             onClick={() => place('BUY')}
             className="submit-btn buy"
           >
@@ -1092,8 +1116,9 @@ export function FuturesOrderForm({
           </button>
           <button
             type="button"
-            disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}
-            title={!connectedFamily ? t('analytics.unavailable') : undefined}
+            disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}
+            title={!connectedFamily ? t('analytics.unavailable') : reduceBlockedReason('SELL')}
+            data-reduce-blocked={reducible('SELL') ? undefined : 'true'}
             onClick={() => place('SELL')}
             className="submit-btn sell"
           >

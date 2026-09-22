@@ -809,9 +809,14 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
     // above the price is right for a long and wrong for a short, so each
     // button carries its own reading of the SAME function. `canSubmit` is
     // still the one shared guard, and `place` still re-reads it.
-    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || activeCloseTarget?.side === 'LONG'}");
-    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || activeCloseTarget?.side === 'SHORT'}");
-    expect(code).toContain("if (activeCloseTarget && orderSide !== (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY')) return;");
+    // `reducible` is per-direction for the same reason: under «Только
+    // уменьшение» a BUY closes a short and a SELL closes a long, and the
+    // button whose side has nothing to reduce is disabled with the reason
+    // on it (owner, 2026-09-22) rather than left looking pressable. `place`
+    // re-reads the same function and SAYS why instead of returning silently.
+    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}");
+    expect(code).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}");
+    expect(code).toContain("const blocked = reduceBlockedReason(orderSide);\n    if (blocked) { setError(blocked); return; }");
     expect(code).toContain('if (!canSubmit) return;');
     // The old visual-only condition is gone.
     expect(code).not.toContain('disabled={submitting}');

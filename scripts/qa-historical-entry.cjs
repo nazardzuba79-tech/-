@@ -246,14 +246,16 @@ async function tradeSide(s, width, side, counts) {
   // 6b. «Лимитный» on the row: a partial close as a resting LIMIT, then one that fills at the near-live price.
   let remaining = Number(QUANTITY);
   if (!SERVER_ONLY && side === 'LONG') {
+    // «Лимитный» opens «Закрытие по лимиту» for this row (the reference's
+    // dialog, 2026-09-22): the whole position prefilled, quantity and price
+    // typed there, OK places the reduce-only LIMIT for THIS position.
     await row.locator('.futures-position-close').nth(0).click();
-    await workspace(p, 'trade');
-    await p.waitForFunction(() => document.querySelector('.fo-form input[type=checkbox]')?.checked === true);
-    assert.equal(await qty(p).inputValue(), QUANTITY, 'Limit close did not prefill the position size');
-    assert.equal(await priceField(p).getAttribute('readonly'), null, 'Price field is read-only in the limit-close ticket');
-    assert(!(await p.locator('.fo-form').innerText()).includes('Вход'), 'The «Вход» row came back in the close ticket');
-    await priceField(p).fill('0.06'); await qty(p).fill('500000');
-    const resting = await command(s, 'OPEN', () => p.locator('.fo-submitPair .sell').click());
+    const dialog = p.locator('[data-limit-close-dialog]'); await dialog.waitFor();
+    assert.equal(await dialog.locator('[data-limit-close-qty]').inputValue(), QUANTITY, 'Limit close did not prefill the position size');
+    assert.equal(await dialog.getAttribute('data-limit-close-side'), side);
+    await dialog.locator('[data-limit-close-price]').fill('0.06'); await dialog.locator('[data-limit-close-qty]').fill('500000');
+    const resting = await command(s, 'OPEN', () => dialog.locator('[data-limit-close-submit]').click());
+    assert.equal(resting.draft.positionId, position.id, 'The limit close did not name the position');
     assert.equal(resting.draft.reduceOnly, true); assert.equal(resting.draft.type, 'LIMIT'); assert.equal(resting.draft.candle, undefined, 'A close carried the historical bar');
     const open = activeOrders(resting.state);
     assert.equal(open.length, counts.orders + 1, 'Reduce-only LIMIT above the mark did not rest');
@@ -265,10 +267,9 @@ async function tradeSide(s, width, side, counts) {
     assert.equal(activeOrders(cancelled.state).length, counts.orders, 'Cancel did not remove the resting close');
     await p.locator('#futures-tab-positions').click();
     await row.locator('.futures-position-close').nth(0).click();
-    await workspace(p, 'trade');
-    await p.waitForFunction(() => document.querySelector('.fo-form input[type=checkbox]')?.checked === true);
-    await priceField(p).fill(String(CURRENT)); await qty(p).fill('500000');
-    const partial = await command(s, 'OPEN', () => p.locator('.fo-submitPair .sell').click());
+    await dialog.waitFor();
+    await dialog.locator('[data-limit-close-price]').fill(String(CURRENT)); await dialog.locator('[data-limit-close-qty]').fill('500000');
+    const partial = await command(s, 'OPEN', () => dialog.locator('[data-limit-close-submit]').click());
     remaining = Number(QUANTITY) - 500000;
     assert.equal(activeOrders(partial.state).length, counts.orders, 'A reduce-only LIMIT at the near-live price did not fill');
     assert.equal(Number(partial.state.positions.find(x => x.id === position.id).quantity), remaining, 'Partial limit close did not reduce the position');

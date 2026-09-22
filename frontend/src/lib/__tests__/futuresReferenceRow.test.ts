@@ -89,7 +89,13 @@ describe('2. the positions row carries the reference columns', () => {
     expect(PANEL).toContain('futures-position-contract');
     expect(PANEL).toContain('futures-position-perp');
     const contractCell = PANEL.match(/className="futures-position-contract">([\s\S]*?)<\/Td>/)?.[1];
-    expect(contractCell).toContain("t('futures.cross')");
+    // The second line is the reference's «Марж. торговля 10.00x» (Isolated
+    // names itself); the side is the quantity's colour and the bar on the
+    // cell, spoken for assistive technology only (owner's Bybit screenshot,
+    // 2026-09-22).
+    expect(contractCell).toContain("t('futures.marginTrading')");
+    expect(contractCell).toContain("t('futures.isolated')");
+    expect(contractCell).toContain('className="futures-sr-only"');
     expect(contractCell).toContain('Number(p.leverage).toFixed(2)');
   });
 
@@ -151,7 +157,11 @@ describe('2. the positions row carries the reference columns', () => {
     expect(PANEL).toContain('className="futures-position-realized"');
     expect(PANEL.match(/data-unit=/g)!.length).toBe(2);
     expect(ROW_PARITY_CSS).toContain("content: ' ' attr(data-unit);");
-    expect(ROW_PARITY_CSS).toContain("content: '(+';");
+    // No plus sign: the reference prints `2,120.5422 USDT` and `(106.84%)`
+    // for a profit; the colour carries the sign (owner's screenshot, 2026-09-22).
+    expect(ROW_PARITY_CSS).not.toContain("content: '(+';");
+    expect(ROW_PARITY_CSS).not.toContain("content: '+';");
+    expect(ROW_PARITY_CSS).toContain("content: '(';");
     expect(ROW_PARITY_CSS).toContain("content: ')';");
   });
 
@@ -161,8 +171,12 @@ describe('2. the positions row carries the reference columns', () => {
     expect(PANEL).toContain("t('futures.closeLimit')");
     expect(PANEL).toContain("t('futures.closeMarket')");
     expect(PANEL).toContain('futures-position-card');
-    // Neither extra is rendered where it would do nothing.
-    expect(PANEL).toContain('{onLimitClose && (');
+    // «Лимитный» opens the panel's own «Закрытие по лимиту» dialog for that
+    // row (the reference's), never the order form; the card button is still
+    // only rendered where a card service exists.
+    expect(PANEL).toContain('data-limit-close-open={p.id}');
+    expect(PANEL).toContain('<FuturesLimitCloseDialog');
+    expect(PANEL).not.toContain('onLimitClose');
     expect(PANEL).toContain('{!archive && execution.showPnlCard && (');
     expect(PANEL).toContain('execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)');
   });
