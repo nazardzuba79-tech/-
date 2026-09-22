@@ -251,6 +251,7 @@ async function orderForm(overrides: Record<string, any> = {}) {
   const form = mount(FORM, {
     account: overrides.account ?? accountState(),
     confirm: overrides.confirm,
+    execution: overrides.execution,
     api: {
       getFuturesConfig: () => Promise.resolve(overrides.config ?? tierConfig),
       getFuturesMarkPrice: () => Promise.resolve({ markPrice: '50000' }),
@@ -1079,5 +1080,85 @@ describe('the size slider sizes for the leverage the order will really use', () 
     expect(f.quantity(f.tree())).toBeCloseTo(0.4, 8);
     f.slider(f.tree()).props.onChange(50);
     expect(f.quantity(f.tree())).toBeCloseTo(0.2, 8);
+  });
+});
+
+// ── A historical entry: a bar picked on the chart, on the simulation engine ──
+
+describe('a selected historical candle is not admitted by the venue', () => {
+  /** A meme contract whose venue caps the owner's example breaks: 1 500 000 contracts against a 1 000 000 ceiling. */
+  const contract = { qtyStep: '1', minOrderQty: '1', maxOrderQty: '1000000', maxMarketOrderQty: '1000000', minNotionalValue: '5', takerFeeRate: '0.00055', makerFeeRate: '0.0002' };
+  const candle = { source: 'BYBIT_LINEAR', interval: '1h', openTime: Date.UTC(2026, 8, 14), pricePoint: 'CLOSE' };
+  /** The simulation engine, with and without a picked bar; everything else identical. */
+  const native = (picked: boolean) => ({
+    engine: 'NATIVE', ready: true, defaultMarginType: 'CROSS', contract, entryProtection: true,
+    candle: picked ? candle : null, candlePrice: picked ? '0.05' : null,
+  });
+  const priceInput = (tree: any) => nodes(tree).find((n: any) => n.type === 'input' && n.props.placeholder === '0.00');
+  const leverageControl = (f: any, tree: any) => nodes(tree).find((n: any) => n.type === f.form.components.FuturesMarginLeverage);
+  const submitButton = (tree: any) => byClass(tree, 'submit-btn').find((b: any) => b.props.className.split(' ').includes('buy'));
+  async function sized(picked: boolean) {
+    const f = await orderForm({ execution: native(picked), props: { symbol: 'AKE/USDT', onPlaced: jest.fn() } });
+    // 1 500 000 × 0.05 = 75 000 USDT of notional: the shipped table's SECOND tier, whose ceiling is 50x.
+    f.change(f.tree, '0.00', '0.05');
+    f.change(f.tree, '0.00000', '1500000');
+    await tick();
+    return { ...f, tree: f.render() };
+  }
+
+  test('the price field shows the bar\'s price, read-only, and the entry row names it', async () => {
+    const f = await orderForm({ execution: native(true), props: { symbol: 'AKE/USDT', onPlaced: jest.fn() } });
+    const input = priceInput(f.tree);
+    expect(input.props.value).toBe('0.05');
+    expect(input.props.readOnly).toBe(true);
+    expect(text(f.tree)).toContain('· 0.05');
+    // The same form with no bar picked is the ordinary editable field.
+    const g = await orderForm({ execution: native(false), props: { symbol: 'AKE/USDT', onPlaced: jest.fn() } });
+    expect(priceInput(g.tree).props.readOnly).toBe(false);
+  });
+
+  test('no risk-tier ceiling: the leverage control is bounded by the contract range alone', async () => {
+    const withBar = await sized(true), without = await sized(false);
+    expect(leverageControl(without, without.tree).props.max).toBe(
+      Math.min(tierConfig.maxLeverage, futuresMath.getLeverageTier(tierConfig.leverageTiers, 75_000)!.maxLeverage));
+    expect(leverageControl(without, without.tree).props.max).toBeLessThan(tierConfig.maxLeverage);
+    expect(leverageControl(withBar, withBar.tree).props.max).toBe(tierConfig.maxLeverage);
+  });
+
+  test('no quantity ceiling: 1 500 000 contracts submit with the requested leverage; without a bar the same size is refused before the round trip', async () => {
+    const withBar = await sized(true);
+    leverageControl(withBar, withBar.tree).props.onLeverageChange(100);
+    await tick();
+    let tree = withBar.render();
+    expect(submitButton(tree).props.disabled).toBe(false);
+    submit(tree);
+    await tick();
+    expect(withBar.placed).toHaveBeenCalledTimes(1);
+    expect(withBar.placed.mock.calls[0][0]).toMatchObject({ quantity: '1500000', leverage: 100, candle });
+
+    const without = await sized(false);
+    tree = without.render();
+    expect(submitButton(tree).props.disabled).toBe(true);
+    submit(tree);
+    await tick();
+    expect(without.placed).not.toHaveBeenCalled();
+  });
+
+  test('the order is costed at the bar\'s price, not at the mark, on the MARKET tab too', async () => {
+    const f = await sized(true);
+    const tabs = nodes(f.tree).find((n: any) => n.type === f.form.components.OrderFamilyTabs);
+    tabs.props.onChange('MARKET');
+    await tick();
+    const rows = byClass(f.render(), 'fo-infoRow').map((r: any) => text(r)).join(' ');
+    // Order value 1 500 000 × 0.05, not 1 500 000 × the 50 000 mark.
+    expect(rows).toContain((1_500_000 * 0.05).toFixed(2));
+    expect(rows).not.toContain((1_500_000 * 50_000).toFixed(2));
+  });
+
+  test('a reducing order with a bar selected is still held to the venue', async () => {
+    const f = await sized(true);
+    nodes(f.tree).find((n: any) => n.type === 'input' && n.props.type === 'checkbox').props.onChange({ target: { checked: true } });
+    await tick();
+    expect(priceInput(f.render()).props.readOnly).toBe(false);
   });
 });

@@ -23,23 +23,37 @@ const now=()=>Date.now(),started=now();
    — one REST call every 5s, cached, exactly as before. No socket is opened
    per symbol, so widening the list costs nothing at runtime.
    Fixture mode keeps a tiny deterministic set because it invents candles. */
-const FIXTURE_SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT'];
+const FIXTURE_SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT','AKEUSDT'];
 /* Synthetic preview capital, same category as the 10,000,000 settle deposit
    below: a non-settle holding that makes the multi-asset collateral path real
    in review and in CI. It is NOT an account value — it is priced every read
    from the market-data path, so the figure moves when the price moves. */
 const PREVIEW_WALLET_BTC='2';
 let symbols=FIXTURE_SYMBOLS;
-function fixtureCandle(t,interval=60000){const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}
+/* AKE/USDT, the owner's historical-entry case: flat at 0.004 until six hours
+   before this server started, a straight rise to 0.0538 by the start, flat
+   since. So every older bar on its chart is a 0.004 entry against a 0.0538
+   current price — the shape of the report, thirteen times apart. Its quote
+   carries ONE token contract per side, far from the mark: a valid book with
+   no usable depth, so a 1 500 000-contract entry can only open if nothing
+   reads the book. QA fixture only; the other three symbols are unchanged. */
+const AKE_RISE_END=started,AKE_RISE_START=started-6*3600000;
+function akePrice(t){return t<=AKE_RISE_START?0.004:t>=AKE_RISE_END?0.0538:0.004+(0.0538-0.004)*(t-AKE_RISE_START)/(AKE_RISE_END-AKE_RISE_START);}
+function fixtureCandle(t,interval=60000,symbol='BTCUSDT'){
+  if(symbol==='AKEUSDT'){const o=akePrice(t),c=akePrice(t+interval);return{timestamp:t,open:o.toFixed(4),high:Math.max(o,c).toFixed(4),low:Math.min(o,c).toFixed(4),close:c.toFixed(4),volume:'125000'};}
+  const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}
 const sizes={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
-function fixtureInstrument(symbol){return{provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};}
+function fixtureInstrument(symbol){const base={provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};
+  // AKE: whole-contract steps, a 1 000 000 venue ceiling and a 2x top tier — the owner's 1 500 000 at 3x breaks both live rules on purpose.
+  if(symbol==='AKEUSDT')return{...base,filters:{tickSize:'0.0001',minPrice:'0.0001',maxPrice:'1000',qtyStep:'1',minOrderQty:'1',maxOrderQty:'1000000',maxMarketOrderQty:'1000000',minNotionalValue:'5'},riskTiers:[{riskLimitValue:'2000',maintenanceMarginRate:'0.01',initialMarginRate:'0.02',maintenanceDeduction:'0',maxLeverage:'50'},{riskLimitValue:'1000000000',maintenanceMarginRate:'0.02',initialMarginRate:'0.5',maintenanceDeduction:'20',maxLeverage:'2'}]};
+  return base;}
 async function transport(url,options={}){
   const u=new URL(url);
   if(u.pathname==='/internal/v1/private-trading/marks'){
     const requested=[...new Set((u.searchParams.get('symbols')||'').split(','))];
     if(!requested.length||requested.length>64||requested.some(s=>!symbols.includes(s)))throw new Error('Invalid preview marks');
     const marks=await Promise.all(requested.map(async symbol=>{
-      if(fixture){const at=now(),price=fixtureCandle(Math.floor(at/60000)*60000).close;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
+      if(fixture){const at=now(),price=fixtureCandle(Math.floor(at/60000)*60000,60000,symbol).close;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
       const q=await source.freshQuote(symbol,options.signal);return{symbol,markPrice:q.markPrice,lastPrice:q.lastPrice,markProviderTimestamp:q.markProviderTimestamp,receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt};
     }));
     return new Response(JSON.stringify({status:'live',fetchedAt:now(),marks}),{status:200,headers:{'Content-Type':'application/json'}});
@@ -48,9 +62,9 @@ async function transport(url,options={}){
   const[kind,symbol]=m.slice(1),q=u.searchParams;let result;
   if(fixture){
     if(kind==='instruments')result=fixtureInstrument(symbol);
-    else if(kind==='quote'){const price=Number(fixtureCandle(Math.floor(now()/60000)*60000).close);result={provider:'bybit',symbol,bids:[{price:(price-.1).toFixed(1),quantity:'10'}],asks:[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:price.toFixed(1),lastPrice:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
-    else if(kind==='chart-candles'){const step=sizes[q.get('interval')],end=Number(q.get('endTime')||now()),limit=Number(q.get('limit')||520);const last=Math.floor(end/step)*step;result={source:'BYBIT_LINEAR',symbol,interval:q.get('interval'),candles:Array.from({length:limit},(_,i)=>fixtureCandle(last-(limit-i-1)*step,step)),fetchedAt:now(),providerTimestamp:now()};}
-    else if(kind==='candles'){const start=Number(q.get('startTime')),end=Number(q.get('endTime')),step=Number(q.get('intervalMinutes'))*60000;result={symbol,candles:Array.from({length:Math.floor((end-start)/step)+1},(_,i)=>fixtureCandle(start+i*step,step)),fetchedAt:now()};}
+    else if(kind==='quote'){const c=fixtureCandle(Math.floor(now()/60000)*60000,60000,symbol),price=Number(c.close),ake=symbol==='AKEUSDT';result={provider:'bybit',symbol,bids:ake?[{price:'0.0001',quantity:'1'}]:[{price:(price-.1).toFixed(1),quantity:'10'}],asks:ake?[{price:'1.0000',quantity:'1'}]:[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:ake?c.close:price.toFixed(1),lastPrice:ake?c.close:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
+    else if(kind==='chart-candles'){const step=sizes[q.get('interval')],end=Number(q.get('endTime')||now()),limit=Number(q.get('limit')||520);const last=Math.floor(end/step)*step;result={source:'BYBIT_LINEAR',symbol,interval:q.get('interval'),candles:Array.from({length:limit},(_,i)=>fixtureCandle(last-(limit-i-1)*step,step,symbol)),fetchedAt:now(),providerTimestamp:now()};}
+    else if(kind==='candles'){const start=Number(q.get('startTime')),end=Number(q.get('endTime')),step=Number(q.get('intervalMinutes'))*60000;result={symbol,candles:Array.from({length:Math.floor((end-start)/step)+1},(_,i)=>fixtureCandle(start+i*step,step,symbol)),fetchedAt:now()};}
     else result={symbol,events:[],fetchedAt:now()};
   }else if(kind==='instruments')result=await source.instrument(symbol,options.signal);
   else if(kind==='quote')result=await source.freshQuote(symbol,options.signal);
@@ -89,7 +103,7 @@ app.use('/api/v1/private-trading/native',nativeDemoRoutes(service,res=>res.local
 app.get('/api/v1/private-trading/candles',asyncRoute(async(req,res)=>res.json(await market.chartCandles({symbol:String(req.query.symbol).replace('/',''),interval:req.query.interval,limit:Number(req.query.limit||520),...(req.query.endTime?{endTime:Number(req.query.endTime)}:{})}))));
 let tickCache=null;
 async function tickers(){if(tickCache&&now()-tickCache.at<5000)return tickCache.rows;let list,time=now();
-  if(fixture)list=symbols.map(symbol=>({symbol,lastPrice:fixtureCandle(Math.floor(now()/60000)*60000).close,bid1Price:'50000',ask1Price:'50001',highPrice24h:'51000',lowPrice24h:'49000',volume24h:'1000',turnover24h:'50000000',price24hPcnt:'0.01',markPrice:fixtureCandle(Math.floor(now()/60000)*60000).close,indexPrice:'50000',fundingRate:'0.0001',openInterest:'10000',openInterestValue:'500000000'}));
+  if(fixture)list=symbols.map(symbol=>{const c=fixtureCandle(Math.floor(now()/60000)*60000,60000,symbol),ake=symbol==='AKEUSDT';return{symbol,lastPrice:c.close,bid1Price:ake?c.close:'50000',ask1Price:ake?c.close:'50001',highPrice24h:ake?'0.0538':'51000',lowPrice24h:ake?'0.0040':'49000',volume24h:'1000',turnover24h:'50000000',price24hPcnt:'0.01',markPrice:c.close,indexPrice:ake?c.close:'50000',fundingRate:'0.0001',openInterest:'10000',openInterestValue:'500000000'};});
   else{const r=await fetch('https://api.bybit.com/v5/market/tickers?category=linear',{signal:AbortSignal.timeout(8000)});const j=await r.json();if(!r.ok||j.retCode!==0)throw new Error('Public tickers unavailable');list=j.result.list;time=Number(j.time);}
   const number=x=>x===undefined||x===null||x===''?null:Number.isFinite(Number(x))?Number(x):null;
   // USDT linear perpetuals only: dated futures carry a delivery suffix and

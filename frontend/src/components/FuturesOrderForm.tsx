@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, FormEvent } from 'react';
+import { useState, useEffect, useId, useRef, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
@@ -216,6 +216,28 @@ export function FuturesOrderForm({
    * changes. See lib/futuresExecution.
    */
   const execution = useFuturesExecution();
+  /**
+   * A bar picked on the chart IS the entry price. It is shown in the price
+   * field, which is read-only while the bar is selected — the server fills
+   * a historical entry at the bar's price whatever is typed here — and when
+   * the bar is dropped the field empties, so the ordinary seeding above
+   * refills it from the market rather than leaving an old candle's price
+   * behind as a live limit.
+   */
+  const candlePriceRef = useRef<string | null>(null);
+  useEffect(() => {
+    const next = execution.candle ? execution.candlePrice ?? null : null;
+    if (next !== candlePriceRef.current) {
+      candlePriceRef.current = next;
+      if (next) { setPrice(next); setPriceEdited(true); }
+      else { setPrice(''); setPriceEdited(false); }
+      return;
+    }
+    // The field is read-only while a bar is selected, so only the form's own
+    // clearing after a submit can move it — and the market seeding would then
+    // print today's price under a bar that is still the entry. Put it back.
+    if (next && !reduceOnly && price !== next) { setPrice(next); setPriceEdited(true); }
+  }, [execution.candle, execution.candlePrice, price, reduceOnly]);
   const activeCloseTarget = reduceOnly ? closeTarget : null;
   /** An engine that settles in one margin mode is not offering a choice.
    *  A named close also keeps its position's bucket, not a different one
@@ -269,7 +291,23 @@ export function FuturesOrderForm({
    * labelled as one.
    */
   const referencePrice = markPrice ?? (lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 ? lastPrice : null);
-  const effectivePrice = !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : referencePrice ?? 0;
+  /**
+   * A HISTORICAL ENTRY: a bar picked on the chart, on the simulation engine.
+   *
+   * It is neither a LIMIT nor a MARKET order. The server fills it at the
+   * bar's price immediately, whatever tab it was submitted from, and no
+   * venue admission applies to it — no risk-tier leverage cap, no market /
+   * order quantity ceiling (owner rule, 2026-09-22). The engine's
+   * `placeDemoOrder` is the authority; what follows only mirrors it, so the
+   * panel neither refuses nor clamps what the server accepts, and costs the
+   * order at the price it will actually be simulated at. A reducing order
+   * with a bar selected is still a reducing order.
+   */
+  const historicalEntry = execution.engine === 'NATIVE' && !reduceOnly && execution.candle !== null;
+  const historicalEntryPrice = historicalEntry && execution.candlePrice && Number(execution.candlePrice) > 0
+    ? Number(execution.candlePrice)
+    : null;
+  const effectivePrice = historicalEntryPrice !== null ? historicalEntryPrice : !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : referencePrice ?? 0;
   const quantityNumber = parseFloat(quantity);
   const notional = effectivePrice && quantity ? effectivePrice * quantityNumber : 0;
   /**
@@ -363,9 +401,13 @@ export function FuturesOrderForm({
   // not actually seen, and the ceiling can only ever be too HIGH that way.
   // Null suspends the slider and the submit guard until the state is known,
   // which is what the backend would enforce anyway.
-  const effectiveMaxLeverage = config && exposureKnown
-    ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
-    : null;
+  const effectiveMaxLeverage = config && historicalEntry
+    // A historical entry is admitted by no risk tier: the contract's own
+    // range is its only ceiling, and leverage is only its arithmetic.
+    ? config.maxLeverage
+    : config && exposureKnown
+      ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
+      : null;
   /** The leverage this order will really use: the request, under the live
    *  ceiling. Derived rather than clamped in an effect, so it rises again
    *  by itself when the size — and with it the ceiling — comes back down. */
@@ -472,7 +514,7 @@ export function FuturesOrderForm({
    */
   const maxPositionNotional = !reduceOnly && config && availableMargin !== null && baseExposure !== null
     ? maxAffordableNotional({
-        tiers: config.leverageTiers,
+        tiers: historicalEntry ? [] : config.leverageTiers,
         freeMargin: availableMargin,
         selectedLeverage: requestedLeverage,
         existingExposure: baseExposure,
@@ -522,7 +564,7 @@ export function FuturesOrderForm({
     // number into the field.
     if (availableMargin === null || baseExposure === null || !config) return;
     const { notional } = maxAffordableNotional({
-      tiers: config.leverageTiers,
+      tiers: historicalEntry ? [] : config.leverageTiers,
       freeMargin: availableMargin * (pct / 100),
       selectedLeverage: atLeverage,
       existingExposure: baseExposure,
@@ -545,7 +587,7 @@ export function FuturesOrderForm({
       const decimals = symbol.split('/')[0] === 'BTC' ? 3 : QUANTITY_DECIMALS;
       return floorToDecimals(raw, decimals).toFixed(decimals);
     }
-    const fitted = fitQuantityToContract(raw, effectivePrice, rules, { market: type === 'MARKET' });
+    const fitted = fitQuantityToContract(raw, effectivePrice, rules, { market: type === 'MARKET', historicalDemo: historicalEntry });
     return fitted.quantity.toFixed(stepDecimals(rules.qtyStep));
   }
 
@@ -556,7 +598,7 @@ export function FuturesOrderForm({
    * only reports the same one the engine would.
    */
   const contractCheck = execution.contract && orderSizeKnown && !reduceOnly
-    ? fitQuantityToContract(quantityNumber, effectivePrice, execution.contract, { market: type === 'MARKET' })
+    ? fitQuantityToContract(quantityNumber, effectivePrice, execution.contract, { market: type === 'MARKET', historicalDemo: historicalEntry })
     : null;
   const contractBreach = contractCheck && (
     contractCheck.rejectedBy !== null
@@ -716,7 +758,7 @@ export function FuturesOrderForm({
         {execution.engine === 'NATIVE' && !reduceOnly && (execution.candle || execution.historicalEntryPending) && <div className="fo-infoRow" role="status" aria-label="Точка входа"
           data-entry-reference={execution.candle ? JSON.stringify(execution.candle) : undefined}>
           <span>Вход</span><strong>{execution.candle
-            ? `${new Date(execution.candle.openTime).toISOString().slice(0,16).replace('T',' ')} UTC · ${execution.candle.interval} · ${execution.candle.pricePoint === 'OPEN' ? 'Открытие' : 'Закрытие'}`
+            ? `${new Date(execution.candle.openTime).toISOString().slice(0,16).replace('T',' ')} UTC · ${execution.candle.interval} · ${execution.candle.pricePoint === 'OPEN' ? 'Открытие' : 'Закрытие'}${execution.candlePrice ? ` · ${execution.candlePrice}` : ''}`
             : 'Выберите свечу на графике'}</strong>
         </div>}
         {/* One compact control where a margin-mode toggle and a full
@@ -762,6 +804,8 @@ export function FuturesOrderForm({
                 step="any"
                 required
                 value={price}
+                readOnly={historicalEntry}
+                aria-readonly={historicalEntry || undefined}
                 onChange={(e) => {
                   setPriceEdited(true);
                   setPrice(e.target.value);
@@ -769,7 +813,7 @@ export function FuturesOrderForm({
                 placeholder="0.00"
               />
               <span className="fo-fieldTrailing">
-                {lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 && (
+                {!historicalEntry && lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 && (
                   <button type="button" onClick={() => {
                     setPriceEdited(true);
                     setPrice(String(lastPrice));

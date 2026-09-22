@@ -11,6 +11,14 @@ on:
       - 'frontend/src/lib/chartTrading.ts'
       - 'frontend/src/lib/__tests__/private*'
       - 'frontend/src/lib/__tests__/chartTrading.test.ts'
+      # The order form is where a selected historical candle becomes a native command.
+      - 'frontend/src/components/FuturesOrderForm.tsx'
+      - 'frontend/src/lib/futuresMath.ts'
+      - 'frontend/src/lib/futuresExecution.tsx'
+      - 'frontend/src/lib/useNativeFuturesExecution.ts'
+      - 'frontend/src/lib/__tests__/futuresOrderPanel.test.ts'
+      - 'frontend/src/lib/__tests__/futuresUiPolish.test.ts'
+      - 'frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts'
       - 'frontend/src/pages/private-trading/**'
       - 'frontend/src/components/PriceChart.tsx'
       - 'frontend/src/components/TerminalChart*'
@@ -97,6 +105,10 @@ jobs:
           src/private-trading/__tests__/liveEngine.test.ts
           src/private-trading/__tests__/marketData.test.ts
           src/private-trading/__tests__/math.test.ts
+          src/private-trading/__tests__/nativeHistoricalEntryExecution.test.ts
+          frontend/src/lib/__tests__/futuresOrderPanel.test.ts
+          frontend/src/lib/__tests__/futuresUiPolish.test.ts
+          frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts
           src/private-trading/__tests__/replay.test.ts
           src/private-trading/__tests__/service.integration.test.ts
           src/private-trading/__tests__/service.runtime.test.ts

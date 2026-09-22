@@ -264,12 +264,17 @@ export interface ContractSizing {
  * The step arithmetic runs on integers scaled by the step's own decimal
  * width, so `0.1 + 0.2` never decides whether an order is a multiple of
  * the step.
+ *
+ * `historicalDemo`: the order is a HISTORICAL_DEMO simulation entry, which
+ * never reaches a venue, so the venue's market / order quantity ceilings
+ * do not apply to it (the engine's `validateContractOrder` skips the same
+ * two rules). The step and the floors still do.
  */
 export function fitQuantityToContract(
   quantity: number,
   price: number,
   rules: FuturesContractRules,
-  options: { market: boolean },
+  options: { market: boolean; historicalDemo?: boolean },
 ): ContractSizing {
   const none: ContractSizing = { quantity: 0, cappedBy: null, rejectedBy: null, limit: null };
   if (!Number.isFinite(quantity) || quantity <= 0) return none;
@@ -284,7 +289,7 @@ export function fitQuantityToContract(
 
   const ceiling = Number(options.market ? rules.maxMarketOrderQty : rules.maxOrderQty);
   let cappedBy: ContractSizing['cappedBy'] = null;
-  if (Number.isFinite(ceiling) && fitted > ceiling) {
+  if (!options.historicalDemo && Number.isFinite(ceiling) && fitted > ceiling) {
     // The ceiling itself has to land on the step, so floor it too.
     fitted = Math.floor(Number((ceiling * scale).toFixed(6))) / scale;
     fitted = Number((Math.floor(Number((fitted / step).toFixed(6))) * step).toFixed(decimals));

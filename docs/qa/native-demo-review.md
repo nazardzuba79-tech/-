@@ -9,8 +9,11 @@ Isolated review only. Not merged, not deployed to production.
   add-to-position with weighted entry (live positions), partial fills from observed depth, cancel,
   partial/full manual close, fees (taker 0.055 %, maker 0.02 %), custom funding, account-level Cross liquidation,
   positions / orders / position history / executions+funding tables, frozen P&L card.
-- Historical trades: pick a candle on our chart → Long/Short, margin, leverage, Market/Limit, optional TP/SL →
-  position, entry marker and P&L appear immediately → close now (current depth) or on a later candle.
+- Historical trades: pick a candle on our chart → Long/Short, quantity or margin, leverage, Cross/Isolated, optional TP/SL,
+  the same Open Long / Open Short → the POSITION opens immediately at the selected candle's price (owner rule, 2026-09-22:
+  a selected candle is neither a Limit nor a Market order — whichever tab is open, nothing rests, nothing reads the book,
+  no venue quantity ceiling or risk-tier leverage cap applies; margin, fees, liquidation, TP/SL and P&L are unchanged) →
+  entry marker and P&L against the current near-live price appear at once → close at the current near-live price.
 
 ## Model (server-authoritative, BigNumber; every figure comes from one persisted revision)
 - **Cross**: equity = wallet + unrealized P&L of all positions; liquidation when equity ≤ total maintenance
@@ -21,9 +24,12 @@ Isolated review only. Not merged, not deployed to production.
   value per 8h UTC settlement (−0.1 % / +0.4 %). Values unchanged from the owner's latest numbers.
 - **Historical path**: every candle is the assumed path Open → Low → High → Close (simulation, never a claim of
   real past fills). Resolution by age at calculation time: ≤ 7 days 1m, ≤ 45 days 15m, older 1h.
-- **Historical Limit on the selected candle**: Buy fills if Low ≤ limit, Sell if High ≥ limit. Already marketable
-  at the candle open → filled at the open as taker. Otherwise filled at the limit (maker) at the moment the
-  assumed path reaches it. Not reached → the order rests from the candle close and can fill later.
+- **Historical Limit on the selected candle** (LIVE-journal accounts only, the model before HISTORICAL_DEMO): Buy fills
+  if Low ≤ limit, Sell if High ≥ limit. Already marketable at the candle open → filled at the open as taker. Otherwise
+  filled at the limit (maker) at the moment the assumed path reaches it. Not reached → the order rests from the candle
+  close and can fill later. On a HISTORICAL_DEMO account a selected candle is the execution itself (above); a Limit
+  placed WITHOUT a candle still rests and fills when the near-live price touches it, and older resting historical
+  orders are left as they are, cancellable.
 - Historical entries are separate positions (own marker, P&L, card); they never merge into a live position.
 - Limit of 6 contracts with simultaneous exposure.
 
