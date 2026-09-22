@@ -300,6 +300,16 @@ describe('the terminal sizes to the contract it is trading', () => {
     expect(futuresMath.fitQuantityToContract(500, 60000, rules, { market: false }).cappedBy).toBeNull();
   });
 
+  test('a historical simulation entry has no venue ceiling, and keeps the step and the floors', () => {
+    const market = futuresMath.fitQuantityToContract(500, 60000, rules, { market: true, historicalDemo: true });
+    expect(market).toMatchObject({ quantity: 500, cappedBy: null, rejectedBy: null, limit: null });
+    expect(futuresMath.fitQuantityToContract(500000, 60000, rules, { market: false, historicalDemo: true }).cappedBy).toBeNull();
+    expect(futuresMath.fitQuantityToContract(1.66666667, 60000, rules, { market: false, historicalDemo: true }).quantity).toBe(1.666);
+    expect(futuresMath.fitQuantityToContract(0.0005, 60000, rules, { market: false, historicalDemo: true }).rejectedBy).toBe('minOrderQty');
+    // Absent, the ceiling applies exactly as before.
+    expect(futuresMath.fitQuantityToContract(500, 60000, rules, { market: true }).cappedBy).toBe('maxMarketOrderQty');
+  });
+
   test('below the floor it refuses and NAMES the rule rather than sizing up', () => {
     const tiny = futuresMath.fitQuantityToContract(0.0005, 60000, rules, { market: false });
     expect(tiny.quantity).toBe(0);

@@ -803,11 +803,20 @@ export class NativeDemoService {
       const selected=request.candle&&!target?await commandRead('market.historical_entry',()=>this.market.resolveCandle({...request.candle!,symbol,signal:commandSignal()})):null;
       const sizePrice=selected?.price??request.price;
       const quantity=request.quantity??new BigNumber(request.margin!).times(request.leverage).div(sizePrice!).div(rules.qtyStep).integerValue(BigNumber.ROUND_FLOOR).times(rules.qtyStep).toFixed();
-      const point=selected&&(request.type==='MARKET'||(request.side==='LONG'?new BigNumber(selected.price).lte(request.price!):new BigNumber(selected.price).gte(request.price!)))?selected.price:undefined;
+      // A SELECTED CANDLE IS THE EXECUTION. A new entry with a historical
+      // candle is neither a market order against a book nor a limit order
+      // waiting to be touched: it is a simulation entry, filled immediately
+      // and in full at the selected historical price, whichever tab the
+      // terminal submitted it from. The submitted limit price is not carried
+      // onto the order — it used to leave a LONG whose limit sat below the
+      // candle resting in the open orders instead of opening a position.
+      // Without a candle (a reducing order, or a legacy resting LIMIT on a
+      // historical account) the order keeps its own type and price.
+      const point=selected?selected.price:undefined;
       draft={id,seq,kind:'OPEN',at:this.now(),executionMode:'HISTORICAL_DEMO',
-        order:{id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,marginType:target?.marginType??request.marginType??'CROSS',
-          historical:true,executionMode:'HISTORICAL_DEMO',...(selected?{entryTimestamp:selected.effectiveAt}:{}),
-          ...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),...(target?{reduceOnly:true,positionId:target.id}:{})},
+        order:{id,symbol,side:request.side,type:selected?'MARKET':request.type,quantity,leverage:request.leverage,marginType:target?.marginType??request.marginType??'CROSS',
+          historical:true,executionMode:'HISTORICAL_DEMO',...(selected?{entryTimestamp:selected.effectiveAt,historicalPrice:selected.price}:{}),
+          ...(request.price&&!selected?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),...(target?{reduceOnly:true,positionId:target.id}:{})},
         instrument:{rules,profile},mark:'',last:'',...(point!==undefined?{point}:{}),...(selected?{candle:request.candle}:{})};
     }else if(request.kind==='CLOSE'){
       const p=row.snapshot.positions.find(p=>p.id===request.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');

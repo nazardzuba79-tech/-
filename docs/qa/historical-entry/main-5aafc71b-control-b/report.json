@@ -1,0 +1,26 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "scope": "real /futures terminal, isolated native engine, AKE/USDT fixture",
+  "checks": [
+    {
+      "name": "historical-entry-1440",
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Positions count did not increase by one\n\n0 !== 1\n\n    at historicalEntry (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:212:12)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:43:26)\n    at async main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:260:36)"
+    },
+    {
+      "name": "historical-entry-390",
+      "passed": false,
+      "error": "AssertionError [ERR_ASSERTION]: Positions count did not increase by one\n\n0 !== 1\n\n    at historicalEntry (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:212:12)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:43:26)\n    at async main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:260:36)"
+    }
+  ],
+  "errors": [],
+  "mode": "server-only control",
+  "inputs": {
+    "quantity": "500000",
+    "leverage": 2,
+    "limitPrice": "0.0039"
+  },
+  "passed": false,
+  "failure": "AssertionError [ERR_ASSERTION]: 2 QA checks failed; see report.json\n    at main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:262:3)"
+}

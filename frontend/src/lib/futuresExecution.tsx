@@ -135,6 +135,11 @@ export interface FuturesExecution {
    *  server. `null` means "trade at the current book", which is every
    *  ordinary order. */
   candle: NativeCandle | null;
+  /** The price of that bar at its `pricePoint` — what a historical entry is
+   *  simulated at. The panel shows it as the entry and costs the order
+   *  against it; the server resolves the same bar itself and never reads
+   *  this. Absent or `null` for every ordinary order. */
+  candlePrice?: string | null;
   historicalEntryPending?: boolean;
   /** The selected contract's quantity rules, when the engine publishes
    *  them. `null` — every real account — means the terminal enforces no

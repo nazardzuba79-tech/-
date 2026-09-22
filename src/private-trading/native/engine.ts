@@ -90,6 +90,8 @@ export interface DemoProtection { takeProfit: string | null; stopLoss: string | 
 export interface PendingClose { reason: 'STOP_LOSS' | 'TAKE_PROFIT'; quantity: string; triggerPrice: string; triggeredAt: number; actionId: string }
 export interface DemoOrder {
   executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'; entryTimestamp?:number;
+  /** The selected historical price a HISTORICAL_DEMO simulation entry was priced and filled at (see `DemoOrderInput`). */
+  historicalPrice?:string;
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; remaining: string;
   filled: string; averagePrice: string | null; price: string | null; leverage: string; reserved: string;
   status: 'OPEN' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED'; createdAt: number;
@@ -239,6 +241,11 @@ export interface DemoState {
 }
 export interface DemoOrderInput {
   executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO'; entryTimestamp?:number;
+  /** HISTORICAL_DEMO only: the selected historical price the entry is simulated at. It is what the
+   *  order is priced at on admission (reserve, minimum notional) and what it fills at — not the
+   *  current quote, which can be an order of magnitude away from an old candle. Absent on the
+   *  resting historical LIMIT orders journaled before selected entries became immediate fills. */
+  historicalPrice?:string;
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; leverage: string;
   price?: string; reduceOnly?: boolean; positionId?: string; protection?: Partial<DemoProtection>; historical?: boolean;
   /** Omitted on instructions journaled before margin mode existed; those are Cross. */
@@ -513,9 +520,16 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   const rules = instrument(s,input.symbol), quote = input.historical ? s.historicalMarks?.[input.symbol] ?? s.marks[input.symbol] : s.marks[input.symbol]; if (!quote) throw new DemoEngineError('MARK_MISSING');
   const price = input.type === 'LIMIT' ? input.price : quote.last;
   if (!price) throw new DemoEngineError('LIMIT_PRICE_REQUIRED');
+  // A HISTORICAL_DEMO entry is not venue execution: it consumes no book, needs no depth, and no
+  // live risk tier admits it (see `validateContractOrder`). It is priced where it is simulated —
+  // at its selected historical price — so the margin it reserves is the margin its fill will
+  // post, not a figure taken from today's quote. Protection levels stay checked against the
+  // current price below: that is the price their triggers are evaluated at.
+  const historicalDemo = input.executionMode === 'HISTORICAL_DEMO';
+  const basis = historicalDemo && input.historicalPrice ? out(positive(input.historicalPrice)) : price;
   // A reducing order is held to every contract rule but the tier cap (see `validateContractOrder`); its own
   // checks — the named position, the side, the bucket, the size — follow right below.
-  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET',reduceOnly:!!input.reduceOnly});
+  validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price:basis,leverage:input.leverage,market:input.type==='MARKET',reduceOnly:!!input.reduceOnly,historicalDemo});
   if (input.reduceOnly) {
     if (!input.positionId) throw new DemoEngineError('POSITION_ID_REQUIRED');
     const p=getPosition(s,input.positionId);
@@ -532,14 +546,15 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   validateProtection(s,{...input,quantity:input.quantity},protection,price);
   const o:DemoOrder = {...input, marginType, reduceOnly:!!input.reduceOnly, historical:!!input.historical, price:input.type==='LIMIT'?price:null,
     remaining:input.quantity, filled:'0', averagePrice:null, reserved:'0', status:'OPEN', createdAt:time, positionId:input.positionId??null,protection};
-  o.reserved=reserveFor(s,o,price);
+  o.reserved=reserveFor(s,o,basis);
   // Margin for an isolated position is still FUNDED from the shared wallet —
   // what isolation changes is that once posted it stops backing anything
   // else. So the affordability question at placement is the same one.
   if (!o.reduceOnly) { const a = demoAccount(s); if (a.liquidatable || n(o.reserved).gt(a.available)) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN'); }
   // A reducing order adds no exposure and is never refused by a tier: a
   // position that has outgrown the table must still be closable at a price.
-  if (!o.reduceOnly) {
+  // Neither is a historical simulation entry: leverage is only its arithmetic.
+  if (!o.reduceOnly && !historicalDemo) {
     const tier=selectRiskTier(out(exposure(s,o,quote.mark).plus(n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
     if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
   }
@@ -665,8 +680,12 @@ export function setDemoLeverage(s:DemoState,id:string,leverage:string,time:numbe
   requireTime(s,time);const p=getPosition(s,id),i=instrument(s,p.symbol);
   validateLeverageRange(i.rules,leverage);
   const mark=s.marks[p.symbol]?.mark??p.markPrice;
-  const tier=selectRiskTier(out(exposure(s,p,mark)),i.profile);
-  if(tier.maxLeverage&&n(leverage).gt(tier.maxLeverage))throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
+  // A historical simulation position was never admitted by a venue tier, and its leverage is
+  // only the arithmetic behind its margin (see `placeDemoOrder`); the contract's range still holds.
+  if(p.executionMode!=='HISTORICAL_DEMO'){
+    const tier=selectRiskTier(out(exposure(s,p,mark)),i.profile);
+    if(tier.maxLeverage&&n(leverage).gt(tier.maxLeverage))throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
+  }
   if(s.orders.some(o=>active(o)&&o.positionId===id))throw new DemoEngineError('CANCEL_ORDERS_BEFORE_LEVERAGE');
   const before=p.leverage,postedBefore=p.isolatedMargin,walletBefore=s.walletBalance;p.leverage=leverage;
   // An isolated position's posted margin IS its leverage. Re-sizing it to

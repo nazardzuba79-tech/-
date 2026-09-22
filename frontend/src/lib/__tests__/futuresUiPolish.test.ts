@@ -167,7 +167,21 @@ test.each([
     // futuresOrderPanel's 40 behavioural tests assert directly and still
     // pass unmodified.
     // Both existing calculator triggers open the same page-owned dialog.
-    "4216665bcfc690266c0fcf6db01fd084c053c673314295e9542f6065cc5f7bc0"
+    //
+    // RE-TAKEN for the historical entry (a bar picked on the chart, on the
+    // simulation engine). A REAL semantic change, recorded as such: with a
+    // bar selected the leverage ceiling is the contract range rather than
+    // the risk tier, the contract quantity ceilings are not applied, the %
+    // sizing ignores the tier table, the order is costed at the bar's
+    // price (`execution.candlePrice`) on every tab, the price field shows
+    // that price read-only — and is held to it, since the form's own clearing
+    // after a submit would otherwise reseed today's price under a bar that is
+    // still the entry — and the entry row prints it. Every one of those
+    // branches is gated on `historicalEntry`; without a selected bar every
+    // value, guard and payload is what it was — the sibling suites that
+    // drive this form with no bar (futuresOrderPanel, unknown-state, final
+    // polish, protection) pass unchanged, which is the evidence.
+    "25972367390be0c00509df0b59e7d221b01a28a8eb88fe9a5a679cba923456a9"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -259,7 +273,12 @@ test.each([
   ],
   [
     "lib/futuresMath.ts",
-    "c9f14a3a796446543a4fbd30508639cdb38b9133a0fc8904b0003eca30739603"
+    // Re-taken for `fitQuantityToContract`'s `historicalDemo` option: a
+    // historical simulation entry has no venue quantity ceiling, mirroring
+    // the engine's `validateContractOrder`. The option is opt-in; every
+    // existing call without it is floored, capped and refused exactly as
+    // before, and no other function in this module changed.
+    "698c91b891d7e62f5e8c526983687499b1fa1cc4e77532760747a9b182673519"
   ]
 ])('%s matches the audited integration fingerprint',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{

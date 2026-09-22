@@ -1,0 +1,26 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "scope": "real /futures terminal, isolated native engine, AKE/USDT fixture",
+  "checks": [
+    {
+      "name": "historical-entry-1440",
+      "passed": false,
+      "error": "Error: Open Long stayed disabled before any request: Вход 2026-09-19 14:00 UTC · 1h · Закрытие Кросс ▾ 3.00x ▾ Цена Посл. цена Количество AKE 0% 0% 25% 50% 75% 100% TP/SL Только уменьшение Стоимость позиции 6000.00 USDT Маржа 2006.60 USDT Прим. цена ликвидации — / 6.74 Прим. комиссии (откр. + закр.) 6.6000 USDT Максимальная позиция 30305461.20 USDT Контракт не примет такой размер. Ближайший допустимый размер: 1000000 AKE. Открыть Лонг Открыть Шорт\n    at historicalEntry (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:205:19)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:43:26)\n    at async main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:261:36)"
+    },
+    {
+      "name": "historical-entry-390",
+      "passed": false,
+      "error": "Error: Open Long stayed disabled before any request: Вход 2026-09-19 18:00 UTC · 1h · Закрытие Кросс ▾ 3.00x ▾ Цена Посл. цена Количество AKE 0% 0% 25% 50% 75% 100% TP/SL Только уменьшение Стоимость позиции 6000.00 USDT Маржа 2006.60 USDT Прим. цена ликвидации — / 6.74 Прим. комиссии (откр. + закр.) 6.6000 USDT Максимальная позиция 30305461.20 USDT Контракт не примет такой размер. Ближайший допустимый размер: 1000000 AKE. Открыть Лонг Открыть Шорт\n    at historicalEntry (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:205:19)\n    at async check (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:43:26)\n    at async main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:261:36)"
+    }
+  ],
+  "errors": [],
+  "mode": "server-only control",
+  "inputs": {
+    "quantity": "1500000",
+    "leverage": 3,
+    "limitPrice": "0.004"
+  },
+  "passed": false,
+  "failure": "AssertionError [ERR_ASSERTION]: 2 QA checks failed; see report.json\n    at main (/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/baseline-main/scripts/qa-historical-entry.cjs:263:3)"
+}

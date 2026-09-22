@@ -1,0 +1,97 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "scope": "real /futures terminal, isolated native engine, AKE/USDT fixture",
+  "checks": [
+    {
+      "name": "historical-entry-1440",
+      "passed": true,
+      "evidence": {
+        "width": 1440,
+        "LONG": {
+          "side": "LONG",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "74700",
+          "realizedNet": "74652.315",
+          "positionsAfterClose": 0
+        },
+        "SHORT": {
+          "side": "SHORT",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "-74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "-74700",
+          "realizedNet": "-74747.685",
+          "positionsAfterClose": 0
+        }
+      }
+    },
+    {
+      "name": "historical-entry-390",
+      "passed": true,
+      "evidence": {
+        "width": 390,
+        "LONG": {
+          "side": "LONG",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "74700",
+          "realizedNet": "74652.315",
+          "positionsAfterClose": 0
+        },
+        "SHORT": {
+          "side": "SHORT",
+          "submittedType": "LIMIT",
+          "orderStatus": "FILLED",
+          "entry": "0.004",
+          "quantity": "1500000",
+          "leverage": "3",
+          "mark": "0.0538",
+          "unrealizedPnl": "-74700",
+          "ordersBefore": 0,
+          "ordersAfterOpen": 0,
+          "positionsAfterOpen": 1,
+          "closedAt": 0.0538,
+          "realizedGross": "-74700",
+          "realizedNet": "-74747.685",
+          "positionsAfterClose": 0
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "mode": "owner flow",
+  "inputs": {
+    "quantity": "1500000",
+    "leverage": 3,
+    "limitPrice": null
+  },
+  "passed": true
+}

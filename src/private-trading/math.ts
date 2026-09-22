@@ -230,8 +230,17 @@ export function validateLeverageRange(rules: ContractRules, leverage: string): v
  * not: that cap admits new exposure, and a reducing order adds none. A
  * position whose tier has tightened since it was opened (the market moved
  * its notional up the ladder) must still be closable at its own leverage.
+ *
+ * `historicalDemo`: the order is a HISTORICAL_DEMO simulation entry. It never
+ * reaches a venue — nothing is consumed from a book, no depth is needed —
+ * so the venue's ADMISSION rules do not apply to it: neither the market /
+ * order quantity ceilings nor the risk-tier leverage cap. Leverage is only
+ * the arithmetic behind its margin, ROI, liquidation and fees. What still
+ * applies is what keeps the numbers consistent: the quantity step, the
+ * minimum size and notional, the tick size of a limit price, and the
+ * contract's own leverage range.
  */
-export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile; reduceOnly?: boolean }): void {
+export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile; reduceOnly?: boolean; historicalDemo?: boolean }): void {
   const { rules } = input, q = decimal(input.quantity, 'quantity', true), p = decimal(input.price, 'price', true), l = decimal(input.leverage, 'leverage', true);
   if (!q.mod(decimal(rules.qtyStep, 'quantity_step', true)).isZero()) {
     throw new ContractRuleError('INVALID_QUANTITY_STEP', { limit: 'qtyStep', allowed: rules.qtyStep, actual: input.quantity });
@@ -246,7 +255,7 @@ export function validateContractOrder(input: { rules: ContractRules; quantity: s
     throw new ContractRuleError('INVALID_ORDER_SIZE', { limit: 'minOrderQty', allowed: rules.minOrderQty, actual: input.quantity });
   }
   const maxQty = input.market ? rules.maxMarketOrderQty : rules.maxOrderQty;
-  if (q.gt(maxQty)) {
+  if (!input.historicalDemo && q.gt(maxQty)) {
     throw new ContractRuleError('INVALID_ORDER_SIZE', {
       limit: input.market ? 'maxMarketOrderQty' : 'maxOrderQty', allowed: maxQty, actual: input.quantity,
     });
@@ -256,7 +265,7 @@ export function validateContractOrder(input: { rules: ContractRules; quantity: s
   }
   validateLeverageRange(rules, input.leverage);
   validateProfile(input.profile);
-  if (input.reduceOnly) return;
+  if (input.reduceOnly || input.historicalDemo) return;
   const tier = selectRiskTier(amount(q.times(p)), input.profile);
   if (tier.maxLeverage && l.gt(tier.maxLeverage)) {
     throw new ContractRuleError('TIER_LEVERAGE_EXCEEDED', { limit: 'tierMaxLeverage', allowed: tier.maxLeverage, actual: input.leverage });

@@ -58,6 +58,8 @@ export function useNativeFuturesExecution(
     const pickedCandle = candle
       ? { source: 'BYBIT_LINEAR' as const, interval: candle.interval, openTime: candle.openTime, pricePoint: 'CLOSE' as const }
       : null;
+    /** The bar's close — the `pricePoint` above — as the panel's entry price. */
+    const candlePrice = candle ? String(candle.close) : null;
 
     /** The server's account, passed straight through — never recomputed. */
     const aggregate = state?.account ?? null;
@@ -80,6 +82,7 @@ export function useNativeFuturesExecution(
         marginType: null,
         defaultMarginType: 'CROSS' as const,
         candle: pickedCandle,
+        candlePrice,
         historicalEntryPending,
         contract,
         account_aggregate: aggregate,
@@ -98,6 +101,7 @@ export function useNativeFuturesExecution(
       marginType: null,
       defaultMarginType: 'CROSS' as const,
       candle: pickedCandle,
+      candlePrice,
       historicalEntryPending,
       contract,
       account_aggregate: aggregate,
