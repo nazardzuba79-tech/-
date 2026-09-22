@@ -1043,6 +1043,7 @@ export const ZH: Record<Key, string> = {
   'futures.colRealized': '已实现盈亏',
   'futures.colCloseAs': '平仓方式',
   'futures.perpetual': '永续',
+  'futures.openContract': '在终端中打开 {symbol}',
   'futures.marginTrading': '保证金交易',
   'futures.addTpsl': '添加',
   'futures.closeMarket': '市价',
