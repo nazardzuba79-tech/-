@@ -1,5 +1,6 @@
 import { privateCardArtwork } from './privateCardArtwork';
-import { privateNumber, privateCardPnl, type PrivateResultCard } from './privateTradingApi';
+import { privateCardPnl, type PrivateResultCard } from './privateTradingApi';
+import { cardPrice, cardSignedAmount, cardSignedPercent, cardLeverage } from './cardNumberFormat';
 
 export const PRIVATE_RESULT_CARD_WIDTH = 1080;
 export const PRIVATE_RESULT_CARD_HEIGHT = 1215;
@@ -15,13 +16,14 @@ function finite(value: unknown): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
-// Formatting only: every financial value is already frozen by the server.
-const formatted = (value: string | null | undefined, digits = 2) =>
-  finite(value) === null ? '—' : privateNumber(value, digits);
-const signed = (value: string | null | undefined, digits = 2) => {
-  const number = finite(value);
-  return number === null ? '—' : `${number > 0 ? '+' : ''}${formatted(value, digits)}`;
-};
+/* Formatting only: every financial value is already frozen by the server.
+   All of it goes through lib/cardNumberFormat, which is the card's single
+   display rule — so a price cannot be rendered one way in one text node and
+   another way in the next. `signed` is PnL and ROI, which are currency
+   amounts and keep two decimals; prices use `cardPrice`, whose precision
+   follows the magnitude. The previous fixed two decimals printed a real AKE
+   entry of 0.0040783 as `0.00`. */
+const signed = cardSignedAmount;
 
 function brand(): string {
   return `<g transform="translate(78 76)"><g transform="translate(0 2) scale(.62)"><defs><mask id="logoMask" maskUnits="userSpaceOnUse" x="0" y="0" width="82" height="64"><rect width="82" height="64" fill="white"/><circle cx="41" cy="32" r="24" fill="black"/></mask></defs><ellipse cx="41" cy="32" rx="39" ry="12.5" transform="rotate(-23 41 32)" stroke="#fff" stroke-width="3.3" mask="url(#logoMask)"/><path d="M57.36 14.44A24 24 0 0 0 18.9 41.37ZM24.64 49.56A24 24 0 0 0 63.1 22.63Z" fill="#fff"/></g><text x="70" y="40" font-size="42" fill="#fff" font-weight="700" letter-spacing="1.3">VOLTEX</text></g>`;
@@ -58,15 +60,17 @@ export function privateResultCardSvg(card: PrivateResultCard): string {
   const negative = (finite(pnl) ?? 0) < 0;
   const accent = negative ? '#ff6b7a' : '#55cda2';
   const sideColor = card.side === 'SHORT' ? '#ff7d88' : '#74cfa6';
-  const roi = signed(card.roiPercent), profit = signed(pnl);
+  const roi = cardSignedPercent(card.roiPercent), profit = signed(pnl);
   const roiSize = roi.length > 10 ? 90 : 96;
   const profitSize = profit.length > 13 ? 46 : 52;
   const side = card.side === 'LONG' ? 'Long' : 'Short';
-  const leverage = finite(card.leverage) === null ? '—' : `${card.leverage}x`;
+  const leverage = cardLeverage(card.leverage);
   const badgeWidth = Math.max(152, 38 + (side.length + leverage.length) * 15);
   const priceLabel = card.status === 'OPEN' ? 'Рыночная цена' : 'Цена выхода';
-  // Display rounding only. Do not change the frozen execution prices or P&L.
-  const entryPrice = formatted(card.entryPrice, 2), valuationPrice = formatted(card.valuationPrice, 2);
+  // Display precision only. The frozen execution prices and P&L are untouched;
+  // this chooses how many places of them to SHOW. A sub-cent contract needs
+  // more than two, and a five-figure one needs exactly two.
+  const entryPrice = cardPrice(card.entryPrice), valuationPrice = cardPrice(card.valuationPrice);
   const fit = (text: string, size: number, max: number) =>
     text.length * size * .62 > max ? ` textLength="${max}" lengthAdjust="spacingAndGlyphs"` : '';
   // NO MODE BADGE. The card is a trading P&L card and reads as one: the
@@ -90,6 +94,22 @@ export function privateResultCardSvg(card: PrivateResultCard): string {
 <text data-field="valuation-label" x="0" y="608" font-size="23" fill="#c4bab0">${priceLabel}</text>
 <text data-field="valuation-price" x="0" y="652" font-size="34" font-weight="700" fill="#f0e9df"${fit(valuationPrice, 34, 440)}>${escapeXml(valuationPrice)}</text>
 </g></g></svg>`;
+}
+
+/**
+ * The preview source: the card's own SVG, as an object URL.
+ *
+ * Same markup the export rasterises, so preview and download cannot disagree
+ * about a single figure — there is one `privateResultCardSvg` and both go
+ * through it. The artwork is already an embedded data URL, so the SVG loads
+ * with no further network work, and nothing here touches a canvas.
+ *
+ * The caller owns the URL and must `revoke()` it when the preview goes away.
+ */
+export function privateResultCardPreviewUrl(card: PrivateResultCard): { url: string; revoke: () => void } {
+  const svg = privateResultCardSvg(card);
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+  return { url, revoke: () => URL.revokeObjectURL(url) };
 }
 
 export async function privateResultCardPng(card: PrivateResultCard): Promise<Blob> {

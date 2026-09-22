@@ -30,7 +30,7 @@ function load(file: string, imports: Record<string, unknown> = {}) {
 }
 const privateApi = load('lib/privateTradingApi.ts', { './api': { getToken: () => 'owner-token' }, './privateTradingError': load('lib/privateTradingError.ts') });
 const nativeApi = load('lib/nativeDemoApi.ts', { './api': { getToken: () => 'owner-token' }, './privateTradingApi': privateApi });
-const cardRenderer = load('lib/privateResultCard.ts', { './privateTradingApi': privateApi, './privateCardArtwork': load('lib/privateCardArtwork.ts') });
+const cardRenderer = load('lib/privateResultCard.ts', { './privateTradingApi': privateApi, './privateCardArtwork': load('lib/privateCardArtwork.ts'), './cardNumberFormat': load('lib/cardNumberFormat.ts') });
 
 function nodes(node: any): any[] { return !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)]; }
 function text(node: any): string { return node === null || node === undefined || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : Array.isArray(node) ? node.map(text).join('') : text(node.props?.children); }
