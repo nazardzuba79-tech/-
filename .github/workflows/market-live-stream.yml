@@ -1,0 +1,48 @@
+# The public SSE market stream: its transport, its backpressure handling and
+# its wire encoding.
+#
+# LiveTransport.test.ts has guarded this transport for some time and NO
+# workflow ran it — `native-demo-qa` path-matches src/api/routes/marketLive.ts
+# but its test step runs private-trading suites and never touches either
+# file. A stream that every connected browser depends on deserves a check
+# that actually executes when it changes.
+name: Market live stream
+on:
+  pull_request:
+    paths:
+      - 'src/api/routes/marketLive.ts'
+      - 'src/api/routes/__tests__/marketLiveGzip.test.ts'
+      - 'src/services/marketData/live/**'
+      - '.github/workflows/market-live-stream.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: market-live-stream-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  live-stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record tested commit and parents
+        run: git show -s --format='%H %P'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript
+        run: npm run build
+      # The compression tests open real sockets and assert frames arrive
+      # while the stream is still open — that is what catches a compressor
+      # buffering events instead of flushing them.
+      - name: Live stream transport and compression
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/marketData/live/__tests__/LiveTransport.test.ts
+          src/api/routes/__tests__/marketLiveGzip.test.ts
