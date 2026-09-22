@@ -1,0 +1,66 @@
+# The Futures trading panel and order book, restyled from the owner's
+# reference pack — and held to the pack's own "do not copy" list.
+#
+# The jest guard pins what a later edit could quietly undo (the order types,
+# the Calculator as the heading's only control, no Bybit orange, geometry
+# kept off mobile). The browser run measures the rest at five widths:
+# clipping, overflow, column alignment, grouping, Стакан/Сделки, price
+# click, and an order POST from the ticket.
+name: Futures trading panel and order book polish
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
+      - 'frontend/src/components/FuturesOrderForm.tsx'
+      - 'frontend/src/components/FuturesReferenceBook.tsx'
+      - 'frontend/src/components/PercentSlider.tsx'
+      - 'frontend/src/components/OrderFamilyPresentation.tsx'
+      - 'frontend/src/lib/referenceBook.ts'
+      - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
+      - 'scripts/qa-futures-visual-polish.cjs'
+      - '.github/workflows/futures-visual-polish.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: futures-visual-polish-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  visual-polish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend dependencies
+        run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Brief guards
+        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/referenceBook.test.ts
+      - name: Frontend TypeScript and production bundle
+        run: npm run build --prefix frontend
+      - name: Disposable browser tooling
+        run: |
+          npm install --prefix /tmp/visual-polish-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/visual-polish-browser/node_modules/playwright/cli.js install --with-deps chromium
+          # The original author harness uses this absolute module path.
+          # Supply it only in the disposable runner; production is untouched.
+          sudo mkdir -p /opt/node22/lib/node_modules
+          sudo ln -s /tmp/visual-polish-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
+      - name: Trading panel and order book at 1920, 1664, 1440, 1366 and 390
+        run: node scripts/qa-futures-visual-polish.cjs --label ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: futures-visual-polish-${{ github.sha }}
+          path: docs/qa/futures-visual-polish/ci-*
+          retention-days: 7
+          if-no-files-found: warn

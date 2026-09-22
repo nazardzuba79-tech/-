@@ -1,0 +1,1314 @@
+{
+  "1920x1080": {
+    "book": {
+      "tabs": [
+        {
+          "text": "Стакан",
+          "selected": "true"
+        },
+        {
+          "text": "Сделки",
+          "selected": "false"
+        }
+      ],
+      "askCount": 13,
+      "bidCount": 13,
+      "rowHeight": 20,
+      "rowFont": {
+        "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif",
+        "font-size": "12px",
+        "font-variant-numeric": "tabular-nums"
+      },
+      "askPriceColor": "rgb(219, 89, 102)",
+      "bidPriceColor": "rgb(40, 170, 124)",
+      "order": {
+        "asksAbove": true,
+        "bidsBelow": true
+      },
+      "columns": {
+        "priceLeftSpread": 0,
+        "qtyRightSpread": 0,
+        "totalRightSpread": 0
+      },
+      "center": {
+        "box": {
+          "left": 1279,
+          "right": 1570,
+          "top": 482,
+          "bottom": 524,
+          "width": 291,
+          "height": 42
+        },
+        "strong": {
+          "font-size": "20px",
+          "font-weight": "600",
+          "color": "rgb(226, 232, 240)",
+          "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif"
+        }
+      },
+      "depth": {
+        "background-color": "rgba(219, 89, 102, 0.08)",
+        "top": "1px",
+        "bottom": "1px",
+        "height": "18px"
+      },
+      "groupOptions": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ]
+    },
+    "bookBox": {
+      "left": 1278,
+      "right": 1570,
+      "top": 104,
+      "bottom": 822,
+      "width": 292,
+      "height": 718
+    },
+    "clippedBook": [],
+    "form": {
+      "tabs": [
+        "Лимитный",
+        "Рыночный",
+        "Стоп",
+        "Take Profit"
+      ],
+      "activeTab": "Лимитный",
+      "activeTabStyle": {
+        "color": "rgb(240, 185, 11)",
+        "font-weight": "550",
+        "border-bottom-width": "2px",
+        "box-shadow": "none"
+      },
+      "headingControls": [
+        {
+          "label": "Калькулятор фьючерсов",
+          "calculator": true
+        }
+      ],
+      "field": {
+        "box": {
+          "left": 1585,
+          "right": 1906,
+          "top": 246,
+          "bottom": 290,
+          "width": 321,
+          "height": 44
+        },
+        "style": {
+          "background-color": "rgb(23, 36, 50)",
+          "border-top-width": "1px",
+          "border-top-color": "rgb(42, 57, 72)",
+          "border-radius": "7px",
+          "height": "44px"
+        }
+      },
+      "fieldCaption": {
+        "font-size": "12px",
+        "color": "rgb(166, 178, 200)"
+      },
+      "fieldInput": {
+        "font-size": "14px",
+        "font-weight": "550",
+        "color": "rgb(248, 250, 252)"
+      },
+      "selects": [
+        {
+          "box": {
+            "left": 1587,
+            "right": 1753,
+            "top": 136,
+            "bottom": 168,
+            "width": 166,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        },
+        {
+          "box": {
+            "left": 1763,
+            "right": 1904,
+            "top": 136,
+            "bottom": 168,
+            "width": 141,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        }
+      ],
+      "slider": {
+        "track": {
+          "left": 1592,
+          "right": 1899,
+          "top": 368,
+          "bottom": 401,
+          "width": 307,
+          "height": 33
+        },
+        "presets": [
+          "0%",
+          "25%",
+          "50%",
+          "75%",
+          "100%"
+        ]
+      },
+      "buttons": [
+        {
+          "text": "Открыть Лонг",
+          "disabled": true,
+          "box": {
+            "left": 1585,
+            "right": 1742,
+            "top": 619,
+            "bottom": 663,
+            "width": 157,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        },
+        {
+          "text": "Открыть Шорт",
+          "disabled": true,
+          "box": {
+            "left": 1750,
+            "right": 1906,
+            "top": 619,
+            "bottom": 663,
+            "width": 157,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        }
+      ],
+      "formBox": {
+        "left": 1570,
+        "right": 1920,
+        "top": 48,
+        "bottom": 1052,
+        "width": 350,
+        "height": 1004
+      },
+      "formOverflowX": 0
+    },
+    "clippedForm": [],
+    "overflowX": 0,
+    "idleRequests": 10,
+    "idleRequestKinds": [
+      "GET /api/v1/futures/mark-price/:x",
+      "GET /api/v1/futures/funding-rate/:x",
+      "GET /api/v1/futures/positions",
+      "GET /api/v1/market/futures/candles/:x",
+      "GET /api/v1/futures/balances",
+      "GET /api/v1/futures/orders/me"
+    ],
+    "grouping": {
+      "options": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ],
+      "firstAskBefore": "85,833.60",
+      "firstAskAfter": "85,835.00",
+      "changed": true
+    },
+    "tabSwitch": {
+      "onTrades": "true",
+      "tapeRendered": true,
+      "back": "true"
+    },
+    "pick": {
+      "row": "Bid 85833.4",
+      "priceField": "85833.4"
+    },
+    "calculator": {
+      "opened": true
+    },
+    "order": {
+      "symbol": "BTC/USDT",
+      "side": "BUY",
+      "type": "LIMIT",
+      "price": "85833.4",
+      "quantity": "0.012",
+      "leverage": 10,
+      "marginType": "ISOLATED",
+      "reduceOnly": false
+    },
+    "pageErrors": []
+  },
+  "1664x900": {
+    "book": {
+      "tabs": [
+        {
+          "text": "Стакан",
+          "selected": "true"
+        },
+        {
+          "text": "Сделки",
+          "selected": "false"
+        }
+      ],
+      "askCount": 8,
+      "bidCount": 8,
+      "rowHeight": 20,
+      "rowFont": {
+        "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif",
+        "font-size": "12px",
+        "font-variant-numeric": "tabular-nums"
+      },
+      "askPriceColor": "rgb(219, 89, 102)",
+      "bidPriceColor": "rgb(40, 170, 124)",
+      "order": {
+        "asksAbove": true,
+        "bidsBelow": true
+      },
+      "columns": {
+        "priceLeftSpread": 0,
+        "qtyRightSpread": 0,
+        "totalRightSpread": 0
+      },
+      "center": {
+        "box": {
+          "left": 1069,
+          "right": 1338,
+          "top": 392,
+          "bottom": 434,
+          "width": 269,
+          "height": 42
+        },
+        "strong": {
+          "font-size": "20px",
+          "font-weight": "600",
+          "color": "rgb(226, 232, 240)",
+          "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif"
+        }
+      },
+      "depth": {
+        "background-color": "rgba(219, 89, 102, 0.08)",
+        "top": "1px",
+        "bottom": "1px",
+        "height": "18px"
+      },
+      "groupOptions": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ]
+    },
+    "bookBox": {
+      "left": 1068,
+      "right": 1338,
+      "top": 104,
+      "bottom": 642,
+      "width": 270,
+      "height": 538
+    },
+    "clippedBook": [],
+    "form": {
+      "tabs": [
+        "Лимитный",
+        "Рыночный",
+        "Стоп",
+        "Take Profit"
+      ],
+      "activeTab": "Лимитный",
+      "activeTabStyle": {
+        "color": "rgb(240, 185, 11)",
+        "font-weight": "550",
+        "border-bottom-width": "2px",
+        "box-shadow": "none"
+      },
+      "headingControls": [
+        {
+          "label": "Калькулятор фьючерсов",
+          "calculator": true
+        }
+      ],
+      "field": {
+        "box": {
+          "left": 1353,
+          "right": 1650,
+          "top": 246,
+          "bottom": 290,
+          "width": 297,
+          "height": 44
+        },
+        "style": {
+          "background-color": "rgb(23, 36, 50)",
+          "border-top-width": "1px",
+          "border-top-color": "rgb(42, 57, 72)",
+          "border-radius": "7px",
+          "height": "44px"
+        }
+      },
+      "fieldCaption": {
+        "font-size": "12px",
+        "color": "rgb(166, 178, 200)"
+      },
+      "fieldInput": {
+        "font-size": "14px",
+        "font-weight": "550",
+        "color": "rgb(248, 250, 252)"
+      },
+      "selects": [
+        {
+          "box": {
+            "left": 1355,
+            "right": 1508,
+            "top": 136,
+            "bottom": 168,
+            "width": 153,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        },
+        {
+          "box": {
+            "left": 1518,
+            "right": 1648,
+            "top": 136,
+            "bottom": 168,
+            "width": 130,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        }
+      ],
+      "slider": {
+        "track": {
+          "left": 1360,
+          "right": 1643,
+          "top": 368,
+          "bottom": 401,
+          "width": 283,
+          "height": 33
+        },
+        "presets": [
+          "0%",
+          "25%",
+          "50%",
+          "75%",
+          "100%"
+        ]
+      },
+      "buttons": [
+        {
+          "text": "Открыть Лонг",
+          "disabled": true,
+          "box": {
+            "left": 1353,
+            "right": 1498,
+            "top": 619,
+            "bottom": 663,
+            "width": 145,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        },
+        {
+          "text": "Открыть Шорт",
+          "disabled": true,
+          "box": {
+            "left": 1506,
+            "right": 1650,
+            "top": 619,
+            "bottom": 663,
+            "width": 145,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        }
+      ],
+      "formBox": {
+        "left": 1338,
+        "right": 1664,
+        "top": 48,
+        "bottom": 872,
+        "width": 326,
+        "height": 824
+      },
+      "formOverflowX": 0
+    },
+    "clippedForm": [],
+    "overflowX": 0,
+    "idleRequests": 10,
+    "idleRequestKinds": [
+      "GET /api/v1/futures/mark-price/:x",
+      "GET /api/v1/futures/funding-rate/:x",
+      "GET /api/v1/futures/positions",
+      "GET /api/v1/market/futures/candles/:x",
+      "GET /api/v1/futures/balances",
+      "GET /api/v1/futures/orders/me"
+    ],
+    "grouping": {
+      "options": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ],
+      "firstAskBefore": "85,833.60",
+      "firstAskAfter": "85,835.00",
+      "changed": true
+    },
+    "tabSwitch": {
+      "onTrades": "true",
+      "tapeRendered": true,
+      "back": "true"
+    },
+    "pick": {
+      "row": "Bid 85833.4",
+      "priceField": "85833.4"
+    },
+    "calculator": {
+      "opened": true
+    },
+    "order": {
+      "symbol": "BTC/USDT",
+      "side": "BUY",
+      "type": "LIMIT",
+      "price": "85833.4",
+      "quantity": "0.012",
+      "leverage": 10,
+      "marginType": "ISOLATED",
+      "reduceOnly": false
+    },
+    "pageErrors": []
+  },
+  "1440x900": {
+    "book": {
+      "tabs": [
+        {
+          "text": "Стакан",
+          "selected": "true"
+        },
+        {
+          "text": "Сделки",
+          "selected": "false"
+        }
+      ],
+      "askCount": 8,
+      "bidCount": 8,
+      "rowHeight": 20,
+      "rowFont": {
+        "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif",
+        "font-size": "12px",
+        "font-variant-numeric": "tabular-nums"
+      },
+      "askPriceColor": "rgb(219, 89, 102)",
+      "bidPriceColor": "rgb(40, 170, 124)",
+      "order": {
+        "asksAbove": true,
+        "bidsBelow": true
+      },
+      "columns": {
+        "priceLeftSpread": 0,
+        "qtyRightSpread": 0,
+        "totalRightSpread": 0
+      },
+      "center": {
+        "box": {
+          "left": 845,
+          "right": 1114,
+          "top": 392,
+          "bottom": 434,
+          "width": 269,
+          "height": 42
+        },
+        "strong": {
+          "font-size": "20px",
+          "font-weight": "600",
+          "color": "rgb(226, 232, 240)",
+          "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif"
+        }
+      },
+      "depth": {
+        "background-color": "rgba(219, 89, 102, 0.08)",
+        "top": "1px",
+        "bottom": "1px",
+        "height": "18px"
+      },
+      "groupOptions": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ]
+    },
+    "bookBox": {
+      "left": 844,
+      "right": 1114,
+      "top": 104,
+      "bottom": 642,
+      "width": 270,
+      "height": 538
+    },
+    "clippedBook": [],
+    "form": {
+      "tabs": [
+        "Лимитный",
+        "Рыночный",
+        "Стоп",
+        "Take Profit"
+      ],
+      "activeTab": "Лимитный",
+      "activeTabStyle": {
+        "color": "rgb(240, 185, 11)",
+        "font-weight": "550",
+        "border-bottom-width": "2px",
+        "box-shadow": "none"
+      },
+      "headingControls": [
+        {
+          "label": "Калькулятор фьючерсов",
+          "calculator": true
+        }
+      ],
+      "field": {
+        "box": {
+          "left": 1129,
+          "right": 1426,
+          "top": 246,
+          "bottom": 290,
+          "width": 297,
+          "height": 44
+        },
+        "style": {
+          "background-color": "rgb(23, 36, 50)",
+          "border-top-width": "1px",
+          "border-top-color": "rgb(42, 57, 72)",
+          "border-radius": "7px",
+          "height": "44px"
+        }
+      },
+      "fieldCaption": {
+        "font-size": "12px",
+        "color": "rgb(166, 178, 200)"
+      },
+      "fieldInput": {
+        "font-size": "14px",
+        "font-weight": "550",
+        "color": "rgb(248, 250, 252)"
+      },
+      "selects": [
+        {
+          "box": {
+            "left": 1131,
+            "right": 1284,
+            "top": 136,
+            "bottom": 168,
+            "width": 153,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        },
+        {
+          "box": {
+            "left": 1294,
+            "right": 1424,
+            "top": 136,
+            "bottom": 168,
+            "width": 130,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        }
+      ],
+      "slider": {
+        "track": {
+          "left": 1136,
+          "right": 1419,
+          "top": 368,
+          "bottom": 401,
+          "width": 283,
+          "height": 33
+        },
+        "presets": [
+          "0%",
+          "25%",
+          "50%",
+          "75%",
+          "100%"
+        ]
+      },
+      "buttons": [
+        {
+          "text": "Открыть Лонг",
+          "disabled": true,
+          "box": {
+            "left": 1129,
+            "right": 1274,
+            "top": 619,
+            "bottom": 663,
+            "width": 145,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        },
+        {
+          "text": "Открыть Шорт",
+          "disabled": true,
+          "box": {
+            "left": 1282,
+            "right": 1426,
+            "top": 619,
+            "bottom": 663,
+            "width": 145,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        }
+      ],
+      "formBox": {
+        "left": 1114,
+        "right": 1440,
+        "top": 48,
+        "bottom": 872,
+        "width": 326,
+        "height": 824
+      },
+      "formOverflowX": 0
+    },
+    "clippedForm": [],
+    "overflowX": 0,
+    "idleRequests": 11,
+    "idleRequestKinds": [
+      "GET /api/v1/futures/mark-price/:x",
+      "GET /api/v1/futures/funding-rate/:x",
+      "GET /api/v1/futures/positions",
+      "GET /api/v1/market/futures/candles/:x",
+      "GET /api/v1/futures/balances",
+      "GET /api/v1/futures/orders/me",
+      "GET /api/v1/market/live"
+    ],
+    "grouping": {
+      "options": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ],
+      "firstAskBefore": "85,833.60",
+      "firstAskAfter": "85,835.00",
+      "changed": true
+    },
+    "tabSwitch": {
+      "onTrades": "true",
+      "tapeRendered": true,
+      "back": "true"
+    },
+    "pick": {
+      "row": "Bid 85833.4",
+      "priceField": "85833.4"
+    },
+    "calculator": {
+      "opened": true
+    },
+    "order": {
+      "symbol": "BTC/USDT",
+      "side": "BUY",
+      "type": "LIMIT",
+      "price": "85833.4",
+      "quantity": "0.012",
+      "leverage": 10,
+      "marginType": "ISOLATED",
+      "reduceOnly": false
+    },
+    "pageErrors": []
+  },
+  "1366x768": {
+    "book": {
+      "tabs": [
+        {
+          "text": "Стакан",
+          "selected": "true"
+        },
+        {
+          "text": "Сделки",
+          "selected": "false"
+        }
+      ],
+      "askCount": 5,
+      "bidCount": 5,
+      "rowHeight": 20,
+      "rowFont": {
+        "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif",
+        "font-size": "12px",
+        "font-variant-numeric": "tabular-nums"
+      },
+      "askPriceColor": "rgb(219, 89, 102)",
+      "bidPriceColor": "rgb(40, 170, 124)",
+      "order": {
+        "asksAbove": true,
+        "bidsBelow": true
+      },
+      "columns": {
+        "priceLeftSpread": 0,
+        "qtyRightSpread": 0,
+        "totalRightSpread": 0
+      },
+      "center": {
+        "box": {
+          "left": 771,
+          "right": 1040,
+          "top": 326,
+          "bottom": 368,
+          "width": 269,
+          "height": 42
+        },
+        "strong": {
+          "font-size": "20px",
+          "font-weight": "600",
+          "color": "rgb(226, 232, 240)",
+          "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif"
+        }
+      },
+      "depth": {
+        "background-color": "rgba(219, 89, 102, 0.08)",
+        "top": "1px",
+        "bottom": "1px",
+        "height": "18px"
+      },
+      "groupOptions": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ]
+    },
+    "bookBox": {
+      "left": 770,
+      "right": 1040,
+      "top": 104,
+      "bottom": 510,
+      "width": 270,
+      "height": 406
+    },
+    "clippedBook": [],
+    "form": {
+      "tabs": [
+        "Лимитный",
+        "Рыночный",
+        "Стоп",
+        "Take Profit"
+      ],
+      "activeTab": "Лимитный",
+      "activeTabStyle": {
+        "color": "rgb(240, 185, 11)",
+        "font-weight": "550",
+        "border-bottom-width": "2px",
+        "box-shadow": "none"
+      },
+      "headingControls": [
+        {
+          "label": "Калькулятор фьючерсов",
+          "calculator": true
+        }
+      ],
+      "field": {
+        "box": {
+          "left": 1055,
+          "right": 1352,
+          "top": 246,
+          "bottom": 290,
+          "width": 297,
+          "height": 44
+        },
+        "style": {
+          "background-color": "rgb(23, 36, 50)",
+          "border-top-width": "1px",
+          "border-top-color": "rgb(42, 57, 72)",
+          "border-radius": "7px",
+          "height": "44px"
+        }
+      },
+      "fieldCaption": {
+        "font-size": "12px",
+        "color": "rgb(166, 178, 200)"
+      },
+      "fieldInput": {
+        "font-size": "14px",
+        "font-weight": "550",
+        "color": "rgb(248, 250, 252)"
+      },
+      "selects": [
+        {
+          "box": {
+            "left": 1057,
+            "right": 1210,
+            "top": 136,
+            "bottom": 168,
+            "width": 153,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        },
+        {
+          "box": {
+            "left": 1220,
+            "right": 1350,
+            "top": 136,
+            "bottom": 168,
+            "width": 130,
+            "height": 32
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "32px"
+          }
+        }
+      ],
+      "slider": {
+        "track": {
+          "left": 1062,
+          "right": 1345,
+          "top": 368,
+          "bottom": 401,
+          "width": 283,
+          "height": 33
+        },
+        "presets": [
+          "0%",
+          "25%",
+          "50%",
+          "75%",
+          "100%"
+        ]
+      },
+      "buttons": [
+        {
+          "text": "Открыть Лонг",
+          "disabled": true,
+          "box": {
+            "left": 1055,
+            "right": 1200,
+            "top": 619,
+            "bottom": 663,
+            "width": 145,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        },
+        {
+          "text": "Открыть Шорт",
+          "disabled": true,
+          "box": {
+            "left": 1208,
+            "right": 1352,
+            "top": 619,
+            "bottom": 663,
+            "width": 145,
+            "height": 44
+          },
+          "style": {
+            "border-radius": "999px",
+            "font-size": "13px",
+            "font-weight": "650",
+            "height": "44px"
+          }
+        }
+      ],
+      "formBox": {
+        "left": 1040,
+        "right": 1366,
+        "top": 48,
+        "bottom": 740,
+        "width": 326,
+        "height": 692
+      },
+      "formOverflowX": 0
+    },
+    "clippedForm": [],
+    "overflowX": 0,
+    "idleRequests": 10,
+    "idleRequestKinds": [
+      "GET /api/v1/futures/mark-price/:x",
+      "GET /api/v1/futures/funding-rate/:x",
+      "GET /api/v1/futures/positions",
+      "GET /api/v1/market/futures/candles/:x",
+      "GET /api/v1/futures/balances",
+      "GET /api/v1/futures/orders/me"
+    ],
+    "grouping": {
+      "options": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ],
+      "firstAskBefore": "85,833.60",
+      "firstAskAfter": "85,835.00",
+      "changed": true
+    },
+    "tabSwitch": {
+      "onTrades": "true",
+      "tapeRendered": true,
+      "back": "true"
+    },
+    "pick": {
+      "row": "Bid 85833.4",
+      "priceField": "85833.4"
+    },
+    "calculator": {
+      "opened": true
+    },
+    "order": {
+      "symbol": "BTC/USDT",
+      "side": "BUY",
+      "type": "LIMIT",
+      "price": "85833.4",
+      "quantity": "0.012",
+      "leverage": 10,
+      "marginType": "ISOLATED",
+      "reduceOnly": false
+    },
+    "pageErrors": []
+  },
+  "390x844": {
+    "book": {
+      "tabs": [
+        {
+          "text": "Стакан",
+          "selected": "true"
+        },
+        {
+          "text": "Сделки",
+          "selected": "false"
+        }
+      ],
+      "askCount": 7,
+      "bidCount": 7,
+      "rowHeight": 44,
+      "rowFont": {
+        "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif",
+        "font-size": "12px",
+        "font-variant-numeric": "tabular-nums"
+      },
+      "askPriceColor": "rgb(219, 89, 102)",
+      "bidPriceColor": "rgb(40, 170, 124)",
+      "order": {
+        "asksAbove": true,
+        "bidsBelow": true
+      },
+      "columns": {
+        "priceLeftSpread": 0,
+        "qtyRightSpread": 0,
+        "totalRightSpread": 0
+      },
+      "center": {
+        "box": {
+          "left": 0,
+          "right": 390,
+          "top": 550,
+          "bottom": 592,
+          "width": 390,
+          "height": 42
+        },
+        "strong": {
+          "font-size": "20px",
+          "font-weight": "600",
+          "color": "rgb(226, 232, 240)",
+          "font-family": "\"Inter Terminal\", Inter, system-ui, sans-serif"
+        }
+      },
+      "depth": {
+        "background-color": "rgba(219, 89, 102, 0.08)",
+        "top": "1px",
+        "bottom": "1px",
+        "height": "42px"
+      },
+      "groupOptions": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ]
+    },
+    "bookBox": {
+      "left": 0,
+      "right": 390,
+      "top": 238,
+      "bottom": 778,
+      "width": 390,
+      "height": 540
+    },
+    "clippedBook": [],
+    "form": {
+      "tabs": [
+        "Лимитный",
+        "Рыночный",
+        "Стоп",
+        "Take Profit"
+      ],
+      "activeTab": "Лимитный",
+      "activeTabStyle": {
+        "color": "rgb(240, 185, 11)",
+        "font-weight": "550",
+        "border-bottom-width": "2px",
+        "box-shadow": "none"
+      },
+      "headingControls": [
+        {
+          "label": "Калькулятор фьючерсов",
+          "calculator": true
+        }
+      ],
+      "field": {
+        "box": {
+          "left": 12,
+          "right": 378,
+          "top": 384,
+          "bottom": 432,
+          "width": 366,
+          "height": 48
+        },
+        "style": {
+          "background-color": "rgb(23, 36, 50)",
+          "border-top-width": "1px",
+          "border-top-color": "rgb(42, 57, 72)",
+          "border-radius": "7px",
+          "height": "48px"
+        }
+      },
+      "fieldCaption": {
+        "font-size": "12px",
+        "color": "rgb(166, 178, 200)"
+      },
+      "fieldInput": {
+        "font-size": "16px",
+        "font-weight": "550",
+        "color": "rgb(248, 250, 252)"
+      },
+      "selects": [
+        {
+          "box": {
+            "left": 12,
+            "right": 205,
+            "top": 271,
+            "bottom": 315,
+            "width": 193,
+            "height": 44
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "44px"
+          }
+        },
+        {
+          "box": {
+            "left": 215,
+            "right": 378,
+            "top": 271,
+            "bottom": 315,
+            "width": 163,
+            "height": 44
+          },
+          "style": {
+            "background-color": "rgb(32, 35, 44)",
+            "border-top-width": "1px",
+            "border-radius": "5px",
+            "height": "44px"
+          }
+        }
+      ],
+      "slider": {
+        "track": {
+          "left": 19,
+          "right": 371,
+          "top": 510,
+          "bottom": 554,
+          "width": 352,
+          "height": 44
+        },
+        "presets": [
+          "0%",
+          "25%",
+          "50%",
+          "75%",
+          "100%"
+        ]
+      },
+      "buttons": [
+        {
+          "text": "Открыть Лонг",
+          "disabled": true,
+          "box": {
+            "left": 12,
+            "right": 191,
+            "top": 708,
+            "bottom": 760,
+            "width": 179,
+            "height": 52
+          },
+          "style": {
+            "border-radius": "12px",
+            "font-size": "15px",
+            "font-weight": "650",
+            "height": "52px"
+          }
+        },
+        {
+          "text": "Открыть Шорт",
+          "disabled": true,
+          "box": {
+            "left": 199,
+            "right": 378,
+            "top": 708,
+            "bottom": 760,
+            "width": 179,
+            "height": 52
+          },
+          "style": {
+            "border-radius": "12px",
+            "font-size": "15px",
+            "font-weight": "650",
+            "height": "52px"
+          }
+        }
+      ],
+      "formBox": {
+        "left": 0,
+        "right": 390,
+        "top": 182,
+        "bottom": 1296,
+        "width": 390,
+        "height": 1114
+      },
+      "formOverflowX": 0
+    },
+    "clippedForm": [],
+    "overflowX": 0,
+    "idleRequests": 8,
+    "idleRequestKinds": [
+      "GET /api/v1/futures/mark-price/:x",
+      "GET /api/v1/market/futures/candles/:x",
+      "GET /api/v1/futures/balances",
+      "GET /api/v1/futures/orders/me",
+      "GET /api/v1/futures/funding-rate/:x",
+      "GET /api/v1/futures/positions",
+      "GET /api/v1/market/live"
+    ],
+    "grouping": {
+      "options": [
+        "0.1",
+        "0.2",
+        "0.5",
+        "1",
+        "5"
+      ],
+      "firstAskBefore": "85,833.60",
+      "firstAskAfter": "85,835.00",
+      "changed": true
+    },
+    "tabSwitch": {
+      "onTrades": "true",
+      "tapeRendered": true,
+      "back": "true"
+    },
+    "pick": {
+      "row": "Bid 85833.4",
+      "priceField": "85833.4"
+    },
+    "calculator": {
+      "opened": true
+    },
+    "order": {
+      "symbol": "BTC/USDT",
+      "side": "BUY",
+      "type": "LIMIT",
+      "price": "85833.4",
+      "quantity": "0.012",
+      "leverage": 10,
+      "marginType": "ISOLATED",
+      "reduceOnly": false
+    },
+    "pageErrors": []
+  }
+}
