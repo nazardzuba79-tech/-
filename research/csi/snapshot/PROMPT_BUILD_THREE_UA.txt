@@ -1,0 +1,108 @@
+ЗАВДАННЯ ДЛЯ CLAUDE CODE / CODEX
+Працюй в окремому дослідницькому проєкті. Не торкайся біржі VOLTEX, production,
+гаманців, торгових акаунтів чи deployment. Мета — створити три різні композитні
+індикатори крипторинку після перевірки реальних даних:
+CYCLE (місяці—роки): відносна дорожнеча/дешевизна циклу;
+REGIME (тижні—місяці): стан капіталу, потоків та ризику;
+TACTICAL (дні—тижні): перекос позиціонування, насамперед контртрендова гіпотеза.
+Назва «супер» не є критерієм успіху. Критерій — перевірювана додаткова користь
+після витрат, обмежень даних і чесних тестів на відокремленій історії.
+
+0. ПРОЧИТАЙ І ЗАФІКСУЙ СТАН
+README.md, NOTES.md, обидва inputs/*.md, research/RESEARCH_UA.md,
+research/SPEC_AUDIT_UA.md, research/MATHEMATICAL_REDUNDANCY.md,
+catalog/catalog.csv, catalog/selection_metadata.json, catalog/SOURCES.md,
+collectors/README_UA.md, collectors/request_specs.json, evaluation/SUMMARY.md.
+Розпізнай: тут 120 market + 120 onchain candidates, але 0 historical rows.
+Не називай 240 записів у каталозі 240 завантаженими timeseries.
+Збережи read-only snapshot вихідного пакета й запиши git commit/file hashes.
+
+1. СЕРЕДОВИЩЕ І СПРАВЖНІ ДАНІ — ОБОВ’ЯЗКОВИЙ GATE
+Запусти collectors/preflight.py з процесу, де будуть Python і backtest.
+Покажи точний результат кожного запиту. HTTP 200 недостатньо: отримай реальний
+файл, перевір MIME/JSON/schema, dates, units, rows. Лише потім розширюй збір.
+Якщо немає мережі, збережи конкретний blocked-domain/error у RUN_STATE.json,
+виконай доступний аудит коду та повідом потрібний дозвіл; не вигадуй дані,
+не обходь географічні/дозвільні обмеження. Не вимагай плагіна Binance.
+
+Пріоритет: Coin Metrics btc/eth, FRED, Binance spot+funding, Alternative.me,
+DefiLlama; потім short-history derivatives, Farside, CoinGecko. Запитаний
+історичний період — максимально доступний, з pagination до кінця.
+Код колекторів у пакеті не перевірений live: спершу аудит і справжні response
+fixtures. Адаптери, позначені unimplemented, необхідно реалізувати окремо.
+
+Збережи exact SQL і canonical metrics із вкладень; upsert за primary key.
+Raw кожної отриманої API-відповіді — дослівні bytes, manifest, timestamps,
+HTTP status і checksum. Помилки/неотримані метрики теж у collection_log.
+Не підміняй missing значеннями 0. Не інтерполюй, не forward-fill core-series,
+не створюй історію зі screenshots, графіків, статей або пам’яті моделі.
+Безкоштовний доступ не означає необмежену історію або дозвіл на redistribution.
+
+2. ВИРІШИ ВИЯВЛЕНІ ПАСТКИ ДО БУДЬ-ЯКИХ ВИСНОВКІВ
+Збережи date+lag 0/1/8/30 з ТЗ, але додатково перевір publication/vintages.
+Без цього не пиши leakage-free. Weekly/monthly series — у природній частоті.
+Lag 0 daily означає після закриття періоду. Протокол має exact decision cutoff.
+Funding — сума фактичних events, не створені три платежі. Звір interval changes.
+OI USD/кількість контрактів/volume/funding — різні поля. Останній місяць OI
+не видавай за всю історію. Dates повинні описувати період, не download time.
+TVL change не inflow, address не user, exchange transfer не executed sell,
+staking deposit не active stake, MVRV/NUPL не незалежні голоси.
+DXY не DTWEXBGS. Net liquidity приведи до однакових units і явно познач heuristic.
+Coin Metrics catalog не гарантує кожен btc/eth metric. Запиши wanted/obtained.
+Farside blocked — без інших ETF-провайдерів всупереч ТЗ. CoinGecko days=max fail
+не маскуй коротшою історією. Top100 — тільки point-in-time universe з delistings.
+Для зміненого означення новий metric/id; ніколи не маскуй proxy під original.
+
+3. АУДИТ КАТАЛОГУ ТА ОДИНОЧНІ ДОСЛІДЖЕННЯ
+Це каталог кандидатів, не доказовий топ прибутковості. Прочитай source scope.
+Усі unverified_definition / index_only звір із первинною методикою до коду.
+Не вважай загальну сторінку бібліотеки доказом конкретного ефекту.
+Публічні реалізації можна використати після license/version audit; збережи
+авторство, LICENSE/NOTICE, commit і відмінності формул. Невідомі індикатори
+не реалізуй довільно під відомою назвою. Не запускай неперевірені залежності.
+Оціни кожен доступний кандидат окремо: IC 1/7/30/90/180/365 днів, задані зрізи,
+coverage, missingness, release lag, revisions, стійкість напряму та витрати.
+За надто малої історії пиши insufficient evidence, не підбирай гарний зріз.
+Нормалізації лише train-fitted rolling/expanding. Clustering/feature selection
+лише на train. Порахуй фактичну кількість спроб, включно з невдалими.
+
+4. ТРИ СИСТЕМИ — ПІСЛЯ ДАНИХ ТА ПРОТОКОЛУ
+Спочатку pre-register criteria, search budget, splits, purge/embargo, costs,
+primary outcomes та stopping rule. Для трьох горизонтів не використовуй один
+випадковий train/test split. Урахуй overlapping long-horizon targets.
+Спочатку випробуй прості baselines, price-only та onchain-only моделі.
+Звузити пул до приблизно 35–45 робочих кандидатів можна лише за coverage,
+недублюванням і перевірками; це не вимога примусово включити 45 у кожен композит.
+Нехай кожен доданий блок доведе incremental value через ablation на окремих
+даних. Не голосуй усіма 240. Кількість внутрішніх компонентів визначай якістю,
+а не бажанням зробити вигляд складності. Якщо простіше стійкіше — обери простіше.
+Розрізняй score, calibrated probability, risk gate і trade instruction.
+CYCLE valuation не автоматично short; REGIME inflow має бути підтвердженим
+flow, TACTICAL contrarian thesis потребує контролю persistent trends.
+Протестуй walk-forward, фінальний untouched OOS, sensitivities, regimes,
+source dropout і distribution changes. Не оптимізуй після перегляду final OOS,
+називаючи повторний прогін новим blind тестом. Без нескінченного пошуку до profit.
+
+5. РЕАЛІЗАЦІЯ І ПЕРЕВІРКА ПЛАТФОРМИ
+Основна відтворювана Python реалізація, data-quality dashboard, автоматичне
+оновлення тільки реально доступних серій. У UI показувати freshness, coverage,
+missingness і чіткі статуси; не імітувати актуальність застарілих onchain даних.
+Перед Pine зроби FEED_FEASIBILITY.md для кожного входу. Pine не може довільно
+читати будь-який REST API, створення нових Pine Seeds feed недоступне.
+Якщо повна модель не відтворюється у TradingView, випусти її як Python/dashboard
+та окрему reduced Pine версію з іншим статусом, власним backtest і переліком
+втрат входів; не називай їх однаковими. Де дані дозволяють — Strategy/Indicator
+Pine v6 для кожного, parity timestamps/signals, non-repaint, alerts і компіляція.
+Не заявляй успішну TradingView compilation або ринковий backtest без виконання.
+
+6. КРИТЕРІЙ ЗАВЕРШЕННЯ ТА ФАЙЛИ
+Поверни verified data archive (або явні gaps), final catalog/selection reasons,
+all experiments log, source/license manifest, individual + composite metrics,
+trade logs за наявності торгової реалізації, failure analysis, exact configs,
+Python code/tests, feasibility report, справді перевірені платформні файли,
+інструкцію українською та фінальний ZIP. Окремо внесок кожного блоку і порівняння
+з простими моделями. Не видавай unit tests за докази дохідності.
+Зберігай RUN_STATE.json після кожного етапу, checkpoint ZIP після milestones.
+Якщо перевага не підтвердилась — віддай валідний негативний результат і код із
+research-only статусом. Якщо blocked — точний failure і зроблену частину.
+Не закінчуй переказом дослідження; почни з реального network/data gate.

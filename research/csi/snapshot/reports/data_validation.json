@@ -1,0 +1,12 @@
+{
+  "mode": "B",
+  "series_rows": 0,
+  "first_date": null,
+  "last_date": null,
+  "lag_check": "NOT_EVALUATED_NO_DATA",
+  "coverage_check": "NOT_EVALUATED_NO_DATA",
+  "api_parser_live_tests": "NOT_RUN",
+  "market_backtests": "NOT_RUN",
+  "alpha_verified": false,
+  "missing_core_pairs": 73
+}

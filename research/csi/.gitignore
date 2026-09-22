@@ -1,0 +1,5 @@
+# regenerable / oversized local files
+v1/data/csi.db
+v1/data/panel.pkl
+__pycache__/
+.pytest_cache/

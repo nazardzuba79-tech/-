@@ -1,0 +1,11 @@
+﻿source,status,first_date,last_date,rows,message
+coinmetrics,FAIL,,,0,DNS failure in required probe; no HTTP response
+binance_spot,NOT_RUN,,,0,Not attempted in code after Mode B gate
+binance_futures,FAIL,,,0,DNS failure in required probe; no HTTP response
+fred,FAIL,,,0,DNS failure in required probe; no HTTP response
+alternative_me,FAIL,,,0,DNS failure in required probe; no HTTP response
+defillama,NOT_RUN,,,0,Not attempted in code after Mode B gate
+farside,NOT_RUN,,,0,Not attempted in code after Mode B gate
+coingecko,NOT_RUN,,,0,Not attempted in code after Mode B gate
+blockchain_info,NOT_RUN,,,0,Not attempted in code after Mode B gate
+mempool_space,NOT_RUN,,,0,Not attempted in code after Mode B gate

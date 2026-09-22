@@ -1,0 +1,38 @@
+//@version=6
+// CSI TACTICAL_reduced — REDUCED Pine variant. STATUS: NOT_COMPILED_IN_TRADINGVIEW, NOT_BACKTESTED_IN_TV, NOT_PARITY_WITH_PYTHON.
+// Inputs lost vs Python TACTICAL: Fear & Greed, funding, long/short, taker ratio (no equivalent symbols or no history).
+// Kept: RSI14, Bollinger %B, Stochastic %K, CCI20, drawdown from 90d high, perp-spot basis (OKX perp vs spot, 2020+).
+// Pre-registered contrarian signs (- for stretch measures, + for drawdown, - for basis). NOTE: the Python development
+// evaluation did NOT confirm the contrarian thesis at 7 days; this script is a research artefact, not a signal.
+indicator("CSI TACTICAL_reduced (research-only)", overlay=false)
+minHist = input.int(365, "Min history for percentile (days)")
+rsi14  = ta.rsi(close, 14)
+[bbm, bbu, bbl] = ta.bb(close, 20, 2)
+pctb   = (close - bbl) / (bbu - bbl)
+stoch  = ta.stoch(close, high, low, 14)
+cci20  = ta.cci(close, 20)
+dd90   = close / ta.highest(high, 90) - 1
+perp   = request.security("OKX:BTCUSDT.P", "D", close, lookahead=barmerge.lookahead_off)
+spot   = request.security("OKX:BTCUSDT", "D", close, lookahead=barmerge.lookahead_off)
+basis  = perp / spot - 1
+f_pct(src, n) =>
+    cnt = 0
+    below = 0
+    for i = 1 to n
+        if not na(src[i])
+            cnt += 1
+            if src[i] < src
+                below += 1
+    cnt >= minHist ? below / cnt : na
+lb = 5000
+parts = array.from(1 - f_pct(rsi14, lb), 1 - f_pct(pctb, lb), 1 - f_pct(stoch, lb), 1 - f_pct(cci20, lb), f_pct(dd90, lb), 1 - f_pct(basis, lb))
+sum = 0.0
+cnt = 0
+for v in parts
+    if not na(v)
+        sum += v
+        cnt += 1
+score = cnt >= 3 ? sum / cnt : na
+plot(barstate.isconfirmed ? score : na, "TACTICAL_reduced score", color=color.purple)
+hline(0.5)
+alertcondition(score > 0.9, "TACTICAL_reduced oversold-stretch", "TACTICAL_reduced > 0.9 (research-only; contrarian thesis not confirmed)")

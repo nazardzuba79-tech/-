@@ -1,0 +1,51 @@
+fid,name,system,horizon,price,worst_slice,worst_signed_ic,all_sign_ok,full_ic,full_lo,full_hi,full_ci_excl0,n_full,status
+M066,Log power-law residual,cycle,365,cm,full,0.5348,True,-0.5348,-0.7543,-0.2328,True,3455.0,confirmed_dev
+O013,Mcap / thermocap,cycle,365,cm,ex_2020-03_2022-01,0.4202,True,-0.5288,-0.7327,-0.2652,True,4184.0,confirmed_dev
+O081,Exchange supply ratio,cycle,365,cm,ex_2017,0.2591,True,-0.2777,-0.5767,0.1611,False,3904.0,not_confirmed
+O072,Puell Multiple,cycle,365,cm,full,0.2246,True,-0.2246,-0.474,0.0164,False,3820.0,not_confirmed
+N001,ROI 1y (CM),cycle,365,cm,ex_2017,0.217,True,-0.2238,-0.535,0.0932,False,3819.0,not_confirmed
+M058,2Y MA multiplier,cycle,365,cm,full,0.1597,True,-0.1597,-0.5061,0.1577,False,3455.0,not_confirmed
+O059,Fee share of issuance+fees,cycle,365,cm,ex_2020-03_2022-01,0.155,True,-0.2009,-0.5281,0.2213,False,4185.0,not_confirmed
+O004,MVRV Z causal,cycle,365,cm,full,0.1542,True,-0.1542,-0.4598,0.1757,False,3820.0,not_confirmed
+O011,Realized cap 90d change,cycle,365,cm,ex_2017,-0.0515,False,-0.0292,-0.2763,0.195,False,4094.0,not_confirmed
+N002,"Mcap per active address (log, z 365)",cycle,365,cm,ex_2020-03_2022-01,-0.0803,False,-0.0584,-0.3287,0.1817,False,4003.0,not_confirmed
+O067,Hash ribbons,cycle,365,cm,ex_2020-03_2022-01,-0.1266,False,-0.0857,-0.3756,0.2232,False,4185.0,not_confirmed
+M057,Mayer Multiple,cycle,365,cm,ex_2020-03_2022-01,-0.1288,False,0.0473,-0.204,0.2334,False,3985.0,not_confirmed
+O003,MVRV,cycle,365,cm,ex_2020-03_2022-01,-0.1356,False,-0.0097,-0.3014,0.2128,False,4184.0,not_confirmed
+M059,200W MA distance,cycle,365,,,,False,,,,False,,insufficient
+M065,Four-year return,cycle,365,,,,False,,,,False,,insufficient
+O080,Exchange balance 30d change,regime,30,cm,ex_2017,0.1469,True,-0.1591,-0.2696,-0.0492,True,4209.0,confirmed_dev
+O079,Exchange netflow 30d / exch supply,regime,30,cm,ex_2017,0.146,True,-0.1582,-0.2683,-0.0153,True,4210.0,confirmed_dev
+O046,Active addresses 30d growth,regime,30,cm,full,0.1422,True,0.1422,0.0514,0.233,True,4520.0,confirmed_dev
+M106,Broad dollar 30d change,regime,30,cm,ex_2017,0.1281,True,-0.1292,-0.2184,-0.0289,True,4520.0,confirmed_dev
+N004,Spot volume USD 30d change (CM reported),regime,30,cm,full,0.0992,True,0.0992,0.0198,0.1889,True,4483.0,confirmed_dev
+O049,Tx count 30d growth,regime,30,cm,full,0.0926,True,0.0926,-0.0011,0.1887,False,4520.0,not_confirmed
+M015,TS momentum 90d,regime,30,cm,ex_2017,0.0871,True,0.1175,-0.0093,0.2395,False,4429.0,not_confirmed
+M115,Net liquidity heuristic 13w change,regime,30,cm,ex_2017,0.085,True,0.095,-0.0226,0.2211,False,4520.0,not_confirmed
+O102,Stablecoin mcap 30d change,regime,30,cm,ex_2020-03_2022-01,0.0783,True,0.1347,-0.0305,0.2988,False,1798.0,not_confirmed
+M001,SMA200 distance,regime,30,cm,ex_2017,0.0715,True,0.1111,-0.0076,0.2294,False,4320.0,not_confirmed
+M107,Real 10y yield 30d change,regime,30,cm,full,0.0661,True,-0.0661,-0.1592,0.0254,False,4520.0,not_confirmed
+O066,Hash rate 30d growth,regime,30,cm,ex_2017,0.0591,True,0.0662,-0.0456,0.1936,False,4520.0,not_confirmed
+N003,Realized vol 30d,regime,30,cm,full,0.0405,True,-0.0405,-0.1564,0.0675,False,4489.0,not_confirmed
+O103,Stablecoin supply ratio,regime,30,cm,ex_2017,0.0119,True,-0.0314,-0.2041,0.1572,False,1828.0,not_confirmed
+M109,VIX level,regime,30,cm,ex_2017,-0.0021,False,-0.0682,-0.1601,0.0433,False,4520.0,not_confirmed
+M105,M2 yoy,regime,30,cm,ex_2020-03_2022-01,-0.0032,False,0.0245,-0.0818,0.1532,False,4520.0,not_confirmed
+O115,DEX volume 30d change,regime,30,cm,full,-0.0109,False,-0.0109,-0.1157,0.0826,False,3102.0,not_confirmed
+M110,S&P 500 30d return,regime,30,cm,full,-0.0178,False,-0.0178,-0.1429,0.1237,False,2232.0,not_confirmed
+M096,Fear & Greed level,regime,30,cm,full,-0.0831,False,0.0831,-0.1057,0.243,False,1765.0,not_confirmed
+O113,TVL 30d change,regime,30,cm,ex_2020-03_2022-01,-0.0892,False,-0.029,-0.2047,0.1181,False,1753.0,not_confirmed
+M088,ETH/BTC 30d change,regime,30,cm,ex_2017,-0.1389,False,-0.1309,-0.2407,0.0133,False,2642.0,not_confirmed
+M108,HY OAS 30d change,regime,30,,,,False,,,,False,,insufficient
+M117,US spot ETF net flow 30d sum (US$m),regime,30,,,,False,,,,False,,insufficient
+M068,Perp-spot basis (OKX),tactical,7,okx,full,0.0126,True,-0.0126,-0.0894,0.0665,False,1089.0,not_confirmed
+N005,5d return z (60d),tactical,7,okx,full,-0.004,False,0.004,-0.069,0.0725,False,1775.0,not_confirmed
+M018,Stochastic %K 14,tactical,7,okx,full,-0.0422,False,0.0422,-0.047,0.1121,False,1796.0,not_confirmed
+M096t,Fear & Greed level (tactical),tactical,7,okx,full,-0.044,False,0.044,-0.0492,0.1372,False,1788.0,not_confirmed
+N006,SMA20 distance,tactical,7,okx,full,-0.0455,False,0.0455,-0.0529,0.1319,False,1790.0,not_confirmed
+M040,Bollinger %B 20,tactical,7,okx,full,-0.051,False,0.051,-0.046,0.112,False,1790.0,not_confirmed
+M017,RSI 14,tactical,7,okx,full,-0.07,False,0.07,-0.0312,0.1432,False,1795.0,not_confirmed
+M021,CCI 20,tactical,7,okx,full,-0.0748,False,0.0748,-0.0167,0.1482,False,1771.0,not_confirmed
+M044,Drawdown from 90d high,tactical,7,okx,since_2022,-0.2329,False,0.0386,-0.0624,0.1263,False,1720.0,not_confirmed
+M067,Funding daily sum (OKX),tactical,7,,,,False,,,,False,,insufficient
+N007,OKX long/short account ratio,tactical,7,,,,False,,,,False,,insufficient
+N008,OKX taker buy/sell ratio,tactical,7,,,,False,,,,False,,insufficient

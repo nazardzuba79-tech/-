@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "mode": "B",
+  "updated_at_utc": "2026-09-21T12:57:09.277158+00:00",
+  "research_catalog": "completed_with_explicit_definition_gaps",
+  "candidates": 240,
+  "market_candidates": 120,
+  "onchain_candidates": 120,
+  "database_rows": 0,
+  "market_tests": "not_run",
+  "individual_IC": "not_run",
+  "composites": "not_built_by_design",
+  "pine": "not_built",
+  "network": "DNS_failure_all_four_required_probes",
+  "next_required_gate": "Valid real runtime response + historical observations; audit original specifications before modeling",
+  "ready_for_live_trading": false,
+  "packaged_at_utc": "2026-09-21T13:01:40.427253+00:00",
+  "artifact_state": "RESEARCH_PACK_READY; DATA_COLLECTION_BLOCKED; NO_COMPOSITES_BUILT",
+  "structural_checks": {
+    "passed": 21,
+    "failed": 0
+  }
+}

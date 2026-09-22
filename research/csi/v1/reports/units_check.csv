@@ -1,0 +1,38 @@
+source,metric,asset,unit,note,last_date,last_value
+fred,WALCL,,USD millions,Wednesday level; weekly,2026-09-16,6746548.0
+fred,WTREGEN,,USD millions,"weekly AVERAGE, not Wednesday level",2026-09-16,877028.0
+fred,RRPONTSYD,,USD billions,daily; x1000 to millions for net liquidity heuristic,2026-09-21,0.582
+fred,WRESBAL,,USD millions,weekly,2026-09-16,3013794.0
+fred,M2SL,,USD billions,"monthly, seasonally adjusted",2026-07-01,23218.0
+fred,DTWEXBGS,,index,"broad trade-weighted dollar, NOT ICE DXY",2026-09-18,119.5133
+fred,DFII10,,percent,10y TIPS real yield,2026-09-18,2.68
+fred,BAMLH0A0HYM2,,percent,FRED CSV delivered only from 2023-09-22 (licence window),2026-09-18,2.68
+fred,VIXCLS,,index,,2026-09-18,14.81
+fred,SP500,,index,FRED delivers last 10y only,2026-09-21,7764.7
+coinmetrics,PriceUSD,btc,USD,end-of-day reference rate,2026-09-21,86505.297748235
+coinmetrics,CapMrktCurUSD,btc,USD,,2026-09-21,1737682294733.746
+coinmetrics,CapMVRVCur,btc,ratio,,2026-09-21,1.6209607997541753
+coinmetrics,SplyCur,btc,BTC,,2026-09-21,20087582.37895552
+coinmetrics,SplyExNtv,btc,BTC,supply on labelled exchanges; label coverage incomplete,2026-09-21,2719494.22011218
+coinmetrics,FlowInExNtv,btc,BTC/day,,2026-09-21,39392.93389089
+coinmetrics,FlowOutExNtv,btc,BTC/day,,2026-09-21,43259.91376965
+coinmetrics,IssTotUSD,btc,USD/day,,2026-09-21,40279029.26402192
+coinmetrics,FeeTotNtv,btc,BTC/day,native units; FeeTotUSD not in Community,2026-09-21,3.4729664
+coinmetrics,HashRate,btc,TH/s (CM units),,2026-09-21,983309095.4339658
+blockchain_info,DiffMean,btc,difficulty,fallback; blockchain.com daily difficulty vs CM mean difficulty,2026-09-21,132757073449488.0
+blockchain_info,FeeTotUSD,btc,USD/day,fallback; blockchain.com transaction-fees-usd,2026-09-21,314900.80835577
+blockchain_info,RevUSD,btc,USD/day,fallback; blockchain.com miners-revenue,2026-09-21,42096485.18335576
+defillama,stablecoin_mcap,,USD,totalCirculatingUSD.peggedUSD,2026-09-21,310176316366.0
+defillama,total_tvl,,USD,,2026-09-21,94232937404.0
+defillama,dex_volume_usd,,USD/day,all listed protocols,2026-09-21,11919672294.280005
+defillama,protocol_fees_usd,,USD/day,all listed protocols,2026-09-21,84570961.76999998
+okx,spot_close,btcusdt,USDT,"fallback venue, 1Dutc",2026-09-21,86617.8
+okx,spot_volume,btcusdt,BTC,base volume,2026-09-21,12440.58479602
+okx,perp_spot_basis,btcusdt,ratio,perp_close/spot_close-1 derived,2026-09-21,-0.00033134067131690426
+okx,funding_rate_daily,btcusdt,rate/day,sum of actual settlements,2026-09-21,0.00021282909334270002
+okx,okx_oi_usd_all_contracts,btc,USD,"all BTC contracts on OKX (rubik), not one symbol",2026-09-21,3393873876.7162
+okx,okx_long_short_account_ratio,btc,ratio,,2026-09-21,0.91
+okx,okx_taker_buy_usd,btc,USD/day,,2026-09-21,5826466929.2779
+farside,etf_flow_musd,btc,USD millions/day,Total column; parentheses=negative,2026-09-21,617.6
+farside,etf_flow_musd,eth,USD millions/day,,2026-09-21,147.1
+alternative_me,fng,,index 0-100,,2026-09-21,70.0

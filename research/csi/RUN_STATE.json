@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "agent": "Claude Code (Fable 5.1) — executor; Codex not involved in this run",
+  "updated_at_utc": "2026-09-22T03:45:00+00:00",
+  "mode": "A_DATA_OBTAINED",
+  "snapshot": {"zip_sha256": "afbd0761ca1e8141aef22adae0689da6e0e7292d3889de4473c83941fa1a6ce6", "files_verified": 59, "mismatches": 0, "path": "research/csi/snapshot"},
+  "stages": {
+    "0_snapshot_and_state": "done",
+    "1_network_data_gate": "done — preflight 200/200/451/200; collected coinmetrics, fred, alternative_me, defillama, okx(fallback), blockchain_info(fallback), farside; blocked: binance 451, bybit 403, coingecko 401/429",
+    "2_validation": "done — lag_check PASS, 435259 rows, 114 series, 73 canonical pairs: 37 primary + 11 fallback + 25 missing",
+    "3_catalog_audit_and_individual_ic": "done — 51 features, 6 horizons, 4 slices, block bootstrap; 240 catalogue ids mapped to run status",
+    "4_preregistration_and_systems": "done — CYCLE confirmed=1 component (dev IC 0.43, holdout insufficient N_eff 2.6); REGIME confirmed=4 (dev 0.17, holdout -0.12 sign reversal); TACTICAL confirmed=0 (contrarian thesis rejected)",
+    "5_platform": "done — dashboard.html, FEED_FEASIBILITY.md, 3 reduced Pine v6 files NOT_COMPILED, 13 unit tests pass",
+    "6_package": "done — ZIP in research/csi/dist, handoff appended, pushed to claude/intelligent-mendel-mlpslf"
+  },
+  "database_rows": 435259, "series_count": 114, "lag_check": "PASS",
+  "blocked": {"binance": "HTTP 451 restricted location", "bybit": "HTTP 403 CloudFront country block", "coingecko_market_chart_days_max": "HTTP 401 after 429", "coinmetrics_non_community": ["CapRealUSD", "SplyAct1yr", "SplyActEver", "TxTfrValAdjUSD", "FeeTotUSD", "RevUSD", "DiffMean", "NVTAdj90", "VtyDayRet30d"]},
+  "short_history": {"okx_funding_days": 97, "okx_oi_longshort_days": 180, "okx_taker_days": 72, "farside_btc_from": "2024-01-11", "farside_eth_from": "2024-07-23"},
+  "protocol": {"preregistration": "v1/docs/PREREGISTRATION.md", "features_sha256": "see v1/docs/PREREGISTRATION_HASH.txt", "amendments_logged": 2, "experiments_logged": 6, "holdout_opened_times": 1},
+  "systems": {
+    "cycle": {"status": "research_only_not_confirmed", "confirmed_components": ["M066"], "dev_ic": 0.434, "holdout_ic": 0.878, "holdout_status": "insufficient (N_eff 2.6)"},
+    "regime": {"status": "negative_result", "confirmed_components": ["O080", "M106", "O046", "N004"], "dev_ic": 0.174, "holdout_ic": -0.122},
+    "tactical": {"status": "negative_result", "confirmed_components": [], "exploratory_dev_ic": -0.072, "holdout_ic": 0.000}
+  },
+  "pine": "3 reduced scripts written; NOT compiled in TradingView; no parity claim",
+  "ready_for_live_trading": false,
+  "unresolved": ["ETH systems", "66 computable catalogue candidates not implemented", "FRED/Coin Metrics vintage audit", "TradingView compilation of reduced Pine", "post-hoc hypotheses need separate pre-registration"]
+}

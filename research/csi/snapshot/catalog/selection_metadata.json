@@ -1,0 +1,3828 @@
+[
+  {
+    "id": "M001",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Sma"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M002",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Ema"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M003",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Kama"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M004",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Hma"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M005",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Macd"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M006",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Adx"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M007",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Aroon"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M008",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Ichimoku"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M009",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Vortex"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M010",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_SuperTrend"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M011",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_ParabolicSar"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M012",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Donchian"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M013",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Keltner"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M014",
+    "family": "trend",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M015",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "TSMOM"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M016",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Sma"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M017",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Rsi"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M018",
+    "family": "range_position",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Stoch"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M019",
+    "family": "range_position",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_WilliamsR"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M020",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Cmo"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M021",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Cci"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M022",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "TALIB"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M023",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "TALIB"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M024",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Awesome"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M025",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Trix"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M026",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Ultimate"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M027",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "TALIB"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M028",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Stc"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M029",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "TALIB"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M030",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "TALIB"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M031",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "TALIB"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M032",
+    "family": "momentum",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "TALIB"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M033",
+    "family": "true_range",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Atr"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M034",
+    "family": "true_range",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Atr"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M035",
+    "family": "volatility",
+    "kind": "native",
+    "definition_verification": "unverified_provider_definition",
+    "source_ids": [
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "index_only_not_exact_methodology_or_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M036",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M037",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M038",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M039",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_BollingerBands"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M040",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_BollingerBands"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M041",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M042",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Chop"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M043",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_UlcerIndex"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M044",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M045",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M046",
+    "family": "volatility",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M047",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Vwap"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M048",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Obv"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M049",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Cmf"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M050",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Adl"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M051",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_Mfi"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M052",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_ForceIndex"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M053",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M054",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M055",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M056",
+    "family": "volume_liquidity",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "SI_INDEX",
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M057",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M058",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M059",
+    "family": "price_trend",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M060",
+    "family": "cycle_controversial",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M061",
+    "family": "cycle_controversial",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M062",
+    "family": "cycle_controversial",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M063",
+    "family": "cycle_controversial",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M064",
+    "family": "cycle_controversial",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M065",
+    "family": "cycle_controversial",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M066",
+    "family": "cycle_controversial",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "SI_Sma",
+      "BITBO_PI",
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M067",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M068",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M069",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M070",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M071",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M072",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M073",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M074",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M075",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M076",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M077",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M078",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M079",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M080",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M081",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M082",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M083",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M084",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M085",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M086",
+    "family": "derivatives",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "BINANCE",
+      "DERIBIT"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M087",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M088",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M089",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M090",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M091",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M092",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M093",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M094",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M095",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M096",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M097",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M098",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M099",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M100",
+    "family": "breadth_sentiment",
+    "kind": "derived",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "CG_HISTORY",
+      "FNG"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M101",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_WALCL"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M102",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_WTREGEN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M103",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_RRPONTSYD"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M104",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_WRESBAL"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M105",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_M2SL"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M106",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_DTWEXBGS"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M107",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_DFII10"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M108",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_BAMLH0A0HYM2"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M109",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_VIXCLS"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M110",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_SP500"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M111",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_T10Y2Y"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M112",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_DFF"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M113",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_T10YIE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M114",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "operational_definition",
+    "source_ids": [
+      "FRED_NFCI"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M115",
+    "family": "macro_institutional",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "FRED_WALCL",
+      "FRED_WTREGEN",
+      "FRED_RRPONTSYD"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M116",
+    "family": "macro_institutional",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "FRED_WALCL",
+      "FRED_WTREGEN",
+      "FRED_RRPONTSYD",
+      "FARSIDE_BTC",
+      "FARSIDE_ETH"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M117",
+    "family": "macro_institutional",
+    "kind": "native",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "FARSIDE_BTC",
+      "FARSIDE_ETH"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M118",
+    "family": "macro_institutional",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "FRED_WALCL",
+      "FRED_WTREGEN",
+      "FRED_RRPONTSYD",
+      "FARSIDE_BTC",
+      "FARSIDE_ETH"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M119",
+    "family": "macro_institutional",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "FRED_WALCL",
+      "FRED_WTREGEN",
+      "FRED_RRPONTSYD",
+      "FARSIDE_BTC",
+      "FARSIDE_ETH"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "M120",
+    "family": "macro_institutional",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "FRED_WALCL",
+      "FRED_WTREGEN",
+      "FRED_RRPONTSYD",
+      "FARSIDE_BTC",
+      "FARSIDE_ETH"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O001",
+    "family": "valuation",
+    "kind": "native",
+    "definition_verification": "provider_definition_opened",
+    "source_ids": [
+      "CM_RC"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O002",
+    "family": "realized_valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O003",
+    "family": "realized_valuation",
+    "kind": "native",
+    "definition_verification": "provider_definition_opened",
+    "source_ids": [
+      "CM_MVRV"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O004",
+    "family": "realized_valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "BITBO_MVRVZ",
+      "CM_MVRV"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O005",
+    "family": "realized_valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O006",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O007",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O008",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O009",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O010",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O011",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O012",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O013",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O014",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O015",
+    "family": "valuation",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_RC",
+      "CM_MVRV",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O016",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O017",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O018",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O019",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O020",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O021",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O022",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O023",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O024",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O025",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O026",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O027",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "unverified_definition",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O028",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O029",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O030",
+    "family": "spending_age",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_SOPR",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O031",
+    "family": "supply_holders",
+    "kind": "native",
+    "definition_verification": "provider_definition_opened",
+    "source_ids": [
+      "CM_SUPPLY"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O032",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O033",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O034",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O035",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O036",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O037",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O038",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O039",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O040",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O041",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O042",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O043",
+    "family": "protocol_supply",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O044",
+    "family": "protocol_supply",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O045",
+    "family": "supply_holders",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_SUPPLY",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O046",
+    "family": "network_activity",
+    "kind": "native",
+    "definition_verification": "provider_definition_opened",
+    "source_ids": [
+      "CM_ACTIVE"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O047",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_ACTIVE",
+      "CM_TX",
+      "CM_NVT90",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O048",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_BAL"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O049",
+    "family": "network_activity",
+    "kind": "native",
+    "definition_verification": "provider_definition_opened",
+    "source_ids": [
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O050",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_ACTIVE",
+      "CM_TX",
+      "CM_NVT90",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O051",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_ACTIVE",
+      "CM_TX",
+      "CM_NVT90",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O052",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_ACTIVE",
+      "CM_TX",
+      "CM_NVT90",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O053",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_ACTIVE",
+      "CM_TX",
+      "CM_NVT90",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O054",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_ACTIVE",
+      "CM_TX",
+      "CM_NVT90",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O055",
+    "family": "network_activity",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_ACTIVE",
+      "CM_TX",
+      "CM_NVT90",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O056",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O057",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O058",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O059",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O060",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O061",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O062",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O063",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O064",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O065",
+    "family": "fees_blockspace",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_INDEX",
+      "CM_TX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O066",
+    "family": "mining",
+    "kind": "native",
+    "definition_verification": "provider_definition_opened",
+    "source_ids": [
+      "CM_HASH"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O067",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O068",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O069",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O070",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O071",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O072",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O073",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O074",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O075",
+    "family": "mining",
+    "kind": "derived",
+    "definition_verification": "index_only",
+    "source_ids": [
+      "CM_HASH",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O076",
+    "family": "exchange_inventory",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O077",
+    "family": "exchange_flows",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O078",
+    "family": "exchange_flows",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O079",
+    "family": "exchange_inventory",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O080",
+    "family": "exchange_inventory",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O081",
+    "family": "exchange_flows",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O082",
+    "family": "exchange_flows",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O083",
+    "family": "exchange_flows",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O084",
+    "family": "exchange_flows",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O085",
+    "family": "exchange_flows",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "CM_EXBAL",
+      "CM_EXIN"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O086",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O087",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O088",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O089",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O090",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O091",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O092",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O093",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O094",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O095",
+    "family": "protocol_supply",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O096",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O097",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O098",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O099",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O100",
+    "family": "ethereum_pos",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "ETH_STAKE",
+      "EIP1559",
+      "EIP4844",
+      "CM_INDEX"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O101",
+    "family": "stablecoin_stock",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O102",
+    "family": "stablecoins",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O103",
+    "family": "stablecoins",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O104",
+    "family": "stablecoins",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O105",
+    "family": "stablecoins",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O106",
+    "family": "stablecoins",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O107",
+    "family": "stablecoin_geography",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O108",
+    "family": "stablecoin_geography",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O109",
+    "family": "stablecoin_geography",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O110",
+    "family": "stablecoin_geography",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O111",
+    "family": "stablecoin_geography",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O112",
+    "family": "stablecoin_geography",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O113",
+    "family": "defi",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O114",
+    "family": "defi",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O115",
+    "family": "defi",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O116",
+    "family": "protocol_economics_nested",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O117",
+    "family": "protocol_economics_nested",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O118",
+    "family": "protocol_economics_nested",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O119",
+    "family": "defi",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  },
+  {
+    "id": "O120",
+    "family": "defi",
+    "kind": "derived",
+    "definition_verification": "research_candidate",
+    "source_ids": [
+      "LLAMA"
+    ],
+    "source_pages_opened": true,
+    "source_coverage": "definition_or_input_only_not_alpha",
+    "ready_for_live_trading": false,
+    "available_history_confirmed": false,
+    "cost_interpretation": "free = запланований безключовий шлях, не підтверджена успішна колекція; freemium = доступ/entitlement ще треба встановити; node/compute costs окремо",
+    "formulas_are_not_executable_code": true
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "total_candidates": 240,
+  "by_group": {
+    "market": 120,
+    "onchain": 120
+  },
+  "verdicts": {
+    "keep_candidate": 142,
+    "weak": 33,
+    "untestable": 63,
+    "reject": 2
+  },
+  "by_group_verdict": {
+    "market": {
+      "keep_candidate": 74,
+      "weak": 19,
+      "untestable": 25,
+      "reject": 2
+    },
+    "onchain": {
+      "keep_candidate": 68,
+      "weak": 14,
+      "untestable": 38
+    }
+  },
+  "source_records": 85,
+  "source_status": {
+    "opened": 81,
+    "search_excerpt_only_open_failed": 2,
+    "prior_conversation_only": 1,
+    "opened_shell_only": 1
+  },
+  "all_collected_no": true,
+  "historical_rows": 0
+}

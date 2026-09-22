@@ -1,0 +1,177 @@
+<!doctype html><html lang="uk"><head><meta charset="utf-8"><title>CSI data quality</title><style>body{font-family:system-ui;margin:24px;background:#fff;color:#111}table{border-collapse:collapse;font-size:13px}td,th{border:1px solid #ccc;padding:3px 6px}.OK{background:#d8f5d8}.STALE{background:#ffe0b3}.SHORT_HISTORY{background:#fff3b0}.ENDED{background:#e0e0e0}h2{margin-top:32px}.warn{color:#a00}</style></head><body>
+<h1>CSI v1 — стан даних</h1><p>Згенеровано 2026-09-22T03:39:03.919760+00:00 (UTC). Це статичний знімок; цифри не оновлюються без повторного запуску <code>python -m csi.collect --source all &amp;&amp; python -m csi.dashboard</code>.</p>
+<p class="warn">Research-only. Жодна серія не є торговим сигналом. Статуси STALE означають, що останнє спостереження старіше за очікувану каденцію + контрактний лаг; такі серії не слід показувати як актуальні.</p>
+<h2>Системи (score — не інструкція до угоди)</h2><table><tr><th>system</th><th>variant</th><th>state</th><th>dev</th><th>holdout</th><th>last</th></tr>
+<tr><td>cycle</td><td>confirmed</td><td>1 components</td><td>dev IC 0.434</td><td>holdout IC 0.878</td><td>last score 0.695 @ 2026-09-21</td></tr>
+<tr><td>cycle</td><td>exploratory</td><td>5 components</td><td>dev IC -0.026</td><td>holdout IC -0.029</td><td>last score 0.521 @ 2026-09-21</td></tr>
+<tr><td>regime</td><td>confirmed</td><td>4 components</td><td>dev IC 0.174</td><td>holdout IC -0.122</td><td>last score 0.387 @ 2026-09-21</td></tr>
+<tr><td>regime</td><td>exploratory</td><td>19 components</td><td>dev IC 0.168</td><td>holdout IC -0.222</td><td>last score 0.459 @ 2026-09-21</td></tr>
+<tr><td>tactical</td><td>confirmed</td><td>EMPTY: no component passed the pre-registered confirmation rule</td><td></td><td></td><td></td></tr>
+<tr><td>tactical</td><td>exploratory</td><td>4 components</td><td>dev IC -0.072</td><td>holdout IC 0.000</td><td>last score 0.268 @ 2026-09-21</td></tr>
+</table><h2>Покриття, свіжість, пропуски</h2><table><tr><th>source</th><th>metric</th><th>asset</th><th>first</th><th>last</th><th>rows</th><th>missing %</th><th>lag</th><th>days since last</th><th>status</th></tr>
+<tr class="OK"><td>alternative_me</td><td>fng</td><td></td><td>2018-02-01</td><td>2026-09-21</td><td>3151</td><td>0.1</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>blockchain_info</td><td>DiffMean</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6461</td><td>0.2</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>blockchain_info</td><td>FeeTotUSD</td><td>btc</td><td>2009-01-17</td><td>2026-09-21</td><td>6450</td><td>0.1</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>blockchain_info</td><td>RevUSD</td><td>btc</td><td>2009-01-17</td><td>2026-09-21</td><td>6450</td><td>0.1</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>AdrActCnt</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>AdrActCnt</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>AdrBalCnt</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>AdrBalCnt</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>BlkCnt</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>BlkCnt</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>CapMVRVCur</td><td>btc</td><td>2010-07-18</td><td>2026-09-21</td><td>5910</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>CapMVRVCur</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>CapMrktCurUSD</td><td>btc</td><td>2010-07-18</td><td>2026-09-21</td><td>5910</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>CapMrktCurUSD</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FeeTotNtv</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FeeTotNtv</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowInExNtv</td><td>btc</td><td>2011-04-24</td><td>2026-09-21</td><td>5630</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowInExNtv</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowInExUSD</td><td>btc</td><td>2011-04-24</td><td>2026-09-21</td><td>5630</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowInExUSD</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowOutExNtv</td><td>btc</td><td>2011-04-24</td><td>2026-09-21</td><td>5630</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowOutExNtv</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowOutExUSD</td><td>btc</td><td>2011-04-24</td><td>2026-09-21</td><td>5630</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>FlowOutExUSD</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>HashRate</td><td>btc</td><td>2009-01-09</td><td>2026-09-21</td><td>6465</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="ENDED"><td>coinmetrics</td><td>HashRate</td><td>eth</td><td>2015-07-30</td><td>2022-09-14</td><td>2604</td><td>0.0</td><td>1</td><td>1469</td><td>ENDED (PoW ended 2022-09-15)</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>IssTotNtv</td><td>btc</td><td>2009-01-09</td><td>2026-09-21</td><td>6465</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>IssTotNtv</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>IssTotUSD</td><td>btc</td><td>2010-07-18</td><td>2026-09-21</td><td>5910</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>IssTotUSD</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>PriceBTC</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>PriceBTC</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>PriceUSD</td><td>btc</td><td>2010-07-18</td><td>2026-09-21</td><td>5910</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>PriceUSD</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>ROI1yr</td><td>btc</td><td>2011-07-18</td><td>2026-09-21</td><td>5545</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>ROI1yr</td><td>eth</td><td>2016-08-07</td><td>2026-09-21</td><td>3698</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>ROI30d</td><td>btc</td><td>2010-08-17</td><td>2026-09-21</td><td>5880</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>ROI30d</td><td>eth</td><td>2015-09-07</td><td>2026-09-21</td><td>4033</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>SplyCur</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>SplyCur</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>SplyExNtv</td><td>btc</td><td>2011-04-24</td><td>2026-09-21</td><td>5630</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>SplyExNtv</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>SplyExUSD</td><td>btc</td><td>2011-04-24</td><td>2026-09-21</td><td>5630</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>SplyExUSD</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>TxCnt</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>TxCnt</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>TxTfrCnt</td><td>btc</td><td>2009-01-03</td><td>2026-09-21</td><td>6471</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>TxTfrCnt</td><td>eth</td><td>2015-07-30</td><td>2026-09-21</td><td>4072</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>volume_reported_spot_usd_1d</td><td>btc</td><td>2010-07-18</td><td>2026-09-21</td><td>5910</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>coinmetrics</td><td>volume_reported_spot_usd_1d</td><td>eth</td><td>2015-08-08</td><td>2026-09-21</td><td>4063</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>dex_volume_usd</td><td></td><td>2014-02-17</td><td>2026-09-21</td><td>4600</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>protocol_fees_usd</td><td></td><td>2018-03-26</td><td>2026-09-21</td><td>3102</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>stablecoin_mcap</td><td></td><td>2017-11-29</td><td>2026-09-21</td><td>3219</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>stablecoin_mcap_arbitrum</td><td></td><td>2021-06-25</td><td>2026-09-21</td><td>1915</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>stablecoin_mcap_base</td><td></td><td>2023-08-15</td><td>2026-09-21</td><td>1134</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>stablecoin_mcap_bsc</td><td></td><td>2020-08-29</td><td>2026-09-21</td><td>2164</td><td>2.3</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>stablecoin_mcap_ethereum</td><td></td><td>2017-11-29</td><td>2026-09-21</td><td>3219</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>stablecoin_mcap_solana</td><td></td><td>2021-09-10</td><td>2026-09-21</td><td>1595</td><td>13.2</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>stablecoin_mcap_tron</td><td></td><td>2019-04-16</td><td>2026-09-21</td><td>2716</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>defillama</td><td>total_tvl</td><td></td><td>2017-09-27</td><td>2026-09-21</td><td>3282</td><td>0.0</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="SHORT_HISTORY"><td>farside</td><td>etf_flow_musd</td><td>btc</td><td>2024-01-11</td><td>2026-09-21</td><td>691</td><td>29.8</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>farside</td><td>etf_flow_musd</td><td>eth</td><td>2024-07-23</td><td>2026-09-21</td><td>553</td><td>30.1</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="OK"><td>fred</td><td>BAMLH0A0HYM2</td><td></td><td>2023-09-22</td><td>2026-09-18</td><td>785</td><td>28.2</td><td>1</td><td>4</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>DFF</td><td></td><td>1954-07-01</td><td>2026-09-18</td><td>26378</td><td>0.0</td><td>1</td><td>4</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>DFII10</td><td></td><td>2003-01-02</td><td>2026-09-18</td><td>5933</td><td>31.5</td><td>1</td><td>4</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>DTWEXBGS</td><td></td><td>2006-01-02</td><td>2026-09-18</td><td>5193</td><td>31.4</td><td>1</td><td>4</td><td>OK</td></tr>
+<tr class="STALE"><td>fred</td><td>M2SL</td><td></td><td>1959-01-01</td><td>2026-07-01</td><td>811</td><td>96.7</td><td>30</td><td>83</td><td>STALE (83d)</td></tr>
+<tr class="STALE"><td>fred</td><td>NFCI</td><td></td><td>1971-01-08</td><td>2026-09-11</td><td>2906</td><td>85.7</td><td>1</td><td>11</td><td>STALE (11d)</td></tr>
+<tr class="OK"><td>fred</td><td>RRPONTSYD</td><td></td><td>2003-02-07</td><td>2026-09-21</td><td>3330</td><td>61.4</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>SP500</td><td></td><td>2016-09-22</td><td>2026-09-21</td><td>2512</td><td>31.2</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>T10Y2Y</td><td></td><td>1976-06-01</td><td>2026-09-21</td><td>12573</td><td>31.6</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>T10YIE</td><td></td><td>2003-01-02</td><td>2026-09-21</td><td>5934</td><td>31.5</td><td>1</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>VIXCLS</td><td></td><td>1990-01-02</td><td>2026-09-18</td><td>9277</td><td>30.8</td><td>1</td><td>4</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>WALCL</td><td></td><td>2002-12-18</td><td>2026-09-16</td><td>1240</td><td>85.7</td><td>8</td><td>6</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>WRESBAL</td><td></td><td>2002-12-18</td><td>2026-09-16</td><td>1240</td><td>85.7</td><td>8</td><td>6</td><td>OK</td></tr>
+<tr class="OK"><td>fred</td><td>WTREGEN</td><td></td><td>2002-12-18</td><td>2026-09-16</td><td>1240</td><td>85.7</td><td>8</td><td>6</td><td>OK</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>funding_rate_daily</td><td>btcusdt</td><td>2026-06-17</td><td>2026-09-21</td><td>97</td><td>0.0</td><td>0</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>funding_rate_daily</td><td>ethusdt</td><td>2026-06-17</td><td>2026-09-21</td><td>97</td><td>0.0</td><td>0</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_contract_volume_usd</td><td>btc</td><td>2026-03-26</td><td>2026-09-21</td><td>180</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_contract_volume_usd</td><td>eth</td><td>2026-03-26</td><td>2026-09-21</td><td>180</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_long_short_account_ratio</td><td>btc</td><td>2026-03-26</td><td>2026-09-21</td><td>180</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_long_short_account_ratio</td><td>eth</td><td>2026-03-26</td><td>2026-09-21</td><td>180</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_oi_usd_all_contracts</td><td>btc</td><td>2026-03-26</td><td>2026-09-21</td><td>180</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_oi_usd_all_contracts</td><td>eth</td><td>2026-03-26</td><td>2026-09-21</td><td>180</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_taker_buy_usd</td><td>btc</td><td>2026-07-12</td><td>2026-09-21</td><td>72</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_taker_buy_usd</td><td>eth</td><td>2026-07-12</td><td>2026-09-21</td><td>72</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_taker_sell_usd</td><td>btc</td><td>2026-07-12</td><td>2026-09-21</td><td>72</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="SHORT_HISTORY"><td>okx</td><td>okx_taker_sell_usd</td><td>eth</td><td>2026-07-12</td><td>2026-09-21</td><td>72</td><td>0.0</td><td>1</td><td>1</td><td>SHORT_HISTORY</td></tr>
+<tr class="OK"><td>okx</td><td>perp_close</td><td>btcusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_close</td><td>ethusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_high</td><td>btcusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_high</td><td>ethusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_low</td><td>btcusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_low</td><td>ethusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_open</td><td>btcusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_open</td><td>ethusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_spot_basis</td><td>btcusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_spot_basis</td><td>ethusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_volume</td><td>btcusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_volume</td><td>ethusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_volume_quote</td><td>btcusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>perp_volume_quote</td><td>ethusdt</td><td>2020-01-01</td><td>2026-09-21</td><td>2456</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_close</td><td>btcusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_close</td><td>ethusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_high</td><td>btcusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_high</td><td>ethusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_low</td><td>btcusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_low</td><td>ethusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_open</td><td>btcusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_open</td><td>ethusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_volume</td><td>btcusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_volume</td><td>ethusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_volume_quote</td><td>btcusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+<tr class="OK"><td>okx</td><td>spot_volume_quote</td><td>ethusdt</td><td>2018-01-11</td><td>2026-09-21</td><td>3176</td><td>0.0</td><td>0</td><td>1</td><td>OK</td></tr>
+</table><h2>Невдалі / недоступні збори (останні записи)</h2><table><tr><th>source</th><th>metric</th><th>asset</th><th>status</th><th>message</th><th>run_at</th></tr>
+<tr><td>farside</td><td>etf_flow_musd</td><td>btc</td><td>FAIL</td><td>BLOCKED_OR_PARSE: ValueError(&#x27;No ticker header row with Total column found&#x27;) | per spec: no alternative ETF-flow provider</td><td>2026-09-22 03:26:00</td></tr>
+<tr><td>farside</td><td>etf_flow_musd</td><td>eth</td><td>FAIL</td><td>BLOCKED_OR_PARSE: ValueError(&#x27;No ticker header row with Total column found&#x27;) | per spec: no alternative ETF-flow provider</td><td>2026-09-22 03:26:00</td></tr>
+<tr><td>farside</td><td>etf_flow_musd</td><td>eth</td><td>FAIL</td><td>BLOCKED_OR_PARSE: ValueError(&quot;Unexpected header layout [&#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;Total&#x27;, &#x27;&#x27;, &#x27;ETHA&#x27;, &#x27;ETHB&#x27;, &#x27;FETH&#x27;, &#x27;ETHW&#x27;, &#x27;TETH&#x27;, &#x27;ETHV&#x27;, &#x27;QETH&#x27;, &#x27;EZET&#x27;, &#x27;MSSE&#x27;, &#x27;ETHE&#x27;, &#x27;ETH&#x27;, &#x27;&#x27;, &#x27;Fee&#x27;, &#x27;0.25</td><td>2026-09-22 03:24:49</td></tr>
+<tr><td>farside</td><td>etf_flow_musd</td><td>btc</td><td>FAIL</td><td>BLOCKED_OR_PARSE: ValueError(&quot;Unexpected header layout [&#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;&#x27;, &#x27;Total&#x27;, &#x27;&#x27;, &#x27;IBIT&#x27;, &#x27;FBTC&#x27;, &#x27;BITB&#x27;, &#x27;ARKB&#x27;, &#x27;BTCO&#x27;, &#x27;EZBC&#x27;, &#x27;BRRR&#x27;, &#x27;HODL&#x27;, &#x27;BTCW&#x27;, &#x27;MSBT&#x27;, &#x27;GBTC&#x27;, &#x27;BTC&#x27;, &#x27;&#x27;, </td><td>2026-09-22 03:24:48</td></tr>
+<tr><td>coingecko</td><td>PriceUSD</td><td>btc</td><td>FAIL</td><td>after 3 attempts: RuntimeError(&#x27;HTTP 401; HTTP Error 401: Unauthorized; body[:300]=\&#x27;{&quot;error&quot;:{&quot;status&quot;:{&quot;timestamp&quot;:&quot;2026-09-22T03:22:30.399+00:00&quot;,&quot;error_code&quot;:10012,&quot;error_message&quot;:&quot;Your request exceeds the allowed ti</td><td>2026-09-22 03:22:55</td></tr>
+<tr><td>farside</td><td>etf_flow_musd</td><td>eth</td><td>FAIL</td><td>HTTP 200 received but HTML table parser not implemented (blocked during development); raw saved for audit</td><td>2026-09-22 03:21:28</td></tr>
+<tr><td>farside</td><td>etf_flow_musd</td><td>btc</td><td>FAIL</td><td>HTTP 200 received but HTML table parser not implemented (blocked during development); raw saved for audit</td><td>2026-09-22 03:21:27</td></tr>
+<tr><td>farside</td><td>etf_flow_musd</td><td>btc</td><td>FAIL</td><td>HTTP 200 received but HTML table parser not implemented (blocked during development); raw saved for audit</td><td>2026-09-22 03:21:26</td></tr>
+<tr><td>bybit</td><td>funding_rate_daily</td><td>btcusdt</td><td>FAIL</td><td>GEO_BLOCKED_OR_ERROR: RuntimeError(&quot;HTTP 403; HTTP Error 403: Forbidden; body[:300]=&#x27;{\\n    error:The Amazon CloudFront distribution is configured to block access from your country\\n}&#x27;&quot;)</td><td>2026-09-22 03:21:21</td></tr>
+<tr><td>bybit</td><td>spot_close</td><td>btcusdt</td><td>FAIL</td><td>GEO_BLOCKED_OR_ERROR: RuntimeError(&quot;HTTP 403; HTTP Error 403: Forbidden; body[:300]=&#x27;{\\n    error:The Amazon CloudFront distribution is configured to block access from your country\\n}&#x27;&quot;)</td><td>2026-09-22 03:21:21</td></tr>
+<tr><td>binance_futures</td><td>open_interest</td><td>btcusdt</td><td>FAIL</td><td>GEO_BLOCKED_OR_ERROR: RuntimeError(&#x27;HTTP 451; HTTP Error 451: ; body[:300]=\&#x27;{\\n  &quot;code&quot;: 0,\\n  &quot;msg&quot;: &quot;Service unavailable from a restricted location according to \\\&#x27;b. Eligibility\\\&#x27; in https://www.binance.com/en/t</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>taker_buy_sell_ratio</td><td>btcusdt</td><td>FAIL</td><td>GEO_BLOCKED_OR_ERROR: RuntimeError(&#x27;HTTP 451; HTTP Error 451: ; body[:300]=\&#x27;{\\n  &quot;code&quot;: 0,\\n  &quot;msg&quot;: &quot;Service unavailable from a restricted location according to \\\&#x27;b. Eligibility\\\&#x27; in https://www.binance.com/en/t</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>long_short_ratio</td><td>btcusdt</td><td>FAIL</td><td>GEO_BLOCKED_OR_ERROR: RuntimeError(&#x27;HTTP 451; HTTP Error 451: ; body[:300]=\&#x27;{\\n  &quot;code&quot;: 0,\\n  &quot;msg&quot;: &quot;Service unavailable from a restricted location according to \\\&#x27;b. Eligibility\\\&#x27; in https://www.binance.com/en/t</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_spot</td><td>spot_close</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_spot</td><td>spot_close</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_spot</td><td>spot_volume</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_spot</td><td>spot_volume</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>funding_rate_daily</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>funding_rate_daily</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>perp_spot_basis</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>perp_spot_basis</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>open_interest</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>open_interest</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>open_interest_usd</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>open_interest_usd</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>taker_buy_sell_ratio</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>taker_buy_sell_ratio</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>long_short_ratio</td><td>btcusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_futures</td><td>long_short_ratio</td><td>ethusdt</td><td>FAIL</td><td>Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted</td><td>2026-09-22 03:21:16</td></tr>
+<tr><td>binance_spot</td><td>spot_close</td><td>btcusdt</td><td>FAIL</td><td>GEO_BLOCKED_OR_ERROR: RuntimeError(&#x27;HTTP 451; HTTP Error 451: ; body[:300]=\&#x27;{\\n  &quot;code&quot;: 0,\\n  &quot;msg&quot;: &quot;Service unavailable from a restricted location according to \\\&#x27;b. Eligibility\\\&#x27; in https://www.binance.com/en/t</td><td>2026-09-22 03:21:15</td></tr>
+<tr><td>binance_futures</td><td>funding_rate_daily</td><td>btcusdt</td><td>FAIL</td><td>GEO_BLOCKED_OR_ERROR: RuntimeError(&#x27;HTTP 451; HTTP Error 451: ; body[:300]=\&#x27;{\\n  &quot;code&quot;: 0,\\n  &quot;msg&quot;: &quot;Service unavailable from a restricted location according to \\\&#x27;b. Eligibility\\\&#x27; in https://www.binance.com/en/t</td><td>2026-09-22 03:21:15</td></tr>
+<tr><td>okx</td><td>spot_close</td><td>ethusdt</td><td>FAIL</td><td>RuntimeError(&quot;HTTP 0; URLError: &lt;urlopen error [SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1016)&gt;; body[:300]=&#x27;&#x27;&quot;)</td><td>2026-09-22 03:19:00</td></tr>
+<tr><td>coinmetrics</td><td>DiffMean</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:34</td></tr>
+<tr><td>coinmetrics</td><td>NVTAdj90</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:34</td></tr>
+<tr><td>coinmetrics</td><td>VtyDayRet30d</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:34</td></tr>
+<tr><td>coinmetrics</td><td>TxTfrValAdjUSD</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:32</td></tr>
+<tr><td>coinmetrics</td><td>FeeTotUSD</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:32</td></tr>
+<tr><td>coinmetrics</td><td>RevUSD</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:32</td></tr>
+<tr><td>coinmetrics</td><td>SplyAct1yr</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:30</td></tr>
+<tr><td>coinmetrics</td><td>SplyActEver</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:30</td></tr>
+<tr><td>coinmetrics</td><td>CapRealUSD</td><td>eth</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:28</td></tr>
+<tr><td>coinmetrics</td><td>DiffMean</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:06</td></tr>
+<tr><td>coinmetrics</td><td>NVTAdj90</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:06</td></tr>
+<tr><td>coinmetrics</td><td>VtyDayRet30d</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:06</td></tr>
+<tr><td>coinmetrics</td><td>TxTfrValAdjUSD</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:04</td></tr>
+<tr><td>coinmetrics</td><td>FeeTotUSD</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:04</td></tr>
+<tr><td>coinmetrics</td><td>RevUSD</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:04</td></tr>
+<tr><td>coinmetrics</td><td>SplyAct1yr</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:01</td></tr>
+<tr><td>coinmetrics</td><td>SplyActEver</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:17:01</td></tr>
+<tr><td>coinmetrics</td><td>CapRealUSD</td><td>btc</td><td>UNAVAILABLE</td><td>not in catalog for asset</td><td>2026-09-22 03:16:59</td></tr>
+</table></body></html>

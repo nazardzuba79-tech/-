@@ -1,0 +1,8 @@
+{
+  "evaluated": 44,
+  "redundant_family": 11,
+  "computable_not_evaluated": 66,
+  "untestable_definition": 61,
+  "insufficient_history": 6,
+  "data_unavailable": 52
+}

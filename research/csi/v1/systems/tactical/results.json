@@ -1,0 +1,277 @@
+{
+  "system": "tactical",
+  "horizon": 7,
+  "price": "okx",
+  "dedupe_dropped": [
+    "M017",
+    "M021",
+    "M040",
+    "M044",
+    "N006"
+  ],
+  "confirmed_components": [],
+  "exploratory_components": [
+    "N005",
+    "M018",
+    "M096t",
+    "M068"
+  ],
+  "results": {
+    "confirmed": {
+      "status": "EMPTY: no component passed the pre-registered confirmation rule"
+    },
+    "exploratory": {
+      "components": [
+        "N005",
+        "M018",
+        "M096t",
+        "M068"
+      ],
+      "n_components": 4,
+      "dev_ic": -0.07220521773532981,
+      "dev_n": 1424,
+      "dev_ic_ci90": [
+        -0.16342801867628529,
+        0.005902654910377458
+      ],
+      "dev_ic_secondary_h": -0.010706730227781902,
+      "dev_yearly": [
+        {
+          "year": 2019,
+          "n": 335,
+          "ic": -0.0416
+        },
+        {
+          "year": 2020,
+          "n": 366,
+          "ic": -0.0736
+        },
+        {
+          "year": 2021,
+          "n": 365,
+          "ic": -0.0124
+        },
+        {
+          "year": 2022,
+          "n": 358,
+          "ic": 0.121
+        }
+      ],
+      "dev_slices": {
+        "full": -0.0722,
+        "ex_2020-03_2022-01": -0.0364,
+        "ex_2017": -0.0722,
+        "since_2022": 0.121
+      },
+      "ablation_dev": [
+        {
+          "removed": "N005",
+          "name": "5d return z (60d)",
+          "dev_ic_without": -0.0977,
+          "delta_vs_full": -0.0255,
+          "harmful": false
+        },
+        {
+          "removed": "M018",
+          "name": "Stochastic %K 14",
+          "dev_ic_without": -0.0691,
+          "delta_vs_full": 0.0031,
+          "harmful": false
+        },
+        {
+          "removed": "M096t",
+          "name": "Fear & Greed level (tactical)",
+          "dev_ic_without": -0.0371,
+          "delta_vs_full": 0.0351,
+          "harmful": true
+        },
+        {
+          "removed": "M068",
+          "name": "Perp-spot basis (OKX)",
+          "dev_ic_without": -0.0726,
+          "delta_vs_full": -0.0004,
+          "harmful": false
+        }
+      ],
+      "single_component_dev_ic": {
+        "N005": 0.0023,
+        "M018": -0.0674,
+        "M096t": -0.1174,
+        "M068": 0.0396
+      },
+      "holdout_ic": 0.00015582955564163984,
+      "holdout_n": 1323,
+      "holdout_ic_ci90": [
+        -0.10524332244330555,
+        0.10950981203187014
+      ],
+      "holdout_ic_secondary_h": 0.002619248357506129,
+      "holdout_yearly": [
+        {
+          "year": 2023,
+          "n": 335,
+          "ic": 0.0971
+        },
+        {
+          "year": 2024,
+          "n": 366,
+          "ic": 0.0058
+        },
+        {
+          "year": 2025,
+          "n": 365,
+          "ic": 0.1056
+        },
+        {
+          "year": 2026,
+          "n": 257,
+          "ic": -0.0467
+        }
+      ],
+      "backtests": {
+        "dev": {
+          "start": "2020-01-30",
+          "end": "2022-12-30",
+          "years": 2.92,
+          "avg_exposure": 0.572,
+          "turnover_per_year": 41.88,
+          "strategy": {
+            "cagr": -0.0849,
+            "vol": 0.5633,
+            "sharpe": -0.157,
+            "max_dd_log": -0.9127
+          },
+          "buy_and_hold": {
+            "cagr": 0.2088,
+            "vol": 0.7641,
+            "sharpe": 0.248,
+            "max_dd_log": -1.4535
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1146,
+            "vol": 0.437,
+            "sharpe": 0.248,
+            "max_dd_log": -0.8313
+          }
+        },
+        "dev_baseline_price_only_M017": {
+          "start": "2019-01-24",
+          "end": "2022-12-30",
+          "years": 3.93,
+          "avg_exposure": 0.467,
+          "turnover_per_year": 24.78,
+          "strategy": {
+            "cagr": -0.0756,
+            "vol": 0.478,
+            "sharpe": -0.164,
+            "max_dd_log": -0.9008
+          },
+          "buy_and_hold": {
+            "cagr": 0.4769,
+            "vol": 0.7442,
+            "sharpe": 0.524,
+            "max_dd_log": -1.4535
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1995,
+            "vol": 0.3472,
+            "sharpe": 0.524,
+            "max_dd_log": -0.6782
+          }
+        },
+        "holdout": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.615,
+          "turnover_per_year": 40.2,
+          "strategy": {
+            "cagr": 0.0257,
+            "vol": 0.3351,
+            "sharpe": 0.076,
+            "max_dd_log": -0.6
+          },
+          "buy_and_hold": {
+            "cagr": 0.3042,
+            "vol": 0.4705,
+            "sharpe": 0.564,
+            "max_dd_log": -0.7545
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1775,
+            "vol": 0.2894,
+            "sharpe": 0.564,
+            "max_dd_log": -0.4641
+          }
+        },
+        "holdout_baseline_price_only_M017": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.553,
+          "turnover_per_year": 28.22,
+          "strategy": {
+            "cagr": 0.0097,
+            "vol": 0.3207,
+            "sharpe": 0.03,
+            "max_dd_log": -0.5802
+          },
+          "buy_and_hold": {
+            "cagr": 0.3042,
+            "vol": 0.4705,
+            "sharpe": 0.564,
+            "max_dd_log": -0.7545
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1581,
+            "vol": 0.26,
+            "sharpe": 0.564,
+            "max_dd_log": -0.4169
+          }
+        }
+      },
+      "sensitivities": {
+        "min_periods_730_dev_ic": -0.078,
+        "min_periods_730_holdout_ic": 0.0002,
+        "rebalance_x4_dev": {
+          "cagr": -0.0734,
+          "vol": 0.5484,
+          "sharpe": -0.139,
+          "max_dd_log": -0.8169
+        },
+        "cost_x2_dev": {
+          "cagr": -0.1406,
+          "vol": 0.5634,
+          "sharpe": -0.269,
+          "max_dd_log": -1.005
+        },
+        "source_dropout": {
+          "alternative_me": {
+            "dev_ic": -0.0371,
+            "holdout_ic": 0.0005,
+            "remaining": 3
+          },
+          "okx": {
+            "dev_ic": -0.1174,
+            "holdout_ic": -0.0085,
+            "remaining": 1
+          }
+        }
+      },
+      "score_mean_by_year": {
+        "2019": 0.437,
+        "2020": 0.392,
+        "2021": 0.476,
+        "2022": 0.593,
+        "2023": 0.447,
+        "2024": 0.417,
+        "2025": 0.574,
+        "2026": 0.665
+      },
+      "dev_ic_uptrend": -0.1347,
+      "holdout_ic_uptrend": 0.0181,
+      "dev_ic_downtrend": 0.0129,
+      "holdout_ic_downtrend": -0.1007
+    }
+  }
+}

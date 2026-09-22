@@ -1,0 +1,98 @@
+{
+  "checked_at_utc": "2026-09-21T13:00:51.822681+00:00",
+  "scope": "STRUCTURE_ONLY_NOT_EMPIRICAL_VALIDATION",
+  "checks": [
+    {
+      "check": "exact_catalog_columns",
+      "status": "PASS"
+    },
+    {
+      "check": "120_market_120_onchain",
+      "status": "PASS"
+    },
+    {
+      "check": "unique_candidate_ids",
+      "status": "PASS"
+    },
+    {
+      "check": "unique_metric_names",
+      "status": "PASS"
+    },
+    {
+      "check": "verdict_enum",
+      "status": "PASS"
+    },
+    {
+      "check": "source_keys_exist",
+      "status": "PASS"
+    },
+    {
+      "check": "all_source_urls_registered",
+      "status": "PASS"
+    },
+    {
+      "check": "csv_json_agree",
+      "status": "PASS"
+    },
+    {
+      "check": "all_category_cards_exist",
+      "status": "PASS"
+    },
+    {
+      "check": "all_rows_have_formula_risk_verdict_reason",
+      "status": "PASS"
+    },
+    {
+      "check": "exact_series_schema_columns",
+      "status": "PASS"
+    },
+    {
+      "check": "exact_series_primary_key",
+      "status": "PASS"
+    },
+    {
+      "check": "sqlite_integrity",
+      "status": "PASS"
+    },
+    {
+      "check": "backup_row_count_matches_database",
+      "status": "PASS"
+    },
+    {
+      "check": "mode_B_banner",
+      "status": "PASS"
+    },
+    {
+      "check": "no_claimed_collection_or_dates",
+      "status": "PASS"
+    },
+    {
+      "check": "python_syntax_collect_core.py",
+      "status": "PASS"
+    },
+    {
+      "check": "python_syntax_preflight.py",
+      "status": "PASS"
+    },
+    {
+      "check": "python_syntax_validate_pack.py",
+      "status": "PASS"
+    },
+    {
+      "check": "73_unique_core_pairs",
+      "status": "PASS"
+    },
+    {
+      "check": "fixed_lag_contract",
+      "status": "PASS"
+    }
+  ],
+  "passed": 21,
+  "failed": 0,
+  "series_rows": 0,
+  "first_date": null,
+  "last_date": null,
+  "lag_check": "NOT_EVALUATED_NO_DATA",
+  "live_API_tests": "NOT_RUN",
+  "market_backtests": "NOT_RUN"
+}
