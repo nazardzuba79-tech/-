@@ -64,7 +64,14 @@ export class BybitLiveTickerCollector {
   constructor(readonly rest: BybitMarketDataService, private options: CollectorOptions = {}) {
     this.now = options.now ?? Date.now;
     this.liveBaseAssets = new Set((options.liveBaseAssets ?? DEFAULT_LIVE_BASE_ASSETS).map(x => x.trim().toUpperCase()).filter(Boolean));
-    this.slowRefreshMs = Math.max(10_000, Math.min(300_000, options.slowRefreshMs ?? 60_000));
+    // Twenty seconds, not sixty: a historical (sampled-demo) command needs the
+    // contract's price no older than 45 s (the 60 s contract less the commit
+    // headroom), and every contract outside the live sockets is priced from
+    // this catalogue. At a minute, each such contract was unpriceable for the
+    // last quarter of every minute — measured on production: AKEUSDT aged
+    // 26 → 58 → 31 → 3 → 35 → 7 s between snapshots. Three REST calls per
+    // cycle (one per category, the venue's 5 s ticker cache below that).
+    this.slowRefreshMs = Math.max(10_000, Math.min(300_000, options.slowRefreshMs ?? 20_000));
     this.book = new BybitTickerBook(this.now);
     this.feed = new LiveFeed(randomUUID(), this.now);
     this.universe = new MarketUniverse(rest, { includeInverse: true });
@@ -77,7 +84,7 @@ export class BybitLiveTickerCollector {
     const batchMs = Math.max(250, Math.min(1_000, this.options.batchMs ?? 500));
     this.batchTimer = setInterval(() => this.flush(), batchMs);
     // Live rows keep the strict 30s freshness budget. Slow catalogue rows are
-    // intentionally refreshed once a minute, so they get a separate budget
+    // intentionally refreshed on the slow cadence, so they get a separate budget
     // and are never falsely marked stale between scheduled bulk snapshots.
     const staleCheckMs = Math.max(1_000, Math.min(10_000, this.options.staleCheckMs ?? 5_000));
     this.staleTimer = setInterval(() => {

@@ -78,11 +78,13 @@ async function transport(url,options={}){
   if(fixture){
     if(kind==='instruments')result=fixtureInstrument(symbol);
     else if(kind==='quote'){const spot=fixtureSpot(symbol),price=Number(spot),ake=symbol==='AKEUSDT';result={provider:'bybit',symbol,bids:ake?[{price:'0.0001',quantity:'1'}]:[{price:(price-.1).toFixed(1),quantity:'10'}],asks:ake?[{price:'1.0000',quantity:'1'}]:[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:ake?spot:price.toFixed(1),lastPrice:ake?spot:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
+    else if(kind==='ticker'){const spot=fixtureSpot(symbol),at=now();result={symbol,markPrice:spot,lastPrice:spot,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
     else if(kind==='chart-candles'){const step=sizes[q.get('interval')],end=Number(q.get('endTime')||now()),limit=Number(q.get('limit')||520);const last=Math.floor(end/step)*step;result={source:'BYBIT_LINEAR',symbol,interval:q.get('interval'),candles:Array.from({length:limit},(_,i)=>fixtureCandle(last-(limit-i-1)*step,step,symbol)),fetchedAt:now(),providerTimestamp:now()};}
     else if(kind==='candles'){const start=Number(q.get('startTime')),end=Number(q.get('endTime')),step=Number(q.get('intervalMinutes'))*60000;result={symbol,candles:Array.from({length:Math.floor((end-start)/step)+1},(_,i)=>fixtureCandle(start+i*step,step,symbol)),fetchedAt:now()};}
     else result={symbol,events:[],fetchedAt:now()};
   }else if(kind==='instruments')result=await source.instrument(symbol,options.signal);
   else if(kind==='quote')result=await source.freshQuote(symbol,options.signal);
+  else if(kind==='ticker')result=await source.ticker(symbol,options.signal);
   else if(kind==='chart-candles')result=await source.chartCandles({symbol,interval:q.get('interval'),limit:Number(q.get('limit')||520),...(q.has('endTime')?{endTime:Number(q.get('endTime'))}:{}),signal:options.signal});
   else if(kind==='candles')result=await source.candles(symbol,q.get('kind'),Number(q.get('intervalMinutes')),Number(q.get('startTime')),Number(q.get('endTime')),options.signal);
   else result=await source.funding(symbol,Number(q.get('startTime')),Number(q.get('endTime')),options.signal);

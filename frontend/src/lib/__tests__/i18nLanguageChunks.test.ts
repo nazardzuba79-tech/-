@@ -120,17 +120,21 @@ describe('translation integrity', () => {
       // Re-taken 2026-09-22 for «Закрытие по лимиту» (the limit-close
       // dialog «Лимитный» opens) and the reduce-only side gating: fifteen
       // `futures.limitClose*` / `futures.reduceOnlyNo*` keys per language
-      // (eighteen lines in Russian, which also carries a section comment).
-      // `git diff --numstat` over the locales directory reports `15 0` for
-      // six languages and `18 0` for Russian — additions only, not one
-      // deletion, so no existing string was retyped.
-      "ru": "3ce3b6f1abc1b02e",
-      "en": "11d08001890a29de",
-      "zh": "b4f23755028f5ced",
-      "es": "eb67e03f6199f5d2",
-      "hi": "68727d605dcfc10c",
-      "ja": "04bca3417a826554",
-      "ko": "82e145c73bc2f7ce"
+      // (eighteen lines in Russian, which also carries a section comment),
+      // then again the same day for the five `futures.orderError.*`
+      // sentences the owner's AKEUSDT refusal needed (a near-live price the
+      // server could not refresh, a busy lane, a reducing order on the wrong
+      // position, an execution-mode mismatch, a duplicate). `git diff
+      // --numstat` over the locales directory reports `5 0` for every
+      // language — additions only, not one deletion, so no existing string
+      // was retyped.
+      "ru": "cee79381e7e8c726",
+      "en": "f817d8dc7e0e9de1",
+      "zh": "9b8a64f07b8782a3",
+      "es": "4c1795cbfe0fa10c",
+      "hi": "28856d15d5bc8944",
+      "ja": "9af89252233dbf08",
+      "ko": "b9720e7a2161a1e4"
 };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {

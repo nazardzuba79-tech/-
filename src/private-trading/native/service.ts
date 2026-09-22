@@ -762,7 +762,10 @@ export class NativeDemoService {
     }
   }
   private async demoCurrentPrices(symbols:string[],required:ReadonlySet<string>=new Set(symbols),minRemainingMs=0):Promise<Map<string,PrivateMark>>{
-    const all=new Map<string,PrivateMark>(),wanted=[...new Set(symbols)].sort();
+    // Execution symbols lead the batch: when the frame has aged, the market's
+    // on-demand reads run in this order, and a collateral asset must never
+    // stand between the contract being traded and its price.
+    const all=new Map<string,PrivateMark>(),wanted=[...new Set(symbols)].sort((a,b)=>Number(required.has(b))-Number(required.has(a))||a.localeCompare(b));
     for(let i=0;i<wanted.length;i+=64){
       const batch=wanted.slice(i,i+64);
       const prices=await commandRead('market.near_live_prices',()=>this.market.historicalDemoPrices(batch,commandSignal(),minRemainingMs));

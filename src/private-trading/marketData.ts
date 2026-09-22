@@ -89,6 +89,8 @@ export class PrivateMarketDataError extends Error {
 }
 function invalid(): never { throw new PrivateMarketDataError('market_data_invalid'); }
 function abort(signal?: AbortSignal): void { if (signal?.aborted) throw new PrivateMarketDataError('request_cancelled', 499); }
+/** The code a refusal travelled under, for a log line that has to tell a thin book from an outage. */
+function reason(e: unknown): string { return e instanceof PrivateMarketDataError ? e.code : e instanceof Error ? e.name : 'unknown'; }
 function decimal(value: unknown): string {
   if (typeof value !== 'string' && typeof value !== 'number') return invalid();
   const d = new BigNumber(value); if (!d.isFinite()) return invalid(); return d.toFixed();
@@ -298,6 +300,26 @@ export class CollectorPrivateTradingSource {
       markPrice: quote.markPrice, lastPrice: quote.lastPrice, fundingRate: quote.fundingRate, nextFundingTime: time(quote.nextFundingTime),
       providerTimestamp: time(book.result.cts), bookGeneratedAt: time(book.result.ts), markProviderTimestamp: time(ticker.time), fetchedAt: this.now() }, contract, this.now());
   }
+  /**
+   * The contract's current mark and last price from ONE ticker read — no book.
+   *
+   * The sampled demo (a historical account followed at current prices) needs
+   * exactly these two numbers on the 60-second contract of
+   * `assertHistoricalDemoCurrentPrice`. Until now `freshQuote` was its only
+   * on-demand source, and that is the LIVE-execution quote: a 1000-level book
+   * that must have changed within five seconds. A thin contract cannot
+   * promise that, so its near-live price went missing exactly when the
+   * collector's minute-cadence frame had aged past the command headroom —
+   * the owner's «Не удалось разместить ордер» on AKEUSDT.
+   */
+  async ticker(input: string, signal?: AbortSignal): Promise<PrivateMark> {
+    const contract = symbol(input);
+    const ticker = await this.get('tickers', { symbol: contract }, signal);
+    if (ticker.result.category !== 'linear' || !Array.isArray(ticker.result.list) || ticker.result.list.length !== 1 || ticker.result.list[0].symbol !== contract) return invalid();
+    const quote = ticker.result.list[0], now = this.now();
+    return assertHistoricalDemoCurrentPrice({ symbol: contract, markPrice: quote.markPrice, lastPrice: quote.lastPrice,
+      markProviderTimestamp: time(ticker.time), receivedAt: now, fetchedAt: now }, contract, now);
+  }
   async chartCandles(request: PrivateChartRequest): Promise<PrivateChartPage> {
     abort(request.signal);
     const { contract, limit } = chartRequest(request, this.now(), 1000), key = chartCacheKey(request), cached = this.chartPages.get(key);
@@ -414,17 +436,29 @@ export class PrivateTradingMarketData {
       if([value.markProviderTimestamp,value.receivedAt,value.fetchedAt].every(t=>fresh(t,this.now(),maxAge)))out.set(value.symbol,value);
     }
     // Missing rows and rows without commit headroom take a fresh authenticated
-    // REST observation before valuation. Never carry an almost-expired frame
-    // through account/receipt persistence.
-    // Its live book checks remain unchanged; only this consumer's subsequent
-    // mark/last lifetime is the explicit 60-second sampled-demo contract.
+    // observation before valuation, in the caller's order — execution symbols
+    // first, so a collateral asset can never starve the contract being traded.
+    // The collector's ticker read is the sampled demo's own source (mark and
+    // last, no book); the live-book quote stays as the second try for a
+    // collector built before the ticker route existed. Never carry an
+    // almost-expired frame through account/receipt persistence; its live
+    // book checks remain unchanged.
     const missing=wanted.filter(s=>!out.has(s));
-    for(let i=0;i<missing.length;i+=8)await Promise.all(missing.slice(i,i+8).map(async s=>{
+    for(let i=0;i<missing.length;i+=4)await Promise.all(missing.slice(i,i+4).map(async s=>{
+      const failures:string[]=[];
+      try{out.set(s,assertHistoricalDemoCurrentPrice(await this.get(`ticker/${s}`,signal),s,this.now()));return;}
+      catch(e){abort(signal);failures.push(reason(e));}
       try{
         const q=await this.freshQuote(s,signal);
         out.set(s,assertHistoricalDemoCurrentPrice({symbol:s,markPrice:q.markPrice,lastPrice:q.lastPrice,
           markProviderTimestamp:Math.min(q.markProviderTimestamp,q.providerTimestamp),receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt},s,this.now()));
-      }catch{abort(signal);/* Missing collateral stays unpriced; execution symbols are required by the caller. */}
+      }catch(e){
+        abort(signal);failures.push(reason(e));
+        // Missing collateral stays unpriced; execution symbols are required by
+        // the caller. The reasons are what the logs need to tell a thin book
+        // from a collector outage — the client only ever sees the code.
+        console.warn('[private-trading] near-live price unavailable',s,failures.join(' then '));
+      }
     }));
     return out;
   }

@@ -98,6 +98,30 @@ describe('futures order error messages', () => {
     }
   });
 
+  it('names a near-live price the server could not refresh as a price problem to retry, not as a generic failure', () => {
+    // The owner's report: «Не удалось разместить ордер» on a limit close of
+    // AKEUSDT. The server had refused with `near_live_price_unavailable`
+    // (the collector's frame past the command headroom and the on-demand
+    // read failing on a thin book), a code this table did not know.
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      for (const code of ['near_live_price_stale', 'near_live_price_unavailable', 'quote_stale', 'collector_unavailable', 'market_data_busy', 'market_data_invalid', 'MARK_MISSING']) {
+        expect(say(engine(code))).toBe('Текущая цена контракта сейчас недоступна или устарела. Повторите через несколько секунд.');
+      }
+      for (const code of ['native_queue_full', 'client_queue_full', 'account_changed']) expect(say(engine(code))).toBe(RU['futures.orderError.busy']);
+      for (const code of ['INVALID_REDUCE_SIDE', 'INVALID_REDUCE_SYMBOL', 'MARGIN_TYPE_MISMATCH']) expect(say(engine(code))).toBe(RU['futures.orderError.reduceSide']);
+      expect(say(engine('POSITION_ID_REQUIRED'))).toBe(RU['futures.orderError.positionNotOpen']);
+      expect(say(engine('EXECUTION_MODE_MISMATCH'))).toBe(RU['futures.orderError.executionMode']);
+      expect(say(engine('IDEMPOTENCY_CONFLICT'))).toBe(RU['futures.orderError.duplicate']);
+      expect(warn).not.toHaveBeenCalled();
+      for (const key of ['futures.orderError.priceUnavailable', 'futures.orderError.busy', 'futures.orderError.reduceSide', 'futures.orderError.executionMode', 'futures.orderError.duplicate'] as const) {
+        for (const dict of Object.values(LOCALES)) expect(dict[key].length).toBeGreaterThan(10);
+      }
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   it('leaves errors from the ordinary account to their own handling', () => {
     expect(say(new Error('boom'))).toBe(FALLBACK);
     expect(say(undefined)).toBe(FALLBACK);

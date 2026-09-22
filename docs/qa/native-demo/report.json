@@ -4,76 +4,444 @@
   "scope": "original terminal / isolated native engine",
   "checks": [
     {
+      "name": "mobile-ticket-layout-320",
+      "passed": true,
+      "evidence": {
+        "page": 320,
+        "scroll": 320,
+        "brand": {
+          "left": 48.046875,
+          "right": 178,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 186,
+          "right": 264,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 308,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 308,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 308,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 308,
+          "top": 728,
+          "bottom": 904
+        },
+        "calculator": {
+          "left": 12,
+          "right": 308,
+          "top": 997,
+          "bottom": 1047
+        },
+        "launcher": {
+          "left": 147.6875,
+          "right": 308,
+          "top": 1003,
+          "bottom": 1047
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-320",
+      "passed": true,
+      "evidence": {
+        "width": 320,
+        "scroll": 320,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-390",
+      "passed": true,
+      "evidence": {
+        "page": 390,
+        "scroll": 390,
+        "brand": {
+          "left": 50,
+          "right": 179.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 221,
+          "right": 299,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 378,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 378,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 378,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 378,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 378,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 217.6875,
+          "right": 378,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-390",
+      "passed": true,
+      "evidence": {
+        "width": 390,
+        "scroll": 390,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-393",
+      "passed": true,
+      "evidence": {
+        "page": 393,
+        "scroll": 393,
+        "brand": {
+          "left": 50,
+          "right": 179.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 224,
+          "right": 302,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 381,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 381,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 381,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 381,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 381,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 220.6875,
+          "right": 381,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-393",
+      "passed": true,
+      "evidence": {
+        "width": 393,
+        "scroll": 393,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-430",
+      "passed": true,
+      "evidence": {
+        "page": 430,
+        "scroll": 430,
+        "brand": {
+          "left": 54,
+          "right": 183.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 228,
+          "right": 306,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 418,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 418,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 418,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 418,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 418,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 257.6875,
+          "right": 418,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-430",
+      "passed": true,
+      "evidence": {
+        "width": 430,
+        "scroll": 430,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "mobile-ticket-layout-768",
+      "passed": true,
+      "evidence": {
+        "page": 768,
+        "scroll": 768,
+        "brand": {
+          "left": 54,
+          "right": 183.953125,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "deposit": {
+          "left": 509,
+          "right": 599,
+          "top": 3.5,
+          "bottom": 47.5
+        },
+        "margin": {
+          "left": 12,
+          "right": 756,
+          "top": 271,
+          "bottom": 315
+        },
+        "tabs": {
+          "left": 12,
+          "right": 756,
+          "top": 327,
+          "bottom": 372
+        },
+        "price": {
+          "left": 12,
+          "right": 756,
+          "top": 384,
+          "bottom": 432
+        },
+        "info": {
+          "left": 12,
+          "right": 756,
+          "top": 728,
+          "bottom": 875
+        },
+        "calculator": {
+          "left": 12,
+          "right": 756,
+          "top": 968,
+          "bottom": 1018
+        },
+        "launcher": {
+          "left": 595.6875,
+          "right": 756,
+          "top": 974,
+          "bottom": 1018
+        }
+      }
+    },
+    {
+      "name": "mobile-position-actions-768",
+      "passed": true,
+      "evidence": {
+        "width": 768,
+        "scroll": 768,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "desktop-position-actions-1366",
+      "passed": true,
+      "evidence": {
+        "width": 1366,
+        "scroll": 1366,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "desktop-position-actions-1440",
+      "passed": true,
+      "evidence": {
+        "width": 1440,
+        "scroll": 1440,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
+      "name": "desktop-position-actions-1920",
+      "passed": true,
+      "evidence": {
+        "width": 1920,
+        "scroll": 1920,
+        "archiveCloseAllAbsent": true,
+        "individualActionsVisible": true,
+        "individualMarketClose": true
+      }
+    },
+    {
       "name": "fields-limit-1440",
       "passed": true,
       "evidence": {
         "price": {
-          "width": 288,
+          "width": 297,
           "height": 44,
-          "left": 1139,
-          "right": 1427,
-          "top": 242,
-          "bottom": 286
+          "left": 1129,
+          "right": 1426,
+          "top": 246,
+          "bottom": 290
         },
         "quantity": {
-          "width": 288,
+          "width": 297,
           "height": 44,
-          "left": 1139,
-          "right": 1427,
-          "top": 298,
-          "bottom": 342
+          "left": 1129,
+          "right": 1426,
+          "top": 304,
+          "bottom": 348
         },
         "long": {
-          "width": 138,
+          "width": 144.5,
           "height": 44,
-          "left": 1139,
-          "right": 1277,
-          "top": 571.84375,
-          "bottom": 615.84375
+          "left": 1129,
+          "right": 1273.5,
+          "top": 723.84375,
+          "bottom": 767.84375
         },
         "short": {
-          "width": 138,
+          "width": 144.5,
           "height": 44,
-          "left": 1289,
-          "right": 1427,
-          "top": 571.84375,
-          "bottom": 615.84375
+          "left": 1281.5,
+          "right": 1426,
+          "top": 723.84375,
+          "bottom": 767.84375
         },
         "trailing": [
           {
             "outer": {
-              "width": 288,
+              "width": 297,
               "height": 44,
-              "left": 1139,
-              "right": 1427,
-              "top": 242,
-              "bottom": 286
+              "left": 1129,
+              "right": 1426,
+              "top": 246,
+              "bottom": 290
             },
             "inner": {
               "width": 81.203125,
               "height": 42,
-              "left": 1344.796875,
-              "right": 1426,
-              "top": 243,
-              "bottom": 285
+              "left": 1343.796875,
+              "right": 1425,
+              "top": 247,
+              "bottom": 289
             }
           },
           {
             "outer": {
-              "width": 288,
+              "width": 297,
               "height": 44,
-              "left": 1139,
-              "right": 1427,
-              "top": 298,
-              "bottom": 342
+              "left": 1129,
+              "right": 1426,
+              "top": 304,
+              "bottom": 348
             },
             "inner": {
               "width": 54,
               "height": 42,
-              "left": 1372,
-              "right": 1426,
-              "top": 299,
-              "bottom": 341
+              "left": 1371,
+              "right": 1425,
+              "top": 305,
+              "bottom": 347
             }
           }
         ]
@@ -83,13 +451,13 @@
       "name": "quantity-to-usdt-calculator-1440",
       "passed": true,
       "evidence": {
-        "price": 49011.2,
+        "price": 49815.8,
         "quantity": 5,
-        "positionValue": "245056.00"
+        "positionValue": "249079.00"
       }
     },
     {
-      "name": "positions-remain-visible-1440",
+      "name": "positions-reachable-1440",
       "passed": true
     },
     {
@@ -97,72 +465,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 288,
+          "width": 297,
           "height": 44,
-          "left": 1139,
-          "right": 1427,
-          "top": 242,
-          "bottom": 286
+          "left": 1129,
+          "right": 1426,
+          "top": 246,
+          "bottom": 290
         },
         "quantity": {
-          "width": 288,
+          "width": 297,
           "height": 44,
-          "left": 1139,
-          "right": 1427,
-          "top": 298,
-          "bottom": 342
+          "left": 1129,
+          "right": 1426,
+          "top": 304,
+          "bottom": 348
         },
         "long": {
-          "width": 138,
+          "width": 144.5,
           "height": 44,
-          "left": 1139,
-          "right": 1277,
-          "top": 571.84375,
-          "bottom": 615.84375
+          "left": 1129,
+          "right": 1273.5,
+          "top": 748.84375,
+          "bottom": 792.84375
         },
         "short": {
-          "width": 138,
+          "width": 144.5,
           "height": 44,
-          "left": 1289,
-          "right": 1427,
-          "top": 571.84375,
-          "bottom": 615.84375
+          "left": 1281.5,
+          "right": 1426,
+          "top": 748.84375,
+          "bottom": 792.84375
         },
         "trailing": [
           {
             "outer": {
-              "width": 288,
+              "width": 297,
               "height": 44,
-              "left": 1139,
-              "right": 1427,
-              "top": 242,
-              "bottom": 286
+              "left": 1129,
+              "right": 1426,
+              "top": 246,
+              "bottom": 290
             },
             "inner": {
               "width": 54,
               "height": 42,
-              "left": 1372,
-              "right": 1426,
-              "top": 243,
-              "bottom": 285
+              "left": 1371,
+              "right": 1425,
+              "top": 247,
+              "bottom": 289
             }
           },
           {
             "outer": {
-              "width": 288,
+              "width": 297,
               "height": 44,
-              "left": 1139,
-              "right": 1427,
-              "top": 298,
-              "bottom": 342
+              "left": 1129,
+              "right": 1426,
+              "top": 304,
+              "bottom": 348
             },
             "inner": {
               "width": 54,
               "height": 42,
-              "left": 1372,
-              "right": 1426,
-              "top": 299,
-              "bottom": 341
+              "left": 1371,
+              "right": 1425,
+              "top": 305,
+              "bottom": 347
             }
           }
         ]
@@ -172,9 +540,9 @@
       "name": "account-summary-1440",
       "passed": true,
       "evidence": {
-        "balance": "10 097 751.84 USDT",
-        "available": "10 048 471.08 USDT",
-        "im": "0.49%",
+        "balance": "10,099,356.61 USDT",
+        "available": "10,049,266.83 USDT",
+        "im": "0.50%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -189,6 +557,7 @@
       "name": "position-table-1440",
       "passed": true,
       "evidence": {
+        "mobileCards": false,
         "pageWidth": 1440,
         "viewport": 1440,
         "clipped": [],
@@ -198,6 +567,7 @@
           "Контракты",
           "К-во",
           "Стоим.",
+          "Маржа",
           "Цена Входа",
           "Цена маркировки",
           "Цена ликвид.",
@@ -206,11 +576,11 @@
           "TP/SL",
           "Закрыть как"
         ],
-        "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nМарж. торговля Кросс 10.00x\n\t7 BTC\t343,078.40 USDT\t49011.3\t49011.2\t—\t\n-0.7000\n-0.00%\n≈-0.70 USD\n\t\n-188.6935\n≈-188.69 USD\n\t+ Добавить\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nМарж. торговля Кросс 10.00x\n\t3 BTC\t147,033.60 USDT\t49011.1\t49011.2\t—\t\n-0.3000\n-0.00%\n≈-0.30 USD\n\t\n-80.8683\n≈-80.87 USD\n\t+ Добавить\t\nЛимитный\nРыночный",
+        "text": "Контракты\tК-во\tСтоим.\tМаржа\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nЛонг\nМарж. торговля 10.00x\n\t7.000 BTC\t348,710.60 USDT\t34,871.13 USDT\t49,815.90\t49,815.80\t—\t\n-0.7000\n-0.00%\n≈-0.70 USD\n\t\n-191.7912\n≈-191.79 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nШорт\nМарж. торговля 10.00x\n\t3.000 BTC\t149,447.40 USDT\t14,944.71 USDT\t49,815.70\t49,815.80\t—\t\n-0.3000\n-0.00%\n≈-0.30 USD\n\t\n-82.1959\n≈-82.20 USD\n\t\n+ Добавить\n\t\nЛимитный\nРыночный",
         "scroll": {
-          "client": 1125,
-          "full": 1125,
-          "overflow": "auto"
+          "client": 1114,
+          "full": 1240,
+          "overflow": "scroll"
         }
       }
     },
@@ -231,7 +601,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-a346753d-a4cb-430c-8d4a-3ef793cd1100",
+        "href": "/futures?nativeCard=native%3A9%3Anative-06dfc186-dac6-41d2-870c-7206eef9b8c3",
         "exported": "1080x1215"
       }
     },
@@ -274,72 +644,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 364,
-          "height": 44,
-          "left": 13,
-          "right": 377,
-          "top": 714,
-          "bottom": 758
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 384,
+          "bottom": 432
         },
         "quantity": {
-          "width": 364,
-          "height": 44,
-          "left": 13,
-          "right": 377,
-          "top": 770,
-          "bottom": 814
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 444,
+          "bottom": 492
         },
         "long": {
-          "width": 176,
-          "height": 44,
-          "left": 13,
-          "right": 189,
-          "top": 1043.84375,
-          "bottom": 1087.84375
+          "width": 179,
+          "height": 52,
+          "left": 12,
+          "right": 191,
+          "top": 708,
+          "bottom": 760
         },
         "short": {
-          "width": 176,
-          "height": 44,
-          "left": 201,
-          "right": 377,
-          "top": 1043.84375,
-          "bottom": 1087.84375
+          "width": 179,
+          "height": 52,
+          "left": 199,
+          "right": 378,
+          "top": 708,
+          "bottom": 760
         },
         "trailing": [
           {
             "outer": {
-              "width": 364,
-              "height": 44,
-              "left": 13,
-              "right": 377,
-              "top": 714,
-              "bottom": 758
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 384,
+              "bottom": 432
             },
             "inner": {
               "width": 81.203125,
-              "height": 42,
-              "left": 294.796875,
-              "right": 376,
-              "top": 715,
-              "bottom": 757
+              "height": 46,
+              "left": 295.796875,
+              "right": 377,
+              "top": 385,
+              "bottom": 431
             }
           },
           {
             "outer": {
-              "width": 364,
-              "height": 44,
-              "left": 13,
-              "right": 377,
-              "top": 770,
-              "bottom": 814
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 444,
+              "bottom": 492
             },
             "inner": {
               "width": 54,
-              "height": 42,
-              "left": 322,
-              "right": 376,
-              "top": 771,
-              "bottom": 813
+              "height": 46,
+              "left": 323,
+              "right": 377,
+              "top": 445,
+              "bottom": 491
             }
           }
         ]
@@ -349,13 +719,13 @@
       "name": "quantity-to-usdt-calculator-390",
       "passed": true,
       "evidence": {
-        "price": 49011.2,
+        "price": 49832.3,
         "quantity": 5,
-        "positionValue": "245056.00"
+        "positionValue": "249161.50"
       }
     },
     {
-      "name": "positions-remain-visible-390",
+      "name": "positions-reachable-390",
       "passed": true
     },
     {
@@ -363,72 +733,72 @@
       "passed": true,
       "evidence": {
         "price": {
-          "width": 364,
-          "height": 44,
-          "left": 13,
-          "right": 377,
-          "top": 70,
-          "bottom": 114
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 384,
+          "bottom": 432
         },
         "quantity": {
-          "width": 364,
-          "height": 44,
-          "left": 13,
-          "right": 377,
-          "top": 126,
-          "bottom": 170
+          "width": 366,
+          "height": 48,
+          "left": 12,
+          "right": 378,
+          "top": 444,
+          "bottom": 492
         },
         "long": {
-          "width": 176,
-          "height": 44,
-          "left": 13,
-          "right": 189,
-          "top": 399.84375,
-          "bottom": 443.84375
+          "width": 179,
+          "height": 52,
+          "left": 12,
+          "right": 191,
+          "top": 708,
+          "bottom": 760
         },
         "short": {
-          "width": 176,
-          "height": 44,
-          "left": 201,
-          "right": 377,
-          "top": 399.84375,
-          "bottom": 443.84375
+          "width": 179,
+          "height": 52,
+          "left": 199,
+          "right": 378,
+          "top": 708,
+          "bottom": 760
         },
         "trailing": [
           {
             "outer": {
-              "width": 364,
-              "height": 44,
-              "left": 13,
-              "right": 377,
-              "top": 70,
-              "bottom": 114
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 384,
+              "bottom": 432
             },
             "inner": {
               "width": 54,
-              "height": 42,
-              "left": 322,
-              "right": 376,
-              "top": 71,
-              "bottom": 113
+              "height": 46,
+              "left": 323,
+              "right": 377,
+              "top": 385,
+              "bottom": 431
             }
           },
           {
             "outer": {
-              "width": 364,
-              "height": 44,
-              "left": 13,
-              "right": 377,
-              "top": 126,
-              "bottom": 170
+              "width": 366,
+              "height": 48,
+              "left": 12,
+              "right": 378,
+              "top": 444,
+              "bottom": 492
             },
             "inner": {
               "width": 54,
-              "height": 42,
-              "left": 322,
-              "right": 376,
-              "top": 127,
-              "bottom": 169
+              "height": 46,
+              "left": 323,
+              "right": 377,
+              "top": 445,
+              "bottom": 491
             }
           }
         ]
@@ -438,9 +808,9 @@
       "name": "account-summary-390",
       "passed": true,
       "evidence": {
-        "balance": "10 097 751.84 USDT",
-        "available": "10 048 471.08 USDT",
-        "im": "0.49%",
+        "balance": "10,099,389.52 USDT",
+        "available": "10,049,283.14 USDT",
+        "im": "0.50%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -455,6 +825,7 @@
       "name": "position-table-390",
       "passed": true,
       "evidence": {
+        "mobileCards": true,
         "pageWidth": 390,
         "viewport": 390,
         "clipped": [],
@@ -464,6 +835,7 @@
           "Контракты",
           "К-во",
           "Стоим.",
+          "Маржа",
           "Цена Входа",
           "Цена маркировки",
           "Цена ликвид.",
@@ -472,11 +844,11 @@
           "TP/SL",
           "Закрыть как"
         ],
-        "text": "Контракты\tК-во\tСтоим.\tЦена Входа\tЦена маркировки\tЦена ликвид.\tНереализованный P&L(ROI)\tРеализованный P&L\tTP/SL\tЗакрыть как\n\nBTCUSDT\nБесср.\nМарж. торговля Кросс 10.00x\n\t7 BTC\t343,078.40 USDT\t49011.3\t49011.2\t—\t\n-0.7000\n-0.00%\n≈-0.70 USD\n\t\n-188.6935\n≈-188.69 USD\n\t+ Добавить\t\nЛимитный\nРыночный\n\n\nBTCUSDT\nБесср.\nМарж. торговля Кросс 10.00x\n\t3 BTC\t147,033.60 USDT\t49011.1\t49011.2\t—\t\n-0.3000\n-0.00%\n≈-0.30 USD\n\t\n-80.8683\n≈-80.87 USD\n\t+ Добавить\t\nЛимитный\nРыночный",
+        "text": "BTCUSDT\nБесср.\nЛонг\nМарж. торговля\n10.00x\n7.000\nBTC\n348,826.10\nUSDT\n34,882.68\nUSDT\n49,832.40\n49,832.30\n—\n-0.7000\n-0.00%\n≈-0.70 USD\n-191.8547\n≈-191.85 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный\nBTCUSDT\nБесср.\nШорт\nМарж. торговля\n10.00x\n3.000\nBTC\n149,496.90\nUSDT\n14,949.66\nUSDT\n49,832.20\n49,832.30\n—\n-0.3000\n-0.00%\n≈-0.30 USD\n-82.2231\n≈-82.22 USD\n+ Добавить\nTP —\nSL —\nЛимитный\nРыночный",
         "scroll": {
-          "client": 388,
-          "full": 1133,
-          "overflow": "auto"
+          "client": 390,
+          "full": 390,
+          "overflow": "visible"
         }
       }
     },
@@ -497,7 +869,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-597a99ba-e77f-4c86-bb5a-4ae541763761",
+        "href": "/futures?nativeCard=native%3A9%3Anative-54a6f81d-8390-4a8f-b7f9-3d6f13e767dc",
         "exported": "1080x1215"
       }
     },
@@ -534,6 +906,24 @@
     {
       "name": "chart-tool-selection-390",
       "passed": true
+    },
+    {
+      "name": "server-deadline-refusal-clears-submit",
+      "passed": true,
+      "evidence": {
+        "singleSubmit": true,
+        "pendingCleared": true,
+        "serverStateUnchanged": true
+      }
+    },
+    {
+      "name": "lost-response-clears-submit-without-retry",
+      "passed": true,
+      "evidence": {
+        "singleSubmit": true,
+        "pendingCleared": true,
+        "serverStateUnchanged": true
+      }
     }
   ],
   "errors": [],

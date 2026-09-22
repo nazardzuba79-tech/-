@@ -46,6 +46,30 @@ describe('private selected-contract transport', () => {
     await expect(service.freshQuote('BTCUSDT')).rejects.toThrow('offline');
     expect(request.mock.calls.every(([url]) => String(url).startsWith('https://collector.example/internal/v1/private-trading/'))).toBe(true);
   });
+  test('a frame row past the command headroom is re-read from the ticker route first; a collector without it falls back to the live quote', async () => {
+    const path = (request: jest.Mock) => request.mock.calls.map(([url]) => new URL(String(url)).pathname);
+    const frame = (age: number) => response({ status: 'live', fetchedAt: NOW, marks: [{ symbol: 'AKEUSDT', markPrice: '0.05', lastPrice: '0.05', markProviderTimestamp: NOW - age, receivedAt: NOW - age, fetchedAt: NOW }] });
+    const ticker = { symbol: 'AKEUSDT', markPrice: '0.0527148', lastPrice: '0.052718', markProviderTimestamp: NOW - 200, receivedAt: NOW, fetchedAt: NOW };
+    // Fifty seconds old: still a valuation price, but short of the 15 s commit headroom a command needs.
+    const withTicker = jest.fn(async (url: string) => url.includes('/marks?') ? frame(50_000) : url.includes('/ticker/AKEUSDT') ? response(ticker) : ({ ok: false, status: 404 } as Response));
+    expect((await api(withTicker).historicalDemoPrices(['AKEUSDT'], undefined, 0)).get('AKEUSDT')!.markPrice).toBe('0.05');
+    expect((await api(withTicker).historicalDemoPrices(['AKEUSDT'], undefined, 15_000)).get('AKEUSDT')).toEqual(ticker);
+    expect(path(withTicker)).toEqual(['/internal/v1/private-trading/marks', '/internal/v1/private-trading/marks', '/internal/v1/private-trading/ticker/AKEUSDT']);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      // A collector built before the ticker route answers 404: the live-book quote is still tried, as before.
+      const q = { ...quote(), symbol: 'AKEUSDT' };
+      const withoutTicker = jest.fn(async (url: string) => url.includes('/marks?') ? frame(50_000) : url.includes('/quote/AKEUSDT') ? response(q) : ({ ok: false, status: 404 } as Response));
+      expect((await api(withoutTicker).historicalDemoPrices(['AKEUSDT'], undefined, 15_000)).get('AKEUSDT')).toEqual({ symbol: 'AKEUSDT', markPrice: q.markPrice, lastPrice: q.lastPrice,
+        markProviderTimestamp: Math.min(q.markProviderTimestamp, q.providerTimestamp), receivedAt: q.fetchedAt, fetchedAt: q.fetchedAt });
+      expect(path(withoutTicker)).toEqual(['/internal/v1/private-trading/marks', '/internal/v1/private-trading/ticker/AKEUSDT', '/internal/v1/private-trading/quote/AKEUSDT']);
+      expect(warn).not.toHaveBeenCalled();
+      // Neither read answering leaves the symbol unpriced, with both reasons on record for the logs.
+      const neither = jest.fn(async (url: string) => url.includes('/marks?') ? frame(50_000) : ({ ok: false, status: 503 } as Response));
+      expect((await api(neither).historicalDemoPrices(['AKEUSDT'], undefined, 15_000)).has('AKEUSDT')).toBe(false);
+      expect(warn).toHaveBeenCalledWith('[private-trading] near-live price unavailable', 'AKEUSDT', 'collector_unavailable then collector_unavailable');
+    } finally { warn.mockRestore(); }
+  });
   test.each(['BTCUSD', 'BTCUSDC', '../BTCUSDT', 'BTCUSDT?x=1', 'BTCUSDT#x', 'BTC USDT'])('rejects nonperpetual and injection symbols %s', async value => {
     const request = jest.fn(); await expect(api(request).freshQuote(value)).rejects.toThrow('invalid_symbol'); expect(request).not.toHaveBeenCalled();
   });
@@ -138,6 +162,16 @@ describe('collector public venue adapter', () => {
     expect(result.providerTimestamp).toBe(NOW - 100); expect(result.markProviderTimestamp).toBe(NOW);
     expect(request).toHaveBeenCalledTimes(2); expect(request.mock.calls.every(([url]) => new URL(url).searchParams.get('symbol') === 'BTCUSDT')).toBe(true);
   });
+  test('one ticker read prices the sampled demo without a book: mark, last and the venue time', async () => {
+    const venue = (time: number) => jest.fn(async (_url: string) => response({ retCode: 0, time, result: { category: 'linear', list: [{ symbol: 'AKEUSDT', markPrice: '0.0527148', lastPrice: '0.052718' }] } }));
+    const request = venue(NOW - 300);
+    expect(await new CollectorPrivateTradingSource(request as typeof fetch, () => NOW).ticker('AKEUSDT')).toEqual({ symbol: 'AKEUSDT', markPrice: '0.0527148', lastPrice: '0.052718', markProviderTimestamp: NOW - 300, receivedAt: NOW, fetchedAt: NOW });
+    expect(request).toHaveBeenCalledTimes(1);
+    const url = new URL(String(request.mock.calls[0][0])); expect(url.pathname).toBe('/v5/market/tickers'); expect(url.searchParams.get('symbol')).toBe('AKEUSDT');
+    // A ticker the venue stamped beyond the 60 s sampled-demo contract is refused, not aged through.
+    await expect(new CollectorPrivateTradingSource(venue(NOW - 61_000) as typeof fetch, () => NOW).ticker('AKEUSDT')).rejects.toThrow('near_live_price_stale');
+    await expect(new CollectorPrivateTradingSource(venue(NOW) as typeof fetch, () => NOW).ticker('BTCUSDT')).rejects.toThrow('market_data_invalid');
+  });
   test('normalizes reverse venue candles and excludes out-of-range records', async () => {
     const start = NOW - 2 * HOUR;
     const request = jest.fn().mockResolvedValue(response({ retCode: 0, result: { category: 'linear', symbol: 'BTCUSDT', list: [[String(start), '100', '105', '95', '101']] } }));
@@ -223,12 +257,17 @@ test('all collector private-data endpoints require token, reject invalid ranges,
   const runtime = collectorServer(new LiveFeed('private-test'), 'test-token', () => ({}));
   const get = jest.spyOn(CollectorPrivateTradingSource.prototype, 'instrument').mockResolvedValue(instrument());
   try {
-    for (const endpoint of ['instruments', 'quote', 'candles', 'funding']) {
+    for (const endpoint of ['instruments', 'quote', 'ticker', 'candles', 'funding']) {
       await requestApp(runtime.app).get(`/internal/v1/private-trading/${endpoint}/BTCUSDT`).expect(401);
     }
     expect(get).not.toHaveBeenCalled();
     const result = await requestApp(runtime.app).get('/internal/v1/private-trading/instruments/BTCUSDT').set('Authorization', 'Bearer test-token').expect(200);
     expect(result.headers['cache-control']).toBe('no-store'); expect(result.body.symbol).toBe('BTCUSDT');
+    const ticker = jest.spyOn(CollectorPrivateTradingSource.prototype, 'ticker').mockResolvedValue({ symbol: 'BTCUSDT', markPrice: '99.95', lastPrice: '100', markProviderTimestamp: NOW, receivedAt: NOW, fetchedAt: NOW });
+    try {
+      const priced = await requestApp(runtime.app).get('/internal/v1/private-trading/ticker/BTCUSDT').set('Authorization', 'Bearer test-token').expect(200);
+      expect(priced.body).toMatchObject({ symbol: 'BTCUSDT', markPrice: '99.95', lastPrice: '100' }); expect(ticker).toHaveBeenCalledWith('BTCUSDT', expect.any(AbortSignal));
+    } finally { ticker.mockRestore(); }
     await requestApp(runtime.app).get('/internal/v1/private-trading/candles/BTCUSDT?kind=bad').set('Authorization', 'Bearer test-token').expect(400);
     await requestApp(runtime.app).get('/internal/v1/private-trading/funding/BTCUSDT?startTime=0&endTime=1').set('Authorization', 'Bearer test-token').expect(400);
   } finally { get.mockRestore(); runtime.close(); }
