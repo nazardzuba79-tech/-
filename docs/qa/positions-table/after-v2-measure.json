@@ -1,0 +1,1031 @@
+[
+  {
+    "width": 1280,
+    "panel": 954,
+    "panelScroll": 1267,
+    "panelClient": 954,
+    "table": 1267,
+    "overflow": 313,
+    "rowHeight": 67,
+    "ths": [
+      {
+        "text": "Контракты",
+        "w": 158,
+        "left": 0,
+        "right": 158,
+        "sticky": true
+      },
+      {
+        "text": "К-во",
+        "w": 110,
+        "left": 158,
+        "right": 268,
+        "sticky": true
+      },
+      {
+        "text": "Стоим.",
+        "w": 119,
+        "left": 268,
+        "right": 387,
+        "sticky": true
+      },
+      {
+        "text": "Маржа",
+        "w": 103,
+        "left": 387,
+        "right": 490,
+        "sticky": true
+      },
+      {
+        "text": "Цена Входа",
+        "w": 53,
+        "left": 490,
+        "right": 543,
+        "sticky": true
+      },
+      {
+        "text": "Цена маркировки",
+        "w": 88,
+        "left": 543,
+        "right": 631,
+        "sticky": true
+      },
+      {
+        "text": "Цена ликвид.",
+        "w": 62,
+        "left": 631,
+        "right": 693,
+        "sticky": true
+      },
+      {
+        "text": "Нереализованный P&L(ROI)",
+        "w": 168,
+        "left": 693,
+        "right": 861,
+        "sticky": true
+      },
+      {
+        "text": "Реализованный P&L",
+        "w": 113,
+        "left": 861,
+        "right": 974,
+        "sticky": true
+      },
+      {
+        "text": "TP/SL",
+        "w": 106,
+        "left": 974,
+        "right": 1080,
+        "sticky": true
+      },
+      {
+        "text": "Закрыть как",
+        "w": 187,
+        "left": 767,
+        "right": 954,
+        "sticky": true
+      }
+    ],
+    "tds": [
+      {
+        "text": "AKEUSDT Бесср. Лонг Марж. торговля 10.00",
+        "w": 158,
+        "clippedText": false
+      },
+      {
+        "text": "14,999,900 AKE",
+        "w": 110,
+        "clippedText": false
+      },
+      {
+        "text": "806,994.62 USDT",
+        "w": 119,
+        "clippedText": false
+      },
+      {
+        "text": "5,999.96 USDT",
+        "w": 103,
+        "clippedText": false
+      },
+      {
+        "text": "0.004",
+        "w": 53,
+        "clippedText": false
+      },
+      {
+        "text": "0.0538",
+        "w": 88,
+        "clippedText": false
+      },
+      {
+        "text": "—",
+        "w": 62,
+        "clippedText": false
+      },
+      {
+        "text": "746,995.0200 12,450.00% ≈746,995.02 USD",
+        "w": 168,
+        "clippedText": false
+      },
+      {
+        "text": "-28.0230 ≈-28.02 USD",
+        "w": 113,
+        "clippedText": false
+      },
+      {
+        "text": "+ Добавить",
+        "w": 106,
+        "clippedText": false
+      },
+      {
+        "text": "Лимитный Рыночный",
+        "w": 187,
+        "clippedText": false
+      }
+    ],
+    "lastThVisible": true,
+    "scrollbarHeight": 0
+  },
+  {
+    "width": 1366,
+    "panel": 1040,
+    "panelScroll": 1267,
+    "panelClient": 1040,
+    "table": 1267,
+    "overflow": 227,
+    "rowHeight": 67,
+    "ths": [
+      {
+        "text": "Контракты",
+        "w": 158,
+        "left": 0,
+        "right": 158,
+        "sticky": true
+      },
+      {
+        "text": "К-во",
+        "w": 110,
+        "left": 158,
+        "right": 268,
+        "sticky": true
+      },
+      {
+        "text": "Стоим.",
+        "w": 119,
+        "left": 268,
+        "right": 387,
+        "sticky": true
+      },
+      {
+        "text": "Маржа",
+        "w": 103,
+        "left": 387,
+        "right": 490,
+        "sticky": true
+      },
+      {
+        "text": "Цена Входа",
+        "w": 53,
+        "left": 490,
+        "right": 543,
+        "sticky": true
+      },
+      {
+        "text": "Цена маркировки",
+        "w": 88,
+        "left": 543,
+        "right": 631,
+        "sticky": true
+      },
+      {
+        "text": "Цена ликвид.",
+        "w": 62,
+        "left": 631,
+        "right": 693,
+        "sticky": true
+      },
+      {
+        "text": "Нереализованный P&L(ROI)",
+        "w": 168,
+        "left": 693,
+        "right": 861,
+        "sticky": true
+      },
+      {
+        "text": "Реализованный P&L",
+        "w": 113,
+        "left": 861,
+        "right": 974,
+        "sticky": true
+      },
+      {
+        "text": "TP/SL",
+        "w": 106,
+        "left": 974,
+        "right": 1080,
+        "sticky": true
+      },
+      {
+        "text": "Закрыть как",
+        "w": 187,
+        "left": 853,
+        "right": 1040,
+        "sticky": true
+      }
+    ],
+    "tds": [
+      {
+        "text": "AKEUSDT Бесср. Лонг Марж. торговля 10.00",
+        "w": 158,
+        "clippedText": false
+      },
+      {
+        "text": "14,999,900 AKE",
+        "w": 110,
+        "clippedText": false
+      },
+      {
+        "text": "806,994.62 USDT",
+        "w": 119,
+        "clippedText": false
+      },
+      {
+        "text": "5,999.96 USDT",
+        "w": 103,
+        "clippedText": false
+      },
+      {
+        "text": "0.004",
+        "w": 53,
+        "clippedText": false
+      },
+      {
+        "text": "0.0538",
+        "w": 88,
+        "clippedText": false
+      },
+      {
+        "text": "—",
+        "w": 62,
+        "clippedText": false
+      },
+      {
+        "text": "746,995.0200 12,450.00% ≈746,995.02 USD",
+        "w": 168,
+        "clippedText": false
+      },
+      {
+        "text": "-28.0230 ≈-28.02 USD",
+        "w": 113,
+        "clippedText": false
+      },
+      {
+        "text": "+ Добавить",
+        "w": 106,
+        "clippedText": false
+      },
+      {
+        "text": "Лимитный Рыночный",
+        "w": 187,
+        "clippedText": false
+      }
+    ],
+    "lastThVisible": true,
+    "scrollbarHeight": 0
+  },
+  {
+    "width": 1440,
+    "panel": 1114,
+    "panelScroll": 1269,
+    "panelClient": 1114,
+    "table": 1269,
+    "overflow": 155,
+    "rowHeight": 67,
+    "ths": [
+      {
+        "text": "Контракты",
+        "w": 158,
+        "left": 0,
+        "right": 158,
+        "sticky": true
+      },
+      {
+        "text": "К-во",
+        "w": 110,
+        "left": 158,
+        "right": 268,
+        "sticky": true
+      },
+      {
+        "text": "Стоим.",
+        "w": 119,
+        "left": 268,
+        "right": 387,
+        "sticky": true
+      },
+      {
+        "text": "Маржа",
+        "w": 103,
+        "left": 387,
+        "right": 490,
+        "sticky": true
+      },
+      {
+        "text": "Цена Входа",
+        "w": 54,
+        "left": 490,
+        "right": 543,
+        "sticky": true
+      },
+      {
+        "text": "Цена маркировки",
+        "w": 89,
+        "left": 543,
+        "right": 632,
+        "sticky": true
+      },
+      {
+        "text": "Цена ликвид.",
+        "w": 63,
+        "left": 632,
+        "right": 695,
+        "sticky": true
+      },
+      {
+        "text": "Нереализованный P&L(ROI)",
+        "w": 168,
+        "left": 695,
+        "right": 863,
+        "sticky": true
+      },
+      {
+        "text": "Реализованный P&L",
+        "w": 113,
+        "left": 863,
+        "right": 976,
+        "sticky": true
+      },
+      {
+        "text": "TP/SL",
+        "w": 106,
+        "left": 976,
+        "right": 1083,
+        "sticky": true
+      },
+      {
+        "text": "Закрыть как",
+        "w": 187,
+        "left": 927,
+        "right": 1114,
+        "sticky": true
+      }
+    ],
+    "tds": [
+      {
+        "text": "AKEUSDT Бесср. Лонг Марж. торговля 10.00",
+        "w": 158,
+        "clippedText": false
+      },
+      {
+        "text": "14,999,900 AKE",
+        "w": 110,
+        "clippedText": false
+      },
+      {
+        "text": "806,994.62 USDT",
+        "w": 119,
+        "clippedText": false
+      },
+      {
+        "text": "5,999.96 USDT",
+        "w": 103,
+        "clippedText": false
+      },
+      {
+        "text": "0.004",
+        "w": 54,
+        "clippedText": false
+      },
+      {
+        "text": "0.0538",
+        "w": 89,
+        "clippedText": false
+      },
+      {
+        "text": "—",
+        "w": 63,
+        "clippedText": false
+      },
+      {
+        "text": "746,995.0200 12,450.00% ≈746,995.02 USD",
+        "w": 168,
+        "clippedText": false
+      },
+      {
+        "text": "-28.0230 ≈-28.02 USD",
+        "w": 113,
+        "clippedText": false
+      },
+      {
+        "text": "+ Добавить",
+        "w": 106,
+        "clippedText": false
+      },
+      {
+        "text": "Лимитный Рыночный",
+        "w": 187,
+        "clippedText": false
+      }
+    ],
+    "lastThVisible": true,
+    "scrollbarHeight": 0
+  },
+  {
+    "width": 1600,
+    "panel": 1274,
+    "panelScroll": 1274,
+    "panelClient": 1274,
+    "table": 1274,
+    "overflow": 0,
+    "rowHeight": 67,
+    "ths": [
+      {
+        "text": "Контракты",
+        "w": 158,
+        "left": 0,
+        "right": 158,
+        "sticky": true
+      },
+      {
+        "text": "К-во",
+        "w": 110,
+        "left": 158,
+        "right": 268,
+        "sticky": true
+      },
+      {
+        "text": "Стоим.",
+        "w": 119,
+        "left": 268,
+        "right": 387,
+        "sticky": true
+      },
+      {
+        "text": "Маржа",
+        "w": 103,
+        "left": 387,
+        "right": 490,
+        "sticky": true
+      },
+      {
+        "text": "Цена Входа",
+        "w": 55,
+        "left": 490,
+        "right": 544,
+        "sticky": true
+      },
+      {
+        "text": "Цена маркировки",
+        "w": 90,
+        "left": 544,
+        "right": 635,
+        "sticky": true
+      },
+      {
+        "text": "Цена ликвид.",
+        "w": 64,
+        "left": 635,
+        "right": 699,
+        "sticky": true
+      },
+      {
+        "text": "Нереализованный P&L(ROI)",
+        "w": 168,
+        "left": 699,
+        "right": 867,
+        "sticky": true
+      },
+      {
+        "text": "Реализованный P&L",
+        "w": 114,
+        "left": 867,
+        "right": 981,
+        "sticky": true
+      },
+      {
+        "text": "TP/SL",
+        "w": 106,
+        "left": 981,
+        "right": 1087,
+        "sticky": true
+      },
+      {
+        "text": "Закрыть как",
+        "w": 187,
+        "left": 1087,
+        "right": 1274,
+        "sticky": true
+      }
+    ],
+    "tds": [
+      {
+        "text": "AKEUSDT Бесср. Лонг Марж. торговля 10.00",
+        "w": 158,
+        "clippedText": false
+      },
+      {
+        "text": "14,999,900 AKE",
+        "w": 110,
+        "clippedText": false
+      },
+      {
+        "text": "806,994.62 USDT",
+        "w": 119,
+        "clippedText": false
+      },
+      {
+        "text": "5,999.96 USDT",
+        "w": 103,
+        "clippedText": false
+      },
+      {
+        "text": "0.004",
+        "w": 55,
+        "clippedText": false
+      },
+      {
+        "text": "0.0538",
+        "w": 90,
+        "clippedText": false
+      },
+      {
+        "text": "—",
+        "w": 64,
+        "clippedText": false
+      },
+      {
+        "text": "746,995.0200 12,450.00% ≈746,995.02 USD",
+        "w": 168,
+        "clippedText": false
+      },
+      {
+        "text": "-28.0230 ≈-28.02 USD",
+        "w": 114,
+        "clippedText": false
+      },
+      {
+        "text": "+ Добавить",
+        "w": 106,
+        "clippedText": false
+      },
+      {
+        "text": "Лимитный Рыночный",
+        "w": 187,
+        "clippedText": false
+      }
+    ],
+    "lastThVisible": true,
+    "scrollbarHeight": 0
+  },
+  {
+    "width": 1664,
+    "panel": 1338,
+    "panelScroll": 1338,
+    "panelClient": 1338,
+    "table": 1338,
+    "overflow": 0,
+    "rowHeight": 67,
+    "ths": [
+      {
+        "text": "Контракты",
+        "w": 158,
+        "left": 0,
+        "right": 158,
+        "sticky": true
+      },
+      {
+        "text": "К-во",
+        "w": 110,
+        "left": 158,
+        "right": 268,
+        "sticky": true
+      },
+      {
+        "text": "Стоим.",
+        "w": 119,
+        "left": 268,
+        "right": 387,
+        "sticky": true
+      },
+      {
+        "text": "Маржа",
+        "w": 103,
+        "left": 387,
+        "right": 490,
+        "sticky": true
+      },
+      {
+        "text": "Цена Входа",
+        "w": 70,
+        "left": 490,
+        "right": 560,
+        "sticky": true
+      },
+      {
+        "text": "Цена маркировки",
+        "w": 106,
+        "left": 560,
+        "right": 665,
+        "sticky": true
+      },
+      {
+        "text": "Цена ликвид.",
+        "w": 79,
+        "left": 665,
+        "right": 745,
+        "sticky": true
+      },
+      {
+        "text": "Нереализованный P&L(ROI)",
+        "w": 175,
+        "left": 745,
+        "right": 920,
+        "sticky": true
+      },
+      {
+        "text": "Реализованный P&L",
+        "w": 125,
+        "left": 920,
+        "right": 1045,
+        "sticky": true
+      },
+      {
+        "text": "TP/SL",
+        "w": 106,
+        "left": 1045,
+        "right": 1151,
+        "sticky": true
+      },
+      {
+        "text": "Закрыть как",
+        "w": 187,
+        "left": 1151,
+        "right": 1338,
+        "sticky": true
+      }
+    ],
+    "tds": [
+      {
+        "text": "AKEUSDT Бесср. Лонг Марж. торговля 10.00",
+        "w": 158,
+        "clippedText": false
+      },
+      {
+        "text": "14,999,900 AKE",
+        "w": 110,
+        "clippedText": false
+      },
+      {
+        "text": "806,994.62 USDT",
+        "w": 119,
+        "clippedText": false
+      },
+      {
+        "text": "5,999.96 USDT",
+        "w": 103,
+        "clippedText": false
+      },
+      {
+        "text": "0.004",
+        "w": 70,
+        "clippedText": false
+      },
+      {
+        "text": "0.0538",
+        "w": 106,
+        "clippedText": false
+      },
+      {
+        "text": "—",
+        "w": 79,
+        "clippedText": false
+      },
+      {
+        "text": "746,995.0200 12,450.00% ≈746,995.02 USD",
+        "w": 175,
+        "clippedText": false
+      },
+      {
+        "text": "-28.0230 ≈-28.02 USD",
+        "w": 125,
+        "clippedText": false
+      },
+      {
+        "text": "+ Добавить",
+        "w": 106,
+        "clippedText": false
+      },
+      {
+        "text": "Лимитный Рыночный",
+        "w": 187,
+        "clippedText": false
+      }
+    ],
+    "lastThVisible": true,
+    "scrollbarHeight": 0
+  },
+  {
+    "width": 1920,
+    "panel": 1570,
+    "panelScroll": 1570,
+    "panelClient": 1570,
+    "table": 1570,
+    "overflow": 0,
+    "rowHeight": 67,
+    "ths": [
+      {
+        "text": "Контракты",
+        "w": 170,
+        "left": 0,
+        "right": 170,
+        "sticky": true
+      },
+      {
+        "text": "К-во",
+        "w": 119,
+        "left": 170,
+        "right": 289,
+        "sticky": true
+      },
+      {
+        "text": "Стоим.",
+        "w": 128,
+        "left": 289,
+        "right": 417,
+        "sticky": true
+      },
+      {
+        "text": "Маржа",
+        "w": 111,
+        "left": 417,
+        "right": 528,
+        "sticky": true
+      },
+      {
+        "text": "Цена Входа",
+        "w": 100,
+        "left": 528,
+        "right": 628,
+        "sticky": true
+      },
+      {
+        "text": "Цена маркировки",
+        "w": 142,
+        "left": 628,
+        "right": 770,
+        "sticky": true
+      },
+      {
+        "text": "Цена ликвид.",
+        "w": 111,
+        "left": 770,
+        "right": 881,
+        "sticky": true
+      },
+      {
+        "text": "Нереализованный P&L(ROI)",
+        "w": 214,
+        "left": 881,
+        "right": 1095,
+        "sticky": true
+      },
+      {
+        "text": "Реализованный P&L",
+        "w": 159,
+        "left": 1095,
+        "right": 1254,
+        "sticky": true
+      },
+      {
+        "text": "TP/SL",
+        "w": 115,
+        "left": 1254,
+        "right": 1368,
+        "sticky": true
+      },
+      {
+        "text": "Закрыть как",
+        "w": 202,
+        "left": 1368,
+        "right": 1570,
+        "sticky": true
+      }
+    ],
+    "tds": [
+      {
+        "text": "AKEUSDT Бесср. Лонг Марж. торговля 10.00",
+        "w": 170,
+        "clippedText": false
+      },
+      {
+        "text": "14,999,900 AKE",
+        "w": 119,
+        "clippedText": false
+      },
+      {
+        "text": "806,994.62 USDT",
+        "w": 128,
+        "clippedText": false
+      },
+      {
+        "text": "5,999.96 USDT",
+        "w": 111,
+        "clippedText": false
+      },
+      {
+        "text": "0.004",
+        "w": 100,
+        "clippedText": false
+      },
+      {
+        "text": "0.0538",
+        "w": 142,
+        "clippedText": false
+      },
+      {
+        "text": "—",
+        "w": 111,
+        "clippedText": false
+      },
+      {
+        "text": "746,995.0200 12,450.00% ≈746,995.02 USD",
+        "w": 214,
+        "clippedText": false
+      },
+      {
+        "text": "-28.0230 ≈-28.02 USD",
+        "w": 159,
+        "clippedText": false
+      },
+      {
+        "text": "+ Добавить",
+        "w": 115,
+        "clippedText": false
+      },
+      {
+        "text": "Лимитный Рыночный",
+        "w": 202,
+        "clippedText": false
+      }
+    ],
+    "lastThVisible": true,
+    "scrollbarHeight": 0
+  },
+  {
+    "width": 2000,
+    "panel": 1650,
+    "panelScroll": 1650,
+    "panelClient": 1650,
+    "table": 1650,
+    "overflow": 0,
+    "rowHeight": 67,
+    "ths": [
+      {
+        "text": "Контракты",
+        "w": 179,
+        "left": 0,
+        "right": 179,
+        "sticky": true
+      },
+      {
+        "text": "К-во",
+        "w": 125,
+        "left": 179,
+        "right": 304,
+        "sticky": true
+      },
+      {
+        "text": "Стоим.",
+        "w": 135,
+        "left": 304,
+        "right": 438,
+        "sticky": true
+      },
+      {
+        "text": "Маржа",
+        "w": 117,
+        "left": 438,
+        "right": 555,
+        "sticky": true
+      },
+      {
+        "text": "Цена Входа",
+        "w": 105,
+        "left": 555,
+        "right": 660,
+        "sticky": true
+      },
+      {
+        "text": "Цена маркировки",
+        "w": 150,
+        "left": 660,
+        "right": 810,
+        "sticky": true
+      },
+      {
+        "text": "Цена ликвид.",
+        "w": 116,
+        "left": 810,
+        "right": 926,
+        "sticky": true
+      },
+      {
+        "text": "Нереализованный P&L(ROI)",
+        "w": 225,
+        "left": 926,
+        "right": 1151,
+        "sticky": true
+      },
+      {
+        "text": "Реализованный P&L",
+        "w": 167,
+        "left": 1151,
+        "right": 1317,
+        "sticky": true
+      },
+      {
+        "text": "TP/SL",
+        "w": 120,
+        "left": 1317,
+        "right": 1438,
+        "sticky": true
+      },
+      {
+        "text": "Закрыть как",
+        "w": 212,
+        "left": 1438,
+        "right": 1650,
+        "sticky": true
+      }
+    ],
+    "tds": [
+      {
+        "text": "AKEUSDT Бесср. Лонг Марж. торговля 10.00",
+        "w": 179,
+        "clippedText": false
+      },
+      {
+        "text": "14,999,900 AKE",
+        "w": 125,
+        "clippedText": false
+      },
+      {
+        "text": "806,994.62 USDT",
+        "w": 135,
+        "clippedText": false
+      },
+      {
+        "text": "5,999.96 USDT",
+        "w": 117,
+        "clippedText": false
+      },
+      {
+        "text": "0.004",
+        "w": 105,
+        "clippedText": false
+      },
+      {
+        "text": "0.0538",
+        "w": 150,
+        "clippedText": false
+      },
+      {
+        "text": "—",
+        "w": 116,
+        "clippedText": false
+      },
+      {
+        "text": "746,995.0200 12,450.00% ≈746,995.02 USD",
+        "w": 225,
+        "clippedText": false
+      },
+      {
+        "text": "-28.0230 ≈-28.02 USD",
+        "w": 167,
+        "clippedText": false
+      },
+      {
+        "text": "+ Добавить",
+        "w": 120,
+        "clippedText": false
+      },
+      {
+        "text": "Лимитный Рыночный",
+        "w": 212,
+        "clippedText": false
+      }
+    ],
+    "lastThVisible": true,
+    "scrollbarHeight": 0
+  }
+]
