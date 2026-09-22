@@ -161,11 +161,12 @@ let server, browser;
     });
     await page.screenshot({ path: path.join(OUT, '02-ksenia-profile-7d.png') });
     const weekly = report.scenarios.kseniaWeekly;
-    // The 7D readout itself, not merely the string somewhere on the page.
-    if (!/ROI\s*·\s*7D\s*\+?61[.,]9%/.test(weekly.readouts ?? weekly.body)) {
-      finding(`Ksenia profile 7D readout is not 61.9% — ${JSON.stringify(weekly.readouts)}`);
+    // After the completed 13–19.09 week, current 7D must be a moving
+    // ledger window again — never the historical 61.9% result.
+    if (/ROI\s*·\s*7D\s*\+?61[.,]9%/.test(weekly.readouts ?? weekly.body)) {
+      finding(`Ksenia profile current 7D is still frozen on historical 61.9% — ${JSON.stringify(weekly.readouts)}`);
     }
-    // And the PnL beside it is still the engine's, not derived from 61.9%.
+    // PnL beside it stays the engine's ledger value.
     weekly.pnlBesideRoi = (weekly.readouts ?? '').match(/PnL[^+\-]*([+\-][^A-Za-z]*USDT)/)?.[1] ?? null;
 
     // The card's own headline follows the marketplace period chips, so put
@@ -186,8 +187,8 @@ let server, browser;
       const el = await page.$(`.trader-card[data-trader-id="${id}"]`);
       if (el) await el.screenshot({ path: path.join(OUT, file) }).catch(() => {});
     }
-    if (!/61[.,]9/.test(weekCards.ksenia?.roi ?? '')) {
-      finding(`Ksenia CARD at 7D does not read 61.9% — ${JSON.stringify(weekCards.ksenia?.roi)}`);
+    if (/61[.,]9/.test(weekCards.ksenia?.roi ?? '')) {
+      finding(`Ksenia CARD current 7D is still frozen on historical 61.9% — ${JSON.stringify(weekCards.ksenia?.roi)}`);
     }
 
     // ── 3. route leave / return ───────────────────────────────────────
