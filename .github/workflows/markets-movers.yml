@@ -11,6 +11,12 @@ on:
       - 'src/services/marketData/AssetRegistry.ts'
       - 'src/services/marketData/__tests__/AssetRegistry.test.ts'
       - 'src/api/routes/marketData.ts'
+      # The public market router, including /market/featured-trader. It was
+      # path-matched only by native-demo-qa, whose test step runs
+      # private-trading suites and never market.test.ts — so nothing
+      # actually ran these.
+      - 'src/api/routes/market.ts'
+      - 'src/api/routes/__tests__/market.test.ts'
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/catalogueStore.ts'
       - 'frontend/src/lib/referenceAssets.ts'
@@ -50,5 +56,7 @@ jobs:
           VITE_API_URL: /api/v1
       - name: Catalogue backend regressions
         run: npm test -- --runInBand --runTestsByPath src/services/__tests__/KrakenMarketDataService.test.ts src/services/marketData/__tests__/AssetRegistry.test.ts src/services/marketData/__tests__/CatalogueScale.test.ts
+      - name: Public market route regressions
+        run: npm test -- --runInBand --runTestsByPath src/api/routes/__tests__/market.test.ts
       - name: Catalogue frontend and actual period-control regressions
         run: npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/cryptoCatalogue.test.ts frontend/src/lib/__tests__/marketsMoversControls.test.ts
