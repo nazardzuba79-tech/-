@@ -48,9 +48,9 @@ class Store:
         (root / 'data').mkdir(parents=True, exist_ok=True)
         (root / 'raw').mkdir(exist_ok=True)
         (root / 'reports').mkdir(exist_ok=True)
-        self.db = sqlite3.connect(root / 'data/csi.db')
+        self.db = sqlite3.connect(root / 'data/csi.db', timeout=120)
         self.db.executescript((Path(__file__).parent / 'schema.sql').read_text())
-        self.side = sqlite3.connect(root / 'data/sidecar.db')
+        self.side = sqlite3.connect(root / 'data/sidecar.db', timeout=120)
         self.side.executescript(
             'CREATE TABLE IF NOT EXISTS fetch_ledger(source TEXT, metric TEXT, asset TEXT, url TEXT, file TEXT,'
             ' http_status INTEGER, fetched_at_utc TEXT, bytes INTEGER, sha256 TEXT, max_date_in_response TEXT, note TEXT);'
@@ -87,6 +87,9 @@ class Store:
             'ON CONFLICT(source,metric,asset,date) DO UPDATE SET available_at=excluded.available_at,'
             "value=excluded.value,ingested_at=datetime('now')",
             (source, metric, asset, day, add_lag(day, lag), v))
+        self._pending = getattr(self, '_pending', 0) + 1
+        if self._pending >= 2000:
+            self.db.commit(); self._pending = 0
         return True
 
     # ---- fetching ------------------------------------------------------
@@ -146,7 +149,13 @@ class Store:
             raise RuntimeError(f'HTTP {status}; {error}; body[:300]={self.last_response["preview"]!r}')
         if ext == 'json':
             return json.loads(body)
+        if ext in ('bin', 'zip'):
+            return body
         return body.decode('utf-8-sig')
+
+    def request_bytes(self, source: str, metric: str, asset: str, url: str, ext: str = 'zip', timeout: int = 60) -> bytes:
+        """Same as request() but returns raw bytes (for zip archives)."""
+        return self.request(source, metric, asset, url, ext=ext, timeout=timeout)
 
     def finish(self) -> None:
         self.db.commit()

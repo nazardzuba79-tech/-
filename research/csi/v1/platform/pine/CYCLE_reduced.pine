@@ -4,23 +4,15 @@
 // fee share, exchange supply ratio, mcap per active address (none are available as equivalent TradingView symbols).
 // What remains: price-only valuation stretch on the chart symbol. Score = mean of causal percentile ranks (1 = expensive).
 // Non-repainting: uses only closed daily bars (barstate.isconfirmed) and no lookahead in request.security.
-indicator("CSI CYCLE_reduced (research-only)", overlay=false)
-minHist = input.int(365, "Min history for percentile (days)")
+indicator("CSI CYCLE_reduced (research-only)", overlay=false, max_bars_back=5000)
+// percent rank uses a rolling window (ta.percentrank), unlike the Python expanding percentile: values differ by construction
 mayer   = close / ta.sma(close, 200)
 ma2y    = close / ta.sma(close, 730)
 ma200w  = close / ta.sma(close, 1400) - 1
 // causal percentile rank of the current value within its own past
 f_pct(src, n) =>
-    // returns share of past values (up to n bars back, all available) strictly below the current value; na until minHist bars exist
-    cnt = 0
-    below = 0
-    for i = 1 to n
-        if not na(src[i])
-            cnt += 1
-            if src[i] < src
-                below += 1
-    cnt >= minHist ? below / cnt : na
-lookback = 5000
+    ta.percentrank(src, n) / 100.0
+lookback = 1500
 p1 = f_pct(mayer, lookback)
 p2 = f_pct(ma2y, lookback)
 p3 = f_pct(ma200w, lookback)

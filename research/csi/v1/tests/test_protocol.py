@@ -110,3 +110,23 @@ def test_backtest_costs_and_exposure_timing():
 def test_rsi_bounds():
     c = pd.Series(np.cumsum(np.random.default_rng(1).normal(size=300)) + 100)
     r = rsi(c).dropna(); assert r.between(0, 100).all()
+
+
+def test_v2_month_iter_and_unzip():
+    import io, zipfile
+    from csi.collect_v2 import month_iter, unzip_csv
+    assert list(month_iter('2019-11', '2020-02-15')) == ['2019-11', '2019-12', '2020-01', '2020-02']
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w') as z:
+        z.writestr('x.csv', 'a,b\n1,2\n')
+    assert unzip_csv(buf.getvalue()) == [['a', 'b'], ['1', '2']]
+
+
+def test_v2_registry_signs_fixed_and_hash_recorded():
+    import hashlib
+    from csi.features_v2 import registry
+    feats = registry(); ids = [f.fid for f in feats]
+    assert len(ids) == len(set(ids)), 'duplicate feature ids'
+    assert all(f.sign in (-1, 0, 1) for f in feats)
+    root = Path(__file__).resolve().parents[1]
+    assert hashlib.sha256((root / 'csi/features_v2.py').read_bytes()).hexdigest() == (root / 'docs/PREREGISTRATION_v2_HASH.txt').read_text().strip()

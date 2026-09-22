@@ -34,9 +34,9 @@ def log_experiment(kind: str, payload: dict) -> int:
     return n + 1
 
 
-def check_prereg() -> str:
-    h = hashlib.sha256((ROOT / 'csi/features.py').read_bytes()).hexdigest()
-    rec = (ROOT / 'docs/PREREGISTRATION_HASH.txt').read_text().strip()
+def check_prereg(hash_file: str = 'docs/PREREGISTRATION_HASH.txt', features_file: str = 'csi/features.py') -> str:
+    h = hashlib.sha256((ROOT / features_file).read_bytes()).hexdigest()
+    rec = (ROOT / hash_file).read_text().strip()
     if h != rec:
         log_experiment('PROTOCOL_VIOLATION', dict(msg='features.py changed after pre-registration', recorded=rec, current=h))
         print('WARNING: features.py hash differs from pre-registration record', file=sys.stderr)
@@ -65,11 +65,15 @@ def block_bootstrap_ic(x: np.ndarray, y: np.ndarray, block: int, n_boot: int = 3
     return float(np.nanpercentile(out, 5)), float(np.nanpercentile(out, 95))
 
 
-def ic_table(panel: pd.DataFrame, feats, targets: dict[str, pd.DataFrame], boot: bool = True) -> pd.DataFrame:
+def price_keys_v1(f) -> list[str]:
+    return ['cm'] if f.system in ('cycle', 'control') and f.fid != 'C001' else (['okx', 'cm'] if f.system == 'regime' else ['okx'])
+
+
+def ic_table(panel: pd.DataFrame, feats, targets: dict[str, pd.DataFrame], boot: bool = True, price_keys_for=price_keys_v1) -> pd.DataFrame:
     rows = []
     for f in feats:
         x_all = panel[f.fid]
-        price_keys = ['cm'] if f.system in ('cycle', 'control') and f.fid != 'C001' else (['okx', 'cm'] if f.system == 'regime' else ['okx'])
+        price_keys = price_keys_for(f)
         for price_key in price_keys:
           for h in HORIZONS:
               y_all = targets[price_key][h]
@@ -94,21 +98,24 @@ def ic_table(panel: pd.DataFrame, feats, targets: dict[str, pd.DataFrame], boot:
     return pd.DataFrame(rows)
 
 
-def main(boot: bool = True) -> None:
-    h = check_prereg()
-    d = Data(); panel, feats = build_panel(d)
+def main(boot: bool = True, registry_fn=registry, tag: str = '', price_keys_for=price_keys_v1, primary_price=None, extra_targets=None, prereg_hash_file='docs/PREREGISTRATION_HASH.txt', features_file='csi/features.py') -> None:
+    h = check_prereg(prereg_hash_file, features_file)
+    d = Data(); panel, feats = build_panel(d, registry_fn())
     targets = {'cm': pd.DataFrame({hh: forward_log_return(d.close('btc', 'cm'), hh) for hh in HORIZONS}),
                'okx': pd.DataFrame({hh: forward_log_return(d.close('btc', 'okx'), hh) for hh in HORIZONS})}
-    out = ROOT / 'evaluation'; out.mkdir(exist_ok=True)
-    panel.to_pickle(ROOT / 'data/panel.pkl')
-    ic = ic_table(panel, feats, targets, boot)
+    for k, close in (extra_targets or {}).items():
+        targets[k] = pd.DataFrame({hh: forward_log_return(close(d), hh) for hh in HORIZONS})
+    primary_price = primary_price or (lambda f: 'okx' if f.system == 'tactical' else 'cm')
+    out = ROOT / ('evaluation' + tag); out.mkdir(exist_ok=True)
+    panel.to_pickle(ROOT / f'data/panel{tag}.pkl')
+    ic = ic_table(panel, feats, targets, boot, price_keys_for)
     ic.to_csv(out / 'ic_individual.csv', index=False)
     # ranking on development only, worst valid slice, primary horizon per system
     rk = []
     for f in feats:
         if f.sign == 0:
             continue
-        pk = 'okx' if f.system == 'tactical' else 'cm'   # amendment (attempt 3): REGIME confirmation on the long CM-priced window; OKX-priced window reported alongside
+        pk = primary_price(f)   # v1: okx for tactical, cm otherwise (amendment attempt 3); v2: binance archive for tactical
         sub = ic[(ic.fid == f.fid) & (ic.window == 'dev') & (ic.horizon == PRIMARY[f.system]) & (ic.status == 'ok') & (ic.price == pk)]
         if sub.empty:
             rk.append(dict(fid=f.fid, name=f.name, system=f.system, horizon=PRIMARY[f.system], worst_slice=None, worst_signed_ic=np.nan, all_sign_ok=False, full_ci_excl0=False, status='insufficient')); continue
@@ -130,7 +137,7 @@ def main(boot: bool = True) -> None:
             if a < b and abs(corr.loc[a, b]) > 0.8:
                 fam.append(dict(a=a, b=b, rho=round(corr.loc[a, b], 3)))
     pd.DataFrame(fam).to_csv(out / 'clusters_dev.csv', index=False)
-    n = log_experiment('individual_ic', dict(features=len(feats), horizons=HORIZONS, prereg_hash=h, rows=len(ic), confirmed_dev=int((rank.status == 'confirmed_dev').sum())))
+    n = log_experiment('individual_ic' + tag, dict(features=len(feats), horizons=HORIZONS, prereg_hash=h, rows=len(ic), confirmed_dev=int((rank.status == 'confirmed_dev').sum())))
     print(rank.to_string()); print('experiment attempt', n)
 
 

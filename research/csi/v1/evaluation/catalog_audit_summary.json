@@ -1,8 +1,7 @@
 {
-  "evaluated": 44,
+  "evaluated": 55,
   "redundant_family": 11,
   "computable_not_evaluated": 66,
-  "untestable_definition": 61,
-  "insufficient_history": 6,
-  "data_unavailable": 52
+  "untestable_definition": 57,
+  "data_unavailable": 51
 }

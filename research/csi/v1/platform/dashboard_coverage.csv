@@ -1,8 +1,54 @@
 source,metric,asset,first_date,last_date,rows,lag,calendar_days,missing_pct,days_since_last,status
 alternative_me,fng,,2018-02-01,2026-09-21,3151,0.0,3155,0.1,1,OK
+binance_vision,funding_rate_daily,btcusdt,2020-01-01,2026-08-31,2435,0.0,2435,0.0,22,OK
+binance_vision,funding_rate_daily,ethusdt,2020-01-01,2026-08-31,2435,0.0,2435,0.0,22,OK
+binance_vision,long_short_ratio,btcusdt,2020-09-01,2026-09-20,2191,0.0,2211,0.9,2,OK
+binance_vision,long_short_ratio,ethusdt,2021-12-01,2026-09-20,1735,0.0,1755,1.1,2,OK
+binance_vision,open_interest,btcusdt,2020-09-01,2026-09-20,2211,0.0,2211,0.0,2,OK
+binance_vision,open_interest,ethusdt,2021-12-01,2026-09-20,1755,0.0,1755,0.0,2,OK
+binance_vision,open_interest_usd,btcusdt,2020-09-01,2026-09-20,2211,0.0,2211,0.0,2,OK
+binance_vision,open_interest_usd,ethusdt,2021-12-01,2026-09-20,1755,0.0,1755,0.0,2,OK
+binance_vision,perp_close,btcusdt,2020-01-01,2026-09-20,2455,0.0,2455,0.0,2,OK
+binance_vision,perp_close,ethusdt,2020-01-01,2026-09-20,2455,0.0,2455,0.0,2,OK
+binance_vision,perp_spot_basis,btcusdt,2020-01-01,2026-09-20,2455,0.0,2455,0.0,2,OK
+binance_vision,perp_spot_basis,ethusdt,2020-01-01,2026-09-20,2455,0.0,2455,0.0,2,OK
+binance_vision,perp_volume,btcusdt,2020-01-01,2026-09-20,2455,0.0,2455,0.0,2,OK
+binance_vision,perp_volume,ethusdt,2020-01-01,2026-09-20,2455,0.0,2455,0.0,2,OK
+binance_vision,spot_close,btcusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_close,ethusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_high,btcusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_high,ethusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_low,btcusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_low,ethusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_open,btcusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_open,ethusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_volume,btcusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_volume,ethusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_volume_quote,btcusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,spot_volume_quote,ethusdt,2017-08-17,2026-09-21,3323,0.0,3323,0.0,1,OK
+binance_vision,taker_buy_sell_ratio,btcusdt,2020-09-01,2026-09-20,2083,0.0,2211,5.8,2,OK
+binance_vision,taker_buy_sell_ratio,ethusdt,2021-12-01,2026-09-20,1627,0.0,1755,7.3,2,OK
+binance_vision,toptrader_ls_account_ratio,btcusdt,2020-09-01,2026-09-20,1891,0.0,2211,14.5,2,OK
+binance_vision,toptrader_ls_account_ratio,ethusdt,2021-12-01,2026-09-20,1435,0.0,1755,18.2,2,OK
+binance_vision,toptrader_ls_position_ratio,btcusdt,2020-09-01,2026-09-20,1891,0.0,2211,14.5,2,OK
+binance_vision,toptrader_ls_position_ratio,ethusdt,2021-12-01,2026-09-20,1435,0.0,1755,18.2,2,OK
+bitfinex,open_interest,btcf0ustf0,2019-08-22,2026-09-21,2588,0.0,2588,0.0,1,OK
+bitfinex,perp_spot_basis,btcf0ustf0,2019-08-22,2026-09-21,2588,0.0,2588,0.0,1,OK
+bitmex,funding_rate_daily,ethusd,2018-08-02,2026-09-16,2968,0.0,2968,0.0,6,STALE (6d)
+bitmex,funding_rate_daily,xbtusd,2016-05-14,2026-09-16,3778,0.0,3778,0.0,6,STALE (6d)
+bitstamp,spot_close,btcusd,2011-08-22,2026-09-21,5510,0.0,5510,0.0,1,OK
+bitstamp,spot_close,ethusd,2017-08-16,2020-04-08,967,0.0,967,0.0,2358,STALE (2358d)
+bitstamp,spot_volume,btcusd,2011-08-22,2026-09-21,5510,0.0,5510,0.0,1,OK
+bitstamp,spot_volume,ethusd,2017-08-16,2020-04-08,967,0.0,967,0.0,2358,STALE (2358d)
 blockchain_info,DiffMean,btc,2009-01-03,2026-09-21,6461,1.0,6471,0.2,1,OK
 blockchain_info,FeeTotUSD,btc,2009-01-17,2026-09-21,6450,1.0,6457,0.1,1,OK
 blockchain_info,RevUSD,btc,2009-01-17,2026-09-21,6450,1.0,6457,0.1,1,OK
+blockchain_info,tx_volume_usd_est,btc,2010-08-28,2026-09-21,5847,1.0,5869,0.4,1,OK
+blockchain_info,unique_addresses_used,btc,2009-01-03,2026-09-21,6435,1.0,6471,0.6,1,OK
+coinbase,spot_close,btcusd,2015-07-20,2026-09-21,4082,0.0,4082,0.0,1,OK
+coinbase,spot_close,ethusd,2016-05-18,2026-09-21,3777,0.0,3779,0.1,1,OK
+coinbase,spot_volume,btcusd,2015-07-20,2026-09-21,4082,0.0,4082,0.0,1,OK
+coinbase,spot_volume,ethusd,2016-05-18,2026-09-21,3777,0.0,3779,0.1,1,OK
 coinmetrics,AdrActCnt,btc,2009-01-03,2026-09-21,6471,1.0,6471,0.0,1,OK
 coinmetrics,AdrActCnt,eth,2015-07-30,2026-09-21,4072,1.0,4072,0.0,1,OK
 coinmetrics,AdrBalCnt,btc,2009-01-03,2026-09-21,6471,1.0,6471,0.0,1,OK
@@ -59,9 +105,14 @@ defillama,stablecoin_mcap_ethereum,,2017-11-29,2026-09-21,3219,1.0,3219,0.0,1,OK
 defillama,stablecoin_mcap_solana,,2021-09-10,2026-09-21,1595,1.0,1838,13.2,1,OK
 defillama,stablecoin_mcap_tron,,2019-04-16,2026-09-21,2716,1.0,2716,0.0,1,OK
 defillama,total_tvl,,2017-09-27,2026-09-21,3282,1.0,3282,0.0,1,OK
+deribit,dvol_close,btc,2021-03-24,2026-09-21,2008,0.0,2008,0.0,1,OK
+deribit,dvol_close,eth,2021-03-24,2026-09-21,2008,0.0,2008,0.0,1,OK
+deribit,funding_rate_daily,btc-perpetual,2019-04-30,2026-09-21,2702,0.0,2702,0.0,1,OK
+deribit,funding_rate_daily,eth-perpetual,2019-04-30,2026-09-21,2702,0.0,2702,0.0,1,OK
 farside,etf_flow_musd,btc,2024-01-11,2026-09-21,691,1.0,985,29.8,1,SHORT_HISTORY
 farside,etf_flow_musd,eth,2024-07-23,2026-09-21,553,1.0,791,30.1,1,SHORT_HISTORY
 fred,BAMLH0A0HYM2,,2023-09-22,2026-09-18,785,1.0,1093,28.2,4,OK
+fred,DEXKOUS,,1981-04-13,2026-09-18,11357,1.0,16595,31.6,4,OK
 fred,DFF,,1954-07-01,2026-09-18,26378,1.0,26378,0.0,4,OK
 fred,DFII10,,2003-01-02,2026-09-18,5933,1.0,8661,31.5,4,OK
 fred,DTWEXBGS,,2006-01-02,2026-09-18,5193,1.0,7565,31.4,4,OK
@@ -113,3 +164,4 @@ okx,spot_volume,btcusdt,2018-01-11,2026-09-21,3176,0.0,3176,0.0,1,OK
 okx,spot_volume,ethusdt,2018-01-11,2026-09-21,3176,0.0,3176,0.0,1,OK
 okx,spot_volume_quote,btcusdt,2018-01-11,2026-09-21,3176,0.0,3176,0.0,1,OK
 okx,spot_volume_quote,ethusdt,2018-01-11,2026-09-21,3176,0.0,3176,0.0,1,OK
+upbit,spot_close,krw-btc,2017-09-25,2026-09-21,3284,0.0,3284,0.0,1,OK

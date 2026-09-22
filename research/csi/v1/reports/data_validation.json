@@ -1,22 +1,29 @@
 {
-  "checked_at_utc": "2026-09-22T03:39:34.566658+00:00",
-  "total_rows": 435259,
+  "checked_at_utc": "2026-09-22T04:48:41.624311+00:00",
+  "total_rows": 593892,
   "date_min": "1954-07-01",
   "date_max": "2026-09-21",
-  "series_count": 114,
+  "series_count": 166,
   "sources": [
     "alternative_me",
+    "binance_vision",
+    "bitfinex",
+    "bitmex",
+    "bitstamp",
     "blockchain_info",
+    "coinbase",
     "coinmetrics",
     "defillama",
+    "deribit",
     "farside",
     "fred",
-    "okx"
+    "okx",
+    "upbit"
   ],
   "lag_check": "PASS",
   "lag_failures": [],
   "canonical_pairs": 73,
   "canonical_obtained_primary": 37,
-  "canonical_obtained_fallback": 11,
-  "canonical_missing": 25
+  "canonical_obtained_fallback": 19,
+  "canonical_missing": 17
 }

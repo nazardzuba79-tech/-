@@ -98,9 +98,10 @@ def stats(df: pd.DataFrame) -> dict:
     return out
 
 
-def run_system(name: str, panel: pd.DataFrame, feats, d: Data, rank: pd.DataFrame, clusters: pd.DataFrame) -> dict:
-    h = PRIMARY[name]; h2 = SECONDARY[name]; pk = PRICE_FOR[name]
-    close = d.close('btc', pk); y = forward_log_return(close, h); y2 = forward_log_return(close, h2)
+def run_system(name: str, panel: pd.DataFrame, feats, d: Data, rank: pd.DataFrame, clusters: pd.DataFrame, price_for=None, closes=None, outroot: str = 'systems', exec_close=None) -> dict:
+    price_for = price_for or PRICE_FOR; closes = closes or {}
+    h = PRIMARY[name]; h2 = SECONDARY[name]; pk = price_for[name]
+    close = closes[pk](d) if pk in closes else d.close('btc', pk); y = forward_log_return(close, h); y2 = forward_log_return(close, h2)
     fmap = {f.fid: f for f in feats}
     signed = [f for f in feats if f.system == name and f.sign != 0]
     rk = rank[rank.system == name].set_index('fid')
@@ -114,9 +115,21 @@ def run_system(name: str, panel: pd.DataFrame, feats, d: Data, rank: pd.DataFram
     confirmed = [(f.fid, f.sign) for f in signed if f.fid in rk.index and rk.loc[f.fid, 'status'] == 'confirmed_dev' and f.fid not in drop]
     exploratory = [(f.fid, f.sign) for f in signed if f.fid in rk.index and rk.loc[f.fid, 'status'] != 'insufficient' and f.fid not in drop]
     out = dict(system=name, horizon=h, price=pk, dedupe_dropped=sorted(drop), confirmed_components=[c[0] for c in confirmed], exploratory_components=[c[0] for c in exploratory])
-    outdir = ROOT / 'systems' / name; outdir.mkdir(parents=True, exist_ok=True)
+    outdir = ROOT / outroot / name; outdir.mkdir(parents=True, exist_ok=True)
     results = {}
-    for variant, comps in (('confirmed', confirmed), ('exploratory', exploratory)):
+    variants = [('confirmed', confirmed), ('exploratory', exploratory)]
+    if len(confirmed) > 1:   # PREREGISTRATION.md rule 6: drop components whose removal improves development IC by > 0.01 (single simultaneous pass)
+        h_ = PRIMARY[name]; dev_mask_ = (panel.index + pd.Timedelta(days=h_) <= DEV_END)
+        full_sc, _ = composite(panel, confirmed); base_ic = ic(full_sc[dev_mask_], y)[0]
+        keep = []
+        for fid, sgn in confirmed:
+            rest = [c for c in confirmed if c[0] != fid]
+            sc_, _ = composite(panel, rest); v_ = ic(sc_[dev_mask_], y)[0]
+            if not (v_ - base_ic > 0.01):
+                keep.append((fid, sgn))
+        if keep and len(keep) < len(confirmed):
+            variants.append(('confirmed_pruned', keep))
+    for variant, comps in variants:
         if not comps:
             results[variant] = dict(status='EMPTY: no component passed the pre-registered confirmation rule'); continue
         score, parts = composite(panel, comps)
@@ -167,7 +180,7 @@ def run_system(name: str, panel: pd.DataFrame, feats, d: Data, rank: pd.DataFram
         _, st2 = backtest(score[score.index <= DEV_END], close[close.index <= DEV_END], 'pct', REBAL[name] * 4, invert=invert); sens['rebalance_x4_dev'] = st2.get('strategy')
         _, st3 = backtest(score[score.index <= DEV_END], close[close.index <= DEV_END], 'pct', REBAL[name], cost=COST * 2, invert=invert); sens['cost_x2_dev'] = st3.get('strategy')
         if name != 'tactical':  # executable-venue check for CM-priced systems
-            okx = d.close('btc', 'okx'); yo = forward_log_return(okx, h)
+            okx = exec_close(d) if exec_close else d.close('btc', 'okx'); yo = forward_log_return(okx, h)
             sens['okx_price_dev_ic'] = round(ic(s_dev[s_dev.index >= pd.Timestamp('2018-01-11')], yo)[0], 4); sens['okx_price_holdout_ic'] = round(ic(s_hold, yo)[0], 4)
         # source dropout
         drops = {}
@@ -193,16 +206,16 @@ def run_system(name: str, panel: pd.DataFrame, feats, d: Data, rank: pd.DataFram
     return out
 
 
-def main() -> None:
-    d = Data(); panel = pd.read_pickle(ROOT / 'data/panel.pkl'); feats = registry()
-    rank = pd.read_csv(ROOT / 'evaluation/ic_ranking_dev.csv'); clusters = pd.read_csv(ROOT / 'evaluation/clusters_dev.csv')
+def main(registry_fn=registry, tag: str = '', price_for=None, closes=None, exec_close=None) -> None:
+    d = Data(); panel = pd.read_pickle(ROOT / f'data/panel{tag}.pkl'); feats = registry_fn()
+    rank = pd.read_csv(ROOT / f'evaluation{tag}/ic_ranking_dev.csv'); clusters = pd.read_csv(ROOT / f'evaluation{tag}/clusters_dev.csv')
     allres = {}
     for name in ('cycle', 'regime', 'tactical'):
-        allres[name] = run_system(name, panel, feats, d, rank, clusters)
-        n = log_experiment('composite_build_and_single_holdout', dict(system=name, confirmed=allres[name]['confirmed_components'], exploratory=allres[name]['exploratory_components'],
+        allres[name] = run_system(name, panel, feats, d, rank, clusters, price_for, closes, 'systems' + tag, exec_close)
+        n = log_experiment('composite_build_and_single_holdout' + tag, dict(system=name, confirmed=allres[name]['confirmed_components'], exploratory=allres[name]['exploratory_components'],
                                                                         dropped=allres[name]['dedupe_dropped'], variants={k: (v.get('status') or f"dev_ic={v['dev_ic']:.3f} holdout_ic={v['holdout_ic']:.3f}") for k, v in allres[name]['results'].items()}))
         print(name, 'attempt', n, json.dumps({k: (v.get('status') or dict(dev=v['dev_ic'], hold=v['holdout_ic'])) for k, v in allres[name]['results'].items()}))
-    (ROOT / 'systems/all_results.json').write_text(json.dumps(allres, indent=2, default=lambda o: float(o) if isinstance(o, (np.floating,)) else str(o)))
+    (ROOT / f'systems{tag}/all_results.json').write_text(json.dumps(allres, indent=2, default=lambda o: float(o) if isinstance(o, (np.floating,)) else str(o)))
 
 
 if __name__ == '__main__':

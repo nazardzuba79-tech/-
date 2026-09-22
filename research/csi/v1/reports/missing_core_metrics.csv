@@ -14,13 +14,5 @@ coinmetrics,NVTAdj90,btc,1,UNAVAILABLE,not in catalog for asset
 coinmetrics,NVTAdj90,eth,1,UNAVAILABLE,not in catalog for asset
 coinmetrics,VtyDayRet30d,btc,1,UNAVAILABLE,not in catalog for asset
 coinmetrics,VtyDayRet30d,eth,1,UNAVAILABLE,not in catalog for asset
-binance_futures,open_interest,btcusdt,0,FAIL,"GEO_BLOCKED_OR_ERROR: RuntimeError('HTTP 451; HTTP Error 451: ; body[:300]=\'{\\n  ""code"": 0,\\n  ""msg"": ""Service unavailable from a restricted location according to \\\'b. Eligibility\\\' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message i"
-binance_futures,open_interest,ethusdt,0,FAIL,Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted
-binance_futures,open_interest_usd,btcusdt,0,FAIL,Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted
-binance_futures,open_interest_usd,ethusdt,0,FAIL,Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted
-binance_futures,taker_buy_sell_ratio,btcusdt,0,FAIL,"GEO_BLOCKED_OR_ERROR: RuntimeError('HTTP 451; HTTP Error 451: ; body[:300]=\'{\\n  ""code"": 0,\\n  ""msg"": ""Service unavailable from a restricted location according to \\\'b. Eligibility\\\' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message i"
-binance_futures,taker_buy_sell_ratio,ethusdt,0,FAIL,Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted
-binance_futures,long_short_ratio,btcusdt,0,FAIL,"GEO_BLOCKED_OR_ERROR: RuntimeError('HTTP 451; HTTP Error 451: ; body[:300]=\'{\\n  ""code"": 0,\\n  ""msg"": ""Service unavailable from a restricted location according to \\\'b. Eligibility\\\' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message i"
-binance_futures,long_short_ratio,ethusdt,0,FAIL,Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted
 coingecko,share_top100_above_sma50,,1,NOT_ATTEMPTED,
 coingecko,share_top100_beating_btc_30d,,1,NOT_ATTEMPTED,

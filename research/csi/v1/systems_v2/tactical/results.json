@@ -1,0 +1,742 @@
+{
+  "system": "tactical",
+  "horizon": 7,
+  "price": "bv",
+  "dedupe_dropped": [
+    "M017",
+    "M021",
+    "M040",
+    "M044",
+    "N006",
+    "T113"
+  ],
+  "confirmed_components": [
+    "T102",
+    "T108",
+    "T110"
+  ],
+  "exploratory_components": [
+    "M096t",
+    "N005",
+    "M018",
+    "M068",
+    "T101",
+    "T102",
+    "T103",
+    "T104",
+    "T105",
+    "T106",
+    "T107",
+    "T108",
+    "T109",
+    "T110",
+    "T111",
+    "T112"
+  ],
+  "results": {
+    "confirmed": {
+      "components": [
+        "T102",
+        "T108",
+        "T110"
+      ],
+      "n_components": 3,
+      "dev_ic": 0.13455518203213018,
+      "dev_n": 1956,
+      "dev_ic_ci90": [
+        0.04813947437362977,
+        0.22320473438876975
+      ],
+      "dev_ic_secondary_h": 0.05251537173867463,
+      "dev_yearly": [
+        {
+          "year": 2017,
+          "n": 137,
+          "ic": -0.1516
+        },
+        {
+          "year": 2018,
+          "n": 365,
+          "ic": 0.3645
+        },
+        {
+          "year": 2019,
+          "n": 365,
+          "ic": 0.2473
+        },
+        {
+          "year": 2020,
+          "n": 366,
+          "ic": 0.0255
+        },
+        {
+          "year": 2021,
+          "n": 365,
+          "ic": 0.0554
+        },
+        {
+          "year": 2022,
+          "n": 358,
+          "ic": 0.13
+        }
+      ],
+      "dev_slices": {
+        "full": 0.1346,
+        "ex_2020-03_2022-01": 0.2106,
+        "ex_2017": 0.1388,
+        "since_2022": 0.13
+      },
+      "ablation_dev": [
+        {
+          "removed": "T102",
+          "name": "Funding 7d mean (BitMEX XBTUSD)",
+          "dev_ic_without": 0.0664,
+          "delta_vs_full": -0.0681,
+          "harmful": false
+        },
+        {
+          "removed": "T108",
+          "name": "DVOL level",
+          "dev_ic_without": 0.0894,
+          "delta_vs_full": -0.0451,
+          "harmful": false
+        },
+        {
+          "removed": "T110",
+          "name": "Coinbase premium 3d mean",
+          "dev_ic_without": 0.1251,
+          "delta_vs_full": -0.0095,
+          "harmful": false
+        }
+      ],
+      "single_component_dev_ic": {
+        "T102": 0.0698,
+        "T108": 0.1908,
+        "T110": 0.041
+      },
+      "holdout_ic": 0.030526901645261825,
+      "holdout_n": 1323,
+      "holdout_ic_ci90": [
+        -0.057642313017020066,
+        0.10868961180488361
+      ],
+      "holdout_ic_secondary_h": 0.02922039487742719,
+      "holdout_yearly": [
+        {
+          "year": 2023,
+          "n": 335,
+          "ic": 0.2082
+        },
+        {
+          "year": 2024,
+          "n": 366,
+          "ic": -0.1182
+        },
+        {
+          "year": 2025,
+          "n": 365,
+          "ic": 0.0535
+        },
+        {
+          "year": 2026,
+          "n": 257,
+          "ic": 0.1194
+        }
+      ],
+      "backtests": {
+        "dev": {
+          "start": "2018-05-18",
+          "end": "2022-12-30",
+          "years": 4.62,
+          "avg_exposure": 0.443,
+          "turnover_per_year": 34.58,
+          "strategy": {
+            "cagr": 0.1074,
+            "vol": 0.4041,
+            "sharpe": 0.252,
+            "max_dd_log": -0.5585
+          },
+          "buy_and_hold": {
+            "cagr": 0.1628,
+            "vol": 0.7303,
+            "sharpe": 0.206,
+            "max_dd_log": -1.4537
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.069,
+            "vol": 0.3233,
+            "sharpe": 0.206,
+            "max_dd_log": -0.6436
+          }
+        },
+        "dev_baseline_price_only_M017": {
+          "start": "2018-08-30",
+          "end": "2022-12-30",
+          "years": 4.34,
+          "avg_exposure": 0.507,
+          "turnover_per_year": 24.6,
+          "strategy": {
+            "cagr": -0.1432,
+            "vol": 0.4931,
+            "sharpe": -0.313,
+            "max_dd_log": -0.911
+          },
+          "buy_and_hold": {
+            "cagr": 0.2199,
+            "vol": 0.7367,
+            "sharpe": 0.27,
+            "max_dd_log": -1.4537
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.106,
+            "vol": 0.3733,
+            "sharpe": 0.27,
+            "max_dd_log": -0.7366
+          }
+        },
+        "dev_baseline_onchain_only_T101": {
+          "start": "2021-01-05",
+          "end": "2022-12-30",
+          "years": 1.98,
+          "avg_exposure": 0.611,
+          "turnover_per_year": 8.99,
+          "strategy": {
+            "cagr": -0.1726,
+            "vol": 0.4564,
+            "sharpe": -0.415,
+            "max_dd_log": -0.916
+          },
+          "buy_and_hold": {
+            "cagr": -0.3039,
+            "vol": 0.7295,
+            "sharpe": -0.496,
+            "max_dd_log": -1.4537
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": -0.1985,
+            "vol": 0.4456,
+            "sharpe": -0.496,
+            "max_dd_log": -0.8879
+          }
+        },
+        "holdout": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.596,
+          "turnover_per_year": 37.73,
+          "strategy": {
+            "cagr": 0.1812,
+            "vol": 0.3405,
+            "sharpe": 0.489,
+            "max_dd_log": -0.3677
+          },
+          "buy_and_hold": {
+            "cagr": 0.3042,
+            "vol": 0.4704,
+            "sharpe": 0.564,
+            "max_dd_log": -0.7544
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1714,
+            "vol": 0.2801,
+            "sharpe": 0.564,
+            "max_dd_log": -0.4493
+          }
+        },
+        "holdout_baseline_price_only_M017": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.553,
+          "turnover_per_year": 28.2,
+          "strategy": {
+            "cagr": 0.0095,
+            "vol": 0.3207,
+            "sharpe": 0.029,
+            "max_dd_log": -0.5801
+          },
+          "buy_and_hold": {
+            "cagr": 0.3042,
+            "vol": 0.4704,
+            "sharpe": 0.564,
+            "max_dd_log": -0.7544
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1581,
+            "vol": 0.2599,
+            "sharpe": 0.564,
+            "max_dd_log": -0.4169
+          }
+        },
+        "holdout_baseline_onchain_only_T101": {
+          "start": "2024-01-30",
+          "end": "2026-09-08",
+          "years": 2.61,
+          "avg_exposure": 0.598,
+          "turnover_per_year": 10.29,
+          "strategy": {
+            "cagr": 0.0757,
+            "vol": 0.3056,
+            "sharpe": 0.239,
+            "max_dd_log": -0.4585
+          },
+          "buy_and_hold": {
+            "cagr": 0.2589,
+            "vol": 0.4696,
+            "sharpe": 0.49,
+            "max_dd_log": -0.7544
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1477,
+            "vol": 0.281,
+            "sharpe": 0.49,
+            "max_dd_log": -0.4515
+          }
+        }
+      },
+      "sensitivities": {
+        "min_periods_730_dev_ic": 0.0446,
+        "min_periods_730_holdout_ic": 0.0176,
+        "rebalance_x4_dev": {
+          "cagr": 0.043,
+          "vol": 0.4016,
+          "sharpe": 0.105,
+          "max_dd_log": -0.632
+        },
+        "cost_x2_dev": {
+          "cagr": 0.0514,
+          "vol": 0.4041,
+          "sharpe": 0.124,
+          "max_dd_log": -0.6478
+        },
+        "source_dropout": {
+          "coinmetrics": {
+            "status": "composite empty without this source"
+          }
+        }
+      },
+      "score_mean_by_year": {
+        "2017": 0.486,
+        "2018": 0.422,
+        "2019": 0.413,
+        "2020": 0.407,
+        "2021": 0.38,
+        "2022": 0.424,
+        "2023": 0.334,
+        "2024": 0.39,
+        "2025": 0.364,
+        "2026": 0.411
+      },
+      "dev_ic_uptrend": 0.093,
+      "holdout_ic_uptrend": 0.0143,
+      "dev_ic_downtrend": 0.2017,
+      "holdout_ic_downtrend": 0.0768
+    },
+    "exploratory": {
+      "components": [
+        "M096t",
+        "N005",
+        "M018",
+        "M068",
+        "T101",
+        "T102",
+        "T103",
+        "T104",
+        "T105",
+        "T106",
+        "T107",
+        "T108",
+        "T109",
+        "T110",
+        "T111",
+        "T112"
+      ],
+      "n_components": 16,
+      "dev_ic": 0.038008467571154836,
+      "dev_n": 725,
+      "dev_ic_ci90": [
+        -0.06406246722000322,
+        0.1680960480270113
+      ],
+      "dev_ic_secondary_h": 0.022897175219522333,
+      "dev_yearly": [
+        {
+          "year": 2021,
+          "n": 365,
+          "ic": 0.1233
+        },
+        {
+          "year": 2022,
+          "n": 358,
+          "ic": 0.1492
+        }
+      ],
+      "dev_slices": {
+        "full": 0.038,
+        "ex_2020-03_2022-01": 0.1093,
+        "ex_2017": 0.038,
+        "since_2022": 0.1492
+      },
+      "ablation_dev": [
+        {
+          "removed": "M096t",
+          "name": "Fear & Greed level (tactical)",
+          "dev_ic_without": 0.102,
+          "delta_vs_full": 0.064,
+          "harmful": true
+        },
+        {
+          "removed": "N005",
+          "name": "5d return z (60d)",
+          "dev_ic_without": 0.0522,
+          "delta_vs_full": 0.0142,
+          "harmful": true
+        },
+        {
+          "removed": "M018",
+          "name": "Stochastic %K 14",
+          "dev_ic_without": 0.0562,
+          "delta_vs_full": 0.0182,
+          "harmful": true
+        },
+        {
+          "removed": "M068",
+          "name": "Perp-spot basis (Binance archive)",
+          "dev_ic_without": 0.0858,
+          "delta_vs_full": 0.0477,
+          "harmful": true
+        },
+        {
+          "removed": "T101",
+          "name": "Funding 7d mean (Binance archive)",
+          "dev_ic_without": 0.0584,
+          "delta_vs_full": 0.0204,
+          "harmful": true
+        },
+        {
+          "removed": "T102",
+          "name": "Funding 7d mean (BitMEX XBTUSD)",
+          "dev_ic_without": 0.0727,
+          "delta_vs_full": 0.0347,
+          "harmful": true
+        },
+        {
+          "removed": "T103",
+          "name": "OI contracts 7d change (Binance archive)",
+          "dev_ic_without": 0.0486,
+          "delta_vs_full": 0.0106,
+          "harmful": true
+        },
+        {
+          "removed": "T104",
+          "name": "OI USD / market cap (Binance archive)",
+          "dev_ic_without": 0.0137,
+          "delta_vs_full": -0.0243,
+          "harmful": false
+        },
+        {
+          "removed": "T105",
+          "name": "Taker buy/sell ratio 7d mean",
+          "dev_ic_without": 0.0459,
+          "delta_vs_full": 0.0079,
+          "harmful": false
+        },
+        {
+          "removed": "T106",
+          "name": "Global long/short account ratio",
+          "dev_ic_without": 0.0237,
+          "delta_vs_full": -0.0143,
+          "harmful": false
+        },
+        {
+          "removed": "T107",
+          "name": "Top-trader position long/short ratio",
+          "dev_ic_without": 0.041,
+          "delta_vs_full": 0.003,
+          "harmful": false
+        },
+        {
+          "removed": "T108",
+          "name": "DVOL level",
+          "dev_ic_without": 0.0141,
+          "delta_vs_full": -0.0239,
+          "harmful": false
+        },
+        {
+          "removed": "T109",
+          "name": "DVOL 7d change",
+          "dev_ic_without": 0.0405,
+          "delta_vs_full": 0.0025,
+          "harmful": false
+        },
+        {
+          "removed": "T110",
+          "name": "Coinbase premium 3d mean",
+          "dev_ic_without": 0.0725,
+          "delta_vs_full": 0.0345,
+          "harmful": true
+        },
+        {
+          "removed": "T111",
+          "name": "Kimchi premium 3d mean",
+          "dev_ic_without": 0.0556,
+          "delta_vs_full": 0.0176,
+          "harmful": true
+        },
+        {
+          "removed": "T112",
+          "name": "Bitfinex OI 7d change",
+          "dev_ic_without": 0.0523,
+          "delta_vs_full": 0.0143,
+          "harmful": true
+        }
+      ],
+      "single_component_dev_ic": {
+        "M096t": -0.1185,
+        "N005": -0.0052,
+        "M018": -0.0541,
+        "M068": -0.0234,
+        "T101": -0.0043,
+        "T102": 0.0698,
+        "T103": -0.0099,
+        "T104": 0.115,
+        "T105": -0.0873,
+        "T106": 0.1007,
+        "T107": -0.1179,
+        "T108": 0.1908,
+        "T109": -0.0007,
+        "T110": 0.041,
+        "T111": 0.0796,
+        "T112": -0.0224
+      },
+      "holdout_ic": 0.005728170303365025,
+      "holdout_n": 1323,
+      "holdout_ic_ci90": [
+        -0.07825541141548893,
+        0.08769059897519775
+      ],
+      "holdout_ic_secondary_h": 0.018058736754584657,
+      "holdout_yearly": [
+        {
+          "year": 2023,
+          "n": 335,
+          "ic": 0.1488
+        },
+        {
+          "year": 2024,
+          "n": 366,
+          "ic": -0.0147
+        },
+        {
+          "year": 2025,
+          "n": 365,
+          "ic": 0.1999
+        },
+        {
+          "year": 2026,
+          "n": 257,
+          "ic": -0.116
+        }
+      ],
+      "backtests": {
+        "dev": {
+          "start": "2021-12-29",
+          "end": "2022-12-30",
+          "years": 1.0,
+          "avg_exposure": 0.644,
+          "turnover_per_year": 26.78,
+          "strategy": {
+            "cagr": -0.3585,
+            "vol": 0.4504,
+            "sharpe": -0.985,
+            "max_dd_log": -0.5809
+          },
+          "buy_and_hold": {
+            "cagr": -0.6422,
+            "vol": 0.6428,
+            "sharpe": -1.598,
+            "max_dd_log": -1.1066
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": -0.4842,
+            "vol": 0.414,
+            "sharpe": -1.598,
+            "max_dd_log": -0.7128
+          }
+        },
+        "dev_baseline_price_only_M017": {
+          "start": "2018-08-30",
+          "end": "2022-12-30",
+          "years": 4.34,
+          "avg_exposure": 0.507,
+          "turnover_per_year": 24.6,
+          "strategy": {
+            "cagr": -0.1432,
+            "vol": 0.4931,
+            "sharpe": -0.313,
+            "max_dd_log": -0.911
+          },
+          "buy_and_hold": {
+            "cagr": 0.2199,
+            "vol": 0.7367,
+            "sharpe": 0.27,
+            "max_dd_log": -1.4537
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.106,
+            "vol": 0.3733,
+            "sharpe": 0.27,
+            "max_dd_log": -0.7366
+          }
+        },
+        "dev_baseline_onchain_only_T101": {
+          "start": "2021-01-05",
+          "end": "2022-12-30",
+          "years": 1.98,
+          "avg_exposure": 0.611,
+          "turnover_per_year": 8.99,
+          "strategy": {
+            "cagr": -0.1726,
+            "vol": 0.4564,
+            "sharpe": -0.415,
+            "max_dd_log": -0.916
+          },
+          "buy_and_hold": {
+            "cagr": -0.3039,
+            "vol": 0.7295,
+            "sharpe": -0.496,
+            "max_dd_log": -1.4537
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": -0.1985,
+            "vol": 0.4456,
+            "sharpe": -0.496,
+            "max_dd_log": -0.8879
+          }
+        },
+        "holdout": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.62,
+          "turnover_per_year": 40.68,
+          "strategy": {
+            "cagr": 0.1065,
+            "vol": 0.3381,
+            "sharpe": 0.299,
+            "max_dd_log": -0.5032
+          },
+          "buy_and_hold": {
+            "cagr": 0.3042,
+            "vol": 0.4704,
+            "sharpe": 0.564,
+            "max_dd_log": -0.7544
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.179,
+            "vol": 0.2917,
+            "sharpe": 0.564,
+            "max_dd_log": -0.4677
+          }
+        },
+        "holdout_baseline_price_only_M017": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.553,
+          "turnover_per_year": 28.2,
+          "strategy": {
+            "cagr": 0.0095,
+            "vol": 0.3207,
+            "sharpe": 0.029,
+            "max_dd_log": -0.5801
+          },
+          "buy_and_hold": {
+            "cagr": 0.3042,
+            "vol": 0.4704,
+            "sharpe": 0.564,
+            "max_dd_log": -0.7544
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1581,
+            "vol": 0.2599,
+            "sharpe": 0.564,
+            "max_dd_log": -0.4169
+          }
+        },
+        "holdout_baseline_onchain_only_T101": {
+          "start": "2024-01-30",
+          "end": "2026-09-08",
+          "years": 2.61,
+          "avg_exposure": 0.598,
+          "turnover_per_year": 10.29,
+          "strategy": {
+            "cagr": 0.0757,
+            "vol": 0.3056,
+            "sharpe": 0.239,
+            "max_dd_log": -0.4585
+          },
+          "buy_and_hold": {
+            "cagr": 0.2589,
+            "vol": 0.4696,
+            "sharpe": 0.49,
+            "max_dd_log": -0.7544
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1477,
+            "vol": 0.281,
+            "sharpe": 0.49,
+            "max_dd_log": -0.4515
+          }
+        }
+      },
+      "sensitivities": {
+        "min_periods_730_dev_ic": 0.0594,
+        "min_periods_730_holdout_ic": 0.0113,
+        "rebalance_x4_dev": {
+          "cagr": -0.3735,
+          "vol": 0.4532,
+          "sharpe": -1.031,
+          "max_dd_log": -0.5816
+        },
+        "cost_x2_dev": {
+          "cagr": -0.3838,
+          "vol": 0.4503,
+          "sharpe": -1.074,
+          "max_dd_log": -0.6071
+        },
+        "source_dropout": {
+          "alternative_me": {
+            "dev_ic": 0.102,
+            "holdout_ic": 0.013,
+            "remaining": 15
+          },
+          "coinmetrics": {
+            "dev_ic": -0.0838,
+            "holdout_ic": 0.0098,
+            "remaining": 4
+          },
+          "okx": {
+            "dev_ic": 0.1051,
+            "holdout_ic": 0.0246,
+            "remaining": 13
+          }
+        }
+      },
+      "score_mean_by_year": {
+        "2020": 0.198,
+        "2021": 0.43,
+        "2022": 0.514,
+        "2023": 0.462,
+        "2024": 0.465,
+        "2025": 0.512,
+        "2026": 0.514
+      },
+      "dev_ic_uptrend": 0.1043,
+      "holdout_ic_uptrend": 0.0545,
+      "dev_ic_downtrend": 0.1147,
+      "holdout_ic_downtrend": -0.0975
+    }
+  }
+}

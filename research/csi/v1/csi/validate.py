@@ -16,7 +16,7 @@ CANONICAL = [  # (source, metric, asset, lag) exactly as in the owner's spec / l
     ('alternative_me', 'fng', '', 0),
     ('coingecko', 'share_top100_above_sma50', '', 1), ('coingecko', 'share_top100_beating_btc_30d', '', 1),
 ]
-FALLBACK_SOURCES = {'binance_spot': ['okx'], 'binance_futures': ['okx'], 'coinmetrics': ['blockchain_info']}
+FALLBACK_SOURCES = {'binance_spot': ['binance_vision', 'okx'], 'binance_futures': ['binance_vision', 'okx'], 'coinmetrics': ['blockchain_info']}
 
 
 def main() -> int:

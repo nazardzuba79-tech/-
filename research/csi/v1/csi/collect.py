@@ -129,25 +129,74 @@ def collect_coinmetrics(s: Store) -> None:
         w = csv.writer(fh); w.writerow(['metric', 'asset', 'kind', 'status', 'detail']); w.writerows(wanted_report)
 
 
-# ---------------------------------------------------------------- Binance (expected geo-block; recorded verbatim)
+# ---------------------------------------------------------------- Binance direct API (451 from the research runtime; parsers follow the documented formats)
 def collect_binance(s: Store) -> None:
-    probes = [
-        ('binance_spot', 'spot_close', 'btcusdt', 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=1000&startTime=1502928000000'),
-        ('binance_futures', 'funding_rate_daily', 'btcusdt', 'https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1000&startTime=1546300800000'),
-        ('binance_futures', 'open_interest', 'btcusdt', 'https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1d&limit=500'),
-        ('binance_futures', 'taker_buy_sell_ratio', 'btcusdt', 'https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=BTCUSDT&period=1d&limit=500'),
-        ('binance_futures', 'long_short_ratio', 'btcusdt', 'https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=1d&limit=500'),
-    ]
-    for source, metric, asset, url in probes:
+    """Spot 1d klines (2017-08-17+), USD-M funding events (2019-09+), short-history OI / taker / long-short (period=1d, ~30 days)."""
+    start_today = int(dt.datetime.combine(dt.date.fromisoformat(s.day), dt.time(), UTC).timestamp() * 1000)
+    for symbol in ('BTCUSDT', 'ETHUSDT'):
+        asset = symbol.lower(); cursor = int(dt.datetime(2017, 8, 17, tzinfo=UTC).timestamp() * 1000); n = 0
         try:
-            s.request(source, metric, asset, url)
-            s.log(source, metric, asset, 'FAIL', 'Unexpected 200: parser for this runtime not implemented because the endpoint was geo-blocked during development; raw saved')
+            for _ in range(100):
+                data = s.request('binance_spot', 'spot_ohlcv', asset, 'https://api.binance.com/api/v3/klines?' + urllib.parse.urlencode({'symbol': symbol, 'interval': '1d', 'limit': 1000, 'startTime': cursor, 'endTime': start_today - 1}))
+                if not data:
+                    break
+                for row in data:
+                    t = int(row[0]); o, h, l, c = map(float, row[1:5])
+                    if min(o, h, l, c) <= 0 or h < max(o, c, l) or l > min(o, c, h):
+                        raise ValueError('Invalid OHLC geometry')
+                    d = epoch_day(t); n += s.put('binance_spot', 'spot_close', asset, d, c, 0)
+                    for m, v in (('spot_open', o), ('spot_high', h), ('spot_low', l), ('spot_volume', row[5]), ('spot_volume_quote', row[7])):
+                        s.put('binance_spot', m, asset, d, v, 0)
+                nxt = int(data[-1][0]) + 1
+                if nxt <= cursor:
+                    raise ValueError('Pagination stalled')
+                cursor = nxt
+                if len(data) < 1000:
+                    break
+            for m in ('spot_close', 'spot_open', 'spot_high', 'spot_low', 'spot_volume', 'spot_volume_quote'):
+                s.log('binance_spot', m, asset, 'OK', f'{n} closed daily bars via direct API')
         except Exception as exc:
-            s.log(source, metric, asset, 'FAIL', 'GEO_BLOCKED_OR_ERROR: ' + repr(exc)[:600])
-    for source, metric in (('binance_spot', 'spot_close'), ('binance_spot', 'spot_volume'), ('binance_futures', 'funding_rate_daily'), ('binance_futures', 'perp_spot_basis'),
-                           ('binance_futures', 'open_interest'), ('binance_futures', 'open_interest_usd'), ('binance_futures', 'taker_buy_sell_ratio'), ('binance_futures', 'long_short_ratio')):
-        for asset in ('btcusdt', 'ethusdt'):
-            s.log(source, metric, asset, 'FAIL', 'Not collected: Binance returns HTTP 451 (restricted location) from this runtime; no bypass attempted')
+            s.log('binance_spot', 'spot_close', asset, 'FAIL', 'GEO_BLOCKED_OR_ERROR: ' + repr(exc)[:400])
+        # funding events
+        cursor = int(dt.datetime(2019, 9, 1, tzinfo=UTC).timestamp() * 1000); events = {}
+        try:
+            for _ in range(100):
+                data = s.request('binance_futures', 'funding_events', asset, 'https://fapi.binance.com/fapi/v1/fundingRate?' + urllib.parse.urlencode({'symbol': symbol, 'startTime': cursor, 'endTime': start_today - 1, 'limit': 1000}))
+                if not data:
+                    break
+                for row in data:
+                    if row.get('symbol') != symbol:
+                        raise ValueError('Wrong symbol')
+                    events[int(row['fundingTime'])] = float(row['fundingRate'])
+                nxt = max(int(r['fundingTime']) for r in data) + 1
+                if nxt <= cursor:
+                    raise ValueError('Funding pagination stalled')
+                cursor = nxt
+                if len(data) < 1000:
+                    break
+            days = {}
+            for t, v in sorted(events.items()):
+                days.setdefault(epoch_day(t), []).append(v)
+            nf = 0
+            with (s.root / f'reports/funding_event_counts_binance_{asset}.csv').open('w', newline='') as fh:
+                w = csv.writer(fh); w.writerow(['date', 'event_count', 'sum_rates', 'completeness'])
+                for day, vals in sorted(days.items()):
+                    nf += s.put('binance_futures', 'funding_rate_daily', asset, day, math.fsum(vals), 0); w.writerow([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+            s.log('binance_futures', 'funding_rate_daily', asset, 'OK', f'{nf} days from {len(events)} actual settlement events')
+        except Exception as exc:
+            s.log('binance_futures', 'funding_rate_daily', asset, 'FAIL', 'GEO_BLOCKED_OR_ERROR: ' + repr(exc)[:400])
+        # short-history statistics (documented: recent ~30 days only). timestamp = end of period per docs => date = day of (timestamp - 1ms)
+        for metric, path, key in (('open_interest', 'openInterestHist', 'sumOpenInterest'), ('open_interest_usd', 'openInterestHist', 'sumOpenInterestValue'),
+                                  ('taker_buy_sell_ratio', 'takerlongshortRatio', 'buySellRatio'), ('long_short_ratio', 'globalLongShortAccountRatio', 'longShortRatio')):
+            try:
+                data = s.request('binance_futures', metric, asset, f'https://fapi.binance.com/futures/data/{path}?symbol={symbol}&period=1d&limit=500')
+                n = 0; first = None
+                for row in data:
+                    d = epoch_day(int(row['timestamp']) - 1); first = min(first, d) if first else d
+                    n += s.put('binance_futures', metric, asset, d, row[key], 0)
+                s.log('binance_futures', metric, asset, 'PARTIAL', f'{n} rows, first date {first}; endpoint serves ~30 days only; period-end timestamp mapped to the day it closes')
+            except Exception as exc:
+                s.log('binance_futures', metric, asset, 'FAIL', 'GEO_BLOCKED_OR_ERROR: ' + repr(exc)[:400])
 
 
 def collect_bybit(s: Store) -> None:

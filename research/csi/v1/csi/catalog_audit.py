@@ -17,7 +17,9 @@ SNAP = ROOT.parent / 'snapshot'
 
 def main() -> None:
     from .features import registry
-    reg = {f.fid.rstrip('t'): f for f in registry()}
+    from .features_v2 import registry as registry_v2
+    reg = {f.fid.rstrip('t'): f for f in registry() + registry_v2()}
+    v2map = {'M067': 'T101/T102/T113', 'M069': 'T103/R103', 'M070': 'T104/R102', 'M071': 'T104', 'M072': 'T103', 'M073': 'T105', 'M074': 'T106', 'M075': 'T107', 'M079': 'T108/R104 (DVOL proxy, new id)', 'M098': 'T110/R105', 'M099': 'T111/R106', 'O051': 'R107/C101 (blockchain.info tx volume, new id)'}
     ev = {'M096t': 'M096'}
     rows = list(csv.DictReader((SNAP / 'catalog/catalog.csv').open(encoding='utf-8-sig')))
     meta = {m['id']: m for m in json.load((SNAP / 'catalog/selection_metadata.json').open())}
@@ -29,7 +31,9 @@ def main() -> None:
                  'O012': 'thermocap level enters O013 (mcap/thermocap)', 'O054': 'velocity needs TxTfrValAdjUSD (unavailable)', 'M016': 'MA crossover = SMA distance family (M001)', 'M002': 'EMA slope = trend family (M001/M015)'}
     for r in rows:
         fid = r['id']; ds = r['data_source']; v = r['verdict']; status = None; reason = ''
-        if fid in reg or fid in ev.values():
+        if fid in v2map:
+            status = 'evaluated'; reason = f'v2: implemented as {v2map[fid]}; see evaluation_v2/'
+        elif fid in reg or fid in ev.values():
             status = 'evaluated'; reason = 'implemented in csi/features.py; see evaluation/ic_individual.csv'
         elif fid in redundant:
             status = 'redundant_family'; reason = redundant[fid]

@@ -1,9 +1,14 @@
 {
-  "version": 2,
+  "version": 3,
   "agent": "Claude Code (Fable 5.1) — executor; Codex not involved in this run",
-  "updated_at_utc": "2026-09-22T03:45:00+00:00",
+  "updated_at_utc": "2026-09-22T04:50:00+00:00",
   "mode": "A_DATA_OBTAINED",
-  "snapshot": {"zip_sha256": "afbd0761ca1e8141aef22adae0689da6e0e7292d3889de4473c83941fa1a6ce6", "files_verified": 59, "mismatches": 0, "path": "research/csi/snapshot"},
+  "snapshot": {
+    "zip_sha256": "afbd0761ca1e8141aef22adae0689da6e0e7292d3889de4473c83941fa1a6ce6",
+    "files_verified": 59,
+    "mismatches": 0,
+    "path": "research/csi/snapshot"
+  },
   "stages": {
     "0_snapshot_and_state": "done",
     "1_network_data_gate": "done — preflight 200/200/451/200; collected coinmetrics, fred, alternative_me, defillama, okx(fallback), blockchain_info(fallback), farside; blocked: binance 451, bybit 403, coingecko 401/429",
@@ -11,18 +16,135 @@
     "3_catalog_audit_and_individual_ic": "done — 51 features, 6 horizons, 4 slices, block bootstrap; 240 catalogue ids mapped to run status",
     "4_preregistration_and_systems": "done — CYCLE confirmed=1 component (dev IC 0.43, holdout insufficient N_eff 2.6); REGIME confirmed=4 (dev 0.17, holdout -0.12 sign reversal); TACTICAL confirmed=0 (contrarian thesis rejected)",
     "5_platform": "done — dashboard.html, FEED_FEASIBILITY.md, 3 reduced Pine v6 files NOT_COMPILED, 13 unit tests pass",
-    "6_package": "done — ZIP in research/csi/dist, handoff appended, pushed to claude/intelligent-mendel-mlpslf"
+    "6_package": "done — ZIP in research/csi/dist, handoff appended, pushed to claude/intelligent-mendel-mlpslf",
+    "7_v2_free_sources": "done — binance_vision, bitmex, deribit(+DVOL), bitfinex, coinbase, bitstamp, upbit, blockchain_info extra; 593892 rows, 166 series, lag_check PASS",
+    "8_v2_evaluation_and_systems": "done — PREREGISTRATION_v2; 75 features; REGIME_pruned holdout IC +0.115 (CI incl. 0, second look); TACTICAL confirmed(3) holdout 0.03; CYCLE unchanged",
+    "9_v2_platform_and_package": "done — CSI_Cycle_Gauge.pine, TRADINGVIEW_UA.md, RUN_ON_YOUR_PC_UA.md, update_all.sh, ZIP v2"
   },
-  "database_rows": 435259, "series_count": 114, "lag_check": "PASS",
-  "blocked": {"binance": "HTTP 451 restricted location", "bybit": "HTTP 403 CloudFront country block", "coingecko_market_chart_days_max": "HTTP 401 after 429", "coinmetrics_non_community": ["CapRealUSD", "SplyAct1yr", "SplyActEver", "TxTfrValAdjUSD", "FeeTotUSD", "RevUSD", "DiffMean", "NVTAdj90", "VtyDayRet30d"]},
-  "short_history": {"okx_funding_days": 97, "okx_oi_longshort_days": 180, "okx_taker_days": 72, "farside_btc_from": "2024-01-11", "farside_eth_from": "2024-07-23"},
-  "protocol": {"preregistration": "v1/docs/PREREGISTRATION.md", "features_sha256": "see v1/docs/PREREGISTRATION_HASH.txt", "amendments_logged": 2, "experiments_logged": 6, "holdout_opened_times": 1},
+  "database_rows": 593892,
+  "series_count": 166,
+  "lag_check": "PASS",
+  "blocked": {
+    "binance": "HTTP 451 restricted location",
+    "bybit": "HTTP 403 CloudFront country block",
+    "coingecko_market_chart_days_max": "HTTP 401 after 429",
+    "coinmetrics_non_community": [
+      "CapRealUSD",
+      "SplyAct1yr",
+      "SplyActEver",
+      "TxTfrValAdjUSD",
+      "FeeTotUSD",
+      "RevUSD",
+      "DiffMean",
+      "NVTAdj90",
+      "VtyDayRet30d"
+    ],
+    "note_v2": "data.binance.vision (public archive) answers 200; api.binance.com still 451; no bypass used"
+  },
+  "short_history": {
+    "okx_funding_days": 97,
+    "okx_oi_longshort_days": 180,
+    "okx_taker_days": 72,
+    "farside_btc_from": "2024-01-11",
+    "farside_eth_from": "2024-07-23",
+    "binance_vision_metrics_from": "2021-12-01",
+    "dvol_from": "2021-03-24",
+    "bitmex_api_last_record": "2026-09-16"
+  },
+  "protocol": {
+    "preregistration": "v1/docs/PREREGISTRATION.md",
+    "features_sha256": "see v1/docs/PREREGISTRATION_HASH.txt",
+    "amendments_logged": 2,
+    "experiments_logged": 6,
+    "holdout_opened_times": 1,
+    "v2": {
+      "preregistration": "v1/docs/PREREGISTRATION_v2.md",
+      "features_v2_sha256": "see v1/docs/PREREGISTRATION_v2_HASH.txt",
+      "experiments_logged": 15,
+      "holdout_looks_v2": 2
+    }
+  },
   "systems": {
-    "cycle": {"status": "research_only_not_confirmed", "confirmed_components": ["M066"], "dev_ic": 0.434, "holdout_ic": 0.878, "holdout_status": "insufficient (N_eff 2.6)"},
-    "regime": {"status": "negative_result", "confirmed_components": ["O080", "M106", "O046", "N004"], "dev_ic": 0.174, "holdout_ic": -0.122},
-    "tactical": {"status": "negative_result", "confirmed_components": [], "exploratory_dev_ic": -0.072, "holdout_ic": 0.000}
+    "cycle": {
+      "status": "research_only_not_confirmed",
+      "confirmed_components": [
+        "M066"
+      ],
+      "dev_ic": 0.434,
+      "holdout_ic": 0.878,
+      "holdout_status": "insufficient (N_eff 2.6)"
+    },
+    "regime": {
+      "status": "negative_result",
+      "confirmed_components": [
+        "O080",
+        "M106",
+        "O046",
+        "N004"
+      ],
+      "dev_ic": 0.174,
+      "holdout_ic": -0.122
+    },
+    "tactical": {
+      "status": "negative_result",
+      "confirmed_components": [],
+      "exploratory_dev_ic": -0.072,
+      "holdout_ic": 0.0
+    }
   },
   "pine": "3 reduced scripts written; NOT compiled in TradingView; no parity claim",
   "ready_for_live_trading": false,
-  "unresolved": ["ETH systems", "66 computable catalogue candidates not implemented", "FRED/Coin Metrics vintage audit", "TradingView compilation of reduced Pine", "post-hoc hypotheses need separate pre-registration"]
+  "unresolved": [
+    "REGIME_pruned needs an independent forward test on data after 2026-09-21",
+    "TradingView compilation of 4 Pine scripts",
+    "ETH systems",
+    "FRED/Coin Metrics vintage audit",
+    "Bitstamp ETH pagination stops 2020-04 (not needed)"
+  ],
+  "systems_v2": {
+    "cycle": {
+      "status": "unchanged_research_only",
+      "confirmed": [
+        "M066"
+      ]
+    },
+    "regime": {
+      "status": "not_confirmed_candidate_for_independent_check",
+      "confirmed": [
+        "O080",
+        "M106",
+        "M015",
+        "N004",
+        "R101",
+        "R105",
+        "R106",
+        "R108"
+      ],
+      "confirmed_dev_ic": 0.208,
+      "confirmed_holdout_ic": -0.034,
+      "pruned": [
+        "O080",
+        "R101",
+        "R105",
+        "R106"
+      ],
+      "pruned_dev_ic": 0.268,
+      "pruned_holdout_ic": 0.115,
+      "pruned_holdout_ci90": [
+        -0.084,
+        0.329
+      ],
+      "pruned_holdout_note": "second look, not blind"
+    },
+    "tactical": {
+      "status": "negative_result",
+      "confirmed": [
+        "T102",
+        "T108",
+        "T110"
+      ],
+      "dev_ic": 0.135,
+      "holdout_ic": 0.031
+    }
+  }
 }

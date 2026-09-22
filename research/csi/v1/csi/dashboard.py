@@ -6,7 +6,7 @@ import datetime as dt, html, json, sqlite3
 from pathlib import Path
 import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_CADENCE = {'fred:WALCL': 7, 'fred:WTREGEN': 7, 'fred:WRESBAL': 7, 'fred:M2SL': 31, 'fred:NFCI': 7}
+EXPECTED_CADENCE = {'fred:WALCL': 7, 'fred:WTREGEN': 7, 'fred:WRESBAL': 7, 'fred:M2SL': 31, 'fred:NFCI': 7, 'binance_vision:funding_rate_daily': 31, 'binance_vision:perp_close': 31}
 
 
 def main() -> None:

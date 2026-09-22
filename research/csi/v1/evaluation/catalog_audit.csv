@@ -65,19 +65,19 @@ M063,Stock-to-Flow price model,market,cycle_controversial,reject,binance_spot + 
 M064,Days since halving,market,cycle_controversial,weak,binance_spot + local_calculation,halving_age_days,evaluated,implemented in csi/features.py; see evaluation/ic_individual.csv
 M065,Four-year return,market,cycle_controversial,weak,binance_spot + local_calculation,four_year_return,evaluated,implemented in csi/features.py; see evaluation/ic_individual.csv
 M066,Log power-law residual,market,cycle_controversial,weak,binance_spot + local_calculation,powerlaw_residual,evaluated,implemented in csi/features.py; see evaluation/ic_individual.csv
-M067,Daily funding sum,market,derivatives,keep_candidate,binance_futures,funding_rate_daily,evaluated,implemented in csi/features.py; see evaluation/ic_individual.csv
+M067,Daily funding sum,market,derivatives,keep_candidate,binance_futures,funding_rate_daily,evaluated,v2: implemented as T101/T102/T113; see evaluation_v2/
 M068,Perpetual-spot basis,market,derivatives,keep_candidate,binance_futures,perp_spot_basis,evaluated,implemented in csi/features.py; see evaluation/ic_individual.csv
-M069,Open interest contracts,market,derivatives,keep_candidate,binance_futures,open_interest,insufficient_history,Binance 451 / Bybit 403; OKX fallback gives 72-180 days (rubik) or ~97 days (funding)
-M070,Open interest USD,market,derivatives,keep_candidate,binance_futures,open_interest_usd,insufficient_history,Binance 451 / Bybit 403; OKX fallback gives 72-180 days (rubik) or ~97 days (funding)
-M071,OI to market cap,market,derivatives,keep_candidate,binance_futures; optional public Deribit after endpoint audit,oi_mcap_ratio,insufficient_history,Binance 451 / Bybit 403; OKX fallback gives 72-180 days (rubik) or ~97 days (funding)
-M072,Price-neutral OI change,market,derivatives,keep_candidate,binance_futures; optional public Deribit after endpoint audit,oi_contract_change,insufficient_history,Binance 451 / Bybit 403; OKX fallback gives 72-180 days (rubik) or ~97 days (funding)
-M073,Taker buy/sell ratio,market,derivatives,keep_candidate,binance_futures,taker_buy_sell_ratio,insufficient_history,Binance 451 / Bybit 403; OKX fallback gives 72-180 days (rubik) or ~97 days (funding)
-M074,Global account long/short ratio,market,derivatives,weak,binance_futures,long_short_ratio,insufficient_history,Binance 451 / Bybit 403; OKX fallback gives 72-180 days (rubik) or ~97 days (funding)
-M075,Top traders position ratio,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,top_position_ratio,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
+M069,Open interest contracts,market,derivatives,keep_candidate,binance_futures,open_interest,evaluated,v2: implemented as T103/R103; see evaluation_v2/
+M070,Open interest USD,market,derivatives,keep_candidate,binance_futures,open_interest_usd,evaluated,v2: implemented as T104/R102; see evaluation_v2/
+M071,OI to market cap,market,derivatives,keep_candidate,binance_futures; optional public Deribit after endpoint audit,oi_mcap_ratio,evaluated,v2: implemented as T104; see evaluation_v2/
+M072,Price-neutral OI change,market,derivatives,keep_candidate,binance_futures; optional public Deribit after endpoint audit,oi_contract_change,evaluated,v2: implemented as T103; see evaluation_v2/
+M073,Taker buy/sell ratio,market,derivatives,keep_candidate,binance_futures,taker_buy_sell_ratio,evaluated,v2: implemented as T105; see evaluation_v2/
+M074,Global account long/short ratio,market,derivatives,weak,binance_futures,long_short_ratio,evaluated,v2: implemented as T106; see evaluation_v2/
+M075,Top traders position ratio,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,top_position_ratio,evaluated,v2: implemented as T107; see evaluation_v2/
 M076,Liquidation notional,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,liquidation_notional,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
 M077,Liquidation imbalance,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,liquidation_imbalance,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
 M078,Dated futures annualized basis,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,dated_basis_annualized,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
-M079,ATM implied volatility,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,atm_iv,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
+M079,ATM implied volatility,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,atm_iv,evaluated,"v2: implemented as T108/R104 (DVOL proxy, new id); see evaluation_v2/"
 M080,25-delta risk reversal,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,risk_reversal_25d,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
 M081,25-delta butterfly,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,butterfly_25d,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
 M082,Implied-volatility term slope,market,derivatives,untestable,binance_futures; optional public Deribit after endpoint audit,iv_term_slope,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
@@ -96,8 +96,8 @@ M094,Rolling BTC beta,market,breadth_sentiment,keep_candidate,coingecko + explic
 M095,BTC-ETH correlation,market,breadth_sentiment,keep_candidate,coingecko + explicitly audited venue sources,btc_eth_correlation,data_unavailable,CoinGecko public API returned 429 then 401 for days=max (verbatim in collection_log); no point-in-time universe
 M096,Fear & Greed,market,breadth_sentiment,weak,alternative_me,fng,evaluated,implemented in csi/features.py; see evaluation/ic_individual.csv
 M097,Google Trends attention,market,breadth_sentiment,untestable,coingecko + explicitly audited venue sources,google_trends_btc,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
-M098,Coinbase premium,market,breadth_sentiment,untestable,coingecko + explicitly audited venue sources,coinbase_premium,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
-M099,Kimchi premium,market,breadth_sentiment,untestable,coingecko + explicitly audited venue sources,kimchi_premium,untestable_definition,"Не допускати до навчання, доки не підтверджено методологію та дозволену історію."
+M098,Coinbase premium,market,breadth_sentiment,untestable,coingecko + explicitly audited venue sources,coinbase_premium,evaluated,v2: implemented as T110/R105; see evaluation_v2/
+M099,Kimchi premium,market,breadth_sentiment,untestable,coingecko + explicitly audited venue sources,kimchi_premium,evaluated,v2: implemented as T111/R106; see evaluation_v2/
 M100,Stablecoin peg deviation,market,breadth_sentiment,keep_candidate,coingecko + explicitly audited venue sources,stablecoin_peg_deviation,data_unavailable,CoinGecko public API returned 429 then 401 for days=max (verbatim in collection_log); no point-in-time universe
 M101,Federal Reserve total assets,market,macro_institutional,keep_candidate,fred,WALCL,computable_not_evaluated,FRED series collected; not in v1 registry
 M102,Treasury General Account,market,macro_institutional,keep_candidate,fred,WTREGEN,computable_not_evaluated,FRED series collected; not in v1 registry
@@ -169,7 +169,7 @@ O047,New addresses,onchain,network_activity,keep_candidate,coinmetrics_community
 O048,Nonzero-balance addresses,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,nonzero_addresses,computable_not_evaluated,inputs present in csi.db (Community or blockchain.info fallback); not implemented in v1 budget
 O049,Transaction count,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,TxCnt,evaluated,implemented in csi/features.py; see evaluation/ic_individual.csv
 O050,Adjusted transfer value USD,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,TxTfrValAdjUSD,data_unavailable,metric not in Coin Metrics Community catalog for btc/eth; no allowed free substitute with the same definition
-O051,NVT,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,nvt,data_unavailable,metric not in Coin Metrics Community catalog for btc/eth; no allowed free substitute with the same definition
+O051,NVT,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,nvt,evaluated,"v2: implemented as R107/C101 (blockchain.info tx volume, new id); see evaluation_v2/"
 O052,NVT 90-day adjusted,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,NVTAdj90,data_unavailable,metric not in Coin Metrics Community catalog for btc/eth; no allowed free substitute with the same definition
 O053,RVT,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,rvt,data_unavailable,metric not in Coin Metrics Community catalog for btc/eth; no allowed free substitute with the same definition
 O054,Monetary velocity,onchain,network_activity,keep_candidate,coinmetrics_community_if_catalog_confirms,monetary_velocity,redundant_family,velocity needs TxTfrValAdjUSD (unavailable)

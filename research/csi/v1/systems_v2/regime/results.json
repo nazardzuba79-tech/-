@@ -1,0 +1,1284 @@
+{
+  "system": "regime",
+  "horizon": 30,
+  "price": "cm",
+  "dedupe_dropped": [
+    "M001",
+    "O046",
+    "O079"
+  ],
+  "confirmed_components": [
+    "O080",
+    "M106",
+    "M015",
+    "N004",
+    "R101",
+    "R105",
+    "R106",
+    "R108"
+  ],
+  "exploratory_components": [
+    "O102",
+    "O103",
+    "O080",
+    "M115",
+    "M106",
+    "M107",
+    "M109",
+    "M110",
+    "M105",
+    "M015",
+    "N003",
+    "O049",
+    "O113",
+    "O115",
+    "M096",
+    "M088",
+    "O066",
+    "N004",
+    "R101",
+    "R105",
+    "R106",
+    "R107",
+    "R108",
+    "R109"
+  ],
+  "results": {
+    "confirmed": {
+      "components": [
+        "O080",
+        "M106",
+        "M015",
+        "N004",
+        "R101",
+        "R105",
+        "R106",
+        "R108"
+      ],
+      "n_components": 8,
+      "dev_ic": 0.20813697523563066,
+      "dev_n": 4065,
+      "dev_ic_ci90": [
+        0.10326923374169222,
+        0.2953666194199342
+      ],
+      "dev_ic_secondary_h": 0.2716313040571912,
+      "dev_yearly": [
+        {
+          "year": 2011,
+          "n": 77,
+          "ic": -0.1068
+        },
+        {
+          "year": 2012,
+          "n": 366,
+          "ic": -0.1315
+        },
+        {
+          "year": 2013,
+          "n": 365,
+          "ic": 0.216
+        },
+        {
+          "year": 2014,
+          "n": 365,
+          "ic": -0.0606
+        },
+        {
+          "year": 2015,
+          "n": 365,
+          "ic": 0.2134
+        },
+        {
+          "year": 2016,
+          "n": 366,
+          "ic": -0.1215
+        },
+        {
+          "year": 2017,
+          "n": 365,
+          "ic": -0.2692
+        },
+        {
+          "year": 2018,
+          "n": 365,
+          "ic": -0.2868
+        },
+        {
+          "year": 2019,
+          "n": 365,
+          "ic": 0.4089
+        },
+        {
+          "year": 2020,
+          "n": 366,
+          "ic": -0.1378
+        },
+        {
+          "year": 2021,
+          "n": 365,
+          "ic": 0.1643
+        },
+        {
+          "year": 2022,
+          "n": 335,
+          "ic": -0.1185
+        }
+      ],
+      "dev_slices": {
+        "full": 0.2081,
+        "ex_2020-03_2022-01": 0.2058,
+        "ex_2017": 0.185,
+        "since_2022": -0.1185
+      },
+      "ablation_dev": [
+        {
+          "removed": "O080",
+          "name": "Exchange balance 30d change",
+          "dev_ic_without": 0.2062,
+          "delta_vs_full": -0.002,
+          "harmful": false
+        },
+        {
+          "removed": "M106",
+          "name": "Broad dollar 30d change",
+          "dev_ic_without": 0.2427,
+          "delta_vs_full": 0.0346,
+          "harmful": true
+        },
+        {
+          "removed": "M015",
+          "name": "TS momentum 90d",
+          "dev_ic_without": 0.2262,
+          "delta_vs_full": 0.0181,
+          "harmful": true
+        },
+        {
+          "removed": "N004",
+          "name": "Spot volume USD 30d change (CM reported)",
+          "dev_ic_without": 0.2381,
+          "delta_vs_full": 0.03,
+          "harmful": true
+        },
+        {
+          "removed": "R101",
+          "name": "Funding 30d mean (BitMEX XBTUSD)",
+          "dev_ic_without": 0.1796,
+          "delta_vs_full": -0.0285,
+          "harmful": false
+        },
+        {
+          "removed": "R105",
+          "name": "Coinbase premium 30d mean",
+          "dev_ic_without": 0.1922,
+          "delta_vs_full": -0.0159,
+          "harmful": false
+        },
+        {
+          "removed": "R106",
+          "name": "Kimchi premium 30d mean",
+          "dev_ic_without": 0.2114,
+          "delta_vs_full": 0.0033,
+          "harmful": false
+        },
+        {
+          "removed": "R108",
+          "name": "Unique addresses 30d growth",
+          "dev_ic_without": 0.2352,
+          "delta_vs_full": 0.027,
+          "harmful": true
+        }
+      ],
+      "single_component_dev_ic": {
+        "O080": 0.0285,
+        "M106": 0.1286,
+        "M015": 0.1062,
+        "N004": 0.0937,
+        "R101": 0.211,
+        "R105": 0.157,
+        "R106": 0.119,
+        "R108": 0.1548
+      },
+      "holdout_ic": -0.03389461268229244,
+      "holdout_n": 1300,
+      "holdout_ic_ci90": [
+        -0.2082860042752155,
+        0.13503169191896916
+      ],
+      "holdout_ic_secondary_h": -0.04922242300306958,
+      "holdout_yearly": [
+        {
+          "year": 2023,
+          "n": 335,
+          "ic": -0.1668
+        },
+        {
+          "year": 2024,
+          "n": 366,
+          "ic": -0.0565
+        },
+        {
+          "year": 2025,
+          "n": 365,
+          "ic": 0.229
+        },
+        {
+          "year": 2026,
+          "n": 234,
+          "ic": -0.0317
+        }
+      ],
+      "backtests": {
+        "dev": {
+          "start": "2012-10-14",
+          "end": "2022-12-30",
+          "years": 10.21,
+          "avg_exposure": 0.521,
+          "turnover_per_year": 6.85,
+          "strategy": {
+            "cagr": 0.8683,
+            "vol": 0.5852,
+            "sharpe": 1.067,
+            "max_dd_log": -1.2174
+          },
+          "buy_and_hold": {
+            "cagr": 1.0353,
+            "vol": 0.8436,
+            "sharpe": 0.842,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.4477,
+            "vol": 0.4392,
+            "sharpe": 0.842,
+            "max_dd_log": -0.9715
+          }
+        },
+        "dev_baseline_price_only_M001": {
+          "start": "2012-02-05",
+          "end": "2022-12-30",
+          "years": 10.9,
+          "avg_exposure": 0.441,
+          "turnover_per_year": 2.45,
+          "strategy": {
+            "cagr": 0.7161,
+            "vol": 0.5512,
+            "sharpe": 0.979,
+            "max_dd_log": -1.1341
+          },
+          "buy_and_hold": {
+            "cagr": 1.0784,
+            "vol": 0.8399,
+            "sharpe": 0.87,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.3812,
+            "vol": 0.3708,
+            "sharpe": 0.87,
+            "max_dd_log": -0.8237
+          }
+        },
+        "dev_baseline_onchain_only_O079": {
+          "start": "2012-05-27",
+          "end": "2022-12-30",
+          "years": 10.6,
+          "avg_exposure": 0.666,
+          "turnover_per_year": 3.6,
+          "strategy": {
+            "cagr": 0.5708,
+            "vol": 0.5321,
+            "sharpe": 0.848,
+            "max_dd_log": -1.315
+          },
+          "buy_and_hold": {
+            "cagr": 1.1431,
+            "vol": 0.8459,
+            "sharpe": 0.9,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.6613,
+            "vol": 0.5633,
+            "sharpe": 0.9,
+            "max_dd_log": -1.2426
+          }
+        },
+        "holdout": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.537,
+          "turnover_per_year": 7.79,
+          "strategy": {
+            "cagr": 0.1591,
+            "vol": 0.2824,
+            "sharpe": 0.522,
+            "max_dd_log": -0.4942
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.153,
+            "vol": 0.2518,
+            "sharpe": 0.565,
+            "max_dd_log": -0.407
+          }
+        },
+        "holdout_baseline_price_only_M001": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.342,
+          "turnover_per_year": 3.93,
+          "strategy": {
+            "cagr": 0.154,
+            "vol": 0.2299,
+            "sharpe": 0.623,
+            "max_dd_log": -0.2188
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.095,
+            "vol": 0.1605,
+            "sharpe": 0.565,
+            "max_dd_log": -0.2593
+          }
+        },
+        "holdout_baseline_onchain_only_O079": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.65,
+          "turnover_per_year": 7.13,
+          "strategy": {
+            "cagr": 0.2396,
+            "vol": 0.3174,
+            "sharpe": 0.676,
+            "max_dd_log": -0.5
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1879,
+            "vol": 0.3045,
+            "sharpe": 0.565,
+            "max_dd_log": -0.4921
+          }
+        }
+      },
+      "sensitivities": {
+        "min_periods_730_dev_ic": 0.239,
+        "min_periods_730_holdout_ic": -0.0339,
+        "rebalance_x4_dev": {
+          "cagr": 0.8593,
+          "vol": 0.5661,
+          "sharpe": 1.095,
+          "max_dd_log": -1.1525
+        },
+        "cost_x2_dev": {
+          "cagr": 0.8492,
+          "vol": 0.5852,
+          "sharpe": 1.05,
+          "max_dd_log": -1.2174
+        },
+        "okx_price_dev_ic": 0.2501,
+        "okx_price_holdout_ic": -0.0333,
+        "source_dropout": {
+          "coinmetrics": {
+            "dev_ic": 0.1286,
+            "holdout_ic": -0.175,
+            "remaining": 1
+          },
+          "fred": {
+            "dev_ic": 0.2427,
+            "holdout_ic": 0.0579,
+            "remaining": 7
+          }
+        }
+      },
+      "score_mean_by_year": {
+        "2011": 0.304,
+        "2012": 0.475,
+        "2013": 0.514,
+        "2014": 0.426,
+        "2015": 0.488,
+        "2016": 0.509,
+        "2017": 0.6,
+        "2018": 0.413,
+        "2019": 0.512,
+        "2020": 0.549,
+        "2021": 0.424,
+        "2022": 0.436,
+        "2023": 0.492,
+        "2024": 0.454,
+        "2025": 0.49,
+        "2026": 0.508
+      }
+    },
+    "exploratory": {
+      "components": [
+        "O102",
+        "O103",
+        "O080",
+        "M115",
+        "M106",
+        "M107",
+        "M109",
+        "M110",
+        "M105",
+        "M015",
+        "N003",
+        "O049",
+        "O113",
+        "O115",
+        "M096",
+        "M088",
+        "O066",
+        "N004",
+        "R101",
+        "R105",
+        "R106",
+        "R107",
+        "R108",
+        "R109"
+      ],
+      "n_components": 24,
+      "dev_ic": 0.18387688670642716,
+      "dev_n": 4055,
+      "dev_ic_ci90": [
+        0.07947601334398012,
+        0.28969492888600873
+      ],
+      "dev_ic_secondary_h": 0.32016137181286486,
+      "dev_yearly": [
+        {
+          "year": 2011,
+          "n": 67,
+          "ic": -0.064
+        },
+        {
+          "year": 2012,
+          "n": 366,
+          "ic": -0.3005
+        },
+        {
+          "year": 2013,
+          "n": 365,
+          "ic": 0.4546
+        },
+        {
+          "year": 2014,
+          "n": 365,
+          "ic": 0.0185
+        },
+        {
+          "year": 2015,
+          "n": 365,
+          "ic": 0.2031
+        },
+        {
+          "year": 2016,
+          "n": 366,
+          "ic": 0.141
+        },
+        {
+          "year": 2017,
+          "n": 365,
+          "ic": -0.319
+        },
+        {
+          "year": 2018,
+          "n": 365,
+          "ic": -0.1611
+        },
+        {
+          "year": 2019,
+          "n": 365,
+          "ic": 0.1829
+        },
+        {
+          "year": 2020,
+          "n": 366,
+          "ic": -0.2357
+        },
+        {
+          "year": 2021,
+          "n": 365,
+          "ic": -0.2245
+        },
+        {
+          "year": 2022,
+          "n": 335,
+          "ic": -0.1063
+        }
+      ],
+      "dev_slices": {
+        "full": 0.1839,
+        "ex_2020-03_2022-01": 0.2423,
+        "ex_2017": 0.1981,
+        "since_2022": -0.1063
+      },
+      "ablation_dev": [
+        {
+          "removed": "O102",
+          "name": "Stablecoin mcap 30d change",
+          "dev_ic_without": 0.1728,
+          "delta_vs_full": -0.0111,
+          "harmful": false
+        },
+        {
+          "removed": "O103",
+          "name": "Stablecoin supply ratio",
+          "dev_ic_without": 0.1906,
+          "delta_vs_full": 0.0067,
+          "harmful": false
+        },
+        {
+          "removed": "O080",
+          "name": "Exchange balance 30d change",
+          "dev_ic_without": 0.1851,
+          "delta_vs_full": 0.0012,
+          "harmful": false
+        },
+        {
+          "removed": "M115",
+          "name": "Net liquidity heuristic 13w change",
+          "dev_ic_without": 0.209,
+          "delta_vs_full": 0.0252,
+          "harmful": true
+        },
+        {
+          "removed": "M106",
+          "name": "Broad dollar 30d change",
+          "dev_ic_without": 0.2143,
+          "delta_vs_full": 0.0304,
+          "harmful": true
+        },
+        {
+          "removed": "M107",
+          "name": "Real 10y yield 30d change",
+          "dev_ic_without": 0.2185,
+          "delta_vs_full": 0.0346,
+          "harmful": true
+        },
+        {
+          "removed": "M109",
+          "name": "VIX level",
+          "dev_ic_without": 0.2193,
+          "delta_vs_full": 0.0354,
+          "harmful": true
+        },
+        {
+          "removed": "M110",
+          "name": "S&P 500 30d return",
+          "dev_ic_without": 0.1978,
+          "delta_vs_full": 0.0139,
+          "harmful": true
+        },
+        {
+          "removed": "M105",
+          "name": "M2 yoy",
+          "dev_ic_without": 0.1983,
+          "delta_vs_full": 0.0144,
+          "harmful": true
+        },
+        {
+          "removed": "M015",
+          "name": "TS momentum 90d",
+          "dev_ic_without": 0.2152,
+          "delta_vs_full": 0.0313,
+          "harmful": true
+        },
+        {
+          "removed": "N003",
+          "name": "Realized vol 30d",
+          "dev_ic_without": 0.2159,
+          "delta_vs_full": 0.032,
+          "harmful": true
+        },
+        {
+          "removed": "O049",
+          "name": "Tx count 30d growth",
+          "dev_ic_without": 0.2247,
+          "delta_vs_full": 0.0408,
+          "harmful": true
+        },
+        {
+          "removed": "O113",
+          "name": "TVL 30d change",
+          "dev_ic_without": 0.1866,
+          "delta_vs_full": 0.0028,
+          "harmful": false
+        },
+        {
+          "removed": "O115",
+          "name": "DEX volume 30d change",
+          "dev_ic_without": 0.1917,
+          "delta_vs_full": 0.0078,
+          "harmful": false
+        },
+        {
+          "removed": "M096",
+          "name": "Fear & Greed level",
+          "dev_ic_without": 0.1897,
+          "delta_vs_full": 0.0058,
+          "harmful": false
+        },
+        {
+          "removed": "M088",
+          "name": "ETH/BTC 30d change",
+          "dev_ic_without": 0.2083,
+          "delta_vs_full": 0.0244,
+          "harmful": true
+        },
+        {
+          "removed": "O066",
+          "name": "Hash rate 30d growth",
+          "dev_ic_without": 0.2205,
+          "delta_vs_full": 0.0366,
+          "harmful": true
+        },
+        {
+          "removed": "N004",
+          "name": "Spot volume USD 30d change (CM reported)",
+          "dev_ic_without": 0.2089,
+          "delta_vs_full": 0.025,
+          "harmful": true
+        },
+        {
+          "removed": "R101",
+          "name": "Funding 30d mean (BitMEX XBTUSD)",
+          "dev_ic_without": 0.1649,
+          "delta_vs_full": -0.019,
+          "harmful": false
+        },
+        {
+          "removed": "R105",
+          "name": "Coinbase premium 30d mean",
+          "dev_ic_without": 0.1807,
+          "delta_vs_full": -0.0032,
+          "harmful": false
+        },
+        {
+          "removed": "R106",
+          "name": "Kimchi premium 30d mean",
+          "dev_ic_without": 0.1796,
+          "delta_vs_full": -0.0043,
+          "harmful": false
+        },
+        {
+          "removed": "R107",
+          "name": "NVT (mcap / 90d mean est. tx volume USD)",
+          "dev_ic_without": 0.1957,
+          "delta_vs_full": 0.0118,
+          "harmful": true
+        },
+        {
+          "removed": "R108",
+          "name": "Unique addresses 30d growth",
+          "dev_ic_without": 0.2176,
+          "delta_vs_full": 0.0338,
+          "harmful": true
+        },
+        {
+          "removed": "R109",
+          "name": "Bitfinex OI 30d change",
+          "dev_ic_without": 0.1889,
+          "delta_vs_full": 0.005,
+          "harmful": false
+        }
+      ],
+      "single_component_dev_ic": {
+        "O102": 0.2563,
+        "O103": -0.0961,
+        "O080": 0.0285,
+        "M115": 0.0885,
+        "M106": 0.1286,
+        "M107": 0.0629,
+        "M109": 0.0833,
+        "M110": -0.0096,
+        "M105": 0.0273,
+        "M015": 0.1062,
+        "N003": 0.037,
+        "O049": 0.0391,
+        "O113": 0.0661,
+        "O115": 0.0014,
+        "M096": -0.207,
+        "M088": -0.1843,
+        "O066": 0.0807,
+        "N004": 0.0937,
+        "R101": 0.211,
+        "R105": 0.157,
+        "R106": 0.119,
+        "R107": 0.1383,
+        "R108": 0.1548,
+        "R109": 0.0161
+      },
+      "holdout_ic": -0.1583535739006127,
+      "holdout_n": 1300,
+      "holdout_ic_ci90": [
+        -0.3109140834236136,
+        -0.00998682504344146
+      ],
+      "holdout_ic_secondary_h": -0.12086397835720794,
+      "holdout_yearly": [
+        {
+          "year": 2023,
+          "n": 335,
+          "ic": -0.207
+        },
+        {
+          "year": 2024,
+          "n": 366,
+          "ic": -0.2054
+        },
+        {
+          "year": 2025,
+          "n": 365,
+          "ic": -0.0205
+        },
+        {
+          "year": 2026,
+          "n": 234,
+          "ic": -0.098
+        }
+      ],
+      "backtests": {
+        "dev": {
+          "start": "2012-10-28",
+          "end": "2022-12-30",
+          "years": 10.17,
+          "avg_exposure": 0.447,
+          "turnover_per_year": 6.73,
+          "strategy": {
+            "cagr": 0.7543,
+            "vol": 0.5292,
+            "sharpe": 1.061,
+            "max_dd_log": -1.2174
+          },
+          "buy_and_hold": {
+            "cagr": 1.0577,
+            "vol": 0.8445,
+            "sharpe": 0.854,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.3802,
+            "vol": 0.3771,
+            "sharpe": 0.854,
+            "max_dd_log": -0.8331
+          }
+        },
+        "dev_baseline_price_only_M001": {
+          "start": "2012-02-05",
+          "end": "2022-12-30",
+          "years": 10.9,
+          "avg_exposure": 0.441,
+          "turnover_per_year": 2.45,
+          "strategy": {
+            "cagr": 0.7161,
+            "vol": 0.5512,
+            "sharpe": 0.979,
+            "max_dd_log": -1.1341
+          },
+          "buy_and_hold": {
+            "cagr": 1.0784,
+            "vol": 0.8399,
+            "sharpe": 0.87,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.3812,
+            "vol": 0.3708,
+            "sharpe": 0.87,
+            "max_dd_log": -0.8237
+          }
+        },
+        "dev_baseline_onchain_only_O079": {
+          "start": "2012-05-27",
+          "end": "2022-12-30",
+          "years": 10.6,
+          "avg_exposure": 0.666,
+          "turnover_per_year": 3.6,
+          "strategy": {
+            "cagr": 0.5708,
+            "vol": 0.5321,
+            "sharpe": 0.848,
+            "max_dd_log": -1.315
+          },
+          "buy_and_hold": {
+            "cagr": 1.1431,
+            "vol": 0.8459,
+            "sharpe": 0.9,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.6613,
+            "vol": 0.5633,
+            "sharpe": 0.9,
+            "max_dd_log": -1.2426
+          }
+        },
+        "holdout": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.549,
+          "turnover_per_year": 7.59,
+          "strategy": {
+            "cagr": 0.1168,
+            "vol": 0.2724,
+            "sharpe": 0.405,
+            "max_dd_log": -0.5037
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1566,
+            "vol": 0.2573,
+            "sharpe": 0.565,
+            "max_dd_log": -0.4159
+          }
+        },
+        "holdout_baseline_price_only_M001": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.342,
+          "turnover_per_year": 3.93,
+          "strategy": {
+            "cagr": 0.154,
+            "vol": 0.2299,
+            "sharpe": 0.623,
+            "max_dd_log": -0.2188
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.095,
+            "vol": 0.1605,
+            "sharpe": 0.565,
+            "max_dd_log": -0.2593
+          }
+        },
+        "holdout_baseline_onchain_only_O079": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.65,
+          "turnover_per_year": 7.13,
+          "strategy": {
+            "cagr": 0.2396,
+            "vol": 0.3174,
+            "sharpe": 0.676,
+            "max_dd_log": -0.5
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1879,
+            "vol": 0.3045,
+            "sharpe": 0.565,
+            "max_dd_log": -0.4921
+          }
+        }
+      },
+      "sensitivities": {
+        "min_periods_730_dev_ic": 0.2162,
+        "min_periods_730_holdout_ic": -0.1584,
+        "rebalance_x4_dev": {
+          "cagr": 0.7691,
+          "vol": 0.5146,
+          "sharpe": 1.108,
+          "max_dd_log": -1.085
+        },
+        "cost_x2_dev": {
+          "cagr": 0.7367,
+          "vol": 0.5292,
+          "sharpe": 1.042,
+          "max_dd_log": -1.2174
+        },
+        "okx_price_dev_ic": 0.165,
+        "okx_price_holdout_ic": -0.1589,
+        "source_dropout": {
+          "alternative_me": {
+            "dev_ic": 0.1897,
+            "holdout_ic": -0.148,
+            "remaining": 23
+          },
+          "coinmetrics": {
+            "dev_ic": 0.1273,
+            "holdout_ic": -0.2439,
+            "remaining": 11
+          },
+          "defillama": {
+            "dev_ic": 0.2204,
+            "holdout_ic": -0.1661,
+            "remaining": 20
+          },
+          "fred": {
+            "dev_ic": 0.1364,
+            "holdout_ic": 0.037,
+            "remaining": 18
+          }
+        }
+      },
+      "score_mean_by_year": {
+        "2011": 0.427,
+        "2012": 0.525,
+        "2013": 0.544,
+        "2014": 0.479,
+        "2015": 0.475,
+        "2016": 0.498,
+        "2017": 0.534,
+        "2018": 0.389,
+        "2019": 0.489,
+        "2020": 0.542,
+        "2021": 0.498,
+        "2022": 0.422,
+        "2023": 0.459,
+        "2024": 0.443,
+        "2025": 0.455,
+        "2026": 0.48
+      }
+    },
+    "confirmed_pruned": {
+      "components": [
+        "O080",
+        "R101",
+        "R105",
+        "R106"
+      ],
+      "n_components": 4,
+      "dev_ic": 0.2675767433273268,
+      "dev_n": 2299,
+      "dev_ic_ci90": [
+        0.11779004051879836,
+        0.40409472130637936
+      ],
+      "dev_ic_secondary_h": 0.4629897346376198,
+      "dev_yearly": [
+        {
+          "year": 2016,
+          "n": 138,
+          "ic": -0.3978
+        },
+        {
+          "year": 2017,
+          "n": 365,
+          "ic": 0.1867
+        },
+        {
+          "year": 2018,
+          "n": 365,
+          "ic": -0.0283
+        },
+        {
+          "year": 2019,
+          "n": 365,
+          "ic": 0.2322
+        },
+        {
+          "year": 2020,
+          "n": 366,
+          "ic": 0.0316
+        },
+        {
+          "year": 2021,
+          "n": 365,
+          "ic": 0.4229
+        },
+        {
+          "year": 2022,
+          "n": 335,
+          "ic": 0.1207
+        }
+      ],
+      "dev_slices": {
+        "full": 0.2676,
+        "ex_2020-03_2022-01": 0.3113,
+        "ex_2017": 0.2374,
+        "since_2022": 0.1207
+      },
+      "ablation_dev": [
+        {
+          "removed": "O080",
+          "name": "Exchange balance 30d change",
+          "dev_ic_without": 0.1729,
+          "delta_vs_full": -0.0947,
+          "harmful": false
+        },
+        {
+          "removed": "R101",
+          "name": "Funding 30d mean (BitMEX XBTUSD)",
+          "dev_ic_without": 0.1666,
+          "delta_vs_full": -0.101,
+          "harmful": false
+        },
+        {
+          "removed": "R105",
+          "name": "Coinbase premium 30d mean",
+          "dev_ic_without": 0.2316,
+          "delta_vs_full": -0.036,
+          "harmful": false
+        },
+        {
+          "removed": "R106",
+          "name": "Kimchi premium 30d mean",
+          "dev_ic_without": 0.2824,
+          "delta_vs_full": 0.0148,
+          "harmful": true
+        }
+      ],
+      "single_component_dev_ic": {
+        "O080": 0.0285,
+        "R101": 0.211,
+        "R105": 0.157,
+        "R106": 0.119
+      },
+      "holdout_ic": 0.11503299660577862,
+      "holdout_n": 1300,
+      "holdout_ic_ci90": [
+        -0.08359547468485536,
+        0.32887823737120436
+      ],
+      "holdout_ic_secondary_h": -0.20101492127367665,
+      "holdout_yearly": [
+        {
+          "year": 2023,
+          "n": 335,
+          "ic": 0.0361
+        },
+        {
+          "year": 2024,
+          "n": 366,
+          "ic": 0.2169
+        },
+        {
+          "year": 2025,
+          "n": 365,
+          "ic": 0.5494
+        },
+        {
+          "year": 2026,
+          "n": 234,
+          "ic": 0.3268
+        }
+      ],
+      "backtests": {
+        "dev": {
+          "start": "2017-08-20",
+          "end": "2022-12-30",
+          "years": 5.36,
+          "avg_exposure": 0.383,
+          "turnover_per_year": 3.99,
+          "strategy": {
+            "cagr": 0.1803,
+            "vol": 0.3414,
+            "sharpe": 0.485,
+            "max_dd_log": -0.4979
+          },
+          "buy_and_hold": {
+            "cagr": 0.2976,
+            "vol": 0.7774,
+            "sharpe": 0.335,
+            "max_dd_log": -1.8191
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1049,
+            "vol": 0.2976,
+            "sharpe": 0.335,
+            "max_dd_log": -0.6963
+          }
+        },
+        "dev_baseline_price_only_M001": {
+          "start": "2012-02-05",
+          "end": "2022-12-30",
+          "years": 10.9,
+          "avg_exposure": 0.441,
+          "turnover_per_year": 2.45,
+          "strategy": {
+            "cagr": 0.7161,
+            "vol": 0.5512,
+            "sharpe": 0.979,
+            "max_dd_log": -1.1341
+          },
+          "buy_and_hold": {
+            "cagr": 1.0784,
+            "vol": 0.8399,
+            "sharpe": 0.87,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.3812,
+            "vol": 0.3708,
+            "sharpe": 0.87,
+            "max_dd_log": -0.8237
+          }
+        },
+        "dev_baseline_onchain_only_O079": {
+          "start": "2012-05-27",
+          "end": "2022-12-30",
+          "years": 10.6,
+          "avg_exposure": 0.666,
+          "turnover_per_year": 3.6,
+          "strategy": {
+            "cagr": 0.5708,
+            "vol": 0.5321,
+            "sharpe": 0.848,
+            "max_dd_log": -1.315
+          },
+          "buy_and_hold": {
+            "cagr": 1.1431,
+            "vol": 0.8459,
+            "sharpe": 0.9,
+            "max_dd_log": -1.8659
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.6613,
+            "vol": 0.5633,
+            "sharpe": 0.9,
+            "max_dd_log": -1.2426
+          }
+        },
+        "holdout": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.632,
+          "turnover_per_year": 4.7,
+          "strategy": {
+            "cagr": 0.2862,
+            "vol": 0.2933,
+            "sharpe": 0.858,
+            "max_dd_log": -0.4478
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1822,
+            "vol": 0.2961,
+            "sharpe": 0.565,
+            "max_dd_log": -0.4785
+          }
+        },
+        "holdout_baseline_price_only_M001": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.342,
+          "turnover_per_year": 3.93,
+          "strategy": {
+            "cagr": 0.154,
+            "vol": 0.2299,
+            "sharpe": 0.623,
+            "max_dd_log": -0.2188
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.095,
+            "vol": 0.1605,
+            "sharpe": 0.565,
+            "max_dd_log": -0.2593
+          }
+        },
+        "holdout_baseline_onchain_only_O079": {
+          "start": "2024-01-30",
+          "end": "2026-09-20",
+          "years": 2.64,
+          "avg_exposure": 0.65,
+          "turnover_per_year": 7.13,
+          "strategy": {
+            "cagr": 0.2396,
+            "vol": 0.3174,
+            "sharpe": 0.676,
+            "max_dd_log": -0.5
+          },
+          "buy_and_hold": {
+            "cagr": 0.3034,
+            "vol": 0.4687,
+            "sharpe": 0.565,
+            "max_dd_log": -0.7575
+          },
+          "bh_scaled_to_avg_exposure": {
+            "cagr": 0.1879,
+            "vol": 0.3045,
+            "sharpe": 0.565,
+            "max_dd_log": -0.4921
+          }
+        }
+      },
+      "sensitivities": {
+        "min_periods_730_dev_ic": 0.149,
+        "min_periods_730_holdout_ic": 0.115,
+        "rebalance_x4_dev": {
+          "cagr": 0.1838,
+          "vol": 0.3329,
+          "sharpe": 0.506,
+          "max_dd_log": -0.6351
+        },
+        "cost_x2_dev": {
+          "cagr": 0.1732,
+          "vol": 0.3414,
+          "sharpe": 0.468,
+          "max_dd_log": -0.502
+        },
+        "okx_price_dev_ic": 0.2156,
+        "okx_price_holdout_ic": 0.1148,
+        "source_dropout": {
+          "coinmetrics": {
+            "status": "composite empty without this source"
+          }
+        }
+      },
+      "score_mean_by_year": {
+        "2016": 0.66,
+        "2017": 0.621,
+        "2018": 0.488,
+        "2019": 0.557,
+        "2020": 0.58,
+        "2021": 0.381,
+        "2022": 0.506,
+        "2023": 0.489,
+        "2024": 0.444,
+        "2025": 0.519,
+        "2026": 0.595
+      }
+    }
+  }
+}

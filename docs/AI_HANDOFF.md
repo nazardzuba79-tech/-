@@ -3414,3 +3414,13 @@ withdrawal was placed.
 - Platform: static data-quality dashboard, FEED_FEASIBILITY.md, three `*_reduced.pine` v6 files marked NOT_COMPILED / no parity claim. 13 pytest tests of mechanics (lags, causality, parser, costs) pass — not evidence of profitability.
 - Preserved from Codex/other agents: everything; this branch adds files only.
 - Unresolved: ETH systems, 66 computable catalogue candidates not implemented, FRED/CM vintage audit, TradingView compilation, post-hoc hypotheses (fee-share opposite sign at 365d; 7-day momentum) need their own pre-registration. Not for live trading.
+
+### 2026-09-22 — Claude — CSI v2: all free sources, positioning features, TradingView pack (research-only)
+
+- Same branch `claude/intelligent-mendel-mlpslf`, same isolated folder `research/csi/`; still no production file touched.
+- Owner asked to "do everything that is free". Found and collected: Binance public archive `data.binance.vision` (200; `api.binance.com` still 451, no bypass), BitMEX funding 2016+, Deribit funding 2019+ and DVOL 2021+, Bitfinex OI 2019+, Coinbase, Bitstamp, Upbit + FRED KRW, blockchain.info tx volume / unique addresses. DB now 593 892 rows / 166 series, lag_check PASS. Raw bytes + manifest as before.
+- Pre-registered v2 (`docs/PREREGISTRATION_v2.md`, hash) before computing; 75 features; TACTICAL priced on the canonical Binance spot close.
+- Results: CYCLE unchanged. TACTICAL confirmed on development (BitMEX funding, DVOL, Coinbase premium; dev IC 0.13) but holdout 0.03 → no edge. REGIME 8-component holdout −0.03; the pre-registered ablation pruning (rule 6, which v1 code had computed but not applied — logged as an omission) gives a 4-component set (exchange balance change, BitMEX funding, Coinbase premium, Kimchi premium) with dev IC 0.27 and holdout IC +0.115, CI includes 0, and it is a second look at the holdout → labelled candidate for an independent forward test, not a confirmed edge. 15 attempts logged.
+- Platform: `CSI_Cycle_Gauge.pine` + reduced scripts moved to `ta.percentrank` (rolling, differs from Python expanding rank by construction); `TRADINGVIEW_UA.md`; `RUN_ON_YOUR_PC_UA.md`; `update_all.sh`; real Binance direct-API parsers written but untested here (451). 15 pytest tests pass (mechanics only).
+- Operational lesson recorded: three concurrent collectors locked SQLite; fixed with periodic commits, failed runs kept in `collection_log`.
+- Unresolved: forward test of REGIME_pruned; TradingView compilation; ETH systems; vintage audit.

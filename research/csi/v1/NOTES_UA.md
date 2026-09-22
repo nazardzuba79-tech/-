@@ -41,3 +41,20 @@ OKX funding: перша подія 2026-06-17; `reports/funding_event_counts_okx
 
 ## Час
 Preflight 2026-09-22T03:16:37Z; збір завершено ≈03:27Z; оцінка одиночних IC 03:32–03:36Z; системи 03:37Z. Розмір сирих відповідей: 8.1 МБ (gzip), 363 записи в MANIFEST.
+
+# v2 — додаткові безкоштовні джерела (2026-09-22, 03:55–04:40 UTC)
+Мотивація: власник попросив зробити все, що безплатне. Знайдено джерела, що відповідають з цього середовища без ключів і без обходу блокувань.
+
+| source | статус | перша…остання дата (BTC) | примітка |
+|---|---|---|---|
+| binance_vision (архів Binance) | OK | спот 2017-08-17…2026-09-21; перп/funding 2020-01-01…2026-09-20/08-31; metrics (OI, L/S, taker) 2021-12-01…2026-09-20 | `api.binance.com` — 451; архів `data.binance.vision` — 200 звичайним GET. Файли funding за 2019-09..12 відсутні (404); metrics до 2021-12 відсутні (701 днів 404) |
+| bitmex | OK | XBTUSD funding 2016-05-14…2026-09-16; ETHUSD 2018-08-02… | публічний API не віддає записи після 2026-09-16 (перевірено `reverse=true`) |
+| deribit | OK | funding BTC/ETH-PERPETUAL 2019-04-30…2026-09-21 (сума погодинних нарахувань); DVOL BTC/ETH 2021-03-24…2026-09-21 | |
+| bitfinex | OK | OI tBTCF0:USTF0 2019-08-22…2026-09-21 (746 сторінок хвилинної історії; останній запис дня) | ETH — так само |
+| coinbase | OK | BTC-USD 2015-07-20…; ETH-USD 2016-05-18… | |
+| bitstamp | OK / PARTIAL | btcusd 2011-08-22…2026-09-21; ethusd лише 2017-08-16…2020-04-08 (пагінація зупинилась; ETH не потрібен для систем) | |
+| upbit + fred DEXKOUS | OK | KRW-BTC 2017-09-25…; DEXKOUS 1981…2026-09-18 | Kimchi premium = Upbit/KRWUSD/Coinbase − 1 |
+| blockchain_info extra | OK | tx_volume_usd_est 2010-08-28…; unique_addresses_used 2009-01-03… | нові id |
+
+Проблема виконання: три паралельні колектори заблокували SQLite (`database is locked`) — Deribit ETH/DVOL, Coinbase, Bitstamp, Upbit, blockchain.info було перезапущено послідовно після завершення важких задач; у `Store.put` додано періодичний commit. Помилкові спроби лишаються в `collection_log`.
+База після v2: 593 892 рядки, 166 серій, lag_check PASS; канонічних пар 73: 37 primary + 19 fallback (тепер включно з `binance_vision`) + 17 відсутні (Coin Metrics non-Community, CoinGecko breadth).
