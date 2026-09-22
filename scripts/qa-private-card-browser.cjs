@@ -123,7 +123,23 @@ async function main() {
     assert(typography.longRoiRight <= 1000, 'Long ROI and its equal-size percent must fit together');
     assert.equal(typography.longNumberSize, typography.longUnitSize);
     report.checks.push({ name: `equal-percent-two-decimal-prices-${width}`, passed: true, typography });
-    const preview = Buffer.from((await image.getAttribute('src')).split(',')[1], 'base64');
+    /* The preview is the card's own SVG now, not a rasterised PNG, so it can
+       no longer be read as base64 bytes. The GUARANTEE is unchanged — preview
+       and export must be one and the same frozen snapshot — and is checked
+       where it now lives, in two halves that together say what the single
+       byte comparison used to say:
+         1. the preview really is this snapshot as the renderer draws it, and
+         2. the downloaded PNG is that same snapshot rasterised.
+       Both still come from the one privateResultCardSvg. */
+    const previewSvg = await page.evaluate(async () => {
+      const img = document.querySelector('dialog.private-card-dialog img');
+      if (!img.src.startsWith('blob:')) throw new Error(`preview is not a blob SVG: ${img.src.slice(0, 40)}`);
+      return (await fetch(img.src)).text();
+    });
+    assert.equal(previewSvg, await page.evaluate(() => window.__cardRenderer.privateResultCardSvg(window.__fixture)),
+      'Preview must be the frozen snapshot exactly as the card renderer draws it');
+    const preview = Buffer.from(await page.evaluate(async () => (await window.__cardRenderer.privateResultCardDataUrl(
+      await window.__cardRenderer.privateResultCardPng(window.__fixture))).split(',')[1]), 'base64');
     const downloadPromise = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Сохранить PNG' }).click();
     const download = await downloadPromise;
@@ -131,7 +147,7 @@ async function main() {
     const bytes = fs.readFileSync(target);
     assert.deepEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], exportSize,
       `downloaded PNG is ${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`);
-    assert.equal(bytes.compare(preview), 0, 'Preview and export must use identical frozen snapshot bytes');
+    assert.equal(bytes.compare(preview), 0, 'The downloaded PNG must be the previewed snapshot, rasterised');
     assert.equal(reads, 2, 'Actual export must authorize both rendering and delivery');
     assert.equal(download.suggestedFilename(), 'VOLTEX-BTCUSDT-historical.png');
     assert.deepEqual(errors, []);
