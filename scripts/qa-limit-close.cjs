@@ -75,6 +75,11 @@ const position = (state, id) => state.positions.find(p => p.id === id);
 
 async function session(width, side) {
   const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 960 }, locale: 'ru-RU', timezoneId: 'UTC' });
+  // Same sandbox as the native QA: the page reaches only the fixture. Without this the tape subscribes to
+  // Bybit's real public stream on a runner with internet, and the dialog's «Рыночная цена» is the real
+  // AKE trade while the engine's mark is the fixture's drifting price (CI on #180: 0.052896 vs ~0.0558).
+  await context.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
+  await context.routeWebSocket('**/*', socket => socket.close());
   const html = await (await context.request.get(origin + '/futures')).text();
   const token = JSON.parse(/localStorage\.setItem\("exchange_token",("[a-f0-9]{48}")\)/.exec(html)[1]);
   let state = await api(context, token, 'state');
