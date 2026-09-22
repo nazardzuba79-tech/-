@@ -63,6 +63,8 @@ on:
       - 'frontend/src/lib/usePriceFlash.ts'
       - 'frontend/src/pages/crypto-card-final/cardApplicationState.ts'
       - 'frontend/src/lib/__tests__/copyTrading*.test.ts'
+      - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
+      - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
   push:
     branches: [main]
@@ -127,6 +129,8 @@ on:
       - 'frontend/src/lib/usePriceFlash.ts'
       - 'frontend/src/pages/crypto-card-final/cardApplicationState.ts'
       - 'frontend/src/lib/__tests__/copyTrading*.test.ts'
+      - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
+      - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
 
 permissions:
@@ -165,6 +169,20 @@ jobs:
           frontend/src/lib/__tests__/copyTradingCriticalPath.test.ts
           frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
           src/services/copyTrading/__tests__/copyMarketplaceEndpointContract.test.ts
+      # THE OWNER'S CADENCE. One new closed trade per strategy per UTC day,
+      # a same-day refresh that adds none, and a three-day gap that adds
+      # exactly three — read off the real service against a moving clock.
+      - name: Daily progression (Nazar + Ksenia)
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/copyTrading/__tests__/dailyProgression.test.ts
+      # The «Сделки» tab is locked for both strategies in every viewer state,
+      # and no service vocabulary reaches a customer-facing surface.
+      - name: Hidden trade history and customer-facing wording
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts
+          frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts
       - name: Copy privacy, retry and period regressions
         run: >-
           npm test -- --runInBand --runTestsByPath
@@ -209,6 +227,13 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-never-loading.cjs
+      # The cadence and the locked tab in a browser, at both widths the owner
+      # reviews on: one more trade a day, none on a same-day reload, a 7D
+      # window that ends on today, and no trade rows anywhere.
+      - name: Browser QA - one trade a day, hidden trades, a 7D that moves
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
+        run: node scripts/qa-copy-daily-progression.cjs
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
@@ -219,4 +244,5 @@ jobs:
             docs/qa/copy-cards-trades-avatar/
             docs/qa/copy-loading-ksenia/
             docs/qa/copy-never-loading/
+            docs/qa/copy-daily-progression/
           retention-days: 7

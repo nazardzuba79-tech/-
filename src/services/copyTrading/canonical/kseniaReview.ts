@@ -2,6 +2,7 @@ import type { SyntheticTrade } from './types';
 import type { CashflowReviewState, ReviewFollower } from './reviewEconomicsTypes';
 import { toCashflowReviewResponse } from './reviewEconomics';
 import { refreshReviewFollowerLedgers } from './reviewFollowerLedger';
+import { dailyProgressionApplies } from './dailyProgression';
 
 /** Explicitly synthetic review scenario. Never imports account, order, wallet,
  * matching, or database services. Prices below are simulation reference prices,
@@ -57,7 +58,15 @@ function pricedTrade(date: string, ordinal: number, slot: number, count: number,
   const [symbol, reference] = ASSETS[Math.floor(rng() * ASSETS.length)];
   const side = rng() < .48 ? 'SHORT' : 'LONG';
   const sign = side === 'LONG' ? 1 : -1;
-  const leverage = 3 + Math.floor(rng() * 4);
+  const drawnLeverage = 3 + Math.floor(rng() * 4);
+  // A post-cutover day is represented by one execution without clipping the
+  // already-generated strategy return. Raise leverage only when that one
+  // priced execution needs it to stay within the existing 5.5% move budget.
+  const requiredLeverage = dailyProgressionApplies(date)
+    ? Math.max(3, Math.ceil(Math.abs(desired) / capital / .055))
+    : 3;
+  if (requiredLeverage > 6) throw new Error('Ksenia single execution exceeds supported leverage');
+  const leverage = Math.max(drawnLeverage, requiredLeverage);
   const entryPrice = round(reference * (.85 + rng() * .32), 10);
   const quantity = round(Math.max(capital * leverage * .6, Math.abs(desired) / .055) / entryPrice, 8);
   if (quantity * entryPrice / leverage > capital) throw new Error('Ksenia synthetic margin exceeds operating capital');
@@ -171,6 +180,20 @@ export function advanceKseniaReview(original: CashflowReviewState, days: number)
     const weights = Array.from({ length: 7 }, () => .6 + rng() * .8);
     const weight = weights[weekday] / weights.reduce((a, b) => a + b, 0);
     const dailyReturn = target * weight;
+    // From the owner's cadence date onward the session is exactly one closed
+    // execution: no second row for frequency and none for the loss ratio.
+    // A zero-return day becomes one BREAKEVEN row, preserving the strategy
+    // return exactly. See canonical/dailyProgression.ts.
+    if (dailyProgressionApplies(date)) {
+      appendDay(state, {
+        date,
+        return: dailyReturn,
+        wins: dailyReturn > 0 ? 1 : 0,
+        losses: dailyReturn < 0 ? 1 : 0,
+        breakevens: dailyReturn === 0 ? 1 : 0,
+      });
+      continue;
+    }
     const plan: Plan = { date, return: dailyReturn, wins: dailyReturn > 0 ? 1 : 0, losses: dailyReturn < 0 ? 1 : 0, breakevens: 0 };
     if (dailyReturn > 0 && random('future-frequency:' + date)() < .22) plan.wins++;
     const resolved = state.trades.filter(t => t.result !== 'BREAKEVEN').length;

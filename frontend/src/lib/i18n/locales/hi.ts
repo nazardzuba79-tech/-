@@ -1019,6 +1019,7 @@ export const HI: Record<Key, string> = {
   'futures.colRealized': 'वास्तविक P&L',
   'futures.colCloseAs': 'इससे बंद करें',
   'futures.perpetual': 'पर्प',
+  'futures.openContract': 'टर्मिनल में {symbol} खोलें',
   'futures.marginTrading': 'मार्जिन ट्रेडिंग',
   'futures.addTpsl': 'जोड़ें',
   'futures.closeMarket': 'मार्केट',

@@ -120,9 +120,12 @@ describe('two ways in, one handler, one piece of state', () => {
     expect(button).toContain('onClick={onSelectSymbol}');
     const selector = bar.slice(bar.indexOf('className="pair-selector"'), bar.indexOf('<CryptoIcon'));
     expect(selector).toContain('onClick={onSelectSymbol}');
-    // Exactly one handler is wired in from the page.
+    // Exactly one handler is wired in from the page for the TICKER BAR.
+    // The positions panel now takes a prop of the same name — a position's
+    // contract name opens that contract — so the count is pinned to the
+    // ticker bar's own line rather than to every use of the name.
     expect(page).toContain('onSelectSymbol={openMarkets}');
-    expect(page.match(/onSelectSymbol=\{/g)).toHaveLength(1);
+    expect(page.match(/<FuturesTickerBar[^>]*onSelectSymbol=\{openMarkets\}/g)).toHaveLength(1);
   });
 
   it('marks both as entry points so the outside click cannot swallow a press', () => {
@@ -159,7 +162,9 @@ describe('the chooser is a temporary layer, not another rail', () => {
     expect(chooser).toContain('<FuturesPairList');
     expect(chooser).toContain('searchable');
     // Picking a contract selects it and dismisses the layer.
-    expect(chooser).toContain('onChange={next => { setSymbol(next); setChooserOpen(false); }}');
+    // `selectSymbol`, not `setSymbol`: selecting a contract also writes it
+    // into `?pair=` so a refresh reopens it. One selection path, still.
+    expect(chooser).toContain('onChange={next => { selectSymbol(next); setChooserOpen(false); }}');
   });
 
   it('closes on Escape and on a click outside, from one effect', () => {

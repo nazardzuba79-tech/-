@@ -1,5 +1,5 @@
 'use strict';
-/** Copy Trading: nothing hangs in «Загрузка…», and Ksenia shows 61.9%.
+/** Copy Trading: nothing hangs in «Загрузка…», and Ksenia's 61.9% stays in its week.
  *
  * Production-like: drives the built frontend in Chromium against the ACTUAL
  * compiled marketplace router, CopyPerformanceService, redactTradeHistory,
@@ -161,11 +161,12 @@ let server, browser;
     });
     await page.screenshot({ path: path.join(OUT, '02-ksenia-profile-7d.png') });
     const weekly = report.scenarios.kseniaWeekly;
-    // The 7D readout itself, not merely the string somewhere on the page.
-    if (!/ROI\s*·\s*7D\s*\+?61[.,]9%/.test(weekly.readouts ?? weekly.body)) {
-      finding(`Ksenia profile 7D readout is not 61.9% — ${JSON.stringify(weekly.readouts)}`);
+    // After the completed 13–19.09 week, current 7D must be a moving
+    // ledger window again — never the historical 61.9% result.
+    if (/ROI\s*·\s*7D\s*\+?61[.,]9%/.test(weekly.readouts ?? weekly.body)) {
+      finding(`Ksenia profile current 7D is still frozen on historical 61.9% — ${JSON.stringify(weekly.readouts)}`);
     }
-    // And the PnL beside it is still the engine's, not derived from 61.9%.
+    // PnL beside it stays the engine's ledger value.
     weekly.pnlBesideRoi = (weekly.readouts ?? '').match(/PnL[^+\-]*([+\-][^A-Za-z]*USDT)/)?.[1] ?? null;
 
     // The card's own headline follows the marketplace period chips, so put
@@ -186,8 +187,8 @@ let server, browser;
       const el = await page.$(`.trader-card[data-trader-id="${id}"]`);
       if (el) await el.screenshot({ path: path.join(OUT, file) }).catch(() => {});
     }
-    if (!/61[.,]9/.test(weekCards.ksenia?.roi ?? '')) {
-      finding(`Ksenia CARD at 7D does not read 61.9% — ${JSON.stringify(weekCards.ksenia?.roi)}`);
+    if (/61[.,]9/.test(weekCards.ksenia?.roi ?? '')) {
+      finding(`Ksenia CARD current 7D is still frozen on historical 61.9% — ${JSON.stringify(weekCards.ksenia?.roi)}`);
     }
 
     // ── 3. route leave / return ───────────────────────────────────────
@@ -309,10 +310,11 @@ let server, browser;
     await c.close();
   }
 
-  // ── 9. a LATER model date: the pinned figure must survive the week ───
-  // The owner pinned 61.9% until they say otherwise, so a model that has
-  // run on past the reported week must still show it — and must stop
-  // calling it a rolling seven days, because by then it is not one.
+  // ── 9. a LATER model date: the current 7D must have MOVED ON ─────────
+  // 61.9% is the result of ONE week, 13–19 September. Past that week the
+  // rolling seven days is the engine's own window again: it must not read
+  // 61.9%, it must be labelled as the ordinary 7D period, and its date range
+  // must end on the model's own latest day rather than on 19 September.
   {
     const laterDate = process.env.QA_LATER_DATE || '2026-09-26';
     const later = db();
@@ -368,16 +370,30 @@ let server, browser;
     await page.screenshot({ path: path.join(OUT, '09c-ksenia-profile-later-week.png') });
     report.scenarios.laterWeek = { date: laterDate, cards: laterCards, cardLabel, profile: laterProfile, errors: errs };
 
-    if (!/61[.,]9/.test(laterCards.ksenia?.roi ?? '')) {
-      finding(`later week (${laterDate}): Ksenia card reverted to ${JSON.stringify(laterCards.ksenia?.roi)}`);
+    if (/61[.,]9/.test(laterCards.ksenia?.roi ?? '')) {
+      finding(`later week (${laterDate}): Ksenia card is still frozen on 61.9% — ${JSON.stringify(laterCards.ksenia?.roi)}`);
     }
-    if (!/61[.,]9/.test(laterProfile.readouts ?? '')) {
-      finding(`later week (${laterDate}): Ksenia profile reverted — ${JSON.stringify(laterProfile.readouts)}`);
+    if (/61[.,]9/.test(laterProfile.readouts ?? '')) {
+      finding(`later week (${laterDate}): Ksenia profile is still frozen on 61.9% — ${JSON.stringify(laterProfile.readouts)}`);
     }
-    // Pinned, but not passed off as a fresh rolling window.
-    if (/7Д|7D/.test(cardLabel ?? '')) finding(`later week: card still labels it a rolling window — ${JSON.stringify(cardLabel)}`);
-    if (/Скользящий/.test(laterProfile.range ?? '')) {
-      finding(`later week: profile still says «Скользящий период» — ${JSON.stringify(laterProfile.range)}`);
+    // An ordinary rolling window again, named as one, ending on the model's
+    // own day — never on 19 September, and never with service vocabulary.
+    if (!/7Д|7D/.test(cardLabel ?? '')) finding(`later week: card does not name the 7D period — ${JSON.stringify(cardLabel)}`);
+    if (!/Скользящий/.test(laterProfile.range ?? '')) {
+      finding(`later week: profile does not say «Скользящий период» — ${JSON.stringify(laterProfile.range)}`);
+    }
+    for (const phrase of ['управляющ', 'отчётн', 'отчетн']) {
+      if ((cardLabel ?? '').includes(phrase) || (laterProfile.range ?? '').includes(phrase)
+        || (laterProfile.readouts ?? '').includes(phrase)) {
+        finding(`later week: service vocabulary on screen — ${JSON.stringify([cardLabel, laterProfile.range])}`);
+      }
+    }
+    // 26 September, the model's own latest day, ends the window.
+    if (!(laterProfile.range ?? '').includes('26.09')) {
+      finding(`later week: the 7D range does not end on ${laterDate} — ${JSON.stringify(laterProfile.range)}`);
+    }
+    if (/13\.09\.2026\s*[-\u2014]\s*19\.09\.2026/.test(laterProfile.range ?? '')) {
+      finding(`later week: the 7D range is still the reported week — ${JSON.stringify(laterProfile.range)}`);
     }
     if (!live(laterCards.nazar)) finding(`later week: Nazar not live — ${JSON.stringify(laterCards.nazar)}`);
     await c.close(); s2.close();

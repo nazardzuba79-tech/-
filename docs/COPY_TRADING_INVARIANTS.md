@@ -19,13 +19,16 @@ do with Copy Trading.
 | 3 | **A failed prefetch never blocks a visit.** A success may be reused for 30s; a failure may not be reused at all. | Critical path case 7, `copyMarketplaceRetry.test.ts`, browser scenario 06. |
 | 4 | **Last-good data survives a later failure.** Session-scoped, re-validated on read, cleared on logout. | Critical path cases 11 and 13, `copyMarketplaceCache.test.ts`, `qa-copy-last-good-browser.cjs`. |
 | 5 | **The payload contract is two-sided.** The real route's bytes must pass the real client validator; the client cannot be loosened to accept a broken server, nor the server changed without the client following. | `copyMarketplaceEndpointContract.test.ts` (real router → real HTTP → real `validStrategy`). |
-| 6 | **Ksenia's owner-reported weekly result is +61.9%**, provenance `OWNER_REPORTED`, and lives in exactly one file: `src/services/copyTrading/kseniaReportedWeek.ts`. A second hardcoded production copy fails the build. | Critical path case 4 (including a source scan for a second copy), `kseniaReportedWeek.test.ts`, `qa-copy-loading-and-ksenia.cjs`. |
+| 6 | **Ksenia's owner-reported +61.9% belongs to ONE week** (13–19 Sep 2026), provenance `OWNER_REPORTED`, and lives in exactly one file: `src/services/copyTrading/kseniaReportedWeek.ts`. A second hardcoded production copy fails the build. It stays on that week's `weekly[]` row permanently and is the rolling 7D **only while the model is inside that week** — after it, 7D is the ledger's own derivation and moves forward daily. | Critical path case 4 (including a source scan for a second copy), `kseniaReportedWeek.test.ts`, `qa-copy-loading-and-ksenia.cjs` scenario 9. |
 | 7 | **Hidden trade history is a declaration, not an absence.** `trades: []` is legitimate only with a valid `tradeVisibility`; the real total, the aggregates and every financial figure still have to be there. | Critical path case 3, `tradeHistoryVisibility.test.ts`, `qa-copy-cards-trades-avatar.cjs` (scans the wire, not the DOM). |
 | 8 | **Nothing is fabricated.** No fallback ROI, PnL, AUM or win rate; no demo trader standing in for Nazar or Ksenia; no `0` where the answer is unknown. Unknown reads `—`. | Critical path cases 1, 10 and 15; the browser harness fails a bare zero with no data behind it. |
 | 9 | **Sections are independent.** Nazar, Ksenia and identities each fail alone. | Critical path case 14, `copyMarketplaceEndpointContract.test.ts`. |
 | 10 | **The endpoint fits inside the client's own timeout.** | `copyMarketplaceEndpointContract.test.ts` time budget. |
 | 11 | **Every section is logged, by name and outcome, with nothing identifying.** | `copyMarketplaceEndpointContract.test.ts` observability case. |
 | 12 | **CI runs whenever something Copy Trading depends on changes.** | `copyTradingCiCoverage.test.ts` walks the real import graph and fails on any file missing from the workflow's `paths:`. |
+| 13 | **One new closed trade per strategy per UTC calendar day**, from `DAILY_PROGRESSION_EFFECTIVE_FROM`. Never 0, never 2. A repeat request on the same day adds none; an N-day gap adds exactly N, one per missed day; no day before that date is rewritten. Every ROI, PnL, win rate, Sharpe, Sortino, chart and daily result is read off that same ledger. | `dailyProgression.test.ts`, `qa-copy-daily-progression.cjs`. |
+| 14 | **Nazar's and Ksenia's executions reach nobody.** Not a subscriber, not a copier, not a favourite, not a large deposit — the server sends none and the «Сделки» tab is a locked state keyed on the strategy, never on the viewer or on a loaded payload. No public route may serve a trade row. | `tradeHistoryVisibility.test.ts` (including a sweep of every public GET enumerated off both routers), `copyHiddenTradeHistory.test.ts`, `qa-copy-cards-trades-avatar.cjs`, `qa-copy-daily-progression.cjs`. |
+| 15 | **No service vocabulary on a customer-facing surface.** «по данным управляющего», «за отчётную неделю», `OWNER_REPORTED`, "synthetic", "modeled" and the like never reach a rendered string. | `copyCustomerFacingWording.test.ts` (TypeScript AST over every Copy Trading UI file). |
 
 ---
 
@@ -87,8 +90,10 @@ in as a real account.
 1. Open `/copy-trading`. It renders, no white screen.
 2. **Nazar's card settles** within ~15 s: a real ROI figure, or «Данные
    недоступны». Not «Загрузка…».
-3. **Ksenia's card settles** on the same terms, and her 7D figure reads
-   **+61.9%**, labelled as the manager's reported result.
+3. **Ksenia's card settles** on the same terms, with a real 7D figure
+   labelled simply `ROI 7Д`. It is **not** +61.9% unless the model is
+   genuinely inside 13–19 September 2026: that reported figure belongs to
+   that week's row and the rolling window moves on past it.
 4. No card is still showing a skeleton past the client's fifteen-second
    timeout.
 5. Browser console: no uncaught error, no `NaN` anywhere on the page.
@@ -96,15 +101,20 @@ in as a real account.
    status, and a body carrying both sections.
 7. Server logs for that minute contain `copy_marketplace.nazar.*` and
    `copy_marketplace.ksenia.*`. Read them per the table above.
-8. Open Nazar's profile and Ksenia's profile. Both paint. Trade history
-   reads «Информация о сделках скрыта» with the real closed-trade count —
-   never a table of executions and never «0 сделок».
+8. Open Nazar's profile and Ksenia's profile. Both paint. The «Сделки»
+   tab is a locked state — one centred icon over «Торговая информация
+   этого трейдера скрыта», nothing else — never a table of executions,
+   never a count, and never «доступна только подписчикам». The real
+   closed-trade total is on the Statistics tab, where «hidden is not
+   zero» is proven instead.
+9. The profile's 7D range ends on **today**, and the newest closed trade
+   in the ledger is today's — exactly one per strategy per UTC day.
 
 If 2, 3 or 4 fails while 6 and 7 show a healthy response, the payload is
 being refused by the client: capture the response body and run it through
 `validStrategy` before changing anything.
 
-**A deploy is not verified until all eight have been done by hand.** "CI is
+**A deploy is not verified until all nine have been done by hand.** "CI is
 green" is not a substitute, and has been wrong about this page before.
 
 ---

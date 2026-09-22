@@ -1046,6 +1046,7 @@ export const EN: Record<Key, string> = {
   'futures.colRealized': 'Realized P&L',
   'futures.colCloseAs': 'Close By',
   'futures.perpetual': 'Perp',
+  'futures.openContract': 'Open {symbol} in the terminal',
   'futures.marginTrading': 'Margin trading',
   'futures.addTpsl': 'Add',
   'futures.closeMarket': 'Market',

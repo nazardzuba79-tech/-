@@ -254,13 +254,28 @@ test.each([
     // fallback for a contract that is no longer listed is the same
     // expression it always was — marketUniverseScale asserts both directly.
     // PR #159 sync: keep mobile workspaces; remove only the archive Close All import/render from #161.
+    //
+    // RE-TAKEN so a refresh keeps the contract the trader was on. The
+    // selection itself is unchanged — same state, same value, same single
+    // source — but every caller that used to call `setSymbol` now calls one
+    // `selectSymbol`, which additionally writes `?pair=` into the address
+    // (replace, never push) and remembers the pair for a bare `/futures`.
+    // The initial value reads that address first, then the remembered pair,
+    // then BTC/USDT; the catalogue reconcile keeps a listed contract exactly
+    // as restored and only replaces one the venue has dropped. Also on this
+    // page: the positions panel is handed `onSelectSymbol`, so a position's
+    // contract name selects that contract. No order, execution, account,
+    // depth, chart-wiring or layout byte changed.
     // Re-taken 2026-09-22: «Лимитный» no longer hands the order form a
     // close ticket — the positions panel opens its own «Закрытие по лимиту»
     // dialog (the reference's). The page now lends the panel the last
     // traded price per contract and names the current symbol; the
     // `closeTicket` state and its effects are gone. Routing, polling and
     // the order payload are untouched.
-    "7f7af59da8e2a0045ca781406d39b4da86fc08d253798f6f1ebf65f202497bd5"
+    //
+    // Re-taken once more over the merge of the two changes above: both
+    // landed on this page independently and the file now carries both.
+    "ccfe7ee398f9c48e1501e2654ab30508b47e715a3c0a5da707757377294f5ce3"
   ],
   [
     "components/FuturesPairList.tsx",

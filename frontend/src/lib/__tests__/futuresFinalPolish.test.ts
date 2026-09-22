@@ -198,7 +198,26 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       for (const label of ['NativeDemoSwitch', 'NativeDemoTicket', 'NativeDemoPanel', 'NativeDemoDialogs']) components[label] ??= () => null;
       return { NativeDemoSwitch: components.NativeDemoSwitch, NativeDemoTicket: components.NativeDemoTicket, NativeDemoPanel: components.NativeDemoPanel, NativeDemoDialogs: components.NativeDemoDialogs };
     }
-    if (name === 'react-router-dom') return { useNavigate: () => jest.fn(), useSearchParams: () => [overrides.params] };
+    // The tuple is a tuple: FuturesPage now WRITES the selected contract
+    // back into `?pair=` through the setter, so a stub that returned only
+    // the reader would fail on a call the real hook always supports. The
+    // stub setter applies the update to the same URLSearchParams the
+    // reader hands out, which is what the real hook does to the address.
+    if (name === 'react-router-dom') return { useNavigate: () => jest.fn(), useSearchParams: () => [overrides.params,
+      overrides.setParams ?? ((update: any) => {
+        const next = typeof update === 'function' ? update(overrides.params) : update;
+        for (const [key, value] of new URLSearchParams(next)) overrides.params.set(key, value);
+      })] };
+    // The contract's own route module: real logic, browser storage stubbed
+    // out, so the page's fallback order is exercised rather than mocked.
+    if (name === '../lib/futuresPairRoute') {
+      const module: any = {};
+      const code = ts.transpileModule(source('lib/futuresPairRoute.ts'), { compilerOptions: {
+        module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
+      } }).outputText;
+      new Function('require', 'exports', 'window', code)(req, module, undefined);
+      return module;
+    }
     if (name.endsWith('.css')) return {};
     if (name.startsWith('./') || name.startsWith('../components/')) {
       const label = name.split('/').pop()!;
