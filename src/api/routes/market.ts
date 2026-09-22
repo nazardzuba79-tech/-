@@ -4,6 +4,7 @@ import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGecko
 import { FearGreedService } from '../../services/FearGreedService';
 import { PrismaClient } from '@prisma/client';
 import { FuturesChartCandles } from '../../services/FuturesChartCandles';
+import { ProviderCache } from '../../services/marketData/ProviderCache';
 
 /**
  * Read-only market data mirrored from Kraken — coin list, live price, order
@@ -16,6 +17,12 @@ import { FuturesChartCandles } from '../../services/FuturesChartCandles';
  * Express path params can't contain "/" — the handler converts it back to
  * our internal "BTC/USDT" format.
  */
+/** The featured photo is an editorial choice that changes about never, so
+ *  ten minutes of staleness costs nothing and removes a per-visitor query. */
+const FEATURED_TRADER_TTL_MS = 10 * 60_000;
+/** Single-entry cache: the route takes no parameters, by design. */
+const FEATURED_TRADER_KEY = 'featured-trader';
+
 export function marketRouter(
   marketDataService: KrakenMarketDataService,
   coinGeckoService: CoinGeckoService,
@@ -44,14 +51,45 @@ export function marketRouter(
   // and therefore narrow on purpose: it returns one field for one
   // designated account and nothing else. It is NOT a lookup that can be
   // pointed at an arbitrary user, which is why it takes no parameters.
+  // One photo that changes about never, on a PUBLIC route, read straight
+  // from the database on every single visit to the marketplace. That is the
+  // one public endpoint left that spends a Neon query per page view, and
+  // Neon only suspends its compute while genuinely idle — so a trickle of
+  // visitors was enough to keep it awake.
+  //
+  // ProviderCache rather than a hand-rolled `{ value, expiresAt }`: it is
+  // this repo's one caching primitive and it already carries the two
+  // behaviours that matter here. A hit serves from memory with NO query at
+  // all, and concurrent callers arriving on a cold entry share ONE loader
+  // promise instead of each opening their own connection.
+  //
+  // `maxStaleMs: 0` is deliberate. A failed lookup stores nothing, so an
+  // error can never be cached as though it were an answer, and the error
+  // path still answers exactly what it answered before: `null`. Serving the
+  // last known photo through an outage would be kinder, but it would change
+  // what this route returns when the database is down, so it is left for a
+  // decision of its own rather than smuggled in here.
+  //
+  // Scoped to this router instance, never module-level: a second app in the
+  // same process (the tests build one per case) must not inherit another's
+  // cached photo.
+  const featuredTraderPhoto = new ProviderCache<string | null>({
+    ttlMs: FEATURED_TRADER_TTL_MS,
+    maxStaleMs: 0,
+    maxEntries: 1,
+  });
+
   router.get('/market/featured-trader', async (_req, res) => {
     try {
-      const featured = await prisma.user.findFirst({
-        where: { role: 'ADMIN' },
-        orderBy: { createdAt: 'asc' },
-        select: { avatarUrl: true },
+      const cached = await featuredTraderPhoto.fetch(FEATURED_TRADER_KEY, async () => {
+        const featured = await prisma.user.findFirst({
+          where: { role: 'ADMIN' },
+          orderBy: { createdAt: 'asc' },
+          select: { avatarUrl: true },
+        });
+        return featured?.avatarUrl ?? null;
       });
-      res.json({ avatarUrl: featured?.avatarUrl ?? null });
+      res.json({ avatarUrl: cached.value });
     } catch (err) {
       // A missing photo must never break the marketplace — fall back to
       // the initials avatar rather than failing the page.
