@@ -119,7 +119,15 @@ export function collectorServer(
     catch (error) { res.status(error instanceof OptionsRequestError ? error.status : 503).json({ error:error instanceof OptionsRequestError ? error.code : 'options_unavailable' }); }
   });
   const server = createServer(app);
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 1024, perMessageDeflate: false });
+  const wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: 1024,
+    // The collector->API stream is long-lived, repetitive JSON. Leaving
+    // permessage-deflate disabled made one backend connection consume roughly
+    // the same ~95 KB/s measured on the public live stream. Negotiate the
+    // standard WebSocket compression extension for frames above 1 KiB.
+    perMessageDeflate: { threshold: 1024 },
+  });
   server.on('upgrade', (req,socket,head) => {
     if (req.url !== '/internal/v1/stream' || !authorized(req.headers.authorization) || wss.clients.size >= 32) {
       socket.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n'); return;
