@@ -445,30 +445,31 @@ describe('spot and futures pair lists are unchanged', () => {
     // subscription is opened only while a 7-day sort is active and dropped
     // when it is not. The test below asserts that boundary directly rather
     // than trusting this paragraph.
-    'src/components/FuturesPairList.tsx': '4be3a5a6ce19eb716e12505c10c495bacc187064bec1aa9f7dc9bfc53767f85b',
+    // Re-taken: the cross-domain 7-day column was removed (it showed
+    // GreenHood's +190.54% under the HOOD perpetual). The assertions
+    // above now pin the stronger property — no catalogue read at all.
+    'src/components/FuturesPairList.tsx': 'fa629b38d54590c8f6e17efe609e61766a09ad0d977ad05f5e3c0a1eb627c905',
   };
 
-  it('reads only a 7-day return from the catalogue, never a market', () => {
+  it('reads NOTHING from the catalogue — the stronger form of the old rule', () => {
     const list = code('src/components/FuturesPairList.tsx');
     // The rows are still the `symbols` prop, filtered. Nothing else builds them.
     expect(list).toContain('const built = symbols');
     expect(list).toMatch(/symbols\s*\n?\s*\.filter\(/);
-    // The catalogue is touched in exactly one helper, and that helper reads
-    // exactly one field off each asset.
-    const helper = list.slice(list.indexOf('function useChange7d'), list.indexOf('export const FuturesPairList'));
-    expect(helper).toContain('asset.market?.changePercent7d');
-    expect([...list.matchAll(/asset\.market\?\./g)]).toHaveLength(1);
-    // One call site, and it is a subscription. (The name also appears twice
-    // on the import line — once as the binding, once in the path — so the
-    // call is counted rather than the mentions.)
-    expect([...list.matchAll(/catalogueStore\.\w+/g)].map((m) => m[0])).toEqual(['catalogueStore.subscribe']);
+    // This used to pin "exactly one catalogue field, exactly one subscription":
+    // `asset.market?.changePercent7d`, read for the 7-day sort. That field was
+    // a CoinGecko asset's week matched to a perpetual by BASE TICKER, and on
+    // the live feed it put GreenHood's +190.54% under the HOOD perpetual. The
+    // read is gone, so the rule tightens rather than relaxes: zero catalogue
+    // fields, zero subscriptions, no import at all.
+    expect(list).not.toMatch(/asset\.market\?\./);
+    expect([...list.matchAll(/catalogueStore\.\w+/g)]).toHaveLength(0);
+    expect(list).not.toMatch(/import .*catalogueStore.* from/);
+    expect(list).not.toContain('useChange7d');
     // Nothing anywhere in the module turns a catalogue entry into a market.
     expect(list).not.toMatch(/tradingPairs/);
     expect(list).not.toMatch(/asset\.symbol\s*\+/);
     expect(list).not.toMatch(/symbols\s*=\s*\[?\s*\.\.\.\s*(state\.)?assets/);
-    // And it is only subscribed while the 7-day sort is the active one.
-    expect(helper).toContain('if (!enabled) return;');
-    expect(list).toContain("useChange7d(sortField === 'change7d')");
   });
 
   it('does not derive tradable pairs from catalogue entries', () => {

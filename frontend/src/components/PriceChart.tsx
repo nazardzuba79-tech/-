@@ -295,7 +295,6 @@ export function PriceChart({
   const privateLineOwnerRef = useRef<ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | ISeriesApi<'Area'> | null>(null);
   const privateHistoryRef = useRef<((time: number) => Promise<void>) | null>(null);
   const [candlesRevision, setCandlesRevision] = useState(0);
-  const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'unavailable' | 'limit'>('idle');
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [interval, setInterval_] = useState<Interval>('1h');
   const [empty, setEmpty] = useState(false);
@@ -1076,7 +1075,6 @@ export function PriceChart({
       paintedSeriesRef.current = seriesKey;
     }
     setLoadFailed(false);
-    if (privateMode) setHistoryState('idle');
 
     function display(res: { candles: Candle[] }) {
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
@@ -1192,14 +1190,12 @@ export function PriceChart({
         }
         historyController?.abort();
       } else if (historyLoading || historyEnd || !candlesRef.current.length || candlesRef.current.length >= 10000) {
-        if (candlesRef.current.length >= 10000) setHistoryState('limit');
         return;
       }
       controller?.abort();
       const requestController = new AbortController();
       historyController = requestController;
       historyLoading = true;
-      setHistoryState('loading');
       const timeout = setTimeout(() => requestController.abort(), 12000);
       const range = scale.getVisibleLogicalRange();
       const firstTime = candlesRef.current[0]?.time;
@@ -1207,10 +1203,10 @@ export function PriceChart({
       try {
         const res = await candleLoader(pair, interval, CANDLE_FETCH_LIMIT, requestController.signal, endTime);
         if (cancelled || requestController.signal.aborted) return;
-        if (!res.candles.length) { historyEnd = true; setHistoryState('unavailable'); return; }
+        if (!res.candles.length) { historyEnd = true; return; }
         const data = targetTime === undefined ? mergeChartCandles(res.candles, candlesRef.current) : res.candles;
         const added = firstTime === undefined ? 0 : data.filter(candle => candle.time < firstTime).length;
-        if (targetTime === undefined && added === 0) { historyEnd = true; setHistoryState('unavailable'); return; }
+        if (targetTime === undefined && added === 0) { historyEnd = true; return; }
         suppressBackfill = true;
         hasSetInitialRange = true;
         display({ candles: data });
@@ -1218,13 +1214,13 @@ export function PriceChart({
           historicalWindow = data[data.length - 1].time * 1000 + CHART_INTERVAL_MS[interval] < Date.now();
           historyEnd = false;
           const time = chartEventBar(data, targetTime, interval);
-          if (time === null) { setHistoryState('unavailable'); return; }
+          if (time === null) return;
           const index = data.findIndex(candle => candle.time === time);
           scale.setVisibleLogicalRange({ from: Math.max(0, index - 70), to: index + 90 });
         } else if (range) scale.setVisibleLogicalRange({ from: range.from + added, to: range.to + added });
-        setHistoryState('idle');
       } catch {
-        if (!cancelled && historyController === requestController) setHistoryState('unavailable');
+        // Nothing older to show is not an error worth words. The initial
+        // load has its own visible failure state; this is only backfill.
       } finally {
         suppressBackfill = false;
         clearTimeout(timeout);
@@ -1724,13 +1720,23 @@ export function PriceChart({
         </div>
       )}
 
-      {privateTrading?.enabled && (tradingSelection || historyState !== 'idle') && <div className="chart-trade-status" role="status">
-        <span>{tradingSelection
-          ? (lang === 'ru' ? (privateTrading.selecting === 'exit' ? 'Выберите свечу выхода' : 'Выберите завершённую свечу') : 'Select a completed candle')
-          : historyState === 'loading' ? (lang === 'ru' ? 'Загрузка свечей…' : 'Loading candles…')
-          : historyState === 'limit' ? (lang === 'ru' ? 'Для более раннего входа выберите старший таймфрейм' : 'Use a larger timeframe for an earlier entry')
-          : (lang === 'ru' ? 'Свечи за этот период недоступны' : 'Candles unavailable for this period')}</span>
-        {tradingSelection && <button type="button" aria-label={lang === 'ru' ? 'Отменить выбор' : 'Cancel selection'} onClick={() => privateTrading.onCancelSelection()}>×</button>}
+      {/* Only a real user action speaks here.
+        *
+        * This strip used to double as a running commentary on the backfill:
+        * loading, at the 10k cap, nothing older to fetch. None of that is a
+        * customer's problem. A chart that has loaded every candle that
+        * exists is a chart working correctly, and announcing it invites the
+        * reader to think something went wrong. Reaching the end of history
+        * is now SILENT.
+        *
+        * A chart that genuinely could not load at all is a different thing,
+        * and still says so — «Не удалось загрузить график» with «Повторить»,
+        * from PR #169, further down this file and untouched. */}
+      {privateTrading?.enabled && tradingSelection && <div className="chart-trade-status" role="status">
+        <span>{lang === 'ru'
+          ? (privateTrading.selecting === 'exit' ? 'Выберите свечу выхода' : 'Выберите завершённую свечу')
+          : 'Select a completed candle'}</span>
+        <button type="button" aria-label={lang === 'ru' ? 'Отменить выбор' : 'Cancel selection'} onClick={() => privateTrading.onCancelSelection()}>×</button>
       </div>}
 
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
