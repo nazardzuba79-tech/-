@@ -17,7 +17,8 @@
  *   4  Ksenia failing never blanks Nazar, and the reverse;
  *   5  hard reload repaints from the validated snapshot;
  *   6  logging out and arriving as another account shows nothing of the first;
- *   7  the profile shows «Информация о сделках скрыта» and NO trade table;
+ *   7  the profile shows «Торговая информация этого трейдера скрыта» and NO
+ *      trade table, no trade count and no trade heading;
  *   8  no response to the browser contains an execution — checked on the
  *      captured wire bytes, not on the DOM;
  *   9  the aggregates survive the redaction: trade count, ROI, win rate;
@@ -273,8 +274,13 @@ let server, browser;
         hasTable: panel ? !!panel.querySelector('table') : null,
         hiddenNote: note ? note.textContent.replace(/\s+/g, ' ').trim() : null,
         hiddenNoteHasIcon: note ? !!note.querySelector('svg') : false,
-        // The count beside the heading: hidden is not zero.
+        // The locked tab carries no heading row and no count at all: the
+        // owner asked for an icon and a sentence, nothing else. «Hidden is
+        // not zero» is proven on the Statistics tab instead, where Total
+        // Trades still reads the whole ledger.
         headingCount: panel?.querySelector('.profile-panel-heading strong')?.textContent?.trim() ?? null,
+        hasHeading: !!panel?.querySelector('.profile-panel-heading'),
+        panelText: panel ? panel.textContent.replace(/\s+/g, ' ').trim() : null,
         // Aggregates that must survive the redaction.
         heroMetrics: [...page.querySelectorAll('.trader-hero-metrics > div')]
           .map(d => [d.querySelector('span')?.textContent?.trim(), d.querySelector('strong')?.textContent?.trim()]),
@@ -427,7 +433,7 @@ let server, browser;
     else {
       if (p.tradeRows > 0) finding(`${tag}: ${p.tradeRows} trade rows are still rendered`);
       if (p.hasTable) finding(`${tag}: the trade TABLE is still in the DOM`);
-      if (p.hiddenNote !== 'Информация о сделках скрыта') finding(`${tag}: hidden note reads ${JSON.stringify(p.hiddenNote)}`);
+      if (p.hiddenNote !== 'Торговая информация этого трейдера скрыта') finding(`${tag}: hidden note reads ${JSON.stringify(p.hiddenNote)}`);
       if (!p.hiddenNoteHasIcon) finding(`${tag}: the hidden note has no icon`);
       if (p.mentionsSubscribers) finding(`${tag}: the profile claims trades are available to subscribers`);
     }
@@ -442,7 +448,8 @@ let server, browser;
       if (!total || !/[1-9]/.test(total[1] ?? '')) finding(`${tag}: Total Trades reads ${JSON.stringify(total)} — hidden must not be zero`);
       const win = stats.metrics.find(([label]) => label === 'Win Rate');
       if (!win || !/[1-9]/.test(win[1] ?? '')) finding(`${tag}: Win Rate reads ${JSON.stringify(win)}`);
-      if (!p.headingCount || /^0 /.test(p.headingCount)) finding(`${tag}: the closed-trade count reads ${JSON.stringify(p.headingCount)} — hidden must not be zero`);
+      if (p.hasHeading || p.headingCount) finding(`${tag}: the locked tab still has a heading/count — ${JSON.stringify(p.headingCount)}`);
+      if (p.panelText !== 'Торговая информация этого трейдера скрыта') finding(`${tag}: the locked tab shows more than the one sentence — ${JSON.stringify(p.panelText)}`);
     }
 
     const ring = view.ring;

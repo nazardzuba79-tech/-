@@ -71,8 +71,12 @@ it('the wire payload passes the client validator for BOTH traders', async () => 
   expect(body.errors).toEqual({});
   expect(validStrategy(body.nazar, 'VX-001')).toBe(true);
   expect(validStrategy(body.ksenia, 'VX-KSENIA')).toBe(true);
-  // The owner-reported weekly result survives the round trip unchanged.
-  expect(body.ksenia.analytics.roi7).toBe(61.9);
+  // The clock here is 21 September — past the reported week — so 7D is the
+  // engine's own rolling window again, and the reported figure stays where it
+  // belongs: on the weekly row for 13-19 September.
+  expect(body.ksenia.analytics.roi7).not.toBe(61.9);
+  expect(body.ksenia.weekly.find((week: any) => week.period === '2026-09-13').roi).toBe(61.9);
+  expect(body.ksenia.reportedWeeks[0].appliedToVisibleWeeklyRoi).toBe(false);
   // And the executions never left the building.
   expect(body.nazar.trades).toEqual([]);
   expect(body.ksenia.trades).toEqual([]);

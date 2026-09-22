@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-09-21T12:48:22.126Z",
-  "date": "2026-09-21",
+  "startedAt": "2026-09-22T14:19:15.193Z",
+  "date": "2026-09-22",
   "environment": "LOCAL QA ONLY — real compiled router/service, in-memory persistence, real auth",
   "budgetMs": 21000,
   "widths": {
@@ -19,13 +19,13 @@
           "hasNaN": false
         },
         "05-token-arrives-late": {
-          "ms": 560,
+          "ms": 629,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -34,7 +34,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -44,13 +44,13 @@
           "problems": []
         },
         "01-cold-load": {
-          "ms": 571,
+          "ms": 597,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -59,7 +59,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -69,13 +69,13 @@
           "problems": []
         },
         "02-hard-reload": {
-          "ms": 532,
+          "ms": 602,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -84,7 +84,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -94,13 +94,13 @@
           "problems": []
         },
         "03-route-return": {
-          "ms": 527,
+          "ms": 543,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -109,7 +109,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -119,13 +119,13 @@
           "problems": []
         },
         "04-focus-refresh": {
-          "ms": 413,
+          "ms": 418,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -134,7 +134,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -144,13 +144,13 @@
           "problems": []
         },
         "06-failed-prefetch-then-visit": {
-          "ms": 592,
+          "ms": 626,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -159,7 +159,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -170,13 +170,13 @@
           "marketplaceRequestsAfterFailedPrefetch": 1
         },
         "07-request-timeout": {
-          "ms": 526,
+          "ms": 593,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -185,7 +185,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -195,13 +195,13 @@
           "problems": []
         },
         "08-server-500": {
-          "ms": 567,
+          "ms": 571,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -210,7 +210,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -220,13 +220,13 @@
           "problems": []
         },
         "09a-offline": {
-          "ms": 574,
+          "ms": 641,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -235,7 +235,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -250,7 +250,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -259,7 +259,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -268,13 +268,13 @@
           "hasNaN": false
         },
         "10a-before-other-tab": {
-          "ms": 576,
+          "ms": 628,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -283,7 +283,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -293,13 +293,13 @@
           "problems": []
         },
         "10-other-tab-logged-in": {
-          "ms": 406,
+          "ms": 411,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -308,7 +308,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -334,13 +334,13 @@
           "hasNaN": false
         },
         "05-token-arrives-late": {
-          "ms": 586,
+          "ms": 611,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -349,7 +349,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -359,13 +359,13 @@
           "problems": []
         },
         "01-cold-load": {
-          "ms": 569,
+          "ms": 587,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -374,7 +374,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -384,13 +384,13 @@
           "problems": []
         },
         "02-hard-reload": {
-          "ms": 532,
+          "ms": 557,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -399,7 +399,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -409,13 +409,13 @@
           "problems": []
         },
         "03-route-return": {
-          "ms": 522,
+          "ms": 642,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -424,7 +424,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -434,13 +434,13 @@
           "problems": []
         },
         "04-focus-refresh": {
-          "ms": 414,
+          "ms": 415,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -449,7 +449,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -459,13 +459,13 @@
           "problems": []
         },
         "06-failed-prefetch-then-visit": {
-          "ms": 592,
+          "ms": 717,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -474,7 +474,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -485,13 +485,13 @@
           "marketplaceRequestsAfterFailedPrefetch": 1
         },
         "07-request-timeout": {
-          "ms": 534,
+          "ms": 577,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -500,7 +500,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -510,13 +510,13 @@
           "problems": []
         },
         "08-server-500": {
-          "ms": 552,
+          "ms": 661,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -525,7 +525,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -535,13 +535,13 @@
           "problems": []
         },
         "09a-offline": {
-          "ms": 576,
+          "ms": 711,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -550,7 +550,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -565,7 +565,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -574,7 +574,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -583,13 +583,13 @@
           "hasNaN": false
         },
         "10a-before-other-tab": {
-          "ms": 583,
+          "ms": 639,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -598,7 +598,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -608,13 +608,13 @@
           "problems": []
         },
         "10-other-tab-logged-in": {
-          "ms": 406,
+          "ms": 409,
           "nazar": {
             "present": true,
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+870.5%",
+            "roi": "+870.3%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
@@ -623,7 +623,7 @@
             "busy": false,
             "unavailable": false,
             "chart": true,
-            "roi": "+476.2%",
+            "roi": "+477.4%",
             "buttonLabel": "Копировать трейдера",
             "hasRealNumber": true
           },
