@@ -36,7 +36,8 @@ describe('collector internal transport and public fanout',()=>{
       const denied=new WebSocket(`ws://127.0.0.1:${port}/internal/v1/stream`); denied.on('error',()=>{});
       const [err]=await once(denied,'error');expect(String(err)).toContain('401');denied.terminate();
       const allowed=new WebSocket(`ws://127.0.0.1:${port}/internal/v1/stream`,{headers:{Authorization:`Bearer ${token}`}});
-      const [raw]=await once(allowed,'message');expect(JSON.parse(raw.toString()).type).toBe('snapshot');allowed.terminate();
+      const [raw]=await once(allowed,'message');expect(JSON.parse(raw.toString()).type).toBe('snapshot');
+      expect(allowed.extensions).toContain('permessage-deflate');allowed.terminate();
     } finally { runtime.close(); }
   });
   test('one backend connector restores a fresh snapshot after reconnect; 100 downstream readers do not add sockets',async()=>{
