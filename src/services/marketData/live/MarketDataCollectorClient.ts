@@ -114,7 +114,11 @@ export class MarketDataCollectorClient {
       this.apply(initial, true);
       const ws = new WebSocket(`${this.url.replace(/^http/, 'ws')}/internal/v1/stream`, {
         headers: { Authorization: `Bearer ${this.token}` }, handshakeTimeout: 10_000,
-        maxPayload: 16_000_000, followRedirects: false, perMessageDeflate: false,
+        maxPayload: 16_000_000, followRedirects: false,
+        // Match the collector server: this is one trusted, long-lived stream
+        // of repetitive market-data JSON, so standard permessage-deflate
+        // removes avoidable cross-region bandwidth without changing frames.
+        perMessageDeflate: true,
       });
       this.socket = ws; this.counters.connections++; this.lastMessage = Date.now();
       const connectedAt = Date.now();
