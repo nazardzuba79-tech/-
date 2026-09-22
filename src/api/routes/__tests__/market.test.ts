@@ -57,6 +57,133 @@ describe('GET /market/featured-trader', () => {
   });
 });
 
+/**
+ * The featured photo is cached in memory so a public page view stops
+ * costing a database query. These pin the four properties that make that
+ * safe: a hit issues no query at all, the entry expires on time, concurrent
+ * callers on a cold entry share one query rather than one each, and a
+ * failed lookup is never stored as though it were an answer.
+ */
+describe('GET /market/featured-trader caching', () => {
+  const photo = 'data:image/png;base64,iVBORw0KGgo=';
+  const other = 'data:image/png;base64,OTHERPHOTO=';
+  const makePrisma = (impl: any) => ({ user: { findFirst: jest.fn(impl) } });
+
+  afterEach(() => { jest.restoreAllMocks(); });
+
+  it('serves a second request from memory with ZERO database queries', async () => {
+    const prisma = makePrisma(async () => ({ avatarUrl: photo }));
+    const app = buildApp({}, undefined, undefined, prisma);
+
+    const first = await request(app).get('/api/v1/market/featured-trader');
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
+
+    const second = await request(app).get('/api/v1/market/featured-trader');
+    const third = await request(app).get('/api/v1/market/featured-trader');
+
+    // THE POINT: still one, after three requests.
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
+    expect(first.body.avatarUrl).toBe(photo);
+    expect(second.body.avatarUrl).toBe(photo);
+    expect(third.body.avatarUrl).toBe(photo);
+  });
+
+  it('holds for ten minutes and refreshes after, not before', async () => {
+    const prisma = makePrisma(async () => ({ avatarUrl: photo }));
+    const app = buildApp({}, undefined, undefined, prisma);
+    const t0 = Date.now();
+
+    await request(app).get('/api/v1/market/featured-trader');
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
+
+    jest.spyOn(Date, 'now').mockReturnValue(t0 + 9 * 60_000 + 59_000);
+    await request(app).get('/api/v1/market/featured-trader');
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1); // still inside the TTL
+
+    jest.spyOn(Date, 'now').mockReturnValue(t0 + 10 * 60_000 + 1_000);
+    await request(app).get('/api/v1/market/featured-trader');
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(2); // past it
+  });
+
+  it('collapses concurrent cold requests into ONE query', async () => {
+    let release: (() => void) | null = null;
+    const gate = new Promise<void>((r) => { release = r; });
+    const prisma = makePrisma(async () => { await gate; return { avatarUrl: photo }; });
+    const app = buildApp({}, undefined, undefined, prisma);
+
+    const inFlight = Array.from({ length: 12 }, () =>
+      request(app).get('/api/v1/market/featured-trader')
+    );
+    await new Promise((r) => setImmediate(r));
+    release!();
+    const responses = await Promise.all(inFlight);
+
+    // Twelve callers, one query — this is what stops a cold cache from
+    // opening a dozen Neon connections at once.
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
+    for (const res of responses) {
+      expect(res.status).toBe(200);
+      expect(res.body.avatarUrl).toBe(photo);
+    }
+  });
+
+  it('never stores a failed lookup as an answer: the next request still asks, and gets the real photo', async () => {
+    let attempt = 0;
+    const prisma = makePrisma(async () => {
+      attempt += 1;
+      if (attempt === 1) throw new Error('db down');
+      return { avatarUrl: photo };
+    });
+    const app = buildApp({}, undefined, undefined, prisma);
+
+    const failed = await request(app).get('/api/v1/market/featured-trader');
+    expect(failed.status).toBe(200);
+    expect(failed.body.avatarUrl).toBeNull(); // unchanged contract on error
+
+    const recovered = await request(app).get('/api/v1/market/featured-trader');
+    // If the error had been cached, this would still be null and would not
+    // have queried again.
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(2);
+    expect(recovered.body.avatarUrl).toBe(photo);
+  });
+
+  it('caches a genuine absence, which is an answer, not a failure', async () => {
+    const prisma = makePrisma(async () => ({ avatarUrl: null }));
+    const app = buildApp({}, undefined, undefined, prisma);
+
+    await request(app).get('/api/v1/market/featured-trader');
+    const second = await request(app).get('/api/v1/market/featured-trader');
+
+    expect(prisma.user.findFirst).toHaveBeenCalledTimes(1);
+    expect(second.body.avatarUrl).toBeNull();
+  });
+
+  it('does not share its cache with another app in the same process', async () => {
+    const one = makePrisma(async () => ({ avatarUrl: photo }));
+    const two = makePrisma(async () => ({ avatarUrl: other }));
+
+    const a = await request(buildApp({}, undefined, undefined, one)).get('/api/v1/market/featured-trader');
+    const b = await request(buildApp({}, undefined, undefined, two)).get('/api/v1/market/featured-trader');
+
+    expect(a.body.avatarUrl).toBe(photo);
+    expect(b.body.avatarUrl).toBe(other);
+    expect(two.user.findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it('still reads exactly one designated account and only its photo', async () => {
+    const prisma = makePrisma(async () => ({ avatarUrl: photo }));
+    await request(buildApp({}, undefined, undefined, prisma)).get('/api/v1/market/featured-trader');
+
+    // The cache must not have loosened what the query itself is allowed to
+    // ask for: no request-supplied filter, one column.
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { role: 'ADMIN' },
+      orderBy: { createdAt: 'asc' },
+      select: { avatarUrl: true },
+    });
+  });
+});
+
 describe('GET /market/global', () => {
   const globalData = {
     totalVolume24hUsd: 76_360_000_000,
