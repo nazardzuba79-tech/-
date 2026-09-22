@@ -55,7 +55,7 @@ export function collectorServer(
         .json({ error: error instanceof PrivateMarketDataError ? error.code : 'private_market_data_unavailable' });
     }
   });
-  for (const kind of ['instruments', 'quote', 'candles', 'funding', 'chart-candles'] as const) {
+  for (const kind of ['instruments', 'quote', 'ticker', 'candles', 'funding', 'chart-candles'] as const) {
     app.get(`/internal/v1/private-trading/${kind}/:symbol`, async (req, res) => {
       const controller = new AbortController();
       const cancel = () => { if (!res.writableEnded) controller.abort(); };
@@ -64,6 +64,8 @@ export function collectorServer(
         let result: unknown;
         if (kind === 'instruments') result = await privateTrading.instrument(req.params.symbol, controller.signal);
         else if (kind === 'quote') result = await privateTrading.freshQuote(req.params.symbol, controller.signal);
+        // Mark and last from one ticker read — the sampled demo's near-live price, which needs no book.
+        else if (kind === 'ticker') result = await privateTrading.ticker(req.params.symbol, controller.signal);
         else if (kind === 'chart-candles') result = await privateTrading.chartCandles({ symbol: req.params.symbol, interval: String(req.query.interval) as PrivateChartInterval,
           limit: Number(req.query.limit ?? 520), ...(req.query.endTime === undefined ? {} : { endTime: Number(req.query.endTime) }), signal: controller.signal });
         else {

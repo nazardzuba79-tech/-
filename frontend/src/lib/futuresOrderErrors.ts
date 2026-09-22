@@ -78,6 +78,34 @@ const CODE_KEY: Record<string, Key> = {
   // not be reachable from it. Mapped anyway: an unmapped code falls back to
   // a generic sentence, and this one has a specific thing to say.
   REDUCE_ORDER_PROTECTION: 'futures.tpslReduceOnlyOff',
+  // The contract's near-live price behind a sampled (historical) account.
+  // Every contract outside the collector's live sockets is priced from a
+  // periodic catalogue snapshot, and a command needs that price younger than
+  // the commit headroom; when the frame has aged and the on-demand read
+  // fails too, the server refuses with one of these. It is the refusal the
+  // owner met on AKEUSDT as «Не удалось разместить ордер»: a price problem
+  // that a retry a few seconds later resolves, and it has to say so.
+  near_live_price_stale: 'futures.orderError.priceUnavailable',
+  near_live_price_unavailable: 'futures.orderError.priceUnavailable',
+  quote_stale: 'futures.orderError.priceUnavailable',
+  collector_unavailable: 'futures.orderError.priceUnavailable',
+  market_data_invalid: 'futures.orderError.priceUnavailable',
+  market_data_busy: 'futures.orderError.priceUnavailable',
+  private_market_data_unavailable: 'futures.orderError.priceUnavailable',
+  MARK_MISSING: 'futures.orderError.priceUnavailable',
+  ENTRY_MARK_UNAVAILABLE: 'futures.orderError.priceUnavailable',
+  // The account's command lane (client or server) is still busy with the
+  // previous command; the order was not taken.
+  native_queue_full: 'futures.orderError.busy',
+  client_queue_full: 'futures.orderError.busy',
+  account_changed: 'futures.orderError.busy',
+  // A reducing order named a position it cannot reduce.
+  INVALID_REDUCE_SIDE: 'futures.orderError.reduceSide',
+  INVALID_REDUCE_SYMBOL: 'futures.orderError.reduceSide',
+  MARGIN_TYPE_MISMATCH: 'futures.orderError.reduceSide',
+  POSITION_ID_REQUIRED: 'futures.orderError.positionNotOpen',
+  EXECUTION_MODE_MISMATCH: 'futures.orderError.executionMode',
+  IDEMPOTENCY_CONFLICT: 'futures.orderError.duplicate',
 };
 
 export type Translate = (key: Key, params?: Record<string, string | number>) => string;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import { useLanguage } from '../lib/i18n';
@@ -113,6 +113,26 @@ export function FuturesPositionsPanel({
    *  and rendering "no open positions" over a failed request would be a
    *  claim about the account that nobody made. */
   const positions = account.positions.data === null ? null : account.positions.data.filter(p => !symbolFilter || p.symbol === symbolFilter);
+  /**
+   * `data-overflow` on the scroll region while the row is wider than it: the
+   * pinned «Закрыть как» column casts its shadow onto the figures scrolling
+   * under it only then, so at a width where everything fits nothing looks
+   * cut. Measured, not inferred from the viewport — the panel's width is the
+   * chart's and the rail's business.
+   */
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const region = scrollRef.current;
+    if (!region || typeof ResizeObserver === 'undefined') return;
+    const measure = () => { region.dataset.overflow = String(region.scrollWidth > region.clientWidth + 1); };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(region);
+    const table = region.querySelector('table');
+    if (table) observer.observe(table);
+    return () => observer.disconnect();
+    // The region is (re)mounted with the rows and the tab; sizes are the observer's.
+  }, [positions, tab]);
   const history = account.positionHistory.data;
   const activeResource = tab === 'open' ? account.positions : account.positionHistory;
 
@@ -324,7 +344,7 @@ export function FuturesPositionsPanel({
         ) : positions.length === 0 ? (
           renderState(t(account.positions.failed ? 'futures.loadPositionsError' : 'futures.noPositions'), account.positions.failed)
         ) : (
-          <div className="futures-positions-scroll" style={styles.tableWrap}
+          <div className="futures-positions-scroll" style={styles.tableWrap} ref={scrollRef}
             tabIndex={archive ? 0 : undefined} role={archive ? 'region' : undefined}
             aria-label={archive ? t('futures.positions') : undefined}>
             <table className="futures-positions-table" style={styles.table}>
