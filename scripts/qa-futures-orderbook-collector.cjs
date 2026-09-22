@@ -142,12 +142,6 @@ async function run() {
           ok(`book populated: ${healthy.bids} bids / ${healthy.asks} asks, top qty ${healthy.firstBidQty}`);
         } else fail(`${vp.name} ${sym}: book not populated — ${JSON.stringify(healthy)}`);
 
-        // Our own region policy must never reach the customer as a venue fault.
-        const text = await page.textContent('body');
-        if (/Direct Bybit access disabled|circuit open|bybit/i.test(text || '')) {
-          fail(`${vp.name} ${sym}: region or venue wording reached the page`);
-        } else ok('no region or venue wording on the page');
-
         await page.screenshot({ path: path.join(OUT, `${vp.name}-${sym}-healthy.png`) });
 
         // Collector down: honest, and NOT an empty book dressed as depth.
@@ -162,12 +156,28 @@ async function run() {
         if ((levels || '') === '') ok('no fake empty book rendered while unavailable');
         else fail(`${vp.name} ${sym}: levels rendered while unavailable — ${levels}`);
 
+        /* Our own region policy must never reach the customer as a venue fault
+           — and THIS is the only moment it could. The page renders the refusal
+           only once `available === false`; while the collector was healthy
+           `#s` read "ok" and no reason existed anywhere on the page, so the
+           same scan taken up there could not have failed for the wording it
+           exists to catch. Both the rendered page and the raw payload are
+           checked, because a `detail` the fixture chose not to render would
+           still reach a real client. */
+        const wording = `${await page.textContent('body')} ${(down && down.reason) || ''} ${(down && down.detail) || ''}`;
+        if (/Direct Bybit access disabled|circuit open|bybit/i.test(wording)) {
+          fail(`${vp.name} ${sym}: region or venue wording reached the customer — ${wording.trim()}`);
+        } else ok('no region or venue wording in the unavailable state');
+
         await page.screenshot({ path: path.join(OUT, `${vp.name}-${sym}-collector-down.png`) });
 
         collectorDown = false;
         await sleep(1100);
         const back = await page.evaluate((s) => window.load(s), sym);
-        if (back && back.bids > 0) ok('recovers when the collector returns');
+        // The same four checks the healthy book is held to: a recovery that
+        // returns half a book, the wrong contract or an unreadable top
+        // quantity has not recovered.
+        if (back && back.bids > 0 && back.asks > 0 && back.firstBidQty > 0 && back.symbol === sym) ok('recovers when the collector returns');
         else fail(`${vp.name} ${sym}: did not recover — ${JSON.stringify(back)}`);
 
         if (errs.length === 0) ok('no console or page errors');
