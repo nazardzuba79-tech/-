@@ -8,6 +8,7 @@ on:
       - 'prisma/**'
       - 'scripts/*native-demo*'
       - 'scripts/qa-large-numbers-browser.cjs'
+      - 'scripts/qa-limit-close.cjs'
       - 'scripts/qa-pnl-card.cjs'
       - 'jest.config.js'
       - '.github/workflows/native-demo-qa.yml'
@@ -57,6 +58,12 @@ jobs:
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-large-numbers-browser.cjs
+      - name: Limit close — dialog, resting order, cancel, partial fill on a price move (desktop and phone)
+        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
+          LIMIT_QA_WIDTHS: '1440,390'
+        run: node scripts/qa-limit-close.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,5 +71,6 @@ jobs:
           path: |
             native-tests.json
             docs/qa/native-demo/
+            docs/qa/limit-close/
             docs/qa/pnl-card/
           retention-days: 7

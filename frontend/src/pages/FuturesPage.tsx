@@ -23,7 +23,6 @@ import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
 import { FuturesAccountSourceContext } from '../lib/futuresAccountSource';
 import { useNativeFuturesExecution } from '../lib/useNativeFuturesExecution';
-import type { FuturesCloseTicket } from '../lib/nativeReduceTarget';
 import { nativeDemoApi } from '../lib/nativeDemoApi';
 import { pairToNativeSymbol } from '../lib/nativeFuturesAdapter';
 import type { FuturesContractRules } from '../lib/futuresMath';
@@ -228,9 +227,6 @@ export function FuturesPage() {
   // another's, and must not survive leaving the page either.
   useEffect(() => { setChartMenu(null); }, [symbol]);
   useEffect(() => () => setChartMenu(null), []);
-  /** A reduce-only close the trader started from the positions table. The
-   *  form fills itself from it; nothing is placed until they submit. */
-  const [closeTicket, setCloseTicket] = useState<FuturesCloseTicket | null>(null);
   /**
    * The calculator is a panel over the terminal, not a route: it is opened
    * to answer a question about the market already on screen, and closing it
@@ -243,7 +239,6 @@ export function FuturesPage() {
   const pickedSeq = useRef(0);
   useEffect(() => {
     setPickedPrice(null);
-    setCloseTicket(current => current?.symbol === symbol ? current : null);
   }, [symbol]);
   const pairListRef = useRef<FuturesPairListHandle>(null);
   const marketDialogRef = useRef<HTMLDialogElement>(null);
@@ -419,7 +414,6 @@ export function FuturesPage() {
   }, [nativeExecution, chartTrading, visibleAccount.positions.data]);
 
   const handleOrderPlaced = useCallback(() => {
-    setCloseTicket(null);
     setPositionsRefreshKey((k) => k + 1);
   }, []);
 
@@ -661,7 +655,6 @@ export function FuturesPage() {
                  the connection the book is already using, and so is
                  available whenever the book is. */
               lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null}
-              closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
               calculatorDraft={calculatorDraft ?? undefined}
               onOpenCalculator={() => setCalculatorOpen(true)}
             />
@@ -705,23 +698,12 @@ export function FuturesPage() {
                   const position = native.getState()?.positions.find(p => p.id === positionId && p.status === 'OPEN');
                   if (position && !native.busy) native.setDialog({ kind: 'leverage', position });
                 } : undefined}
-                /* "Лимитный" hands the position to the ORDINARY order form
-                   as a reduce-only ticket, priced at the level the trader
-                   then types. It is the form that places it, so this is a
-                   real limit close and not a second order path. */
-                onLimitClose={(position) => {
-                  // Read that exact row from the same account source as the
-                  // table. Never infer its bucket from the form's old mode.
-                  const target = visibleAccount.positions.data?.find(p => p.id === position.id);
-                  if (!target) return;
-                  native.interaction.onCancelSelection();
-                  setPickedPrice(null);
-                  setSymbol(target.symbol);
-                  pickedSeq.current += 1;
-                  selectMobileTab('trade', true);
-                  setCloseTicket({ id: target.id, symbol: target.symbol, side: target.side,
-                    size: target.size, marginType: target.marginType, seq: pickedSeq.current });
-                }}
+                /* «Лимитный» opens the panel's own «Закрытие по лимиту»
+                   dialog for that row. The page lends it the last traded
+                   price of each contract and says which contract's rules
+                   `execution.contract` describes. */
+                lastPrice={(pair) => (pair === symbol ? tapeLastPrice : null) ?? reference.get(pair)?.lastPrice ?? null}
+                currentSymbol={symbol}
               />
             )}
             {bottomTab === 'positionHistory' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="history" />}

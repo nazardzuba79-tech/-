@@ -1,8 +1,6 @@
-.trade-terminal.trade-terminal.futures-reference .futures-position-money[data-positive="true"]::before,
-.trade-terminal.trade-terminal.futures-reference .futures-position-realized[data-positive="true"]::before {
-  content: '+';
-}
-
+/* The reference prints a profit without a plus sign (`2,120.5422 USDT`,
+   `(106.84%)`) and a loss with its minus; the colour carries the sign.
+   Owner's screenshot, 2026-09-22. */
 .trade-terminal.trade-terminal.futures-reference .futures-position-money[data-unit]::after,
 .trade-terminal.trade-terminal.futures-reference .futures-position-realized[data-unit]::after {
   content: ' ' attr(data-unit);
@@ -10,10 +8,6 @@
 
 .trade-terminal.trade-terminal.futures-reference .futures-position-roi::before {
   content: '(';
-}
-
-.trade-terminal.trade-terminal.futures-reference .futures-position-roi[data-positive="true"]::before {
-  content: '(+';
 }
 
 .trade-terminal.trade-terminal.futures-reference .futures-position-roi::after {
@@ -33,3 +27,8 @@
    collapses into the width it is given. These are the values it had. */
 .futures-history-table th { padding: 10px 14px; }
 .futures-history-table td { padding: 8px 14px; }
+
+/* The side is said for assistive technology only: the reference carries it
+   in the colour of the quantity and the bar on the contract cell, not in
+   words. */
+.futures-sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
