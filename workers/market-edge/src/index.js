@@ -218,7 +218,7 @@ async function cfdCandles(symbol,searchParams){
   return{...raw,symbol,fetchedAt:Date.now()};
 }
 
-async function cachedPublic(request, loader) {async function cachedPublic(request, loader) {
+async function cachedPublic(request, loader) {
   const cache = globalThis.caches?.default;
   const key = new Request(request.url, { method: "GET" });
   if (cache) {
