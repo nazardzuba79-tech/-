@@ -8,7 +8,7 @@ type Interval='5m'|'15m'|'1h'|'4h'|'1d';
 const INTERVALS:Interval[]=['5m','15m','1h','4h','1d'];
 const API_BASE=(import.meta.env.VITE_API_URL||'/api/v1').replace(/\/$/,'');
 const MARKET_EDGE_BASE='https://market.voltextech.net';
-const production=()=>typeof window!=='undefined'&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
+const production=()=>typeof window!=='undefined'&&!!window.location&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
 const PROVIDER_SYMBOL:Record<string,string>={WTIUSD:'USOIL',XBRUSD:'UKOIL'};
 
 type RawBar={openTime:number|string;open:number|string;high:number|string;low:number|string;close:number|string;volume?:number|string|null;tickVolume?:number|string|null;isOpen?:boolean};
