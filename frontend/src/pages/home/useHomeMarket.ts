@@ -87,7 +87,7 @@ export interface HomeMarket {
 export const HOME_MARKET_REFRESH_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_HERO_PAIR = HOME_HERO_PAIR;
 const MARKET_EDGE_BASE='https://market.voltextech.net';
-const production=()=>typeof window!=='undefined'&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
+const production=()=>typeof window!=='undefined'&&!!window.location&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
 async function edgeJson<T>(path:string):Promise<T>{const r=await fetch(`${MARKET_EDGE_BASE}${path}`,{credentials:'omit',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('edge_market_unavailable');return r.json() as Promise<T>;}
 const getDisplayTickers=()=>production()?edgeJson<Awaited<ReturnType<typeof api.getExternalTickers>>>('/market/display/spot-tickers'):api.getExternalTickers();
 const getDisplayCfdTickers=()=>production()?edgeJson<Awaited<ReturnType<typeof api.getCfdTickers>>>('/cfd/display/tickers'):api.getCfdTickers();
