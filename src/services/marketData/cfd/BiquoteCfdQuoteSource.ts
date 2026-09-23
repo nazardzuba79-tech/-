@@ -13,7 +13,15 @@ function positive(value: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 function timestampMs(value: unknown): number | null {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)) return null;
+  // BiQuote has returned both ISO timestamps with an explicit offset and
+  // epoch timestamps over time. Identity, bid/ask sanity and future-time
+  // rejection are checked separately below, so accepting those equivalent
+  // timestamp encodings does not relax quote validity.
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value < 1e12 ? value * 1000 : value;
+  if (typeof value !== 'string' || !value.trim()) return null;
+  if (/^\d+(?:\.\d+)?$/.test(value)) {
+    const n=Number(value); if(!Number.isFinite(n)||n<=0)return null; return n < 1e12 ? n * 1000 : n;
+  }
   const at=Date.parse(value); return Number.isFinite(at) ? at : null;
 }
 
