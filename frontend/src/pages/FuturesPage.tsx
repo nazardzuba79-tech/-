@@ -84,6 +84,7 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
  */
 export function FuturesPage() {
   const { t } = useLanguage();
+  const reference = useFuturesReference();
   const [initialParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -100,7 +101,6 @@ export function FuturesPage() {
   // contract lives — falling back to this browser's last one, and only then
   // to BTC/USDT. See lib/futuresPairRoute.
   const [symbol, setSymbol] = useState(() => initialFuturesPair(searchParams.get('pair')));
-  const reference = useFuturesReference(symbol);
   /**
    * Selecting a contract, everywhere. Every caller that used to call
    * `setSymbol` calls this instead, so there is ONE place that keeps the
