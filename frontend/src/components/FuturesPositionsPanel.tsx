@@ -121,23 +121,36 @@ export function FuturesPositionsPanel({
    *  claim about the account that nobody made. */
   const positions = account.positions.data === null ? null : account.positions.data.filter(p => !symbolFilter || p.symbol === symbolFilter);
   /**
-   * `data-overflow` on the scroll region while the row is wider than it: the
-   * pinned «Закрыть как» column casts its shadow onto the figures scrolling
-   * under it only then, so at a width where everything fits nothing looks
-   * cut. Measured, not inferred from the viewport — the panel's width is the
+   * `data-overflow` on the scroll region while the row is wider than it, and
+   * which side currently has figures hidden under a pinned column:
+   * `data-hidden-start` (under the contract) and `data-hidden-end` (under
+   * «Закрыть как»), plus `--pin-start`, the pinned contract column's width.
+   * The sheet fades the figures into the pinned edge only on that side, so
+   * at a width where everything fits nothing looks cut.
+   * Measured, not inferred from the viewport — the panel's width is the
    * chart's and the rail's business.
    */
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const region = scrollRef.current;
     if (!region || typeof ResizeObserver === 'undefined') return;
-    const measure = () => { region.dataset.overflow = String(region.scrollWidth > region.clientWidth + 1); };
+    const measure = () => {
+      const hidden = region.scrollWidth - region.clientWidth;
+      region.dataset.overflow = String(hidden > 1);
+      region.dataset.hiddenStart = String(hidden > 1 && region.scrollLeft > 1);
+      region.dataset.hiddenEnd = String(hidden > 1 && region.scrollLeft < hidden - 1);
+      // Where the pinned contract column ends, for the fade under it.
+      const pinned = region.querySelector('thead th');
+      const pinStart = `${pinned ? Math.round(pinned.getBoundingClientRect().width) : 0}px`;
+      if (region.style.getPropertyValue('--pin-start') !== pinStart) region.style.setProperty('--pin-start', pinStart);
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(region);
     const table = region.querySelector('table');
     if (table) observer.observe(table);
-    return () => observer.disconnect();
+    region.addEventListener('scroll', measure, { passive: true });
+    return () => { observer.disconnect(); region.removeEventListener('scroll', measure); };
     // The region is (re)mounted with the rows and the tab; sizes are the observer's.
   }, [positions, tab]);
   const history = account.positionHistory.data;
@@ -466,8 +479,8 @@ export function FuturesPositionsPanel({
                         ) : '—'}
                       </Td>
                       <Td label={t('futures.colEntry')} className="mono">{archive ? formatPrice(Number(p.entryPrice)) : p.entryPrice}</Td>
-                      <Td label={t('futures.colMark')} className="mono">{p.markPrice === null ? '—' : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
-                      <Td label={t('futures.colLiq')} className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? '—' : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
+                      <Td label={t('futures.colMark')} className="mono">{p.markPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(p.markPrice)) : p.markPrice}</Td>
+                      <Td label={t('futures.colLiq')} className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
                       <Td label={t('futures.colUnrealized')} className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
