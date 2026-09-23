@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { actor, setup, key, H, H0, M, outcome } from '../native/testing/liveFixture';
-import { NativeCommand, NativeDemoService } from '../native/service';
+import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_COMPACT_MIN, supersededObservations } from '../native/service';
 import { demoPositionView } from '../native/engine';
 import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateMarketDataError, PrivateTradingMarketData } from '../marketData';
 import { deriveNativeLiveProjection, projectionDigest, verifiedProjection } from '../native/liveProjection';
@@ -71,7 +71,8 @@ describe('historical entry with current server valuation and exit',()=>{
     expect(p.openedAt).toBe(f.clock.now());expect(p.markPrice).toBe('81000');
     expect(demoPositionView(s,p).unrealizedPnl).toBe(new BigNumber('81000').minus(entry).times(q).times(side==='LONG'?1:-1).toFixed());
     expect(p.openingFees).toBe(new BigNumber(entry).times(q).times(feeRate).toFixed());
-    f.clock.t+=M;f.market.price='81500';await f.refresh();
+    // A mark-only REFRESH is journaled once the stored observation is 15 minutes old.
+    f.clock.t+=15*M;f.market.price='81500';await f.refresh();
     const restarted=new NativeDemoService(f.repo,f.market,f.clock.now);
     const read=await restarted.state(actor);
     expect(read.positions[0].entryPrice).toBe(entry);expect(read.positions[0].openedAt).toBe(selectedAt);
@@ -253,5 +254,57 @@ describe('historical entry with current server valuation and exit',()=>{
     expect(f.repo.row!.snapshot.positions[0].status).toBe('OPEN');expect(f.repo.row!.snapshot.orders.at(-1)!.status).toBe('OPEN');
     expect(f.repo.row!.snapshot.positions[0].markPrice).toBe('81000');
     expect(outcome(await f.replay('FULL'))).toEqual(outcome(f.repo.row!.snapshot));
+  });
+});
+
+describe('an open historical account does not grow its journal with every price',()=>{
+  test('a mark-only REFRESH is answered, not journaled; a fill is journaled at once; one observation per 15 minutes',async()=>{
+    const f=await fixture();await f.open();
+    const p=f.repo.row!.snapshot.positions[0];
+    await f.open({side:'SHORT',type:'LIMIT',quantity:'0.001',price:'82000',reduceOnly:true,positionId:p.id,candle:undefined});
+    const commits=f.repo.commits,length=f.repo.row!.commands.length,revision=f.repo.row!.revision;
+    for(let i=0;i<30;i++){f.clock.t+=10_000;f.market.price=String(81000+i);const v=await f.refresh();expect(v.positions[0].markPrice).toBe(String(81000+i));}
+    // Five minutes of 10 s limit passes: no write, no journal growth, no new revision.
+    expect(f.repo.commits).toBe(commits);expect(f.repo.row!.commands).toHaveLength(length);expect(f.repo.row!.revision).toBe(revision);
+    // The price reaches the resting close: journaled on that very pass.
+    f.clock.t+=10_000;f.market.price='82100';await f.refresh();
+    expect(f.repo.commits).toBe(commits+1);expect(f.repo.row!.snapshot.positions[0].status).toBe('CLOSED');
+    expect(outcome(await f.replay('FULL'))).toEqual(outcome(f.repo.row!.snapshot));
+  });
+  test('a stored observation 15 minutes old is refreshed in the journal',async()=>{
+    const f=await fixture();await f.open();const commits=f.repo.commits;
+    f.clock.t+=14*M;await f.refresh();expect(f.repo.commits).toBe(commits);
+    f.clock.t+=M;f.market.price='81200';await f.refresh();expect(f.repo.commits).toBe(commits+1);
+    expect(f.repo.row!.snapshot.positions[0].markPrice).toBe('81200');
+  });
+  test('a journal bloated by the old rule is compacted on the next command, to the identical account',async()=>{
+    const f=await fixture();await f.open({quantity:'0.002'});
+    const p=f.repo.row!.snapshot.positions[0];
+    await f.open({side:'SHORT',type:'LIMIT',quantity:'0.001',price:'82000',reduceOnly:true,positionId:p.id,candle:undefined});
+    // The old rule: every 10 s pass journaled (forced here with `persist`), with no compaction yet.
+    const off=jest.spyOn(NativeDemoService.prototype as any,'compactHistoricalObservations').mockImplementation(async(row:any)=>row);
+    const pass=async(price:string)=>{f.clock.t+=10_000;f.market.price=price;await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()},{persist:true});};
+    for(let i=0;i<150;i++)await pass(String(81000+(i%7)));
+    await pass('82050');// fills half the position: an event inside the bloat
+    for(let i=0;i<150;i++)await pass(String(81500+(i%5)));
+    off.mockRestore();
+    const bloated=f.repo.row!,before=structuredClone(bloated.snapshot);
+    expect(bloated.commands.length).toBeGreaterThan(300);
+    const drop=supersededObservations(bloated);
+    expect(drop.size).toBeGreaterThanOrEqual(NATIVE_OBSERVE_COMPACT_MIN);
+    // The observation that filled the order is never a candidate.
+    const fill=before.events.find(e=>e.kind==='CLOSE')!;
+    expect(bloated.commands.filter(c=>c.kind==='OBSERVE'&&c.at===fill.time).every(c=>!drop.has(c.id))).toBe(true);
+    // The next real command stores the compacted journal.
+    f.clock.t+=10_000;
+    await f.open({side:'SHORT',type:'LIMIT',quantity:'0.001',price:'90000',reduceOnly:true,positionId:p.id,candle:undefined});
+    const row=f.repo.row!;
+    expect(row.commands.length).toBeLessThan(20);
+    expect(row.snapshot.events.slice(0,before.events.length)).toEqual(before.events);
+    expect(row.snapshot.positions[0]).toMatchObject({status:'OPEN',quantity:before.positions[0].quantity,realizedGross:before.positions[0].realizedGross});
+    expect(row.snapshot.walletBalance).toBe(before.walletBalance);
+    expect(row.snapshot.orders.at(-1)).toMatchObject({price:'90000',status:'OPEN'});
+    expect(outcome(await f.replay('FULL'))).toEqual(outcome(row.snapshot));
+    expect(outcome(await f.replay('CHECKPOINT'))).toEqual(outcome(row.snapshot));
   });
 });
