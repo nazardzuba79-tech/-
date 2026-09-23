@@ -2,15 +2,12 @@ import { useEffect, useState } from 'react';
 import { directFuturesReferenceStore } from './directFuturesReference';
 
 /**
- * Bulk reference rows refresh slowly; the focused contract is overlaid from
- * the same direct Bybit WebSocket used by depth/trades.
+ * Bulk reference rows refresh slowly. The currently selected contract is
+ * overlaid automatically from ticker frames already carried by the direct
+ * depth/trades WebSocket.
  */
-export function useFuturesReference(focusedPair?:string) {
+export function useFuturesReference() {
   const [rows, setRows] = useState(directFuturesReferenceStore.getState);
   useEffect(() => directFuturesReferenceStore.subscribe(setRows), []);
-  useEffect(() => {
-    directFuturesReferenceStore.focus(focusedPair ?? null);
-    return () => directFuturesReferenceStore.focus(null);
-  }, [focusedPair]);
   return rows;
 }
