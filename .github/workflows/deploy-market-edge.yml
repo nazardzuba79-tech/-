@@ -1,27 +1,32 @@
-name: Deploy voltex-market-edge (Cloudflare Worker)
+name: Verify / deploy voltex-market-edge (Cloudflare Worker)
 
-# Deploys ONLY the voltex-market-edge Worker. Does not touch Pages, Render or Neon.
-# SAFETY: a push alone never deploys. The deploy job runs only when
-#   - the pushed commit message contains [deploy-market-edge]  (branch cloudflare-market-edge), or
-#   - it is started manually (workflow_dispatch, once this file is on the default branch).
+# Verifies every change on the isolated branch.
+# Deploys ONLY when the commit explicitly contains [deploy-market-edge],
+# or when manually started after the workflow exists on the default branch.
 on:
   push:
     branches: [cloudflare-market-edge]
     paths:
       - 'workers/market-edge/**'
       - '.github/workflows/deploy-market-edge.yml'
+  pull_request:
+    paths:
+      - 'workers/market-edge/**'
+      - 'frontend/src/lib/sampledDepth.ts'
+      - 'frontend/src/lib/futuresDepth.ts'
+      - 'frontend/src/pages/FuturesPage.tsx'
+      - '.github/workflows/deploy-market-edge.yml'
   workflow_dispatch:
 
 concurrency:
-  group: deploy-market-edge
+  group: market-edge-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy-market-edge]')
+  verify:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,7 +35,24 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+      - name: Worker contract and isolation tests
+        run: node --experimental-default-type=module test.mjs
+      - name: Wrangler dry-run
+        run: npx --yes wrangler@4 deploy --dry-run
+
+  deploy:
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]'))
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/market-edge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Deploy Worker
         run: npx --yes wrangler@4 deploy
         env:
