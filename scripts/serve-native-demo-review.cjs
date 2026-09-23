@@ -139,6 +139,16 @@ async function tickers(){if(tickCache&&now()-tickCache.at<5000)return tickCache.
   // are not part of this terminal's universe.
   if(!fixture)symbols=list.map(x=>x.symbol).filter(x=>/^[A-Z0-9]+USDT$/.test(x)).sort();
   const rows=list.filter(x=>symbols.includes(x.symbol)).map(x=>{const base=x.symbol.replace(/USDT$/,''),pair=base+'/USDT';return{id:'linear_perpetual:'+x.symbol,pair,symbol:pair,providerSymbol:x.symbol,provider:'bybit',marketType:'linear_perpetual',baseAsset:base,quoteAsset:'USDT',settleAsset:'USDT',lastPrice:number(x.lastPrice),bidPrice:number(x.bid1Price),askPrice:number(x.ask1Price),high24h:number(x.highPrice24h),low24h:number(x.lowPrice24h),volume24h:number(x.volume24h),quoteVolume24h:number(x.turnover24h),changePercent24h:number(x.price24hPcnt)===null?null:number(x.price24hPcnt)*100,indexPrice:number(x.indexPrice),markPrice:number(x.markPrice),fundingRate:number(x.fundingRate),fundingIntervalMinutes:null,openInterest:number(x.openInterest),openInterestValue:number(x.openInterestValue),providerEventAt:time,sequence:null,receivedAt:now(),fetchedAt:time,stale:now()-time>10000};});tickCache={at:now(),rows};return rows;}
+// Public sampled display contract, backed by the SAME local fixture source used below.
+const sampledDisplay = value => ({...value,_display:{mode:'snapshot',capturedAt:now(),refreshMs:60000}});
+app.get('/api/v1/market/display',asyncRoute(async(_req,res)=>{
+ const rows=await tickers();res.set('Cache-Control','public,max-age=60').json(sampledDisplay({version:1,type:'snapshot',status:rows.some(r=>r.stale)?'stale':'live',rows,revision:1,epoch:String(started)}));
+}));
+app.get('/api/v1/market/display/futures-book/:symbol',asyncRoute(async(req,res)=>{
+ const symbol=req.params.symbol,q=await market.freshQuote(symbol);
+ res.set('Cache-Control','public,max-age=60').json(sampledDisplay({available:true,symbol,providerTime:q.providerTimestamp,fetchedAt:q.fetchedAt,stale:false,updateId:1,bids:q.bids,asks:q.asks}));
+}));
+app.get('/api/v1/market/display/futures-trades/:symbol',(_req,res)=>res.set('Cache-Control','public,max-age=60').json(sampledDisplay({symbol:_req.params.symbol,trades:[]})));
 app.get('/api/v1/market/live',asyncRoute(async(req,res)=>{res.setHeader('Content-Type','text/event-stream');res.setHeader('Connection','keep-alive');res.flushHeaders();let rev=0,closed=false;const send=async()=>{try{const rows=await tickers();if(!closed)res.write(`event: snapshot\ndata: ${JSON.stringify({version:1,type:'snapshot',status:rows.some(r=>r.stale)?'stale':'live',rows,revision:rev++,epoch:String(started)})}\n\n`);}catch{if(!closed)res.write(`event: state\ndata: ${JSON.stringify({version:1,type:'state',status:'stale',rows:[],revision:rev++,epoch:String(started)})}\n\n`);}};await send();const timer=setInterval(send,5000);req.on('close',()=>{closed=true;clearInterval(timer);});}));
 app.get('/api/v1/market/universe',asyncRoute(async(_req,res)=>{
   // Derived from the cached ticker snapshot, NOT one instrument call per

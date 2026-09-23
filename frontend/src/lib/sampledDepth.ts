@@ -69,7 +69,7 @@ export function subscribeFuturesDepth(pair: string, listener: Listener, onTrades
         }).catch(() => {}) : Promise.resolve();
       await Promise.all([book, tape]);
       if (state.controller === controller) state.controller = null;
-      schedule(DISPLAY_REFRESH_MS);
+      schedule(controller.signal.aborted && !(typeof document !== 'undefined' && document.hidden) ? 0 : DISPLAY_REFRESH_MS);
     };
     state.visibility = () => {
       if (document.hidden) { if (state.timer) clearTimeout(state.timer); state.timer = null; state.controller?.abort(); }

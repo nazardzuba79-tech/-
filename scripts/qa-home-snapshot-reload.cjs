@@ -15,7 +15,7 @@ const SNAPSHOT_KEY='voltex.home.market.v1';
 // figures, CFD quotes and the contract list. Asset-icon metadata under
 // /market/assets is a lookup for logos, not a provider read; it is reported
 // on its own and never counted here.
-const MARKET=/\/api\/v1\/(market\/external\/|market\/global|cfd\/tickers|futures\/config)/;
+const MARKET=/\/api\/v1\/(market\/external\/|market\/global|cfd\/(?:display\/)?tickers|futures\/config)/;
 const METADATA=/\/api\/v1\/market\/assets\//;
 const report={startedAt:new Date().toISOString(),firstVisit:{},reload:{},coldVisit:{},pageErrors:[],findings:[]};
 let server,browser,page;
@@ -28,7 +28,9 @@ const tickers=[
 ];
 
 function fixture(req,res,next){
- const p=req.path;
+ const sampled=req.path==='/cfd/display/tickers';
+ if(sampled){const original=res.json.bind(res);res.json=body=>original({...body,_display:{mode:'snapshot',capturedAt:Date.now(),refreshMs:21600000}});res.set('Cache-Control','public,max-age=21600');}
+ const p=sampled?'/cfd/tickers':req.path;
  if(p==='/market/external/tickers')return res.json({source:'kraken',tickers});
  if(p==='/market/external/orderbook/BTC-USDT')return res.json({source:'kraken',pair:'BTC/USDT',timestamp:Date.now(),bids:Array.from({length:8},(_,i)=>({price:String(76745.9-i*.1),quantity:String(.1+i*.03)})),asks:Array.from({length:8},(_,i)=>({price:String(76746.1+i*.1),quantity:String(.12+i*.025)}))});
  if(p==='/market/external/candles/BTC-USDT')return res.json({source:'kraken',pair:'BTC/USDT',interval:'15m',candles});

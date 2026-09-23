@@ -88,6 +88,13 @@ export function readDisplayJson<T = any>(url: string, ttl: number, signal?: Abor
   });
 }
 
+/** Remaining local lifetime, so a remount cannot postpone the next observation by a full interval. */
+export function displayRefreshDelay(url: string, ttl: number): number {
+  hydrate();
+  const item = cache.get(url);
+  return item && item.ttl === ttl ? Math.max(1000, Math.min(ttl, item.expiresAt - Date.now())) : ttl;
+}
+
 /** EventSource-shaped adapter, but performs one bounded GET/minute and opens NO stream. */
 export class SampledMarketSource {
   onerror: EventSource['onerror'] = null;
@@ -106,7 +113,7 @@ export class SampledMarketSource {
   private visibility = () => {
     if (this.closed) return;
     if (document.hidden) { if (this.timer) clearTimeout(this.timer); this.timer = null; this.controller?.abort(); return; }
-    this.schedule(Math.max(0, DISPLAY_REFRESH_MS - (Date.now() - this.lastAttempt)));
+    this.schedule(0); // The shared snapshot cache enforces remaining TTL on visibility resume.
   };
   private schedule(ms: number) {
     if (this.closed || (typeof document !== 'undefined' && document.hidden)) return;
@@ -116,8 +123,10 @@ export class SampledMarketSource {
   private async load() {
     if (this.closed || this.controller || (typeof document !== 'undefined' && document.hidden)) return;
     const controller = new AbortController(); this.controller = controller; this.lastAttempt = Date.now();
+    let delay = DISPLAY_REFRESH_MS;
     try {
       const body = await readDisplayJson(this.url, DISPLAY_REFRESH_MS, controller.signal);
+      delay = displayRefreshDelay(this.url, DISPLAY_REFRESH_MS);
       if (this.closed || controller.signal.aborted) return;
       const event = new MessageEvent('snapshot', { data: JSON.stringify(body) });
       for (const cb of this.callbacks.get('snapshot') ?? []) {
@@ -125,7 +134,7 @@ export class SampledMarketSource {
       }
     } catch {
       if (!this.closed && !controller.signal.aborted) this.onerror?.call(this as unknown as EventSource, new Event('error'));
-    } finally { if (this.controller === controller) this.controller = null; this.schedule(DISPLAY_REFRESH_MS); }
+    } finally { if (this.controller === controller) this.controller = null; this.schedule(controller.signal.aborted && !this.closed && !(typeof document !== 'undefined' && document.hidden) ? 0 : delay); }
   }
   close(): void {
     this.closed = true; if (this.timer) clearTimeout(this.timer); this.timer = null;

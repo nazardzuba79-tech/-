@@ -23,6 +23,7 @@ export function publicDisplayCache(ttlMs: number, valid: (body: any) => boolean,
     res.status(200).type('application/json');
     res.setHeader('Cache-Control', `public, max-age=${Math.max(0, Math.floor((entry.expires - now()) / 1000))}, must-revalidate`);
     res.setHeader('ETag', entry.etag);
+    res.setHeader('Access-Control-Expose-Headers', 'Age, X-VOLTEX-Display, X-VOLTEX-Refresh-Seconds');
     res.setHeader('X-VOLTEX-Display', 'snapshot');
     res.setHeader('X-VOLTEX-Refresh-Seconds', String(ttlMs / 1000));
     res.vary('Accept-Encoding');

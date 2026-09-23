@@ -1,7 +1,7 @@
 'use strict';
 /** Disposable end-to-end browser QA for the working CFD terminal.
- * Real public quotes/OHLC are used. The browser is loopback-only except for
- * the read-only BiQuote OHLC fallback, and every non-GET request is rejected. */
+ * Real public quotes/OHLC are used. The browser is loopback-only; the backend retains its real
+ * public-provider fallback, and every non-GET request is rejected. */
 const fs=require('node:fs');
 const path=require('node:path');
 const express=require('express');
@@ -33,18 +33,23 @@ function fixture(pathname){
   await context.route('**/*',route=>{
     const req=route.request(),u=new URL(req.url());
     if(!['GET','HEAD'].includes(req.method())){report.blockedWrites++;return route.abort();}
-    if(width===1280&&u.origin===origin&&u.pathname.startsWith('/api/v1/cfd/candles/'))return route.fulfill({status:503,contentType:'application/json',body:'{"error":"forced_api_candle_failure"}'});
     if(u.origin===origin)return route.continue();
-    if(u.hostname==='biquote.io'&&u.pathname.includes('/ohlc'))return route.continue();
     denied.add(u.hostname);return route.abort();
   });
+  const displayRequests=[];context.on('request',req=>{if(new URL(req.url()).pathname.startsWith('/api/v1/cfd/display/'))displayRequests.push(req.url());});
   const page=await context.newPage();activePage=page;page.on('pageerror',e=>report.pageErrors.push({width,error:e.message}));await page.goto(origin+'/trade?market=cfd&symbol=XAUUSD',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelectorAll('.cfd-option').length===13,{timeout:25000});await page.waitForFunction(()=>{const p=document.querySelector('.cfd-option.active .cfd-price')?.textContent||'';return p.trim()!==''&&!p.includes('—');},{timeout:25000});
   await page.locator('.cfd-owned-chart-canvas canvas').first().waitFor({state:'visible',timeout:25000});await page.waitForFunction(()=>document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')==='ready',{timeout:25000});await page.locator('.cfd-order-panel form').waitFor({state:'visible',timeout:10000});
   const price=await page.locator('.cfd-option.active .cfd-price').innerText();const input=page.locator('.cfd-order-panel input[type=number]');await input.fill('0.01');const submit=page.locator('.cfd-order-panel button[type=submit]');await submit.waitFor({state:'visible'});if(await submit.isDisabled())throw new Error(`Order remained disabled at ${width}px`);await submit.click();
   await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const openText=await page.locator('.cfd-position-content').innerText();if(!openText.includes('XAUUSD'))throw new Error(`Position missing at ${width}px`);
   const close=page.locator('.cfd-closeBtn').first();await page.waitForFunction(()=>{const b=document.querySelector('.cfd-closeBtn');return b&&!b.disabled;},{timeout:10000});await close.click();await page.locator('.cfd-tab').nth(1).click();await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const historyText=await page.locator('.cfd-position-content').innerText();if(!historyText.includes('XAUUSD'))throw new Error(`History missing at ${width}px`);
-  const result=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,rows:document.querySelectorAll('.cfd-option').length,forms:document.querySelectorAll('.cfd-terminal form').length,submits:document.querySelectorAll('.cfd-terminal button[type=submit]').length,canvases:document.querySelectorAll('.cfd-owned-chart-canvas canvas').length,chartStatus:document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')||null,technicalLabels:document.querySelectorAll('.cfd-practice-badge,.cfd-practice-mode,.cfd-disclaimer').length}));report.scenarios.push({width,price,forcedDirectOhlc:width===1280,...result});if(result.overflow)report.findings.push(`Horizontal overflow ${width}px`);if(result.forms!==1||result.submits!==1)report.findings.push(`Order ticket incomplete ${width}px`);if(result.canvases<1||result.chartStatus!=='ready')report.findings.push(`Chart not ready ${width}px`);if(result.technicalLabels!==0)report.findings.push(`Technical labels visible ${width}px`);await page.screenshot({path:path.join(OUT,`cfd-working-${width}.png`),fullPage:true});await context.close();activePage=null;
+  const result=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,rows:document.querySelectorAll('.cfd-option').length,forms:document.querySelectorAll('.cfd-terminal form').length,submits:document.querySelectorAll('.cfd-terminal button[type=submit]').length,canvases:document.querySelectorAll('.cfd-owned-chart-canvas canvas').length,chartStatus:document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')||null,technicalLabels:document.querySelectorAll('.cfd-practice-badge,.cfd-practice-mode,.cfd-disclaimer').length}));report.scenarios.push({width,price,sampledDisplay:true,...result});if(result.overflow)report.findings.push(`Horizontal overflow ${width}px`);if(result.forms!==1||result.submits!==1)report.findings.push(`Order ticket incomplete ${width}px`);if(result.canvases<1||result.chartStatus!=='ready')report.findings.push(`Chart not ready ${width}px`);if(result.technicalLabels!==0)report.findings.push(`Technical labels visible ${width}px`);await page.screenshot({path:path.join(OUT,`cfd-working-${width}.png`),fullPage:true});
+  const before=displayRequests.length;await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')==='ready',{timeout:15000});
+  await page.waitForTimeout(1000);
+  if(displayRequests.length!==before)report.findings.push(`CFD snapshot was re-downloaded on reload at ${width}px`);
+  if(!await page.locator('[data-sampled-note][data-refresh-ms="21600000"]').count())report.findings.push(`Missing six-hour snapshot marker at ${width}px`);
+  await context.close();activePage=null;
  }
  {const context=await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:'block'});await context.route('**/*',route=>{const u=new URL(route.request().url());if(u.origin!==origin)return route.abort();return['GET','HEAD'].includes(route.request().method())?route.continue():route.abort();});const page=await context.newPage();await page.goto(origin+'/',{waitUntil:'domcontentloaded'});await page.locator('.vx-asset-gold').waitFor({state:'visible',timeout:15000});await page.waitForFunction(()=>['.vx-asset-gold','.vx-asset-oil'].every(s=>{const x=document.querySelector(s)?.textContent||'';return x&&!x.includes('—');}),{timeout:25000});await page.screenshot({path:path.join(OUT,'home-prices-1280.png'),fullPage:true});await context.close();}
  if(report.blockedWrites!==0)report.findings.push(`Unexpected browser/API writes attempted: ${report.blockedWrites}`);if(report.pageErrors.length)report.findings.push(`Browser errors: ${report.pageErrors.length}`);

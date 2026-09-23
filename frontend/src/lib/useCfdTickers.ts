@@ -1,5 +1,6 @@
+import { displayRefreshDelay, SLOW_DISPLAY_REFRESH_MS } from './displaySnapshotCache';
 import { useEffect,useRef,useState } from 'react';
-import { api } from './api';
+import { api, API_BASE } from './api';
 import { ageCfdTickerRows } from './cfdPresentation';
 import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
@@ -36,12 +37,13 @@ export function useCfdTickers(enabled = true){
         if(cancelled)return;
         const rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
         if(rows===null)throw new Error('Invalid CFD snapshot');
+        delay=displayRefreshDelay(`${API_BASE}/cfd/display/tickers`,SLOW_DISPLAY_REFRESH_MS);
         setLoadError(false);if(typeof res.configured==='boolean')setConfigured(res.configured);
         setTickers(rows.map(row=>({...row,status:row.price===null?'unavailable':row.marketClosed?'market_closed':'sampled',displayOnly:true,executionAllowed:false})));
       }catch{if(!cancelled){setLoadError(true);setTickers(old=>old.map(row=>({...row,status:'stale',stale:true})));}delay=60_000;}
       finally{inFlight=false;schedule(delay);}
     }
-    const visible=()=>{if(document.hidden){if(timer)clearTimeout(timer);timer=null;}else if(Date.now()-lastAttempt>=POLL_MS)void load();else schedule(POLL_MS-(Date.now()-lastAttempt));};
+    const visible=()=>{if(document.hidden){if(timer)clearTimeout(timer);timer=null;}else void load();};
     reloadRef.current=()=>void load();
     document.addEventListener('visibilitychange',visible);void load();
     return()=>{cancelled=true;if(timer)clearTimeout(timer);document.removeEventListener('visibilitychange',visible);reloadRef.current=()=>{};};

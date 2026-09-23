@@ -6,6 +6,8 @@ export function sampledDisplayText(lang: string, asOf: number | null | undefined
     es: ['Instantánea', 'Animación local de datos recibidos; no son operaciones nuevas ni profundidad en tiempo real'],
     pt: ['Instantâneo', 'Animação local dos dados recebidos; não são novas operações nem profundidade em tempo real'],
     zh: ['快照', '已接收数据的本地动画；不是新交易或实时深度'],
+    ja: ['スナップショット', '取得済みデータのローカルアニメーション。新しい約定やリアルタイムの板情報ではありません'],
+    ko: ['스냅샷', '수신된 데이터의 로컬 애니메이션이며 신규 체결이나 실시간 호가가 아닙니다'],
     hi: ['स्नैपशॉट', 'प्राप्त डेटा का स्थानीय एनिमेशन; नई ट्रेड या वास्तविक समय की गहराई नहीं'],
   };
   const [label, explanation] = words[lang] ?? words.en;

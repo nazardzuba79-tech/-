@@ -50,11 +50,13 @@ test('CFD terminal exposes working local order controls but never financial exec
   expect(positions).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition/);
 });
 
-test('CFD chart has two real OHLC paths and no explanatory customer copy', () => {
+test('CFD chart samples real OHLC through the cached backend with no duplicate direct request', () => {
   const chart=read('components/CfdChart.tsx');
-  expect(chart).toContain('/cfd/candles/');
-  expect(chart).toContain('https://biquote.io/api/');
-  expect(chart).toContain('firstSuccess');
+  expect(chart).toContain('/cfd/display/candles/');
+  expect(chart).not.toContain('https://biquote.io/api/');
+  expect(chart).toContain('readDisplayJson');expect(chart).toContain('SLOW_DISPLAY_REFRESH_MS');expect(chart).toContain('SampledDataNote');
+  const route=readFileSync(resolve(process.cwd(),'src/api/routes/cfd.ts'),'utf8');
+  expect(route).toContain('collectorDisplay.getOhlc');expect(route).toContain('biquoteOhlc.getOhlc');
   expect(chart).toContain('CandlestickSeries');
   expect(chart).toContain('createChart');
   expect(chart).toContain('data-chart-status={status}');

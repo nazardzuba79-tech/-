@@ -1,4 +1,4 @@
-import { readDisplayJson, SLOW_DISPLAY_REFRESH_MS } from '../lib/displaySnapshotCache';
+import { readDisplayJson, displayRefreshDelay, SLOW_DISPLAY_REFRESH_MS } from '../lib/displaySnapshotCache';
 import { SampledDataNote } from './SampledDataNote';
 import { useEffect, useRef, useState } from 'react';
 import { CandlestickSeries, ColorType, createChart, HistogramSeries, type IChartApi, type ISeriesApi, type Time } from 'lightweight-charts';
@@ -68,13 +68,14 @@ export function CfdChart({symbol}:{symbol:string}){
       try{
         const snapshot=await loadCandles(symbol,interval,request.signal);
         if(cancelled||request.signal.aborted)return;
+        delay=displayRefreshDelay(`${API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`,SLOW_DISPLAY_REFRESH_MS);
         const rows=snapshot.rows;
         seriesRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,open:bar.open,high:bar.high,low:bar.low,close:bar.close})));
         volumeRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,value:bar.volume,color:bar.close>=bar.open?'rgba(18,201,141,.28)':'rgba(239,83,80,.28)'})));
         if(renderedKey.current!==key)chartRef.current?.timeScale().fitContent();
         renderedKey.current=key;setAsOf(snapshot.asOf);setStatus('ready');
       }catch{if(!cancelled&&!request.signal.aborted)setStatus('error');delay=60_000;}
-      finally{if(controller===request)controller=null;schedule(delay);}
+      finally{if(controller===request)controller=null;schedule(request.signal.aborted&&!cancelled&&!document.hidden?0:delay);}
     }
     const visible=()=>{if(document.hidden){if(timer)clearTimeout(timer);timer=null;controller?.abort();}else schedule(0);};
     document.addEventListener('visibilitychange',visible);void load();

@@ -88,7 +88,16 @@ describe('browser snapshot budget',()=>{
  });
  test('persisted six-hour snapshot survives module reload without a new request',async()=>{
   const ttl=21_600_000,url='/api/v1/cfd/display/tickers';global.fetch=jest.fn(async()=>response(snap({tickers:[]},ttl),21600));
-  await browserModule().readDisplayJson(url,ttl);jest.resetModules();await browserModule().readDisplayJson(url,ttl);expect(fetch).toHaveBeenCalledTimes(1);
+  await browserModule().readDisplayJson(url,ttl);expect(fetch).toHaveBeenCalledTimes(1);
+  jest.resetModules();global.fetch=jest.fn(async()=>response(snap({tickers:[]},ttl),21600));
+  await browserModule().readDisplayJson(url,ttl);expect(fetch).not.toHaveBeenCalled();
+ });
+ test('remaining cache lifetime survives remount rather than resetting a six-hour timer',async()=>{
+  const ttl=21_600_000,url='/api/v1/cfd/display/candles/XAUUSD?interval=1h';
+  global.fetch=jest.fn(async()=>response(snap({bars:[]},ttl),1800));const {readDisplayJson,displayRefreshDelay}=browserModule();
+  await readDisplayJson(url,ttl);expect(displayRefreshDelay(url,ttl)).toBe(1_800_000);
+  await jest.advanceTimersByTimeAsync(1_200_000);await readDisplayJson(url,ttl);
+  expect(fetch).toHaveBeenCalledTimes(1);expect(displayRefreshDelay(url,ttl)).toBe(600_000);
  });
  test('one subscriber cancellation does not abort another subscriber',async()=>{
   let finish:any;global.fetch=jest.fn((_u,options)=>new Promise(resolve=>{finish=()=>resolve(response(snap({price:5})));}));
@@ -113,6 +122,18 @@ describe('browser snapshot budget',()=>{
   const source=new SampledMarketSource('/api/v1/market/display');await flush();await jest.advanceTimersByTimeAsync(600_000);expect(fetch).not.toHaveBeenCalled();
   document.hidden=false;document.dispatchEvent(new Event('visibilitychange'));await jest.advanceTimersByTimeAsync(1);expect(fetch).toHaveBeenCalledTimes(1);
   document.hidden=true;document.dispatchEvent(new Event('visibilitychange'));await jest.advanceTimersByTimeAsync(600_000);expect(fetch).toHaveBeenCalledTimes(1);source.close();
+ });
+ test('hiding then immediately restoring an in-flight page does not wait another minute',async()=>{
+  let calls=0;global.fetch=jest.fn((_url,{signal})=>{
+    if(++calls===1)return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError'))));
+    return Promise.resolve(response(snap({rows:[]})));
+  });
+  const {SampledMarketSource}=browserModule(),source=new SampledMarketSource('/api/v1/market/display'),seen=jest.fn();
+  source.addEventListener('snapshot',seen);await flush();expect(fetch).toHaveBeenCalledTimes(1);
+  document.hidden=true;document.dispatchEvent(new Event('visibilitychange'));
+  document.hidden=false;document.dispatchEvent(new Event('visibilitychange'));
+  await flush();await jest.advanceTimersByTimeAsync(1);await flush();
+  expect(fetch).toHaveBeenCalledTimes(2);expect(seen).toHaveBeenCalledTimes(1);source.close();
  });
  test('depth parser rejects identity swaps, crossed books and malformed amounts',()=>{
   const{parseSampledBook}=require(resolve(process.cwd(),'frontend/src/lib/sampledDepth.ts'));
