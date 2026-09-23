@@ -132,6 +132,26 @@ interface CommandLane{chain:Promise<unknown>;depth:number;/** The most recently 
 // same Prisma client. Coordinate before reading/replaying, outside DB locks.
 // Separate clients/replicas still use the unchanged transactional CAS guard.
 const repositoryLanes=new WeakMap<object,Map<string,CommandLane>>();
+
+/**
+ * Wallet collateral is not always named `ASSETUSDT` on the venue.
+ * EUR is the important example: Bybit's USDT-settled FX perpetual is
+ * EURUSDUSDT and its mark tracks EUR/USD. Because the contract itself is
+ * USDT-settled, that mark is the venue's USDT-denominated valuation source
+ * for one EUR in this account model. Never invent EURUSDT.
+ *
+ * Missing/stale quotes still stay UNPRICED; this only selects the real
+ * market symbol and does not add a fallback price.
+ */
+type CollateralMarket = { symbol:string; source:string };
+const COLLATERAL_MARKET_OVERRIDES:Readonly<Record<string,CollateralMarket>>=Object.freeze({
+  EUR:{symbol:'EURUSDUSDT',source:'BYBIT_FX_EURUSDUSDT_MARK'},
+});
+export function collateralMarket(asset:string):CollateralMarket|null{
+  const normalized=asset.trim().toUpperCase();
+  if(normalized==='USDT')return null;
+  return COLLATERAL_MARKET_OVERRIDES[normalized]??{symbol:`${normalized}USDT`,source:'BYBIT_LINEAR_MARK'};
+}
 /** The three fields of a valuation the engine acts on. */
 export const externalCollateral=(v:CollateralValuation):ExternalCollateral=>({priced:v.collateralPriced,complete:v.complete,asOf:v.asOf});
 /** A copy of the snapshot valued on `valuation`, or the snapshot itself when it already carries the same figure. */
@@ -265,7 +285,7 @@ export class NativeDemoService {
     const accountRow=row===undefined?await commandRead('repository.read',()=>this.repository.read(actor)):row;
     const holdings=options.holdings??await commandRead('repository.holdings',()=>this.repository.holdings(actor));
     if(accountRow?.executionMode==='HISTORICAL_DEMO'){
-      const symbols=holdings.filter(h=>h.asset!=='USDT'&&new BigNumber(h.available).plus(h.locked??'0').gt(0)).map(h=>h.asset+'USDT');
+      const symbols=holdings.filter(h=>h.asset!=='USDT'&&new BigNumber(h.available).plus(h.locked??'0').gt(0)).map(h=>collateralMarket(h.asset)!.symbol);
       const prices=await this.demoCurrentPrices(symbols,new Set());
       return this.demoCollateral(holdings,prices,accountRow);
     }
@@ -275,11 +295,12 @@ export class NativeDemoService {
     const priced=holdings.filter(h=>h.asset!==settle&&new BigNumber(h.available).plus(h.locked??'0').gt(0)
       &&(!options.reuse||!accountRow?.disabledCollateralAssets?.includes(h.asset)));
     // One frame read for every asset that has no quote of this command's own; a mark is all a valuation needs.
-    const frame=await this.frameMarks(priced.map(h=>`${h.asset}${settle}`).filter(symbol=>!(options.reuse&&this.youngQuote(symbol))));
+    const frame=await this.frameMarks(priced.map(h=>collateralMarket(h.asset)!.symbol).filter(symbol=>!(options.reuse&&this.youngQuote(symbol))));
     const priceOne=async(h:{asset:string},fresh:boolean):Promise<CollateralPrice>=>{
+      const market=collateralMarket(h.asset)!;
       try{
-        const mark=fresh?undefined:frame.get(`${h.asset}${settle}`);
-        if(mark&&this.now()-mark.markProviderTimestamp<=NATIVE_FRAME_MARK_MAX_AGE_MS)return{asset:h.asset,price:mark.markPrice,source:'BYBIT_LINEAR_MARK',asOf:mark.markProviderTimestamp};
+        const mark=fresh?undefined:frame.get(market.symbol);
+        if(mark&&this.now()-mark.markProviderTimestamp<=NATIVE_FRAME_MARK_MAX_AGE_MS)return{asset:h.asset,price:mark.markPrice,source:market.source,asOf:mark.markProviderTimestamp};
         // Inside a command the valuation may share the command's own fresh
         // quotes (the same observation, once). A plain read always prices
         // the wallet now: a reader asking for the account gets the market
@@ -294,16 +315,16 @@ export class NativeDemoService {
         // The mark is all a valuation reads: a source that answers with a
         // mark and no book (the test-account wallet projection) prices
         // the holding; execution alone needs the whole observed book.
-        const symbol=`${h.asset}${settle}`;
+        const symbol=market.symbol;
         const quoted=options.reuse&&!fresh?await this.valuationMark(symbol):assertPrivateFreshMark(await this.quote(symbol,true),symbol,this.now());
         // Mark, not last: the collateral is valued the way the positions
         // it backs are valued, so the two cannot drift apart.
-        return{asset:h.asset,price:quoted.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quoted.markProviderTimestamp};
+        return{asset:h.asset,price:quoted.markPrice,source:market.source,asOf:quoted.markProviderTimestamp};
       }catch{
         commandCheck();
         // A contract that does not exist and a provider that is down are
         // the same answer here: we do not know what this is worth.
-        return{asset:h.asset,price:null,source:'BYBIT_LINEAR_MARK',asOf:null};
+        return{asset:h.asset,price:null,source:market.source,asOf:null};
       }
     };
     let prices=await Promise.all(priced.map(h=>priceOne(h,false)));
@@ -837,8 +858,13 @@ export class NativeDemoService {
       throw new PrivateMarketDataError('near_live_price_stale');
   }
   private demoCollateral(holdings:CollateralHolding[],prices:Map<string,PrivateMark>,row:NativeAccount){
-    return valueCollateral(holdings,[...prices].map(([symbol,q])=>({asset:symbol.replace(/USDT$/,''),price:q.markPrice,source:'BYBIT_LINEAR_MARK',asOf:q.markProviderTimestamp})),
-      'USDT',new Set(row.disabledCollateralAssets??[]));
+    const quoted:CollateralPrice[]=[];
+    for(const holding of holdings){
+      const market=collateralMarket(holding.asset);if(!market)continue;
+      const q=prices.get(market.symbol);
+      quoted.push({asset:holding.asset,price:q?.markPrice??null,source:market.source,asOf:q?.markProviderTimestamp??null});
+    }
+    return valueCollateral(holdings,quoted,'USDT',new Set(row.disabledCollateralAssets??[]));
   }
   /** Historical entry is an immutable selected price, then the account follows sampled current prices.
    * No historical OHLC catch-up, manufactured depth, live-book timeout exemption, or second math engine. */
@@ -847,7 +873,7 @@ export class NativeDemoService {
       .some(p=>p.executionMode!=='HISTORICAL_DEMO'))throw new DemoEngineError('EXECUTION_MODE_MISMATCH');
     const holdings=preparedHoldings??await commandRead('repository.holdings',()=>this.repository.holdings(actor));
     const required=new Set(exposedSymbols(row.snapshot)),symbols=new Set(required);
-    for(const h of holdings)if(h.asset!=='USDT'&&!row.disabledCollateralAssets?.includes(h.asset)&&new BigNumber(h.available).plus(h.locked??'0').gt(0))symbols.add(h.asset+'USDT');
+    for(const h of holdings)if(h.asset!=='USDT'&&!row.disabledCollateralAssets?.includes(h.asset)&&new BigNumber(h.available).plus(h.locked??'0').gt(0)){const market=collateralMarket(h.asset);if(market)symbols.add(market.symbol);}
     const seq=nextInstructionSeq(row.commands),id=`native-${randomUUID()}`;
     let draft:NativeInstruction|undefined;
     if(request.kind==='OPEN'){

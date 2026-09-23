@@ -233,6 +233,39 @@ describe('historical entry with current server valuation and exit',()=>{
     expect(()=>assertHistoricalDemoCurrentPrice(q,'ETHUSDT',f.clock.t)).toThrow();
     expect(()=>assertPrivateFreshQuote(f.market.quoteNow('BTCUSDT'),'BTCUSDT',f.clock.t+6000)).toThrow();
   });
+  test('EUR collateral uses EURUSDUSDT, never the nonexistent EURUSDT, in live valuation',async()=>{
+    const f=await fixture('60000','1.08');f.repo.wallet=[{asset:'EUR',available:'5',locked:'0'}];
+    const marks=jest.spyOn(f.market,'marks');
+    const v=await f.service.collateral(actor);
+    expect(marks.mock.calls.some(call=>Array.isArray(call[0])&&call[0].includes('EURUSDUSDT'))).toBe(true);
+    expect(marks.mock.calls.some(call=>Array.isArray(call[0])&&call[0].includes('EURUSDT'))).toBe(false);
+    expect(v.complete).toBe(true);expect(v.collateralPriced).toBe('5.4');
+    expect(v.lines.find(l=>l.asset==='EUR')).toMatchObject({price:'1.08',value:'5.4',source:'BYBIT_FX_EURUSDUSDT_MARK',status:'PRICED'});
+    marks.mockRestore();
+  });
+  test('EUR collateral uses the EURUSDUSDT mark in HISTORICAL_DEMO and stays unpriced when that mark is absent',async()=>{
+    const f=await fixture();f.repo.wallet=[{asset:'EUR',available:'5',locked:'0'}];
+    const requested:string[][]=[];
+    f.market.historicalDemoPrices=jest.fn(async symbols=>{
+      requested.push([...symbols]);const now=f.clock.now(),out=new Map<string,any>();
+      for(const symbol of symbols){
+        if(symbol==='BTCUSDT')out.set(symbol,{symbol,markPrice:'81000',lastPrice:'81000',markProviderTimestamp:now,receivedAt:now,fetchedAt:now});
+        if(symbol==='EURUSDUSDT')out.set(symbol,{symbol,markPrice:'1.08',lastPrice:'1.08',markProviderTimestamp:now,receivedAt:now,fetchedAt:now});
+      }
+      return out;
+    });
+    await f.open();let v=await f.service.collateral(actor);
+    expect(requested.flat()).toContain('EURUSDUSDT');expect(requested.flat()).not.toContain('EURUSDT');
+    expect(v.complete).toBe(true);expect(v.collateralPriced).toBe('5.4');
+    expect(v.lines.find(l=>l.asset==='EUR')).toMatchObject({price:'1.08',value:'5.4',source:'BYBIT_FX_EURUSDUSDT_MARK'});
+    f.market.historicalDemoPrices=jest.fn(async symbols=>{
+      const now=f.clock.now(),out=new Map<string,any>();
+      for(const symbol of symbols)if(symbol==='BTCUSDT')out.set(symbol,{symbol,markPrice:'81000',lastPrice:'81000',markProviderTimestamp:now,receivedAt:now,fetchedAt:now});
+      return out;
+    });
+    v=await f.service.collateral(actor);
+    expect(v.complete).toBe(false);expect(v.lines.find(l=>l.asset==='EUR')!.value).toBeNull();
+  });
   test('unquoted collateral is unknown, known collateral follows current prices and OFF/ON survives reload',async()=>{
     const f=await fixture();f.repo.wallet=[{asset:'BTC',available:'1',locked:'0'},{asset:'EUR',available:'5',locked:'0'}];f.source.frame=['BTCUSDT'];
     await f.open();let v=await f.service.collateral(actor);
