@@ -3,6 +3,7 @@ import { actor, setup, key, H, H0, M, outcome } from '../native/testing/liveFixt
 import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_COMPACT_MIN, NATIVE_OBSERVE_COMPACT_RETRY_MS, supersededObservations } from '../native/service';
 import { demoPositionView } from '../native/engine';
 import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateMarketDataError, PrivateTradingMarketData } from '../marketData';
+import { CommandScope, commandScope } from '../native/commandScope';
 import { deriveNativeLiveProjection, projectionDigest, verifiedProjection } from '../native/liveProjection';
 
 const selectedAt=H0-24*H;
@@ -270,6 +271,15 @@ describe('an open historical account does not grow its journal with every price'
     f.clock.t+=10_000;f.market.price='82100';await f.refresh();
     expect(f.repo.commits).toBe(commits+1);expect(f.repo.row!.snapshot.positions[0].status).toBe('CLOSED');
     expect(outcome(await f.replay('FULL'))).toEqual(outcome(f.repo.row!.snapshot));
+  });
+  test('background compaction is detached from the request CommandScope',async()=>{
+    const f=await fixture();
+    let seen:unknown='not-run';
+    const run=jest.spyOn(f.service as any,'runHistoricalCompaction').mockImplementation(async()=>{seen=commandScope();});
+    const scope=new CommandScope('REFRESH',30_000);
+    await scope.run(async()=>{await (f.service as any).scheduleHistoricalCompaction(actor);});
+    expect(seen).toBeUndefined();
+    run.mockRestore();
   });
   test('REFRESH queues journal cleanup without waiting for its background replay',async()=>{
     const f=await fixture();await f.open();
