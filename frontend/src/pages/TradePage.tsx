@@ -2,7 +2,6 @@ import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
