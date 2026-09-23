@@ -1,0 +1,12 @@
+# VOLTEX public market data edge (Cloudflare Workers Free).
+# Isolated from Pages (frontend/), Render and Neon. No KV / DO / R2 yet.
+name = "voltex-market-edge"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+account_id = "c379227476dedde6dff09c787ffdb510"
+workers_dev = true
+preview_urls = false
+
+routes = [
+  { pattern = "market.voltextech.net", custom_domain = true }
+]
