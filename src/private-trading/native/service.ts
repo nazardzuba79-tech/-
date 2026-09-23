@@ -43,7 +43,7 @@ export type NativeQuoteResult =
       takerFeeRate:string; makerFeeRate:string };
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
-import { applyLatestQuotes, BarRequest, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
+import { applyLatestQuotes, BarRequest, compareInstructions, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 import type { PrivateFreshQuote } from '../marketData';
 import { markDemoAccount } from './engine';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
@@ -62,6 +62,32 @@ export type NativeCommand = {idempotencyKey:string;executionMode?:'LIVE_EXECUTIO
   | {kind:'PROTECTION';positionId:string;protection:Partial<DemoProtection>}
   | {kind:'LEVERAGE';positionId:string;leverage:string}
 );
+/** Superseded observations are compacted once at least this many have accumulated (a full replay each time). */
+export const NATIVE_OBSERVE_COMPACT_MIN=200;
+/** The full verification replay's own time budget, well inside a command's 30 s. */
+export const NATIVE_OBSERVE_COMPACT_BUDGET_MS=12_000;
+const canonicalJson=(v:unknown)=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
+/** The whole engine state, key order aside; a from-scratch replay creates an empty `historicalMarks` a checkpointed one never had. */
+const comparableState=(s:DemoState)=>{const{historicalMarks,...rest}=s;return canonicalJson(historicalMarks&&Object.keys(historicalMarks).length?s:rest);};
+/**
+ * The HISTORICAL_DEMO OBSERVE instructions whose whole effect the next
+ * instruction overwrites: no event was emitted at their time, and the next
+ * instruction in journal order is an OBSERVE that re-marks every contract
+ * they marked and carries collateral whenever they did.
+ */
+export function supersededObservations(row:NativeAccount):Set<string>{
+  const eventTimes=new Set(row.snapshot.events.map(e=>e.time));
+  const ordered=[...row.commands].sort(compareInstructions),out=new Set<string>();
+  for(let i=0;i+1<ordered.length;i++){
+    const c=ordered[i],next=ordered[i+1];
+    if(c.kind!=='OBSERVE'||next.kind!=='OBSERVE'||c.executionMode!=='HISTORICAL_DEMO'||next.executionMode!=='HISTORICAL_DEMO')continue;
+    if(eventTimes.has(c.at)||c.at===next.at)continue;
+    if(c.collateral!==undefined&&next.collateral===undefined)continue;
+    if(Object.keys(c.marks).some(symbol=>!next.marks[symbol]))continue;
+    out.add(c.id);
+  }
+  return out;
+}
 /** HISTORICAL_DEMO commands that are accepted without a current price (see `historicalDemoRest`). */
 const restsWithoutPrice=(c:NativeCommand)=>c.kind==='CANCEL'
   ||(c.kind==='OPEN'&&c.type==='LIMIT'&&!!c.reduceOnly&&!!c.positionId&&!!c.price&&!!c.quantity&&!c.candle);
@@ -680,10 +706,11 @@ export class NativeDemoService {
         // A resting close at the trader's price (and its cancellation) changes no exposure and
         // needs no current price to be ACCEPTED. When the sampled prices cannot be had, it is
         // journaled without an observation; the next fresh observation decides whether it fills.
-        return this.historicalDemoAttempt(actor,row,request,hash,prepared?.holdings).catch(e=>{
+        const base=await this.compactHistoricalObservations(row);
+        return this.historicalDemoAttempt(actor,base,request,hash,prepared?.holdings,!!options.persist).catch(e=>{
           if(!restsWithoutPrice(request)||!marketOutage(e))throw e;
           commandScope()?.trace('historical_demo.rest_without_price',{reason:e instanceof PrivateMarketDataError?e.code:(e as Error).name});
-          return this.historicalDemoRest(actor,row,request,hash,prepared?.holdings);
+          return this.historicalDemoRest(actor,base,request,hash,prepared?.holdings);
         });
       }
       // A monotonic per-account sequence orders instructions journaled in the
@@ -801,7 +828,7 @@ export class NativeDemoService {
   }
   /** Historical entry is an immutable selected price, then the account follows sampled current prices.
    * No historical OHLC catch-up, manufactured depth, live-book timeout exemption, or second math engine. */
-  private async historicalDemoAttempt(actor:OwnerSession,row:NativeAccount,request:NativeCommand,hash:string,preparedHoldings?:CollateralHolding[]){
+  private async historicalDemoAttempt(actor:OwnerSession,row:NativeAccount,request:NativeCommand,hash:string,preparedHoldings?:CollateralHolding[],persist=false){
     if([...row.snapshot.positions.filter(p=>p.status==='OPEN'),...row.snapshot.orders.filter(o=>o.status==='OPEN'||o.status==='PARTIALLY_FILLED')]
       .some(p=>p.executionMode!=='HISTORICAL_DEMO'))throw new DemoEngineError('EXECUTION_MODE_MISMATCH');
     const holdings=preparedHoldings??await commandRead('repository.holdings',()=>this.repository.holdings(actor));
@@ -880,12 +907,61 @@ export class NativeDemoService {
       executionSession:{...actor},executionPending:exposedSymbols(result.snapshot).size>0};
     // Flat polling changes no financial state and does not grow the journal.
     if(!draft&&!exposedSymbols(row.snapshot).size)return this.authoritative(actor,this.view({...next,revision:row.revision}),next,valuation);
+    // A REFRESH that only moved the marks is ANSWERED, not journaled — the rule
+    // the live path already had (NATIVE_REFRESH_PERSIST_MS). Journaling every
+    // 10 s limit-pass observation grew an open account by 8 640 instructions a
+    // day, each commit rewriting the whole journal into the account row and
+    // an immutable revision, until commands timed out or met JOURNAL_LIMIT.
+    // A fill, a trigger, a liquidation or a cancellation changes the outcome
+    // and is journaled at once; otherwise one observation per 15 minutes is.
+    if(!draft&&!persist){
+      const stale=!row.checkpoint||at-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
+      const sessionChanged=!row.executionSession||row.executionSession.sessionId!==actor.sessionId||row.executionSession.expiresAt!==actor.expiresAt;
+      if(!stale&&!sessionChanged&&outcome(result.snapshot)===outcome(row.snapshot))
+        return this.authoritative(actor,this.view({...next,revision:row.revision}),next,valuation);
+    }
     // Replay may consume the reserve. Refuse before starting any writes in that
     // case; never retry a financial command or bypass the final 60s rollback guard.
     this.demoCommitHeadroom(prices,HISTORICAL_DEMO_COMMIT_HEADROOM_MS);
     let checks=0;
     const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash,()=>guard(['pre_transaction','before_account_write','before_commit'][checks++]??'before_write'));
     return this.authoritative(actor,this.view(committed),committed,valuation);
+  }
+  /**
+   * SUPERSEDED OBSERVATIONS LEAVE THE JOURNAL, AND ONLY IF NOTHING CHANGES.
+   *
+   * Until the rule above, every limit-pass REFRESH on an open historical
+   * account appended an OBSERVE (8 640 a day). An OBSERVE that emitted no
+   * event and is followed directly by another OBSERVE re-marking the same
+   * contracts (and collateral) only set marks the next one overwrites, so the
+   * account after the pair is the account after the second alone. Those are
+   * dropped, the compacted journal is replayed IN FULL from the deposit, and
+   * it is kept only if that replay reproduces the stored account exactly;
+   * otherwise the row is used as it was. The row is not written here: the
+   * command's own commit stores the shorter journal and its new checkpoint.
+   */
+  /** Journals whose compaction did not verify, by revision: not re-attempted until the account changes. */
+  private compactionRefused=new Set<string>();
+  private async compactHistoricalObservations(row:NativeAccount):Promise<NativeAccount>{
+    const attempt=`${row.revision}:${row.commands.length}`;
+    if(this.compactionRefused.has(attempt))return row;
+    const drop=supersededObservations(row);
+    if(drop.size<NATIVE_OBSERVE_COMPACT_MIN)return row;
+    const commands=row.commands.filter(c=>!drop.has(c.id));
+    // Its own budget and its own abort signal, never the command's: a slow
+    // history read ends the compaction, not the command it runs in front of.
+    const signal=AbortSignal.timeout(NATIVE_OBSERVE_COMPACT_BUDGET_MS),cache=nativeHistoryCache(this.market,this.now);
+    try{
+      commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length});
+      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},r=>cache.load(r,signal));
+      if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
+      return{...row,commands,checkpoint:result.checkpoint};
+    }catch(e){
+      console.warn('[native] observation compaction skipped',row.commands.length,commands.length,e instanceof Error?e.message:e);
+      if(this.compactionRefused.size>1000)this.compactionRefused.clear();
+      this.compactionRefused.add(attempt);
+      return row;
+    }
   }
   /**
    * THE ORDER IS ACCEPTED NOW; THE PRICE DECIDES THE FILL LATER. Only for what
