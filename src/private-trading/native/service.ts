@@ -68,6 +68,8 @@ export const NATIVE_OBSERVE_COMPACT_MIN=200;
 export const NATIVE_OBSERVE_COMPACT_BUDGET_MS=12_000;
 /** A plain REFRESH may spend longer verifying one-time cleanup without delaying an order. */
 export const NATIVE_OBSERVE_REFRESH_COMPACT_BUDGET_MS=20_000;
+/** Transient history transport failures retry later on the same unchanged revision. */
+export const NATIVE_OBSERVE_COMPACT_RETRY_MS=60_000;
 const canonicalJson=(v:unknown)=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 /** The whole engine state, key order aside; a from-scratch replay creates an empty `historicalMarks` a checkpointed one never had. */
 const comparableState=(s:DemoState)=>{const{historicalMarks,...rest}=s;return canonicalJson(historicalMarks&&Object.keys(historicalMarks).length?s:rest);};
@@ -944,11 +946,13 @@ export class NativeDemoService {
    * otherwise the row is used as it was. The row is not written here: the
    * command's own commit stores the shorter journal and its new checkpoint.
    */
-  /** Journals whose compaction did not verify, by revision: not re-attempted until the account changes. */
+  /** Semantic mismatches stay refused for this exact revision; transient transport failures only back off. */
   private compactionRefused=new Set<string>();
+  private compactionRetryAfter=new Map<string,number>();
   private async compactHistoricalObservations(row:NativeAccount,budgetMs=NATIVE_OBSERVE_COMPACT_BUDGET_MS):Promise<NativeAccount>{
     const attempt=`${row.revision}:${row.commands.length}`;
     if(this.compactionRefused.has(attempt))return row;
+    const retryAt=this.compactionRetryAfter.get(attempt);if(retryAt!==undefined&&retryAt>this.now())return row;
     const drop=supersededObservations(row);
     if(drop.size<NATIVE_OBSERVE_COMPACT_MIN)return row;
     const commands=row.commands.filter(c=>!drop.has(c.id));
@@ -959,12 +963,20 @@ export class NativeDemoService {
       commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length});
       const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},r=>cache.load(r,signal));
       if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
+      this.compactionRetryAfter.delete(attempt);
       console.info('[native] observation compaction verified',row.commands.length,commands.length);
       return{...row,commands,checkpoint:result.checkpoint};
     }catch(e){
-      console.warn('[native] observation compaction skipped',row.commands.length,commands.length,e instanceof Error?e.message:e);
-      if(this.compactionRefused.size>1000)this.compactionRefused.clear();
-      this.compactionRefused.add(attempt);
+      const message=e instanceof Error?e.message:String(e),name=e instanceof Error?e.name:'';
+      console.warn('[native] observation compaction skipped',row.commands.length,commands.length,message);
+      const transient=name==='TimeoutError'||name==='AbortError'||message==='fetch failed'||/timed? out/i.test(message);
+      if(transient){
+        if(this.compactionRetryAfter.size>1000)this.compactionRetryAfter.clear();
+        this.compactionRetryAfter.set(attempt,this.now()+NATIVE_OBSERVE_COMPACT_RETRY_MS);
+      }else{
+        if(this.compactionRefused.size>1000)this.compactionRefused.clear();
+        this.compactionRefused.add(attempt);
+      }
       return row;
     }
   }
