@@ -24,7 +24,7 @@ import { subscribeFuturesDepth, closeFuturesDepth, FLUSH_MS } from '../futuresDe
 
 const now = 1_800_000_000_000;
 const frame = (data: any = {}, type = 'snapshot') => ({
-  topic: 'orderbook.200.BTCUSDT', type, ts: now,
+  topic: 'orderbook.50.BTCUSDT', type, ts: now,
   data: { s: 'BTCUSDT', b: [['100', '2']], a: [['101', '3']], u: 2, seq: 2, ...data },
 });
 
