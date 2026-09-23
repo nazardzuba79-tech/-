@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { CommandScope, commandScope, commandCheck, commandRead, commandSignal } from './commandScope';
+import {CommandScope, commandScope, commandCheck, commandRead, commandSignal, withoutCommandScope } from './commandScope';
 import BigNumber from 'bignumber.js';
 import { nativeHistoryCache } from './historyCache';
 import { liveCheckpoint, recoverEmptyObservationCheckpoint } from './replay';
@@ -991,7 +991,7 @@ export class NativeDemoService {
   private scheduleHistoricalCompaction(actor:OwnerSession):Promise<void>{
     const existing=this.backgroundCompactions.get(actor.userId);if(existing)return existing;
     let task!:Promise<void>;
-    task=this.runHistoricalCompaction(actor)
+    task=withoutCommandScope(()=>this.runHistoricalCompaction(actor))
       .catch(e=>console.warn('[native] background observation compaction skipped',e instanceof Error?e.message:e))
       .finally(()=>{if(this.backgroundCompactions.get(actor.userId)===task)this.backgroundCompactions.delete(actor.userId);});
     this.backgroundCompactions.set(actor.userId,task);return task;
