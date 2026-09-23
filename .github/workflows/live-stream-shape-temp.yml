@@ -1,0 +1,41 @@
+name: TEMP live stream shape
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/live-stream-shape-temp.yml'
+permissions:
+  contents: read
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Sample production SSE frames
+        run: |
+          node <<'NODE'
+          (async()=>{
+            const controller=new AbortController();
+            setTimeout(()=>controller.abort(),45000);
+            const r=await fetch('https://api.voltextech.net/api/v1/market/live',{headers:{Origin:'https://voltextech.net'},signal:controller.signal});
+            console.log('STATUS',r.status,'ENC',r.headers.get('content-encoding'));
+            const rd=r.body.getReader(), dec=new TextDecoder(); let buf='', frames=0,total=0,snapshot=0,delta=0,state=0;
+            const buckets={small:{n:0,bytes:0,rows:0},medium:{n:0,bytes:0,rows:0},large:{n:0,bytes:0,rows:0}};
+            try{
+              while(true){
+                const {done,value}=await rd.read(); if(done)break; buf+=dec.decode(value,{stream:true});
+                let k; while((k=buf.indexOf('\n\n'))>=0){
+                  const raw=buf.slice(0,k);buf=buf.slice(k+2);
+                  const line=raw.split('\n').find(x=>x.startsWith('data: '));if(!line)continue;
+                  const data=line.slice(6); let f; try{f=JSON.parse(data)}catch{continue}
+                  const bytes=Buffer.byteLength(data), rows=Array.isArray(f.rows)?f.rows.length:0;
+                  frames++;total+=bytes;
+                  if(f.type==='snapshot')snapshot+=bytes; else if(f.type==='delta')delta+=bytes; else state+=bytes;
+                  const b=rows>100?'large':rows>10?'medium':'small'; buckets[b].n++;buckets[b].bytes+=bytes;buckets[b].rows+=rows;
+                  console.log('FRAME',frames,f.type,'rev',f.revision,'rows',rows,'bytes',bytes,
+                    rows?('types='+[...new Set(f.rows.map(x=>x.marketType))].join(',')):'');
+                }
+              }
+            }catch(e){if(e.name!=='AbortError')throw e}
+            console.log('SUMMARY',JSON.stringify({frames,total,snapshot,delta,state,buckets}));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
