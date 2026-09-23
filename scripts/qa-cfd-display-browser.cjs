@@ -26,13 +26,25 @@ function fixture(pathname){
   await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url());if(!['GET','HEAD'].includes(req.method())){report.blockedWrites++;return route.abort();}if(u.origin===origin)return route.continue();denied.add(u.hostname);return route.abort();});
   const displayRequests=[];context.on('request',req=>{if(new URL(req.url()).pathname.startsWith('/api/v1/cfd/display/'))displayRequests.push(req.url());});
   const page=await context.newPage();page.setDefaultTimeout(45_000);activePage=page;page.on('pageerror',e=>report.pageErrors.push({width,error:e.message}));await page.goto(origin+'/trade?market=cfd&symbol=XAUUSD',{waitUntil:'domcontentloaded'});
-  // One bounded 30s cold-provider warmup retry is allowed; steady state remains six hours.
+  // One bounded cold-provider warmup retry is allowed; steady state remains six hours.
+  // Public no-key feeds can legitimately omit one instrument for a moment, so
+  // acceptance uses the first REAL priced row instead of fabricating XAUUSD.
   await page.waitForFunction(()=>document.querySelectorAll('.cfd-option').length===13,null,{timeout:45_000});
-  await page.waitForFunction(()=>{const p=document.querySelector('.cfd-option.active .cfd-price')?.textContent||'';return p.trim()!==''&&!p.includes('—');},null,{timeout:45_000});
+  await page.waitForFunction(()=>[...document.querySelectorAll('.cfd-option')].some(row=>{const p=row.querySelector('.cfd-price')?.textContent||'';return p.trim()!==''&&!p.includes('—');}),null,{timeout:45_000});
+  const selectedSymbol=await page.evaluate(()=>{
+    const active=document.querySelector('.cfd-option.active');
+    const price=(active?.querySelector('.cfd-price')?.textContent||'').trim();
+    const usable=price!==''&&!price.includes('—')?active:[...document.querySelectorAll('.cfd-option')].find(row=>{const p=(row.querySelector('.cfd-price')?.textContent||'').trim();return p!==''&&!p.includes('—');});
+    if(!usable)throw new Error('No real CFD price available');
+    if(usable!==active)(usable as HTMLButtonElement).click();
+    return (usable.querySelector('.cfd-optionSymbol')?.textContent||'').trim();
+  });
+  if(!selectedSymbol)throw new Error(`Selected CFD symbol missing at ${width}px`);
+  await page.waitForFunction(symbol=>{const row=document.querySelector('.cfd-option.active');const p=(row?.querySelector('.cfd-price')?.textContent||'').trim();return row?.querySelector('.cfd-optionSymbol')?.textContent?.trim()===symbol&&p!==''&&!p.includes('—');},selectedSymbol,{timeout:10000});
   await page.locator('.cfd-owned-chart-canvas canvas').first().waitFor({state:'visible',timeout:25000});await page.waitForFunction(()=>document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')==='ready',null,{timeout:25000});await page.locator('.cfd-order-panel form').waitFor({state:'visible',timeout:10000});
   const price=await page.locator('.cfd-option.active .cfd-price').innerText();const input=page.locator('.cfd-order-panel input[type=number]');await input.fill('0.01');const submit=page.locator('.cfd-order-panel button[type=submit]');await submit.waitFor({state:'visible'});if(await submit.isDisabled())throw new Error(`Order remained disabled at ${width}px`);await submit.click();
-  await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const openText=await page.locator('.cfd-position-content').innerText();if(!openText.includes('XAUUSD'))throw new Error(`Position missing at ${width}px`);
-  const close=page.locator('.cfd-closeBtn').first();await page.waitForFunction(()=>{const b=document.querySelector('.cfd-closeBtn');return b&&!b.disabled;},null,{timeout:10000});await close.click();await page.locator('.cfd-tab').nth(1).click();await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const historyText=await page.locator('.cfd-position-content').innerText();if(!historyText.includes('XAUUSD'))throw new Error(`History missing at ${width}px`);
+  await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const openText=await page.locator('.cfd-position-content').innerText();if(!openText.includes(selectedSymbol))throw new Error(`Position missing at ${width}px`);
+  const close=page.locator('.cfd-closeBtn').first();await page.waitForFunction(()=>{const b=document.querySelector('.cfd-closeBtn');return b&&!b.disabled;},null,{timeout:10000});await close.click();await page.locator('.cfd-tab').nth(1).click();await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const historyText=await page.locator('.cfd-position-content').innerText();if(!historyText.includes(selectedSymbol))throw new Error(`History missing at ${width}px`);
   const result=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,rows:document.querySelectorAll('.cfd-option').length,forms:document.querySelectorAll('.cfd-terminal form').length,submits:document.querySelectorAll('.cfd-terminal button[type=submit]').length,canvases:document.querySelectorAll('.cfd-owned-chart-canvas canvas').length,chartStatus:document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')||null,technicalLabels:document.querySelectorAll('.cfd-practice-badge,.cfd-practice-mode,.cfd-disclaimer').length}));
   report.scenarios.push({width,price,sampledDisplay:true,...result});if(result.overflow)report.findings.push(`Horizontal overflow ${width}px`);if(result.forms!==1||result.submits!==1)report.findings.push(`Order ticket incomplete ${width}px`);if(result.canvases<1||result.chartStatus!=='ready')report.findings.push(`Chart not ready ${width}px`);if(result.technicalLabels!==0)report.findings.push(`Technical labels visible ${width}px`);
   await page.screenshot({path:path.join(OUT,`cfd-working-${width}.png`),fullPage:true});const before=displayRequests.length;
