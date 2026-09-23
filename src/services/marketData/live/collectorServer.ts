@@ -8,9 +8,12 @@ import type { LiveSource, LiveFrame } from './contract';
 import type { MarketUniverseSnapshot } from '../bybit/MarketUniverse';
 import { BybitOptions, OptionsRequestError, optionQuerySchema } from '../bybit/BybitOptions';
 import type { CfdQuote } from '../cfd/CfdQuote';
-import type { DepthBook } from '../bybit/BybitMarketDataService';
-import type { CachedValue } from '../ProviderCache';
 import { CFD_OHLC_INTERVALS, type CfdOhlcInterval, type CfdOhlcSnapshot } from '../cfd/BiquoteCfdOhlcSource';
+import type { CachedValue } from '../ProviderCache';
+import type { DepthBook } from '../bybit/BybitMarketDataService';
+
+/** Linear-perpetual depth read by the collector, the only process allowed to call the venue. */
+export type CollectorLinearDepth = (providerSymbol: string) => Promise<CachedValue<DepthBook>>;
 
 export function collectorServer(
   source: LiveSource,
@@ -23,10 +26,7 @@ export function collectorServer(
     getOhlc?: (symbol:string,interval:CfdOhlcInterval,limit:number) => Promise<CfdOhlcSnapshot>;
     diagnostics?: () => unknown | Promise<unknown>;
   },
-  /** Linear-perpetual depth, read through the collector's OWN Bybit service.
-   *  Frankfurt may reach the venue; Oregon may not. Without this the API
-   *  region has no depth path at all and the fallback book cannot work. */
-  depth?: (providerSymbol: string) => Promise<CachedValue<DepthBook>>
+  linearDepth?: CollectorLinearDepth,
 ) {
   if (!token.trim()) throw new Error('MARKET_DATA_COLLECTOR_TOKEN is required');
   const authorized = (header?: string) => {
@@ -46,27 +46,6 @@ export function collectorServer(
     try {res.json(await futuresCandles.get(req.params.pair,String(req.query.interval??'15m'),Number(req.query.limit??520)));}
     catch(error) {res.status(error instanceof RangeError?400:503).json({error:'candles_unavailable'});}
   });
-  // The fallback order book's venue hop. The API region cannot call Bybit
-  // directly by policy, so it asks here instead; the source is unchanged —
-  // the same Bybit linear book, fetched from the region allowed to fetch it.
-  //
-  // The caller's own `ProviderCache` already coalesces and holds for a
-  // second, and so does this one, so a thousand fallback clients on one
-  // contract remain one upstream request per second.
-  if (depth) {
-    app.get('/internal/v1/futures/orderbook/:symbol', async (req, res) => {
-      const symbol = String(req.params.symbol ?? '').toUpperCase();
-      if (!/^[A-Z0-9]{2,32}$/.test(symbol)) { res.status(400).json({ error: 'invalid_symbol' }); return; }
-      try {
-        const book = await depth(symbol);
-        res.json({ value: book.value, fetchedAt: book.fetchedAt, stale: book.stale });
-      } catch {
-        // The venue's own words never cross this boundary.
-        res.status(503).json({ error: 'orderbook_unavailable' });
-      }
-    });
-  }
-
   // Private replay transport carries public market data only. No owner/account data,
   // database writes, or execution actions exist on the collector.
   const privateTrading = new CollectorPrivateTradingSource();
@@ -82,7 +61,7 @@ export function collectorServer(
         .json({ error: error instanceof PrivateMarketDataError ? error.code : 'private_market_data_unavailable' });
     }
   });
-  for (const kind of ['instruments', 'quote', 'candles', 'funding', 'chart-candles'] as const) {
+  for (const kind of ['instruments', 'quote', 'ticker', 'candles', 'funding', 'chart-candles'] as const) {
     app.get(`/internal/v1/private-trading/${kind}/:symbol`, async (req, res) => {
       const controller = new AbortController();
       const cancel = () => { if (!res.writableEnded) controller.abort(); };
@@ -91,6 +70,8 @@ export function collectorServer(
         let result: unknown;
         if (kind === 'instruments') result = await privateTrading.instrument(req.params.symbol, controller.signal);
         else if (kind === 'quote') result = await privateTrading.freshQuote(req.params.symbol, controller.signal);
+        // Mark and last from one ticker read — the sampled demo's near-live price, which needs no book.
+        else if (kind === 'ticker') result = await privateTrading.ticker(req.params.symbol, controller.signal);
         else if (kind === 'chart-candles') result = await privateTrading.chartCandles({ symbol: req.params.symbol, interval: String(req.query.interval) as PrivateChartInterval,
           limit: Number(req.query.limit ?? 520), ...(req.query.endTime === undefined ? {} : { endTime: Number(req.query.endTime) }), signal: controller.signal });
         else {
@@ -108,6 +89,18 @@ export function collectorServer(
       } finally { req.off('aborted', cancel); res.off('close', cancel); }
     });
   }
+  // Fallback order book for browsers whose own venue WebSocket fails. The API
+  // process must not call the venue directly, so it asks the collector. Public
+  // market data only: no account state, no execution. The symbol is validated
+  // here and again inside getOrderBook; the API has already checked it is a
+  // listed linear perpetual.
+  app.get('/internal/v1/futures/orderbook/:symbol', async (req,res) => {
+    const symbol = String(req.params.symbol ?? '').toUpperCase();
+    if (!/^[A-Z0-9]{2,32}$/.test(symbol)) { res.status(400).json({ error:'invalid_symbol' }); return; }
+    if (!linearDepth) { res.status(503).json({ error:'orderbook_unavailable' }); return; }
+    try { res.json(await linearDepth(symbol)); }
+    catch { res.status(503).json({ error:'orderbook_unavailable' }); }
+  });
   app.get('/internal/v1/diagnostics', async (_req,res) => {
     let cfd: unknown = null;
     if (typeof cfdDisplay?.diagnostics === 'function') {
@@ -144,7 +137,15 @@ export function collectorServer(
     catch (error) { res.status(error instanceof OptionsRequestError ? error.status : 503).json({ error:error instanceof OptionsRequestError ? error.code : 'options_unavailable' }); }
   });
   const server = createServer(app);
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 1024, perMessageDeflate: false });
+  const wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: 1024,
+    // The collector->API stream is long-lived, repetitive JSON. Leaving
+    // permessage-deflate disabled made one backend connection consume roughly
+    // the same ~95 KB/s measured on the public live stream. Negotiate the
+    // standard WebSocket compression extension for frames above 1 KiB.
+    perMessageDeflate: { threshold: 1024 },
+  });
   server.on('upgrade', (req,socket,head) => {
     if (req.url !== '/internal/v1/stream' || !authorized(req.headers.authorization) || wss.clients.size >= 32) {
       socket.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n'); return;
