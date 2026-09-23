@@ -1,9 +1,9 @@
 import type { Candle } from './indicators';
+import { API_BASE } from './api';
 import type { FuturesDepthSnapshot } from './futuresDepth';
 
 const DIRECT_KRAKEN_BASE = 'https://api.kraken.com';
 const EDGE_BASE = 'https://market.voltextech.net';
-const API_BASE = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
 
 const INTERVAL_MINUTES: Record<string, number> = {
   '1m': 1,
