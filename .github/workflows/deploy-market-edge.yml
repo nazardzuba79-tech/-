@@ -1,0 +1,40 @@
+name: Deploy voltex-market-edge (Cloudflare Worker)
+
+# Deploys ONLY the voltex-market-edge Worker. Does not touch Pages, Render or Neon.
+# SAFETY: a push alone never deploys. The deploy job runs only when
+#   - the pushed commit message contains [deploy-market-edge]  (branch cloudflare-market-edge), or
+#   - it is started manually (workflow_dispatch, once this file is on the default branch).
+on:
+  push:
+    branches: [cloudflare-market-edge]
+    paths:
+      - 'workers/market-edge/**'
+      - '.github/workflows/deploy-market-edge.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-market-edge
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[deploy-market-edge]')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/market-edge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deploy Worker
+        run: npx --yes wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
+      - name: Health check
+        run: curl -fsS https://market.voltextech.net/health
