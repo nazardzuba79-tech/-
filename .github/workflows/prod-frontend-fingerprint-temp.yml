@@ -1,0 +1,30 @@
+name: TEMP frontend fingerprint
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/prod-frontend-fingerprint-temp.yml'
+permissions:
+  contents: read
+jobs:
+  fingerprint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build candidate frontend and compare deployed assets
+        shell: bash
+        run: |
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          (cd frontend && VITE_API_URL='https://api.voltextech.net/api/v1' npm run build)
+          echo "LOCAL_ENTRY"
+          grep -oE 'src="/assets/index-[^"]+\.js"' frontend/dist/index.html || true
+          curl -sS --max-time 20 'https://voltextech.net/futures?pair=BTC%2FUSDT' -o /tmp/prod.html
+          echo "PROD_ENTRY"
+          grep -oE 'src="/assets/index-[^"]+\.js"' /tmp/prod.html || true
+          echo "LOCAL_CHUNKS"
+          find frontend/dist/assets -maxdepth 1 -type f -printf '%f\n' | sort | grep -E '^(index|FuturesPage|useNativeDemo|TerminalChart|PriceChart)-.*\.js$' || true
