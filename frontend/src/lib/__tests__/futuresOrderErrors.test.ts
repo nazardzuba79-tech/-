@@ -98,6 +98,11 @@ describe('futures order error messages', () => {
     }
   });
 
+  it('maps JOURNAL_LIMIT from historical limit-close failures instead of showing the generic placement error', () => {
+    expect(say(engine('JOURNAL_LIMIT'))).toBe(RU['futures.orderError.commandLimit']);
+    expect(say(engine('JOURNAL_LIMIT'))).not.toBe(FALLBACK);
+  });
+
   it('names a near-live price the server could not refresh as a price problem to retry, not as a generic failure', () => {
     // The owner's report: «Не удалось разместить ордер» on a limit close of
     // AKEUSDT. The server had refused with `near_live_price_unavailable`
