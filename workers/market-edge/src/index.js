@@ -13,6 +13,8 @@ const JSON_HEADERS = {
 const EDGE_TTL_SECONDS = 15;
 const BOOK_LEVELS = 25;
 const SYMBOL_RE = /^[A-Z0-9]{1,28}USDT$/;
+const RENDER_API_BASE = "https://api.voltextech.net/api/v1";
+const APP_INTERVAL_BY_PROVIDER = { "5":"5m", "15":"15m", "60":"1h", "240":"4h", "D":"1d", "W":"1w" };
 
 function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
@@ -33,6 +35,46 @@ function validPositiveDecimal(value) {
     && /^\d+(?:\.\d+)?$/.test(value)
     && Number.isFinite(Number(value))
     && Number(value) > 0;
+}
+
+function normalizeRenderBookRows(rows) {
+  if (!Array.isArray(rows)) throw new Error("render_book_shape");
+  const seen = new Set();
+  const out = [];
+  for (const row of rows) {
+    if (!row || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.quantity)) throw new Error("render_book_level");
+    if (seen.has(row.price)) throw new Error("render_book_duplicate");
+    seen.add(row.price);
+    out.push({ price: row.price, quantity: row.quantity });
+    if (out.length >= BOOK_LEVELS) break;
+  }
+  return out;
+}
+
+function normalizedSnapshotToBybitTickers(snapshot) {
+  if (snapshot?.type !== "snapshot" || !Array.isArray(snapshot.rows)) throw new Error("render_ticker_shape");
+  const list = snapshot.rows
+    .filter(row => row?.marketType === "linear_perpetual" && row?.provider === "bybit" && row?.quoteAsset === "USDT"
+      && row?.settleAsset === "USDT" && typeof row?.providerSymbol === "string" && SYMBOL_RE.test(row.providerSymbol)
+      && Number(row.lastPrice) > 0)
+    .map(row => ({
+      symbol: row.providerSymbol,
+      lastPrice: String(row.lastPrice),
+      bid1Price: row.bidPrice == null ? null : String(row.bidPrice),
+      ask1Price: row.askPrice == null ? null : String(row.askPrice),
+      highPrice24h: row.high24h == null ? null : String(row.high24h),
+      lowPrice24h: row.low24h == null ? null : String(row.low24h),
+      volume24h: row.volume24h == null ? null : String(row.volume24h),
+      turnover24h: row.quoteVolume24h == null ? null : String(row.quoteVolume24h),
+      price24hPcnt: row.changePercent24h == null ? null : String(Number(row.changePercent24h) / 100),
+      indexPrice: row.indexPrice == null ? null : String(row.indexPrice),
+      markPrice: row.markPrice == null ? null : String(row.markPrice),
+      fundingRate: row.fundingRate == null ? null : String(row.fundingRate),
+      openInterest: row.openInterest == null ? null : String(row.openInterest),
+      openInterestValue: row.openInterestValue == null ? null : String(row.openInterestValue),
+    }));
+  if (!list.length) throw new Error("render_ticker_empty");
+  return { retCode: 0, time: Number(snapshot.sentAt) || Date.now(), result: { category: "linear", list } };
 }
 
 function normalizeBookRows(rows) {
@@ -78,74 +120,76 @@ function bybitUrl(host, path, params) {
 }
 
 async function futuresBook(symbol) {
-  const body = await firstPublicJson([
-    bybitUrl("https://api.bybit.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
-    bybitUrl("https://api.bytick.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
-  ]);
-  if (body?.retCode !== 0 || body?.result?.s !== symbol) throw new Error("provider_identity");
+  try {
+    const body = await firstPublicJson([
+      bybitUrl("https://api.bybit.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
+      bybitUrl("https://api.bytick.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
+    ]);
+    if (body?.retCode !== 0 || body?.result?.s !== symbol) throw new Error("provider_identity");
 
-  const bids = normalizeBookRows(body.result.b);
-  const asks = normalizeBookRows(body.result.a);
-  if (!bids.length || !asks.length || Number(bids[0].price) >= Number(asks[0].price)) throw new Error("provider_book");
+    const bids = normalizeBookRows(body.result.b);
+    const asks = normalizeBookRows(body.result.a);
+    if (!bids.length || !asks.length || Number(bids[0].price) >= Number(asks[0].price)) throw new Error("provider_book");
 
-  const providerTime = Number(body.time);
-  const updateId = Number(body.result.u);
-  if (!Number.isSafeInteger(updateId) || updateId < 1) throw new Error("provider_update");
-
-  return {
-    available: true,
-    symbol,
-    source: "bybit",
-    fetchedAt: Date.now(),
-    providerTime: Number.isFinite(providerTime) && providerTime > 0 ? providerTime : Date.now(),
-    stale: false,
-    updateId,
-    bids,
-    asks,
-  };
+    const providerTime = Number(body.time);
+    const updateId = Number(body.result.u);
+    if (!Number.isSafeInteger(updateId) || updateId < 1) throw new Error("provider_update");
+    return {
+      available: true, symbol, source: "bybit", fetchedAt: Date.now(),
+      providerTime: Number.isFinite(providerTime) && providerTime > 0 ? providerTime : Date.now(),
+      stale: false, updateId, bids, asks,
+    };
+  } catch {
+    // Rare fallback only. Normal production viewers use Bybit directly from the browser,
+    // so this does not put Render back in the hot market-data path.
+    const body = await publicJson(`${RENDER_API_BASE}/market/display/futures-book/${encodeURIComponent(symbol)}`);
+    if (body?.available !== true || body?.symbol !== symbol) throw new Error("render_book_identity");
+    const bids = normalizeRenderBookRows(body.bids);
+    const asks = normalizeRenderBookRows(body.asks);
+    if (!bids.length || !asks.length || Number(bids[0].price) >= Number(asks[0].price)) throw new Error("render_book");
+    const updateId = Number(body.updateId);
+    if (!Number.isSafeInteger(updateId) || updateId < 1) throw new Error("render_book_update");
+    return { ...body, bids, asks, source: body.source || "bybit" };
+  }
 }
 
 async function futuresTrades(symbol) {
-  const body = await firstPublicJson([
-    bybitUrl("https://api.bybit.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
-    bybitUrl("https://api.bytick.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
-  ]);
-  if (body?.retCode !== 0 || body?.result?.category !== "linear" || !Array.isArray(body?.result?.list)) {
-    throw new Error("provider_trade_shape");
+  try {
+    const body = await firstPublicJson([
+      bybitUrl("https://api.bybit.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
+      bybitUrl("https://api.bytick.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
+    ]);
+    if (body?.retCode !== 0 || body?.result?.category !== "linear" || !Array.isArray(body?.result?.list)) throw new Error("provider_trade_shape");
+    const seen = new Set();
+    const rows = body.result.list.map((row) => {
+      if (row?.symbol !== symbol || !["Buy", "Sell"].includes(row.side)
+        || typeof row.execId !== "string" || !row.execId || seen.has(row.execId)
+        || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.size)
+        || !Number.isSafeInteger(Number(row.time)) || Number(row.time) <= 0) throw new Error("provider_trade_identity");
+      seen.add(row.execId);
+      return { id: row.execId, price: row.price, quantity: row.size, time: Number(row.time), side: row.side === "Buy" ? "BUY" : "SELL" };
+    }).slice(0, 30).sort((a, b) => b.time - a.time);
+    return { symbol, trades: rows };
+  } catch {
+    const body = await publicJson(`${RENDER_API_BASE}/market/display/futures-trades/${encodeURIComponent(symbol)}`);
+    if (body?.symbol !== symbol || !Array.isArray(body.trades) || body.trades.length > 30) throw new Error("render_trade_shape");
+    return body;
   }
-
-  const seen = new Set();
-  const rows = body.result.list.map((row) => {
-    if (row?.symbol !== symbol || !["Buy", "Sell"].includes(row.side)
-      || typeof row.execId !== "string" || !row.execId || seen.has(row.execId)
-      || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.size)
-      || !Number.isSafeInteger(Number(row.time)) || Number(row.time) <= 0) {
-      throw new Error("provider_trade_identity");
-    }
-    seen.add(row.execId);
-    return {
-      id: row.execId,
-      price: row.price,
-      quantity: row.size,
-      time: Number(row.time),
-      side: row.side === "Buy" ? "BUY" : "SELL",
-    };
-  }).slice(0, 30).sort((a, b) => b.time - a.time);
-
-  return { symbol, trades: rows };
 }
 
 const KLINE_INTERVALS = new Set(["1","3","5","15","30","60","120","240","360","720","D","W","M"]);
 
 async function futuresTickers() {
-  const body = await firstPublicJson([
-    bybitUrl("https://api.bybit.com", "/v5/market/tickers", { category: "linear" }),
-    bybitUrl("https://api.bytick.com", "/v5/market/tickers", { category: "linear" }),
-  ]);
-  if (body?.retCode !== 0 || body?.result?.category !== "linear" || !Array.isArray(body?.result?.list)) {
-    throw new Error("provider_ticker_shape");
+  try {
+    const body = await firstPublicJson([
+      bybitUrl("https://api.bybit.com", "/v5/market/tickers", { category: "linear" }),
+      bybitUrl("https://api.bytick.com", "/v5/market/tickers", { category: "linear" }),
+    ]);
+    if (body?.retCode !== 0 || body?.result?.category !== "linear" || !Array.isArray(body?.result?.list)) throw new Error("provider_ticker_shape");
+    return body;
+  } catch {
+    return normalizedSnapshotToBybitTickers(await publicJson(`${RENDER_API_BASE}/market/display`));
   }
-  return body;
 }
 
 async function futuresCandles(symbol, searchParams) {
@@ -160,14 +204,23 @@ async function futuresCandles(symbol, searchParams) {
   }
   const params = { category: "linear", symbol, interval, limit: String(limitRaw) };
   if (endRaw !== null) params.end = endRaw;
-  const body = await firstPublicJson([
-    bybitUrl("https://api.bybit.com", "/v5/market/kline", params),
-    bybitUrl("https://api.bytick.com", "/v5/market/kline", params),
-  ]);
-  if (body?.retCode !== 0 || body?.result?.category !== "linear" || body?.result?.symbol !== symbol || !Array.isArray(body?.result?.list)) {
-    throw new Error("provider_candle_shape");
+  try {
+    const body = await firstPublicJson([
+      bybitUrl("https://api.bybit.com", "/v5/market/kline", params),
+      bybitUrl("https://api.bytick.com", "/v5/market/kline", params),
+    ]);
+    if (body?.retCode !== 0 || body?.result?.category !== "linear" || body?.result?.symbol !== symbol || !Array.isArray(body?.result?.list)) throw new Error("provider_candle_shape");
+    return body;
+  } catch {
+    const appInterval = APP_INTERVAL_BY_PROVIDER[interval];
+    if (!appInterval) throw new Error("render_candle_interval");
+    const pair = symbol.replace(/USDT$/, "-USDT");
+    const query = new URLSearchParams({ interval: appInterval, limit: String(limitRaw) });
+    if (endRaw !== null) query.set("endTime", endRaw);
+    const body = await publicJson(`${RENDER_API_BASE}/market/futures/candles/${pair}?${query}`);
+    if (body?.retCode !== 0 || body?.result?.category !== "linear" || body?.result?.symbol !== symbol || !Array.isArray(body?.result?.list)) throw new Error("render_candle_shape");
+    return body;
   }
-  return body;
 }
 
 async function cachedPublic(request, loader) {
