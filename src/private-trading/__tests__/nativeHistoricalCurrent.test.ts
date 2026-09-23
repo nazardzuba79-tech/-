@@ -271,6 +271,16 @@ describe('an open historical account does not grow its journal with every price'
     expect(f.repo.commits).toBe(commits+1);expect(f.repo.row!.snapshot.positions[0].status).toBe('CLOSED');
     expect(outcome(await f.replay('FULL'))).toEqual(outcome(f.repo.row!.snapshot));
   });
+  test('REFRESH queues journal cleanup without waiting for its background replay',async()=>{
+    const f=await fixture();await f.open();
+    const never=new Promise<void>(()=>{});
+    const queued=jest.spyOn(f.service as any,'scheduleHistoricalCompaction').mockReturnValue(never);
+    f.clock.t+=10_000;f.market.price='81123';
+    const view=await f.refresh();
+    expect(view.positions[0].markPrice).toBe('81123');
+    expect(queued).toHaveBeenCalledWith(actor);
+    queued.mockRestore();
+  });
   test('a stored observation 15 minutes old is refreshed in the journal',async()=>{
     const f=await fixture();await f.open();const commits=f.repo.commits;
     f.clock.t+=14*M;await f.refresh();expect(f.repo.commits).toBe(commits);
@@ -299,12 +309,15 @@ describe('an open historical account does not grow its journal with every price'
     const commitsBeforeCompaction=f.repo.commits,revisionBeforeCompaction=f.repo.row!.revision;
     const history=jest.spyOn(f.market,'history').mockRejectedValueOnce(new TypeError('fetch failed'));
     f.clock.t+=10_000;f.market.price='81501';await f.refresh();
+    // REFRESH did not await the verifier; awaiting the same queued background task is test-only.
+    await (f.service as any).scheduleHistoricalCompaction(actor);
     expect(f.repo.commits).toBe(commitsBeforeCompaction);
     expect(f.repo.row!.revision).toBe(revisionBeforeCompaction);
     expect(f.repo.row!.commands.length).toBeGreaterThan(300);
     history.mockRestore();
-    // Same revision, after the transient cooldown: verification retries and the ordinary REFRESH persists it.
-    f.clock.t+=NATIVE_OBSERVE_COMPACT_RETRY_MS+1;f.market.price='81502';await f.refresh();
+    // Same revision, after the transient cooldown: background verification retries and CAS-commits it.
+    f.clock.t+=NATIVE_OBSERVE_COMPACT_RETRY_MS+1;
+    await (f.service as any).scheduleHistoricalCompaction(actor);
     const row=f.repo.row!;
     expect(f.repo.commits).toBe(commitsBeforeCompaction+1);
     expect(row.commands.length).toBeLessThan(20);

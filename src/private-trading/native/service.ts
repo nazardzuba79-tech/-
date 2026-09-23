@@ -66,8 +66,8 @@ export type NativeCommand = {idempotencyKey:string;executionMode?:'LIVE_EXECUTIO
 export const NATIVE_OBSERVE_COMPACT_MIN=200;
 /** The full verification replay's own time budget, well inside a command's 30 s. */
 export const NATIVE_OBSERVE_COMPACT_BUDGET_MS=12_000;
-/** A plain REFRESH may spend longer verifying one-time cleanup without delaying an order. */
-export const NATIVE_OBSERVE_REFRESH_COMPACT_BUDGET_MS=20_000;
+/** Full cleanup verification runs outside the request's 30 s deadline. */
+export const NATIVE_OBSERVE_BACKGROUND_COMPACT_BUDGET_MS=60_000;
 /** Transient history transport failures retry later on the same unchanged revision. */
 export const NATIVE_OBSERVE_COMPACT_RETRY_MS=60_000;
 const canonicalJson=(v:unknown)=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
@@ -707,11 +707,17 @@ export class NativeDemoService {
       if(request.executionMode==='HISTORICAL_DEMO'||row.executionMode==='HISTORICAL_DEMO'){
         commandScope()?.trace('execution.dispatch',{executionMode:'HISTORICAL_DEMO'});
         if(request.executionMode==='LIVE_EXECUTION')throw new DemoEngineError('EXECUTION_MODE_MISMATCH');
+        // REFRESH never waits for a full cleanup replay. That replay can take tens of seconds
+        // on a historical account, so it runs independently and commits only under the same
+        // revision CAS. Trading/valuation stays on the normal request deadline.
+        if(request.kind==='REFRESH'){
+          try{return await this.historicalDemoAttempt(actor,row,request,hash,prepared?.holdings,!!options.persist);}
+          finally{void this.scheduleHistoricalCompaction(actor);}
+        }
         // A resting close at the trader's price (and its cancellation) changes no exposure and
         // needs no current price to be ACCEPTED. When the sampled prices cannot be had, it is
         // journaled without an observation; the next fresh observation decides whether it fills.
-        const compactBudget=request.kind==='REFRESH'?NATIVE_OBSERVE_REFRESH_COMPACT_BUDGET_MS:NATIVE_OBSERVE_COMPACT_BUDGET_MS;
-        const base=await this.compactHistoricalObservations(row,compactBudget);
+        const base=await this.compactHistoricalObservations(row,NATIVE_OBSERVE_COMPACT_BUDGET_MS);
         const compacted=base.commands.length<row.commands.length;
         return this.historicalDemoAttempt(actor,base,request,hash,prepared?.holdings,!!options.persist||compacted).catch(e=>{
           if(!restsWithoutPrice(request)||!marketOutage(e))throw e;
@@ -949,6 +955,7 @@ export class NativeDemoService {
   /** Semantic mismatches stay refused for this exact revision; transient transport failures only back off. */
   private compactionRefused=new Set<string>();
   private compactionRetryAfter=new Map<string,number>();
+  private backgroundCompactions=new Map<string,Promise<void>>();
   private async compactHistoricalObservations(row:NativeAccount,budgetMs=NATIVE_OBSERVE_COMPACT_BUDGET_MS):Promise<NativeAccount>{
     const attempt=`${row.revision}:${row.commands.length}`;
     if(this.compactionRefused.has(attempt))return row;
@@ -978,6 +985,32 @@ export class NativeDemoService {
         this.compactionRefused.add(attempt);
       }
       return row;
+    }
+  }
+  /** One background verifier per account. It never blocks the command that queued it. */
+  private scheduleHistoricalCompaction(actor:OwnerSession):Promise<void>{
+    const existing=this.backgroundCompactions.get(actor.userId);if(existing)return existing;
+    let task!:Promise<void>;
+    task=this.runHistoricalCompaction(actor)
+      .catch(e=>console.warn('[native] background observation compaction skipped',e instanceof Error?e.message:e))
+      .finally(()=>{if(this.backgroundCompactions.get(actor.userId)===task)this.backgroundCompactions.delete(actor.userId);});
+    this.backgroundCompactions.set(actor.userId,task);return task;
+  }
+  private async runHistoricalCompaction(actor:OwnerSession):Promise<void>{
+    const row=await this.repository.read(actor);if(!row||row.executionMode!=='HISTORICAL_DEMO')return;
+    const compacted=await this.compactHistoricalObservations(row,NATIVE_OBSERVE_BACKGROUND_COMPACT_BUDGET_MS);
+    if(compacted.commands.length>=row.commands.length)return;
+    const requestKey=`native-maintenance-compact:${row.revision}:${row.commands.length}`;
+    const requestHash=commandHash({kind:'OBSERVE_COMPACTION',revision:row.revision,before:row.commands.length,after:compacted.commands.length});
+    try{
+      const committed=await this.repository.commit(actor,row.revision,compacted,requestKey,requestHash);
+      console.info('[native] background observation compaction committed',row.commands.length,compacted.commands.length,committed.revision);
+    }catch(e){
+      if(e instanceof PrivateTradingError&&e.code==='account_changed'){
+        console.info('[native] background observation compaction superseded',row.revision,row.commands.length);
+        return;
+      }
+      throw e;
     }
   }
   /**
