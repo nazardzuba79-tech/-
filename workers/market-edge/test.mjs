@@ -17,7 +17,7 @@ async function run() {
       assert.equal(options.headers?.authorization, undefined);
       assert.equal(options.headers?.cookie, undefined);
       const u = new URL(url);
-      assert.ok(["api.bybit.com", "api.bytick.com"].includes(u.hostname));
+      assert.ok(["api.bybit.com", "api.bytick.com", "api.kraken.com"].includes(u.hostname));
       if (u.pathname.includes("orderbook")) {
         return new Response(JSON.stringify({
           retCode: 0,
@@ -46,6 +46,29 @@ async function run() {
           retCode: 0,
           time: 1790150000300,
           result: { category: "linear", symbol: "BTCUSDT", list: [["1790146800000","100","102","99","101","1234"]] },
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (u.hostname === "api.kraken.com" && u.pathname.includes("/Depth")) {
+        return new Response(JSON.stringify({
+          error: [],
+          result: {
+            XBTUSDT: {
+              bids: [["100.00","1.5",1790150000.1],["99.90","2",1790150000.0]],
+              asks: [["100.10","1.1",1790150000.2],["100.20","2.2",1790150000.0]],
+            },
+          },
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (u.hostname === "api.kraken.com" && u.pathname.includes("/OHLC")) {
+        return new Response(JSON.stringify({
+          error: [],
+          result: {
+            XBTUSDT: [
+              [1790146800,"100","102","99","101","100.5","1234",12],
+              [1790150400,"101","103","100","102","102","1500",14],
+            ],
+            last: 1790150400,
+          },
         }), { status: 200, headers: { "content-type": "application/json" } });
       }
       throw new Error("unexpected provider request");
@@ -80,7 +103,21 @@ async function run() {
     assert.equal(candles.status, 200);
     assert.equal((await candles.json()).result.symbol, "BTCUSDT");
 
-    assert.equal(providerCalls, 4);
+    const spotBook = await worker.fetch(new Request("https://market.voltextech.net/market/display/spot-book/BTC-USDT"));
+    assert.equal(spotBook.status, 200);
+    const spotBookBody = await spotBook.json();
+    assert.equal(spotBookBody.pair, "BTC/USDT");
+    assert.equal(spotBookBody.bids[0].price, "100.00");
+    assert.equal(spotBookBody.asks[0].price, "100.10");
+
+    const spotCandles = await worker.fetch(new Request("https://market.voltextech.net/market/display/spot-candles/BTC-USDT?interval=1h&limit=2"));
+    assert.equal(spotCandles.status, 200);
+    const spotCandleBody = await spotCandles.json();
+    assert.equal(spotCandleBody.pair, "BTC/USDT");
+    assert.equal(spotCandleBody.interval, "1h");
+    assert.equal(spotCandleBody.candles.length, 2);
+
+    assert.equal(providerCalls, 6);
     assert.ok(providerUrls.every((url) => !url.includes("onrender.com")));
 
     // A venue may reject a Cloudflare egress location. In that rare case the
