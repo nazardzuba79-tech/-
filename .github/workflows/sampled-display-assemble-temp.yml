@@ -1,0 +1,63 @@
+name: TEMP sampled display branch assembly
+on:
+  push:
+    branches: ['chatgpt/sampled-display-budget']
+    paths:
+      - 'scripts/apply-sampled-display-temp.py'
+      - '.github/workflows/sampled-display-assemble-temp.yml'
+permissions:
+  contents: write
+concurrency:
+  group: sampled-display-assembly
+  cancel-in-progress: false
+jobs:
+  assemble:
+    if: github.repository == 'nazardzuba79-tech/-' && github.ref == 'refs/heads/chatgpt/sampled-display-budget'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/sampled-display-budget
+      - name: Apply explicit guarded display-only changes
+        run: python3 scripts/apply-sampled-display-temp.py
+      - name: Save only allowlisted source changes to this feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = 'chatgpt/sampled-display-budget'
+          if test -s /tmp/sampled-display-changed.txt; then
+            while IFS= read -r path || test -n "$path"; do
+              case "$path" in src/*|frontend/src/*) git add -- "$path" ;; *) echo 'Unexpected assembly target'; exit 1 ;; esac
+            done < /tmp/sampled-display-changed.txt
+            if ! git diff --cached --quiet; then
+              git config user.name 'VOLTEX display assembly'
+              git config user.email 'noreply@users.noreply.github.com'
+              git commit -m '[CF-Pages-Skip] Wire owner-approved sampled display on feature branch'
+              git push origin HEAD:refs/heads/chatgpt/sampled-display-budget
+            fi
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install build dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm ci --prefix frontend --ignore-scripts --no-audit --no-fund && npx prisma generate
+      - name: Backend type check
+        id: backend
+        continue-on-error: true
+        run: npm run build 2>&1 | tee /tmp/backend-build.txt
+      - name: Frontend type check and bundle
+        id: frontend
+        continue-on-error: true
+        run: npm run build --prefix frontend 2>&1 | tee /tmp/frontend-build.txt
+      - name: Preserve review evidence
+        if: always()
+        run: |
+          git diff HEAD~1 HEAD --stat
+          git rev-parse HEAD
+      - name: Require both builds
+        if: always()
+        env:
+          BACKEND: ${{ steps.backend.outcome }}
+          FRONTEND: ${{ steps.frontend.outcome }}
+        run: test "$BACKEND" = success && test "$FRONTEND" = success
