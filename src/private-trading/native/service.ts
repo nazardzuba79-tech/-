@@ -68,6 +68,8 @@ export const NATIVE_OBSERVE_COMPACT_MIN=200;
 export const NATIVE_OBSERVE_COMPACT_BUDGET_MS=12_000;
 /** Full cleanup verification runs outside the request's 30 s deadline. */
 export const NATIVE_OBSERVE_BACKGROUND_COMPACT_BUDGET_MS=60_000;
+/** A background cleanup may retry one failed historical read inside that same bounded verifier. */
+export const NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS=3;
 /** Transient history transport failures retry later on the same unchanged revision. */
 export const NATIVE_OBSERVE_COMPACT_RETRY_MS=60_000;
 const canonicalJson=(v:unknown)=>JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
@@ -966,9 +968,26 @@ export class NativeDemoService {
     // Its own budget and its own abort signal, never the command's: a slow
     // history read ends the compaction, not the command it runs in front of.
     const signal=AbortSignal.timeout(budgetMs),cache=nativeHistoryCache(this.market,this.now);
+    const background=budgetMs===NATIVE_OBSERVE_BACKGROUND_COMPACT_BUDGET_MS;
+    const load=async(r:BarRequest)=>{
+      const attempts=background?NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS:1;
+      let last:unknown;
+      for(let n=1;n<=attempts;n++){
+        try{return await cache.load(r,signal);}
+        catch(e){
+          last=e;
+          const message=e instanceof Error?e.message:String(e);
+          if(signal.aborted||message!=='fetch failed'||n===attempts){
+            if(background)console.warn('[native] observation compaction history failed',r.symbol,r.intervalMs,r.start,r.end,n,message);
+            throw e;
+          }
+        }
+      }
+      throw last;
+    };
     try{
       commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length});
-      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},r=>cache.load(r,signal));
+      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},load);
       if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
       this.compactionRetryAfter.delete(attempt);
       console.info('[native] observation compaction verified',row.commands.length,commands.length);
