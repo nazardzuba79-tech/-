@@ -1,11 +1,14 @@
-import { useFuturesReference } from '../lib/useFuturesReference';
+import { useEffect, useState } from 'react';
+import { useLiveMarket } from '../lib/useLiveMarket';
+import { livePerpetualTurnover } from '../lib/terminalPresentation';
 import { formatCompact } from '../lib/formatNumber';
 
-/** Public turnover display. Direct Bybit browser data is the fallback; no Render market stream. */
+/** Separate from financial mark/funding reads; one shared reference stream. */
 export function FuturesTurnover({ pair, aggregate, stale, fullPrecision = false }: { pair: string; aggregate: number | null; stale: boolean; fullPrecision?: boolean }) {
-  const reference = useFuturesReference();
-  const direct = reference.get(pair)?.quoteVolume24h ?? null;
-  const fallback = typeof direct === 'number' && Number.isFinite(direct) && direct >= 0 ? direct : null;
+  const live = useLiveMarket();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(timer); }, []);
+  const fallback = livePerpetualTurnover(live, pair, now);
   const validAggregate = aggregate !== null && Number.isFinite(aggregate) && aggregate >= 0;
   const value = validAggregate && !stale ? aggregate : fallback ?? (validAggregate ? aggregate : null);
   return <span className={`value${value !== null && value === aggregate && stale && fallback === null ? ' is-stale' : ''}`}>
