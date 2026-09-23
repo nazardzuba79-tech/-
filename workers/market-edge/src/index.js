@@ -249,7 +249,7 @@ export default {
     try {
       let response;
       if (url.pathname === "/health") {
-        response = json({ ok: true, service: "voltex-market-edge", version: "futures-edge-direct-v5" }, 200, { "cache-control": "no-store" });
+        response = json({ ok: true, service: "voltex-market-edge", version: "public-display-edge-v2" }, 200, { "cache-control": "no-store" });
       } else {
         const book = url.pathname.match(/^\/market\/display\/futures-book\/([A-Z0-9]{1,28}USDT)$/);
         const trades = url.pathname.match(/^\/market\/display\/futures-trades\/([A-Z0-9]{1,28}USDT)$/);
