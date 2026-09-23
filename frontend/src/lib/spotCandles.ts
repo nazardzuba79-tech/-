@@ -14,7 +14,7 @@ export function parseSpotCandles(payload:any,symbol:string):{candles:Candle[]}{
   return{candles};
 }
 async function getJson(url:string,signal?:AbortSignal){const r=await fetch(url,{signal,credentials:'omit',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('spot_candle_http');return r.json();}
-function production(){if(typeof window==='undefined')return false;const h=window.location.hostname;return h==='voltextech.net'||h.endsWith('.voltextech.net');}
+function production(){if(typeof window==='undefined'||!window.location)return false;const h=window.location.hostname;return h==='voltextech.net'||h.endsWith('.voltextech.net');}
 export async function getSpotCandles(pair:string,interval:string,limit:number,signal?:AbortSignal):Promise<{candles:Candle[]}>{
   if(!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)||!intervals[interval])throw new Error('Unsupported spot candle instrument');
   if(!production()){
