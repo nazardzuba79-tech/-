@@ -62,6 +62,10 @@ const CODE_KEY: Record<string, Key> = {
   native_queue_timeout: 'futures.orderError.queueTimeout',
   native_confirmation_unknown: 'futures.orderError.confirmationUnknown',
   COMMAND_LIMIT: 'futures.orderError.commandLimit',
+  // A historical journal beyond the engine hard ceiling refuses every command,
+  // including a reduce-only LIMIT close. Show the specific account-limit text
+  // instead of the generic «Не удалось разместить ордер».
+  JOURNAL_LIMIT: 'futures.orderError.commandLimit',
   ACCOUNT_MISSING: 'futures.orderError.accountMissing',
   SET_EXISTING_POSITION_LEVERAGE_FIRST: 'futures.orderError.leverageExistingPosition',
   CANCEL_ORDERS_BEFORE_LEVERAGE: 'futures.orderError.cancelOrdersFirst',
