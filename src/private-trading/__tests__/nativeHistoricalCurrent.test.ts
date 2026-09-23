@@ -1,6 +1,13 @@
+
+test('large legacy compaction budget leaves ordinary compaction conservative',()=>{
+  expect(NATIVE_OBSERVE_COMPACT_LARGE_DROP_MIN).toBeGreaterThan(NATIVE_OBSERVE_COMPACT_MIN);
+  expect(NATIVE_OBSERVE_COMPACT_LARGE_BUDGET_MS).toBeGreaterThan(12_000);
+  expect(NATIVE_OBSERVE_COMPACT_LARGE_BUDGET_MS).toBeLessThan(30_000);
+});
+
 import BigNumber from 'bignumber.js';
 import { actor, setup, key, H, H0, M, outcome } from '../native/testing/liveFixture';
-import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_COMPACT_MIN, supersededObservations } from '../native/service';
+import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_COMPACT_MIN, NATIVE_OBSERVE_COMPACT_LARGE_BUDGET_MS, NATIVE_OBSERVE_COMPACT_LARGE_DROP_MIN, supersededObservations } from '../native/service';
 import { demoPositionView } from '../native/engine';
 import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateMarketDataError, PrivateTradingMarketData } from '../marketData';
 import { deriveNativeLiveProjection, projectionDigest, verifiedProjection } from '../native/liveProjection';
