@@ -257,7 +257,9 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   }
   if(c.kind==='OPEN'){
     registerDemoInstrument(s,c.instrument);
-    markDemoAccount(s,{[c.order.symbol]:{mark:c.mark,last:c.last}},time);
+    // A reduce-only LIMIT accepted while no current price could be had carries
+    // no mark (''); it re-marks nothing. Every other OPEN has always carried one.
+    if(c.mark!==''||c.last!=='')markDemoAccount(s,{[c.order.symbol]:{mark:c.mark,last:c.last}},time);
     // RISK BEFORE EXECUTION: the observation this command was decided on is
     // applied to the account first. A position it has already carried past
     // its boundary is liquidated there, before any order can settle at a
