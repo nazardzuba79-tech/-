@@ -57,7 +57,10 @@ function gzipSink(res: Response): LiveSink {
   // propagates through the gzip pipe, and writeLiveStream still destroys a
   // client that stays blocked for 30 seconds. The cap is deliberately just
   // above today's bounded snapshot, not an unbounded queue.
-  const gzip = zlib.createGzip({ writableHighWaterMark: LIVE_GZIP_WRITABLE_HIGH_WATER_MARK });
+  const gzipOptions: zlib.ZlibOptions & { writableHighWaterMark: number } = {
+    writableHighWaterMark: LIVE_GZIP_WRITABLE_HIGH_WATER_MARK,
+  };
+  const gzip = zlib.createGzip(gzipOptions);
   gzip.pipe(res);
   // The socket going away must not leave the compressor attached to it.
   res.once('close', () => { if (!gzip.destroyed) gzip.destroy(); });
