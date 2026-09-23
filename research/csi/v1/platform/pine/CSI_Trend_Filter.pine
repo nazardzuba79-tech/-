@@ -1,0 +1,28 @@
+//@version=6
+// CSI Trend Filter 200D (baseline rule of the CSI study).
+// STATUS: written for Pine v6; syntax-checked offline with an independent parser; NOT compiled in TradingView by the author.
+// Rule: risk-on when the DAILY CLOSE is above its 200-day simple moving average, cautious below. Act on closed daily bars
+// only (use alerts "Once Per Bar Close"). Evidence (Python, Bitstamp BTCUSD, 0.15% cost per side): lower maximum drawdown
+// than buy-and-hold in 2014-2022, in 2023-2026 and on ETH, with similar or higher Sharpe. It lags at turning points and
+// whipsaws in sideways markets. It is a risk filter, not a price forecast.
+indicator("CSI Тренд-фільтр 200D", shorttitle="CSI Trend", overlay=true)
+
+smaLen = input.int(200, "Довжина SMA, днів", minval=50)
+ma200 = ta.sma(close, smaLen)
+above = close > ma200
+dist = (close / ma200 - 1) * 100
+
+plot(ma200, "SMA", color=above ? color.green : color.red, linewidth=2)
+bgcolor(above ? color.new(color.green, 92) : color.new(color.red, 92))
+
+var table t = table.new(position.top_right, 2, 3, border_width=1)
+if barstate.islast
+    table.cell(t, 0, 0, "Тренд 200D", bgcolor=color.gray, text_color=color.white)
+    table.cell(t, 1, 0, above ? "вище: ризик дозволено" : "нижче: обережно", bgcolor=above ? color.green : color.red, text_color=color.white)
+    table.cell(t, 0, 1, "Відстань до SMA")
+    table.cell(t, 1, 1, na(dist) ? "-" : str.tostring(dist, "#.#") + "%")
+    table.cell(t, 0, 2, "Діяти лише після")
+    table.cell(t, 1, 2, "закриття дня")
+
+alertcondition(ta.crossover(close, ma200), "Закриття вище SMA200", "CSI Тренд: денне закриття вище SMA200")
+alertcondition(ta.crossunder(close, ma200), "Закриття нижче SMA200", "CSI Тренд: денне закриття нижче SMA200")

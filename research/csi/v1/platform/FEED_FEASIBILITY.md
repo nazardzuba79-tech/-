@@ -26,3 +26,9 @@ Python-модель у TradingView **не відтворюється**. Нижч
   - `REGIME_reduced`: SMA200 distance, TS momentum 90d, realized vol 30d, FRED DTWEXBGS/DFII10 зміни (втрачено: stablecoins, exchange flows, net liquidity з контрактним лагом, ETH/BTC можна додати як `OKX:ETHBTC`).
   - `TACTICAL_reduced`: RSI14, %B, stochastic, CCI, drawdown 90d, basis (OKX perp/spot).
 - Pine-файли в `platform/pine/` **не компілювалися** в TradingView у цьому середовищі (немає доступу до редактора). Статус: `NOT_COMPILED`, `NOT_BACKTESTED_IN_TV`. Паритет сигналів з Python не заявляється.
+
+## Оновлення v3 (2026-09-23)
+- **BitMEX funding (R101, T102, C102): недоступний наживо ніде** — контракти XBTUSD/ETHUSD закрито 2026-09-16.
+- FRED H.10 (`DTWEXBGS`, `DEXKOUS`) виходять щотижня; у TradingView `FRED:*` символи показують значення на дату спостереження, тобто з заглядом уперед на 3–7 днів відносно реальної публікації.
+- `DERIBIT:DVOL` — назва символу не перевірена (немає доступу до TradingView); у скрипті її можна змінити, а за відсутності символу компонент пропускається.
+- Нові скрипти v3 і що в них втрачено: `CSI_Cycle_Gauge` — лише відхилення від тренду (MVRV, Puell, thermocap і біржові баланси в TradingView відсутні); `CSI_Trend_Filter` — нічого не втрачено (ціна графіка); `CSI_Regime_Premiums_research` — 2 з 4 входів REGIME pruned (немає біржових балансів Coin Metrics і BitMEX funding); `CSI_Tactical_DVOL_research` — 2 з 3 (немає BitMEX funding).

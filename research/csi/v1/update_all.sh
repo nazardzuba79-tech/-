@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
-# One-command refresh of everything that is actually reachable. Sources that are blocked are logged, not faked.
+# One-command INCREMENTAL refresh of every source that is actually reachable, then checks, dashboard and the
+# forward-test ledger snapshot. Blocked or failing sources are logged in collection_log, never faked.
+# Full re-download: add --full (e.g. ./update_all.sh --full).
 set -u
 cd "$(dirname "$0")"
+PY="$(command -v python3 || command -v python)"
+[ -n "$PY" ] || { echo "Python 3 not found"; exit 1; }
+FULL="${1:-}"
 [ -f data/csi.db ] || gunzip -k data/csi.db.gz
-python -m csi.preflight
-for s in alternative_me fred coinmetrics defillama farside okx blockchain_info derive binance; do python -m csi.collect --source "$s"; done
-for s in binance_vision binance_vision_recent bitmex deribit bitfinex coinbase bitstamp upbit blockchain_info_extra; do python -m csi.collect_v2 --source "$s"; done
-python -m csi.validate
-python -m csi.dashboard
-echo "Refresh finished. Re-evaluation (python -m csi.evaluate_v2 && python -m csi.systems_v2) is NOT run automatically: it is a research step, not an update."
+"$PY" -m csi.preflight
+for s in alternative_me fred coinmetrics defillama farside okx blockchain_info derive binance; do "$PY" -m csi.collect --source "$s" $FULL; done
+for s in binance_vision binance_vision_recent bitmex deribit bitfinex coinbase bitstamp upbit blockchain_info_extra; do "$PY" -m csi.collect_v2 --source "$s" $FULL; done
+"$PY" -m csi.validate
+"$PY" -m csi.dashboard
+"$PY" -m csi.forward snapshot
+"$PY" -m csi.forward verify
+echo "Refresh finished. Research re-evaluation is NOT run automatically (it is a research step, not an update)."

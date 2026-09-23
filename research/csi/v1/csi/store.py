@@ -42,6 +42,23 @@ def number(x: Any) -> float | None:
     return out
 
 
+def write_merged_report(path: Path, header: list[str], rows: list[list]) -> None:
+    """Report files keyed by date (first column): merge with what is already there instead of overwriting,
+    so incremental runs never truncate a full-history report. New rows win for the same date."""
+    merged: dict[str, list] = {}
+    if path.exists():
+        with path.open(newline='', encoding='utf-8') as f:
+            r = csv.reader(f); old_header = next(r, None)
+            if old_header == header:
+                for row in r:
+                    if row:
+                        merged[row[0]] = row
+    for row in rows:
+        merged[str(row[0])] = [str(x) for x in row]
+    with path.open('w', newline='', encoding='utf-8') as f:
+        w = csv.writer(f); w.writerow(header); w.writerows(merged[k] for k in sorted(merged))
+
+
 class Store:
     def __init__(self, root: Path = ROOT, today: str | None = None) -> None:
         self.root = root
@@ -73,6 +90,10 @@ class Store:
         if status == 'FAIL':
             self.failures += 1
         print(f'[{status}] {source} {metric} {asset}: rows={n} {first}..{last} | {message[:160]}')
+
+    def last_date(self, source: str, metric: str, asset: str = '') -> str | None:
+        r = self.db.execute('SELECT MAX(date) FROM series WHERE source=? AND metric=? AND asset=?', (source, metric, asset)).fetchone()
+        return r[0] if r and r[0] else None
 
     # ---- writing -------------------------------------------------------
     def put(self, source: str, metric: str, asset: str, day: str, value: Any, lag: int) -> bool:

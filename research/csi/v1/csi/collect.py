@@ -10,7 +10,7 @@ Fallback rules (from the owner's spec):
 from __future__ import annotations
 import argparse, csv, datetime as dt, io, json, math, re, sys, time, urllib.parse
 from pathlib import Path
-from .store import Store, UTC, epoch_day, number
+from .store import Store, UTC, epoch_day, number, write_merged_report
 
 CM_WANTED = 'PriceUSD CapMrktCurUSD CapRealUSD CapMVRVCur SplyCur SplyAct1yr SplyActEver AdrActCnt TxCnt TxTfrValAdjUSD FeeTotUSD RevUSD IssTotUSD HashRate DiffMean NVTAdj90 VtyDayRet30d'.split()
 # Extra Community metrics used by catalogue candidates (exchange flows, balances, fees in native units, ROI, spot volume)
@@ -18,6 +18,7 @@ CM_EXTRA = 'AdrBalCnt BlkCnt FeeTotNtv FlowInExNtv FlowInExUSD FlowOutExNtv Flow
 FRED_CORE = 'WALCL WTREGEN RRPONTSYD WRESBAL M2SL DTWEXBGS DFII10 BAMLH0A0HYM2 VIXCLS SP500'.split()
 FRED_EXTRA = 'T10Y2Y DFF T10YIE NFCI'.split()  # catalogue M111-M114; lag 1 by the "решта: 1" rule
 FRED_LAG = {'WALCL': 8, 'WTREGEN': 8, 'WRESBAL': 8, 'M2SL': 30}
+INCREMENTAL = True   # --full re-downloads complete histories
 LLAMA_CHAINS = {'Ethereum': 'stablecoin_mcap_ethereum', 'Tron': 'stablecoin_mcap_tron', 'Solana': 'stablecoin_mcap_solana',
                 'Arbitrum': 'stablecoin_mcap_arbitrum', 'Base': 'stablecoin_mcap_base', 'BSC': 'stablecoin_mcap_bsc'}
 
@@ -92,8 +93,10 @@ def collect_coinmetrics(s: Store) -> None:
                 reason = 'not in catalog for asset' if f is None else 'in catalog but community=false'
                 s.log('coinmetrics', metric, asset, 'UNAVAILABLE', reason)
                 wanted_report.append([metric, asset, kind, 'UNAVAILABLE', reason]); continue
+            last = s.last_date('coinmetrics', metric, asset) if INCREMENTAL else None
+            start_time = (dt.date.fromisoformat(last) - dt.timedelta(days=30)).isoformat() if last else '2009-01-01'   # 30-day overlap re-reads recent revisions
             url = 'https://community-api.coinmetrics.io/v4/timeseries/asset-metrics?' + urllib.parse.urlencode(
-                {'assets': asset, 'metrics': metric, 'frequency': '1d', 'start_time': '2009-01-01', 'end_time': s.day, 'page_size': 10000})
+                {'assets': asset, 'metrics': metric, 'frequency': '1d', 'start_time': start_time, 'end_time': s.day, 'page_size': 10000})
             visited = set(); n = 0; nulls = 0
             try:
                 for _ in range(100):
@@ -178,10 +181,10 @@ def collect_binance(s: Store) -> None:
             for t, v in sorted(events.items()):
                 days.setdefault(epoch_day(t), []).append(v)
             nf = 0
-            with (s.root / f'reports/funding_event_counts_binance_{asset}.csv').open('w', newline='') as fh:
-                w = csv.writer(fh); w.writerow(['date', 'event_count', 'sum_rates', 'completeness'])
-                for day, vals in sorted(days.items()):
-                    nf += s.put('binance_futures', 'funding_rate_daily', asset, day, math.fsum(vals), 0); w.writerow([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+            rep = []
+            for day, vals in sorted(days.items()):
+                nf += s.put('binance_futures', 'funding_rate_daily', asset, day, math.fsum(vals), 0); rep.append([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+            write_merged_report(s.root / f'reports/funding_event_counts_binance_{asset}.csv', ['date', 'event_count', 'sum_rates', 'completeness'], rep)
             s.log('binance_futures', 'funding_rate_daily', asset, 'OK', f'{nf} days from {len(events)} actual settlement events')
         except Exception as exc:
             s.log('binance_futures', 'funding_rate_daily', asset, 'FAIL', 'GEO_BLOCKED_OR_ERROR: ' + repr(exc)[:400])
@@ -210,10 +213,12 @@ def collect_bybit(s: Store) -> None:
 
 
 # ---------------------------------------------------------------- OKX (fallback venue)
-def okx_page(s: Store, source, metric, asset, base_url: str, after_key: str, ts_index) -> list:
-    """Paginate backwards with `after=<oldest ts>` until an empty page."""
+def okx_page(s: Store, source, metric, asset, base_url: str, after_key: str, ts_index, stop_before_ms: int | None = None) -> list:
+    """Paginate backwards with `after=<oldest ts>` until an empty page (or, incrementally, until older than stop_before_ms)."""
     rows = []; after = None; seen = set()
     for _ in range(400):
+        if stop_before_ms is not None and after is not None and after < stop_before_ms:
+            break
         url = base_url + (f'&after={after}' if after else '')
         obj = s.request(source, metric, asset, url)
         if obj.get('code') != '0':
@@ -239,7 +244,9 @@ def collect_okx(s: Store) -> None:
     for inst, asset, kind in (('BTC-USDT', 'btcusdt', 'spot'), ('ETH-USDT', 'ethusdt', 'spot'), ('BTC-USDT-SWAP', 'btcusdt', 'perp'), ('ETH-USDT-SWAP', 'ethusdt', 'perp')):
         prefix = 'spot' if kind == 'spot' else 'perp'
         try:
-            rows = okx_page(s, 'okx', f'{prefix}_ohlcv', asset, f'https://www.okx.com/api/v5/market/history-candles?instId={inst}&bar=1Dutc&limit=100', 'after', lambda r: r[0])
+            last = s.last_date('okx', f'{prefix}_close', asset) if INCREMENTAL else None
+            stop = int(dt.datetime.combine(dt.date.fromisoformat(last) - dt.timedelta(days=3), dt.time(), UTC).timestamp() * 1000) if last else None
+            rows = okx_page(s, 'okx', f'{prefix}_ohlcv', asset, f'https://www.okx.com/api/v5/market/history-candles?instId={inst}&bar=1Dutc&limit=100', 'after', lambda r: r[0], stop)
             n = 0; unconfirmed = 0
             for r in rows:
                 ts, o, h, l, c, vol, volccy, volq, confirm = r[:9]
@@ -267,14 +274,13 @@ def collect_okx(s: Store) -> None:
                     raise ValueError('Wrong instId in funding response')
                 rate = r.get('realizedRate') or r.get('fundingRate')
                 days.setdefault(epoch_day(int(r['fundingTime'])), []).append(float(rate))
-            with (s.root / f'reports/funding_event_counts_okx_{asset}.csv').open('w', newline='', encoding='utf-8') as fh:
-                w = csv.writer(fh); w.writerow(['date', 'event_count', 'sum_rates', 'completeness'])
-                n = 0
-                for day, vals in sorted(days.items()):
-                    if day >= s.day:
-                        continue
-                    n += s.put('okx', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
-                    w.writerow([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+            n = 0; rep = []
+            for day, vals in sorted(days.items()):
+                if day >= s.day:
+                    continue
+                n += s.put('okx', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
+                rep.append([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+            write_merged_report(s.root / f'reports/funding_event_counts_okx_{asset}.csv', ['date', 'event_count', 'sum_rates', 'completeness'], rep)
             first = min(days) if days else None
             s.log('okx', 'funding_rate_daily', asset, 'PARTIAL', f'{n} days from {len(rows)} settlement events; first event day {first}; OKX public history is SHORT (~3 months); FALLBACK venue')
         except Exception as exc:
@@ -475,7 +481,10 @@ def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--source', choices=list(SOURCES) + ['all'], required=True)
     p.add_argument('--root', default=None)
+    p.add_argument('--full', action='store_true', help='re-download complete histories instead of incremental updates')
     args = p.parse_args()
+    global INCREMENTAL
+    INCREMENTAL = not args.full
     root = Path(args.root) if args.root else Path(__file__).resolve().parents[1]
     s = Store(root)
     names = list(SOURCES) if args.source == 'all' else [args.source]

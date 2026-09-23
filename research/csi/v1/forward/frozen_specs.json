@@ -1,0 +1,102 @@
+{
+  "CYCLE_v1": {
+    "system": "cycle",
+    "components": [
+      "M066"
+    ],
+    "origin": "v1 confirmed on 2011-2022"
+  },
+  "REGIME_v2_confirmed": {
+    "system": "regime",
+    "components": [
+      "O080",
+      "M106",
+      "M015",
+      "N004",
+      "R101",
+      "R105",
+      "R106",
+      "R108"
+    ],
+    "origin": "v2 confirmed on 2011-2022"
+  },
+  "REGIME_v2_pruned": {
+    "system": "regime",
+    "components": [
+      "O080",
+      "R101",
+      "R105",
+      "R106"
+    ],
+    "origin": "v2 rule-6 pruning (second holdout look)"
+  },
+  "TACTICAL_v2": {
+    "system": "tactical",
+    "components": [
+      "T102",
+      "T108",
+      "T110"
+    ],
+    "origin": "v2 confirmed on 2017-2022"
+  },
+  "CYCLE_wf2025_confirmed": {
+    "system": "cycle",
+    "components": [
+      "M059",
+      "O013"
+    ],
+    "origin": "walk-forward selection with training through 2024-12-31"
+  },
+  "CYCLE_wf2025_pruned": {
+    "system": "cycle",
+    "components": [
+      "O013"
+    ],
+    "origin": "walk-forward selection with training through 2024-12-31"
+  },
+  "REGIME_wf2026_confirmed": {
+    "system": "regime",
+    "components": [
+      "M115",
+      "O046",
+      "R101",
+      "R105",
+      "R106"
+    ],
+    "origin": "walk-forward selection with training through 2025-12-31"
+  },
+  "REGIME_wf2026_pruned": {
+    "system": "regime",
+    "components": [
+      "M115",
+      "O046",
+      "R101",
+      "R105",
+      "R106"
+    ],
+    "origin": "walk-forward selection with training through 2025-12-31"
+  },
+  "TACTICAL_wf2026_confirmed": {
+    "system": "tactical",
+    "components": [
+      "T104",
+      "T106",
+      "T110",
+      "T111"
+    ],
+    "origin": "walk-forward selection with training through 2025-12-31"
+  },
+  "TACTICAL_wf2026_pruned": {
+    "system": "tactical",
+    "components": [
+      "T104",
+      "T106"
+    ],
+    "origin": "walk-forward selection with training through 2025-12-31"
+  },
+  "TREND200_BTC": {
+    "system": "baseline",
+    "components": [],
+    "origin": "binary: Bitstamp BTCUSD close above its 200-day SMA"
+  }
+}

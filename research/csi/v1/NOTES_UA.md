@@ -58,3 +58,12 @@ Preflight 2026-09-22T03:16:37Z; збір завершено ≈03:27Z; оцін�
 
 Проблема виконання: три паралельні колектори заблокували SQLite (`database is locked`) — Deribit ETH/DVOL, Coinbase, Bitstamp, Upbit, blockchain.info було перезапущено послідовно після завершення важких задач; у `Store.put` додано періодичний commit. Помилкові спроби лишаються в `collection_log`.
 База після v2: 593 892 рядки, 166 серій, lag_check PASS; канонічних пар 73: 37 primary + 19 fallback (тепер включно з `binance_vision`) + 17 відсутні (Coin Metrics non-Community, CoinGecko breadth).
+
+# v3 — повторна перевірка (2026-09-23)
+- Мережа: FRED `fredgraph.csv` через curl 16:31–16:40 UTC → `HTTP/2 INTERNAL_ERROR` / `Empty reply` (сайт fred.stlouisfed.org відповідав 200, проксі збоїв не фіксував); через Python (HTTP/1.1) о ≈16:55 UTC — 200. ALFRED `alfredgraph.csv?vintage_date=…` → `RemoteDisconnected` на всіх 9 запитах; перевірити версії даних не вдалося.
+- BitMEX `/instrument?symbol=XBTUSD` і `ETHUSD`: `state=Settled`, `settle=2026-09-16T12:00:00Z`; останній funding — 2026-09-16 12:00 UTC.
+- Coin Metrics `AssetEODCompletionTime` (btc, 2026-09-15…22): дані дня D готові о 02:22–04:25 UTC дня D+1.
+- Binance-архів: щоденних файлів funding немає (404), щоденні metrics і klines за 2026-09-22 уже були 2026-09-23.
+- Доібрано: Upbit KRW-ETH (3282 дні з 2017-09-25), Bitstamp ethusd повністю (3325 днів з 2017-08-16; раніше пагінація обривалась на 2020-04).
+- Інкрементне оновлення 2026-09-23: Coin Metrics +30-денний перечит, Bitfinex 2 сторінки (замість 746), Binance-архів 2 дні metrics + 1 день klines; сирих даних +≈4 МБ. Binance API — 451, як і раніше.
+- Журнал прямого тесту: 11 рядків на дату рішення 2026-09-22, ланцюжок хешів перевірено.

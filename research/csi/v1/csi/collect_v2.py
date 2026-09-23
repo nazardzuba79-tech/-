@@ -14,8 +14,21 @@ blockchain_info: estimated-transaction-volume-usd, n-unique-addresses (NEW ids, 
 from __future__ import annotations
 import argparse, csv, datetime as dt, io, json, math, time, urllib.parse, zipfile
 from pathlib import Path
-from .store import Store, UTC, epoch_day, number
+from .store import Store, UTC, epoch_day, number, write_merged_report
 from .collect import collect_fred as _collect_fred_v1  # noqa (kept for reference)
+
+INCREMENTAL = True   # --full re-downloads complete histories
+
+
+def _start_month(s, source, metric, asset, default):
+    last = s.last_date(source, metric, asset) if INCREMENTAL else None
+    return last[:7] if last and last[:7] > default else default
+
+
+def _start_day(s, source, metric, asset, default: dt.date, back_days: int = 0) -> dt.date:
+    last = s.last_date(source, metric, asset) if INCREMENTAL else None
+    return max(default, dt.date.fromisoformat(last) - dt.timedelta(days=back_days)) if last else default
+
 
 ALLOW_V2 = {'data.binance.vision', 'www.bitmex.com', 'www.deribit.com', 'api-pub.bitfinex.com', 'api.exchange.coinbase.com', 'www.bitstamp.net', 'api.upbit.com'}
 
@@ -50,7 +63,7 @@ def collect_binance_vision(s: Store, only: str | None = None) -> None:
         if only in (None, 'spot'):
             n = 0; first = None; misses = []
             try:
-                for mo in month_iter('2017-08', s.day):
+                for mo in month_iter(_start_month(s, 'binance_vision', 'spot_close', asset, '2017-08'), s.day):
                     try:
                         body = s.request_bytes('binance_vision', 'spot_ohlcv', asset, f'{base}/spot/monthly/klines/{symbol}/1d/{symbol}-1d-{mo}.zip')
                     except RuntimeError as exc:
@@ -78,7 +91,7 @@ def collect_binance_vision(s: Store, only: str | None = None) -> None:
             for kind, metric in (('fundingRate', 'funding_events'), ('klines', 'perp_ohlcv')):
                 n = 0; first = None; misses = []; days: dict[str, list] = {}
                 try:
-                    for mo in month_iter('2019-09', s.day):
+                    for mo in month_iter(_start_month(s, 'binance_vision', 'funding_rate_daily' if kind == 'fundingRate' else 'perp_close', asset, '2019-09'), s.day):
                         url = f'{base}/futures/um/monthly/{kind}/{symbol}/{symbol}-{kind}-{mo}.zip' if kind == 'fundingRate' else f'{base}/futures/um/monthly/klines/{symbol}/1d/{symbol}-1d-{mo}.zip'
                         try:
                             body = s.request_bytes('binance_vision', metric, asset, url)
@@ -97,15 +110,16 @@ def collect_binance_vision(s: Store, only: str | None = None) -> None:
                                 n += s.put('binance_vision', 'perp_close', asset, d, c, 0); s.put('binance_vision', 'perp_volume', asset, d, v, 0)
                         time.sleep(0.05)
                     if kind == 'fundingRate':
-                        with (s.root / f'reports/funding_event_counts_binance_vision_{asset}.csv').open('w', newline='') as fh:
-                            w = csv.writer(fh); w.writerow(['date', 'event_count', 'sum_rates', 'completeness'])
-                            for day, vals in sorted(days.items()):
-                                n += s.put('binance_vision', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
-                                w.writerow([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+                        rep = []
+                        for day, vals in sorted(days.items()):
+                            n += s.put('binance_vision', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
+                            rep.append([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+                        write_merged_report(s.root / f'reports/funding_event_counts_binance_vision_{asset}.csv', ['date', 'event_count', 'sum_rates', 'completeness'], rep)
                         first = min(days) if days else None
                         s.log('binance_vision', 'funding_rate_daily', asset, 'OK' if n else 'FAIL', f'{n} days from {sum(len(v) for v in days.values())} settlement events (archive), first {first}; months without file: {misses[:6]}')
                     else:
-                        s.log('binance_vision', 'perp_close', asset, 'OK' if n else 'FAIL', f'{n} daily perp bars, first {first}; months without file: {misses[:6]}')
+                        cur_month_only = misses == [s.day[:7]]
+                        s.log('binance_vision', 'perp_close', asset, 'OK' if (n or cur_month_only) else 'FAIL', f'{n} daily perp bars, first {first}; months without file: {misses[:6]}' + ('; current month not yet published (daily zips cover it)' if cur_month_only else ''))
                 except Exception as exc:
                     s.log('binance_vision', metric, asset, 'FAIL', repr(exc))
             # derived basis
@@ -114,7 +128,7 @@ def collect_binance_vision(s: Store, only: str | None = None) -> None:
             s.log('binance_vision', 'perp_spot_basis', asset, 'OK' if nb else 'FAIL', f'{nb} rows = perp_close/spot_close - 1 (archive daily closes)')
         # ---- daily metrics zips (5-minute rows): OI, OI value, long/short ratios, taker ratio
         if only in (None, 'metrics'):
-            day = dt.date(2020, 1, 1); n = 0; first = None; misses = 0; consecutive_404 = 0
+            day = _start_day(s, 'binance_vision', 'open_interest', asset, dt.date(2020, 1, 1)) + (dt.timedelta(days=1) if INCREMENTAL and s.last_date('binance_vision', 'open_interest', asset) else dt.timedelta(0)); n = 0; first = None; misses = 0; consecutive_404 = 0
             try:
                 while day.isoformat() < s.day:
                     ds = day.isoformat()
@@ -147,7 +161,7 @@ def collect_binance_vision(s: Store, only: str | None = None) -> None:
 def collect_bitmex(s: Store) -> None:
     _extend_allow()
     for symbol, asset, start in (('XBTUSD', 'xbtusd', '2016-05-01'), ('ETHUSD', 'ethusd', '2018-08-01')):
-        days: dict[str, list] = {}; cursor = start + 'T00:00:00.000Z'; seen = set()
+        days: dict[str, list] = {}; cursor = _start_day(s, 'bitmex', 'funding_rate_daily', asset, dt.date.fromisoformat(start)).isoformat() + 'T00:00:00.000Z'; seen = set()
         try:
             for _ in range(200):
                 url = 'https://www.bitmex.com/api/v1/funding?' + urllib.parse.urlencode({'symbol': symbol, 'count': 500, 'reverse': 'false', 'startTime': cursor})
@@ -167,11 +181,11 @@ def collect_bitmex(s: Store) -> None:
                 cursor = data[-1]['timestamp']
                 time.sleep(1.2)  # BitMEX public rate limit
             n = 0
-            with (s.root / f'reports/funding_event_counts_bitmex_{asset}.csv').open('w', newline='') as fh:
-                w = csv.writer(fh); w.writerow(['date', 'event_count', 'sum_rates', 'completeness'])
-                for day, vals in sorted(days.items()):
-                    n += s.put('bitmex', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
-                    w.writerow([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+            rep = []
+            for day, vals in sorted(days.items()):
+                n += s.put('bitmex', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
+                rep.append([day, len(vals), math.fsum(vals), 'NOT_PROVEN_FROM_EVENT_COUNT_ALONE'])
+            write_merged_report(s.root / f'reports/funding_event_counts_bitmex_{asset}.csv', ['date', 'event_count', 'sum_rates', 'completeness'], rep)
             s.log('bitmex', 'funding_rate_daily', asset, 'OK', f'{n} days from {len(seen)} events, first {min(days) if days else None}; inverse contract {symbol}')
         except Exception as exc:
             s.log('bitmex', 'funding_rate_daily', asset, 'FAIL', repr(exc))
@@ -181,7 +195,7 @@ def collect_bitmex(s: Store) -> None:
 def collect_deribit(s: Store) -> None:
     _extend_allow()
     for inst, asset in (('BTC-PERPETUAL', 'btc-perpetual'), ('ETH-PERPETUAL', 'eth-perpetual')):
-        days: dict[str, list] = {}; t0 = int(dt.datetime(2019, 4, 1, tzinfo=UTC).timestamp() * 1000); end = int(dt.datetime.now(UTC).timestamp() * 1000); seen = set()
+        days: dict[str, list] = {}; t0 = int(dt.datetime.combine(_start_day(s, 'deribit', 'funding_rate_daily', asset, dt.date(2019, 4, 1)), dt.time(), UTC).timestamp() * 1000); end = int(dt.datetime.now(UTC).timestamp() * 1000); seen = set()
         try:
             while t0 < end:
                 t1 = min(t0 + 30 * 86400000, end)
@@ -192,17 +206,17 @@ def collect_deribit(s: Store) -> None:
                     seen.add(r['timestamp']); days.setdefault(epoch_day(r['timestamp']), []).append(float(r['interest_1h']))
                 t0 = t1; time.sleep(0.25)
             n = 0
-            with (s.root / f'reports/funding_event_counts_deribit_{asset}.csv').open('w', newline='') as fh:
-                w = csv.writer(fh); w.writerow(['date', 'hourly_rows', 'sum_interest_1h', 'completeness'])
-                for day, vals in sorted(days.items()):
-                    n += s.put('deribit', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
-                    w.writerow([day, len(vals), math.fsum(vals), 'HOURLY_ACCRUAL_SUM; 24 rows expected'])
+            rep = []
+            for day, vals in sorted(days.items()):
+                n += s.put('deribit', 'funding_rate_daily', asset, day, math.fsum(vals), 0)
+                rep.append([day, len(vals), math.fsum(vals), 'HOURLY_ACCRUAL_SUM; 24 rows expected'])
+            write_merged_report(s.root / f'reports/funding_event_counts_deribit_{asset}.csv', ['date', 'hourly_rows', 'sum_interest_1h', 'completeness'], rep)
             s.log('deribit', 'funding_rate_daily', asset, 'OK', f'{n} days = sum of hourly interest_1h (continuous funding, definition differs from 8h settlements), first {min(days) if days else None}')
         except Exception as exc:
             s.log('deribit', 'funding_rate_daily', asset, 'FAIL', repr(exc))
     for ccy, asset in (('BTC', 'btc'), ('ETH', 'eth')):
         try:
-            t0 = int(dt.datetime(2021, 1, 1, tzinfo=UTC).timestamp() * 1000); end = int(dt.datetime.now(UTC).timestamp() * 1000); n = 0; first = None
+            t0 = int(dt.datetime.combine(_start_day(s, 'deribit', 'dvol_close', asset, dt.date(2021, 1, 1), 2), dt.time(), UTC).timestamp() * 1000); end = int(dt.datetime.now(UTC).timestamp() * 1000); n = 0; first = None
             while t0 < end:
                 t1 = min(t0 + 900 * 86400000, end)
                 obj = s.request('deribit', 'dvol', asset, f'https://www.deribit.com/api/v2/public/get_volatility_index_data?currency={ccy}&start_timestamp={t0}&end_timestamp={t1}&resolution=1D')
@@ -218,7 +232,7 @@ def collect_deribit(s: Store) -> None:
 def collect_bitfinex(s: Store) -> None:
     _extend_allow()
     for pair, asset in (('tBTCF0:USTF0', 'btcf0ustf0'), ('tETHF0:USTF0', 'ethf0ustf0')):
-        start = int(dt.datetime(2019, 8, 1, tzinfo=UTC).timestamp() * 1000); end = int(dt.datetime.now(UTC).timestamp() * 1000)
+        start = int(dt.datetime.combine(_start_day(s, 'bitfinex', 'open_interest', asset, dt.date(2019, 8, 1)), dt.time(), UTC).timestamp() * 1000); end = int(dt.datetime.now(UTC).timestamp() * 1000)
         last_by_day: dict[str, tuple] = {}; pages = 0
         try:
             while start < end and pages < 2000:
@@ -247,7 +261,7 @@ def collect_bitfinex(s: Store) -> None:
 def collect_coinbase(s: Store) -> None:
     _extend_allow()
     for product, asset, start in (('BTC-USD', 'btcusd', dt.date(2015, 1, 1)), ('ETH-USD', 'ethusd', dt.date(2016, 5, 1))):
-        n = 0; day = start; first = None
+        n = 0; day = _start_day(s, 'coinbase', 'spot_close', asset, start, 3); first = None
         try:
             while day.isoformat() < s.day:
                 e = min(day + dt.timedelta(days=299), dt.date.fromisoformat(s.day))
@@ -262,9 +276,14 @@ def collect_coinbase(s: Store) -> None:
 
 
 def collect_bitstamp(s: Store) -> None:
+    _collect_bitstamp_pairs(s, (('btcusd', 'btcusd', 1314000000), ('ethusd', 'ethusd', 1500000000)))
+
+
+def _collect_bitstamp_pairs(s: Store, pairs) -> None:
     _extend_allow()
-    for pair, asset, start in (('btcusd', 'btcusd', 1314000000), ('ethusd', 'ethusd', 1500000000)):
-        n = 0; cur = start; first = None
+    for pair, asset, start in pairs:
+        last = s.last_date('bitstamp', 'spot_close', asset) if INCREMENTAL else None
+        n = 0; cur = max(start, int(dt.datetime.combine(dt.date.fromisoformat(last) - dt.timedelta(days=3), dt.time(), UTC).timestamp())) if last else start; first = None
         try:
             for _ in range(60):
                 obj = s.request('bitstamp', 'spot_ohlcv', asset, f'https://www.bitstamp.net/api/v2/ohlc/{pair}/?step=86400&limit=1000&start={cur}')
@@ -278,33 +297,38 @@ def collect_bitstamp(s: Store) -> None:
                 if nxt <= cur:
                     break
                 cur = nxt; time.sleep(0.3)
-                if len(rows) < 1000:
+                # v3 fix: a short page is NOT the end (Bitstamp returns bars inside [start, start+limit*step)); stop at today
+                if epoch_day(nxt, 's') >= s.day:
                     break
             s.log('bitstamp', 'spot_close', asset, 'OK', f'{n} daily bars {pair}, first {first}')
         except Exception as exc:
             s.log('bitstamp', 'spot_close', asset, 'FAIL', repr(exc))
 
 
-def collect_upbit(s: Store) -> None:
+def collect_upbit(s: Store, markets=('KRW-BTC', 'KRW-ETH'), with_fx: bool = True) -> None:
     _extend_allow()
-    n = 0; to = None; first = None
-    try:
-        for _ in range(60):
-            url = 'https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=200' + (f'&to={to}' if to else '')
-            data = s.request('upbit', 'spot_ohlcv', 'krw-btc', url)
-            if not data:
-                break
-            for r in data:
-                d = r['candle_date_time_utc'][:10]; first = d
-                n += s.put('upbit', 'spot_close', 'krw-btc', d, r['trade_price'], 0)
-            to = data[-1]['candle_date_time_utc'] + 'Z'
-            time.sleep(0.2)
-            if len(data) < 200:
-                break
-        s.log('upbit', 'spot_close', 'krw-btc', 'OK', f'{n} daily closes KRW-BTC (KRW), first {first}')
-    except Exception as exc:
-        s.log('upbit', 'spot_close', 'krw-btc', 'FAIL', repr(exc))
+    for market in markets:
+        asset = market.lower(); n = 0; to = None; first = None
+        try:
+            for _ in range(60):
+                url = f'https://api.upbit.com/v1/candles/days?market={market}&count=200' + (f'&to={to}' if to else '')
+                data = s.request('upbit', 'spot_ohlcv', asset, url)
+                if not data:
+                    break
+                for r in data:
+                    d = r['candle_date_time_utc'][:10]; first = d
+                    n += s.put('upbit', 'spot_close', asset, d, r['trade_price'], 0)
+                to = data[-1]['candle_date_time_utc'] + 'Z'
+                time.sleep(0.2)
+                last = s.last_date('upbit', 'spot_close', asset) if INCREMENTAL else None
+                if len(data) < 200 or (last and data[-1]['candle_date_time_utc'][:10] <= last):
+                    break
+            s.log('upbit', 'spot_close', asset, 'OK', f'{n} daily closes {market} (KRW), first {first}')
+        except Exception as exc:
+            s.log('upbit', 'spot_close', asset, 'FAIL', repr(exc))
     # KRW per USD from FRED (lag 1 per FRED rule)
+    if not with_fx:
+        return
     try:
         text = s.request('fred', 'DEXKOUS', '', 'https://fred.stlouisfed.org/graph/fredgraph.csv?id=DEXKOUS', 'csv')
         rd = csv.DictReader(io.StringIO(text)); k = 'DATE' if 'DATE' in rd.fieldnames else 'observation_date'; m = 0
@@ -359,13 +383,24 @@ def collect_binance_vision_recent(s: Store) -> None:
         s.log('binance_vision', 'perp_spot_basis', asset, 'OK', f'{nb} rows after recent update')
 
 
-SOURCES = {'binance_vision': collect_binance_vision, 'binance_vision_recent': collect_binance_vision_recent, 'bitmex': collect_bitmex, 'deribit': collect_deribit, 'bitfinex': collect_bitfinex,
+def collect_bitstamp_eth(s: Store) -> None:
+    _collect_bitstamp_pairs(s, (('ethusd', 'ethusd', 1500000000),))
+
+
+def collect_upbit_eth(s: Store) -> None:
+    collect_upbit(s, markets=('KRW-ETH',), with_fx=False)
+
+
+SOURCES = {'bitstamp_eth': collect_bitstamp_eth, 'upbit_eth': collect_upbit_eth, 'binance_vision': collect_binance_vision, 'binance_vision_recent': collect_binance_vision_recent, 'bitmex': collect_bitmex, 'deribit': collect_deribit, 'bitfinex': collect_bitfinex,
            'coinbase': collect_coinbase, 'bitstamp': collect_bitstamp, 'upbit': collect_upbit, 'blockchain_info_extra': collect_blockchain_info_extra}
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__); p.add_argument('--source', choices=list(SOURCES) + ['all'], required=True); p.add_argument('--only', default=None)
+    p.add_argument('--full', action='store_true', help='re-download complete histories instead of incremental updates')
     a = p.parse_args(); s = Store(Path(__file__).resolve().parents[1])
+    global INCREMENTAL
+    INCREMENTAL = not a.full
     try:
         for name in (list(SOURCES) if a.source == 'all' else [a.source]):
             print(f'=== {name} ===', flush=True)

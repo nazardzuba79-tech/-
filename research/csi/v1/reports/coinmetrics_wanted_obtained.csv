@@ -1,65 +1,65 @@
 metric,asset,kind,status,detail
-PriceUSD,btc,wanted,OK,5910 rows
-CapMrktCurUSD,btc,wanted,OK,5910 rows
+PriceUSD,btc,wanted,OK,32 rows
+CapMrktCurUSD,btc,wanted,OK,32 rows
 CapRealUSD,btc,wanted,UNAVAILABLE,not in catalog for asset
-CapMVRVCur,btc,wanted,OK,5910 rows
-SplyCur,btc,wanted,OK,6471 rows
+CapMVRVCur,btc,wanted,OK,32 rows
+SplyCur,btc,wanted,OK,32 rows
 SplyAct1yr,btc,wanted,UNAVAILABLE,not in catalog for asset
 SplyActEver,btc,wanted,UNAVAILABLE,not in catalog for asset
-AdrActCnt,btc,wanted,OK,6471 rows
-TxCnt,btc,wanted,OK,6471 rows
+AdrActCnt,btc,wanted,OK,32 rows
+TxCnt,btc,wanted,OK,32 rows
 TxTfrValAdjUSD,btc,wanted,UNAVAILABLE,not in catalog for asset
 FeeTotUSD,btc,wanted,UNAVAILABLE,not in catalog for asset
 RevUSD,btc,wanted,UNAVAILABLE,not in catalog for asset
-IssTotUSD,btc,wanted,OK,5910 rows
-HashRate,btc,wanted,OK,6465 rows
+IssTotUSD,btc,wanted,OK,32 rows
+HashRate,btc,wanted,OK,32 rows
 DiffMean,btc,wanted,UNAVAILABLE,not in catalog for asset
 NVTAdj90,btc,wanted,UNAVAILABLE,not in catalog for asset
 VtyDayRet30d,btc,wanted,UNAVAILABLE,not in catalog for asset
-AdrBalCnt,btc,extra,OK,6471 rows
-BlkCnt,btc,extra,OK,6471 rows
-FeeTotNtv,btc,extra,OK,6471 rows
-FlowInExNtv,btc,extra,OK,5630 rows
-FlowInExUSD,btc,extra,OK,5630 rows
-FlowOutExNtv,btc,extra,OK,5630 rows
-FlowOutExUSD,btc,extra,OK,5630 rows
-IssTotNtv,btc,extra,OK,6465 rows
-ROI1yr,btc,extra,OK,5545 rows
-ROI30d,btc,extra,OK,5880 rows
-SplyExNtv,btc,extra,OK,5630 rows
-SplyExUSD,btc,extra,OK,5630 rows
-TxTfrCnt,btc,extra,OK,6471 rows
-volume_reported_spot_usd_1d,btc,extra,OK,5910 rows
-PriceBTC,btc,extra,OK,6471 rows
-PriceUSD,eth,wanted,OK,4063 rows
-CapMrktCurUSD,eth,wanted,OK,4063 rows
+AdrBalCnt,btc,extra,OK,32 rows
+BlkCnt,btc,extra,OK,32 rows
+FeeTotNtv,btc,extra,OK,32 rows
+FlowInExNtv,btc,extra,OK,32 rows
+FlowInExUSD,btc,extra,OK,32 rows
+FlowOutExNtv,btc,extra,OK,32 rows
+FlowOutExUSD,btc,extra,OK,32 rows
+IssTotNtv,btc,extra,OK,32 rows
+ROI1yr,btc,extra,OK,32 rows
+ROI30d,btc,extra,OK,32 rows
+SplyExNtv,btc,extra,OK,32 rows
+SplyExUSD,btc,extra,OK,32 rows
+TxTfrCnt,btc,extra,OK,32 rows
+volume_reported_spot_usd_1d,btc,extra,OK,32 rows
+PriceBTC,btc,extra,OK,32 rows
+PriceUSD,eth,wanted,OK,32 rows
+CapMrktCurUSD,eth,wanted,OK,32 rows
 CapRealUSD,eth,wanted,UNAVAILABLE,not in catalog for asset
-CapMVRVCur,eth,wanted,OK,4063 rows
-SplyCur,eth,wanted,OK,4072 rows
+CapMVRVCur,eth,wanted,OK,32 rows
+SplyCur,eth,wanted,OK,32 rows
 SplyAct1yr,eth,wanted,UNAVAILABLE,not in catalog for asset
 SplyActEver,eth,wanted,UNAVAILABLE,not in catalog for asset
-AdrActCnt,eth,wanted,OK,4072 rows
-TxCnt,eth,wanted,OK,4072 rows
+AdrActCnt,eth,wanted,OK,32 rows
+TxCnt,eth,wanted,OK,32 rows
 TxTfrValAdjUSD,eth,wanted,UNAVAILABLE,not in catalog for asset
 FeeTotUSD,eth,wanted,UNAVAILABLE,not in catalog for asset
 RevUSD,eth,wanted,UNAVAILABLE,not in catalog for asset
-IssTotUSD,eth,wanted,OK,4063 rows
-HashRate,eth,wanted,OK,2604 rows
+IssTotUSD,eth,wanted,OK,32 rows
+HashRate,eth,wanted,OK,31 rows
 DiffMean,eth,wanted,UNAVAILABLE,not in catalog for asset
 NVTAdj90,eth,wanted,UNAVAILABLE,not in catalog for asset
 VtyDayRet30d,eth,wanted,UNAVAILABLE,not in catalog for asset
-AdrBalCnt,eth,extra,OK,4072 rows
-BlkCnt,eth,extra,OK,4072 rows
-FeeTotNtv,eth,extra,OK,4072 rows
-FlowInExNtv,eth,extra,OK,4072 rows
-FlowInExUSD,eth,extra,OK,4063 rows
-FlowOutExNtv,eth,extra,OK,4072 rows
-FlowOutExUSD,eth,extra,OK,4063 rows
-IssTotNtv,eth,extra,OK,4072 rows
-ROI1yr,eth,extra,OK,3698 rows
-ROI30d,eth,extra,OK,4033 rows
-SplyExNtv,eth,extra,OK,4072 rows
-SplyExUSD,eth,extra,OK,4063 rows
-TxTfrCnt,eth,extra,OK,4072 rows
-volume_reported_spot_usd_1d,eth,extra,OK,4063 rows
-PriceBTC,eth,extra,OK,4063 rows
+AdrBalCnt,eth,extra,OK,32 rows
+BlkCnt,eth,extra,OK,32 rows
+FeeTotNtv,eth,extra,OK,32 rows
+FlowInExNtv,eth,extra,OK,32 rows
+FlowInExUSD,eth,extra,OK,32 rows
+FlowOutExNtv,eth,extra,OK,32 rows
+FlowOutExUSD,eth,extra,OK,32 rows
+IssTotNtv,eth,extra,OK,32 rows
+ROI1yr,eth,extra,OK,32 rows
+ROI30d,eth,extra,OK,32 rows
+SplyExNtv,eth,extra,OK,32 rows
+SplyExUSD,eth,extra,OK,32 rows
+TxTfrCnt,eth,extra,OK,32 rows
+volume_reported_spot_usd_1d,eth,extra,OK,32 rows
+PriceBTC,eth,extra,OK,32 rows

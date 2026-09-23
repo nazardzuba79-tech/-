@@ -1,0 +1,78 @@
+[
+  {
+    "source": "alternative_me",
+    "url": "https://api.alternative.me/fng/?limit=1",
+    "command": [
+      "curl",
+      "--max-time",
+      "20",
+      "-sS",
+      "-o",
+      "/dev/null",
+      "-w",
+      "%{http_code}\n",
+      "https://api.alternative.me/fng/?limit=1"
+    ],
+    "returncode": 0,
+    "stdout": "200\n",
+    "stderr": "",
+    "at_utc": "2026-09-23T16:55:22.056356+00:00"
+  },
+  {
+    "source": "coinmetrics",
+    "url": "https://community-api.coinmetrics.io/v4/catalog-v2/asset-metrics?assets=btc",
+    "command": [
+      "curl",
+      "--max-time",
+      "20",
+      "-sS",
+      "-o",
+      "/dev/null",
+      "-w",
+      "%{http_code}\n",
+      "https://community-api.coinmetrics.io/v4/catalog-v2/asset-metrics?assets=btc"
+    ],
+    "returncode": 0,
+    "stdout": "200\n",
+    "stderr": "",
+    "at_utc": "2026-09-23T16:55:22.034502+00:00"
+  },
+  {
+    "source": "binance",
+    "url": "https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1",
+    "command": [
+      "curl",
+      "--max-time",
+      "20",
+      "-sS",
+      "-o",
+      "/dev/null",
+      "-w",
+      "%{http_code}\n",
+      "https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1"
+    ],
+    "returncode": 0,
+    "stdout": "451\n",
+    "stderr": "",
+    "at_utc": "2026-09-23T16:55:22.002489+00:00"
+  },
+  {
+    "source": "fred",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL",
+    "command": [
+      "curl",
+      "--max-time",
+      "20",
+      "-sS",
+      "-o",
+      "/dev/null",
+      "-w",
+      "%{http_code}\n",
+      "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WALCL"
+    ],
+    "returncode": 0,
+    "stdout": "200\n",
+    "stderr": "",
+    "at_utc": "2026-09-23T16:55:22.033851+00:00"
+  }
+]

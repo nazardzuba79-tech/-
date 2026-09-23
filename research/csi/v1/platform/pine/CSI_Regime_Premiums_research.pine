@@ -1,0 +1,55 @@
+//@version=6
+// CSI Regime Premiums (RESEARCH-ONLY).
+// STATUS: written for Pine v6; syntax-checked offline with an independent parser; NOT compiled in TradingView by the author.
+// The parent REGIME system FAILED the pre-registered walk-forward test (pooled out-of-sample IC 2014-2022 = -0.02).
+// This script only lets you watch the two v2 REGIME inputs that exist in TradingView:
+//   Coinbase premium, 30-day mean (higher = more favourable)  and  Kimchi premium, 30-day mean (higher = less favourable).
+// Missing symbols are skipped (ignore_invalid_symbol) and the score uses what is available.
+indicator("CSI Режим: премії (дослідження)", shorttitle="CSI Premiums", overlay=false)
+
+symCB = input.symbol("COINBASE:BTCUSD", "Coinbase BTC/USD")
+symBS = input.symbol("BITSTAMP:BTCUSD", "Bitstamp BTC/USD")
+symUP = input.symbol("UPBIT:BTCKRW", "Upbit BTC/KRW")
+symFX = input.symbol("FX_IDC:USDKRW", "Курс USD/KRW")
+winPR = input.int(365, "Вікно перцентиля, днів", minval=90)
+
+cb = request.security(symCB, "D", close, ignore_invalid_symbol=true)
+bs = request.security(symBS, "D", close, ignore_invalid_symbol=true)
+up = request.security(symUP, "D", close, ignore_invalid_symbol=true)
+fx = request.security(symFX, "D", close, ignore_invalid_symbol=true)
+
+cbPrem = ta.sma(cb / bs - 1, 30)
+kimchi = ta.sma(up / fx / cb - 1, 30)
+
+f_pr(float src, int len) =>
+    float raw = ta.percentrank(src, len)
+    float valid = ta.cum(na(src) ? 0 : 1)
+    valid > len ? raw : na
+
+p1 = f_pr(cbPrem, winPR)
+p2 = f_pr(kimchi, winPR)
+p2inv = na(p2) ? na : 100 - p2
+
+float acc = 0.0
+int cnt = 0
+if not na(p1)
+    acc += p1
+    cnt += 1
+if not na(p2inv)
+    acc += p2inv
+    cnt += 1
+score = cnt >= 1 ? acc / cnt : na
+
+plot(score, "Премії 0..100 (100 = сприятливо)", color=color.teal, linewidth=2)
+plot(cbPrem * 100, "Coinbase premium 30д, %", color=color.new(color.blue, 60), display=display.data_window)
+plot(kimchi * 100, "Kimchi premium 30д, %", color=color.new(color.orange, 60), display=display.data_window)
+hline(50, "Середина", color=color.gray)
+
+var table t = table.new(position.top_right, 2, 3, border_width=1)
+if barstate.islast
+    table.cell(t, 0, 0, "Премії", bgcolor=color.gray, text_color=color.white)
+    table.cell(t, 1, 0, na(score) ? "-" : str.tostring(score, "#"))
+    table.cell(t, 0, 1, "Coinbase / Kimchi, %")
+    table.cell(t, 1, 1, (na(cbPrem) ? "-" : str.tostring(cbPrem * 100, "#.##")) + " / " + (na(kimchi) ? "-" : str.tostring(kimchi * 100, "#.##")))
+    table.cell(t, 0, 2, "Статус")
+    table.cell(t, 1, 2, "не пройшов перевірку")

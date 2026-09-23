@@ -1,3 +1,17 @@
+# CSI — CYCLE / REGIME / TACTICAL (research-only)
+
+## Стан після повторної перевірки v3 (2026-09-23) — читати першим
+- **Знайдено й виправлено помилки backtest** (найважливіша: для CYCLE експозиція була перевернута). Повний список з доказами: `docs/AUDIT_v3_UA.md`.
+- **Чесний walk-forward** (відбір компонентів лише на минулих даних, рік за роком): **жодна система не пройшла** зафіксований заздалегідь критерій. `walkforward/SUMMARY_UA.md`.
+- **ETH (раніше не бачені дані)**: REGIME формально пройшов, але лише завдяки 2016–2022; після 2023 ефекту немає, як і на BTC. `eth_transfer/SUMMARY_UA.md`.
+- **Джерело зникло**: BitMEX закрив XBTUSD/ETHUSD 2026-09-16 — компоненти funding у REGIME pruned і TACTICAL наживо недоступні.
+- **Що лишилось корисного**: простий тренд-фільтр 200D (стабільно менша просадка) і шкала циклу як контекст «дорого/дешево» (правильний напрям, але мало циклів для доказу).
+- TradingView: `platform/TRADINGVIEW_UA.md` (2 основні + 2 дослідницькі скрипти; власні результати кожного — `platform/replica/SUMMARY_UA.md`).
+- Прямий тест на майбутніх даних почато: `forward/README_UA.md`. Оновлення однією командою: `./update_all.sh` (тепер інкрементне).
+- Команди v3: `python -m csi.systems_v3`, `python -m csi.walkforward`, `python -m csi.eth_transfer`, `python -m csi.pine_replica`, `python -m csi.forward snapshot|verify|evaluate`.
+
+---
+
 # CSI v1 (+v2) — CYCLE / REGIME / TACTICAL: зібрані дані, перевірки, три системи (research-only)
 
 ## Оновлення v2 (2026-09-22): усе безкоштовне, що відповідає з цього середовища
