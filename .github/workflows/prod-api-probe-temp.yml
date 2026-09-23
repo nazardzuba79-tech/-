@@ -161,7 +161,7 @@ jobs:
           NODE
           echo "::endgroup::"
           echo "::group::market-live"
-          curl -sS -N --max-time 8 -D /tmp/lh -o /tmp/lb -H 'Origin: https://voltextech.net' 'https://api.voltextech.net/api/v1/market/live' || true
+          curl -sS -N --compressed --max-time 20 -w '\nTRANSFER_BYTES=%{size_download}\n' -D /tmp/lh -o /tmp/lb -H 'Origin: https://voltextech.net' 'https://api.voltextech.net/api/v1/market/live' || true
           sed -n '1,30p' /tmp/lh || true
           head -c 3000 /tmp/lb || true
           echo
