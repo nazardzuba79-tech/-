@@ -139,13 +139,14 @@ class DirectFuturesReferenceStore {
   }
 
   private onVisibility = (): void => {
-    if (document.hidden) {
-      if (this.timer) clearTimeout(this.timer);
-      this.timer = null;
-      this.controller?.abort();
-      return;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    const active = this.controller;
+    if (active) {
+      active.abort();
+      if (this.controller === active) this.controller = null;
     }
-    this.schedule(0);
+    if (!document.hidden) this.schedule(0);
   };
 
   private attachVisibility(): void {
