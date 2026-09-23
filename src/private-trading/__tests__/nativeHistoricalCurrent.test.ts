@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { actor, setup, key, H, H0, M, outcome } from '../native/testing/liveFixture';
-import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_COMPACT_MIN, NATIVE_OBSERVE_COMPACT_RETRY_MS, supersededObservations } from '../native/service';
+import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS, NATIVE_OBSERVE_COMPACT_MIN, NATIVE_OBSERVE_COMPACT_RETRY_MS, supersededObservations } from '../native/service';
 import { demoPositionView } from '../native/engine';
 import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateMarketDataError, PrivateTradingMarketData } from '../marketData';
 import { CommandScope, commandScope } from '../native/commandScope';
@@ -317,10 +317,14 @@ describe('an open historical account does not grow its journal with every price'
     expect(bloated.commands.filter(c=>c.kind==='OBSERVE'&&c.at===fill.time).every(c=>!drop.has(c.id))).toBe(true);
     // A transient history transport failure must not blacklist this unchanged revision forever.
     const commitsBeforeCompaction=f.repo.commits,revisionBeforeCompaction=f.repo.row!.revision;
-    const history=jest.spyOn(f.market,'history').mockRejectedValueOnce(new TypeError('fetch failed'));
+    const history=jest.spyOn(f.market,'history');
+    for(let i=0;i<NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS;i++)history.mockRejectedValueOnce(new TypeError('fetch failed'));
     f.clock.t+=10_000;f.market.price='81501';await f.refresh();
     // REFRESH did not await the verifier; awaiting the same queued background task is test-only.
     await (f.service as any).scheduleHistoricalCompaction(actor);
+    // Background cleanup retries the transient read inside its own budget, then backs off
+    // only after the bounded retry set is exhausted.
+    expect(history).toHaveBeenCalledTimes(NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS);
     expect(f.repo.commits).toBe(commitsBeforeCompaction);
     expect(f.repo.row!.revision).toBe(revisionBeforeCompaction);
     expect(f.repo.row!.commands.length).toBeGreaterThan(300);
