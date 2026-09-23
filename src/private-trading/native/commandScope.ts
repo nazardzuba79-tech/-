@@ -39,3 +39,6 @@ export const commandScope=()=>local.getStore();
 export const commandCheck=()=>local.getStore()?.check();
 export const commandSignal=()=>local.getStore()?.controller.signal;
 export const commandRead=<T>(stage:string,task:()=>Promise<T>):Promise<T>=>local.getStore()?.read(stage,task)??task();
+
+/** Run non-financial background maintenance outside any request deadline/abort context. */
+export const withoutCommandScope=<T>(task:()=>T):T=>local.exit(task);
