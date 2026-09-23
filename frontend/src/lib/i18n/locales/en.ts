@@ -1180,6 +1180,7 @@ export const EN: Record<Key, string> = {
   'futures.orderError.commandLimit': 'The account\'s operation limit has been reached.',
   'futures.orderError.accountMissing': 'No trading account is connected.',
   'futures.orderError.priceUnavailable': 'The contract\'s current price is unavailable or out of date right now. Try again in a few seconds.',
+  'futures.orderError.serverUnavailable': 'The server is restarting and did not answer. Check your orders and try again in a minute.',
   'futures.orderError.busy': 'The previous operation is still running. Try again in a second.',
   'futures.orderError.reduceSide': 'A reducing order must target the same position, on the opposite side and in the same margin mode.',
   'futures.orderError.executionMode': 'The account holds a position or order of another execution mode. Close them and try again.',
