@@ -5,6 +5,8 @@ import { ageCfdTickerRows } from './cfdPresentation';
 import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
 const POLL_MS=6 * 60 * 60 * 1000;
+const MARKET_EDGE_BASE='https://market.voltextech.net';
+const production=()=>typeof window!=='undefined'&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
 function numericString(value:unknown):string|null{if(typeof value==='number')return Number.isFinite(value)?String(value):null;if(typeof value!=='string')return null;return value.trim()!==''&&Number.isFinite(Number(value))?value:null;}
 
 function parseTickerPayload(value:unknown):CfdTickerRow[]|null{
@@ -33,11 +35,12 @@ export function useCfdTickers(enabled = true){
       if(cancelled||document.hidden||inFlight)return;
       inFlight=true;lastAttempt=Date.now();let delay=POLL_MS;
       try{
-        const res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(`${API_BASE}/cfd/display/tickers`,SLOW_DISPLAY_REFRESH_MS);
+        const endpoint=`${production()?MARKET_EDGE_BASE:API_BASE}/cfd/display/tickers`;
+        const res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(endpoint,SLOW_DISPLAY_REFRESH_MS);
         if(cancelled)return;
         const rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
         if(rows===null)throw new Error('Invalid CFD snapshot');
-        delay=displayRefreshDelay(`${API_BASE}/cfd/display/tickers`,SLOW_DISPLAY_REFRESH_MS);
+        delay=displayRefreshDelay(`${production()?MARKET_EDGE_BASE:API_BASE}/cfd/display/tickers`,SLOW_DISPLAY_REFRESH_MS);
         setLoadError(false);if(typeof res.configured==='boolean')setConfigured(res.configured);
         setTickers(rows.map(row=>({...row,status:row.price===null?'unavailable':row.marketClosed?'market_closed':'sampled',displayOnly:true,executionAllowed:false})));
       }catch{if(!cancelled){setLoadError(true);setTickers(old=>old.map(row=>({...row,status:'stale',stale:true})));}delay=60_000;}
