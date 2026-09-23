@@ -3,18 +3,6 @@ import worker from "./src/index.js";
 
 const makeBook = () => Array.from({ length: 50 }, (_, i) => [String(100 - i / 100), String(i + 1)]);
 const makeAsks = () => Array.from({ length: 50 }, (_, i) => [String(101 + i / 100), String(i + 1)]);
-const renderBook = () => ({
-  available: true,
-  symbol: "BTCUSDT",
-  source: "bybit",
-  fetchedAt: 1790150000000,
-  providerTime: 1790150000000,
-  stale: false,
-  updateId: 54321,
-  bids: makeBook().map(([price, quantity]) => ({ price, quantity })),
-  asks: makeAsks().map(([price, quantity]) => ({ price, quantity })),
-});
-
 async function run() {
   const originalFetch = globalThis.fetch;
   const originalCaches = globalThis.caches;
@@ -65,7 +53,7 @@ async function run() {
 
     const health = await worker.fetch(new Request("https://market.voltextech.net/health"));
     assert.equal(health.status, 200);
-    assert.deepEqual(await health.json(), { ok: true, service: "voltex-market-edge", version: "futures-edge-v4" });
+    assert.deepEqual(await health.json(), { ok: true, service: "voltex-market-edge", version: "futures-edge-direct-v5" });
 
     const book = await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-book/BTCUSDT", {
       headers: { authorization: "Bearer must-not-forward", cookie: "session=must-not-forward" },
@@ -95,42 +83,24 @@ async function run() {
     assert.equal(providerCalls, 4);
     assert.ok(providerUrls.every((url) => !url.includes("onrender.com")));
 
-    // A venue may reject a Cloudflare egress location. Book/trade fallback is
-    // still public-only and never forwards browser auth/cookies to Render.
+    // A venue may reject a Cloudflare egress location. Fail closed:
+    // never route public display traffic back through Render or Neon.
     const fallbackUrls = [];
     globalThis.fetch = async (url, options = {}) => {
       fallbackUrls.push(String(url));
       assert.equal(options.headers?.authorization, undefined);
       assert.equal(options.headers?.cookie, undefined);
       const u = new URL(url);
-      if (u.hostname === "api.bybit.com" || u.hostname === "api.bytick.com") {
-        return new Response("forbidden", { status: 403 });
-      }
-      if (u.hostname === "voltex-api.onrender.com" && u.pathname.endsWith("/market/display/futures-book/BTCUSDT")) {
-        return new Response(JSON.stringify(renderBook()), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      if (u.hostname === "voltex-api.onrender.com" && u.pathname.endsWith("/market/display/futures-trades/BTCUSDT")) {
-        return new Response(JSON.stringify({
-          symbol: "BTCUSDT",
-          trades: [{ id: "rt1", price: "100.4", quantity: "0.2", time: 1790150000456, side: "SELL" }],
-        }), { status: 200, headers: { "content-type": "application/json" } });
-      }
-      throw new Error(`unexpected fallback request ${url}`);
+      assert.ok(["api.bybit.com", "api.bytick.com"].includes(u.hostname));
+      return new Response("forbidden", { status: 403 });
     };
 
-    const fallbackBook = await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-book/BTCUSDT?fallback-test=1"));
-    assert.equal(fallbackBook.status, 200);
-    const fallbackBody = await fallbackBook.json();
-    assert.equal(fallbackBody.symbol, "BTCUSDT");
-    assert.equal(fallbackBody.bids.length, 25);
-    assert.equal(fallbackBody.asks.length, 25);
-    assert.equal(fallbackBody.updateId, 54321);
-
-    const fallbackTrades = await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-trades/BTCUSDT?fallback-test=1"));
-    assert.equal(fallbackTrades.status, 200);
-    assert.equal((await fallbackTrades.json()).trades[0].id, "rt1");
-    assert.ok(fallbackUrls.some((url) => url.startsWith("https://voltex-api.onrender.com/")));
-    assert.ok(fallbackUrls.every((url) => !url.includes("api.voltextech.net")));
+    const failedBook = await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-book/BTCUSDT?fail-closed=1"));
+    assert.equal(failedBook.status, 503);
+    const failedTrades = await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-trades/BTCUSDT?fail-closed=1"));
+    assert.equal(failedTrades.status, 503);
+    assert.ok(fallbackUrls.length >= 4);
+    assert.ok(fallbackUrls.every((url) => !url.includes("onrender.com") && !url.includes("api.voltextech.net")));
 
     const badMethod = await worker.fetch(new Request("https://market.voltextech.net/health", { method: "POST" }));
     assert.equal(badMethod.status, 405);
