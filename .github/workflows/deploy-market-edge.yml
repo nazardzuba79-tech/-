@@ -73,7 +73,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
       - name: Production deployment identity and isolation smoke
         run: |
-          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v2')process.exit(1)})"
+          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='futures-edge-direct-v6')process.exit(1)})"
           test "$(curl -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)" = "404"
 
 
@@ -84,7 +84,7 @@ jobs:
     steps:
       - name: Confirm deployed Worker version and private-route isolation
         run: |
-          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v2')process.exit(1)})"
+          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='futures-edge-direct-v6')process.exit(1)})"
           test "$(curl -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)" = "404"
           # Provider-backed market endpoints are contract-tested in verify.
           # GitHub-hosted runners are in US regions where Bybit explicitly blocks public API requests; checking them here would be a geo false-negative.
