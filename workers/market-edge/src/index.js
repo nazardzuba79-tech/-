@@ -56,9 +56,7 @@ async function publicJson(url) {
   const response = await fetch(url, {
     method: "GET",
     headers: { accept: "application/json" },
-    redirect: "error",
-    signal: AbortSignal.timeout(7000),
-    cf: { cacheEverything: true, cacheTtl: EDGE_TTL_SECONDS },
+    redirect: "follow",
   });
   if (!response.ok) throw new Error(`provider_http_${response.status}`);
   return response.json();
