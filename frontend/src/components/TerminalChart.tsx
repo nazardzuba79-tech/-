@@ -3,6 +3,7 @@ import { PriceChart } from './PriceChart';
 import { TradingViewAdvancedChart } from './TradingViewAdvancedChart';
 import { TradingViewRulerLayer } from './TradingViewRulerLayer';
 import { getFuturesCandles } from '../lib/futuresCandles';
+import { getSpotCandles } from '../lib/spotCandles';
 import { useLanguage } from '../lib/i18n';
 import type { ChartCandleLoader, ChartPositionLine, ChartTradingInteraction } from '../lib/chartTrading';
 import './TerminalChart.css';
@@ -44,7 +45,7 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
       ? <TradingViewRulerLayer>
           <PriceChart key={`${market}:${pair}`} pair={pair} chrome="terminal" drawingTools market={market} compactTools={compactTools}
             privateTrading={privateTrading} positionLines={positionLines}
-            candleLoader={candleLoader ?? (market==='futures'?getFuturesCandles:undefined)} />
+            candleLoader={candleLoader ?? (market==='futures'?getFuturesCandles:getSpotCandles)} />
         </TradingViewRulerLayer>
       : <TradingViewAdvancedChart key={`${market}:${pair}`} pair={pair} market={market} />}
   </div>;
