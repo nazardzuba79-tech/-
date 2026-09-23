@@ -51,3 +51,6 @@ manual workflow run.
 
 Commits on the isolated branch start with `[CF-Pages-Skip]` so the existing
 Cloudflare Pages frontend is not rebuilt by Worker-only changes.
+
+
+Fallback order-book recovery uses the existing collector-backed public API route only after both direct Bybit hosts fail. Normal production browser traffic never depends on this fallback.
