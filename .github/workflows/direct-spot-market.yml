@@ -1,0 +1,39 @@
+name: Direct Spot public market data
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/lib/spotPublicMarket.ts'
+      - 'frontend/src/lib/__tests__/spotPublicMarket.test.ts'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/components/TerminalChart.tsx'
+      - 'workers/market-edge/**'
+      - '.github/workflows/direct-spot-market.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  direct-spot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Direct Spot parser and existing terminal regression tests
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          frontend/src/lib/__tests__/spotPublicMarket.test.ts
+          frontend/src/lib/__tests__/spotOrderBook.test.ts
+          frontend/src/lib/__tests__/futuresUiPolish.test.ts
+      - name: Production frontend build
+        run: npm run build --prefix frontend
+      - name: Worker public-market contract
+        run: node --experimental-default-type=module workers/market-edge/test.mjs
