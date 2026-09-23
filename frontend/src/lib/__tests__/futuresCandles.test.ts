@@ -1,15 +1,20 @@
 import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
-const output:any={};
+const output:any={};let klineCallback:any=null;
 const source=fs.readFileSync(path.resolve(__dirname,'../futuresCandles.ts'),'utf8').replace('import.meta.env.VITE_API_URL',"'/api/v1'");
-new Function('exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(output);
+const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+new Function('exports','require',compiled)(output,(name:string)=>{
+  if(name==='./futuresDepth')return {subscribeFuturesKline:(_pair:string,_interval:string,callback:any)=>{klineCallback=callback;return()=>{klineCallback=null;}}};
+  throw new Error(`unexpected require ${name}`);
+});
 const {getFuturesCandles,parseFuturesCandles}=output;
+const productionHost=()=>Object.defineProperty(globalThis,'window',{configurable:true,writable:true,value:{location:{hostname:'voltextech.net'}}});
 const frame = (symbol='1000PEPEUSDT') => ({retCode:0,result:{category:'linear',symbol,list:[
   ['1700000900000','0.0034','0.0035','0.0033','0.00345','0'],
   ['1700000000000','0.0033','0.0035','0.0032','0.0034','123'],
 ]}});
-afterEach(()=>jest.restoreAllMocks());
+afterEach(()=>{jest.restoreAllMocks();klineCallback=null;Reflect.deleteProperty(globalThis,'window');});
 test('preserves exact tiny OHLC, zero volume, and chronological order',()=>{
   const {candles}=parseFuturesCandles(frame(),'1000PEPEUSDT');
   expect(candles.map((c:any)=>c.time)).toEqual([1700000000,1700000900]);
@@ -30,6 +35,7 @@ test('rejects inconsistent OHLC and duplicate times',()=>{
   const d=frame();d.result.list.push(d.result.list[0]);expect(()=>parseFuturesCandles(d,'1000PEPEUSDT')).toThrow();
 });
 test('requests Bybit candles directly with provider interval and no credentials',async()=>{
+  productionHost();
   const mocked=jest.spyOn(globalThis,'fetch').mockResolvedValue({ok:true,json:async()=>frame()} as Response);
   const controller=new AbortController();const endTime=1700000900000;
   await getFuturesCandles('1000PEPE/USDT','4h',520,controller.signal,endTime);
@@ -43,6 +49,7 @@ test('requests Bybit candles directly with provider interval and no credentials'
   expect(options).toEqual({signal:controller.signal,credentials:'omit',headers:{Accept:'application/json'}});
 });
 test('falls back only to Cloudflare edge when direct public Bybit hosts fail',async()=>{
+  productionHost();
   const mocked=jest.spyOn(globalThis,'fetch').mockImplementation(async(url:any)=>{
     const host=new URL(String(url)).hostname;
     if(host==='api.bybit.com'||host==='api.bytick.com')return {ok:false,status:403,json:async()=>({})} as Response;
@@ -63,4 +70,18 @@ test('Futures terminal display candles are not coupled to private execution auth
   const page=fs.readFileSync(path.resolve(__dirname,'../../pages/FuturesPage.tsx'),'utf8');
   expect(page).not.toContain('candleLoader={nativeExecution?native.loader:undefined}');
   expect(page).toContain('privateTrading={nativeExecution ? native.interaction : undefined}');
+});
+
+
+test('reuses REST history while shared WebSocket updates the live candle',async()=>{
+  productionHost();
+  const mocked=jest.spyOn(globalThis,'fetch').mockResolvedValue({ok:true,json:async()=>frame()} as Response);
+  const first=await getFuturesCandles('1000PEPE/USDT','1h',320);
+  expect(mocked).toHaveBeenCalledTimes(1);
+  expect(typeof klineCallback).toBe('function');
+  klineCallback({symbol:'1000PEPEUSDT',interval:'1h',time:1700003600,open:.00345,high:.0037,low:.0034,close:.0036,volume:55,confirm:false,updatedAt:1700003650000});
+  const second=await getFuturesCandles('1000PEPE/USDT','1h',320);
+  expect(mocked).toHaveBeenCalledTimes(1);
+  expect(second.candles[second.candles.length-1]).toEqual({time:1700003600,open:.00345,high:.0037,low:.0034,close:.0036,volume:55});
+  expect(first.candles.length).toBeGreaterThan(0);
 });
