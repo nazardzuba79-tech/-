@@ -34,7 +34,6 @@ export function publicDisplayCache(ttlMs: number, valid: (body: any) => boolean,
   };
   return async (req, res, next) => {
     if (req.method !== 'GET') { next(); return; }
-    // Each middleware instance belongs to an explicit alias, with no personal query parameters.
     const key = req.originalUrl;
     if (key.length > 512) { res.status(400).json({ error: 'display_query_too_long' }); return; }
     const cached = entries.get(key);
@@ -66,13 +65,20 @@ export function publicDisplayCache(ttlMs: number, valid: (body: any) => boolean,
           return originalJson(body);
         }
         const at = now();
+        // A cold provider can return some instruments before the rest have warmed.
+        // Keep received prices visible but give the FIRST partial six-hour ticker
+        // snapshot one shared retry after 30s. No per-visitor retry, changed
+        // provider timestamp or recurring fast poll is introduced.
+        const partialColdTickers = ttlMs === SLOW_DISPLAY_REFRESH_MS && !entries.has(key)
+          && Array.isArray(body.tickers) && body.tickers.some((row: any) => row.price === null);
+        const effectiveTtlMs = partialColdTickers ? 30_000 : ttlMs;
         const data = { ...body, _display: { mode: 'snapshot', capturedAt: at, refreshMs: ttlMs } };
         const raw = Buffer.from(JSON.stringify(data));
         if (raw.length > 2 * 1024 * 1024) {
           return res.status(503).send({ error: 'display_snapshot_too_large' });
         }
         const compressed = gzipSync(raw);
-        const entry: Entry = { at, expires: at + ttlMs, raw, gzip: compressed,
+        const entry: Entry = { at, expires: at + effectiveTtlMs, raw, gzip: compressed,
           etag: `W/\"${createHash('sha256').update(raw).digest('hex')}\"` };
         remove(key);
         while (entries.size >= 64 || bytes + raw.length + compressed.length > maxBytes) remove(entries.keys().next().value!);
