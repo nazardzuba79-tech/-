@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { actor, setup, key, H, H0, M, outcome } from '../native/testing/liveFixture';
-import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_COMPACT_MIN, supersededObservations } from '../native/service';
+import { NativeCommand, NativeDemoService, NATIVE_OBSERVE_COMPACT_MIN, NATIVE_OBSERVE_COMPACT_RETRY_MS, supersededObservations } from '../native/service';
 import { demoPositionView } from '../native/engine';
 import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateMarketDataError, PrivateTradingMarketData } from '../marketData';
 import { deriveNativeLiveProjection, projectionDigest, verifiedProjection } from '../native/liveProjection';
@@ -295,9 +295,16 @@ describe('an open historical account does not grow its journal with every price'
     // The observation that filled the order is never a candidate.
     const fill=before.events.find(e=>e.kind==='CLOSE')!;
     expect(bloated.commands.filter(c=>c.kind==='OBSERVE'&&c.at===fill.time).every(c=>!drop.has(c.id))).toBe(true);
-    // A normal REFRESH must persist a verified compaction even when no financial outcome changes.
-    const commitsBeforeCompaction=f.repo.commits;
+    // A transient history transport failure must not blacklist this unchanged revision forever.
+    const commitsBeforeCompaction=f.repo.commits,revisionBeforeCompaction=f.repo.row!.revision;
+    const history=jest.spyOn(f.market,'history').mockRejectedValueOnce(new TypeError('fetch failed'));
     f.clock.t+=10_000;f.market.price='81501';await f.refresh();
+    expect(f.repo.commits).toBe(commitsBeforeCompaction);
+    expect(f.repo.row!.revision).toBe(revisionBeforeCompaction);
+    expect(f.repo.row!.commands.length).toBeGreaterThan(300);
+    history.mockRestore();
+    // Same revision, after the transient cooldown: verification retries and the ordinary REFRESH persists it.
+    f.clock.t+=NATIVE_OBSERVE_COMPACT_RETRY_MS+1;f.market.price='81502';await f.refresh();
     const row=f.repo.row!;
     expect(f.repo.commits).toBe(commitsBeforeCompaction+1);
     expect(row.commands.length).toBeLessThan(20);
