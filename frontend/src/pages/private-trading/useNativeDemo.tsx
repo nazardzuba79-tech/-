@@ -4,6 +4,7 @@ import { getToken,onSessionChange } from '../../lib/api';
 import { nativeDemoApi,type NativeState,type NativeDraft,type NativePosition,type NativeEvent } from '../../lib/nativeDemoApi';
 import { PrivateTradingError,privateTradingApi,privateErrorText,type PrivateResultCard } from '../../lib/privateTradingApi';
 import { NativeCommandLane,acceptsRevision } from '../../lib/nativeCommandLane';
+import { withNativeTransportRetry } from '../../lib/nativeTransportRetry';
 import { chartExits } from '../../lib/nativeChartExits';
 import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCandleLoader } from '../../lib/chartTrading';
 import { compactNativeUiState,shouldPollNativeLive,NATIVE_LIVE_POLL_MS } from '../../lib/nativeLivePolicy';
@@ -144,7 +145,11 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
       if(orphaned())throw new PrivateTradingError('Сессия завершена',401,'session_ended');
       if(!refresh){errorRef.current='';setError('');}
       let key=attempts.current.get(fingerprint);if(!key){key=crypto.randomUUID();attempts.current.set(fingerprint,key);}
-      const next=refresh?await nativeDemoApi.live():await nativeDemoApi.command(draft,key);
+      // A restarting server is retried under the same key; a refusal is not (see nativeTransportRetry).
+      const next=refresh?await nativeDemoApi.live():await withNativeTransportRetry(()=>{
+        if(orphaned())throw new PrivateTradingError('Сессия завершена',401,'session_ended');
+        return nativeDemoApi.command(draft,key!);
+      });
       if(orphaned())throw new PrivateTradingError('Сессия завершена',401,'session_ended');
       attempts.current.delete(fingerprint);commitState(next);return next;
     };

@@ -153,6 +153,9 @@ export function futuresOrderErrorMessage(error: unknown, t: Translate, fallback:
 
   const key = error.code ? CODE_KEY[error.code] : undefined;
   if (key) return t(key);
+  // No code and a gateway status: the host answered for an API that was
+  // restarting, after the command had already been retried under its key.
+  if (!error.code && [502, 503, 504].includes(error.status)) return t('futures.orderError.serverUnavailable');
 
   // A code with no entry above is a gap in this table, not something to
   // show. The server's own sentence is not a safe substitute either: it is

@@ -1174,6 +1174,7 @@ export const ZH: Record<Key, string> = {
   'futures.orderError.commandLimit': '已达到账户操作次数上限。',
   'futures.orderError.accountMissing': '未连接交易账户。',
   'futures.orderError.priceUnavailable': '合约当前价格暂不可用或已过期，请几秒后重试。',
+  'futures.orderError.serverUnavailable': '服务器正在重启，未作出响应。请检查订单，并在一分钟后重试。',
   'futures.orderError.busy': '上一操作仍在执行，请稍后重试。',
   'futures.orderError.reduceSide': '减仓订单必须针对同一仓位、方向相反且保证金模式相同。',
   'futures.orderError.executionMode': '账户中存在其他执行模式的仓位或订单，请先关闭后重试。',

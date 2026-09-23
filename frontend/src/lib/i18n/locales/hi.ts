@@ -1151,6 +1151,7 @@ export const HI: Record<Key, string> = {
   'futures.orderError.commandLimit': 'खाते की संचालन सीमा पूरी हो गई है।',
   'futures.orderError.accountMissing': 'कोई ट्रेडिंग खाता जुड़ा नहीं है।',
   'futures.orderError.priceUnavailable': 'कॉन्ट्रैक्ट का वर्तमान भाव अभी उपलब्ध नहीं है या पुराना है। कुछ सेकंड बाद फिर से प्रयास करें।',
+  'futures.orderError.serverUnavailable': 'सर्वर पुनः आरंभ हो रहा है और उसने उत्तर नहीं दिया। अपने ऑर्डर जाँचें और एक मिनट बाद फिर से प्रयास करें।',
   'futures.orderError.busy': 'पिछला ऑपरेशन अभी चल रहा है। एक सेकंड बाद फिर से प्रयास करें।',
   'futures.orderError.reduceSide': 'घटाने वाला ऑर्डर उसी पोज़िशन पर, विपरीत दिशा में और उसी मार्जिन मोड में होना चाहिए।',
   'futures.orderError.executionMode': 'खाते में दूसरे निष्पादन मोड की पोज़िशन या ऑर्डर है। उन्हें बंद करके फिर से प्रयास करें।',

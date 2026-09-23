@@ -1151,6 +1151,7 @@ export const JA: Record<Key, string> = {
   'futures.orderError.commandLimit': '口座の操作回数の上限に達しました。',
   'futures.orderError.accountMissing': '取引口座が接続されていません。',
   'futures.orderError.priceUnavailable': '契約の現在価格が取得できないか古くなっています。数秒後にもう一度お試しください。',
+  'futures.orderError.serverUnavailable': 'サーバーが再起動中で応答しませんでした。注文を確認し、1分後にもう一度お試しください。',
   'futures.orderError.busy': '前の操作がまだ実行中です。1秒後にもう一度お試しください。',
   'futures.orderError.reduceSide': '縮小注文は同じポジションに対して、反対側かつ同じ証拠金モードで出す必要があります。',
   'futures.orderError.executionMode': '口座に別の執行モードのポジションまたは注文があります。それらを閉じてからもう一度お試しください。',
