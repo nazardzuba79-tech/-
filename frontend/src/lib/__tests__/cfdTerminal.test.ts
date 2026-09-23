@@ -27,7 +27,7 @@ function mount(file:string,options:any={}){
       const module:any={};const code=ts.transpileModule(read('lib/useCompactAccountPanel.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
       new Function('require','exports',code)(()=>react,module);return module;
     }
-    if(name.endsWith('/displaySnapshotCache'))return{displayRefreshDelay:()=>6*60*60*1000,SLOW_DISPLAY_REFRESH_MS:6*60*60*1000};
+    if(name.endsWith('/displaySnapshotCache'))return{displayRefreshDelay:()=>6*60*60*1000,SLOW_DISPLAY_REFRESH_MS:6*60*60*1000,readDisplayJson:()=>api.getCfdTickers()};
     if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error,API_BASE:'/api/v1'};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
     if(name.endsWith('/priceChange'))return{parseChangePercentOrNull:(v:any)=>v==null?null:Number(v),parseChangePercent:Number};if(name.endsWith('/useCfdTickers'))return{useCfdTickers:()=>options.feed};if(name.endsWith('/krakenSocket'))return{krakenSocket:{subscribeBook:()=>()=>{}}};if(name.endsWith('/bookFreshness'))return bookFreshness;if(name.endsWith('/tradingMode'))return{rememberTradingMode:jest.fn()};if(name==='react-router-dom')return{useSearchParams:()=>[options.params]};if(name.endsWith('.css'))return{};
     if(name==='./Skeleton'){components.SkeletonRow??=()=>null;return{SkeletonRow:components.SkeletonRow};}
