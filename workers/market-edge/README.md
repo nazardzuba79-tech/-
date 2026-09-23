@@ -23,3 +23,7 @@ or when started manually after the workflow is on the default branch.
 Commits on this branch must start with `[CF-Pages-Skip]` so Cloudflare Pages
 does not build them.
 Test deploy: 2026-09-23 (health only, owner-approved).
+
+
+Current Worker release marker: `futures-edge-v2`.
+The direct venue path falls back only to VOLTEX's public display snapshot through the direct Render service origin when the venue rejects the Cloudflare egress location.
