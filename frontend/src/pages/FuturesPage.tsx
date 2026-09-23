@@ -60,7 +60,6 @@ import './trade-terminal/FuturesMobile.css';
 // from localStorage and then reconcile it with the same network calls that
 // already existed — no extra request is introduced.
 const CORE_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
-const MARKET_EDGE_BASE = 'https://market.voltextech.net';
 
 // Orders and their history share /futures/orders/me with different filters.
 type BottomTab = 'orders' | 'positions' | 'orderHistory' | 'positionHistory' | 'assets';
@@ -400,7 +399,7 @@ export function FuturesPage() {
 
   // The depth module stays free of `import.meta` so it can be tested outside
   // the bundler; the page hands it the API origin the rest of the app uses.
-  useEffect(() => { setFuturesDepthFallbackBase(API_BASE, true, MARKET_EDGE_BASE); }, []);
+  useEffect(() => { setFuturesDepthFallbackBase(API_BASE, true); }, []);
 
   useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot }), incoming => {
     setTape(previous => ({symbol,rows:incoming.length ? [...incoming,...(previous.symbol===symbol?previous.rows:[])]
