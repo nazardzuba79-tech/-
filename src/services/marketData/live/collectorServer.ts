@@ -40,7 +40,8 @@ export function collectorServer(
   app.get('/internal/v1/snapshot', (_req,res) => res.json(source.snapshot()));
   const futuresCandles=new FuturesChartCandles();
   app.get('/internal/v1/futures/candles/:pair',async(req,res)=>{
-    try {res.json(await futuresCandles.get(req.params.pair,String(req.query.interval??'15m'),Number(req.query.limit??520)));}
+    try {res.json(await futuresCandles.get(req.params.pair,String(req.query.interval??'15m'),Number(req.query.limit??520),
+      req.query.endTime===undefined?undefined:Number(req.query.endTime)));}
     catch(error) {res.status(error instanceof RangeError?400:503).json({error:'candles_unavailable'});}
   });
   app.get('/internal/v1/futures/orderbook/:symbol', async (req,res) => {

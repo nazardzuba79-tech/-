@@ -36,7 +36,8 @@ export function marketRouter(
   });
   router.get('/market/futures/candles/:pair', async (req,res) => {
     try {
-      res.json(await futuresChartCandles.get(req.params.pair, String(req.query.interval ?? '15m'), Number(req.query.limit ?? 520)));
+      res.json(await futuresChartCandles.get(req.params.pair, String(req.query.interval ?? '15m'), Number(req.query.limit ?? 520),
+        req.query.endTime === undefined ? undefined : Number(req.query.endTime)));
     } catch(error) {
       res.status(error instanceof RangeError ? 400 : 503).json({error:'Candles unavailable'});
     }

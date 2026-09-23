@@ -613,8 +613,7 @@ export function FuturesPage() {
             >
               <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
                 privateTrading={nativeExecution ? native.interaction : undefined}
-                positionLines={chartPositionLines}
-                candleLoader={nativeExecution?native.loader:undefined} />
+                positionLines={chartPositionLines} />
               {nativeExecution && <button
                 type="button"
                 /* Touch has no double click. This is a compact control that

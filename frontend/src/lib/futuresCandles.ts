@@ -18,10 +18,12 @@ export function parseFuturesCandles(payload: any, symbol: string): { candles: Ca
   return { candles };
 }
 
-export async function getFuturesCandles(pair:string, interval:string, limit:number, signal?:AbortSignal):Promise<{candles:Candle[]}> {
-  if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair) || !intervals[interval]) throw new Error('Unsupported candle instrument');
+export async function getFuturesCandles(pair:string, interval:string, limit:number, signal?:AbortSignal, endTime?:number):Promise<{candles:Candle[]}> {
+  if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair) || !intervals[interval] ||
+      (endTime !== undefined && (!Number.isSafeInteger(endTime) || endTime <= 0))) throw new Error('Unsupported candle instrument');
   const symbol=pair.replace('/','');
-  const query=new URLSearchParams({interval,limit:String(Math.min(1000,Math.max(1,limit)))});
+  const query=new URLSearchParams({interval,limit:String(Math.min(1000,Math.max(1,limit))),
+    ...(endTime===undefined?{}:{endTime:String(endTime)})});
   const base=import.meta.env.VITE_API_URL || '/api/v1';
   const response=await fetch(`${base}/market/futures/candles/${pair.replace('/','-')}?${query}`,{signal,credentials:'omit'});
   if (!response.ok) throw new Error('Candles unavailable');
