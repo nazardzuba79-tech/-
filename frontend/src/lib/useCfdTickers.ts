@@ -6,7 +6,7 @@ import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
 const POLL_MS=6 * 60 * 60 * 1000;
 const MARKET_EDGE_BASE='https://market.voltextech.net';
-const production=()=>typeof window!=='undefined'&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
+const production=()=>typeof window!=='undefined'&&!!window.location&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
 function numericString(value:unknown):string|null{if(typeof value==='number')return Number.isFinite(value)?String(value):null;if(typeof value!=='string')return null;return value.trim()!==''&&Number.isFinite(Number(value))?value:null;}
 
 function parseTickerPayload(value:unknown):CfdTickerRow[]|null{
