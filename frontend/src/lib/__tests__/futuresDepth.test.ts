@@ -1,7 +1,8 @@
 // The thresholds under test, read from the rules themselves. See bookFreshness.
 import { BOOK_STALE_AFTER_MS, BOOK_UNAVAILABLE_AFTER_MS } from '../bookFreshness';
 import {
-  FuturesDepthBook, subscribeFuturesDepth, parseFuturesTrades,
+  FuturesDepthBook, subscribeFuturesDepth, subscribeFuturesTicker, subscribeFuturesKline,
+  parseFuturesTrades, parseFuturesTickerFrame, parseFuturesKlineFrame,
   setFuturesDepthFallbackBase, closeFuturesDepth, DepthFrameError, DepthDesyncError,
   FLUSH_MS,
 } from '../futuresDepth';
@@ -99,6 +100,21 @@ describe('selected-contract depth lifecycle',()=>{
     expect(listener.mock.calls[1][0].source).toBe('socket');
     const late=ws.onmessage;stop();late({data:JSON.stringify(frame())});jest.advanceTimersByTime(60000);
     expect(listener).toHaveBeenCalledTimes(2);expect(ws.close).toHaveBeenCalled();expect(sockets).toHaveLength(1);
+  });
+
+  test('ticker and kline share the selected-contract socket without REST polling',()=>{
+    const depth=jest.fn(),ticker=jest.fn(),kline=jest.fn();
+    const stopDepth=subscribeFuturesDepth('BTC/USDT',depth);const ws=sockets[0];ws.onopen();ws.send.mockClear();
+    const stopTicker=subscribeFuturesTicker('BTC/USDT',ticker);
+    const stopKline=subscribeFuturesKline('BTC/USDT','1h',kline);
+    expect(sockets).toHaveLength(1);
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['tickers.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['kline.60.BTCUSDT']}));
+    ws.onmessage({data:JSON.stringify({topic:'tickers.BTCUSDT',type:'snapshot',ts:now,data:{symbol:'BTCUSDT',lastPrice:'101.5',markPrice:'101.4',price24hPcnt:'0.01'}})});
+    ws.onmessage({data:JSON.stringify({topic:'kline.60.BTCUSDT',type:'snapshot',ts:now,data:[{start:now-3600000,interval:'60',open:'100',high:'102',low:'99',close:'101.5',volume:'12',confirm:false,timestamp:now}]})});
+    expect(ticker).toHaveBeenCalledWith(expect.objectContaining({symbol:'BTCUSDT',lastPrice:'101.5',markPrice:'101.4'}));
+    expect(kline).toHaveBeenCalledWith(expect.objectContaining({symbol:'BTCUSDT',interval:'1h',close:101.5,volume:12}));
+    stopTicker();stopKline();stopDepth();jest.advanceTimersByTime(1000);
   });
 
   test('a second subscriber to a live contract is handed the book, never an empty one',()=>{
@@ -347,4 +363,14 @@ test('trade frames require exact contract and positive real quantities',()=>{
  // A trade stamped by the venue's clock is not discarded because the
  // visitor's clock disagrees — the same skew bug the book had.
  expect(parseFuturesTrades(input({...good,T:now-3_600_000}),'BTCUSDT',now)).toHaveLength(1);
+});
+
+
+test('ticker and kline frame parsers reject identity swaps and malformed prices',()=>{
+  expect(parseFuturesTickerFrame({topic:'tickers.BTCUSDT',type:'snapshot',ts:now,data:{symbol:'BTCUSDT',lastPrice:'100'}},'BTCUSDT'))
+    .toMatchObject({symbol:'BTCUSDT',lastPrice:'100'});
+  expect(parseFuturesTickerFrame({topic:'tickers.ETHUSDT',type:'snapshot',ts:now,data:{symbol:'ETHUSDT',lastPrice:'100'}},'BTCUSDT')).toBeNull();
+  expect(parseFuturesKlineFrame({topic:'kline.60.BTCUSDT',data:[{start:now,interval:'60',open:'100',high:'102',low:'99',close:'101',volume:'3',confirm:false,timestamp:now}]},'BTCUSDT','1h'))
+    .toMatchObject({symbol:'BTCUSDT',interval:'1h',close:101});
+  expect(parseFuturesKlineFrame({topic:'kline.60.BTCUSDT',data:[{start:now,interval:'60',open:'100',high:'98',low:'99',close:'101',volume:'3'}]},'BTCUSDT','1h')).toBeNull();
 });
