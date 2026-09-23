@@ -1151,6 +1151,7 @@ export const KO: Record<Key, string> = {
   'futures.orderError.commandLimit': '계정의 작업 한도에 도달했습니다.',
   'futures.orderError.accountMissing': '연결된 거래 계정이 없습니다.',
   'futures.orderError.priceUnavailable': '계약의 현재 가격을 지금 사용할 수 없거나 오래되었습니다. 몇 초 후 다시 시도하세요.',
+  'futures.orderError.serverUnavailable': '서버가 재시작 중이라 응답하지 않았습니다. 주문을 확인하고 1분 후 다시 시도하세요.',
   'futures.orderError.busy': '이전 작업이 아직 실행 중입니다. 잠시 후 다시 시도하세요.',
   'futures.orderError.reduceSide': '축소 주문은 같은 포지션에 대해 반대 방향, 같은 마진 모드로 제출해야 합니다.',
   'futures.orderError.executionMode': '계정에 다른 실행 모드의 포지션 또는 주문이 있습니다. 먼저 닫은 후 다시 시도하세요.',
