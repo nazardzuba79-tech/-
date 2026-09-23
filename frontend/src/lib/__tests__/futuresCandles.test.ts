@@ -76,11 +76,11 @@ test('Futures terminal display candles are not coupled to private execution auth
 test('reuses REST history while shared WebSocket updates the live candle',async()=>{
   productionHost();
   const mocked=jest.spyOn(globalThis,'fetch').mockResolvedValue({ok:true,json:async()=>frame()} as Response);
-  const first=await getFuturesCandles('1000PEPE/USDT','1h',320);
+  const first=await getFuturesCandles('1000PEPE/USDT','15m',320);
   expect(mocked).toHaveBeenCalledTimes(1);
   expect(typeof klineCallback).toBe('function');
-  klineCallback({symbol:'1000PEPEUSDT',interval:'1h',time:1700003600,open:.00345,high:.0037,low:.0034,close:.0036,volume:55,confirm:false,updatedAt:1700003650000});
-  const second=await getFuturesCandles('1000PEPE/USDT','1h',320);
+  klineCallback({symbol:'1000PEPEUSDT',interval:'15m',time:1700003600,open:.00345,high:.0037,low:.0034,close:.0036,volume:55,confirm:false,updatedAt:1700003650000});
+  const second=await getFuturesCandles('1000PEPE/USDT','15m',320);
   expect(mocked).toHaveBeenCalledTimes(1);
   expect(second.candles[second.candles.length-1]).toEqual({time:1700003600,open:.00345,high:.0037,low:.0034,close:.0036,volume:55});
   expect(first.candles.length).toBeGreaterThan(0);
