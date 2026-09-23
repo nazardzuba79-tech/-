@@ -45,7 +45,7 @@ jobs:
       - name: Market-data collector build
         run: npx tsc -p tsconfig.collector.json
       - name: Market-data and CFD regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts
+        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
