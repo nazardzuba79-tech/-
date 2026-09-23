@@ -268,8 +268,8 @@ interface ActiveDepth {
  *  must stay free of so it can be tested outside the bundler. */
 let fallbackBase = '/api/v1';
 let sampledDisplay = false;
-export function setFuturesDepthFallbackBase(base: string, sampled = false) {
-  fallbackBase = base; sampledDisplay = sampled; setSampledBase(base);
+export function setFuturesDepthFallbackBase(base: string, sampled = false, displayBase = base) {
+  fallbackBase = base; sampledDisplay = sampled; setSampledBase(base, displayBase);
   if (sampled) transport.close(); else closeSampledDepth();
 }
 
