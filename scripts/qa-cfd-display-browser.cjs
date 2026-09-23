@@ -36,7 +36,7 @@ function fixture(pathname){
     const price=(active?.querySelector('.cfd-price')?.textContent||'').trim();
     const usable=price!==''&&!price.includes('—')?active:[...document.querySelectorAll('.cfd-option')].find(row=>{const p=(row.querySelector('.cfd-price')?.textContent||'').trim();return p!==''&&!p.includes('—');});
     if(!usable)throw new Error('No real CFD price available');
-    if(usable!==active)(usable as HTMLButtonElement).click();
+    if(usable!==active)usable.click();
     return (usable.querySelector('.cfd-optionSymbol')?.textContent||'').trim();
   });
   if(!selectedSymbol)throw new Error(`Selected CFD symbol missing at ${width}px`);
