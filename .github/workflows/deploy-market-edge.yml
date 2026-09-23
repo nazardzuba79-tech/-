@@ -48,7 +48,7 @@ jobs:
 
   deploy:
     needs: verify
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]'))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]')) || (github.event_name == 'pull_request' && github.head_ref == 'cloudflare-market-edge')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,7 +73,7 @@ jobs:
 
 
   live-smoke:
-    needs: verify
+    needs: [verify, deploy]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
