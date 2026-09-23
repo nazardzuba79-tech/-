@@ -78,46 +78,10 @@ function bybitUrl(host, path, params) {
 }
 
 async function futuresBook(symbol) {
-  let body;
-  let fromRender = false;
-  try {
-    body = await firstPublicJson([
-      bybitUrl("https://api.bybit.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
-      bybitUrl("https://api.bytick.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
-    ]);
-  } catch {
-    // Some Cloudflare egress locations are rejected by the venue. The browser
-    // still uses the venue socket directly; this is only the resilient
-    // display fallback, and it calls VOLTEX's public snapshot with no private
-    // credentials or trading/account data.
-    body = await publicJson(`https://voltex-api.onrender.com/api/v1/market/display/futures-book/${encodeURIComponent(symbol)}`);
-    fromRender = true;
-  }
-
-  if (fromRender) {
-    if (body?.available !== true || body?.symbol !== symbol || !Array.isArray(body.bids) || !Array.isArray(body.asks)) {
-      throw new Error("fallback_identity");
-    }
-    const normalizeObjects = (rows) => rows.slice(0, BOOK_LEVELS).map((row) => {
-      if (!row || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.quantity)) throw new Error("fallback_level");
-      return { price: row.price, quantity: row.quantity };
-    });
-    const bids = normalizeObjects(body.bids);
-    const asks = normalizeObjects(body.asks);
-    if (!bids.length || !asks.length || Number(bids[0].price) >= Number(asks[0].price)) throw new Error("fallback_book");
-    return {
-      available: true,
-      symbol,
-      source: "bybit",
-      fetchedAt: Number.isFinite(Number(body.fetchedAt)) ? Number(body.fetchedAt) : Date.now(),
-      providerTime: Number.isFinite(Number(body.providerTime)) ? Number(body.providerTime) : Date.now(),
-      stale: body.stale === true,
-      updateId: Number.isSafeInteger(Number(body.updateId)) ? Number(body.updateId) : 1,
-      bids,
-      asks,
-    };
-  }
-
+  const body = await firstPublicJson([
+    bybitUrl("https://api.bybit.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
+    bybitUrl("https://api.bytick.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
+  ]);
   if (body?.retCode !== 0 || body?.result?.s !== symbol) throw new Error("provider_identity");
 
   const bids = normalizeBookRows(body.result.b);
@@ -142,37 +106,16 @@ async function futuresBook(symbol) {
 }
 
 async function futuresTrades(symbol) {
-  let body;
-  let fromRender = false;
-  try {
-    body = await firstPublicJson([
-      bybitUrl("https://api.bybit.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
-      bybitUrl("https://api.bytick.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
-    ]);
-  } catch {
-    body = await publicJson(`https://voltex-api.onrender.com/api/v1/market/display/futures-trades/${encodeURIComponent(symbol)}`);
-    fromRender = true;
-  }
-
-  if (fromRender) {
-    if (body?.symbol !== symbol || !Array.isArray(body.trades) || body.trades.length > 30) throw new Error("fallback_trade_shape");
-    const seen = new Set();
-    const trades = body.trades.map((row) => {
-      if (!row || typeof row.id !== "string" || !row.id || seen.has(row.id)
-        || !["BUY", "SELL"].includes(row.side) || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.quantity)
-        || !Number.isSafeInteger(Number(row.time)) || Number(row.time) <= 0) throw new Error("fallback_trade_identity");
-      seen.add(row.id);
-      return { id: row.id, price: row.price, quantity: row.quantity, time: Number(row.time), side: row.side };
-    }).sort((a, b) => b.time - a.time);
-    return { symbol, trades };
-  }
-
+  const body = await firstPublicJson([
+    bybitUrl("https://api.bybit.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
+    bybitUrl("https://api.bytick.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
+  ]);
   if (body?.retCode !== 0 || body?.result?.category !== "linear" || !Array.isArray(body?.result?.list)) {
     throw new Error("provider_trade_shape");
   }
 
   const seen = new Set();
-  const trades = body.result.list.map((row) => {
+  const rows = body.result.list.map((row) => {
     if (row?.symbol !== symbol || !["Buy", "Sell"].includes(row.side)
       || typeof row.execId !== "string" || !row.execId || seen.has(row.execId)
       || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.size)
@@ -189,7 +132,7 @@ async function futuresTrades(symbol) {
     };
   }).slice(0, 30).sort((a, b) => b.time - a.time);
 
-  return { symbol, trades };
+  return { symbol, trades: rows };
 }
 
 const KLINE_INTERVALS = new Set(["1","3","5","15","30","60","120","240","360","720","D","W","M"]);
@@ -258,7 +201,7 @@ export default {
     try {
       let response;
       if (url.pathname === "/health") {
-        response = json({ ok: true, service: "voltex-market-edge", version: "futures-edge-v4" }, 200, { "cache-control": "no-store" });
+        response = json({ ok: true, service: "voltex-market-edge", version: "futures-edge-direct-v5" }, 200, { "cache-control": "no-store" });
       } else {
         const book = url.pathname.match(/^\/market\/display\/futures-book\/([A-Z0-9]{1,28}USDT)$/);
         const trades = url.pathname.match(/^\/market\/display\/futures-trades\/([A-Z0-9]{1,28}USDT)$/);
