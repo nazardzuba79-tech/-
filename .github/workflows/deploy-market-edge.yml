@@ -63,8 +63,13 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
-      - name: Health check
-        run: curl -fsS https://market.voltextech.net/health
+      - name: Production smoke checks
+        run: |
+          curl -fsS https://market.voltextech.net/health
+          curl -fsS https://market.voltextech.net/market/display/futures-book/BTCUSDT | grep -q '"available":true'
+          curl -fsS https://market.voltextech.net/market/display/futures-trades/BTCUSDT | grep -q '"symbol":"BTCUSDT"'
+          curl -fsS https://market.voltextech.net/market/display/futures-tickers | grep -q '"retCode":0'
+          curl -fsS 'https://market.voltextech.net/market/display/futures-candles/BTCUSDT?interval=60&limit=5' | grep -q '"retCode":0'
 
 
   live-smoke:
