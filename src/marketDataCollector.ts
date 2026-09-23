@@ -69,6 +69,7 @@ const runtime = collectorServer(
   options,
   () => collector.universe.snapshot(),
   cfdDisplay,
+  (providerSymbol) => collector.rest.getOrderBook('linear', providerSymbol),
 );
 const bindHost = process.env.MARKET_DATA_BIND_HOST?.trim() || '0.0.0.0';
 runtime.server.listen(Number(process.env.PORT || 10000), bindHost, () => {
