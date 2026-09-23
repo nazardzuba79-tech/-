@@ -1,8 +1,7 @@
-import { readSpotDisplayBook } from '../lib/sampledDepth';
+import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
@@ -147,7 +146,7 @@ export function TradePage() {
     const pending = { generation, request };
     bookPendingRef.current = pending;
     const wsVersion = bookWsVersionRef.current;
-    readSpotDisplayBook(API_BASE, pair)
+    readSpotPublicBook(pair)
       .then((res) => {
         if (bookPairRef.current === pair && generation === bookGenerationRef.current && request === bookRequestRef.current && wsVersion === bookWsVersionRef.current) {
           setBook({ pair, bids: res.bids, asks: res.asks, asOf: res.asOf });

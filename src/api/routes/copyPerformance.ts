@@ -73,10 +73,18 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     // overlay has folded its reported trade into the aggregates — otherwise
     // that overlay would reinsert a row into a response already cleaned.
     // Executions never leave this function. See tradeHistoryVisibility.ts.
+    // Nazar, THEN Ksenia — never both at once. The first request of a UTC day
+    // appends that day to each stored history, and doing the two appends
+    // concurrently needs a third more live heap (128 MB instead of < 96 MB,
+    // measured) inside a container whose memory is shared with the market
+    // collector. Identities are a small read and still run alongside.
+    const nazarSection = service.get('nazar').then(summarizeStrategy).then(redactTradeHistory);
+    const kseniaSection = nazarSection.catch(() => undefined)
+      .then(() => service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade)
+        .then(withKseniaReportedWeek).then(redactTradeHistory));
     const results = await Promise.allSettled([
-      service.get('nazar').then(summarizeStrategy).then(redactTradeHistory),
-      service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade)
-        .then(withKseniaReportedWeek).then(redactTradeHistory),
+      nazarSection,
+      kseniaSection,
       Promise.all(PUBLIC_STRATEGIES.map(id => resolveStrategyOwner(prisma, id))),
     ]);
     const [nazar, ksenia, identities] = results.map(result => result.status === 'fulfilled' ? result.value : null);

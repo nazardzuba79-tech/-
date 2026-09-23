@@ -13,7 +13,15 @@ function positive(value: unknown): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 function timestampMs(value: unknown): number | null {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)) return null;
+  // BiQuote has returned both ISO timestamps with an explicit offset and
+  // epoch timestamps over time. Identity, bid/ask sanity and future-time
+  // rejection are checked separately below, so accepting those equivalent
+  // timestamp encodings does not relax quote validity.
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value < 1e12 ? value * 1000 : value;
+  if (typeof value !== 'string' || !value.trim()) return null;
+  if (/^\d+(?:\.\d+)?$/.test(value)) {
+    const n=Number(value); if(!Number.isFinite(n)||n<=0)return null; return n < 1e12 ? n * 1000 : n;
+  }
   const at=Date.parse(value); return Number.isFinite(at) ? at : null;
 }
 
@@ -48,10 +56,14 @@ export class BiquoteCfdQuoteSource implements CfdQuoteSource {
     const providerSymbol=BIQUOTE_CFD_SYMBOLS[symbol];
     if(!raw||raw.symbol!==providerSymbol){this.fail(symbol,'identity');return this.missing(symbol,providerSymbol);}
     const bid=positive(raw.bid),ask=positive(raw.ask),mid=positive(raw.mid),at=timestampMs(raw.timestamp);
-    const marketState=raw.marketState; const providerStale=raw.stale===true;
-    const sane=bid!==null&&ask!==null&&mid!==null&&bid<=mid&&mid<=ask&&at!==null&&at<=receivedAt+1000;
-    if(!sane){this.fail(symbol,'payload');return this.missing(symbol,providerSymbol);}
-    const stale=providerStale||receivedAt-at!>this.maxQuoteAgeMs; const admitted=this.admitted(symbol); const closed=marketState==='closed';
+    const marketState=raw.marketState; const providerStale=raw.stale===true; const admitted=this.admitted(symbol);
+    // Public display only needs the provider's actual mid/last observation.
+    // Financially admitted use still requires a real two-sided quote; we never
+    // manufacture a bid or ask from the mid.
+    const displaySane=mid!==null&&at!==null&&at<=receivedAt+1000;
+    const financialSane=displaySane&&bid!==null&&ask!==null&&bid<=mid!&&mid!<=ask;
+    if(!(admitted?financialSane:displaySane)){this.fail(symbol,'payload');return this.missing(symbol,providerSymbol);}
+    const stale=providerStale||receivedAt-at!>this.maxQuoteAgeMs; const closed=marketState==='closed';
     return {provider:'biquote',symbol,providerSymbol,bid,ask,mid,last:mid,providerTimestamp:at,fetchedAt:receivedAt,
       stale,status:admitted?(closed?'market_closed':stale?'stale':'live'):'entitlement_required',referenceStatus:closed?'market_closed':stale?'stale':'available',
       entitlementVerified:admitted,executionAllowed:admitted&&!closed&&!stale&&this.executable.has(symbol),changePercent24h:typeof raw.dayDiffPercent==='number'&&Number.isFinite(raw.dayDiffPercent)?String(raw.dayDiffPercent):undefined};
