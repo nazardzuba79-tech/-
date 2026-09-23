@@ -31,13 +31,22 @@ test('rejects inconsistent OHLC and duplicate times',()=>{
 });
 test('requests linear candles with exact symbol/interval and abort signal, without credentials',async()=>{
   const mocked=jest.spyOn(globalThis,'fetch').mockResolvedValue({ok:true,json:async()=>frame()} as Response);
-  const controller=new AbortController();await getFuturesCandles('1000PEPE/USDT','4h',520,controller.signal);
+  const controller=new AbortController();const endTime=1700000900000;
+  await getFuturesCandles('1000PEPE/USDT','4h',520,controller.signal,endTime);
   const [url,options]=mocked.mock.calls[0];const parsed=new URL(String(url),'https://voltextech.net');
   expect(parsed.pathname).toBe('/api/v1/market/futures/candles/1000PEPE-USDT');
-  expect(parsed.searchParams.get('interval')).toBe('4h');expect(options).toEqual({signal:controller.signal,credentials:'omit'});
+  expect(parsed.searchParams.get('interval')).toBe('4h');
+  expect(parsed.searchParams.get('endTime')).toBe(String(endTime));
+  expect(options).toEqual({signal:controller.signal,credentials:'omit'});
 });
 test('never falls back on HTTP failure or unsupported input',async()=>{
   const mocked=jest.spyOn(globalThis,'fetch').mockResolvedValue({ok:false} as Response);
   await expect(getFuturesCandles('BTC/USDT','15m',520)).rejects.toThrow();expect(mocked).toHaveBeenCalledTimes(1);
   await expect(getFuturesCandles('BTC/USD','15m',520)).rejects.toThrow();expect(mocked).toHaveBeenCalledTimes(1);
+  await expect(getFuturesCandles('BTC/USDT','15m',520,undefined,-1)).rejects.toThrow();expect(mocked).toHaveBeenCalledTimes(1);
+});
+test('Futures terminal display candles are not coupled to private execution auth',()=>{
+  const page=fs.readFileSync(path.resolve(__dirname,'../../pages/FuturesPage.tsx'),'utf8');
+  expect(page).not.toContain('candleLoader={nativeExecution?native.loader:undefined}');
+  expect(page).toContain('privateTrading={nativeExecution ? native.interaction : undefined}');
 });
