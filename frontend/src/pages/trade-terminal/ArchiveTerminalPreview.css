@@ -221,8 +221,20 @@
    column (the contract) stays pinned to
    the panel's left edge while the rest scrolls; «Лимитный» / «Рыночный»
    are reached by that scroll, never cut at the panel's edge. */
-#archive-terminal-preview .futures-positions-table { width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
-#archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px 5px; padding-inline:5px !important; white-space:nowrap; text-align:left; }
+/* Room between the columns (owner, 2026-09-23: «текст налазить один на одного,
+   дай більше свободи»). The side padding is taken from the PANEL's own width
+   (the scroll region is a size container): whatever the row does not need is
+   given back as space, up to 16px a side — 16px at 2000, 15px at 1920, 5px where
+   the panel only just holds the row (1664) — instead of a fixed 5px that left
+   «Цена Входа · Цена марк. · Цена ликвид.» ten pixels apart everywhere. The
+   row never starts scrolling at a width where it used to fit. */
+#archive-terminal-preview .futures-positions-scroll { container-type:inline-size; }
+#archive-terminal-preview .futures-positions-table { --pos-cell-x:5px; width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
+@supports (width:1cqw) { #archive-terminal-preview .futures-positions-table { --pos-cell-x:clamp(5px,calc((100cqw - 1240px) / 22),16px); } }
+#archive-terminal-preview .futures-positions-table :is(th,td) { --pos-cell-bg:var(--panel); width:auto; padding:8px var(--pos-cell-x); padding-inline:var(--pos-cell-x) !important; white-space:nowrap; text-align:left; }
+/* The heading of the contract column starts where the contract name does,
+   past the side bar. */
+#archive-terminal-preview .futures-positions-table th:first-child { padding-left:calc(var(--pos-cell-x) + 10px) !important; }
 /* `height:40px`: the studio sheet pins the heading to `height:30px` with
    `padding:0 !important`; one explicit height keeps the band the same at
    every width the geometry check measures, with room for a two-line title. */
@@ -233,7 +245,10 @@
    column fit: when the panel is narrower than the row, the figures scroll
    under the pinned contract and «Закрыть как», as they already do. */
 #archive-terminal-preview .futures-positions-table td { height:64px; font-size:13px; font-weight:550; color:#f8fafc; vertical-align:middle; border-bottom:0; }
-#archive-terminal-preview .futures-position-unit { color:#bac5d5; }
+/* Units are quiet next to their figures: «692,890.38 USDT», «0.230 BTC». */
+#archive-terminal-preview .futures-position-unit { color:var(--text-tertiary); font-size:11.5px; font-weight:400; }
+#archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized)[data-unit]::after { font-size:11.5px; font-weight:400; opacity:.8; }
+#archive-terminal-preview .futures-position-empty { color:var(--text-tertiary) !important; font-weight:400; }
 #archive-terminal-preview .futures-positions-table td:is(:nth-child(3),:nth-child(4),:nth-child(5)) { color:#f8fafc !important; }
 /* Both edges are pinned, as the reference pins them: the contract at the
    left, «Закрыть как» at the right, both opaque, so the close pills are on
@@ -241,16 +256,32 @@
    with a shadow, never a cut at the panel's edge (the owner's second report:
    «Закрыть ка…» / «Лимитны…» sliced off at ~1600px). The panel flags
    `data-overflow` while the row is wider than it; only then the pinned
-   actions cast their shadow, and the scrollbar below is always drawn. */
-#archive-terminal-preview .futures-positions-table :is(th,td):is(:first-child,:last-child) { position:sticky; z-index:2; background:var(--panel); }
+   edges fade the figures under them (below), and the scrollbar below is
+   always drawn. */
+#archive-terminal-preview .futures-positions-table :is(th,td):is(:first-child,:last-child) { position:sticky; z-index:2; background:var(--pos-cell-bg); }
 #archive-terminal-preview .futures-positions-table :is(th,td):first-child { left:0; }
 #archive-terminal-preview .futures-positions-table :is(th,td):last-child { right:0; }
 #archive-terminal-preview .futures-positions-table th:is(:first-child,:last-child) { z-index:3; }
-#archive-terminal-preview .futures-positions-scroll[data-overflow=true] .futures-positions-table :is(th,td):last-child { box-shadow:-10px 0 14px -10px #000c; }
+/* Where figures scroll under a pinned column, they fade out into it instead
+   of being sliced mid-word («Реализованны…» under «Закрыть как»). The panel
+   flags which side has something hidden; nothing fades while the row fits.
+   · Under «Закрыть как»: a band inside the pinned cell, reaching LEFT over
+     the figures — painted in the pinned cell's own layer, so it is above
+     them, and an overflow to the left adds nothing to any scroll width.
+   · Under the contract: a mask on the scroll region itself, starting at the
+     pinned column's measured width (`--pin-start`, set by the panel).
+   Desktop only: on a phone the rows are cards and `td::before` is a label. */
+@media (min-width:901px) {
+  #archive-terminal-preview .futures-positions-scroll[data-hidden-end=true] .futures-positions-table :is(th,td):last-child { box-shadow:inset 1px 0 0 var(--border); }
+  #archive-terminal-preview .futures-positions-scroll[data-hidden-end=true] .futures-positions-table :is(th,td):last-child::before { content:''; position:absolute; top:0; bottom:0; right:100%; width:34px; pointer-events:none; background:linear-gradient(90deg,transparent,var(--pos-cell-bg) 85%); }
+  #archive-terminal-preview .futures-positions-scroll[data-hidden-start=true] .futures-positions-table :is(th,td):first-child { box-shadow:inset -1px 0 0 var(--border); }
+  #archive-terminal-preview .futures-positions-scroll[data-hidden-start=true] { -webkit-mask-image:linear-gradient(90deg,#000 var(--pin-start,0px),transparent var(--pin-start,0px),#000 calc(var(--pin-start,0px) + 30px)); mask-image:linear-gradient(90deg,#000 var(--pin-start,0px),transparent var(--pin-start,0px),#000 calc(var(--pin-start,0px) + 30px)); }
+}
+
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar { height:10px; }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:#171e2a; }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:#657082; border-radius:5px; border:2px solid #171e2a; }
-#archive-terminal-preview .futures-position-row:hover td { background:var(--panel-alt); }
+#archive-terminal-preview .futures-position-row:hover td { --pos-cell-bg:var(--panel-alt); background:var(--pos-cell-bg); }
 #archive-terminal-preview .futures-position-realized { border-bottom:0; text-decoration:none; }
 #archive-terminal-preview .futures-positions-table td.text-buy { color:var(--buy) !important; }
 #archive-terminal-preview .futures-positions-table td.text-sell { color:var(--sell) !important; }
