@@ -97,7 +97,7 @@ async function run() {
         return new Response("forbidden", { status: 403 });
       }
       assert.equal(u.hostname, "api.voltextech.net");
-      if (u.pathname.endsWith("/market/display/futures-book/BTCUSDT")) {
+      if (u.pathname.endsWith("/market/futures/orderbook/BTCUSDT")) {
         return new Response(JSON.stringify({
           available: true, symbol: "BTCUSDT", source: "bybit", fetchedAt: 1790150000000,
           providerTime: 1790150000000, stale: false, updateId: 77,
