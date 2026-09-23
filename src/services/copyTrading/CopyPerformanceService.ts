@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { gunzipSync, gzipSync } from 'zlib';
 import { advanceState } from './canonical/SyntheticCopyTradingEngine';
 import { createReviewSyntheticState } from './canonical/reviewSyntheticHistory';
 import { advanceKseniaReview, kseniaReviewResponse } from './canonical/kseniaReview';
@@ -17,9 +18,35 @@ export const PERFORMANCE_SCENARIOS = {
 export type PerformanceStrategy = keyof typeof PERFORMANCE_SCENARIOS;
 export type PerformanceDatabase = Pick<PrismaClient, 'copyPerformanceScenario'>;
 
-export function encodePerformanceState(state: CashflowReviewState): string { return JSON.stringify(state); }
+/**
+ * The stored state is written gzip-compressed (`gz1:` + base64), and read in
+ * either form.
+ *
+ * Each strategy's state is ~8 MB of JSON — 13 000 copied trades and ~10 000
+ * fee events — and the first request of every UTC day rewrites both rows.
+ * Moving 8 MB through the Prisma engine costs the API process ~120 MB of
+ * native memory per write that is not handed back to the OS (measured: RSS
+ * 122 → 241 → 192 MB for one row). In the single free Render service the API
+ * shares 512 MB with the market collector, so that first request of the day
+ * pushed the container past its limit: the platform killed it, the append
+ * was never persisted, and every later visit to Copy Trading repeated the
+ * kill — the cards stuck on «Загрузка…» and the whole API answering 502 for a
+ * minute every few minutes. Compressed, the same state is 1.5 MB and a write
+ * costs ~29 MB. The JSON inside is byte-for-byte what was stored before, so
+ * nothing about the history changes; legacy uncompressed rows are read as
+ * they are and are compressed on their next append.
+ */
+const PACKED_PREFIX = 'gz1:';
+export function encodePerformanceState(state: CashflowReviewState): string {
+  return PACKED_PREFIX + gzipSync(Buffer.from(JSON.stringify(state), 'utf8'), { level: 6 }).toString('base64');
+}
+function unpackStateText(value: string): string {
+  if (!value.startsWith(PACKED_PREFIX)) return value;
+  try { return gunzipSync(Buffer.from(value.slice(PACKED_PREFIX.length), 'base64')).toString('utf8'); }
+  catch { throw new Error('Stored canonical performance is invalid; refusing to regenerate history'); }
+}
 export function decodePerformanceState(value: string): CashflowReviewState {
-  const state = JSON.parse(value) as CashflowReviewState;
+  const state = JSON.parse(unpackStateText(value)) as CashflowReviewState;
   if (state.version !== 8 || !state.cashflow || !Array.isArray(state.trades)
       || !Array.isArray(state.dailyResults) || !Number.isFinite(Date.parse(state.simulatedAt))) {
     throw new Error('Stored canonical performance is invalid; refusing to regenerate history');
