@@ -60,7 +60,7 @@ export function parseFuturesTrades(frame:any,symbol:string,now:number):FuturesTr
     .map((r:any)=>({id:r.i,price:r.p,quantity:r.v,time:r.T,side:r.S==='Buy'?'BUY':'SELL'}));
 }
 
-const DEPTH = 200;
+const DEPTH = 50;
 /**
  * No accepted frame for this long and the book is labelled, not cleared.
  *
