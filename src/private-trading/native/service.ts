@@ -43,7 +43,7 @@ export type NativeQuoteResult =
       takerFeeRate:string; makerFeeRate:string };
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
-import { applyLatestQuotes, BarRequest, compareInstructions, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
+import { applyLatestQuotes, BarRequest, compareInstructions, exposedSymbols, instructionDigest, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 import type { PrivateFreshQuote } from '../marketData';
 import { markDemoAccount } from './engine';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
@@ -964,42 +964,103 @@ export class NativeDemoService {
     const retryAt=this.compactionRetryAfter.get(attempt);if(retryAt!==undefined&&retryAt>this.now())return row;
     const drop=supersededObservations(row);
     if(drop.size<NATIVE_OBSERVE_COMPACT_MIN)return row;
-    const commands=row.commands.filter(c=>!drop.has(c.id));
-    // Its own budget and its own abort signal, never the command's: a slow
-    // history read ends the compaction, not the command it runs in front of.
-    const signal=AbortSignal.timeout(budgetMs),cache=nativeHistoryCache(this.market,this.now);
+
     const background=budgetMs===NATIVE_OBSERVE_BACKGROUND_COMPACT_BUDGET_MS;
-    const load=async(r:BarRequest)=>{
-      const attempts=background?NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS:1;
-      let last:unknown;
-      for(let n=1;n<=attempts;n++){
-        try{return await cache.load(r,signal);}
-        catch(e){
-          last=e;
-          const message=e instanceof Error?e.message:String(e);
-          if(signal.aborted||message!=='fetch failed'||n===attempts){
-            if(background)console.warn('[native] observation compaction history failed',r.symbol,r.intervalMs,r.start,r.end,n,message);
-            throw e;
+    const cache=nativeHistoryCache(this.market,this.now);
+    const transient=(e:unknown)=>{
+      const message=e instanceof Error?e.message:String(e),name=e instanceof Error?e.name:'';
+      return name==='TimeoutError'||name==='AbortError'||message==='fetch failed'||/timed? out/i.test(message);
+    };
+    const deferRetry=(e:unknown)=>{
+      if(!transient(e))return false;
+      if(this.compactionRetryAfter.size>1000)this.compactionRetryAfter.clear();
+      this.compactionRetryAfter.set(attempt,this.now()+NATIVE_OBSERVE_COMPACT_RETRY_MS);
+      return true;
+    };
+    const loader=()=>{
+      const signal=AbortSignal.timeout(budgetMs);
+      return async(r:BarRequest)=>{
+        const attempts=background?NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS:1;
+        let last:unknown;
+        for(let n=1;n<=attempts;n++){
+          try{return await cache.load(r,signal);}
+          catch(e){
+            last=e;
+            const message=e instanceof Error?e.message:String(e);
+            if(signal.aborted||message!=='fetch failed'||n===attempts){
+              if(background)console.warn('[native] observation compaction history failed',r.symbol,r.intervalMs,r.start,r.end,n,message);
+              throw e;
+            }
           }
         }
-      }
-      throw last;
+        throw last;
+      };
     };
+
+    /*
+     * Fast path from Claude PR #196, tightened for checkpoint safety.
+     *
+     * Replaying a multi-day journal from the deposit needs old funding/history
+     * pages and is exactly what production keeps timing out on. An unsealed
+     * historical checkpoint already contains the canonical state at cp.time.
+     * We may re-seal that checkpoint over a shorter prefix ONLY where removing
+     * an OBSERVE cannot change that prefix:
+     *   - the stored checkpoint really seals this journal;
+     *   - if a dropped OBSERVE is before cp.time, its superseding adjacent
+     *     OBSERVE is also before cp.time; and
+     *   - no persisted financial event occurred between those two observations.
+     *
+     * Unsafe candidates simply stay in the journal. The old full-replay path
+     * remains below as the verifier/fallback, so this optimization never
+     * weakens the financial-state equality check.
+     */
+    const cp=row.checkpoint;
+    if(cp&&cp.commandCount===undefined&&instructionDigest(row.commands,cp.time)===cp.digest){
+      const ordered=[...row.commands].sort(compareInstructions);
+      const eventTimes=row.snapshot.events.map(e=>e.time);
+      const safeDrop=new Set<string>();
+      for(let i=0;i<ordered.length;i++){
+        const current=ordered[i];
+        if(!drop.has(current.id))continue;
+        if(current.at>=cp.time){safeDrop.add(current.id);continue;}
+        const next=ordered[i+1];
+        if(!next||next.at>=cp.time)continue;
+        if(eventTimes.some(time=>time>current.at&&time<next.at))continue;
+        safeDrop.add(current.id);
+      }
+      if(safeDrop.size>=NATIVE_OBSERVE_COMPACT_MIN){
+        const commands=row.commands.filter(c=>!safeDrop.has(c.id));
+        const resealed={...cp,digest:instructionDigest(commands,cp.time)};
+        try{
+          commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length,fromCheckpoint:true});
+          const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time,checkpoint:resealed},loader());
+          if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
+          this.compactionRetryAfter.delete(attempt);
+          console.info('[native] observation compaction verified from checkpoint',row.commands.length,commands.length);
+          return{...row,commands,checkpoint:result.checkpoint};
+        }catch(e){
+          console.warn('[native] checkpoint observation compaction skipped',row.commands.length,commands.length,e instanceof Error?e.message:e);
+          // A transport timeout on the fast path will only be worse from the
+          // deposit, so back off instead of doing two expensive replays now.
+          if(deferRetry(e))return row;
+          // CHECKPOINT_MISMATCH / replay-diff / other semantic failures fall
+          // through to the original full replay, which remains authoritative.
+        }
+      }
+    }
+
+    const commands=row.commands.filter(c=>!drop.has(c.id));
     try{
-      commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length});
-      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},load);
+      commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length,fromCheckpoint:false});
+      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},loader());
       if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
       this.compactionRetryAfter.delete(attempt);
       console.info('[native] observation compaction verified',row.commands.length,commands.length);
       return{...row,commands,checkpoint:result.checkpoint};
     }catch(e){
-      const message=e instanceof Error?e.message:String(e),name=e instanceof Error?e.name:'';
+      const message=e instanceof Error?e.message:String(e);
       console.warn('[native] observation compaction skipped',row.commands.length,commands.length,message);
-      const transient=name==='TimeoutError'||name==='AbortError'||message==='fetch failed'||/timed? out/i.test(message);
-      if(transient){
-        if(this.compactionRetryAfter.size>1000)this.compactionRetryAfter.clear();
-        this.compactionRetryAfter.set(attempt,this.now()+NATIVE_OBSERVE_COMPACT_RETRY_MS);
-      }else{
+      if(!deferRetry(e)){
         if(this.compactionRefused.size>1000)this.compactionRefused.clear();
         this.compactionRefused.add(attempt);
       }
