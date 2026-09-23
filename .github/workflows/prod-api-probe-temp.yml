@@ -101,6 +101,65 @@ jobs:
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
           echo "::endgroup::"
+          echo "::group::live-frame-validation"
+          node <<'NODE'
+          (async()=>{
+            const response=await fetch('https://api.voltextech.net/api/v1/market/live',{headers:{Origin:'https://voltextech.net',Accept:'text/event-stream'},signal:AbortSignal.timeout(15000)});
+            if(!response.ok)throw Error('live HTTP '+response.status);
+            const reader=response.body.getReader();const dec=new TextDecoder();let buf='',frame=null;
+            while(!frame){
+              const {value,done}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});
+              const chunks=buf.split('\n\n');buf=chunks.pop()||'';
+              for(const chunk of chunks){
+                const event=/^event: (.+)$/m.exec(chunk)?.[1];
+                const data=/^data: (.+)$/m.exec(chunk)?.[1];
+                if(event==='snapshot'&&data){frame=JSON.parse(data);break;}
+              }
+            }
+            reader.cancel().catch(()=>{});
+            if(!frame)throw Error('no snapshot');
+            console.log('snapshot status',frame.status,'rows',frame.rows?.length,'revision',frame.revision);
+            let bad=null;
+            for(let i=0;i<frame.rows.length;i++){
+              const row=frame.rows[i];
+              const reasons=[];
+              if(!row||typeof row.id!=='string')reasons.push('id');
+              if(row?.id!==`${row?.marketType}:${row?.providerSymbol}`)reasons.push('identity');
+              if(typeof row?.baseAsset!=='string')reasons.push('baseAsset');
+              if(typeof row?.quoteAsset!=='string')reasons.push('quoteAsset');
+              if(typeof row?.stale!=='boolean')reasons.push('stale');
+              for(const k of ['lastPrice','changePercent24h','quoteVolume24h']){
+                if(row?.[k]!==null&&(typeof row?.[k]!=='number'||!Number.isFinite(row[k])))reasons.push(k);
+              }
+              if(reasons.length){bad={i,reasons,row};break;}
+            }
+            console.log('FIRST_INVALID_ROW',JSON.stringify(bad));
+            const btc=frame.rows.filter(r=>r.providerSymbol==='BTCUSDT'||r.symbol==='BTC/USDT');
+            console.log('BTC_ROWS',JSON.stringify(btc.slice(0,10)));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          echo "::endgroup::"
+          echo "::group::browser-ordinary-production"
+          PROD_PW=/tmp/prod-browser/node_modules/playwright node <<'NODE'
+          const { chromium }=require(process.env.PROD_PW);
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            const context=await browser.newContext({viewport:{width:1600,height:900},locale:'ru-RU'});
+            await context.addInitScript(()=>{localStorage.setItem('exchange_token','qa-browser-only');localStorage.setItem('exchange_lang','ru');});
+            await context.route('https://api.voltextech.net/api/v1/me',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({id:'qa-browser',displayName:'QA Browser',email:'qa@example.invalid',createdAt:'2026-01-01',isAdmin:false,kycStatus:'NOT_STARTED'})}));
+            await context.route('https://api.voltextech.net/api/v1/private-trading/access',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify({allowed:true,mode:'PRIVATE_SIMULATION',nativeAvailable:false,simulationOnly:false})}));
+            const page=await context.newPage();const ev=[];
+            page.on('response',r=>{const u=r.url();if(u.includes('/candles')||u.includes('/market/live')||u.includes('/private-trading/access'))ev.push({status:r.status(),url:u})});
+            page.on('requestfailed',r=>ev.push({failed:r.url(),why:r.failure()?.errorText}));
+            await page.goto('https://voltextech.net/futures?pair=BTC%2FUSDT',{waitUntil:'domcontentloaded',timeout:30000});
+            await page.waitForTimeout(12000);
+            console.log('ORDINARY_CHART_ERROR',await page.locator('text=Не удалось загрузить график').count());
+            console.log('ORDINARY_MARK_PRICE_TEXT',JSON.stringify((await page.locator('body').innerText()).slice(0,1800)));
+            console.log('ORDINARY_EVENTS',JSON.stringify(ev,null,2));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          echo "::endgroup::"
           echo "::group::market-live"
           curl -sS -N --max-time 8 -D /tmp/lh -o /tmp/lb -H 'Origin: https://voltextech.net' 'https://api.voltextech.net/api/v1/market/live' || true
           sed -n '1,30p' /tmp/lh || true
