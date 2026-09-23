@@ -55,7 +55,7 @@ const WIDTHS = (arg('--widths', '1920x1080,1664x900,1440x900,1366x768,390x844'))
 const SHOT_WIDTHS = new Set(['1440x900', '1664x900', '390x844']);
 
 const express = require('express');
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium } = (()=>{try{return require('playwright');}catch{return require('/opt/node22/lib/node_modules/playwright');}})();
 
 const SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'AKE/USDT'];
 const MID = { BTCUSDT: 85833.5, ETHUSDT: 3120.55, AKEUSDT: 0.0536 };
@@ -96,6 +96,16 @@ function start(log) {
   const app = express();
   app.use(express.json());
   app.use((req, res, next) => { log.requests.push(`${req.method} ${req.originalUrl}`); res.setHeader('Cache-Control', 'no-store'); next(); });
+  const display=(value)=>({...value,_display:{mode:'snapshot',capturedAt:Date.now(),refreshMs:60_000}});
+  const quoteRows=()=>SYMBOLS.map(pair=>{const symbol=pair.replace('/',''),price=MID[symbol];return{
+    id:'linear_perpetual:'+symbol,pair,symbol:pair,provider:'bybit',providerSymbol:symbol,marketType:'linear_perpetual',
+    baseAsset:pair.split('/')[0],quoteAsset:'USDT',settleAsset:'USDT',lastPrice:price,bidPrice:price-.1,askPrice:price+.1,
+    high24h:price*1.05,low24h:price*.95,volume24h:100,quoteVolume24h:price*100,changePercent24h:1,indexPrice:price,markPrice:price,
+    fundingRate:.0001,openInterest:100,openInterestValue:price*100,fundingIntervalMinutes:480,sequence:null,
+    providerEventAt:Date.now(),fetchedAt:Date.now(),receivedAt:Date.now(),stale:false};});
+  app.get('/api/v1/market/display',(_q,r)=>r.set('Cache-Control','public,max-age=60').json(display({version:1,type:'snapshot',epoch:'sampled-local',revision:1,status:'live',rows:quoteRows()})));
+  app.get('/api/v1/market/display/futures-book/:symbol',(q,r)=>r.set('Cache-Control','public,max-age=60').json(display({...book(q.params.symbol),symbol:q.params.symbol,providerTime:Date.now(),fetchedAt:Date.now(),stale:false})));
+  app.get('/api/v1/market/display/futures-trades/:symbol',(q,r)=>r.set('Cache-Control','public,max-age=60').json(display({symbol:q.params.symbol,trades:[{id:'sampled-tape-'+q.params.symbol,price:String(MID[q.params.symbol]),quantity:'0.01',time:Date.now(),side:'BUY'}]})));
   app.get('/api/v1/me', (_q, r) => r.json({ id: 'qa-user', email: 'qa@example.invalid', role: 'USER', isAdmin: false, avatarUrl: null }));
   // ORDINARY account: the real execution path, the one most traders see.
   app.get('/api/v1/private-trading/access', (_q, r) =>

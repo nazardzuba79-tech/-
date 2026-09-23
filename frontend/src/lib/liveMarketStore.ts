@@ -42,7 +42,7 @@ export class LiveMarketStore {
   };
   private emit(): void { for (const listener of this.listeners) listener(this.state); }
   private stale(): void {
-    this.state = { status: 'stale', revision: this.state.revision + 1,
+    this.state = { ...this.state, status: 'stale', revision: this.state.revision + 1,
       rows: new Map([...this.state.rows].map(([id,row]) => [id,{ ...row, stale: true }])) };
     this.emit();
   }

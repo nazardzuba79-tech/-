@@ -43,6 +43,7 @@ export function readDisplayJson<T = any>(url: string, ttl: number, signal?: Abor
   if (hit && hit.ttl === ttl && Date.now() >= hit.at && Date.now() < hit.expiresAt) return Promise.resolve(clone(hit.value));
   if (Date.now() < (cooldown.get(url) ?? 0)) return Promise.reject(new Error('Display refresh cooling down'));
   let work = pending.get(url);
+  if (work?.controller.signal.aborted) { pending.delete(url); work = undefined; }
   if (!work) {
     if (pending.size >= 16) return Promise.reject(new Error('Display queue full'));
     const controller = new AbortController();
@@ -79,7 +80,7 @@ export function readDisplayJson<T = any>(url: string, ttl: number, signal?: Abor
   const shared = work; shared.users++;
   return new Promise<T>((resolve, reject) => {
     let settled = false;
-    const release = () => { if (settled) return false; settled = true; signal?.removeEventListener('abort', onAbort); shared.users--; if (!shared.users && !shared.done) shared.controller.abort(); return true; };
+    const release = () => { if (settled) return false; settled = true; signal?.removeEventListener('abort', onAbort); shared.users--; if (!shared.users && !shared.done) { if (pending.get(url) === shared) pending.delete(url); shared.controller.abort(); } return true; };
     const onAbort = () => { if (release()) reject(abortError()); };
     signal?.addEventListener('abort', onAbort, { once: true });
     shared.promise.then(value => { if (release()) resolve(clone(value)); }, error => { if (release()) reject(error); });
