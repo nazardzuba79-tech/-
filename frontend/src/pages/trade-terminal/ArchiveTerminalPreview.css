@@ -65,40 +65,112 @@
 #archive-terminal-preview .drawing-rail .tool-btn { color:#a6b2c8; }
 #archive-terminal-preview .reference-book { --buy:#28aa7c; --sell:#db5966; background:var(--panel); }
 #archive-terminal-preview :is(.rb-controls,.rb-columns,.rb-center) { background:var(--panel); border-color:var(--border); }
-#archive-terminal-preview .rb-columns { font-size:10px; color:var(--text-tertiary); }
-#archive-terminal-preview .rb-row { font-size:12px; font-weight:400; padding-inline:10px; color:#c4cbd5; }
-#archive-terminal-preview .rb-row.ask > span:first-of-type { color:var(--sell); }
-#archive-terminal-preview .rb-row.bid > span:first-of-type { color:var(--buy); }
-#archive-terminal-preview .rb-row.bid .rb-depth { background:rgba(40,170,124,.08); }
-#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(219,89,102,.08); }
+#archive-terminal-preview .rb-columns { font-size:11px; color:var(--text-secondary); }
+#archive-terminal-preview .rb-row { font-size:12px; font-weight:400; padding-inline:10px; color:#d7dde5; }
+#archive-terminal-preview .rb-row.ask > span:first-of-type { color:var(--sell); font-weight:500; }
+#archive-terminal-preview .rb-row.bid > span:first-of-type { color:var(--buy); font-weight:500; }
+#archive-terminal-preview .rb-row.bid .rb-depth { background:rgba(40,170,124,.15); }
+#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(219,89,102,.15); }
 #archive-terminal-preview .rb-ratio[data-available=true] { background:rgba(219,89,102,.10); }
 #archive-terminal-preview .rb-ratio > i { background:#1a302d; }
 #archive-terminal-preview .rb-ratio[data-available=true] span { color:var(--sell); }
 #archive-terminal-preview .rb-ratio[data-available=true] span:first-of-type { color:var(--buy); }
-#archive-terminal-preview .rb-center { min-height:42px; padding:5px 10px; }
-#archive-terminal-preview .rb-center strong { font-size:20px; }
-#archive-terminal-preview .rb-controls select { background:var(--panel-alt); border:1px solid var(--border); border-radius:6px; }
+#archive-terminal-preview .rb-center { min-height:42px; padding:5px 10px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+#archive-terminal-preview .rb-center strong { font-size:20px; font-weight:650; }
+/* The grouping step is a flat control, like every select in the trading
+   panel beside it: the reference's filled surface, no frame. The 1px
+   border is kept transparent so the control's size does not move. */
+#archive-terminal-preview .rb-controls select { background:#1e2126; border:1px solid transparent; border-radius:5px; font-weight:600; }
+#archive-terminal-preview .rb-controls select:hover { background:#23272e; }
+#archive-terminal-preview .rb-controls select:focus-visible { border-color:var(--accent); }
 #archive-terminal-preview .order-form-area .reference-order-heading { display:flex; align-items:center; margin:0; padding:0 14px; height:42px; min-height:42px; font-size:14px; font-weight:600; border-bottom:1px solid var(--border); }
 #archive-terminal-preview .archive-trading-heading { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-right:14px; }
 #archive-terminal-preview .archive-trading-heading .reference-order-heading { border-bottom:0; }
 #archive-terminal-preview .archive-trading-heading .archive-calculator-slot { padding:0; }
 #archive-terminal-preview .archive-trading-heading .archive-calculator-trigger { width:30px; height:30px; justify-content:center; padding:5px; }
+/* ── TRADING PANEL: the owner's reference pack (2026-09-22) ─────────────────
+   VOLTEX_FUTURES_CLAUDE_REFERENCE_PACK, «take the Trading panel visual
+   hierarchy from the reference». What moved, and only this:
+
+   · Every control is a FLAT FILLED SURFACE, not a box in a frame. Fields
+     and both selects share one neutral graphite fill (#1e2126, the
+     reference's input tone) instead of the blue-tinted #172432 with a
+     #2a3948 frame. The border is kept at 1px TRANSPARENT so each control's
+     outer size is byte-for-byte what it was: hover and focus still light
+     that same border, so the affordance survives without the permanent
+     frame. Radius 7 → 5, the reference's.
+   · The order-type tabs say which is active by COLOUR AND WEIGHT alone —
+     gold at 700, the others muted at 500 — with no underline and no rule
+     under the row. The tab SET is untouched: Лимитный · Рыночный · Стоп ·
+     Take Profit, exactly as main renders them. Nothing duplicated, nothing
+     added, nothing renamed.
+   · The value in a field reads first: 14px at 600 in the panel's brightest
+     tone, its caption 11px and muted.
+   · The panel breathes on the reference's rhythm: 16px top, 12px between
+     the form's rows.
+
+   VOLTEX's gold stays the one accent. No Bybit orange, no Bybit copy, no
+   heading icons: the heading keeps exactly the Calculator it had. */
 #archive-terminal-preview .fo-panel { padding:10px 14px 14px; background:var(--panel); height:auto; overflow:visible; }
 #archive-terminal-preview .fo-form { gap:14px; padding:12px 0 0; }
-#archive-terminal-preview .fo-mlTrigger { background:#20232c; border:1px solid #2a303c; border-radius:5px; height:32px; min-height:32px; padding:0 10px; font-size:14px; }
+#archive-terminal-preview .fo-mlTrigger { background:#1e2126; border:1px solid transparent; border-radius:5px; height:32px; min-height:32px; padding:0 10px; font-size:14px; font-weight:600; transition:background-color 120ms ease, border-color 120ms ease; }
+#archive-terminal-preview .fo-mlTrigger:hover:not(:disabled) { background:#23272e; }
+#archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] { border-color:#3a3f48; }
 #archive-terminal-preview .fo-mlRow { gap:10px; }
 #archive-terminal-preview .fo-mlTriggerLevBtn { color:var(--accent); }
 #archive-terminal-preview .order-family-tabs { gap:8px; border-color:var(--border); padding-inline:0; }
-#archive-terminal-preview .order-family-tabs button { font-size:13px; line-height:20px; font-weight:550; padding-inline:0; }
-#archive-terminal-preview :is(.fo-label,.fo-fieldCaption,.order-family-label) { font-size:12px; color:var(--text-secondary); }
-#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input) { background:#172432; border:1px solid #2a3948; border-radius:7px; min-height:42px; }
-#archive-terminal-preview .fo-input { background:transparent; font-size:14px; font-weight:550; color:#f8fafc; }
+#archive-terminal-preview .order-family-tabs button { font-size:13px; line-height:20px; font-weight:500; padding-inline:0; color:var(--text-secondary); border-bottom-color:transparent; }
+#archive-terminal-preview .order-family-tabs button:hover { color:var(--text-primary); }
+#archive-terminal-preview .order-family-tabs button.active { color:var(--accent); font-weight:700; border-bottom-color:transparent; }
+#archive-terminal-preview :is(.fo-label,.fo-fieldCaption,.order-family-label) { font-size:11px; color:var(--text-secondary); }
+#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input) { background:#1e2126; border:1px solid transparent; border-radius:5px; min-height:42px; transition:border-color 120ms ease, background-color 120ms ease; }
+#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input):hover { background:#23272e; border-color:transparent; }
+#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input):focus-within { border-color:var(--accent); }
+#archive-terminal-preview .fo-input { background:transparent; font-size:14px; font-weight:600; color:#f8fafc; }
+/* The size slider, as the reference draws it: a thin neutral track, small
+   hollow stops, and a SOLID gold thumb — where the old one was a gold ring
+   around the panel colour, which read as another stop rather than as the
+   thing you hold. The five preset percentages stay: they are buttons that
+   set the size, not decoration, so they keep their places and only drop to
+   the muted tone the reference gives its scale. */
+#archive-terminal-preview .percent-slider-track input::-webkit-slider-runnable-track { height:3px; border-radius:3px; background:linear-gradient(to right,var(--accent) var(--size-percent),#3a3f48 var(--size-percent)); }
+#archive-terminal-preview .percent-slider-track input::-webkit-slider-thumb { height:14px; width:14px; margin-top:-5.5px; border:2px solid var(--panel); border-radius:50%; background:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+#archive-terminal-preview .percent-slider-track input::-moz-range-track { height:3px; border-radius:3px; background:#3a3f48; }
+#archive-terminal-preview .percent-slider-track input::-moz-range-progress { height:3px; background:var(--accent); }
+#archive-terminal-preview .percent-slider-track input::-moz-range-thumb { height:10px; width:10px; border:2px solid var(--panel); border-radius:50%; background:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+#archive-terminal-preview .percent-slider-marks span { width:9px; height:9px; top:9.5px; border:2px solid #3a3f48; background:#1e2126; }
+#archive-terminal-preview .percent-slider-presets button { font-size:11px; color:var(--text-tertiary); padding:0; }
+#archive-terminal-preview .percent-slider-presets button:hover { color:var(--text-secondary); }
+#archive-terminal-preview .percent-slider-presets button[aria-pressed="true"] { color:var(--accent); font-weight:600; }
+/* GEOMETRY IS DESKTOP-ONLY. A phone has its own complete layout for this
+   panel in FuturesMobile.css (the tabs in a four-column grid, 44px touch
+   targets, the selects back in the flow), and the brief is explicit that
+   mobile is not redesigned. Only colour and weight above reach it.
+
+   On a desktop the two selects are pinned absolutely at the top of the
+   panel and the tab row is pushed down past them by a margin — 62px, which
+   left ~30px of nothing between the selects and the tabs. The reference
+   puts 18px there. The pin also sat 16px in while every field sat 14px in,
+   so the selects' edges missed the fields' by 2px; both now share the
+   panel's own 14px. */
+@media (min-width:901px) {
+  #archive-terminal-preview .fo-panel { padding:14px 14px 18px; }
+  #archive-terminal-preview .fo-form { gap:12px; }
+  #archive-terminal-preview .fo-form > .fo-mlWrap { top:14px; left:14px; right:14px; }
+  #archive-terminal-preview .order-family-tabs { margin-top:50px; border-bottom:0; }
+  #archive-terminal-preview .order-family-tabs button { padding-block:6px; }
+  #archive-terminal-preview .percent-slider-continuous { gap:6px; padding:4px 5px 0; }
+}
 #archive-terminal-preview :is(input,button,select) { font-family:var(--font-family); font-variant-numeric:tabular-nums; }
 #archive-terminal-preview :is(input,button,select):focus-visible { outline:2px solid #f0b90b80; outline-offset:2px; }
-#archive-terminal-preview .fo-infoBox { background:#0b1019; border:1px solid var(--border); border-radius:7px; padding:12px; }
+/* The order's figures are a SECTION, not a card in a frame: the reference
+   separates the panel's parts with space and hairlines, never with boxes
+   inside the box. Same rows, same figures, same order. */
+#archive-terminal-preview .fo-infoBox { background:transparent; border:0; border-top:1px solid var(--border); border-radius:0; padding:12px 0 0; }
 #archive-terminal-preview :is(.fo-infoRow > :first-child,.futures-account-summary .fa-label) { color:var(--archive-label) !important; }
-#archive-terminal-preview .fo-submitPair { gap:8px; position:static; box-shadow:none; }
-#archive-terminal-preview .fo-submitPair button { position:static; box-shadow:none; border-radius:999px; height:44px; min-height:44px; font-size:13px; font-weight:650; color:#fff; border:0; }
+#archive-terminal-preview .fo-submitPair { gap:10px; position:static; box-shadow:none; }
+/* The reference's action weight: 15px at 700 on the same 44px pill. */
+#archive-terminal-preview .fo-submitPair button { position:static; box-shadow:none; border-radius:999px; height:44px; min-height:44px; font-size:15px; font-weight:700; color:#fff; border:0; }
 #archive-terminal-preview .fo-submitPair .buy { background:#00c67c; color:#fff; }
 #archive-terminal-preview .fo-submitPair .sell { background:#ff3453; color:#fff; }
 #archive-terminal-preview .fo-submitPair button:disabled { opacity:.9; cursor:not-allowed; }
