@@ -70,6 +70,10 @@ jobs:
       - name: Confirm deployed Worker health
         run: |
           curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='futures-edge-v2')process.exit(1)})"
+      - name: Confirm public Render fallback contract
+        run: |
+          curl -fsS https://voltex-api.onrender.com/api/v1/market/display/futures-book/BTCUSDT -o /tmp/render-book.json
+          node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/render-book.json','utf8'));if(j.available!==true||j.symbol!=='BTCUSDT'||!Array.isArray(j.bids)||!Array.isArray(j.asks)||!j.bids.length||!j.asks.length)process.exit(1)"
       - name: Confirm deployed Futures book contract
         run: |
           for attempt in $(seq 1 18); do
