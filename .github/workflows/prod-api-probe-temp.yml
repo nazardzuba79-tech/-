@@ -66,6 +66,17 @@ jobs:
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
             const context=await browser.newContext({viewport:{width:1600,height:900},locale:'ru-RU'});
+            await context.addInitScript(() => {
+              localStorage.setItem('exchange_token','qa-browser-only');
+              localStorage.setItem('exchange_lang','ru');
+            });
+            await context.route('https://api.voltextech.net/api/v1/me', async route => {
+              await route.fulfill({
+                status:200,
+                contentType:'application/json',
+                body:JSON.stringify({id:'qa-browser',displayName:'QA Browser',email:'qa@example.invalid',createdAt:'2026-01-01',isAdmin:false,kycStatus:'NOT_STARTED'})
+              });
+            });
             const page=await context.newPage();
             const events=[];
             page.on('requestfailed', r=>events.push({kind:'requestfailed',url:r.url(),failure:r.failure()?.errorText||null}));
