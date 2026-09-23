@@ -1,4 +1,5 @@
-import { api } from './api';
+import { API_BASE } from './api';
+import { readDisplayJson, DISPLAY_REFRESH_MS } from './displaySnapshotCache';
 import type { MarketTicker, GlobalMarketSnapshot } from './api';
 import { readSpotWarmCache, writeSpotWarmCache } from './terminalWarmCache';
 
@@ -172,9 +173,10 @@ class MarketDataStore {
   refresh(): Promise<void> {
     if (typeof document !== 'undefined' && document.hidden) return Promise.resolve();
     if (this.inFlight) return this.inFlight;
-    this.inFlight = api
-      .getMarketSnapshot()
-      .then((snapshot) => this.apply(snapshot))
+    this.inFlight = readDisplayJson<MarketSnapshotResponse>(
+      `${API_BASE}/market/display/spot-snapshot`,
+      DISPLAY_REFRESH_MS,
+    ).then((snapshot) => this.apply(snapshot))
       .catch(() => {
         // A transport failure keeps whatever was last known good on
         // screen and flags the status — it never blanks the numbers and
