@@ -1210,6 +1210,7 @@ export const RU = {
   'futures.orderError.commandLimit': 'Достигнут лимит операций счёта.',
   'futures.orderError.accountMissing': 'Торговый счёт не подключён.',
   'futures.orderError.priceUnavailable': 'Текущая цена контракта сейчас недоступна или устарела. Повторите через несколько секунд.',
+  'futures.orderError.serverUnavailable': 'Сервер перезапускается и не ответил. Проверьте ордера и повторите через минуту.',
   'futures.orderError.busy': 'Предыдущая операция ещё выполняется. Повторите через секунду.',
   'futures.orderError.reduceSide': 'Сокращающий ордер должен быть по той же позиции, на противоположной стороне и в том же режиме маржи.',
   'futures.orderError.executionMode': 'На счёте есть позиция или ордер другого режима исполнения. Закройте их и повторите.',
