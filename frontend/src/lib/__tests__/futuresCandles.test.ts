@@ -29,21 +29,35 @@ test('rejects inconsistent OHLC and duplicate times',()=>{
   const f=frame();f.result.list[0][2]='0.001';expect(()=>parseFuturesCandles(f,'1000PEPEUSDT')).toThrow();
   const d=frame();d.result.list.push(d.result.list[0]);expect(()=>parseFuturesCandles(d,'1000PEPEUSDT')).toThrow();
 });
-test('requests linear candles with exact symbol/interval and abort signal, without credentials',async()=>{
+test('requests Bybit candles directly with provider interval and no credentials',async()=>{
   const mocked=jest.spyOn(globalThis,'fetch').mockResolvedValue({ok:true,json:async()=>frame()} as Response);
   const controller=new AbortController();const endTime=1700000900000;
   await getFuturesCandles('1000PEPE/USDT','4h',520,controller.signal,endTime);
-  const [url,options]=mocked.mock.calls[0];const parsed=new URL(String(url),'https://voltextech.net');
-  expect(parsed.pathname).toBe('/api/v1/market/futures/candles/1000PEPE-USDT');
-  expect(parsed.searchParams.get('interval')).toBe('4h');
-  expect(parsed.searchParams.get('endTime')).toBe(String(endTime));
-  expect(options).toEqual({signal:controller.signal,credentials:'omit'});
+  const [url,options]=mocked.mock.calls[0];const parsed=new URL(String(url));
+  expect(parsed.hostname).toBe('api.bybit.com');
+  expect(parsed.pathname).toBe('/v5/market/kline');
+  expect(parsed.searchParams.get('category')).toBe('linear');
+  expect(parsed.searchParams.get('symbol')).toBe('1000PEPEUSDT');
+  expect(parsed.searchParams.get('interval')).toBe('240');
+  expect(parsed.searchParams.get('end')).toBe(String(endTime));
+  expect(options).toEqual({signal:controller.signal,credentials:'omit',headers:{Accept:'application/json'}});
 });
-test('never falls back on HTTP failure or unsupported input',async()=>{
-  const mocked=jest.spyOn(globalThis,'fetch').mockResolvedValue({ok:false} as Response);
-  await expect(getFuturesCandles('BTC/USDT','15m',520)).rejects.toThrow();expect(mocked).toHaveBeenCalledTimes(1);
-  await expect(getFuturesCandles('BTC/USD','15m',520)).rejects.toThrow();expect(mocked).toHaveBeenCalledTimes(1);
-  await expect(getFuturesCandles('BTC/USDT','15m',520,undefined,-1)).rejects.toThrow();expect(mocked).toHaveBeenCalledTimes(1);
+test('falls back only to Cloudflare edge when direct public Bybit hosts fail',async()=>{
+  const mocked=jest.spyOn(globalThis,'fetch').mockImplementation(async(url:any)=>{
+    const host=new URL(String(url)).hostname;
+    if(host==='api.bybit.com'||host==='api.bytick.com')return {ok:false,status:403,json:async()=>({})} as Response;
+    if(host==='market.voltextech.net')return {ok:true,json:async()=>frame()} as Response;
+    throw new Error('unexpected host');
+  });
+  await getFuturesCandles('1000PEPE/USDT','1h',320);
+  expect(mocked).toHaveBeenCalledTimes(3);
+  expect(new URL(String(mocked.mock.calls[2][0])).hostname).toBe('market.voltextech.net');
+});
+test('unsupported input does not make a network request',async()=>{
+  const mocked=jest.spyOn(globalThis,'fetch');
+  await expect(getFuturesCandles('BTC/USD','15m',520)).rejects.toThrow();
+  await expect(getFuturesCandles('BTC/USDT','15m',520,undefined,-1)).rejects.toThrow();
+  expect(mocked).not.toHaveBeenCalled();
 });
 test('Futures terminal display candles are not coupled to private execution auth',()=>{
   const page=fs.readFileSync(path.resolve(__dirname,'../../pages/FuturesPage.tsx'),'utf8');
