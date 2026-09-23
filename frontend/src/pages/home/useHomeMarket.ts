@@ -86,6 +86,14 @@ export interface HomeMarket {
  */
 export const HOME_MARKET_REFRESH_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_HERO_PAIR = HOME_HERO_PAIR;
+const MARKET_EDGE_BASE='https://market.voltextech.net';
+const production=()=>typeof window!=='undefined'&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
+async function edgeJson<T>(path:string):Promise<T>{const r=await fetch(`${MARKET_EDGE_BASE}${path}`,{credentials:'omit',headers:{Accept:'application/json'}});if(!r.ok)throw new Error('edge_market_unavailable');return r.json() as Promise<T>;}
+const getDisplayTickers=()=>production()?edgeJson<Awaited<ReturnType<typeof api.getExternalTickers>>>('/market/display/spot-tickers'):api.getExternalTickers();
+const getDisplayCfdTickers=()=>production()?edgeJson<Awaited<ReturnType<typeof api.getCfdTickers>>>('/cfd/display/tickers'):api.getCfdTickers();
+const getDisplayBook=(pair:string,_limit:number)=>production()?edgeJson<Awaited<ReturnType<typeof api.getExternalOrderBook>>>(`/market/display/spot-book/${pair.replace('/','-')}`):api.getExternalOrderBook(pair,_limit);
+const getDisplayCandles=(pair:string,interval:string,limit:number)=>production()?edgeJson<Awaited<ReturnType<typeof api.getExternalCandles>>>(`/market/display/spot-candles/${pair.replace('/','-')}?interval=${interval}&limit=${limit}`):api.getExternalCandles(pair,interval,limit);
+const getDisplayTrades=(pair:string,_limit:number)=>production()?edgeJson<Awaited<ReturnType<typeof api.getExternalTrades>>>(`/market/display/spot-trades/${pair.replace('/','-')}`):api.getExternalTrades(pair,_limit);
 const receivedNumber = (value: unknown): number => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '')
   && Number.isFinite(Number(value)) ? Number(value) : NaN;
 
@@ -217,7 +225,7 @@ export function useHomeMarket(): HomeMarket {
       cfdInFlight = true;
       cfdStartedAt = Date.now();
       try {
-        const res = await api.getCfdTickers();
+        const res = await getDisplayCfdTickers();
         if (cancelled) return;
         const history = mergePriceHistory(committed.cfd?.history ?? {}, res.tickers
           .filter(row => row.status === 'live' && !row.stale)
@@ -245,7 +253,7 @@ export function useHomeMarket(): HomeMarket {
       let receivedCandles: HomeCandle[] = [];
       let receivedTrades: HomeTrade[] = [];
 
-      const bookTask = api.getExternalOrderBook(pair, 12).then(value => {
+      const bookTask = getDisplayBook(pair, 12).then(value => {
         const validBook = value.pair === pair && positive(value.timestamp)
           ? { ...value,
             bids: value.bids.filter(row => positive(row.price) && positive(row.quantity)).slice(0, 6),
@@ -256,7 +264,7 @@ export function useHomeMarket(): HomeMarket {
         else updateHero(pair, { bookStatus: 'error' });
       }).catch(() => updateHero(pair, { bookStatus: 'error' }));
 
-      const candleTask = api.getExternalCandles(pair, '15m', 48).then(value => {
+      const candleTask = getDisplayCandles(pair, '15m', 48).then(value => {
         const validCandles = value.pair === pair
           ? value.candles.filter(c => [c.time, c.open, c.high, c.low, c.close].every(Number.isFinite)
             && Math.min(c.time, c.open, c.high, c.low, c.close) > 0
@@ -268,7 +276,7 @@ export function useHomeMarket(): HomeMarket {
         } else updateHero(pair, { candlesStatus: 'error' });
       }).catch(() => updateHero(pair, { candlesStatus: 'error' }));
 
-      const tradeTask = api.getExternalTrades(pair, 8).then(value => {
+      const tradeTask = getDisplayTrades(pair, 8).then(value => {
         const validTrades = value.pair === pair
           ? value.trades.filter(row => positive(row.price) && positive(row.quantity)
             && Number.isFinite(row.time) && row.time > 0 && (row.side === 'BUY' || row.side === 'SELL'))
@@ -299,7 +307,7 @@ export function useHomeMarket(): HomeMarket {
         || Date.now() - tickerStartedAt < HOME_MARKET_REFRESH_MS) return;
       tickerInFlight = true;
       tickerStartedAt = Date.now();
-      api.getExternalTickers().then(res => {
+      getDisplayTickers().then(res => {
         if (cancelled) return;
         const rows: HomeTicker[] = res.tickers
           .filter(t => Number.isFinite(receivedNumber(t.lastPrice)) && receivedNumber(t.lastPrice) >= 0)
