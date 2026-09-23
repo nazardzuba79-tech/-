@@ -145,7 +145,9 @@ describe('translation integrity', () => {
         // guard meaningful: every OTHER byte of every dictionary still has
         // to match. `futures.openContract` is the label on the contract
         // name in an open position, which now opens that contract.
-        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract'];
+        // `futures.orderError.serverUnavailable` names a command the host
+        // answered for a restarting API (a code-less 502/503/504).
+        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable'];
         return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
