@@ -43,8 +43,24 @@ export interface LiveSink {
  * carries the socket's own backpressure back into it, so the caller's
  * blocked/drain handling is untouched.
  */
+const LIVE_GZIP_WRITABLE_HIGH_WATER_MARK = 2 * 1024 * 1024;
+
 function gzipSink(res: Response): LiveSink {
-  const gzip = zlib.createGzip();
+  // A normal full-market snapshot is currently ~0.9 MB uncompressed. Node's
+  // default Transform writable highWaterMark is only 16 KiB, so the very
+  // first healthy snapshot made gzip.write() return false. writeLiveStream
+  // interpreted that as a slow browser and, if any delta arrived before the
+  // transform's drain, replaced it with ANOTHER full snapshot. With an active
+  // market that became a self-sustaining snapshot loop and huge egress.
+  //
+  // This is input buffering only; actual slow-socket backpressure still
+  // propagates through the gzip pipe, and writeLiveStream still destroys a
+  // client that stays blocked for 30 seconds. The cap is deliberately just
+  // above today's bounded snapshot, not an unbounded queue.
+  const gzipOptions: zlib.ZlibOptions & { writableHighWaterMark: number } = {
+    writableHighWaterMark: LIVE_GZIP_WRITABLE_HIGH_WATER_MARK,
+  };
+  const gzip = zlib.createGzip(gzipOptions);
   gzip.pipe(res);
   // The socket going away must not leave the compressor attached to it.
   res.once('close', () => { if (!gzip.destroyed) gzip.destroy(); });

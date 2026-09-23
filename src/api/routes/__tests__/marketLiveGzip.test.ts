@@ -104,6 +104,41 @@ describe('live stream compression', () => {
     } finally { client.close(); server.close(); }
   });
 
+
+  it('does not turn one large healthy snapshot into a repeated-snapshot loop', async () => {
+    const feed = new LiveFeed('large-gzip-stream');
+    feed.status = 'live';
+    feed.publish('snapshot', Array.from({ length: 1450 }, (_, i) => ({
+      ...ticker(`linear_perpetual:S${i}USDT`, 100 + i),
+      id: `linear_perpetual:S${i}USDT`,
+      pair: `S${i}/USDT`, symbol: `S${i}/USDT`, providerSymbol: `S${i}USDT`,
+      marketType: 'linear_perpetual' as const, baseAsset: `S${i}`, quoteAsset: 'USDT', settleAsset: 'USDT',
+      bidPrice: 100 + i, askPrice: 101 + i, high24h: 110 + i, low24h: 90 + i,
+      volume24h: 123456.789, quoteVolume24h: 9876543.21, changePercent24h: 1.23,
+      indexPrice: 100 + i, markPrice: 100 + i, fundingRate: 0.0001,
+      openInterest: 12345, openInterestValue: 1234500, fundingIntervalMinutes: 480,
+      providerEventAt: Date.now(), receivedAt: Date.now(), fetchedAt: Date.now(),
+    } as LiveTicker)));
+    const app = express(); app.use('/api/v1', marketLiveRouter(feed));
+    const { server, port } = await listen(app);
+    const client = connect(port, { 'accept-encoding': 'gzip' });
+    try {
+      await until(() => feed.subscriberCount === 1);
+      // Publish while the initial large frame is still moving through gzip.
+      // With the old 16 KiB transform high-water mark these were collapsed
+      // into another ~0.9 MB snapshot on drain, then the same thing repeated.
+      for (let i = 0; i < 20; i++) feed.publish('delta', [{
+        ...ticker('linear_perpetual:BTCUSDT', 101 + i),
+        id: 'linear_perpetual:BTCUSDT', marketType: 'linear_perpetual' as const,
+        settleAsset: 'USDT',
+      } as LiveTicker]);
+      await until(() => client.frames.some(f => f.type === 'delta'), 6000);
+      await new Promise(r => setTimeout(r, 250));
+      expect(client.frames.filter(f => f.type === 'snapshot')).toHaveLength(1);
+      expect(client.frames.filter(f => f.type === 'delta').length).toBeGreaterThan(0);
+    } finally { client.close(); server.close(); }
+  });
+
   it('serves plain text, unchanged, to a client that does not accept gzip', async () => {
     const feed = new LiveFeed('plain-stream');
     feed.status = 'live';
