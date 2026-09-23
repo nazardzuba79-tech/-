@@ -1,11 +1,12 @@
 import type { LiveQuote } from './liveMarketTypes';
+import { subscribeFuturesTickerFeed, type FuturesTickerUpdate } from './futuresDepth';
 
 const DIRECT_TICKER_URLS = [
   'https://api.bybit.com/v5/market/tickers?category=linear',
   'https://api.bytick.com/v5/market/tickers?category=linear',
 ] as const;
 const EDGE_TICKER_URL = 'https://market.voltextech.net/market/display/futures-tickers';
-const REFRESH_MS = 30_000;
+const REFRESH_MS = 300_000;
 const RETRY_MS = 60_000;
 
 type Listener = (rows: ReadonlyMap<string, LiveQuote>) => void;
@@ -34,7 +35,7 @@ export function parseDirectFuturesTickers(payload: any, now = Date.now()): Map<s
       pair,
       symbol: pair,
       providerSymbol: raw.symbol,
-      provider: 'bybit',
+      provider: payload?.source === 'okx' ? 'okx' : 'bybit',
       marketType: 'linear_perpetual',
       volumeAsset: baseAsset,
       turnoverAsset: 'USDT',
@@ -81,6 +82,37 @@ export function parseNormalizedFuturesSnapshot(payload: any): Map<string, LiveQu
   return rows;
 }
 
+export function applyFuturesTickerUpdate(rows:ReadonlyMap<string,LiveQuote>, pair:string, update:FuturesTickerUpdate, now=Date.now()):Map<string,LiveQuote>{
+  const next=new Map(rows);
+  const previous=next.get(pair);
+  const symbol=pair.replace('/','');
+  if(update.symbol!==symbol)return next;
+  const number=(value:string|undefined,fallback:number|null)=>value===undefined?fallback:(Number.isFinite(Number(value))?Number(value):fallback);
+  const lastPrice=number(update.lastPrice,previous?.lastPrice??null);
+  if(lastPrice===null||lastPrice<=0)return next;
+  const baseAsset=pair.slice(0,-5);
+  next.set(pair,{
+    id:`linear_perpetual:${symbol}`,pair,symbol:pair,providerSymbol:symbol,provider:'bybit',marketType:'linear_perpetual',
+    volumeAsset:baseAsset,turnoverAsset:'USDT',baseAsset,quoteAsset:'USDT',settleAsset:'USDT',
+    lastPrice,
+    bidPrice:number(update.bid1Price,previous?.bidPrice??null),
+    askPrice:number(update.ask1Price,previous?.askPrice??null),
+    high24h:number(update.highPrice24h,previous?.high24h??null),
+    low24h:number(update.lowPrice24h,previous?.low24h??null),
+    volume24h:number(update.volume24h,previous?.volume24h??null),
+    quoteVolume24h:number(update.turnover24h,previous?.quoteVolume24h??null),
+    changePercent24h:update.price24hPcnt===undefined?(previous?.changePercent24h??null):Number(update.price24hPcnt)*100,
+    indexPrice:number(update.indexPrice,previous?.indexPrice??null),
+    markPrice:number(update.markPrice,previous?.markPrice??null),
+    fundingRate:number(update.fundingRate,previous?.fundingRate??null),
+    fundingIntervalMinutes:update.fundingIntervalHour===undefined?(previous?.fundingIntervalMinutes??null):Number(update.fundingIntervalHour)*60,
+    openInterest:number(update.openInterest,previous?.openInterest??null),
+    openInterestValue:number(update.openInterestValue,previous?.openInterestValue??null),
+    providerEventAt:update.ts,sequence:previous?.sequence??null,receivedAt:now,fetchedAt:previous?.fetchedAt??now,stale:false,
+  });
+  return next;
+}
+
 function productionSite(): boolean {
   if (typeof window === 'undefined') return false;
   const host = window.location.hostname;
@@ -99,14 +131,27 @@ class DirectFuturesReferenceStore {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private controller: AbortController | null = null;
   private visibilityAttached = false;
+  private tickerStop: (()=>void) | null = null;
 
   getState = (): ReadonlyMap<string, LiveQuote> => this.rows;
+
+  private attachTicker():void{
+    if(this.tickerStop||!productionSite())return;
+    this.tickerStop=subscribeFuturesTickerFeed((update)=>{
+      const base=update.symbol.endsWith('USDT')?update.symbol.slice(0,-4):'';
+      if(!base)return;
+      const pair=`${base}/USDT`;
+      this.rows=applyFuturesTickerUpdate(this.rows,pair,update);
+      this.emit();
+    });
+  }
 
   subscribe = (listener: Listener): (() => void) => {
     this.listeners.add(listener);
     listener(this.rows);
     if (this.listeners.size === 1) {
       this.attachVisibility();
+      this.attachTicker();
       void this.load();
     }
     return () => {
@@ -187,6 +232,8 @@ class DirectFuturesReferenceStore {
     this.timer = null;
     this.controller?.abort();
     this.controller = null;
+    this.tickerStop?.();
+    this.tickerStop = null;
     if (this.visibilityAttached && typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.onVisibility);
       this.visibilityAttached = false;

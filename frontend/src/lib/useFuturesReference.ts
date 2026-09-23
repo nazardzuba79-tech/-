@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { directFuturesReferenceStore } from './directFuturesReference';
 
 /**
- * Public Futures reference prices come from Bybit directly in the visitor's
- * browser. If that path is unavailable, the store falls back to the public
- * Cloudflare market edge. Render and Neon are not in this display path.
+ * Bulk reference rows refresh slowly. The currently selected contract is
+ * overlaid automatically from ticker frames already carried by the direct
+ * depth/trades WebSocket.
  */
 export function useFuturesReference() {
   const [rows, setRows] = useState(directFuturesReferenceStore.getState);
