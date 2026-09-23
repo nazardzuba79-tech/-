@@ -326,13 +326,14 @@ describe('6. no fake controls', () => {
     }
   });
 
-  it('the status line claims "live" only when the feed says so', () => {
-    const status = mountComponent(STATUS, { execution: { contract: contractRules } });
-    const live = JSON.stringify(status.render({ status: 'live', asOf: Date.now() }));
-    expect(live).toContain('futures.statusLive');
-    for (const degraded of ['connecting', 'reconnecting', 'stale', 'unavailable'] as const) {
-      const tree = JSON.stringify(mountComponent(STATUS, {}).render({ status: degraded, asOf: null }));
-      expect({ degraded, live: tree.includes('futures.statusLive') }).toEqual({ degraded, live: false });
+  it('does not expose feed/snapshot implementation state in the customer UI', () => {
+    const rendered = (status: 'live' | 'connecting' | 'reconnecting' | 'stale' | 'unavailable') =>
+      JSON.stringify(mountComponent(STATUS, { execution: { contract: contractRules } }).render({ status, asOf: Date.now() }));
+    for (const state of ['live', 'connecting', 'reconnecting', 'stale', 'unavailable'] as const) {
+      const tree = rendered(state);
+      for (const technical of ['futures.statusLive', 'catalogue.stale', 'trade.bookUnavailable', 'trade.marketDelayed', 'data-feed-age', 'UTC', 'Snapshot', 'Снимок', 'Знімок']) {
+        expect({ state, technical, visible: tree.includes(technical) }).toEqual({ state, technical, visible: false });
+      }
     }
   });
 
