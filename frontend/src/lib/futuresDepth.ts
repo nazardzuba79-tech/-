@@ -267,13 +267,16 @@ interface ActiveDepth {
  *  Set explicitly rather than read from `import.meta`, which this module
  *  must stay free of so it can be tested outside the bundler. */
 let fallbackBase = '/api/v1';
+let fallbackBookBase = fallbackBase;
 let sampledDisplay = false;
 const PUBLIC_MARKET_EDGE_BASE = 'https://market.voltextech.net';
-export function setFuturesDepthFallbackBase(base: string, sampled = false) {
-  fallbackBase = base; sampledDisplay = sampled;
+export function setFuturesDepthFallbackBase(base: string, sampled = false, displayBase?: string) {
+  fallbackBase = base.replace(/\/$/, '');
   const host = typeof window !== 'undefined' ? window.location.hostname : '';
   const productionSite = host === 'voltextech.net' || host.endsWith('.voltextech.net');
-  setSampledBase(base, sampled && productionSite ? PUBLIC_MARKET_EDGE_BASE : base);
+  fallbackBookBase = (displayBase ?? (productionSite ? PUBLIC_MARKET_EDGE_BASE : fallbackBase)).replace(/\/$/, '');
+  sampledDisplay = sampled;
+  setSampledBase(fallbackBase, fallbackBookBase);
   if (sampled) transport.close(); else closeSampledDepth();
 }
 
@@ -393,7 +396,7 @@ class FuturesDepthTransport {
     this.scheduleEmit(symbol, active);
   }
 
-  // ---- fallback: our own backend, only while the socket has nothing ----
+  // ---- fallback: Cloudflare public REST, only while the direct Bybit socket has nothing ----
 
   private scheduleFallback(active: ActiveDepth, symbol: string) {
     if (active.polling || active.poll !== null || typeof fetch !== 'function') return;
@@ -423,7 +426,7 @@ class FuturesDepthTransport {
     if (active.listeners.size === 0) return;
     active.polling = true;
     try {
-      const response = await fetch(`${fallbackBase}/market/futures/orderbook/${symbol}`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(`${fallbackBookBase}/market/display/futures-book/${symbol}`, { headers: { Accept: 'application/json' }, credentials: 'omit' });
       if (this.subscriptions.get(symbol) !== active) return;
       const body = response.ok ? await response.json() : null;
       // An unavailable venue is not an empty book: nothing is applied, the
