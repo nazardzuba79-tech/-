@@ -51,6 +51,36 @@ export interface FuturesDepthSnapshot {
 
 export interface FuturesTrade { id:string; price:string; quantity:string; time:number; side:'BUY'|'SELL' }
 
+export interface FuturesTickerUpdate {
+  symbol:string; ts:number;
+  lastPrice?:string; bid1Price?:string; ask1Price?:string; highPrice24h?:string; lowPrice24h?:string;
+  volume24h?:string; turnover24h?:string; price24hPcnt?:string; indexPrice?:string; markPrice?:string;
+  fundingRate?:string; fundingIntervalHour?:string; openInterest?:string; openInterestValue?:string;
+}
+export interface FuturesKlineUpdate {
+  symbol:string; interval:string; time:number; open:number; high:number; low:number; close:number; volume:number; confirm:boolean; updatedAt:number;
+}
+const WS_INTERVAL:Record<string,string>={'5m':'5','15m':'15','1h':'60','4h':'240','1d':'D','1w':'W'};
+const decimal=(value:unknown)=>typeof value==='string'&&/^\d+(?:\.\d+)?$/.test(value)&&Number.isFinite(Number(value));
+
+export function parseFuturesTickerFrame(frame:any,symbol:string):FuturesTickerUpdate|null{
+  if(frame?.topic!==`tickers.${symbol}`||!['snapshot','delta'].includes(frame.type)||!frame.data||frame.data.symbol!==symbol)return null;
+  const d=frame.data;
+  const out:FuturesTickerUpdate={symbol,ts:Number(frame.ts)||Date.now()};
+  for(const key of ['lastPrice','bid1Price','ask1Price','highPrice24h','lowPrice24h','volume24h','turnover24h','price24hPcnt','indexPrice','markPrice','fundingRate','fundingIntervalHour','openInterest','openInterestValue'] as const){
+    const value=d[key];if(value!==undefined&&value!==null&&decimal(String(value))) (out as any)[key]=String(value);
+  }
+  return out;
+}
+export function parseFuturesKlineFrame(frame:any,symbol:string,interval:string):FuturesKlineUpdate|null{
+  const provider=WS_INTERVAL[interval];if(!provider||frame?.topic!==`kline.${provider}.${symbol}`||!Array.isArray(frame.data)||!frame.data.length)return null;
+  const row=frame.data[0];
+  if(row?.interval!==provider||![row.open,row.high,row.low,row.close,row.volume].every(decimal))return null;
+  const time=Number(row.start),open=Number(row.open),high=Number(row.high),low=Number(row.low),close=Number(row.close),volume=Number(row.volume);
+  if(!Number.isSafeInteger(time)||time<=0||Math.min(open,high,low,close)<=0||low>Math.min(open,close)||high<Math.max(open,close)||volume<0)return null;
+  return {symbol,interval,time:time/1000,open,high,low,close,volume,confirm:row.confirm===true,updatedAt:Number(row.timestamp)||Number(frame.ts)||Date.now()};
+}
+
 export function parseFuturesTrades(frame:any,symbol:string,now:number):FuturesTrade[] {
   if(frame?.topic!==`publicTrade.${symbol}`)return [];
   if(!Array.isArray(frame.data)||frame.data.length>1024)return [];
