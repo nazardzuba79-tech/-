@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { HttpProviderClient, ProviderHealth, providerHealthRegistry } from '../ProviderHealth';
 import type { CachedValue } from '../ProviderCache';
-import { BybitMarketDataService } from '../bybit/BybitMarketDataService';
+import { BybitMarketDataService, type BybitCategory, type DepthBook } from '../bybit/BybitMarketDataService';
 import type { MarketUniverseSnapshot } from '../bybit/MarketUniverse';
 import type { NormalizedInstrument } from '../bybit/types';
 import { LiveFeed, reconnectDelay, type LiveFrame } from './contract';
@@ -36,6 +36,19 @@ const instrumentSchema = z.object({
   providerMaxLeverage: finiteNullable,
   fundingIntervalMinutes: finiteNullable,
 });
+const depthDecimal = z.string().max(64).regex(/^\d+(?:\.\d+)?$/);
+const depthLevelSchema = z.object({ price: depthDecimal, quantity: depthDecimal });
+const collectorDepthSchema = z.object({
+  value: z.object({
+    symbol: z.string().regex(/^[A-Z0-9]{2,32}$/),
+    bids: z.array(depthLevelSchema).max(1_000),
+    asks: z.array(depthLevelSchema).max(1_000),
+    updateId: z.number().int().nonnegative(),
+    providerTime: finiteNullable,
+  }),
+  fetchedAt: z.number().finite(),
+  stale: z.boolean(),
+});
 const universeSnapshotSchema = z.object({
   instruments: z.array(instrumentSchema).max(20_000),
   refreshedAt: finiteNullable,
@@ -61,6 +74,8 @@ export class MarketDataCollectorClient {
   private readonly http: HttpProviderClient;
   private universeCache: { value: MarketUniverseSnapshot; cachedAt: number } | null = null;
   private universeInFlight: Promise<MarketUniverseSnapshot> | null = null;
+  private readonly depthCache = new Map<string, { value: CachedValue<DepthBook>; cachedAt: number }>();
+  private readonly depthInFlight = new Map<string, Promise<CachedValue<DepthBook>>>();
   constructor(private url: string, private token: string, private fetchFn: typeof fetch = fetch) {
     const parsed = new URL(url);
     if (!['https:','http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== '/') throw new Error('Invalid collector URL');
@@ -97,6 +112,32 @@ export class MarketDataCollectorClient {
       return value;
     })().finally(() => { this.universeInFlight = null; });
     this.universeInFlight = load;
+    return load;
+  }
+  /** Linear-perpetual depth from the configured collector, never directly from the venue. */
+  async orderBook(providerSymbol: string): Promise<CachedValue<DepthBook>> {
+    const symbol = providerSymbol.toUpperCase();
+    if (!/^[A-Z0-9]{2,32}$/.test(symbol)) throw new Error('Unsupported symbol');
+    const now = Date.now();
+    const cached = this.depthCache.get(symbol);
+    if (cached && now - cached.cachedAt <= 1_000) return cached.value;
+    const existing = this.depthInFlight.get(symbol);
+    if (existing) return existing;
+    const load = (async () => {
+      const response = await this.fetchFn(`${this.url}/internal/v1/futures/orderbook/${encodeURIComponent(symbol)}`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+        redirect: 'error',
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!response.ok) throw new Error('Collector order book unavailable');
+      const parsed = collectorDepthSchema.parse(await response.json());
+      if (parsed.value.symbol !== symbol) throw new Error('Collector returned a book for a different symbol');
+      const value: CachedValue<DepthBook> = { value: parsed.value, fetchedAt: parsed.fetchedAt, stale: parsed.stale };
+      this.depthCache.set(symbol, { value, cachedAt: Date.now() });
+      if (this.depthCache.size > 64) this.depthCache.delete(this.depthCache.keys().next().value as string);
+      return value;
+    })().finally(() => { this.depthInFlight.delete(symbol); });
+    this.depthInFlight.set(symbol, load);
     return load;
   }
   start(): void { if (!this.running) { this.running = true; this.generation++; void this.connect(); } }
@@ -177,7 +218,7 @@ export class MarketDataCollectorClient {
  * The superclass transport is intentionally disabled, so constructing this
  * adapter in Oregon cannot fall back to a direct Bybit request. */
 export class CollectorUniverseProvider extends BybitMarketDataService {
-  constructor(private readonly collector: Pick<MarketDataCollectorClient,'universeSnapshot'>) {
+  constructor(private readonly collector: Pick<MarketDataCollectorClient,'universeSnapshot'|'orderBook'>) {
     super({
       baseUrl: 'http://127.0.0.1',
       fetchFn: async () => { throw new Error('Direct Bybit access disabled in API region'); },
@@ -198,6 +239,12 @@ export class CollectorUniverseProvider extends BybitMarketDataService {
   override listSpotInstruments(): Promise<CachedValue<NormalizedInstrument[]>> { return this.instruments('spot'); }
   override listLinearInstruments(): Promise<CachedValue<NormalizedInstrument[]>> { return this.instruments('linear'); }
   override listInverseInstruments(): Promise<CachedValue<NormalizedInstrument[]>> { return this.instruments('inverse'); }
+
+  /** Keep the API-side Futures fallback on the collector path. */
+  override async getOrderBook(category: BybitCategory, providerSymbol: string): Promise<CachedValue<DepthBook>> {
+    if (category !== 'linear') throw new Error(`Collector depth covers linear perpetuals only, not ${category}`);
+    return this.collector.orderBook(providerSymbol);
+  }
 }
 
 export function collectorFromEnv(env: NodeJS.ProcessEnv = process.env): MarketDataCollectorClient | null {
