@@ -1,4 +1,5 @@
-import { api } from './api';
+import { API_BASE } from './api';
+import { readDisplayJson, DISPLAY_REFRESH_MS } from './displaySnapshotCache';
 import type { MarketTicker, GlobalMarketSnapshot } from './api';
 import { readSpotWarmCache, writeSpotWarmCache } from './terminalWarmCache';
 
@@ -102,8 +103,8 @@ function initialState(): MarketState {
  *  polling faster than this cannot return fresher data — it would only
  *  cost VOLTEX requests. 3s preserves the terminal's existing feel while
  *  staying just under that TTL. */
-const MIN_INTERVAL_MS = 3_000;
-const DEFAULT_INTERVAL_MS = 5_000;
+const MIN_INTERVAL_MS = 60_000; // Owner-approved display snapshot cadence, not execution cadence.
+const DEFAULT_INTERVAL_MS = 60_000;
 const WARM_CACHE_WRITE_INTERVAL_MS = 30_000;
 
 type Listener = (state: MarketState) => void;
@@ -170,10 +171,12 @@ class MarketDataStore {
    * server's request coalescing.
    */
   refresh(): Promise<void> {
+    if (typeof document !== 'undefined' && document.hidden) return Promise.resolve();
     if (this.inFlight) return this.inFlight;
-    this.inFlight = api
-      .getMarketSnapshot()
-      .then((snapshot) => this.apply(snapshot))
+    this.inFlight = readDisplayJson<MarketSnapshotResponse>(
+      `${API_BASE}/market/display/spot-snapshot`,
+      DISPLAY_REFRESH_MS,
+    ).then((snapshot) => this.apply(snapshot))
       .catch(() => {
         // A transport failure keeps whatever was last known good on
         // screen and flags the status — it never blanks the numbers and

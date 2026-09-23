@@ -1,0 +1,41 @@
+name: Sampled CFD provider warmup
+on:
+  pull_request:
+    paths:
+      - 'src/api/middleware/publicDisplayCache.ts'
+      - 'src/api/routes/__tests__/sampledDisplayWarmup.test.ts'
+      - 'scripts/qa-cfd-display-browser.cjs'
+      - '.github/workflows/sampled-display-warmup.yml'
+permissions:
+  contents: read
+concurrency:
+  group: sampled-cfd-warmup-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  cfd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund && npm ci --prefix frontend --ignore-scripts --no-audit --no-fund && npx prisma generate
+      - run: npm run build && npm run build --prefix frontend
+      - run: npx jest --runInBand --silent --runTestsByPath src/api/routes/__tests__/sampledDisplayWarmup.test.ts src/api/routes/__tests__/sampledDisplayBudget.test.ts
+      - name: Install disposable browser
+        run: |
+          npm install --prefix /tmp/cfd-warmup playwright@1.63.0 --no-audit --no-fund
+          /tmp/cfd-warmup/node_modules/.bin/playwright install --with-deps chromium
+      - name: Real public-provider CFD and cached reload
+        env:
+          CFD_QA_PLAYWRIGHT: /tmp/cfd-warmup/node_modules/playwright
+        run: node scripts/qa-cfd-display-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cfd-warmup-${{ github.sha }}
+          path: docs/qa/cfd-display-browser/
+          retention-days: 3

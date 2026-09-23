@@ -104,7 +104,7 @@ export function TerminalPreview({ market }: { market: HomeMarket }) {
     .toLocaleTimeString(localeOf(lang), { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
   return (
-    <div id="home-live-terminal" className="vx-live-terminal" data-stale={!!stale}>
+    <div id="home-live-terminal" data-sampled-preview="true" className="vx-live-terminal" data-stale={!!stale}>
       <div className="vx-terminal-appbar">
         <span className="vx-terminal-logo"><LogoMark size={14} /> VOLTEX</span>
         <div className="vx-terminal-nav">

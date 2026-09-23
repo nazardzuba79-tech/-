@@ -29,6 +29,8 @@ on:
       # onSessionChange broadcast every session invariant rests on, and a
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/displaySnapshotCache.ts'
+      - 'frontend/src/lib/sampledDisplayCopy.ts'
       - 'src/api/middleware/auth.ts'
       - 'frontend/src/lib/copyTradingMoney.ts'
       - 'frontend/src/lib/modeledCopyData.ts'
@@ -95,6 +97,8 @@ on:
       # onSessionChange broadcast every session invariant rests on, and a
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/displaySnapshotCache.ts'
+      - 'frontend/src/lib/sampledDisplayCopy.ts'
       - 'src/api/middleware/auth.ts'
       - 'frontend/src/lib/copyTradingMoney.ts'
       - 'frontend/src/lib/modeledCopyData.ts'
@@ -228,8 +232,7 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-never-loading.cjs
       # The cadence and the locked tab in a browser, at both widths the owner
-      # reviews on: one more trade a day, none on a same-day reload, a 7D
-      # window that ends on today, and no trade rows anywhere.
+      # reviews on: one more trade a day, hidden trades, a 7D that moves.
       - name: Browser QA - one trade a day, hidden trades, a 7D that moves
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright

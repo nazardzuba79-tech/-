@@ -22,17 +22,19 @@ function mount(file:string,options:any={}){
   const react={...React,useMemo:(fn:any)=>fn(),useState(initial:any){const at=index++;if(!(at in hooks))hooks[at]=typeof initial==='function'?initial():initial;return[hooks[at],(value:any)=>{hooks[at]=typeof value==='function'?value(hooks[at]):value;}];},useRef(initial:any){const at=index++;return hooks[at]??={current:initial};},useCallback(fn:any,deps:any[]){const at=index++,old=hooks[at];if(!old||deps.some((d,i)=>d!==old.deps[i]))hooks[at]={fn,deps};return hooks[at].fn;},useEffect(fn:any,deps:any[]){const at=index++,old=hooks[at];if(!old||deps.some((d,i)=>d!==old.deps[i])){hooks[at]={deps};effects.push(()=>{old?.cleanup?.();hooks[at].cleanup=fn();});}}};
   const api=new Proxy(options.api??{},{get:(obj,key:string)=>obj[key]??(()=>new Promise(()=>{}))});
   const compiled=ts.transpileModule(read(file),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;const output:any={};
-  new Function('require','exports','window',compiled)((name:string)=>{
+  new Function('require','exports','window','document',compiled)((name:string)=>{
     if(name.endsWith('/useCompactAccountPanel')){
       const module:any={};const code=ts.transpileModule(read('lib/useCompactAccountPanel.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
       new Function('require','exports',code)(()=>react,module);return module;
     }
-    if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
+    if(name.endsWith('/displaySnapshotCache'))return{displayRefreshDelay:()=>6*60*60*1000,SLOW_DISPLAY_REFRESH_MS:6*60*60*1000,readDisplayJson:()=>api.getCfdTickers()};
+    if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error,API_BASE:'/api/v1'};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
     if(name.endsWith('/priceChange'))return{parseChangePercentOrNull:(v:any)=>v==null?null:Number(v),parseChangePercent:Number};if(name.endsWith('/useCfdTickers'))return{useCfdTickers:()=>options.feed};if(name.endsWith('/krakenSocket'))return{krakenSocket:{subscribeBook:()=>()=>{}}};if(name.endsWith('/bookFreshness'))return bookFreshness;if(name.endsWith('/tradingMode'))return{rememberTradingMode:jest.fn()};if(name==='react-router-dom')return{useSearchParams:()=>[options.params]};if(name.endsWith('.css'))return{};
     if(name==='./Skeleton'){components.SkeletonRow??=()=>null;return{SkeletonRow:components.SkeletonRow};}
     if(name.startsWith('./')||name.startsWith('../components/')){const label=name.split('/').pop()!;components[label]??=()=>null;return{[label]:components[label]};}
+    if(name.endsWith('/sampledDepth'))return{readSpotDisplayBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     return req(name);
-  },output,{setInterval,clearInterval});
+  },output,{setInterval,clearInterval,setTimeout,clearTimeout},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
   return{components,render(props={}){index=0;const fn:any=Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};
 }
 
@@ -75,16 +77,16 @@ test('bottom panel provides local practice positions and history without account
 
 test('CFD chart is owned by VOLTEX and uses real OHLC API rather than an external embed',()=>{
  const source=read('components/CfdChart.tsx');
- expect(source).toContain('createChart');expect(source).toContain('CandlestickSeries');expect(source).toContain('/cfd/candles/');
+ expect(source).toContain('createChart');expect(source).toContain('CandlestickSeries');expect(source).toContain('/cfd/display/candles/');
  expect(source).not.toContain('TradingViewAdvancedChart');
 });
 
-test('ticker hook polls every 15 seconds and keeps last good rows after a failed refresh',async()=>{
+test('ticker hook samples every six hours and keeps last good rows after a failed refresh',async()=>{
  const getCfdTickers=jest.fn().mockResolvedValueOnce({configured:true,tickers:rows}).mockRejectedValue(new Error('temporary'));
- const hook=mount('lib/useCfdTickers.ts',{api:{getCfdTickers}});hook.render();await tick();expect(hook.render().tickers).toHaveLength(13);jest.advanceTimersByTime(15000);await tick();const state=hook.render();expect(getCfdTickers).toHaveBeenCalledTimes(2);expect(state.tickers).toHaveLength(13);expect(state.loadError).toBe(true);expect(state.tickers.every((r:any)=>r.stale===true)).toBe(true);
+ const hook=mount('lib/useCfdTickers.ts',{api:{getCfdTickers}});hook.render(true);await tick();expect(hook.render(true).tickers).toHaveLength(13);jest.advanceTimersByTime(6*60*60*1000-1);await tick();expect(getCfdTickers).toHaveBeenCalledTimes(1);jest.advanceTimersByTime(1);await tick();const state=hook.render(true);expect(getCfdTickers).toHaveBeenCalledTimes(2);expect(state.tickers).toHaveLength(13);expect(state.loadError).toBe(true);expect(state.tickers.every((r:any)=>r.stale===true)).toBe(true);
 });
 
-test.each([{},null,'broken',{configured:true,tickers:null},{configured:true,tickers:{XAUUSD:'1'}}])('malformed ticker body fails safely: %p',async payload=>{const getCfdTickers=jest.fn().mockResolvedValue(payload);const hook=mount('lib/useCfdTickers.ts',{api:{getCfdTickers}});hook.render();await tick();const state=hook.render();expect(Array.isArray(state.tickers)).toBe(true);expect(state.loadError).toBe(true);});
+test.each([{},null,'broken',{configured:true,tickers:null},{configured:true,tickers:{XAUUSD:'1'}}])('malformed ticker body fails safely: %p',async payload=>{const getCfdTickers=jest.fn().mockResolvedValue(payload);const hook=mount('lib/useCfdTickers.ts',{api:{getCfdTickers}});hook.render(true);await tick();const state=hook.render(true);expect(Array.isArray(state.tickers)).toBe(true);expect(state.loadError).toBe(true);});
 
 test('WTI and Brent identities stay distinct in visible data',()=>{const wti=rows.find(x=>x.symbol==='WTIUSD')!,brent=rows.find(x=>x.symbol==='XBRUSD')!;expect(wti.providerSymbol).toBe('USOIL');expect(brent.providerSymbol).toBe('UKOIL');expect(wti.providerSymbol).not.toBe(brent.providerSymbol);});
 

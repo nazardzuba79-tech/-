@@ -1,3 +1,4 @@
+import { publicDisplayCache, DISPLAY_REFRESH_MS, SLOW_DISPLAY_REFRESH_MS } from '../middleware/publicDisplayCache';
 import { Router } from 'express';
 import { MarketDataGateway } from '../../services/marketData/MarketDataGateway';
 import type { MarketUniverse } from '../../services/marketData/bybit/MarketUniverse';
@@ -157,6 +158,9 @@ export function marketDataRouter(
    * the provider cost but VOLTEX still served every one of those requests.
    * Now one poll feeds every consumer on the page.
    */
+  router.get('/market/display/spot-snapshot', publicDisplayCache(DISPLAY_REFRESH_MS,
+    body => body?.tickers?.available === true),
+    (req,_res,next) => { req.url=req.url.replace('/market/display/spot-snapshot','/market/snapshot'); next(); });
   router.get('/market/snapshot', async (_req, res) => {
     try {
       res.json(await gateway.getSnapshot());

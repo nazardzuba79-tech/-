@@ -24,7 +24,7 @@ export class LiveMarketStore {
   private attempts = 0;
   private lastWarmCacheWriteAt = 0;
 
-  constructor(private createSource: () => Source, private useWarmCache = false) {
+  constructor(private createSource: () => Source, private useWarmCache = false, private policy: { watchdogMs?: number; retryFloorMs?: number } = {}) {
     const warm = useWarmCache ? readLiveQuoteCache() : null;
     this.state = warm
       ? { status: 'stale', rows: new Map(warm.map(row => [row.id, row])), revision: 0 }
@@ -42,7 +42,7 @@ export class LiveMarketStore {
   };
   private emit(): void { for (const listener of this.listeners) listener(this.state); }
   private stale(): void {
-    this.state = { status: 'stale', revision: this.state.revision + 1,
+    this.state = { ...this.state, status: 'stale', revision: this.state.revision + 1,
       rows: new Map([...this.state.rows].map(([id,row]) => [id,{ ...row, stale: true }])) };
     this.emit();
   }
@@ -78,7 +78,7 @@ export class LiveMarketStore {
           initialized = true; this.epoch = frame.epoch; this.wireRevision = frame.revision;
           const now = Date.now();
           this.lastMessage = now; if (now - connectedAt >= 60_000) this.attempts = 0;
-          this.state = { rows, status: frame.status, revision: this.state.revision + 1 }; this.emit();
+          this.state = { rows, status: frame.status, revision: this.state.revision + 1, ...(frame._display?.mode === 'snapshot' ? { sampled: true } : {}) }; this.emit();
 
           // Local browser write only. The SSE connection/cadence is
           // unchanged, so this path costs Render exactly zero requests.
@@ -91,12 +91,12 @@ export class LiveMarketStore {
       };
       for (const name of ['snapshot','delta','state']) source.addEventListener(name, receive);
       source.onerror = () => { if (this.source === source) this.failed(); };
-      this.watchdog = setInterval(() => { if (Date.now() - this.lastMessage > 40_000) this.failed(); }, 10_000);
+      this.watchdog = setInterval(() => { if (!(typeof document !== 'undefined' && document.hidden) && Date.now() - this.lastMessage > (this.policy.watchdogMs ?? 40_000)) this.failed(); }, 10_000);
     } catch { this.failed(); }
   }
   private failed(): void {
     this.stopTransport(); this.stale();
-    this.schedule(Math.min(30_000, 1000 * 2 ** Math.min(this.attempts++, 5)) * (0.75 + Math.random() * 0.25));
+    this.schedule(Math.max(this.policy.retryFloorMs ?? 0, Math.min(30_000, 1000 * 2 ** Math.min(this.attempts++, 5)) * (0.75 + Math.random() * 0.25)));
   }
   private schedule(ms: number): void {
     if (this.listeners.size && !this.retry) this.retry = setTimeout(() => { this.retry = null; this.connect(); }, ms);

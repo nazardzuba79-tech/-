@@ -14,4 +14,4 @@ export interface LiveQuote {
   receivedAt: number; fetchedAt: number; stale: boolean;
 }
 export type LiveStatus = 'disabled' | 'connecting' | 'live' | 'stale';
-export interface LiveState { status: LiveStatus; rows: ReadonlyMap<string, LiveQuote>; revision: number }
+export interface LiveState { sampled?: boolean; status: LiveStatus; rows: ReadonlyMap<string, LiveQuote>; revision: number }
