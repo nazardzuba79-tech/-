@@ -1,29 +1,53 @@
 # voltex-market-edge
 
-Cloudflare Worker (Workers Free) for future **public** VOLTEX market data
-(order books, tickers, Home market data, CFD display data).
+Cloudflare Worker (Workers Free) for **public** VOLTEX market-data fallback.
 
-Current state: `GET /health` plus public Futures display endpoints for order book and recent trades. The book is capped at 25 bids + 25 asks and cached at the Cloudflare edge; no private/trading route is exposed.
+## Production design
 
-- workers.dev: https://voltex-market-edge.nazardzuba79.workers.dev/health
-- custom domain: https://market.voltextech.net/health
+Primary Futures display path does **not** use this Worker:
 
-## Rules
-- Public data only. Never proxy trading commands, never read cookies or
-  `Authorization`, no balances / orders / positions / PnL / liquidation / ledger.
-- Private trading stays on Render. No writes to Neon.
-- No KV / Durable Objects / R2 until explicitly approved.
+- order book + public trades: browser → Bybit public WebSocket
+- candles: browser → Bybit public REST
+- reference tickers: browser → Bybit public REST
+
+The Worker is a fallback/cache for browsers or regions where direct public REST
+is unavailable:
+
+- `GET /market/display/futures-book/:symbol`
+- `GET /market/display/futures-trades/:symbol`
+- `GET /market/display/futures-tickers`
+- `GET /market/display/futures-candles/:symbol`
+- `GET /health`
+
+The fallback never calls Render or Neon. If both public Bybit HTTP hosts reject
+the Worker egress, it returns 503 rather than silently spending backend
+bandwidth.
+
+Order-book fallback snapshots are capped at 25 bids + 25 asks and cached at
+Cloudflare's edge. No KV / Durable Objects / R2 are required for this phase.
+
+## Security boundary
+
+- Public market data only.
+- Never proxy trading commands.
+- Never forward cookies or `Authorization`.
+- No balances / orders / positions / PnL / liquidation / ledger.
+- Private trading and execution stay on the existing VOLTEX API.
+- No writes to Neon.
+
+## Domains
+
+- custom domain: https://market.voltextech.net
+- health: https://market.voltextech.net/health
 
 ## Deploy
-Workflow: `.github/workflows/deploy-market-edge.yml` (secret `CLOUDFLARE_API_TOKEN`).
-A push alone does NOT deploy. Deploy runs only when a commit on branch
-`cloudflare-market-edge` contains `[deploy-market-edge]` in its message,
-or when started manually after the workflow is on the default branch.
 
-Commits on this branch must start with `[CF-Pages-Skip]` so Cloudflare Pages
-does not build them.
-Test deploy: 2026-09-23 (health only, owner-approved).
+Workflow: `.github/workflows/deploy-market-edge.yml`
+Secret: `CLOUDFLARE_API_TOKEN`
 
+A normal push verifies but does not deploy. Worker deploy runs only when an
+approved branch commit contains `[deploy-market-edge]`, or via an approved
+manual workflow run.
 
-Current Worker release marker: `futures-edge-v2`.
-The direct venue path falls back only to VOLTEX's public display snapshot through the direct Render service origin when the venue rejects the Cloudflare egress location.
+Commits on the isolated branch start with `[CF-Pages-Skip]` so the existing
+Cloudflare Pages frontend is not rebuilt by Worker-only changes.
