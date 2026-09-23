@@ -329,6 +329,8 @@ export function setFuturesDepthFallbackBase(base: string, sampled = false, displ
 class FuturesDepthTransport {
   private socket: WebSocket | null = null;
   private subscriptions = new Map<string, ActiveDepth>();
+  private tickerListeners = new Map<string, Set<(update:FuturesTickerUpdate)=>void>>();
+  private klineListeners = new Map<string, Set<(update:FuturesKlineUpdate)=>void>>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private idleCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private heartbeat: ReturnType<typeof setInterval> | null = null;
@@ -337,6 +339,10 @@ class FuturesDepthTransport {
   /** When the CURRENT socket was created — see `SOCKET_GRACE_MS`. */
   private socketStartedAt = 0;
   private visibilityAttached = false;
+
+  private hasConsumers(): boolean {
+    return this.subscriptions.size > 0 || this.tickerListeners.size > 0 || this.klineListeners.size > 0;
+  }
 
   subscribe(pair: string, listener: DepthListener, onTrades?:(trades:FuturesTrade[])=>void): () => void {
     if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) {
@@ -364,7 +370,7 @@ class FuturesDepthTransport {
     listener(this.view(active));
 
     this.connect();
-    if (isNewTopic) this.send('subscribe', symbol);
+    if (isNewTopic) this.sendDepth('subscribe', symbol);
     this.scheduleFallback(active, symbol);
 
     let stopped = false;
@@ -382,9 +388,41 @@ class FuturesDepthTransport {
         current.tradeFlush=null;current.pendingTrades=[];
         this.stopFallback(current);
         this.subscriptions.delete(symbol);
-        this.send('unsubscribe', symbol);
+        this.sendDepth('unsubscribe', symbol);
       }
-      if (this.subscriptions.size === 0) this.scheduleIdleClose();
+      if (!this.hasConsumers()) this.scheduleIdleClose();
+    };
+  }
+
+  subscribeTicker(pair: string, listener:(update:FuturesTickerUpdate)=>void):()=>void {
+    if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) return () => {};
+    const symbol=pair.replace('/','');
+    this.cancelIdleClose();this.attachVisibility();
+    let listeners=this.tickerListeners.get(symbol);
+    const first=!listeners;
+    if(!listeners){listeners=new Set();this.tickerListeners.set(symbol,listeners);}
+    listeners.add(listener);
+    this.connect();
+    if(first)this.sendTopics('subscribe',[`tickers.${symbol}`]);
+    let stopped=false;
+    return()=>{if(stopped)return;stopped=true;const current=this.tickerListeners.get(symbol);current?.delete(listener);
+      if(current&&!current.size){this.tickerListeners.delete(symbol);this.sendTopics('unsubscribe',[`tickers.${symbol}`]);}
+      if(!this.hasConsumers())this.scheduleIdleClose();
+    };
+  }
+
+  subscribeKline(pair:string, interval:string, listener:(update:FuturesKlineUpdate)=>void):()=>void {
+    if(!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)||!WS_INTERVAL[interval])return()=>{};
+    const symbol=pair.replace('/',''),provider=WS_INTERVAL[interval],key=`${symbol}:${provider}`;
+    this.cancelIdleClose();this.attachVisibility();
+    let listeners=this.klineListeners.get(key);const first=!listeners;
+    if(!listeners){listeners=new Set();this.klineListeners.set(key,listeners);}
+    listeners.add(listener);this.connect();
+    if(first)this.sendTopics('subscribe',[`kline.${provider}.${symbol}`]);
+    let stopped=false;
+    return()=>{if(stopped)return;stopped=true;const current=this.klineListeners.get(key);current?.delete(listener);
+      if(current&&!current.size){this.klineListeners.delete(key);this.sendTopics('unsubscribe',[`kline.${provider}.${symbol}`]);}
+      if(!this.hasConsumers())this.scheduleIdleClose();
     };
   }
 
@@ -536,7 +574,7 @@ class FuturesDepthTransport {
   }
 
   private connect() {
-    if (this.subscriptions.size === 0 || (typeof document !== 'undefined' && document.hidden) || this.socket || this.reconnectTimer !== null) return;
+    if (!this.hasConsumers() || (typeof document !== 'undefined' && document.hidden) || this.socket || this.reconnectTimer !== null) return;
     try {
       const ws = new WebSocket(WS_URL);
       this.socket = ws;
@@ -547,7 +585,12 @@ class FuturesDepthTransport {
         if (this.socket !== ws) return;
         this.reconnectDelay = 1000;
         this.lastPing = Date.now();
-        for (const symbol of this.subscriptions.keys()) this.send('subscribe', symbol);
+        for (const symbol of this.subscriptions.keys()) this.sendDepth('subscribe', symbol);
+        for (const symbol of this.tickerListeners.keys()) this.sendTopics('subscribe',[`tickers.${symbol}`]);
+        for (const key of this.klineListeners.keys()) {
+          const split=key.lastIndexOf(':');const symbol=key.slice(0,split),interval=key.slice(split+1);
+          this.sendTopics('subscribe',[`kline.${interval}.${symbol}`]);
+        }
       };
       ws.onmessage = event => {
         if (this.socket !== ws) return;
@@ -586,8 +629,8 @@ class FuturesDepthTransport {
             // inside the grace window is a reconnect, not a stale feed.
             active.status = active.lastGood === null ? 'connecting'
               : this.inGrace(active, Date.now()) ? 'reconnecting' : 'stale';
-            this.send('unsubscribe', symbol);
-            this.send('subscribe', symbol);
+            this.sendDepth('unsubscribe', symbol);
+            this.sendDepth('subscribe', symbol);
             this.scheduleEmit(symbol, active);
             return;
           }
@@ -605,20 +648,18 @@ class FuturesDepthTransport {
     }
   }
 
-  private send(op: 'subscribe' | 'unsubscribe', symbol: string) {
-    const ws = this.socket;
-    if (!ws || ws.readyState !== 1) return;
-    try {
-      ws.send(JSON.stringify({ op, args: [`orderbook.${DEPTH}.${symbol}`, `publicTrade.${symbol}`] }));
-    } catch {
-      this.reconnect();
-    }
+  private sendTopics(op:'subscribe'|'unsubscribe',args:string[]) {
+    const ws=this.socket;if(!ws||ws.readyState!==1||!args.length)return;
+    try{ws.send(JSON.stringify({op,args}));}catch{this.reconnect();}
+  }
+  private sendDepth(op:'subscribe'|'unsubscribe',symbol:string){
+    this.sendTopics(op,[`orderbook.${DEPTH}.${symbol}`,`publicTrade.${symbol}`]);
   }
 
   private startHeartbeat() {
     if (this.heartbeat !== null) clearInterval(this.heartbeat);
     this.heartbeat = setInterval(() => {
-      if (this.subscriptions.size === 0) return;
+      if (!this.hasConsumers()) return;
       const now = Date.now();
       let silent = false;
       for (const [symbol, active] of this.subscriptions) {
@@ -709,7 +750,7 @@ class FuturesDepthTransport {
   private reconnect() {
     this.clearSocket();
     this.markStale();
-    if (this.subscriptions.size === 0 || (typeof document !== 'undefined' && document.hidden) || this.reconnectTimer !== null) return;
+    if (!this.hasConsumers() || (typeof document !== 'undefined' && document.hidden) || this.reconnectTimer !== null) return;
     // While the socket is down, our own backend is the second source. It
     // stops again the instant a socket frame lands.
     for (const [symbol, active] of this.subscriptions) this.scheduleFallback(active, symbol);
@@ -746,7 +787,7 @@ class FuturesDepthTransport {
     this.cancelIdleClose();
     this.idleCloseTimer = setTimeout(() => {
       this.idleCloseTimer = null;
-      if (this.subscriptions.size !== 0) return;
+      if (this.hasConsumers()) return;
       this.cancelReconnect();
       this.clearSocket();
       this.reconnectDelay = 1000;
@@ -767,6 +808,8 @@ class FuturesDepthTransport {
       this.stopFallback(active);
     }
     this.subscriptions.clear();
+    this.tickerListeners.clear();
+    this.klineListeners.clear();
     this.clearSocket();
     this.reconnectDelay = 1000;
     this.detachVisibility();
@@ -780,4 +823,10 @@ export function closeFuturesDepth() { transport.close(); closeSampledDepth(); }
 
 export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void, onTrades?:(trades:FuturesTrade[])=>void): () => void {
   return sampledDisplay ? subscribeSampledDepth(pair, listener, onTrades) : transport.subscribe(pair, listener, onTrades);
+}
+export function subscribeFuturesTicker(pair:string,listener:(update:FuturesTickerUpdate)=>void):()=>void{
+  return transport.subscribeTicker(pair,listener);
+}
+export function subscribeFuturesKline(pair:string,interval:string,listener:(update:FuturesKlineUpdate)=>void):()=>void{
+  return transport.subscribeKline(pair,interval,listener);
 }
