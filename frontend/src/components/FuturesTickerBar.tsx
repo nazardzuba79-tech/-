@@ -98,27 +98,10 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
 
   useEffect(() => {
     let cancelled = false;
-    // Every figure below is re-read for the symbol currently selected, so
-    // the whole row always describes one instrument — there is no path
-    // where a stat is left over from the previously selected contract.
     setMarkPrice(null);
     setIndexPrice(null);
-    setFundingRate(null);
-    // Cleared on every symbol change, so BTC's turnover and open interest
-    // can never sit under an ETH header while the new read is in flight.
-    setDerivatives(null);
 
-    // Everything in this loop is a VOLTEX financial value read from the
-    // futures services, and is deliberately unchanged: mark price, the
-    // index price and the settled funding rate. No external venue's
-    // derivatives metric is read here, and none may substitute for these.
-    //
-    // VOLTEX's OWN open interest is no longer read here: the header's
-    // "Open Interest" cell asks about the MARKET, and this venue's book
-    // was never an answer to that question. `/futures/open-interest` and
-    // its client method are untouched — internal risk and the Analytics
-    // VOLTEX section still read them.
-    function load() {
+    function loadMark() {
       api
         .getFuturesMarkPrice(symbol)
         .then((res) => {
@@ -127,6 +110,25 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
           setIndexPrice(parseFloat(res.indexPrice));
         })
         .catch(() => {});
+    }
+
+    loadMark();
+    const interval = setInterval(loadMark, 4000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [symbol]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setFundingRate(null);
+
+    // Funding is persisted only on the exchange's funding boundary. Reading
+    // the same Neon row every four seconds cannot make it fresher; one read
+    // on selection plus a slow refresh keeps the UI current without waking
+    // the database hundreds of times per interval.
+    function loadFunding() {
       api
         .getFuturesFundingRate(symbol, 1)
         .then((res) => {
@@ -136,8 +138,9 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
         })
         .catch(() => {});
     }
-    load();
-    const interval = setInterval(load, 4000);
+
+    loadFunding();
+    const interval = setInterval(loadFunding, 5 * 60_000);
     return () => {
       cancelled = true;
       clearInterval(interval);
