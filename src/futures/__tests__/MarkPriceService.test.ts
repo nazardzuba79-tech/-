@@ -43,11 +43,8 @@ describe('MarkPriceService', () => {
     ];
     expect(marketData.getOrderBook).toHaveBeenCalledTimes(1);
     release();
-    await expect(Promise.all(reads)).resolves.toEqual([
-      expect.objectContaining({}),
-      expect.objectContaining({}),
-      expect.objectContaining({}),
-    ]);
+    const values = await Promise.all(reads);
+    expect(values.map(value => value?.toFixed())).toEqual(['50000', '50000', '50000']);
     expect(marketData.getOrderBook).toHaveBeenCalledTimes(1);
 
     // Once the shared promise settles there is deliberately no TTL cache:
