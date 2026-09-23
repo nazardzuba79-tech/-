@@ -118,6 +118,18 @@ app.use('/api/v1/private-trading',(req,res,next)=>{const token=req.headers.autho
 app.get('/api/v1/private-trading/access',(_req,res)=>res.json({allowed:true,nativeAvailable:true,simulationOnly:true,mode:'PRIVATE_SIMULATION'}));
 app.use('/api/v1/private-trading/native',nativeDemoRoutes(service,res=>res.locals.actor));
 app.get('/api/v1/private-trading/candles',asyncRoute(async(req,res)=>res.json(await market.chartCandles({symbol:String(req.query.symbol).replace('/',''),interval:req.query.interval,limit:Number(req.query.limit||520),...(req.query.endTime?{endTime:Number(req.query.endTime)}:{})}))));
+/* The production Futures chart is display-only and now reads the public
+   exact-contract candle route even while this fixture account is bound to
+   the native engine. Mirror that public route here so the browser QA tests
+   the same source split as production rather than relying on the legacy
+   owner-protected chart transport. */
+app.get('/api/v1/market/futures/candles/:pair',asyncRoute(async(req,res)=>{
+  const symbol=String(req.params.pair).toUpperCase().replace('-','');
+  const page=await market.chartCandles({symbol,interval:req.query.interval,limit:Number(req.query.limit||520),...(req.query.endTime?{endTime:Number(req.query.endTime)}:{})});
+  res.json({retCode:0,result:{category:'linear',symbol, list:page.candles.slice().reverse().map(c=>[
+    String(c.time*1000),String(c.open),String(c.high),String(c.low),String(c.close),String(c.volume??0)
+  ])}});
+}));
 let tickCache=null;
 async function tickers(){if(tickCache&&now()-tickCache.at<5000)return tickCache.rows;let list,time=now();
   if(fixture)list=symbols.map(symbol=>{const spot=fixtureSpot(symbol),ake=symbol==='AKEUSDT';return{symbol,lastPrice:spot,bid1Price:ake?spot:'50000',ask1Price:ake?spot:'50001',highPrice24h:ake?'0.0538':'51000',lowPrice24h:ake?'0.0040':'49000',volume24h:'1000',turnover24h:'50000000',price24hPcnt:'0.01',markPrice:spot,indexPrice:ake?spot:'50000',fundingRate:'0.0001',openInterest:'10000',openInterestValue:'500000000'};});
