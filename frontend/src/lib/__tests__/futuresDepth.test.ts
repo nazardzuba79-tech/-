@@ -243,7 +243,7 @@ describe('selected-contract depth lifecycle',()=>{
     jest.advanceTimersByTime(1_100);
     await Promise.resolve();await Promise.resolve();await Promise.resolve();
     expect(respond).toHaveBeenCalledTimes(1);
-    expect(respond.mock.calls[0][0]).toBe('/api/v1/market/futures/orderbook/BTCUSDT');
+    expect(respond.mock.calls[0][0]).toBe('/api/v1/market/display/futures-book/BTCUSDT');
     jest.advanceTimersByTime(FLUSH);
     const filled=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(filled.bids).toEqual([{price:'100',quantity:'2'}]);
