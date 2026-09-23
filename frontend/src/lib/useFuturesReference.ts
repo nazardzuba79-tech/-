@@ -1,9 +1,13 @@
-import { useMemo } from 'react';
-import { useLiveMarket } from './useLiveMarket';
-import { futuresReferenceRows } from './futuresReference';
+import { useEffect, useState } from 'react';
+import { directFuturesReferenceStore } from './directFuturesReference';
 
-/** One existing shared stream; never used to price a financial write. */
+/**
+ * Public Futures reference prices come from Bybit directly in the visitor's
+ * browser. If that path is unavailable, the store falls back to the public
+ * Cloudflare market edge. Render and Neon are not in this display path.
+ */
 export function useFuturesReference() {
-  const state = useLiveMarket();
-  return useMemo(() => futuresReferenceRows(state), [state]);
+  const [rows, setRows] = useState(directFuturesReferenceStore.getState);
+  useEffect(() => directFuturesReferenceStore.subscribe(setRows), []);
+  return rows;
 }

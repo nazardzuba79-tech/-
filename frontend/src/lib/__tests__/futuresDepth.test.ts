@@ -17,7 +17,7 @@ import {
 const FLUSH = FLUSH_MS;
 
 const now=1_800_000_000_000;
-const frame=(data:any={},type='snapshot',extra:any={})=>({topic:'orderbook.200.BTCUSDT',type,ts:now,
+const frame=(data:any={},type='snapshot',extra:any={})=>({topic:'orderbook.50.BTCUSDT',type,ts:now,
   data:{s:'BTCUSDT',b:[['100','2']],a:[['101','3']],u:2,seq:2,...data},...extra});
 
 test('snapshot, delta update/delete/insert, and provider restart replace depth deterministically',()=>{
@@ -71,7 +71,7 @@ test.each([
 
 test('an unrelated topic is ignored rather than treated as an error',()=>{
   const book=new FuturesDepthBook('BTCUSDT');
-  expect(book.apply(frame({},'snapshot',{topic:'orderbook.200.ETHUSDT'}),now)).toBe(false);
+  expect(book.apply(frame({},'snapshot',{topic:'orderbook.50.ETHUSDT'}),now)).toBe(false);
 });
 
 describe('selected-contract depth lifecycle',()=>{
@@ -90,7 +90,7 @@ describe('selected-contract depth lifecycle',()=>{
 
   test('subscribes only to selected contract, coalesces updates, and ignores events after unsubscribe',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);const ws=sockets[0];ws.onopen();
-    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.50.BTCUSDT','publicTrade.BTCUSDT']}));
     expect(listener.mock.calls[0][0]).toEqual({bids:[],asks:[],status:'connecting',asOf:null,source:null});
     ws.onmessage({data:JSON.stringify(frame())});ws.onmessage({data:JSON.stringify(frame({u:3,seq:3,b:[['100','4']],a:[]},'delta'))});
     expect(listener).toHaveBeenCalledTimes(1);jest.advanceTimersByTime(FLUSH);expect(listener).toHaveBeenCalledTimes(2);
@@ -129,8 +129,8 @@ describe('selected-contract depth lifecycle',()=>{
     ws.send.mockClear();
     ws.onmessage({data:JSON.stringify(frame({u:6,seq:6,b:[['102','1']],a:[]},'delta'))});
     jest.advanceTimersByTime(FLUSH);
-    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
-    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.50.BTCUSDT','publicTrade.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.50.BTCUSDT','publicTrade.BTCUSDT']}));
     expect(sockets).toHaveLength(1); // the transport was never torn down
     const after=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(after.bids).toEqual([{price:'100',quantity:'2'}]); // last good, still drawn
@@ -140,7 +140,7 @@ describe('selected-contract depth lifecycle',()=>{
 
   test('trade updates share the exact-contract socket, batch and clear on disconnect; late events are ignored',()=>{
     const depth=jest.fn(), trades=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',depth,trades);const ws=sockets[0];ws.onopen();
-    expect(JSON.parse(ws.send.mock.calls[0][0]).args).toEqual(['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']);
+    expect(JSON.parse(ws.send.mock.calls[0][0]).args).toEqual(['orderbook.50.BTCUSDT','publicTrade.BTCUSDT']);
     const execution=(i:string,s='BTCUSDT')=>({topic:'publicTrade.BTCUSDT',data:[{s,i,S:'Buy',p:'100',v:'0.001',T:Date.now()}]});
     ws.onmessage({data:JSON.stringify(execution('wrong','ETHUSDT'))});
     ws.onmessage({data:JSON.stringify(execution('one'))});ws.onmessage({data:JSON.stringify(execution('two'))});
@@ -158,13 +158,13 @@ describe('selected-contract depth lifecycle',()=>{
     stopBtc();
     const eth=jest.fn();const stopEth=subscribeFuturesDepth('ETH/USDT',eth,ethTrades);
     expect(sockets).toHaveLength(1);
-    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
-    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.ETHUSDT','publicTrade.ETHUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.50.BTCUSDT','publicTrade.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.50.ETHUSDT','publicTrade.ETHUSDT']}));
     oldHandler({data:JSON.stringify(frame())});jest.advanceTimersByTime(FLUSH);
     expect(btc).toHaveBeenCalledTimes(1);expect(eth).toHaveBeenCalledTimes(1);
     expect(btcTrades).not.toHaveBeenCalled();expect(ethTrades).not.toHaveBeenCalled();
     ws.onmessage({data:JSON.stringify({topic:'publicTrade.ETHUSDT',data:[{s:'ETHUSDT',i:'eth-execution',S:'Sell',p:'200',v:'2',T:now}]})});
-    ws.onmessage({data:JSON.stringify(frame({s:'ETHUSDT',b:[['200','1']],a:[['201','2']]},'snapshot',{topic:'orderbook.200.ETHUSDT'}))});
+    ws.onmessage({data:JSON.stringify(frame({s:'ETHUSDT',b:[['200','1']],a:[['201','2']]},'snapshot',{topic:'orderbook.50.ETHUSDT'}))});
     jest.advanceTimersByTime(FLUSH);
     expect(eth).toHaveBeenCalledTimes(2);
     expect(eth.mock.calls[1][0].bids).toEqual([{price:'200',quantity:'1'}]);
@@ -243,7 +243,7 @@ describe('selected-contract depth lifecycle',()=>{
     jest.advanceTimersByTime(1_100);
     await Promise.resolve();await Promise.resolve();await Promise.resolve();
     expect(respond).toHaveBeenCalledTimes(1);
-    expect(respond.mock.calls[0][0]).toBe('/api/v1/market/futures/orderbook/BTCUSDT');
+    expect(respond.mock.calls[0][0]).toBe('/api/v1/market/display/futures-book/BTCUSDT');
     jest.advanceTimersByTime(FLUSH);
     const filled=listener.mock.calls[listener.mock.calls.length-1][0];
     expect(filled.bids).toEqual([{price:'100',quantity:'2'}]);

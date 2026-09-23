@@ -283,7 +283,11 @@ test.each([
     // Futures candle loader for both ordinary and native-bound accounts.
     // Owner-approved sampled-display switch: only setFuturesDepthFallbackBase(API_BASE, true).
     // Order payload, engine, overlays, symbols and account polling remain unchanged.
-    "581c7db42f7d2b3d6ec6b6ad5d452fa2926043f95ddaca6c339f9d20afcb4c2c"
+    // Re-taken for the owner-approved zero-backend public market-data path:
+    // FuturesPage changes only the depth transport mode from sampled REST to
+    // the existing direct Bybit public WebSocket, with Cloudflare public REST
+    // as fallback. Order payloads, execution, accounts and private APIs are unchanged.
+    "052913ce7f8f042c46f2d6c6bce8bd910a3a79033e8a6daa77faf03ecd3e47ec"
   ],
   [
     "components/FuturesPairList.tsx",

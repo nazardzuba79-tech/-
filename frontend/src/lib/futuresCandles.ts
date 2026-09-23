@@ -18,14 +18,50 @@ export function parseFuturesCandles(payload: any, symbol: string): { candles: Ca
   return { candles };
 }
 
+async function fetchPublicJson(url:string, signal?:AbortSignal):Promise<any> {
+  const response=await fetch(url,{signal,credentials:'omit',headers:{Accept:'application/json'}});
+  if(!response.ok)throw new Error(`candle_http_${response.status}`);
+  return response.json();
+}
+
 export async function getFuturesCandles(pair:string, interval:string, limit:number, signal?:AbortSignal, endTime?:number):Promise<{candles:Candle[]}> {
   if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair) || !intervals[interval] ||
       (endTime !== undefined && (!Number.isSafeInteger(endTime) || endTime <= 0))) throw new Error('Unsupported candle instrument');
   const symbol=pair.replace('/','');
-  const query=new URLSearchParams({interval,limit:String(Math.min(1000,Math.max(1,limit))),
-    ...(endTime===undefined?{}:{endTime:String(endTime)})});
-  const base=import.meta.env.VITE_API_URL || '/api/v1';
-  const response=await fetch(`${base}/market/futures/candles/${pair.replace('/','-')}?${query}`,{signal,credentials:'omit'});
-  if (!response.ok) throw new Error('Candles unavailable');
-  return parseFuturesCandles(await response.json(),symbol);
+
+  // Fixture/local/preview hosts keep using the app API so deterministic QA
+  // never depends on a public venue being reachable from a CI runner.
+  // Production VOLTEX is the zero-backend path below.
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const productionSite = host === 'voltextech.net' || host.endsWith('.voltextech.net');
+    if (!productionSite) {
+      const query=new URLSearchParams({interval,limit:String(Math.min(1000,Math.max(1,limit))),
+        ...(endTime===undefined?{}:{endTime:String(endTime)})});
+      const base=import.meta.env.VITE_API_URL || '/api/v1';
+      const response=await fetch(`${base}/market/futures/candles/${pair.replace('/','-')}?${query}`,{signal,credentials:'omit'});
+      if(!response.ok)throw new Error('Candles unavailable');
+      return parseFuturesCandles(await response.json(),symbol);
+    }
+  }
+
+  const providerInterval=intervals[interval];
+  const providerQuery=new URLSearchParams({category:'linear',symbol,interval:providerInterval,limit:String(Math.min(1000,Math.max(1,limit))),
+    ...(endTime===undefined?{}:{end:String(endTime)})});
+  const edgeQuery=new URLSearchParams({interval:providerInterval,limit:String(Math.min(1000,Math.max(1,limit))),
+    ...(endTime===undefined?{}:{end:String(endTime)})});
+
+  // Primary path: the visitor's browser talks to Bybit directly. This costs
+  // Render, Neon and Cloudflare zero requests when the venue is reachable.
+  for(const host of ['https://api.bybit.com','https://api.bytick.com']){
+    try{
+      return parseFuturesCandles(await fetchPublicJson(`${host}/v5/market/kline?${providerQuery}`,signal),symbol);
+    }catch(error){
+      if(signal?.aborted)throw error;
+    }
+  }
+
+  // Regional/CORS fallback only: Cloudflare edge, never Render/Neon.
+  const body=await fetchPublicJson(`https://market.voltextech.net/market/display/futures-candles/${symbol}?${edgeQuery}`,signal);
+  return parseFuturesCandles(body,symbol);
 }
