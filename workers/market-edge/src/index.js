@@ -137,6 +137,41 @@ async function futuresTrades(symbol) {
   return { symbol, trades };
 }
 
+const KLINE_INTERVALS = new Set(["1","3","5","15","30","60","120","240","360","720","D","W","M"]);
+
+async function futuresTickers() {
+  const body = await firstPublicJson([
+    bybitUrl("https://api.bybit.com", "/v5/market/tickers", { category: "linear" }),
+    bybitUrl("https://api.bytick.com", "/v5/market/tickers", { category: "linear" }),
+  ]);
+  if (body?.retCode !== 0 || body?.result?.category !== "linear" || !Array.isArray(body?.result?.list)) {
+    throw new Error("provider_ticker_shape");
+  }
+  return body;
+}
+
+async function futuresCandles(symbol, searchParams) {
+  const interval = searchParams.get("interval") || "";
+  const limitRaw = Number(searchParams.get("limit") || "320");
+  const endRaw = searchParams.get("end");
+  if (!KLINE_INTERVALS.has(interval) || !Number.isSafeInteger(limitRaw) || limitRaw < 1 || limitRaw > 1000) {
+    throw new RangeError("invalid_candle_query");
+  }
+  if (endRaw !== null && (!/^\d+$/.test(endRaw) || !Number.isSafeInteger(Number(endRaw)) || Number(endRaw) <= 0)) {
+    throw new RangeError("invalid_candle_end");
+  }
+  const params = { category: "linear", symbol, interval, limit: String(limitRaw) };
+  if (endRaw !== null) params.end = endRaw;
+  const body = await firstPublicJson([
+    bybitUrl("https://api.bybit.com", "/v5/market/kline", params),
+    bybitUrl("https://api.bytick.com", "/v5/market/kline", params),
+  ]);
+  if (body?.retCode !== 0 || body?.result?.category !== "linear" || body?.result?.symbol !== symbol || !Array.isArray(body?.result?.list)) {
+    throw new Error("provider_candle_shape");
+  }
+  return body;
+}
+
 async function cachedPublic(request, loader) {
   const cache = globalThis.caches?.default;
   const key = new Request(request.url, { method: "GET" });
@@ -172,6 +207,7 @@ export default {
       } else {
         const book = url.pathname.match(/^\/market\/display\/futures-book\/([A-Z0-9]{1,28}USDT)$/);
         const trades = url.pathname.match(/^\/market\/display\/futures-trades\/([A-Z0-9]{1,28}USDT)$/);
+        const candles = url.pathname.match(/^\/market\/display\/futures-candles\/([A-Z0-9]{1,28}USDT)$/);
 
         if (book) {
           const symbol = book[1];
@@ -181,6 +217,12 @@ export default {
           const symbol = trades[1];
           if (!SYMBOL_RE.test(symbol)) return json({ error: "symbol_not_listed" }, 404);
           response = await cachedPublic(request, () => futuresTrades(symbol));
+        } else if (url.pathname === "/market/display/futures-tickers") {
+          response = await cachedPublic(request, futuresTickers);
+        } else if (candles) {
+          const symbol = candles[1];
+          if (!SYMBOL_RE.test(symbol)) return json({ error: "symbol_not_listed" }, 404);
+          response = await cachedPublic(request, () => futuresCandles(symbol, url.searchParams));
         } else {
           return json({ ok: false, error: "not_found" }, 404);
         }
