@@ -24,6 +24,35 @@ describe('MarkPriceService', () => {
     expect(marketData.getTicker).not.toHaveBeenCalled();
   });
 
+  it('coalesces concurrent reads for the same symbol without caching the result', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const marketData = {
+      getOrderBook: jest.fn(async () => {
+        await gate;
+        return { bids: [{ price: '49990', quantity: '1' }], asks: [{ price: '50010', quantity: '1' }] };
+      }),
+      getTicker: jest.fn(),
+    } as any;
+    const svc = new MarkPriceService(marketData);
+
+    const reads = [
+      svc.getIndexPrice('BTC/USDT'),
+      svc.getIndexPrice('BTC/USDT'),
+      svc.getMarkPrice('BTC/USDT'),
+    ];
+    expect(marketData.getOrderBook).toHaveBeenCalledTimes(1);
+    release();
+    const values = await Promise.all(reads);
+    expect(values.map(value => value?.toFixed())).toEqual(['50000', '50000', '50000']);
+    expect(marketData.getOrderBook).toHaveBeenCalledTimes(1);
+
+    // Once the shared promise settles there is deliberately no TTL cache:
+    // the next financial read asks the real source again.
+    await svc.getIndexPrice('BTC/USDT');
+    expect(marketData.getOrderBook).toHaveBeenCalledTimes(2);
+  });
+
   it('defaults mark price to the index price when the contract has never traded', async () => {
     const svc = new MarkPriceService(makeMarketData('50000'));
     const mark = await svc.getMarkPrice('BTC/USDT');

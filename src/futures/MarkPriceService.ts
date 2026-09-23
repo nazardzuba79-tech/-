@@ -7,6 +7,8 @@ const INDEX_READ_TIMEOUT_MS = 5_000;
 export class MarkPriceService {
   private basisEma = new Map<string, BigNumber>();
   private lastIndexPrice = new Map<string, BigNumber>();
+  /** Concurrent readers of one symbol share the same fresh upstream read. No value is cached here. */
+  private indexReads = new Map<string, Promise<BigNumber | null>>();
 
   constructor(private marketData: KrakenMarketDataService) {}
 
@@ -22,6 +24,15 @@ export class MarkPriceService {
   }
 
   async getIndexPrice(symbol: string): Promise<BigNumber | null> {
+    const existing = this.indexReads.get(symbol);
+    if (existing) return existing;
+    const read = this.readIndexPrice(symbol);
+    this.indexReads.set(symbol, read);
+    try { return await read; }
+    finally { if (this.indexReads.get(symbol) === read) this.indexReads.delete(symbol); }
+  }
+
+  private async readIndexPrice(symbol: string): Promise<BigNumber | null> {
     try {
       // A mark/index read is a single-market operation. Reading best bid/ask
       // avoids coupling it to the full Kraken ticker-universe refresh, which
