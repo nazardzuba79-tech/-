@@ -15,6 +15,9 @@ const BOOK_LEVELS = 25;
 const SYMBOL_RE = /^[A-Z0-9]{1,28}USDT$/;
 const RENDER_API_BASE = "https://api.voltextech.net/api/v1";
 const APP_INTERVAL_BY_PROVIDER = { "5":"5m", "15":"15m", "60":"1h", "240":"4h", "D":"1d", "W":"1w" };
+const SPOT_INTERVAL_MINUTES = { "1m":"1", "5m":"5", "15m":"15", "1h":"60", "4h":"240", "1d":"1440", "1w":"10080" };
+const KRAKEN_ASSET = { BTC: "XBT", DOGE: "XDG" };
+const SPOT_SLUG_RE = /^[A-Z0-9]{1,32}-[A-Z0-9]{2,12}$/;
 
 function json(body, status = 200, extra = {}) {
   return new Response(JSON.stringify(body), {
@@ -223,6 +226,78 @@ async function futuresCandles(symbol, searchParams) {
   }
 }
 
+
+function spotIdentity(slug) {
+  if (!SPOT_SLUG_RE.test(slug)) throw new RangeError("invalid_spot_pair");
+  const [base, quote] = slug.split("-");
+  return {
+    pair: `${base}/${quote}`,
+    kraken: `${KRAKEN_ASSET[base] ?? base}${KRAKEN_ASSET[quote] ?? quote}`,
+  };
+}
+
+function krakenResultValue(body) {
+  if (!body || !Array.isArray(body.error) || body.error.length || !body.result || typeof body.result !== "object") {
+    throw new Error("kraken_shape");
+  }
+  const key = Object.keys(body.result).find(name => name !== "last");
+  if (!key) throw new Error("kraken_empty");
+  return body.result[key];
+}
+
+async function spotBook(slug) {
+  const { pair, kraken } = spotIdentity(slug);
+  try {
+    const query = new URLSearchParams({ pair: kraken, count: String(BOOK_LEVELS) });
+    const body = await publicJson(`https://api.kraken.com/0/public/Depth?${query}`);
+    const raw = krakenResultValue(body);
+    const map = rows => {
+      if (!Array.isArray(rows)) throw new Error("kraken_book_shape");
+      return rows.slice(0, BOOK_LEVELS).map(row => {
+        if (!Array.isArray(row) || !validPositiveDecimal(row[0]) || !validPositiveDecimal(row[1])) throw new Error("kraken_book_level");
+        return { price: row[0], quantity: row[1] };
+      });
+    };
+    const bids = map(raw.bids).sort((a,b)=>Number(b.price)-Number(a.price));
+    const asks = map(raw.asks).sort((a,b)=>Number(a.price)-Number(b.price));
+    if (!bids.length || !asks.length || Number(bids[0].price) >= Number(asks[0].price)) throw new Error("kraken_book_unusable");
+    const newest = Math.max(...[...(raw.bids ?? []), ...(raw.asks ?? [])].slice(0, BOOK_LEVELS * 2)
+      .map(row => Number(row?.[2]) * 1000).filter(value => Number.isFinite(value) && value > 0), 0);
+    return { pair, bids, asks, timestamp: newest || Date.now(), source: "kraken" };
+  } catch {
+    const body = await publicJson(`${RENDER_API_BASE}/market/external/orderbook/${encodeURIComponent(slug)}?limit=${BOOK_LEVELS}`);
+    if (body?.pair !== pair || !Array.isArray(body.bids) || !Array.isArray(body.asks)) throw new Error("render_spot_book_shape");
+    return body;
+  }
+}
+
+async function spotCandles(slug, searchParams) {
+  const { pair, kraken } = spotIdentity(slug);
+  const interval = searchParams.get("interval") || "";
+  const krakenInterval = SPOT_INTERVAL_MINUTES[interval];
+  const limit = Number(searchParams.get("limit") || "520");
+  if (!krakenInterval || !Number.isSafeInteger(limit) || limit < 1 || limit > 720) throw new RangeError("invalid_spot_candle_query");
+  try {
+    const query = new URLSearchParams({ pair: kraken, interval: krakenInterval });
+    const body = await publicJson(`https://api.kraken.com/0/public/OHLC?${query}`);
+    const raw = krakenResultValue(body);
+    if (!Array.isArray(raw)) throw new Error("kraken_candle_shape");
+    const candles = raw.map(row => {
+      if (!Array.isArray(row) || row.length < 7) throw new Error("kraken_candle_row");
+      const values = [Number(row[0]),Number(row[1]),Number(row[2]),Number(row[3]),Number(row[4]),Number(row[6])];
+      if (!values.every(Number.isFinite) || values[0] <= 0 || Math.min(...values.slice(1,5)) <= 0
+        || values[2] < Math.max(values[1],values[4]) || values[3] > Math.min(values[1],values[4])) throw new Error("kraken_candle_values");
+      return { time:values[0], open:values[1], high:values[2], low:values[3], close:values[4], volume:Math.max(0,values[5]) };
+    }).sort((a,b)=>a.time-b.time).slice(-limit);
+    if (!candles.length) throw new Error("kraken_candle_empty");
+    return { source:"kraken", pair, interval, candles };
+  } catch {
+    const body = await publicJson(`${RENDER_API_BASE}/market/external/candles/${encodeURIComponent(slug)}?interval=${encodeURIComponent(interval)}&limit=${limit}`);
+    if (body?.pair !== pair || body?.interval !== interval || !Array.isArray(body.candles)) throw new Error("render_spot_candle_shape");
+    return body;
+  }
+}
+
 async function cachedPublic(request, loader) {
   const cache = globalThis.caches?.default;
   const key = new Request(request.url, { method: "GET" });
@@ -259,6 +334,8 @@ export default {
         const book = url.pathname.match(/^\/market\/display\/futures-book\/([A-Z0-9]{1,28}USDT)$/);
         const trades = url.pathname.match(/^\/market\/display\/futures-trades\/([A-Z0-9]{1,28}USDT)$/);
         const candles = url.pathname.match(/^\/market\/display\/futures-candles\/([A-Z0-9]{1,28}USDT)$/);
+        const spotBookMatch = url.pathname.match(/^\/market\/display\/spot-book\/([A-Z0-9]{1,32}-[A-Z0-9]{2,12})$/);
+        const spotCandlesMatch = url.pathname.match(/^\/market\/display\/spot-candles\/([A-Z0-9]{1,32}-[A-Z0-9]{2,12})$/);
 
         if (book) {
           const symbol = book[1];
@@ -274,6 +351,10 @@ export default {
           const symbol = candles[1];
           if (!SYMBOL_RE.test(symbol)) return json({ error: "symbol_not_listed" }, 404);
           response = await cachedPublic(request, () => futuresCandles(symbol, url.searchParams));
+        } else if (spotBookMatch) {
+          response = await cachedPublic(request, () => spotBook(spotBookMatch[1]));
+        } else if (spotCandlesMatch) {
+          response = await cachedPublic(request, () => spotCandles(spotCandlesMatch[1], url.searchParams));
         } else {
           return json({ ok: false, error: "not_found" }, 404);
         }
