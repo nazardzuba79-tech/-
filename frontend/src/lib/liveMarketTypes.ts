@@ -1,6 +1,6 @@
 /** Public normalized reference contract. No trading/account fields. */
 export interface LiveQuote {
-  id: string; pair: string; symbol: string; providerSymbol: string; provider: 'bybit';
+  id: string; pair: string; symbol: string; providerSymbol: string; provider: 'bybit' | 'okx';
   marketType: 'spot' | 'linear_perpetual' | 'linear_futures' | 'inverse' | 'inverse_perpetual' | 'inverse_futures';
   volumeAsset?: string;
   turnoverAsset?: string;

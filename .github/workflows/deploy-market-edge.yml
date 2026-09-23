@@ -1,0 +1,85 @@
+name: Verify / deploy voltex-market-edge (Cloudflare Worker)
+
+# Verifies every change on the isolated branch.
+# Deploys ONLY when the commit explicitly contains [deploy-market-edge],
+# or when manually started after the workflow exists on the default branch.
+on:
+  push:
+    branches: [cloudflare-market-edge]
+    paths:
+      - 'workers/market-edge/**'
+      - '.github/workflows/deploy-market-edge.yml'
+  pull_request:
+    paths:
+      - 'workers/market-edge/**'
+      - 'frontend/src/lib/sampledDepth.ts'
+      - 'frontend/src/lib/futuresDepth.ts'
+      - 'frontend/src/lib/__tests__/futuresCandles.test.ts'
+      - 'frontend/src/lib/__tests__/directFuturesReference.test.ts'
+      - 'frontend/src/lib/futuresCandles.ts'
+      - 'frontend/src/lib/useFuturesReference.ts'
+      - 'frontend/src/lib/directFuturesReference.ts'
+      - 'frontend/src/pages/FuturesPage.tsx'
+      - '.github/workflows/deploy-market-edge.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: market-edge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/market-edge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Worker contract and isolation tests
+        run: node --experimental-default-type=module test.mjs
+      - name: Wrangler dry-run
+        run: npx --yes wrangler@4 deploy --dry-run
+
+  deploy:
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]'))
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: workers/market-edge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy Worker
+        run: npx --yes wrangler@4 deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
+      - name: Production smoke checks
+        run: |
+          curl -fsS https://market.voltextech.net/health
+          curl -fsS https://market.voltextech.net/market/display/futures-book/BTCUSDT | grep -q '"available":true'
+          curl -fsS https://market.voltextech.net/market/display/futures-trades/BTCUSDT | grep -q '"symbol":"BTCUSDT"'
+          curl -fsS https://market.voltextech.net/market/display/futures-tickers | grep -q '"retCode":0'
+          curl -fsS 'https://market.voltextech.net/market/display/futures-candles/BTCUSDT?interval=60&limit=5' | grep -q '"retCode":0'
+
+
+  live-smoke:
+    needs: verify
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm deployed Worker version and private-route isolation
+        run: |
+          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='futures-edge-direct-v6')process.exit(1)})"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)" = "404"
+          # Provider endpoints are contract-tested offline. GitHub-hosted runners
+          # may be in jurisdictions where public venue APIs are blocked.

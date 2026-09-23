@@ -1,9 +1,13 @@
-import { useMemo } from 'react';
-import { useLiveMarket } from './useLiveMarket';
-import { futuresReferenceRows } from './futuresReference';
+import { useEffect, useState } from 'react';
+import { directFuturesReferenceStore } from './directFuturesReference';
 
-/** One existing shared stream; never used to price a financial write. */
+/**
+ * Bulk reference rows refresh slowly. The currently selected contract is
+ * overlaid automatically from ticker frames already carried by the direct
+ * depth/trades WebSocket.
+ */
 export function useFuturesReference() {
-  const state = useLiveMarket();
-  return useMemo(() => futuresReferenceRows(state), [state]);
+  const [rows, setRows] = useState(directFuturesReferenceStore.getState);
+  useEffect(() => directFuturesReferenceStore.subscribe(setRows), []);
+  return rows;
 }

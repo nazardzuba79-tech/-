@@ -2,7 +2,16 @@ import { DISPLAY_REFRESH_MS, readDisplayJson } from './displaySnapshotCache';
 import type { FuturesDepthSnapshot, FuturesDepthLevel, FuturesTrade } from './futuresDepth';
 
 let apiBase = '/api/v1';
-export function setFuturesDepthFallbackBase(base: string): void { apiBase = base.replace(/\/$/, ''); }
+let futuresDisplayBase = apiBase;
+/**
+ * Trading/API fallback origin and public display origin are deliberately
+ * separate. Public Futures display may live at Cloudflare while every
+ * account/execution path stays on the API origin.
+ */
+export function setFuturesDepthFallbackBase(base: string, displayBase = base): void {
+  apiBase = base.replace(/\/$/, '');
+  futuresDisplayBase = displayBase.replace(/\/$/, '');
+}
 const goodNumber = (value: unknown) => typeof value === 'string' && value.length <= 64 && /^\d+(?:\.\d+)?$/.test(value) && Number.isFinite(Number(value));
 export function parseSampledBook(body: any, identity: string, futures: boolean): FuturesDepthSnapshot {
   if (!body || body.available !== true || (futures ? body.symbol !== identity : body.pair !== identity)) throw new Error('Wrong display book');
@@ -37,7 +46,7 @@ const empty = (): FuturesDepthSnapshot => ({ bids: [], asks: [], asOf: null, sou
 /** One request/minute per watched contract, coalesced across consumers. No synthetic book updates. */
 export function subscribeFuturesDepth(pair: string, listener: Listener, onTrades?: (trades: FuturesTrade[]) => void): () => void {
   if (!/^[A-Z0-9]{1,28}\/USDT$/.test(pair)) { listener({ ...empty(), status: 'unavailable' }); return () => {}; }
-  const symbol = pair.replace('/', ''), key = `${apiBase}:${symbol}`, base = apiBase;
+  const symbol = pair.replace('/', ''), key = `${futuresDisplayBase}:${symbol}`, base = futuresDisplayBase;
   let active = subscriptions.get(key);
   if (!active) {
     const state: Active = { listeners: new Set(), tapes: new Set(), timer: null, controller: null, value: empty(), lastSuccess: null, visibility: () => {} };

@@ -51,6 +51,36 @@ export interface FuturesDepthSnapshot {
 
 export interface FuturesTrade { id:string; price:string; quantity:string; time:number; side:'BUY'|'SELL' }
 
+export interface FuturesTickerUpdate {
+  symbol:string; ts:number;
+  lastPrice?:string; bid1Price?:string; ask1Price?:string; highPrice24h?:string; lowPrice24h?:string;
+  volume24h?:string; turnover24h?:string; price24hPcnt?:string; indexPrice?:string; markPrice?:string;
+  fundingRate?:string; fundingIntervalHour?:string; openInterest?:string; openInterestValue?:string;
+}
+export interface FuturesKlineUpdate {
+  symbol:string; interval:string; time:number; open:number; high:number; low:number; close:number; volume:number; confirm:boolean; updatedAt:number;
+}
+const WS_INTERVAL:Record<string,string>={'5m':'5','15m':'15','1h':'60','4h':'240','1d':'D','1w':'W'};
+const decimal=(value:unknown)=>typeof value==='string'&&/^\d+(?:\.\d+)?$/.test(value)&&Number.isFinite(Number(value));
+
+export function parseFuturesTickerFrame(frame:any,symbol:string):FuturesTickerUpdate|null{
+  if(frame?.topic!==`tickers.${symbol}`||!['snapshot','delta'].includes(frame.type)||!frame.data||frame.data.symbol!==symbol)return null;
+  const d=frame.data;
+  const out:FuturesTickerUpdate={symbol,ts:Number(frame.ts)||Date.now()};
+  for(const key of ['lastPrice','bid1Price','ask1Price','highPrice24h','lowPrice24h','volume24h','turnover24h','price24hPcnt','indexPrice','markPrice','fundingRate','fundingIntervalHour','openInterest','openInterestValue'] as const){
+    const value=d[key];if(value!==undefined&&value!==null&&decimal(String(value))) (out as any)[key]=String(value);
+  }
+  return out;
+}
+export function parseFuturesKlineFrame(frame:any,symbol:string,interval:string):FuturesKlineUpdate|null{
+  const provider=WS_INTERVAL[interval];if(!provider||frame?.topic!==`kline.${provider}.${symbol}`||!Array.isArray(frame.data)||!frame.data.length)return null;
+  const row=frame.data[0];
+  if(row?.interval!==provider||![row.open,row.high,row.low,row.close,row.volume].every(decimal))return null;
+  const time=Number(row.start),open=Number(row.open),high=Number(row.high),low=Number(row.low),close=Number(row.close),volume=Number(row.volume);
+  if(!Number.isSafeInteger(time)||time<=0||Math.min(open,high,low,close)<=0||low>Math.min(open,close)||high<Math.max(open,close)||volume<0)return null;
+  return {symbol,interval,time:time/1000,open,high,low,close,volume,confirm:row.confirm===true,updatedAt:Number(row.timestamp)||Number(frame.ts)||Date.now()};
+}
+
 export function parseFuturesTrades(frame:any,symbol:string,now:number):FuturesTrade[] {
   if(frame?.topic!==`publicTrade.${symbol}`)return [];
   if(!Array.isArray(frame.data)||frame.data.length>1024)return [];
@@ -60,7 +90,7 @@ export function parseFuturesTrades(frame:any,symbol:string,now:number):FuturesTr
     .map((r:any)=>({id:r.i,price:r.p,quantity:r.v,time:r.T,side:r.S==='Buy'?'BUY':'SELL'}));
 }
 
-const DEPTH = 200;
+const DEPTH = 50;
 /**
  * No accepted frame for this long and the book is labelled, not cleared.
  *
@@ -267,9 +297,16 @@ interface ActiveDepth {
  *  Set explicitly rather than read from `import.meta`, which this module
  *  must stay free of so it can be tested outside the bundler. */
 let fallbackBase = '/api/v1';
+let fallbackBookBase = fallbackBase;
 let sampledDisplay = false;
-export function setFuturesDepthFallbackBase(base: string, sampled = false) {
-  fallbackBase = base; sampledDisplay = sampled; setSampledBase(base);
+const PUBLIC_MARKET_EDGE_BASE = 'https://market.voltextech.net';
+export function setFuturesDepthFallbackBase(base: string, sampled = false, displayBase?: string) {
+  fallbackBase = base.replace(/\/$/, '');
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const productionSite = host === 'voltextech.net' || host.endsWith('.voltextech.net');
+  fallbackBookBase = (displayBase ?? (productionSite ? PUBLIC_MARKET_EDGE_BASE : fallbackBase)).replace(/\/$/, '');
+  sampledDisplay = sampled;
+  setSampledBase(fallbackBase, fallbackBookBase);
   if (sampled) transport.close(); else closeSampledDepth();
 }
 
@@ -292,6 +329,9 @@ export function setFuturesDepthFallbackBase(base: string, sampled = false) {
 class FuturesDepthTransport {
   private socket: WebSocket | null = null;
   private subscriptions = new Map<string, ActiveDepth>();
+  private tickerListeners = new Map<string, Set<(update:FuturesTickerUpdate)=>void>>();
+  private tickerFeedListeners = new Set<(update:FuturesTickerUpdate)=>void>();
+  private klineListeners = new Map<string, Set<(update:FuturesKlineUpdate)=>void>>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private idleCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private heartbeat: ReturnType<typeof setInterval> | null = null;
@@ -300,6 +340,10 @@ class FuturesDepthTransport {
   /** When the CURRENT socket was created — see `SOCKET_GRACE_MS`. */
   private socketStartedAt = 0;
   private visibilityAttached = false;
+
+  private hasConsumers(): boolean {
+    return this.subscriptions.size > 0 || this.tickerListeners.size > 0 || this.klineListeners.size > 0;
+  }
 
   subscribe(pair: string, listener: DepthListener, onTrades?:(trades:FuturesTrade[])=>void): () => void {
     if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) {
@@ -327,7 +371,7 @@ class FuturesDepthTransport {
     listener(this.view(active));
 
     this.connect();
-    if (isNewTopic) this.send('subscribe', symbol);
+    if (isNewTopic) this.sendDepth('subscribe', symbol);
     this.scheduleFallback(active, symbol);
 
     let stopped = false;
@@ -345,9 +389,46 @@ class FuturesDepthTransport {
         current.tradeFlush=null;current.pendingTrades=[];
         this.stopFallback(current);
         this.subscriptions.delete(symbol);
-        this.send('unsubscribe', symbol);
+        this.sendDepth('unsubscribe', symbol);
       }
-      if (this.subscriptions.size === 0) this.scheduleIdleClose();
+      if (!this.hasConsumers()) this.scheduleIdleClose();
+    };
+  }
+
+  subscribeTickerFeed(listener:(update:FuturesTickerUpdate)=>void):()=>void {
+    this.tickerFeedListeners.add(listener);
+    return()=>this.tickerFeedListeners.delete(listener);
+  }
+
+  subscribeTicker(pair: string, listener:(update:FuturesTickerUpdate)=>void):()=>void {
+    if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) return () => {};
+    const symbol=pair.replace('/','');
+    this.cancelIdleClose();this.attachVisibility();
+    let listeners=this.tickerListeners.get(symbol);
+    const first=!listeners;
+    if(!listeners){listeners=new Set();this.tickerListeners.set(symbol,listeners);}
+    listeners.add(listener);
+    this.connect();
+    if(first)this.sendTopics('subscribe',[`tickers.${symbol}`]);
+    let stopped=false;
+    return()=>{if(stopped)return;stopped=true;const current=this.tickerListeners.get(symbol);current?.delete(listener);
+      if(current&&!current.size){this.tickerListeners.delete(symbol);this.sendTopics('unsubscribe',[`tickers.${symbol}`]);}
+      if(!this.hasConsumers())this.scheduleIdleClose();
+    };
+  }
+
+  subscribeKline(pair:string, interval:string, listener:(update:FuturesKlineUpdate)=>void):()=>void {
+    if(!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)||!WS_INTERVAL[interval])return()=>{};
+    const symbol=pair.replace('/',''),provider=WS_INTERVAL[interval],key=`${symbol}:${provider}`;
+    this.cancelIdleClose();this.attachVisibility();
+    let listeners=this.klineListeners.get(key);const first=!listeners;
+    if(!listeners){listeners=new Set();this.klineListeners.set(key,listeners);}
+    listeners.add(listener);this.connect();
+    if(first)this.sendTopics('subscribe',[`kline.${provider}.${symbol}`]);
+    let stopped=false;
+    return()=>{if(stopped)return;stopped=true;const current=this.klineListeners.get(key);current?.delete(listener);
+      if(current&&!current.size){this.klineListeners.delete(key);this.sendTopics('unsubscribe',[`kline.${provider}.${symbol}`]);}
+      if(!this.hasConsumers())this.scheduleIdleClose();
     };
   }
 
@@ -389,7 +470,7 @@ class FuturesDepthTransport {
     this.scheduleEmit(symbol, active);
   }
 
-  // ---- fallback: our own backend, only while the socket has nothing ----
+  // ---- fallback: Cloudflare public REST, only while the direct Bybit socket has nothing ----
 
   private scheduleFallback(active: ActiveDepth, symbol: string) {
     if (active.polling || active.poll !== null || typeof fetch !== 'function') return;
@@ -419,7 +500,7 @@ class FuturesDepthTransport {
     if (active.listeners.size === 0) return;
     active.polling = true;
     try {
-      const response = await fetch(`${fallbackBase}/market/futures/orderbook/${symbol}`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(`${fallbackBookBase}/market/display/futures-book/${symbol}`, { headers: { Accept: 'application/json' }, credentials: 'omit' });
       if (this.subscriptions.get(symbol) !== active) return;
       const body = response.ok ? await response.json() : null;
       // An unavailable venue is not an empty book: nothing is applied, the
@@ -499,7 +580,7 @@ class FuturesDepthTransport {
   }
 
   private connect() {
-    if (this.subscriptions.size === 0 || (typeof document !== 'undefined' && document.hidden) || this.socket || this.reconnectTimer !== null) return;
+    if (!this.hasConsumers() || (typeof document !== 'undefined' && document.hidden) || this.socket || this.reconnectTimer !== null) return;
     try {
       const ws = new WebSocket(WS_URL);
       this.socket = ws;
@@ -510,13 +591,38 @@ class FuturesDepthTransport {
         if (this.socket !== ws) return;
         this.reconnectDelay = 1000;
         this.lastPing = Date.now();
-        for (const symbol of this.subscriptions.keys()) this.send('subscribe', symbol);
+        for (const symbol of this.subscriptions.keys()) this.sendDepth('subscribe', symbol);
+        for (const symbol of this.tickerListeners.keys()) this.sendTopics('subscribe',[`tickers.${symbol}`]);
+        for (const key of this.klineListeners.keys()) {
+          const split=key.lastIndexOf(':');const symbol=key.slice(0,split),interval=key.slice(split+1);
+          this.sendTopics('subscribe',[`kline.${interval}.${symbol}`]);
+        }
       };
       ws.onmessage = event => {
         if (this.socket !== ws) return;
         let frame: any;
         try { frame = JSON.parse(event.data); } catch { this.reconnect(); return; }
         if (frame?.success === false) { this.reconnect(); return; }
+        if(typeof frame?.topic==='string'&&frame.topic.startsWith('tickers.')){
+          const symbol=frame.topic.slice('tickers.'.length),update=parseFuturesTickerFrame(frame,symbol);
+          if(update){
+            for(const listener of this.tickerListeners.get(symbol)??[])listener(update);
+            for(const listener of this.tickerFeedListeners)listener(update);
+          }
+          return;
+        }
+        if(typeof frame?.topic==='string'&&frame.topic.startsWith('kline.')){
+          const match=/^kline\.([^.]+)\.([A-Z0-9]{1,32}USDT)$/.exec(frame.topic);
+          if(match){
+            const key=`${match[2]}:${match[1]}`;
+            const appInterval=Object.keys(WS_INTERVAL).find(value=>WS_INTERVAL[value]===match[1]);
+            if(appInterval){
+              const update=parseFuturesKlineFrame(frame,match[2],appInterval);
+              if(update)for(const listener of this.klineListeners.get(key)??[])listener(update);
+            }
+          }
+          return;
+        }
         if(typeof frame?.topic==='string'&&frame.topic.startsWith('publicTrade.')) {
           const symbol=frame.topic.slice('publicTrade.'.length);
           const active=this.subscriptions.get(symbol);
@@ -549,8 +655,8 @@ class FuturesDepthTransport {
             // inside the grace window is a reconnect, not a stale feed.
             active.status = active.lastGood === null ? 'connecting'
               : this.inGrace(active, Date.now()) ? 'reconnecting' : 'stale';
-            this.send('unsubscribe', symbol);
-            this.send('subscribe', symbol);
+            this.sendDepth('unsubscribe', symbol);
+            this.sendDepth('subscribe', symbol);
             this.scheduleEmit(symbol, active);
             return;
           }
@@ -568,20 +674,18 @@ class FuturesDepthTransport {
     }
   }
 
-  private send(op: 'subscribe' | 'unsubscribe', symbol: string) {
-    const ws = this.socket;
-    if (!ws || ws.readyState !== 1) return;
-    try {
-      ws.send(JSON.stringify({ op, args: [`orderbook.${DEPTH}.${symbol}`, `publicTrade.${symbol}`] }));
-    } catch {
-      this.reconnect();
-    }
+  private sendTopics(op:'subscribe'|'unsubscribe',args:string[]) {
+    const ws=this.socket;if(!ws||ws.readyState!==1||!args.length)return;
+    try{ws.send(JSON.stringify({op,args}));}catch{this.reconnect();}
+  }
+  private sendDepth(op:'subscribe'|'unsubscribe',symbol:string){
+    this.sendTopics(op,[`orderbook.${DEPTH}.${symbol}`,`publicTrade.${symbol}`,`tickers.${symbol}`]);
   }
 
   private startHeartbeat() {
     if (this.heartbeat !== null) clearInterval(this.heartbeat);
     this.heartbeat = setInterval(() => {
-      if (this.subscriptions.size === 0) return;
+      if (!this.hasConsumers()) return;
       const now = Date.now();
       let silent = false;
       for (const [symbol, active] of this.subscriptions) {
@@ -672,7 +776,7 @@ class FuturesDepthTransport {
   private reconnect() {
     this.clearSocket();
     this.markStale();
-    if (this.subscriptions.size === 0 || (typeof document !== 'undefined' && document.hidden) || this.reconnectTimer !== null) return;
+    if (!this.hasConsumers() || (typeof document !== 'undefined' && document.hidden) || this.reconnectTimer !== null) return;
     // While the socket is down, our own backend is the second source. It
     // stops again the instant a socket frame lands.
     for (const [symbol, active] of this.subscriptions) this.scheduleFallback(active, symbol);
@@ -709,7 +813,7 @@ class FuturesDepthTransport {
     this.cancelIdleClose();
     this.idleCloseTimer = setTimeout(() => {
       this.idleCloseTimer = null;
-      if (this.subscriptions.size !== 0) return;
+      if (this.hasConsumers()) return;
       this.cancelReconnect();
       this.clearSocket();
       this.reconnectDelay = 1000;
@@ -730,6 +834,8 @@ class FuturesDepthTransport {
       this.stopFallback(active);
     }
     this.subscriptions.clear();
+    this.tickerListeners.clear();
+    this.klineListeners.clear();
     this.clearSocket();
     this.reconnectDelay = 1000;
     this.detachVisibility();
@@ -743,4 +849,13 @@ export function closeFuturesDepth() { transport.close(); closeSampledDepth(); }
 
 export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void, onTrades?:(trades:FuturesTrade[])=>void): () => void {
   return sampledDisplay ? subscribeSampledDepth(pair, listener, onTrades) : transport.subscribe(pair, listener, onTrades);
+}
+export function subscribeFuturesTicker(pair:string,listener:(update:FuturesTickerUpdate)=>void):()=>void{
+  return transport.subscribeTicker(pair,listener);
+}
+export function subscribeFuturesTickerFeed(listener:(update:FuturesTickerUpdate)=>void):()=>void{
+  return transport.subscribeTickerFeed(listener);
+}
+export function subscribeFuturesKline(pair:string,interval:string,listener:(update:FuturesKlineUpdate)=>void):()=>void{
+  return transport.subscribeKline(pair,interval,listener);
 }

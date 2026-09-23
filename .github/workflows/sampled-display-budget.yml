@@ -13,6 +13,11 @@ on:
       - 'frontend/src/lib/*Display*'
       - 'frontend/src/lib/displaySnapshotCache.ts'
       - 'frontend/src/lib/sampledDepth.ts'
+      - 'frontend/src/lib/__tests__/futuresCandles.test.ts'
+      - 'frontend/src/lib/__tests__/directFuturesReference.test.ts'
+      - 'frontend/src/lib/futuresCandles.ts'
+      - 'frontend/src/lib/useFuturesReference.ts'
+      - 'frontend/src/lib/directFuturesReference.ts'
       - 'frontend/src/lib/useCfdTickers.ts'
       - 'frontend/src/lib/useLiveMarket.ts'
       - 'frontend/src/lib/liveMarketStore.ts'
@@ -64,6 +69,8 @@ jobs:
           frontend/src/lib/__tests__/cfdTerminal.test.ts
           frontend/src/lib/__tests__/cfdDisplayOnly.test.ts
           frontend/src/lib/__tests__/futuresUiPolish.test.ts
+          frontend/src/lib/__tests__/directFuturesReference.test.ts
+          frontend/src/lib/__tests__/futuresCandles.test.ts
           frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
           frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts
