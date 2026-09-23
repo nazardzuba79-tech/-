@@ -1,4 +1,3 @@
-import { sampledDisplayText } from '../lib/sampledDisplayCopy';
 import { useSampledMotion } from './SampledDataNote';
 import { useEffect, useState } from 'react';
 import { useFuturesExecution } from '../lib/futuresExecution';
@@ -32,6 +31,13 @@ import './FuturesTerminalStatus.css';
 
 /** Which depth states are honestly "live", and which are not. */
 const LIVE: ReadonlySet<FuturesDepthStatus> = new Set<FuturesDepthStatus>(['live']);
+function sampledStatus(lang: string, asOf: number | null): string {
+  const label: Record<string,string> = { en:'Snapshot', uk:'Знімок', ru:'Снимок', es:'Instantánea', pt:'Instantâneo', zh:'快照', hi:'स्नैपशॉट' };
+  const time = asOf !== null && Number.isFinite(asOf) && asOf > 0
+    ? new Date(asOf).toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'})
+    : '—';
+  return `${label[lang] ?? label.en} · ${time} UTC · 60s`;
+}
 
 function ageSeconds(asOf: number | null, now: number): number | null {
   if (asOf === null) return null;
@@ -84,7 +90,7 @@ export function FuturesTerminalStatus({ status, asOf }: {
     <div className="fts-bar" data-terminal-status={live ? 'live' : status}>
       <span className="fts-conn">
         <span className={`fts-dot${live ? ' fts-dotLive' : ''}`} aria-hidden="true" />
-        <span className="fts-connText">{status === 'sampled' ? sampledDisplayText(lang, asOf).label : t(live ? 'futures.statusLive' : status === 'stale' ? 'catalogue.stale' : status === 'unavailable' ? 'trade.bookUnavailable' : 'trade.marketDelayed')}</span>
+        <span className="fts-connText">{status === 'sampled' ? sampledStatus(lang, asOf) : t(live ? 'futures.statusLive' : status === 'stale' ? 'catalogue.stale' : status === 'unavailable' ? 'trade.bookUnavailable' : 'trade.marketDelayed')}</span>
         {/* The age is a measurement, so it renders whatever the state is —
             a stale book is exactly when its age matters most. */}
         {age !== null && <span className="fts-age mono" data-feed-age={age}>{age}s</span>}
