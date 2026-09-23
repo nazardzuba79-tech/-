@@ -142,7 +142,7 @@ async function futuresBook(symbol) {
   } catch {
     // Rare fallback only. Normal production viewers use Bybit directly from the browser,
     // so this does not put Render back in the hot market-data path.
-    const body = await publicJson(`${RENDER_API_BASE}/market/display/futures-book/${encodeURIComponent(symbol)}`);
+    const body = await publicJson(`${RENDER_API_BASE}/market/futures/orderbook/${encodeURIComponent(symbol)}`);
     if (body?.available !== true || body?.symbol !== symbol) throw new Error("render_book_identity");
     const bids = normalizeRenderBookRows(body.bids);
     const asks = normalizeRenderBookRows(body.asks);
