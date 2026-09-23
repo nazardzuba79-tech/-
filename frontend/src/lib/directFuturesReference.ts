@@ -66,6 +66,27 @@ export function parseDirectFuturesTickers(payload: any, now = Date.now()): Map<s
   return rows;
 }
 
+
+export function parseNormalizedFuturesSnapshot(payload: any): Map<string, LiveQuote> {
+  if (payload?.type !== 'snapshot' || !Array.isArray(payload?.rows)) throw new Error('Invalid normalized futures snapshot');
+  const rows = new Map<string, LiveQuote>();
+  for (const raw of payload.rows) {
+    if (!raw || raw.marketType !== 'linear_perpetual' || raw.quoteAsset !== 'USDT' || raw.settleAsset !== 'USDT' ||
+        raw.provider !== 'bybit' || typeof raw.providerSymbol !== 'string' || !/^[A-Z0-9]{1,28}USDT$/.test(raw.providerSymbol) ||
+        raw.id !== `linear_perpetual:${raw.providerSymbol}` || raw.pair !== `${raw.baseAsset}/USDT` ||
+        typeof raw.lastPrice !== 'number' || !Number.isFinite(raw.lastPrice) || raw.lastPrice <= 0) continue;
+    rows.set(raw.pair, raw as LiveQuote);
+  }
+  if (!rows.size) throw new Error('Empty normalized futures snapshot');
+  return rows;
+}
+
+function productionSite(): boolean {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return host === 'voltextech.net' || host.endsWith('.voltextech.net');
+}
+
 async function fetchJson(url: string, signal: AbortSignal): Promise<any> {
   const response = await fetch(url, { signal, credentials: 'omit', headers: { Accept: 'application/json' } });
   if (!response.ok) throw new Error(`ticker_http_${response.status}`);
@@ -114,20 +135,26 @@ class DirectFuturesReferenceStore {
     this.controller = controller;
     try {
       let payload: any = null;
-      let loaded = false;
-      for (const url of DIRECT_TICKER_URLS) {
-        try {
-          payload = await fetchJson(url, controller.signal);
-          this.rows = parseDirectFuturesTickers(payload);
-          loaded = true;
-          break;
-        } catch (error) {
-          if (controller.signal.aborted) throw error;
+      if (!productionSite()) {
+        // CI/local/preview stays deterministic and uses the existing fixture-backed app API.
+        payload = await fetchJson('/api/v1/market/display', controller.signal);
+        this.rows = parseNormalizedFuturesSnapshot(payload);
+      } else {
+        let loaded = false;
+        for (const url of DIRECT_TICKER_URLS) {
+          try {
+            payload = await fetchJson(url, controller.signal);
+            this.rows = parseDirectFuturesTickers(payload);
+            loaded = true;
+            break;
+          } catch (error) {
+            if (controller.signal.aborted) throw error;
+          }
         }
-      }
-      if (!loaded) {
-        payload = await fetchJson(EDGE_TICKER_URL, controller.signal);
-        this.rows = parseDirectFuturesTickers(payload);
+        if (!loaded) {
+          payload = await fetchJson(EDGE_TICKER_URL, controller.signal);
+          this.rows = parseDirectFuturesTickers(payload);
+        }
       }
       if (!controller.signal.aborted) this.emit();
       this.schedule(REFRESH_MS);
