@@ -295,15 +295,15 @@ describe('an open historical account does not grow its journal with every price'
     // The observation that filled the order is never a candidate.
     const fill=before.events.find(e=>e.kind==='CLOSE')!;
     expect(bloated.commands.filter(c=>c.kind==='OBSERVE'&&c.at===fill.time).every(c=>!drop.has(c.id))).toBe(true);
-    // The next real command stores the compacted journal.
-    f.clock.t+=10_000;
-    await f.open({side:'SHORT',type:'LIMIT',quantity:'0.001',price:'90000',reduceOnly:true,positionId:p.id,candle:undefined});
+    // A normal REFRESH must persist a verified compaction even when no financial outcome changes.
+    const commitsBeforeCompaction=f.repo.commits;
+    f.clock.t+=10_000;f.market.price='81501';await f.refresh();
     const row=f.repo.row!;
+    expect(f.repo.commits).toBe(commitsBeforeCompaction+1);
     expect(row.commands.length).toBeLessThan(20);
     expect(row.snapshot.events.slice(0,before.events.length)).toEqual(before.events);
     expect(row.snapshot.positions[0]).toMatchObject({status:'OPEN',quantity:before.positions[0].quantity,realizedGross:before.positions[0].realizedGross});
     expect(row.snapshot.walletBalance).toBe(before.walletBalance);
-    expect(row.snapshot.orders.at(-1)).toMatchObject({price:'90000',status:'OPEN'});
     expect(outcome(await f.replay('FULL'))).toEqual(outcome(row.snapshot));
     expect(outcome(await f.replay('CHECKPOINT'))).toEqual(outcome(row.snapshot));
   });
