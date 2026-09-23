@@ -275,7 +275,13 @@ test.each([
     //
     // Re-taken once more over the merge of the two changes above: both
     // landed on this page independently and the file now carries both.
-    "ccfe7ee398f9c48e1501e2654ab30508b47e715a3c0a5da707757377294f5ce3"
+    //
+    // Re-taken 2026-09-23 for the production chart outage: display-only
+    // Futures candles no longer switch to the authenticated native loader.
+    // The native execution seam, interaction overlays, account and order
+    // paths are untouched; TerminalChart supplies the public exact-contract
+    // Futures candle loader for both ordinary and native-bound accounts.
+    "9bc4a84e1302b2d9931e96e94a1816c193047db89459cf4dc7e765b3f8eedfac"
   ],
   [
     "components/FuturesPairList.tsx",
