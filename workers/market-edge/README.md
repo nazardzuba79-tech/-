@@ -3,7 +3,7 @@
 Cloudflare Worker (Workers Free) for future **public** VOLTEX market data
 (order books, tickers, Home market data, CFD display data).
 
-Current state: only `GET /health` → `{"ok":true,"service":"voltex-market-edge"}`.
+Current state: `GET /health` plus public Futures display endpoints for order book and recent trades. The book is capped at 25 bids + 25 asks and cached at the Cloudflare edge; no private/trading route is exposed.
 
 - workers.dev: https://voltex-market-edge.nazardzuba79.workers.dev/health
 - custom domain: https://market.voltextech.net/health
