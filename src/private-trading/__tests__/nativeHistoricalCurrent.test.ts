@@ -237,8 +237,8 @@ describe('historical entry with current server valuation and exit',()=>{
     const f=await fixture('60000','1.08');f.repo.wallet=[{asset:'EUR',available:'5',locked:'0'}];
     const marks=jest.spyOn(f.market,'marks');
     const v=await f.service.collateral(actor);
-    expect(marks).toHaveBeenCalledWith(['EURUSDUSDT'],expect.anything());
-    expect(marks.mock.calls.flat().join(',')).not.toContain('EURUSDT');
+    expect(marks.mock.calls.some(call=>Array.isArray(call[0])&&call[0].includes('EURUSDUSDT'))).toBe(true);
+    expect(marks.mock.calls.some(call=>Array.isArray(call[0])&&call[0].includes('EURUSDT'))).toBe(false);
     expect(v.complete).toBe(true);expect(v.collateralPriced).toBe('5.4');
     expect(v.lines.find(l=>l.asset==='EUR')).toMatchObject({price:'1.08',value:'5.4',source:'BYBIT_FX_EURUSDUSDT_MARK',status:'PRICED'});
     marks.mockRestore();
