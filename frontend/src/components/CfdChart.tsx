@@ -7,6 +7,8 @@ import '../pages/trade-terminal/CfdPractice.css';
 type Interval='5m'|'15m'|'1h'|'4h'|'1d';
 const INTERVALS:Interval[]=['5m','15m','1h','4h','1d'];
 const API_BASE=(import.meta.env.VITE_API_URL||'/api/v1').replace(/\/$/,'');
+const MARKET_EDGE_BASE='https://market.voltextech.net';
+const production=()=>typeof window!=='undefined'&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
 const PROVIDER_SYMBOL:Record<string,string>={WTIUSD:'USOIL',XBRUSD:'UKOIL'};
 
 type RawBar={openTime:number|string;open:number|string;high:number|string;low:number|string;close:number|string;volume?:number|string|null;tickVolume?:number|string|null;isOpen?:boolean};
@@ -33,7 +35,7 @@ function normalizeBars(body:RawEnvelope,symbol:string,interval:Interval):ChartBa
 }
 
 async function loadCandles(symbol:string,interval:Interval,signal:AbortSignal):Promise<{rows:ChartBar[];asOf:number|null}>{
-  const url=`${API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`;
+  const url=`${production()?MARKET_EDGE_BASE:API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`;
   const body=await readDisplayJson<RawEnvelope>(url,SLOW_DISPLAY_REFRESH_MS,signal);
   return {rows:normalizeBars(body,symbol,interval),asOf:typeof body.fetchedAt==='number'?body.fetchedAt:null};
 }
@@ -68,7 +70,7 @@ export function CfdChart({symbol}:{symbol:string}){
       try{
         const snapshot=await loadCandles(symbol,interval,request.signal);
         if(cancelled||request.signal.aborted)return;
-        delay=displayRefreshDelay(`${API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`,SLOW_DISPLAY_REFRESH_MS);
+        delay=displayRefreshDelay(`${production()?MARKET_EDGE_BASE:API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`,SLOW_DISPLAY_REFRESH_MS);
         const rows=snapshot.rows;
         seriesRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,open:bar.open,high:bar.high,low:bar.low,close:bar.close})));
         volumeRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,value:bar.volume,color:bar.close>=bar.open?'rgba(18,201,141,.28)':'rgba(239,83,80,.28)'})));
