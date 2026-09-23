@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
-import { useLanguage } from '../lib/i18n';
 import '../pages/trade-terminal/SampledDisplay.css';
 
-import { sampledDisplayText } from '../lib/sampledDisplayCopy';
 export { sampledDisplayText } from '../lib/sampledDisplayCopy';
 
 let motionUsers = 0;
@@ -14,9 +12,12 @@ export function useSampledMotion(): void {
     return () => { if (--motionUsers === 0) { document.removeEventListener('visibilitychange', reflectVisibility); delete document.documentElement.dataset.sampledMotion; } };
   }, []);
 }
-export function SampledDataNote({ asOf, cadenceMs = 60_000 }: { asOf?: number | null; cadenceMs?: number }) {
-  const { lang } = useLanguage(); useSampledMotion();
-  const copy = sampledDisplayText(lang, asOf, cadenceMs);
-  return <span className="sampled-data-note" data-sampled-note="true" data-refresh-ms={cadenceMs}
-    data-observed-at={asOf ?? undefined} title={copy.title}>{copy.label}</span>;
+
+/**
+ * Keep the sampled-display motion lifecycle, but never expose transport/cache
+ * implementation details in the customer UI.
+ */
+export function SampledDataNote(_props: { asOf?: number | null; cadenceMs?: number }) {
+  useSampledMotion();
+  return null;
 }
