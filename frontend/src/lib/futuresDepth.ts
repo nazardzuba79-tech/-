@@ -268,8 +268,10 @@ interface ActiveDepth {
  *  must stay free of so it can be tested outside the bundler. */
 let fallbackBase = '/api/v1';
 let sampledDisplay = false;
-export function setFuturesDepthFallbackBase(base: string, sampled = false, displayBase = base) {
-  fallbackBase = base; sampledDisplay = sampled; setSampledBase(base, displayBase);
+const PUBLIC_MARKET_EDGE_BASE = 'https://market.voltextech.net';
+export function setFuturesDepthFallbackBase(base: string, sampled = false) {
+  fallbackBase = base; sampledDisplay = sampled;
+  setSampledBase(base, sampled ? PUBLIC_MARKET_EDGE_BASE : base);
   if (sampled) transport.close(); else closeSampledDepth();
 }
 
