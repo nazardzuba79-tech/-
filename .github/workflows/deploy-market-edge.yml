@@ -70,6 +70,13 @@ jobs:
           curl -fsS https://market.voltextech.net/market/display/futures-trades/BTCUSDT | grep -q '"symbol":"BTCUSDT"'
           curl -fsS https://market.voltextech.net/market/display/futures-tickers | grep -q '"retCode":0'
           curl -fsS 'https://market.voltextech.net/market/display/futures-candles/BTCUSDT?interval=60&limit=5' | grep -q '"retCode":0'
+          curl -fsS https://market.voltextech.net/market/display | grep -q '"type":"snapshot"'
+          curl -fsS https://market.voltextech.net/market/display/spot-tickers | grep -q '"source":"bybit-edge"'
+          curl -fsS https://market.voltextech.net/market/display/spot-book/BTC-USDT | grep -q '"available":true'
+          curl -fsS 'https://market.voltextech.net/market/display/spot-candles/BTC-USDT?interval=1h&limit=5' | grep -q '"pair":"BTC/USDT"'
+          curl -fsS https://market.voltextech.net/market/display/spot-trades/BTC-USDT | grep -q '"pair":"BTC/USDT"'
+          curl -fsS https://market.voltextech.net/cfd/display/tickers | grep -q '"configured":true'
+          curl -fsS 'https://market.voltextech.net/cfd/display/candles/XAUUSD?interval=1h&limit=20' | grep -q '"symbol":"XAUUSD"'
 
 
   live-smoke:
