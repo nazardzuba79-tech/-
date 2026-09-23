@@ -35,7 +35,7 @@ export function parseSampledBook(body: any, identity: string, futures: boolean):
 
 export async function readSpotDisplayBook(base: string, pair: string, signal?: AbortSignal) {
   if (!/^[A-Z0-9]{1,32}\/[A-Z0-9]{2,12}$/.test(pair)) throw new Error('Invalid spot pair');
-  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const host = typeof window !== 'undefined' && window.location ? window.location.hostname : '';
   const production = host === 'voltextech.net' || host.endsWith('.voltextech.net');
   const origin = production ? MARKET_EDGE_BASE : base.replace(/\/$/, '');
   const body = await readDisplayJson(`${origin}/market/display/spot-book/${pair.replace('/', '-')}`, DISPLAY_REFRESH_MS, signal);
