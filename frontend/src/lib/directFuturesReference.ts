@@ -1,5 +1,5 @@
 import type { LiveQuote } from './liveMarketTypes';
-import { subscribeFuturesTicker, type FuturesTickerUpdate } from './futuresDepth';
+import { subscribeFuturesTickerFeed, type FuturesTickerUpdate } from './futuresDepth';
 
 const DIRECT_TICKER_URLS = [
   'https://api.bybit.com/v5/market/tickers?category=linear',
@@ -131,22 +131,16 @@ class DirectFuturesReferenceStore {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private controller: AbortController | null = null;
   private visibilityAttached = false;
-  private focusedPair: string | null = null;
   private tickerStop: (()=>void) | null = null;
 
   getState = (): ReadonlyMap<string, LiveQuote> => this.rows;
 
-  focus = (pair:string|null):void => {
-    if(this.focusedPair===pair)return;
-    this.tickerStop?.();this.tickerStop=null;this.focusedPair=pair;
-    if(pair&&this.listeners.size&&productionSite())this.attachTicker();
-  };
-
   private attachTicker():void{
-    if(!this.focusedPair||this.tickerStop||!productionSite())return;
-    const pair=this.focusedPair;
-    this.tickerStop=subscribeFuturesTicker(pair,(update)=>{
-      if(this.focusedPair!==pair)return;
+    if(this.tickerStop||!productionSite())return;
+    this.tickerStop=subscribeFuturesTickerFeed((update)=>{
+      const base=update.symbol.endsWith('USDT')?update.symbol.slice(0,-4):'';
+      if(!base)return;
+      const pair=`${base}/USDT`;
       this.rows=applyFuturesTickerUpdate(this.rows,pair,update);
       this.emit();
     });
