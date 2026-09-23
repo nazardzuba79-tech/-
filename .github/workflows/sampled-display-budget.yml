@@ -1,0 +1,98 @@
+name: Sampled public display budget
+on:
+  pull_request:
+    paths:
+      - 'src/api/middleware/publicDisplayCache.ts'
+      - 'src/api/routes/displaySnapshots.ts'
+      - 'src/api/routes/cfd.ts'
+      - 'src/api/routes/marketData.ts'
+      - 'src/api/routes/__tests__/sampledDisplayBudget.test.ts'
+      - 'src/services/FuturesDisplayTrades.ts'
+      - 'src/services/marketData/live/collectorServer.ts'
+      - 'src/index.ts'
+      - 'frontend/src/lib/*Display*'
+      - 'frontend/src/lib/displaySnapshotCache.ts'
+      - 'frontend/src/lib/sampledDepth.ts'
+      - 'frontend/src/lib/useCfdTickers.ts'
+      - 'frontend/src/lib/useLiveMarket.ts'
+      - 'frontend/src/lib/liveMarketStore.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/components/SampledDataNote.tsx'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/pages/FuturesPage.tsx'
+      - 'frontend/src/pages/home/**'
+      - 'frontend/src/pages/trade-terminal/SampledDisplay.css'
+      - '.github/workflows/sampled-display-budget.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/api/middleware/publicDisplayCache.ts'
+      - 'src/api/routes/displaySnapshots.ts'
+      - 'src/api/routes/__tests__/sampledDisplayBudget.test.ts'
+      - 'frontend/src/lib/displaySnapshotCache.ts'
+      - 'frontend/src/lib/sampledDepth.ts'
+      - 'frontend/src/lib/useCfdTickers.ts'
+      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/pages/home/useHeroStream.ts'
+      - '.github/workflows/sampled-display-budget.yml'
+permissions:
+  contents: read
+concurrency:
+  group: sampled-display-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  cadence-and-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install build and test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm ci --prefix frontend --ignore-scripts --no-audit --no-fund && npx prisma generate
+      - name: Build both production bundles
+        run: npm run build && npm run build --prefix frontend
+      - name: Snapshot cadence, persistence and intended UI contracts
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/api/routes/__tests__/sampledDisplayBudget.test.ts
+          frontend/src/lib/__tests__/homeHeroVisibility.test.ts
+          frontend/src/lib/__tests__/cfdTerminal.test.ts
+          frontend/src/lib/__tests__/cfdDisplayOnly.test.ts
+          frontend/src/lib/__tests__/futuresUiPolish.test.ts
+          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts
+          frontend/src/lib/__tests__/homeLiveMarket.test.ts
+          frontend/src/lib/__tests__/homeMarketSnapshot.test.ts
+          frontend/src/lib/__tests__/homeHeroStream.test.ts
+      - name: Execution and collector remain independent
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts
+          src/services/marketData/live/__tests__/LiveTransport.test.ts
+          src/api/routes/__tests__/marketLiveGzip.test.ts
+          src/private-trading/__tests__/math.test.ts
+          src/private-trading/__tests__/liveEngine.test.ts
+      - name: Install disposable browser
+        run: |
+          npm install --prefix /tmp/voltex-sampled playwright@1.63.0 --no-audit --no-fund
+          ln -s /tmp/voltex-sampled/node_modules/playwright node_modules/playwright
+          /tmp/voltex-sampled/node_modules/.bin/playwright install --with-deps chromium
+      - name: Futures desktop and phone; exact price pick and order payload
+        run: node scripts/qa-futures-visual-polish.cjs --widths 1440x900,390x844 --out docs/qa/sampled-display-ci --label sampled
+      - name: Homepage first paint and cached hard reload
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-sampled/node_modules/playwright
+        run: node scripts/qa-home-laptop-first-load.cjs && node scripts/qa-home-snapshot-reload.cjs
+      - name: Preserve generated evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sampled-display-${{ github.sha }}
+          path: docs/qa/sampled-display-ci/
+          retention-days: 3
