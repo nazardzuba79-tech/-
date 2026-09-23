@@ -222,20 +222,16 @@
    the panel's left edge while the rest scrolls; «Лимитный» / «Рыночный»
    are reached by that scroll, never cut at the panel's edge. */
 #archive-terminal-preview .futures-positions-table { width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
-#archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px; padding-inline:8px !important; white-space:nowrap; text-align:left; }
+#archive-terminal-preview .futures-positions-table :is(th,td) { width:auto; padding:8px 5px; padding-inline:5px !important; white-space:nowrap; text-align:left; }
 /* `height:40px`: the studio sheet pins the heading to `height:30px` with
    `padding:0 !important`; one explicit height keeps the band the same at
    every width the geometry check measures, with room for a two-line title. */
-#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:40px; font-size:12px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
-/* The five widest headings — «Цена Входа», «Цена маркировки», «Цена
-   ликвид.», «Нереализованный P&L(ROI)», «Реализованный P&L» — may take two
-   lines inside the same 40px band, and only when the panel cannot hold them
-   on one: auto layout never drops a column below its cells (every cell stays
-   on one line), so the column measures its figures, not its title, and on a
-   wide screen the titles sit on one line as before. `min-width:0` on the
-   table is what lets that happen; the table still never gets narrower than
-   its cells, it scrolls instead. */
-#archive-terminal-preview .futures-positions-table th:is(:nth-child(5),:nth-child(6),:nth-child(7),:nth-child(8),:nth-child(9)) { white-space:normal !important; } /* the terminal system sheet pins every heading to `nowrap !important` */
+#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:40px; font-size:11px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
+/* Every heading stays on ONE line (the owner, 2026-09-23: the two-line
+   «Цена / Входа», «Цена / маркировки», «Цена / ликвид.» beside one-line
+   titles read as text stacked on text). A title is never wrapped to make a
+   column fit: when the panel is narrower than the row, the figures scroll
+   under the pinned contract and «Закрыть как», as they already do. */
 #archive-terminal-preview .futures-positions-table td { height:64px; font-size:13px; font-weight:550; color:#f8fafc; vertical-align:middle; border-bottom:0; }
 #archive-terminal-preview .futures-position-unit { color:#bac5d5; }
 #archive-terminal-preview .futures-positions-table td:is(:nth-child(3),:nth-child(4),:nth-child(5)) { color:#f8fafc !important; }
