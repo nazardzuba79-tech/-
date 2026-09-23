@@ -4,6 +4,7 @@ on:
     branches: ['chatgpt/sampled-display-budget']
     paths:
       - 'scripts/reconcile-sampled-display-temp.py'
+      - 'scripts/visibility-sampled-display-temp.py'
       - '.github/workflows/sampled-display-assemble-temp.yml'
 permissions:
   contents: write
@@ -22,19 +23,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/sampled-display-budget
-      - name: Apply reviewed offline-tested fixes exactly once
+      - name: Apply reviewed source fixes, never edit workflows with the runner token
         run: |
+          set -euo pipefail
+          : > /tmp/sampled-display-changed.txt
           if ! grep -q '^export function displayRefreshDelay' frontend/src/lib/displaySnapshotCache.ts; then
             python3 scripts/reconcile-sampled-display-temp.py
-            while IFS= read -r path || test -n "$path"; do
-              case "$path" in src/*|frontend/src/*|scripts/qa-*.cjs|scripts/serve-native-demo-review.cjs|.github/workflows/copy-trading-card-regression.yml) git add -- "$path" ;; *) echo 'Unexpected target'; exit 1 ;; esac
-            done < /tmp/sampled-display-changed.txt
-            if ! git diff --cached --quiet; then
-              git config user.name 'VOLTEX display assembly'
-              git config user.email 'noreply@users.noreply.github.com'
-              git commit -m '[CF-Pages-Skip] Reconcile sampled cache expiry and intended regression contracts'
-              git push origin HEAD:refs/heads/chatgpt/sampled-display-budget
-            fi
+          fi
+          python3 scripts/visibility-sampled-display-temp.py
+          while IFS= read -r path || test -n "$path"; do
+            case "$path" in src/*|frontend/src/*|scripts/qa-*.cjs|scripts/serve-native-demo-review.cjs) git add -- "$path" ;; *) echo "Unexpected source target: $path"; exit 1 ;; esac
+          done < /tmp/sampled-display-changed.txt
+          if ! git diff --cached --quiet; then
+            git config user.name 'VOLTEX display assembly'
+            git config user.email 'noreply@users.noreply.github.com'
+            git commit -m '[CF-Pages-Skip] Apply reviewed sampled-display persistence and compatibility fixes'
+            git push origin HEAD:refs/heads/chatgpt/sampled-display-budget
           fi
       - uses: actions/setup-node@v4
         with:
