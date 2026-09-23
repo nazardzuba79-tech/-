@@ -330,6 +330,7 @@ class FuturesDepthTransport {
   private socket: WebSocket | null = null;
   private subscriptions = new Map<string, ActiveDepth>();
   private tickerListeners = new Map<string, Set<(update:FuturesTickerUpdate)=>void>>();
+  private tickerFeedListeners = new Set<(update:FuturesTickerUpdate)=>void>();
   private klineListeners = new Map<string, Set<(update:FuturesKlineUpdate)=>void>>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private idleCloseTimer: ReturnType<typeof setTimeout> | null = null;
@@ -392,6 +393,11 @@ class FuturesDepthTransport {
       }
       if (!this.hasConsumers()) this.scheduleIdleClose();
     };
+  }
+
+  subscribeTickerFeed(listener:(update:FuturesTickerUpdate)=>void):()=>void {
+    this.tickerFeedListeners.add(listener);
+    return()=>this.tickerFeedListeners.delete(listener);
   }
 
   subscribeTicker(pair: string, listener:(update:FuturesTickerUpdate)=>void):()=>void {
@@ -599,7 +605,10 @@ class FuturesDepthTransport {
         if (frame?.success === false) { this.reconnect(); return; }
         if(typeof frame?.topic==='string'&&frame.topic.startsWith('tickers.')){
           const symbol=frame.topic.slice('tickers.'.length),update=parseFuturesTickerFrame(frame,symbol);
-          if(update)for(const listener of this.tickerListeners.get(symbol)??[])listener(update);
+          if(update){
+            for(const listener of this.tickerListeners.get(symbol)??[])listener(update);
+            for(const listener of this.tickerFeedListeners)listener(update);
+          }
           return;
         }
         if(typeof frame?.topic==='string'&&frame.topic.startsWith('kline.')){
@@ -670,7 +679,7 @@ class FuturesDepthTransport {
     try{ws.send(JSON.stringify({op,args}));}catch{this.reconnect();}
   }
   private sendDepth(op:'subscribe'|'unsubscribe',symbol:string){
-    this.sendTopics(op,[`orderbook.${DEPTH}.${symbol}`,`publicTrade.${symbol}`]);
+    this.sendTopics(op,[`orderbook.${DEPTH}.${symbol}`,`publicTrade.${symbol}`,`tickers.${symbol}`]);
   }
 
   private startHeartbeat() {
@@ -843,6 +852,9 @@ export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepth
 }
 export function subscribeFuturesTicker(pair:string,listener:(update:FuturesTickerUpdate)=>void):()=>void{
   return transport.subscribeTicker(pair,listener);
+}
+export function subscribeFuturesTickerFeed(listener:(update:FuturesTickerUpdate)=>void):()=>void{
+  return transport.subscribeTickerFeed(listener);
 }
 export function subscribeFuturesKline(pair:string,interval:string,listener:(update:FuturesKlineUpdate)=>void):()=>void{
   return transport.subscribeKline(pair,interval,listener);
