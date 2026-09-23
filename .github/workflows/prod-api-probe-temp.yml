@@ -1,0 +1,37 @@
+name: TEMP production API probe
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/prod-api-probe-temp.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe public production endpoints
+        shell: bash
+        run: |
+          set -u
+          probe() {
+            name="$1"; url="$2"
+            echo "::group::$name"
+            curl -sS --max-time 20 -D /tmp/h -o /tmp/b -H 'Origin: https://voltextech.net' "$url" || true
+            echo "--- status/headers ---"
+            sed -n '1,30p' /tmp/h || true
+            echo "--- body ---"
+            head -c 3000 /tmp/b || true
+            echo
+            echo "::endgroup::"
+          }
+          probe health 'https://api.voltextech.net/health'
+          probe candles 'https://api.voltextech.net/api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=20'
+          probe snapshot 'https://api.voltextech.net/api/v1/market/snapshot'
+          probe symbols 'https://api.voltextech.net/api/v1/market/external/symbols'
+          echo "::group::market-live"
+          curl -sS -N --max-time 8 -D /tmp/lh -o /tmp/lb -H 'Origin: https://voltextech.net' 'https://api.voltextech.net/api/v1/market/live' || true
+          sed -n '1,30p' /tmp/lh || true
+          head -c 3000 /tmp/lb || true
+          echo
+          echo "::endgroup::"
