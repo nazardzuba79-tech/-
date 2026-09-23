@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js';
 import { actor, setup, key, H, H0, M, outcome } from '../native/testing/liveFixture';
 import { NativeCommand, NativeDemoService } from '../native/service';
 import { demoPositionView } from '../native/engine';
-import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateTradingMarketData } from '../marketData';
+import { assertHistoricalDemoCurrentPrice, assertPrivateFreshQuote, PrivateMarketDataError, PrivateTradingMarketData } from '../marketData';
 import { deriveNativeLiveProjection, projectionDigest, verifiedProjection } from '../native/liveProjection';
 
 const selectedAt=H0-24*H;
@@ -121,6 +121,79 @@ describe('historical entry with current server valuation and exit',()=>{
     expect(f.repo.row!.snapshot.positions[0].status).toBe('CLOSED');
     expect(f.repo.row!.snapshot.positions[1].quantity).toBe(b.quantity);
     expect(f.repo.row!.snapshot.events.filter(e=>e.kind==='CLOSE').at(-1)!.price).toBe('82500');
+  });
+
+  describe('a reduce-only LIMIT is accepted without a current price and fills on the next fresh one',()=>{
+    const outage=(f:Awaited<ReturnType<typeof fixture>>,how:'down'|'stale')=>{
+      const marks=f.market.historicalDemoPrices.bind(f.market),instrument=f.market.instrument.bind(f.market);
+      if(how==='down'){
+        f.market.historicalDemoPrices=jest.fn(async()=>{throw new PrivateMarketDataError('collector_unavailable');});
+        f.market.instrument=jest.fn(async()=>{throw new TypeError('fetch failed');});
+      }else f.market.historicalDemoPrices=jest.fn(async symbols=>new Map([...(await marks(symbols))].map(([s,q])=>[s,{...q,markProviderTimestamp:f.clock.now()-59000}])));
+      return()=>{f.market.historicalDemoPrices=marks;f.market.instrument=instrument;};
+    };
+    test.each(['down','stale'] as const)('collector %s: the close rests at once, marketable or not, and fills at the next observation',async how=>{
+      const f=await fixture();await f.open({quantity:'0.002'});
+      const p=f.repo.row!.snapshot.positions[0],marksBefore=structuredClone(f.repo.row!.snapshot.marks),wallet=f.repo.row!.snapshot.walletBalance;
+      const restore=outage(f,how);
+      // 80000 is BELOW the last observed 81000: a sell limit that would have filled at once.
+      await f.open({side:'SHORT',type:'LIMIT',quantity:'0.002',price:'80000',reduceOnly:true,positionId:p.id,candle:undefined});
+      let s=f.repo.row!.snapshot;
+      expect(s.orders.at(-1)).toMatchObject({type:'LIMIT',price:'80000',reduceOnly:true,positionId:p.id,status:'OPEN',filled:'0'});
+      expect(s.positions[0]).toMatchObject({status:'OPEN',quantity:'0.002'});
+      // Nothing was valued, re-marked or settled at an old price.
+      expect(s.marks).toEqual(marksBefore);expect(s.walletBalance).toBe(wallet);
+      expect(f.repo.row!.commands.at(-1)).toMatchObject({kind:'OPEN',mark:'',last:''});
+      // Still no price: the order waits, the account is not touched.
+      f.clock.t+=10_000;await expect(f.refresh()).rejects.toBeTruthy();
+      expect(f.repo.row!.snapshot.orders.at(-1)!.status).toBe('OPEN');
+      // The price comes back: the next observation fills it at that observation's price.
+      restore();f.clock.t+=10_000;f.market.price='80500';await f.refresh();
+      s=f.repo.row!.snapshot;
+      expect(s.orders.at(-1)!.status).toBe('FILLED');expect(s.positions[0].status).toBe('CLOSED');
+      expect(s.events.filter(e=>e.kind==='CLOSE').at(-1)).toMatchObject({price:'80500',pricing:'NEAR_LIVE_DEMO'});
+      expect(outcome(await f.replay('FULL'))).toEqual(outcome(s));
+      expect(outcome(await f.replay('CHECKPOINT'))).toEqual(outcome(s));
+    });
+    test('a close above the market rests through the outage and fills only when the price reaches it',async()=>{
+      const f=await fixture();await f.open();const p=f.repo.row!.snapshot.positions[0];
+      const restore=outage(f,'down');
+      await f.open({side:'SHORT',type:'LIMIT',quantity:'0.001',price:'82000',reduceOnly:true,positionId:p.id,candle:undefined});
+      restore();f.clock.t+=5000;f.market.price='81500';await f.refresh();
+      expect(f.repo.row!.snapshot.orders.at(-1)!.status).toBe('OPEN');
+      f.clock.t+=5000;f.market.price='82100';await f.refresh();
+      expect(f.repo.row!.snapshot.positions[0].status).toBe('CLOSED');
+      expect(outcome(await f.replay('FULL'))).toEqual(outcome(f.repo.row!.snapshot));
+    });
+    test('the same key after the outage answers with the saved order; a CANCEL also needs no price',async()=>{
+      const f=await fixture();await f.open();const p=f.repo.row!.snapshot.positions[0];
+      outage(f,'down');
+      const c={kind:'OPEN',symbol:'BTCUSDT',side:'SHORT',type:'LIMIT',quantity:'0.001',price:'90000',leverage:'10',marginType:'CROSS',
+        reduceOnly:true,positionId:p.id,executionMode:'HISTORICAL_DEMO',idempotencyKey:key()} as NativeCommand;
+      await f.service.command(actor,c);const saved=structuredClone(f.repo.row);
+      await f.service.command(actor,c);expect(f.repo.row).toEqual(saved);
+      await f.command({kind:'CANCEL',orderId:f.repo.row!.snapshot.orders.at(-1)!.id} as NativeCommand);
+      expect(f.repo.row!.snapshot.orders.at(-1)!.status).toBe('CANCELLED');
+      expect(f.repo.row!.snapshot.positions[0].status).toBe('OPEN');
+    });
+    test('anything that adds or prices risk is still refused without a current price',async()=>{
+      const f=await fixture();await f.open();const p=f.repo.row!.snapshot.positions[0];
+      outage(f,'stale');const before=structuredClone(f.repo.row);
+      await expect(f.open()).rejects.toMatchObject({code:'near_live_price_stale'});
+      await expect(f.open({type:'LIMIT',price:'70000',candle:undefined})).rejects.toMatchObject({code:'near_live_price_stale'});
+      await expect(f.command({kind:'CLOSE',positionId:p.id} as NativeCommand)).rejects.toMatchObject({code:'near_live_price_stale'});
+      await expect(f.open({side:'SHORT',type:'MARKET',quantity:'0.001',reduceOnly:true,positionId:p.id,candle:undefined})).rejects.toMatchObject({code:'near_live_price_stale'});
+      expect(f.repo.row).toEqual(before);
+    });
+    test('a reduce order that does not fit its position is refused as before, not rested',async()=>{
+      const f=await fixture();await f.open();const p=f.repo.row!.snapshot.positions[0];
+      outage(f,'down');const before=structuredClone(f.repo.row);
+      await expect(f.open({side:'SHORT',type:'LIMIT',quantity:'0.005',price:'82000',reduceOnly:true,positionId:p.id,candle:undefined}))
+        .rejects.toMatchObject({code:'CLOSE_EXCEEDS_POSITION'});
+      await expect(f.open({side:'LONG',type:'LIMIT',quantity:'0.001',price:'82000',reduceOnly:true,positionId:p.id,candle:undefined}))
+        .rejects.toMatchObject({code:'INVALID_REDUCE_SIDE'});
+      expect(f.repo.row).toEqual(before);
+    });
   });
 
   test('LIMIT waits for current observed price, cancellation persists, Isolated uses the same engine',async()=>{
