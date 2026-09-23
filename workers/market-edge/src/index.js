@@ -52,7 +52,7 @@ function normalizeBookRows(rows) {
   return out;
 }
 
-async function bybitJson(url) {
+async function publicJson(url) {
   const response = await fetch(url, {
     method: "GET",
     headers: { accept: "application/json" },
@@ -64,13 +64,61 @@ async function bybitJson(url) {
   return response.json();
 }
 
-async function futuresBook(symbol) {
-  const upstream = new URL("https://api.bybit.com/v5/market/orderbook");
-  upstream.searchParams.set("category", "linear");
-  upstream.searchParams.set("symbol", symbol);
-  upstream.searchParams.set("limit", "50");
+async function firstPublicJson(urls) {
+  let lastError;
+  for (const url of urls) {
+    try { return await publicJson(url); }
+    catch (error) { lastError = error; }
+  }
+  throw lastError ?? new Error("provider_unavailable");
+}
 
-  const body = await bybitJson(upstream.toString());
+function bybitUrl(host, path, params) {
+  const url = new URL(path, host);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  return url.toString();
+}
+
+async function futuresBook(symbol) {
+  let body;
+  let fromRender = false;
+  try {
+    body = await firstPublicJson([
+      bybitUrl("https://api.bybit.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
+      bybitUrl("https://api.bytick.com", "/v5/market/orderbook", { category: "linear", symbol, limit: "50" }),
+    ]);
+  } catch {
+    // Cloudflare egress can land in a jurisdiction Bybit rejects with HTTP 403.
+    // In that case use VOLTEX's existing PUBLIC display snapshot in Frankfurt.
+    // No account cookie, Authorization header or trading route is ever forwarded.
+    body = await publicJson(`https://api.voltextech.net/api/v1/market/display/futures-book/${encodeURIComponent(symbol)}`);
+    fromRender = true;
+  }
+
+  if (fromRender) {
+    if (body?.available !== true || body?.symbol !== symbol || !Array.isArray(body.bids) || !Array.isArray(body.asks)) {
+      throw new Error("fallback_identity");
+    }
+    const normalizeObjects = (rows) => rows.slice(0, BOOK_LEVELS).map((row) => {
+      if (!row || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.quantity)) throw new Error("fallback_level");
+      return { price: row.price, quantity: row.quantity };
+    });
+    const bids = normalizeObjects(body.bids);
+    const asks = normalizeObjects(body.asks);
+    if (!bids.length || !asks.length || Number(bids[0].price) >= Number(asks[0].price)) throw new Error("fallback_book");
+    return {
+      available: true,
+      symbol,
+      source: "bybit",
+      fetchedAt: Number.isFinite(Number(body.fetchedAt)) ? Number(body.fetchedAt) : Date.now(),
+      providerTime: Number.isFinite(Number(body.providerTime)) ? Number(body.providerTime) : Date.now(),
+      stale: body.stale === true,
+      updateId: Number.isSafeInteger(Number(body.updateId)) ? Number(body.updateId) : 1,
+      bids,
+      asks,
+    };
+  }
+
   if (body?.retCode !== 0 || body?.result?.s !== symbol) throw new Error("provider_identity");
 
   const bids = normalizeBookRows(body.result.b);
@@ -95,12 +143,31 @@ async function futuresBook(symbol) {
 }
 
 async function futuresTrades(symbol) {
-  const upstream = new URL("https://api.bybit.com/v5/market/recent-trade");
-  upstream.searchParams.set("category", "linear");
-  upstream.searchParams.set("symbol", symbol);
-  upstream.searchParams.set("limit", "30");
+  let body;
+  let fromRender = false;
+  try {
+    body = await firstPublicJson([
+      bybitUrl("https://api.bybit.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
+      bybitUrl("https://api.bytick.com", "/v5/market/recent-trade", { category: "linear", symbol, limit: "30" }),
+    ]);
+  } catch {
+    body = await publicJson(`https://api.voltextech.net/api/v1/market/display/futures-trades/${encodeURIComponent(symbol)}`);
+    fromRender = true;
+  }
 
-  const body = await bybitJson(upstream.toString());
+  if (fromRender) {
+    if (body?.symbol !== symbol || !Array.isArray(body.trades) || body.trades.length > 30) throw new Error("fallback_trade_shape");
+    const seen = new Set();
+    const trades = body.trades.map((row) => {
+      if (!row || typeof row.id !== "string" || !row.id || seen.has(row.id)
+        || !["BUY", "SELL"].includes(row.side) || !validPositiveDecimal(row.price) || !validPositiveDecimal(row.quantity)
+        || !Number.isSafeInteger(Number(row.time)) || Number(row.time) <= 0) throw new Error("fallback_trade_identity");
+      seen.add(row.id);
+      return { id: row.id, price: row.price, quantity: row.quantity, time: Number(row.time), side: row.side };
+    }).sort((a, b) => b.time - a.time);
+    return { symbol, trades };
+  }
+
   if (body?.retCode !== 0 || body?.result?.category !== "linear" || !Array.isArray(body?.result?.list)) {
     throw new Error("provider_trade_shape");
   }
