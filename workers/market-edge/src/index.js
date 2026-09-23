@@ -410,7 +410,7 @@ async function cfdTickers() {
   for(const [symbol,providerSymbol] of Object.entries(CFD_SYMBOLS)){
     const row=raw?.[providerSymbol],price=Number(row?.mid);
     const at=typeof row?.timestamp==="number"&&Number.isFinite(row.timestamp)?(row.timestamp<1e12?row.timestamp*1000:row.timestamp)
-      :typeof row?.timestamp==="string"?(/^d+(?:.d+)?$/.test(row.timestamp)?(Number(row.timestamp)<1e12?Number(row.timestamp)*1000:Number(row.timestamp)):Date.parse(row.timestamp)):NaN;
+      :typeof row?.timestamp==="string"?(/^\d+(?:\.\d+)?$/.test(row.timestamp)?(Number(row.timestamp)<1e12?Number(row.timestamp)*1000:Number(row.timestamp)):Date.parse(row.timestamp)):NaN;
     tickers.push({
       symbol,name:symbol,price:Number.isFinite(price)&&price>0?String(price):null,
       changePercent24h:Number.isFinite(Number(row?.dayDiffPercent))?String(row.dayDiffPercent):undefined,
