@@ -297,48 +297,68 @@ describe('an open historical account does not grow its journal with every price'
     f.clock.t+=M;f.market.price='81200';await f.refresh();expect(f.repo.commits).toBe(commits+1);
     expect(f.repo.row!.snapshot.positions[0].markPrice).toBe('81200');
   });
-  test('a journal bloated by the old rule is compacted on the next command, to the identical account',async()=>{
+  test('a valid checkpoint compacts the old bloated journal without historical reads and preserves FULL/CHECKPOINT replay',async()=>{
     const f=await fixture();await f.open({quantity:'0.002'});
     const p=f.repo.row!.snapshot.positions[0];
     await f.open({side:'SHORT',type:'LIMIT',quantity:'0.001',price:'82000',reduceOnly:true,positionId:p.id,candle:undefined});
-    // The old rule: every 10 s pass journaled (forced here with `persist`), with no compaction yet.
+    // Reproduce the old rule: every 10 s pass was persisted.
     const off=jest.spyOn(NativeDemoService.prototype as any,'compactHistoricalObservations').mockImplementation(async(row:any)=>row);
     const pass=async(price:string)=>{f.clock.t+=10_000;f.market.price=price;await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()},{persist:true});};
     for(let i=0;i<150;i++)await pass(String(81000+(i%7)));
-    await pass('82050');// fills half the position: an event inside the bloat
+    await pass('82050'); // a real fill inside the bloat must survive
     for(let i=0;i<150;i++)await pass(String(81500+(i%5)));
     off.mockRestore();
+
     const bloated=f.repo.row!,before=structuredClone(bloated.snapshot);
     expect(bloated.commands.length).toBeGreaterThan(300);
     const drop=supersededObservations(bloated);
     expect(drop.size).toBeGreaterThanOrEqual(NATIVE_OBSERVE_COMPACT_MIN);
-    // The observation that filled the order is never a candidate.
     const fill=before.events.find(e=>e.kind==='CLOSE')!;
     expect(bloated.commands.filter(c=>c.kind==='OBSERVE'&&c.at===fill.time).every(c=>!drop.has(c.id))).toBe(true);
-    // A transient history transport failure must not blacklist this unchanged revision forever.
-    const commitsBeforeCompaction=f.repo.commits,revisionBeforeCompaction=f.repo.row!.revision;
+
     const history=jest.spyOn(f.market,'history');
-    for(let i=0;i<NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS;i++)history.mockRejectedValueOnce(new TypeError('fetch failed'));
-    f.clock.t+=10_000;f.market.price='81501';await f.refresh();
-    // REFRESH did not await the verifier; awaiting the same queued background task is test-only.
-    await (f.service as any).scheduleHistoricalCompaction(actor);
-    // Background cleanup retries the transient read inside its own budget, then backs off
-    // only after the bounded retry set is exhausted.
-    expect(history).toHaveBeenCalledTimes(NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS);
-    expect(f.repo.commits).toBe(commitsBeforeCompaction);
-    expect(f.repo.row!.revision).toBe(revisionBeforeCompaction);
-    expect(f.repo.row!.commands.length).toBeGreaterThan(300);
-    history.mockRestore();
-    // Same revision, after the transient cooldown: background verification retries and CAS-commits it.
-    f.clock.t+=NATIVE_OBSERVE_COMPACT_RETRY_MS+1;
+    const commits=f.repo.commits;
     await (f.service as any).scheduleHistoricalCompaction(actor);
     const row=f.repo.row!;
-    expect(f.repo.commits).toBe(commitsBeforeCompaction+1);
+
+    expect(history).not.toHaveBeenCalled();
+    expect(f.repo.commits).toBe(commits+1);
     expect(row.commands.length).toBeLessThan(20);
     expect(row.snapshot.events.slice(0,before.events.length)).toEqual(before.events);
     expect(row.snapshot.positions[0]).toMatchObject({status:'OPEN',quantity:before.positions[0].quantity,realizedGross:before.positions[0].realizedGross});
     expect(row.snapshot.walletBalance).toBe(before.walletBalance);
     expect(outcome(await f.replay('FULL'))).toEqual(outcome(row.snapshot));
     expect(outcome(await f.replay('CHECKPOINT'))).toEqual(outcome(row.snapshot));
+    history.mockRestore();
+  });
+
+  test('a checkpoint that cannot be safely re-sealed keeps the bounded history-retry fallback',async()=>{
+    const f=await fixture();await f.open();
+    const off=jest.spyOn(NativeDemoService.prototype as any,'compactHistoricalObservations').mockImplementation(async(row:any)=>row);
+    const pass=async()=>{f.clock.t+=10_000;await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()},{persist:true});};
+    for(let i=0;i<NATIVE_OBSERVE_COMPACT_MIN+10;i++)await pass();
+    off.mockRestore();
+
+    const row=f.repo.row!;
+    expect(row.commands.length).toBeGreaterThan(NATIVE_OBSERVE_COMPACT_MIN);
+    // Simulate a legacy/mismatched checkpoint: the optimization must refuse
+    // to bless it and use the original full-replay verifier instead.
+    row.checkpoint={...row.checkpoint!,digest:'not-the-current-journal'};
+    const commits=f.repo.commits,revision=row.revision;
+    const history=jest.spyOn(f.market,'history');
+    for(let i=0;i<NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS;i++)history.mockRejectedValueOnce(new TypeError('fetch failed'));
+
+    await (f.service as any).scheduleHistoricalCompaction(actor);
+    expect(history).toHaveBeenCalledTimes(NATIVE_OBSERVE_BACKGROUND_HISTORY_ATTEMPTS);
+    expect(f.repo.commits).toBe(commits);
+    expect(f.repo.row!.revision).toBe(revision);
+
+    history.mockRestore();
+    f.clock.t+=NATIVE_OBSERVE_COMPACT_RETRY_MS+1;
+    await (f.service as any).scheduleHistoricalCompaction(actor);
+    expect(f.repo.commits).toBe(commits+1);
+    expect(f.repo.row!.commands.length).toBeLessThan(20);
+    expect(outcome(await f.replay('FULL'))).toEqual(outcome(f.repo.row!.snapshot));
+    expect(outcome(await f.replay('CHECKPOINT'))).toEqual(outcome(f.repo.row!.snapshot));
   });
 });
