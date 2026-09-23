@@ -43,7 +43,7 @@ export type NativeQuoteResult =
       takerFeeRate:string; makerFeeRate:string };
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
-import { applyLatestQuotes, BarRequest, compareInstructions, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
+import { applyLatestQuotes, BarRequest, compareInstructions, exposedSymbols, instructionDigest, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 import type { PrivateFreshQuote } from '../marketData';
 import { markDemoAccount } from './engine';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
@@ -951,9 +951,21 @@ export class NativeDemoService {
     // Its own budget and its own abort signal, never the command's: a slow
     // history read ends the compaction, not the command it runs in front of.
     const signal=AbortSignal.timeout(NATIVE_OBSERVE_COMPACT_BUDGET_MS),cache=nativeHistoryCache(this.market,this.now);
+    // FROM THE STORED CHECKPOINT, NOT FROM THE DEPOSIT. A full replay of a
+    // days-long journal reads the history of every funding boundary and did
+    // not finish inside the budget on production, so the bloated journal was
+    // never compacted and its multi-megabyte commit outran the 10 s
+    // transaction. The checkpoint's state is the state the journal reached at
+    // its time, and a superseded observation cannot change that state (see
+    // `supersededObservations`), so the checkpoint is re-sealed over the
+    // shorter prefix and the tail is replayed from it: no history is read,
+    // and the result must still equal the stored account exactly.
+    // Only a checkpoint that seals THIS journal is re-sealed; any other falls back to the full replay.
+    const cp=row.checkpoint,resealed=cp&&cp.commandCount===undefined&&instructionDigest(row.commands,cp.time)===cp.digest
+      ?{...cp,digest:instructionDigest(commands,cp.time)}:null;
     try{
-      commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length});
-      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time},r=>cache.load(r,signal));
+      commandScope()?.trace('historical_demo.compact',{before:row.commands.length,after:commands.length,fromCheckpoint:!!resealed});
+      const result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf:row.snapshot.time,...(resealed?{checkpoint:resealed}:{})},r=>cache.load(r,signal));
       if(comparableState(result.snapshot)!==comparableState(row.snapshot))throw new Error('replay differs');
       return{...row,commands,checkpoint:result.checkpoint};
     }catch(e){

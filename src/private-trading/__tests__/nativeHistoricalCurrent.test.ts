@@ -295,9 +295,11 @@ describe('an open historical account does not grow its journal with every price'
     // The observation that filled the order is never a candidate.
     const fill=before.events.find(e=>e.kind==='CLOSE')!;
     expect(bloated.commands.filter(c=>c.kind==='OBSERVE'&&c.at===fill.time).every(c=>!drop.has(c.id))).toBe(true);
-    // The next real command stores the compacted journal.
-    f.clock.t+=10_000;
+    // The next real command stores the compacted journal — verified from the
+    // stored checkpoint, so not one history page is read for it.
+    f.clock.t+=10_000;const history=f.source.calls.history;
     await f.open({side:'SHORT',type:'LIMIT',quantity:'0.001',price:'90000',reduceOnly:true,positionId:p.id,candle:undefined});
+    expect(f.source.calls.history).toBe(history);
     const row=f.repo.row!;
     expect(row.commands.length).toBeLessThan(20);
     expect(row.snapshot.events.slice(0,before.events.length)).toEqual(before.events);
