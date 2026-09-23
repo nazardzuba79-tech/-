@@ -1056,7 +1056,7 @@ export const RU = {
   'futures.colQty': 'К-во',
   'futures.colValue': 'Стоим.',
   'futures.colEntry': 'Цена Входа',
-  'futures.colMark': 'Цена маркировки',
+  'futures.colMark': 'Цена марк.',
   'futures.colLiq': 'Цена ликвид.',
   'futures.colUnrealized': 'Нереализованный P&L(ROI)',
   'futures.colRealized': 'Реализованный P&L',
