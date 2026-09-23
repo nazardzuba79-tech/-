@@ -33,7 +33,7 @@ export function useCfdTickers(enabled = true){
       if(cancelled||document.hidden||inFlight)return;
       inFlight=true;lastAttempt=Date.now();let delay=POLL_MS;
       try{
-        const res=await api.getCfdTickers();
+        const res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(`${API_BASE}/cfd/display/tickers`,SLOW_DISPLAY_REFRESH_MS);
         if(cancelled)return;
         const rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
         if(rows===null)throw new Error('Invalid CFD snapshot');
