@@ -20,6 +20,14 @@ on:
       - 'frontend/src/lib/useFuturesReference.ts'
       - 'frontend/src/lib/directFuturesReference.ts'
       - 'frontend/src/pages/FuturesPage.tsx'
+      - 'frontend/src/lib/spotCandles.ts'
+      - 'frontend/src/components/TerminalChart.tsx'
+      - 'frontend/src/lib/useLiveMarket.ts'
+      - 'frontend/src/lib/useCfdTickers.ts'
+      - 'frontend/src/components/CfdChart.tsx'
+      - 'frontend/src/pages/home/useHomeMarket.ts'
+      - 'src/services/marketData/cfd/BiquoteCfdQuoteSource.ts'
+      - 'scripts/qa-cfd-display-browser.cjs'
       - '.github/workflows/deploy-market-edge.yml'
   workflow_dispatch:
 
@@ -63,13 +71,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
-      - name: Production smoke checks
+      - name: Production deployment identity and isolation smoke
         run: |
-          curl -fsS https://market.voltextech.net/health
-          curl -fsS https://market.voltextech.net/market/display/futures-book/BTCUSDT | grep -q '"available":true'
-          curl -fsS https://market.voltextech.net/market/display/futures-trades/BTCUSDT | grep -q '"symbol":"BTCUSDT"'
-          curl -fsS https://market.voltextech.net/market/display/futures-tickers | grep -q '"retCode":0'
-          curl -fsS 'https://market.voltextech.net/market/display/futures-candles/BTCUSDT?interval=60&limit=5' | grep -q '"retCode":0'
+          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v2')process.exit(1)})"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)" = "404"
 
 
   live-smoke:
@@ -77,10 +82,9 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Confirm deployed Worker public market endpoints
+      - name: Confirm deployed Worker version and private-route isolation
         run: |
-          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge')process.exit(1)})"
-          curl -fsS https://market.voltextech.net/market/display/futures-book/BTCUSDT | grep -q '"available":true'
-          curl -fsS https://market.voltextech.net/market/display/futures-trades/BTCUSDT | grep -q '"symbol":"BTCUSDT"'
-          curl -fsS https://market.voltextech.net/market/display/futures-tickers | grep -q '"retCode":0'
-          curl -fsS 'https://market.voltextech.net/market/display/futures-candles/BTCUSDT?interval=60&limit=5' | grep -q '"retCode":0'
+          curl -fsS https://market.voltextech.net/health | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v2')process.exit(1)})"
+          test "$(curl -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)" = "404"
+          # Provider-backed market endpoints are contract-tested in verify.
+          # GitHub-hosted runners are in US regions where Bybit explicitly blocks public API requests; checking them here would be a geo false-negative.
