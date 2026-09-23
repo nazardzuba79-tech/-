@@ -45,7 +45,7 @@ export function livePerpetualTurnover(state: LiveState, pair: string, now = Date
       row.baseAsset !== base || row.quoteAsset !== quote || row.settleAsset !== quote ||
       row.providerSymbol !== `${base}${quote}` || row.provider !== 'bybit' ||
       (row.turnoverAsset !== undefined && row.turnoverAsset !== quote) || row.stale) return null;
-  if (![row.fetchedAt, row.receivedAt].every(time => Number.isFinite(time) && time <= now + 5000 && now - time <= 30000)) return null;
+  if (![row.fetchedAt, row.receivedAt].every(time => Number.isFinite(time) && time <= now + 5000 && now - time <= (state.sampled ? 90_000 : 30_000))) return null;
   const value = row.quoteVolume24h;
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 }

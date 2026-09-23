@@ -1,3 +1,4 @@
+import { FuturesDisplayTrades } from '../../FuturesDisplayTrades';
 import express from 'express';
 import { FuturesChartCandles } from '../../FuturesChartCandles';
 import { CollectorPrivateTradingSource, PrivateMarketDataError, PrivateChartInterval, liveMarks } from '../../../private-trading/marketData';
@@ -38,6 +39,11 @@ export function collectorServer(
     res.setHeader('Cache-Control', 'no-store'); next();
   });
   app.get('/internal/v1/snapshot', (_req,res) => res.json(source.snapshot()));
+  const displayTrades = new FuturesDisplayTrades();
+  app.get('/internal/v1/futures/trades/:symbol', async (req,res) => {
+    try { res.json(await displayTrades.get(req.params.symbol.toUpperCase())); }
+    catch(error) { res.status(error instanceof RangeError ? 400 : 503).json({error:'display_trades_unavailable'}); }
+  });
   const futuresCandles=new FuturesChartCandles();
   app.get('/internal/v1/futures/candles/:pair',async(req,res)=>{
     try {res.json(await futuresCandles.get(req.params.pair,String(req.query.interval??'15m'),Number(req.query.limit??520),

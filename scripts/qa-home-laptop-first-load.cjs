@@ -18,7 +18,9 @@ const tickers=[
 ];
 
 function fixture(req,res,next){
- const p=req.path;
+ const sampled=req.path==='/cfd/display/tickers';
+ if(sampled){const original=res.json.bind(res);res.json=body=>original({...body,_display:{mode:'snapshot',capturedAt:Date.now(),refreshMs:21600000}});res.set('Cache-Control','public,max-age=21600');}
+ const p=sampled?'/cfd/tickers':req.path;
  if(p==='/market/external/tickers')return void(async()=>{await wait(TICKER_DELAY_MS);tickerFinished=true;res.json({source:'kraken',tickers});})();
  if(p==='/market/external/orderbook/BTC-USDT')return res.json({source:'kraken',pair:'BTC/USDT',timestamp:Date.now(),bids:Array.from({length:8},(_,i)=>({price:String(76745.9-i*.1),quantity:String(.1+i*.03)})),asks:Array.from({length:8},(_,i)=>({price:String(76746.1+i*.1),quantity:String(.12+i*.025)}))});
  if(p==='/market/external/candles/BTC-USDT')return res.json({source:'kraken',pair:'BTC/USDT',interval:'15m',candles});

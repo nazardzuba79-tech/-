@@ -281,7 +281,9 @@ test.each([
     // The native execution seam, interaction overlays, account and order
     // paths are untouched; TerminalChart supplies the public exact-contract
     // Futures candle loader for both ordinary and native-bound accounts.
-    "9bc4a84e1302b2d9931e96e94a1816c193047db89459cf4dc7e765b3f8eedfac"
+    // Owner-approved sampled-display switch: only setFuturesDepthFallbackBase(API_BASE, true).
+    // Order payload, engine, overlays, symbols and account polling remain unchanged.
+    "581c7db42f7d2b3d6ec6b6ad5d452fa2926043f95ddaca6c339f9d20afcb4c2c"
   ],
   [
     "components/FuturesPairList.tsx",
