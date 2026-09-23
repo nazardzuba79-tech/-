@@ -92,3 +92,12 @@ export function subscribeFuturesDepth(pair: string, listener: Listener, onTrades
   };
 }
 export type { FuturesTrade, FuturesDepthStatus } from './futuresDepth';
+
+export function closeSampledDepth(): void {
+  for (const state of subscriptions.values()) {
+    if (state.timer) clearTimeout(state.timer);
+    state.controller?.abort();
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', state.visibility);
+  }
+  subscriptions.clear();
+}

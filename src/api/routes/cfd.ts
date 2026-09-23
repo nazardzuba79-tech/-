@@ -1,3 +1,4 @@
+import { publicDisplayCache, DISPLAY_REFRESH_MS, SLOW_DISPLAY_REFRESH_MS } from '../middleware/publicDisplayCache';
 import { Router } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
@@ -61,6 +62,14 @@ export function cfdRouter(prisma:PrismaClient,cfdDataService:CfdMarketDataServic
   router.get('/admin/cfd/diagnostics',requireAuth(prisma),requireAdmin(prisma),async(_req,res)=>{res.setHeader('Cache-Control','no-store');try{if(displaySource===defaultDisplaySource)ensureDisplayFeeds();res.json({financial:await cfdDataService.diagnostics(),display:displaySource?await displaySource.diagnostics():null});}catch{res.status(503).json({error:'cfd_diagnostics_unavailable'});}});
   router.get('/cfd/config',(_req,res)=>res.json({symbols:CFD_SYMBOLS,catalog:cfdDataService.catalog(),maxQuoteAgeMs:cfdDataService.maxQuoteAgeMs,minLeverage:MIN_LEVERAGE,maxLeverage:MAX_LEVERAGE,newAccountMaxLeverage:NEW_ACCOUNT_MAX_LEVERAGE,newAccountPeriodDays:NEW_ACCOUNT_PERIOD_DAYS,highLeverageWarningThreshold:HIGH_LEVERAGE_WARNING_THRESHOLD,leverageTiers:LEVERAGE_TIERS}));
   router.get('/cfd/catalog',(_req,res)=>res.json({instruments:cfdDataService.catalog()}));
+  // Presentation aliases have their own bounded six-hour cache. Originals and
+  // all financial routes below remain unchanged and never read these entries.
+  router.get('/cfd/display/tickers', publicDisplayCache(SLOW_DISPLAY_REFRESH_MS,
+    body => Array.isArray(body?.tickers) && body.tickers.some((row:any) => row.price !== null && Number(row.price) > 0)),
+    (req,_res,next) => { req.url=req.url.replace('/cfd/display/tickers','/cfd/tickers'); next(); });
+  router.get('/cfd/display/candles/:symbol', publicDisplayCache(SLOW_DISPLAY_REFRESH_MS,
+    body => Array.isArray(body?.bars) && body.bars.length > 0),
+    (req,_res,next) => { req.url=req.url.replace('/cfd/display/candles/','/cfd/candles/'); next(); });
   router.get('/cfd/tickers',async(_req,res)=>{
     try{
       if(displaySource===defaultDisplaySource)ensureDisplayFeeds();

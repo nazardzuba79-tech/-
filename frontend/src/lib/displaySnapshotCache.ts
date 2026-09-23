@@ -1,7 +1,7 @@
 export const DISPLAY_REFRESH_MS = 60_000;
 export const SLOW_DISPLAY_REFRESH_MS = 6 * 60 * 60 * 1000;
 const STORAGE_KEY = 'voltex.public-display.v1';
-type Entry = { at: number; ttl: number; value: any };
+type Entry = { at: number; expiresAt: number; ttl: number; value: any };
 type Pending = { promise: Promise<any>; controller: AbortController; users: number; done: boolean };
 const cache = new Map<string, Entry>();
 const pending = new Map<string, Pending>();
@@ -17,7 +17,7 @@ function hydrate() {
       if (!Array.isArray(item) || item.length !== 2) continue;
       const [key, value] = item;
       if (typeof key !== 'string' || !key.includes('/cfd/display/') || !value || value.ttl !== SLOW_DISPLAY_REFRESH_MS ||
-        !Number.isFinite(value.at) || value.at > Date.now() + 5000 || Date.now() - value.at >= value.ttl) continue;
+        !Number.isFinite(value.at) || value.at > Date.now() + 5000 || !Number.isFinite(value.expiresAt) || Date.now() >= value.expiresAt || value.expiresAt - value.at > value.ttl) continue;
       cache.set(key, value);
     }
   } catch { /* Storage is an optional presentation optimization. */ }
@@ -40,7 +40,7 @@ export function readDisplayJson<T = any>(url: string, ttl: number, signal?: Abor
   if (signal?.aborted) return Promise.reject(abortError());
   hydrate();
   const hit = cache.get(url);
-  if (hit && hit.ttl === ttl && Date.now() >= hit.at && Date.now() - hit.at < ttl) return Promise.resolve(clone(hit.value));
+  if (hit && hit.ttl === ttl && Date.now() >= hit.at && Date.now() < hit.expiresAt) return Promise.resolve(clone(hit.value));
   if (Date.now() < (cooldown.get(url) ?? 0)) return Promise.reject(new Error('Display refresh cooling down'));
   let work = pending.get(url);
   if (!work) {
@@ -58,7 +58,10 @@ export function readDisplayJson<T = any>(url: string, ttl: number, signal?: Abor
           value._display.refreshMs !== ttl || !Number.isFinite(value._display.capturedAt)) throw new Error('Invalid display snapshot');
         // Acquire time is local; provider/capture timestamps remain untouched in value.
         const at = Date.now();
-        cache.delete(url); cache.set(url, { at, ttl, value });
+        const maxAge = /(?:^|,)\s*max-age=(\d+)/i.exec(response.headers.get('cache-control') ?? '');
+        const age = Number(response.headers.get('age') ?? 0);
+        const remaining = maxAge ? Math.max(0, Number(maxAge[1]) - (Number.isFinite(age) ? age : 0)) * 1000 : ttl;
+        cache.delete(url); cache.set(url, { at, expiresAt: at + Math.min(ttl, remaining), ttl, value });
         while (cache.size > 32) cache.delete(cache.keys().next().value!);
         cooldown.delete(url);
         if (ttl === SLOW_DISPLAY_REFRESH_MS) persist();

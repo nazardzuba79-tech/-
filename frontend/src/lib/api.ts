@@ -1,3 +1,4 @@
+import { readDisplayJson, DISPLAY_REFRESH_MS, SLOW_DISPLAY_REFRESH_MS } from './displaySnapshotCache';
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
 import type { CardApplicationSnapshot, CardProduct } from '../pages/crypto-card-final/cardApplicationState';
 
@@ -911,7 +912,7 @@ export const api = {
   // Do not call getMarketSnapshot from a component directly: go through
   // lib/marketDataStore, which shares ONE poll and ONE in-flight request
   // across every consumer in the tab.
-  getMarketSnapshot: () => request<MarketSnapshotResponse>('/market/snapshot'),
+  getMarketSnapshot: () => readDisplayJson<MarketSnapshotResponse>(`${API_BASE}/market/display/spot-snapshot`, DISPLAY_REFRESH_MS),
 
   /** The Analytics page's single dataset. Available to any signed-in
    *  user: it carries ordinary exchange market information and no
@@ -957,11 +958,11 @@ export const api = {
     ),
 
   getCfdTickers: () =>
-    request<{
+    readDisplayJson<{
       source: string;
       configured: boolean;
       tickers: import('../components/CfdInstrumentList').CfdTickerRow[];
-    }>('/cfd/tickers'),
+    }>(`${API_BASE}/cfd/display/tickers`, SLOW_DISPLAY_REFRESH_MS),
 
   getCfdConfig: () =>
     request<{

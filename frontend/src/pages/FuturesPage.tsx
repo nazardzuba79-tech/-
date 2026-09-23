@@ -399,7 +399,7 @@ export function FuturesPage() {
 
   // The depth module stays free of `import.meta` so it can be tested outside
   // the bundler; the page hands it the API origin the rest of the app uses.
-  useEffect(() => { setFuturesDepthFallbackBase(API_BASE); }, []);
+  useEffect(() => { setFuturesDepthFallbackBase(API_BASE, true); }, []);
 
   useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot }), incoming => {
     setTape(previous => ({symbol,rows:incoming.length ? [...incoming,...(previous.symbol===symbol?previous.rows:[])]

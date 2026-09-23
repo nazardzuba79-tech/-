@@ -1,3 +1,4 @@
+import { subscribeFuturesDepth as subscribeSampledDepth, setFuturesDepthFallbackBase as setSampledBase, closeSampledDepth } from './sampledDepth';
 /** Public linear-perpetual depth, for presentation only. No account or order API.
  * Protocol: https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook
  */
@@ -37,7 +38,7 @@ export interface FuturesDepthLevel { price: string; quantity: string }
  * closes with nothing, the ordinary rules take over and `stale` is told.
  * `unavailable` is never held back — data that old is not a price.
  */
-export type FuturesDepthStatus = 'connecting' | 'live' | 'reconnecting' | 'stale' | 'unavailable';
+export type FuturesDepthStatus = 'connecting' | 'live' | 'sampled' | 'reconnecting' | 'stale' | 'unavailable';
 
 export interface FuturesDepthSnapshot {
   bids: FuturesDepthLevel[];
@@ -266,7 +267,11 @@ interface ActiveDepth {
  *  Set explicitly rather than read from `import.meta`, which this module
  *  must stay free of so it can be tested outside the bundler. */
 let fallbackBase = '/api/v1';
-export function setFuturesDepthFallbackBase(base: string) { fallbackBase = base; }
+let sampledDisplay = false;
+export function setFuturesDepthFallbackBase(base: string, sampled = false) {
+  fallbackBase = base; sampledDisplay = sampled; setSampledBase(base);
+  if (sampled) transport.close(); else closeSampledDepth();
+}
 
 /**
  * One shared Bybit linear socket for the Futures tab, with our own backend
@@ -734,8 +739,8 @@ class FuturesDepthTransport {
 const transport = new FuturesDepthTransport();
 
 /** Release the shared depth transport — see `FuturesDepthTransport.close`. */
-export function closeFuturesDepth() { transport.close(); }
+export function closeFuturesDepth() { transport.close(); closeSampledDepth(); }
 
 export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void, onTrades?:(trades:FuturesTrade[])=>void): () => void {
-  return transport.subscribe(pair, listener, onTrades);
+  return sampledDisplay ? subscribeSampledDepth(pair, listener, onTrades) : transport.subscribe(pair, listener, onTrades);
 }

@@ -1,6 +1,8 @@
+import { readSpotDisplayBook } from '../lib/sampledDepth';
+import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
@@ -14,7 +16,6 @@ import { AssetsPanel } from '../components/AssetsPanel';
 import { AccountPanelToggle } from '../components/AccountPanelToggle';
 import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
-import { krakenSocket } from '../lib/krakenSocket';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
 import { CfdTickerBar } from '../components/CfdTickerBar';
 import { resolveCfdSymbol } from '../lib/cfdPresentation';
@@ -74,7 +75,7 @@ export function TradePage() {
     const next = searchParams.get('pair');
     if (next && PAIR_PATTERN.test(next)) setPair(next);
   }, [searchParams]);
-  const [book, setBook] = useState<{ pair: string; bids: any[]; asks: any[] }>({ pair, bids: [], asks: [] });
+  const [book, setBook] = useState<{ pair: string; bids: any[]; asks: any[]; asOf?: number | null }>({ pair, bids: [], asks: [] });
   // Effects run after render: never expose the previous instrument's depth
   // during that first new-pair render or initialize grouping from its prices.
   const visibleBook = book.pair === pair ? book : { bids: [], asks: [] };
@@ -121,7 +122,7 @@ export function TradePage() {
   // actually lists (below) — an unknown symbol falls back rather than
   // selecting an instrument that does not exist.
   const [cfdSymbol, setCfdSymbol] = useState(searchParams.get('symbol')?.toUpperCase() || 'XAUUSD');
-  const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, reload: reloadCfd } = useCfdTickers();
+  const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, reload: reloadCfd } = useCfdTickers(marketType === 'cfd');
   // Same reason as marketType above: this page is not remounted when only
   // the query string changes, so a second CFD deep-link would otherwise
   // leave the previously selected instrument active.
@@ -136,7 +137,7 @@ export function TradePage() {
   // look — actual order matching always happens on our own internal book
   // (see OrderForm), this is display only.
   const refreshBook = useCallback(() => {
-    if (bookPairRef.current !== pair) return;
+    if (bookPairRef.current !== pair || marketType !== 'spot' || document.hidden) return;
     const generation = bookGenerationRef.current;
     // A slow fallback must finish instead of being invalidated by every 2s
     // poll. A new pair/generation can still start immediately while its old
@@ -146,76 +147,31 @@ export function TradePage() {
     const pending = { generation, request };
     bookPendingRef.current = pending;
     const wsVersion = bookWsVersionRef.current;
-    api
-      .getExternalOrderBook(pair)
+    readSpotDisplayBook(API_BASE, pair)
       .then((res) => {
         if (bookPairRef.current === pair && generation === bookGenerationRef.current && request === bookRequestRef.current && wsVersion === bookWsVersionRef.current) {
-          setBook({ pair, bids: res.bids, asks: res.asks });
+          setBook({ pair, bids: res.bids, asks: res.asks, asOf: res.asOf });
         }
       })
       .catch(() => {})
       .finally(() => {
         if (bookPendingRef.current === pending) bookPendingRef.current = null;
       });
-  }, [pair]);
+  }, [pair, marketType]);
 
-  // Primary source is Kraken's WebSocket for real live updates (see
-  // krakenSocket.ts). If it hasn't delivered anything within a few
-  // seconds — connection blocked, schema drift, whatever — fall back to
-  // the old 2s REST poll instead of leaving the book frozen.
+  // DISPLAY ONLY. A snapshot/minute; local CSS animates without changing levels.
   useEffect(() => {
-    const generation = ++bookGenerationRef.current;
-    // A different market is a different book, so the old ladder has to go —
-    // BTC depth must never sit under an ETH header for even one frame. A
-    // re-run on the SAME pair is not that: emptying the book there is what
-    // made an ordinary reconnect look like the terminal had thrown the
-    // market away and started again. Last-good stays on screen and is
-    // replaced by the next real answer, never by a blank.
+    bookGenerationRef.current += 1;
     if (bookShownPairRef.current !== pair) {
-      setBook({ pair, bids: [], asks: [] });
-      setPickedPrice(null);
-      bookShownPairRef.current = pair;
+      setBook({ pair, bids: [], asks: [], asOf: null });setPickedPrice(null);bookShownPairRef.current=pair;
     }
-    let lastWsData = 0;
-
-    const unsubscribe = krakenSocket.subscribeBook(pair, (snapshot) => {
-      if (bookPairRef.current !== pair || generation !== bookGenerationRef.current) return;
-      lastWsData = Date.now();
-      bookWsVersionRef.current += 1;
-      setBook({ pair, bids: snapshot.bids, asks: snapshot.asks });
-    });
-
+    if (marketType !== 'spot') return;
     refreshBook();
-    // A REST read only stands in when the socket has actually gone quiet for
-    // a whole cycle, so a healthy socket costs no requests at all and a dead
-    // one costs two a minute. Delayed REST never overwrites newer socket
-    // data — `bookWsVersionRef` guards that in `refreshBook`.
-    const quiet = () => Date.now() - lastWsData >= BOOK_REFRESH_MS;
-    const fallbackTimer = window.setInterval(() => {
-      if (quiet()) refreshBook();
-    }, BOOK_REFRESH_MS);
-
-    // Coming back to the tab. A background tab has its timers throttled and
-    // its socket may have been closed by the browser, so the ladder on
-    // screen can be older than it looks. Read once, quietly: nothing is
-    // cleared, no banner is raised, and if the socket is still delivering
-    // this does nothing at all.
-    const onVisibility = () => {
-      if (typeof document !== 'undefined' && document.hidden) return;
-      if (quiet()) refreshBook();
-    };
-    // Guarded the way the depth store guards its own listener: this module
-    // is also loaded where there is no document.
-    const hasDocument = typeof document !== 'undefined';
-    if (hasDocument) document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      unsubscribe();
-      bookGenerationRef.current += 1;
-      clearInterval(fallbackTimer);
-      if (hasDocument) document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [pair, refreshBook]);
+    const timer=window.setInterval(()=>{if(!document.hidden)refreshBook();},60_000);
+    const visible=()=>{if(!document.hidden)refreshBook();};
+    document.addEventListener('visibilitychange',visible);
+    return()=>{bookGenerationRef.current+=1;clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
+  }, [pair,marketType,refreshBook]);
 
   function handleOrderPlaced() {
     setAccountOpenOrderCount(null);
@@ -330,8 +286,9 @@ export function TradePage() {
             <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />
           </div>
 
-          <div className="orderbook-area">
-            <OrderBookPanel
+          <div className="orderbook-area" data-sampled-book="true">
+            <SampledDataNote asOf={book.pair === pair ? book.asOf : null} />
+                <OrderBookPanel
               bids={visibleBook.bids}
               asks={visibleBook.asks}
               pair={pair}

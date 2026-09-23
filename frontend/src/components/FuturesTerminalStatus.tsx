@@ -1,3 +1,5 @@
+import { sampledDisplayText } from '../lib/sampledDisplayCopy';
+import { useSampledMotion } from './SampledDataNote';
 import { useEffect, useState } from 'react';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { useLanguage } from '../lib/i18n';
@@ -53,7 +55,8 @@ export function FuturesTerminalStatus({ status, asOf }: {
   /** Local arrival time of the newest accepted frame, or null while none has. */
   asOf: number | null;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  useSampledMotion();
   const execution = useFuturesExecution();
 
   /**
@@ -81,7 +84,7 @@ export function FuturesTerminalStatus({ status, asOf }: {
     <div className="fts-bar" data-terminal-status={live ? 'live' : status}>
       <span className="fts-conn">
         <span className={`fts-dot${live ? ' fts-dotLive' : ''}`} aria-hidden="true" />
-        <span className="fts-connText">{t(live ? 'futures.statusLive' : status === 'stale' ? 'catalogue.stale' : status === 'unavailable' ? 'trade.bookUnavailable' : 'trade.marketDelayed')}</span>
+        <span className="fts-connText">{status === 'sampled' ? sampledDisplayText(lang, asOf).label : t(live ? 'futures.statusLive' : status === 'stale' ? 'catalogue.stale' : status === 'unavailable' ? 'trade.bookUnavailable' : 'trade.marketDelayed')}</span>
         {/* The age is a measurement, so it renders whatever the state is —
             a stale book is exactly when its age matters most. */}
         {age !== null && <span className="fts-age mono" data-feed-age={age}>{age}s</span>}

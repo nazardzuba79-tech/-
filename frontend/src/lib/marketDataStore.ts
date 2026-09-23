@@ -102,8 +102,8 @@ function initialState(): MarketState {
  *  polling faster than this cannot return fresher data — it would only
  *  cost VOLTEX requests. 3s preserves the terminal's existing feel while
  *  staying just under that TTL. */
-const MIN_INTERVAL_MS = 3_000;
-const DEFAULT_INTERVAL_MS = 5_000;
+const MIN_INTERVAL_MS = 60_000; // Owner-approved display snapshot cadence, not execution cadence.
+const DEFAULT_INTERVAL_MS = 60_000;
 const WARM_CACHE_WRITE_INTERVAL_MS = 30_000;
 
 type Listener = (state: MarketState) => void;
@@ -170,6 +170,7 @@ class MarketDataStore {
    * server's request coalescing.
    */
   refresh(): Promise<void> {
+    if (typeof document !== 'undefined' && document.hidden) return Promise.resolve();
     if (this.inFlight) return this.inFlight;
     this.inFlight = api
       .getMarketSnapshot()

@@ -76,6 +76,7 @@ import { LiquidationStreamService } from './services/analytics/LiquidationStream
 import { HistoricalOpenInterestService } from './services/analytics/HistoricalOpenInterestService';
 import { CoinGlassAnalyticsService } from './services/analytics/CoinGlassAnalyticsService';
 import { marketDataRouter } from './api/routes/marketData';
+import { displaySnapshotsRouter } from './api/routes/displaySnapshots';
 import { marketOptionsRouter } from './api/routes/marketOptions';
 import { resolveBuildCommit } from './buildCommit';
 
@@ -215,6 +216,7 @@ app.get('/health', (_req, res) => res.json({
   branch: process.env.RENDER_GIT_BRANCH ?? null,
   startedAt: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
 }));
+app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma, marketDataService));
