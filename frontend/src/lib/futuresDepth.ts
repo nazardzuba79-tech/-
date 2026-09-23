@@ -597,6 +597,23 @@ class FuturesDepthTransport {
         let frame: any;
         try { frame = JSON.parse(event.data); } catch { this.reconnect(); return; }
         if (frame?.success === false) { this.reconnect(); return; }
+        if(typeof frame?.topic==='string'&&frame.topic.startsWith('tickers.')){
+          const symbol=frame.topic.slice('tickers.'.length),update=parseFuturesTickerFrame(frame,symbol);
+          if(update)for(const listener of this.tickerListeners.get(symbol)??[])listener(update);
+          return;
+        }
+        if(typeof frame?.topic==='string'&&frame.topic.startsWith('kline.')){
+          const match=/^kline\.([^.]+)\.([A-Z0-9]{1,32}USDT)$/.exec(frame.topic);
+          if(match){
+            const key=`${match[2]}:${match[1]}`;
+            const appInterval=Object.keys(WS_INTERVAL).find(value=>WS_INTERVAL[value]===match[1]);
+            if(appInterval){
+              const update=parseFuturesKlineFrame(frame,match[2],appInterval);
+              if(update)for(const listener of this.klineListeners.get(key)??[])listener(update);
+            }
+          }
+          return;
+        }
         if(typeof frame?.topic==='string'&&frame.topic.startsWith('publicTrade.')) {
           const symbol=frame.topic.slice('publicTrade.'.length);
           const active=this.subscriptions.get(symbol);
