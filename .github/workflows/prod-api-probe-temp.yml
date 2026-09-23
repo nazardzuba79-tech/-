@@ -29,6 +29,35 @@ jobs:
           probe candles 'https://api.voltextech.net/api/v1/market/futures/candles/BTC-USDT?interval=1h&limit=20'
           probe snapshot 'https://api.voltextech.net/api/v1/market/snapshot'
           probe symbols 'https://api.voltextech.net/api/v1/market/external/symbols'
+          echo "::group::frontend-build"
+          curl -sS --max-time 20 -D /tmp/fh -o /tmp/page 'https://voltextech.net/futures?pair=BTC%2FUSDT' || true
+          sed -n '1,25p' /tmp/fh || true
+          echo "--- script assets ---"
+          grep -oE 'src="[^"]+\.js"' /tmp/page || true
+          assets=$(grep -oE 'src="[^"]+\.js"' /tmp/page | sed 's/src="//;s/"$//' || true)
+          for asset in $assets; do
+            case "$asset" in
+              http*) url="$asset" ;;
+              /*) url="https://voltextech.net$asset" ;;
+              *) url="https://voltextech.net/$asset" ;;
+            esac
+            echo "FETCH $url"
+            curl -sS --max-time 20 "$url" -o /tmp/main.js || true
+            echo "--- endpoint strings in entry ---"
+            grep -oE 'https://[^"[:space:]]+|exchange-api[^"[:space:]]+|api\.voltextech\.net|/api/v1' /tmp/main.js | head -100 || true
+            echo "--- dynamic js refs ---"
+            grep -oE 'assets/[A-Za-z0-9._-]+\.js' /tmp/main.js | sort -u | head -100 > /tmp/refs || true
+            while read ref; do
+              [ -n "$ref" ] || continue
+              curl -sS --max-time 20 "https://voltextech.net/$ref" -o /tmp/chunk.js || true
+              hits=$(grep -oE 'https://exchange-api[^"[:space:]]+|https://api\.voltextech\.net[^"[:space:]]*|/api/v1' /tmp/chunk.js | head -20 || true)
+              if [ -n "$hits" ]; then
+                echo "HITS $ref"
+                echo "$hits"
+              fi
+            done < /tmp/refs
+          done
+          echo "::endgroup::"
           echo "::group::market-live"
           curl -sS -N --max-time 8 -D /tmp/lh -o /tmp/lb -H 'Origin: https://voltextech.net' 'https://api.voltextech.net/api/v1/market/live' || true
           sed -n '1,30p' /tmp/lh || true
