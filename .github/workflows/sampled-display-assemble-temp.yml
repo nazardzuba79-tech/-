@@ -3,8 +3,9 @@ on:
   push:
     branches: ['chatgpt/sampled-display-budget']
     paths:
-      - 'scripts/apply-sampled-display-temp.py'
+      - 'scripts/finalize-sampled-display-temp.py'
       - '.github/workflows/sampled-display-assemble-temp.yml'
+      - 'src/api/routes/__tests__/sampledDisplayBudget.test.ts'
 permissions:
   contents: write
 concurrency:
@@ -15,49 +16,74 @@ jobs:
     if: github.repository == 'nazardzuba79-tech/-' && github.ref == 'refs/heads/chatgpt/sampled-display-budget'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/sampled-display-budget
-      - name: Apply explicit guarded display-only changes
-        run: python3 scripts/apply-sampled-display-temp.py
-      - name: Save only allowlisted source changes to this feature branch
-        shell: bash
+      - name: Complete guarded display-only wiring
+        run: python3 scripts/finalize-sampled-display-temp.py
+      - name: Save only explicit source changes to feature branch
         run: |
           set -euo pipefail
           test "$(git branch --show-current)" = 'chatgpt/sampled-display-budget'
-          if test -s /tmp/sampled-display-changed.txt; then
-            while IFS= read -r path || test -n "$path"; do
-              case "$path" in src/*|frontend/src/*) git add -- "$path" ;; *) echo 'Unexpected assembly target'; exit 1 ;; esac
-            done < /tmp/sampled-display-changed.txt
-            if ! git diff --cached --quiet; then
-              git config user.name 'VOLTEX display assembly'
-              git config user.email 'noreply@users.noreply.github.com'
-              git commit -m '[CF-Pages-Skip] Wire owner-approved sampled display on feature branch'
-              git push origin HEAD:refs/heads/chatgpt/sampled-display-budget
-            fi
+          while IFS= read -r path || test -n "$path"; do
+            case "$path" in src/*|frontend/src/*|scripts/qa-futures-visual-polish.cjs) git add -- "$path" ;; *) echo 'Unexpected target'; exit 1 ;; esac
+          done < /tmp/sampled-display-changed.txt
+          if ! git diff --cached --quiet; then
+            git config user.name 'VOLTEX display assembly'
+            git config user.email 'noreply@users.noreply.github.com'
+            git commit -m '[CF-Pages-Skip] Finish sampled display wiring before browser acceptance'
+            git push origin HEAD:refs/heads/chatgpt/sampled-display-budget
           fi
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install build dependencies
+      - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund && npm ci --prefix frontend --ignore-scripts --no-audit --no-fund && npx prisma generate
-      - name: Backend type check
+      - name: Backend build
         id: backend
         continue-on-error: true
-        run: npm run build 2>&1 | tee /tmp/backend-build.txt
-      - name: Frontend type check and bundle
+        run: npm run build
+      - name: Frontend build
         id: frontend
         continue-on-error: true
-        run: npm run build --prefix frontend 2>&1 | tee /tmp/frontend-build.txt
-      - name: Preserve review evidence
-        if: always()
+        run: npm run build --prefix frontend
+      - name: Snapshot budget, identity and cancellation regressions
+        id: tests
+        continue-on-error: true
+        run: npx jest --runInBand --silent --runTestsByPath src/api/routes/__tests__/sampledDisplayBudget.test.ts
+      - name: Existing execution and transport regression suites
+        id: execution
+        continue-on-error: true
+        run: npx jest --runInBand --silent --runTestsByPath src/services/marketData/live/__tests__/CollectorDepthRouting.test.ts src/services/marketData/live/__tests__/LiveTransport.test.ts src/api/routes/__tests__/marketLiveGzip.test.ts src/private-trading/__tests__/math.test.ts src/private-trading/__tests__/liveEngine.test.ts
+      - name: Browser dependencies
+        if: steps.frontend.outcome == 'success'
         run: |
-          git diff HEAD~1 HEAD --stat
-          git rev-parse HEAD
-      - name: Require both builds
+          npm install --prefix /tmp/voltex-browser playwright --no-audit --no-fund
+          ln -s /tmp/voltex-browser/node_modules/playwright node_modules/playwright
+          /tmp/voltex-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Actual desktop and mobile trading panel
+        id: browser
+        if: steps.frontend.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/qa-futures-visual-polish.cjs --widths 1440x900,390x844 --out /tmp/sampled-browser --label sampled
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sampled-display-browser
+          path: /tmp/sampled-browser
+          retention-days: 3
+      - name: All acceptance steps must pass
         if: always()
         env:
           BACKEND: ${{ steps.backend.outcome }}
           FRONTEND: ${{ steps.frontend.outcome }}
-        run: test "$BACKEND" = success && test "$FRONTEND" = success
+          TESTS: ${{ steps.tests.outcome }}
+          EXECUTION: ${{ steps.execution.outcome }}
+          BROWSER: ${{ steps.browser.outcome }}
+        run: |
+          printf 'backend=%s frontend=%s tests=%s execution=%s browser=%s\n' "$BACKEND" "$FRONTEND" "$TESTS" "$EXECUTION" "$BROWSER"
+          test "$BACKEND" = success && test "$FRONTEND" = success && test "$TESTS" = success && test "$EXECUTION" = success && test "$BROWSER" = success
