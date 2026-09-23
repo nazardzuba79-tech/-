@@ -60,7 +60,7 @@ import './trade-terminal/FuturesMobile.css';
 // from localStorage and then reconcile it with the same network calls that
 // already existed — no extra request is introduced.
 const CORE_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
-const MARKET_EDGE_BASE = (import.meta.env.VITE_MARKET_EDGE_URL || 'https://market.voltextech.net').replace(/\/$/, '');
+const MARKET_EDGE_BASE = 'https://market.voltextech.net';
 
 // Orders and their history share /futures/orders/me with different filters.
 type BottomTab = 'orders' | 'positions' | 'orderHistory' | 'positionHistory' | 'assets';
