@@ -271,7 +271,9 @@ let sampledDisplay = false;
 const PUBLIC_MARKET_EDGE_BASE = 'https://market.voltextech.net';
 export function setFuturesDepthFallbackBase(base: string, sampled = false) {
   fallbackBase = base; sampledDisplay = sampled;
-  setSampledBase(base, sampled ? PUBLIC_MARKET_EDGE_BASE : base);
+  const host = typeof window !== 'undefined' ? window.location.hostname : '';
+  const productionSite = host === 'voltextech.net' || host.endsWith('.voltextech.net');
+  setSampledBase(base, sampled && productionSite ? PUBLIC_MARKET_EDGE_BASE : base);
   if (sampled) transport.close(); else closeSampledDepth();
 }
 
