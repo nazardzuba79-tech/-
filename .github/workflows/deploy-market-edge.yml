@@ -48,7 +48,7 @@ jobs:
 
   deploy:
     needs: verify
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]'))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]')) || (github.event_name == 'pull_request' && github.head_ref == 'chatgpt/direct-spot-public-data')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -70,10 +70,12 @@ jobs:
           curl -fsS https://market.voltextech.net/market/display/futures-trades/BTCUSDT | grep -q '"symbol":"BTCUSDT"'
           curl -fsS https://market.voltextech.net/market/display/futures-tickers | grep -q '"retCode":0'
           curl -fsS 'https://market.voltextech.net/market/display/futures-candles/BTCUSDT?interval=60&limit=5' | grep -q '"retCode":0'
+          curl -fsS https://market.voltextech.net/market/display/spot-book/BTC-USDT | grep -q '"pair":"BTC/USDT"'
+          curl -fsS 'https://market.voltextech.net/market/display/spot-candles/BTC-USDT?interval=1h&limit=5' | grep -q '"pair":"BTC/USDT"'
 
 
   live-smoke:
-    needs: verify
+    needs: [verify, deploy]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
