@@ -22,3 +22,4 @@ or when started manually after the workflow is on the default branch.
 
 Commits on this branch must start with `[CF-Pages-Skip]` so Cloudflare Pages
 does not build them.
+Test deploy: 2026-09-23 (health only, owner-approved).
