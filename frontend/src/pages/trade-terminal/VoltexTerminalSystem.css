@@ -32,15 +32,23 @@
    and CFD shells. Changing a value here changes all three, which is the
    whole point of it being one block. */
 :is(#archive-terminal-preview, .trade-terminal.vx-terminal) {
-  --studio-canvas:#080a0f; --workspace-bg:#10141e; --studio-panel:#10141e;
-  --panel:#10141e; --panel-alt:#161c2b; --studio-raised:#161c2b;
-  --bg-primary:#080a0f; --bg-secondary:#10141e; --bg-tertiary:#161c2b;
-  --toolbar-bg:#10141e; --chart-bg:#10141e; --voltex-plot-background:#0b1019;
-  --border:#232b40; --border-color:#232b40; --panel-border:#232b40; --layer-border:#232b40;
-  --text-primary:#e2e8f0; --text-secondary:#a6b2c8; --text-tertiary:#8c9bb3;
-  --archive-label:#b8c2d1;
+  /* 2026-09-24: the owner approved the lighter palette of the HTML concept
+     («темний занадто темний» on the first draft, then the lighter one) and
+     asked for it on the terminal. Values are the concept's own tokens:
+     canvas #171c25, panel #1d232e, raised #262d3a (+hover #2d3544), line
+     #2e3644, text #f0f3f7 / #c0c8d5 / #9ba5b5, buy #2ebd85. The accent
+     stays VOLTEX gold. The chart plot takes the panel colour so the chart
+     no longer sits in a darker well than the panels around it. */
+  --studio-canvas:#171c25; --workspace-bg:#1d232e; --studio-panel:#1d232e;
+  --panel:#1d232e; --panel-alt:#262d3a; --studio-raised:#262d3a; --panel-alt-hover:#2d3544;
+  --bg-primary:#171c25; --bg-secondary:#1d232e; --bg-tertiary:#262d3a;
+  --toolbar-bg:#1d232e; --chart-bg:#1d232e; --voltex-plot-background:#1d232e;
+  --border:#2e3644; --border-color:#2e3644; --panel-border:#2e3644; --layer-border:#2e3644;
+  --field-line:#3d4757; --control:#313a49; --control-hover:#3a4455;
+  --text-primary:#f0f3f7; --text-secondary:#c0c8d5; --text-tertiary:#9ba5b5;
+  --archive-label:#c0c8d5;
   --accent:#f0b90b; --accent-yellow:#f0b90b; --color-accent:#f0b90b;
-  --color-buy:#0ecb81; --buy:#0ecb81; --color-sell:#f6465d; --sell:#f6465d;
+  --color-buy:#2ebd85; --buy:#2ebd85; --color-sell:#f6465d; --sell:#f6465d;
   --font-family:'Inter Terminal',Inter,system-ui,sans-serif;
   color:var(--text-primary); background:var(--studio-canvas); font-family:var(--font-family);
   font-variant-numeric:tabular-nums;

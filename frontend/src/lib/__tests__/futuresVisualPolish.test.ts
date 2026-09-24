@@ -63,13 +63,15 @@ describe('1. what the brief said NOT to copy', () => {
 
 describe('2. the trading panel takes the reference hierarchy', () => {
   it('draws fields and selects as flat filled surfaces with no permanent frame', () => {
+    // The fill is the raised token (2026-09-24, the lighter palette); the
+    // shape — flat, no permanent frame — is what this test is about.
     const field = rule('#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input)');
-    expect(field).toContain('background:#1e2126');
+    expect(field).toContain('background:var(--panel-alt)');
     // Transparent, not removed: the control keeps its exact outer size.
     expect(field).toContain('border:1px solid transparent');
     expect(field).toContain('border-radius:5px');
     const select = rule('#archive-terminal-preview .fo-mlTrigger');
-    expect(select).toContain('background:#1e2126');
+    expect(select).toContain('background:var(--panel-alt)');
     expect(select).toContain('border:1px solid transparent');
   });
 
