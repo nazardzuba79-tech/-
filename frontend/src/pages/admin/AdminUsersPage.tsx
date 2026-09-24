@@ -8,7 +8,7 @@ import { AdminStatCard } from './AdminStatCard';
 import { AdminPagination } from './AdminPagination';
 import { AdminToastContainer, useAdminToasts } from './AdminToast';
 import { UsersIcon, ActivityIcon, ClockIcon, MoreHorizontalIcon, EyeIcon, PauseCircleIcon, BanIcon } from './AdminIcons';
-import { formatLastLoginAt, kyivDayDifference } from './lastLoginLabel';
+import { formatLastLoginAt } from './lastLoginLabel';
 
 type User = Awaited<ReturnType<typeof api.getAdminUsers>>[number];
 
@@ -29,11 +29,12 @@ const AVATAR_COLORS = ['#4f46e5', '#039855', '#0284c7', '#dc6803', '#e11d48', '#
 // highlight in the Баланс column.
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-// Green for a login on today's Kyiv calendar date.
+// Keep the green activity dot on the existing rolling 24-hour window.
+// Only the displayed label uses Kyiv calendar dates.
 function LastSeenBadge({ lastLoginAt }: { lastLoginAt: string | null }) {
   const now = new Date();
   const login = lastLoginAt ? new Date(lastLoginAt) : null;
-  const recent = login !== null && Number.isFinite(login.getTime()) && kyivDayDifference(login, now) === 0;
+  const recent = login !== null && Number.isFinite(login.getTime()) && now.getTime() - login.getTime() <= ONE_DAY_MS;
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-tertiary)' }}>
       <span
