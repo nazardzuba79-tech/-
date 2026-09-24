@@ -576,7 +576,10 @@ describe('the instrument cluster is one node, and its caption is real', () => {
     expect(identity.indexOf('className="pair-name"'))
       .toBeLessThan(identity.indexOf('className="pair-asset"'));
     expect(identity).toContain('{symbol}');
-    expect(identity).toContain('assetName ?? baseAsset');
+    // The caption is the asset's name alone, in every design — the pair is
+    // not repeated under itself (owner, 2026-09-24).
+    expect(identity).toContain('<span className="pair-asset">{assetName}</span>');
+    expect(identity).not.toContain('quoteAsset');
   });
 
   it('never invents a name: an unknown asset renders an empty caption', () => {
@@ -594,5 +597,12 @@ describe('the instrument cluster is one node, and its caption is real', () => {
   it('prints the catalogue name when the catalogue has one', () => {
     const named = mount({ __assetName: 'Bitcoin' }).render();
     expect(JSON.stringify(named)).toContain('Bitcoin');
+  });
+
+  it('prints the name alone on the archive design too, without the quote asset', () => {
+    const caption = (tree: any) => nodes(tree).find(n => n.props?.className === 'pair-asset')?.props.children;
+    expect(caption(mount({ __assetName: 'Bitcoin' }).render({ symbol: 'BTC/USDT', archive: true }))).toBe('Bitcoin');
+    // Unknown to the catalogue: nothing, not «BTC USDT» standing in for a name.
+    expect(caption(mount().render({ symbol: 'BTC/USDT', archive: true }))).toBeNull();
   });
 });
