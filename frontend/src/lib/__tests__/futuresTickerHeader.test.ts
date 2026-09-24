@@ -298,7 +298,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/futuresReference') return futuresReference;
     if (name === '../lib/useFuturesReference') return { useFuturesReference: () => new Map(overrides.__noTicker ? [] : [
-      ['BTC/USDT', Object.fromEntries(Object.entries(referenceTicker).map(([key, value]) => [key, key === 'pair' ? value : Number(value)]))],
+      ['BTC/USDT', overrides.__referenceRow ?? Object.fromEntries(Object.entries(referenceTicker).map(([key, value]) => [key, key === 'pair' ? value : Number(value)]))],
     ]) };
     if (name === '../lib/useMarketData') {
       return {
@@ -321,6 +321,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     };
     if (name === '../lib/formatNumber') return numbers;
     if (name === '../lib/priceChange') return changes;
+    if (name === '../lib/terminalPresentation') return require('../terminalPresentation');
     return req(name);
   }, output);
   return { api, render(props: any = { symbol: 'BTC/USDT' }) {
@@ -437,6 +438,42 @@ test('unavailable data stays unavailable rather than becoming fake zero', async 
   expect(text(tree)).toContain('futures.openInterest (USDT)—');
   expect(text(tree)).toContain('futures.headerTurnover24h (USDT)—');
   expect(text(tree)).toContain('futures.headerFunding— / ');
+});
+
+// Production: the server's cross-venue turnover is Binance's alone, and
+// Binance Futures refuses the backend's US region, so that aggregate never
+// arrives and the cell used to sit on «—». The header's OWN Bybit reference
+// row — the one its 24h high and low already come from — names it instead.
+// No request is added, and no venue is named.
+const bybitRow = (patch: Record<string, unknown> = {}) => ({
+  id: 'linear_perpetual:BTCUSDT', pair: 'BTC/USDT', symbol: 'BTC/USDT', providerSymbol: 'BTCUSDT', provider: 'bybit',
+  marketType: 'linear_perpetual', volumeAsset: 'BTC', turnoverAsset: 'USDT', baseAsset: 'BTC', quoteAsset: 'USDT', settleAsset: 'USDT',
+  lastPrice: 83514.9, bidPrice: null, askPrice: null, high24h: 85937.4, low24h: 82800, volume24h: 98765.4, quoteVolume24h: 8_234_567_890.12,
+  changePercent24h: -2.81, indexPrice: null, markPrice: null, fundingRate: null, fundingIntervalMinutes: null, openInterest: null,
+  openInterestValue: null, providerEventAt: null, sequence: null, receivedAt: Date.now(), fetchedAt: Date.now(), stale: false, ...patch,
+});
+test.each([
+  ['unavailable', async () => ({ available: false, reason: 'provider_unavailable' })],
+  ['available without turnover', async () => ({ available: true, source: 'okx', fetchedAt: 0, stale: true,
+    value: { baseAsset: 'BTC', turnover24hUsd: null, turnoverVenues: [], openInterestBase: 126305.2302, openInterestUsd: null, openInterestBaseVenues: ['okx'], openInterestUsdVenues: [] } })],
+])('with the server turnover %s, the cell shows the header\'s own Bybit perpetual turnover', async (_case, stats) => {
+  const component = mount({ getFuturesMarketStats: stats, __referenceRow: bybitRow() });
+  component.render(); await flush();
+  const tree = component.render();
+  expect(text(tree)).toContain('futures.headerTurnover24h (USDT)8.23B');
+  expect(text(tree)).not.toMatch(/binance|okx|bybit/i);
+});
+test('a stale or foreign reference row never fills the turnover', async () => {
+  for (const patch of [{ stale: true }, { provider: 'okx' }, { receivedAt: Date.now() - 600_001 }, { quoteVolume24h: null }]) {
+    const component = mount({ getFuturesMarketStats: async () => ({ available: false, reason: 'provider_unavailable' }), __referenceRow: bybitRow(patch) });
+    component.render(); await flush();
+    expect(text(component.render())).toContain('futures.headerTurnover24h (USDT)—');
+  }
+});
+test('a fresh cross-venue turnover still wins over the reference row', async () => {
+  const component = mount({ __referenceRow: bybitRow() });
+  component.render(); await flush();
+  expect(text(component.render())).toContain('futures.headerTurnover24h (USDT)987.65M');
 });
 
 test('the header names no upstream venue, in any state', async () => {

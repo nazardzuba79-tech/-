@@ -1,0 +1,74 @@
+{
+  "label": "before",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-main2/frontend/dist",
+  "views": {
+    "1440": {
+      "cells": {
+        "turnover": {
+          "label": "Оборот за 24ч (USDT)",
+          "text": "—",
+          "className": "value",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        },
+        "openInterest": {
+          "label": "Открытый интерес (BTC)",
+          "text": "126,305.2302",
+          "className": "value is-stale",
+          "opacity": "0.62",
+          "color": "rgb(255, 255, 255)"
+        },
+        "mark": {
+          "label": "Маркировочная цена",
+          "text": "83,529.85",
+          "className": "value archive-mark-index",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        }
+      },
+      "menu": [
+        "Профиль",
+        "Выйти"
+      ],
+      "adminChipInRow": 1,
+      "outside": [
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net"
+      ]
+    },
+    "1920": {
+      "cells": {
+        "turnover": {
+          "label": "Оборот за 24ч (USDT)",
+          "text": "—",
+          "className": "value",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        },
+        "openInterest": {
+          "label": "Открытый интерес (BTC)",
+          "text": "126,305.2302",
+          "className": "value is-stale",
+          "opacity": "0.62",
+          "color": "rgb(255, 255, 255)"
+        },
+        "mark": {
+          "label": "Маркировочная цена",
+          "text": "83,529.85",
+          "className": "value archive-mark-index",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        }
+      },
+      "menu": [
+        "Профиль",
+        "Выйти"
+      ],
+      "adminChipInRow": 1,
+      "outside": [
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net"
+      ]
+    }
+  }
+}

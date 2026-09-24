@@ -1,4 +1,4 @@
-import { formatBookAmount, formatBookTotal, formatCompactBookValue, livePerpetualTurnover } from '../terminalPresentation';
+import { formatBookAmount, formatBookTotal, formatCompactBookValue, livePerpetualTurnover, referencePerpetualTurnover, REFERENCE_TURNOVER_MAX_AGE_MS } from '../terminalPresentation';
 import type { LiveQuote, LiveState } from '../liveMarketTypes';
 
 const now = 1_800_000_000_000;
@@ -40,3 +40,15 @@ test('formatting never modifies source values or aggregates', () => { const leve
 test('exact live perpetual turnover and real zero are available', () => { expect(livePerpetualTurnover(state(),'BTC/USDT',now)).toBe(123456789); expect(livePerpetualTurnover(state({quoteVolume24h:0}),'BTC/USDT',now)).toBe(0); });
 test.each([{marketType:'spot'}, {marketType:'linear_futures'}, {marketType:'inverse_perpetual'}, {pair:'ETH/USDT'}, {quoteAsset:'USD'}, {settleAsset:'BTC'}, {turnoverAsset:'BTC'}, {stale:true}, {fetchedAt:now-30001}, {receivedAt:now-30001}, {fetchedAt:NaN}, {fetchedAt:now+6000}, {quoteVolume24h:null}, {quoteVolume24h:NaN}, {quoteVolume24h:-1}, {providerSymbol:'ETHUSDT'}] as Partial<LiveQuote>[])('reject mismatched, expired or malformed turnover %j', patch => expect(livePerpetualTurnover(state(patch),'BTC/USDT',now)).toBeNull());
 test.each(['disabled','connecting','stale'] as const)('non-live stream gives no turnover: %s', status => expect(livePerpetualTurnover(state({},status),'BTC/USDT',now)).toBeNull());
+
+// The header's own Bybit reference row (the one its 24h high/low come from)
+// names the turnover when the server's cross-venue figure is unavailable —
+// on production always, because only Binance publishes it and Binance
+// Futures refuses the backend's US region.
+test('reference row turnover: this pair\'s Bybit USDT perpetual, fresh, real zero kept', () => {
+  expect(referencePerpetualTurnover(quote, 'BTC/USDT', now)).toBe(123456789);
+  expect(referencePerpetualTurnover({ ...quote, quoteVolume24h: 0 }, 'BTC/USDT', now)).toBe(0);
+  expect(referencePerpetualTurnover({ ...quote, receivedAt: now - REFERENCE_TURNOVER_MAX_AGE_MS }, 'BTC/USDT', now)).toBe(123456789);
+});
+test.each([{marketType:'spot'}, {marketType:'linear_futures'}, {pair:'ETH/USDT'}, {quoteAsset:'USD'}, {settleAsset:'BTC'}, {turnoverAsset:'BTC'}, {provider:'okx'}, {stale:true}, {receivedAt:now-REFERENCE_TURNOVER_MAX_AGE_MS-1}, {receivedAt:NaN}, {receivedAt:now+6000}, {quoteVolume24h:null}, {quoteVolume24h:NaN}, {quoteVolume24h:-1}, {providerSymbol:'ETHUSDT'}] as Partial<LiveQuote>[])('reference row turnover rejects mismatched, expired or malformed %j', patch => expect(referencePerpetualTurnover({ ...quote, ...patch } as LiveQuote, 'BTC/USDT', now)).toBeNull());
+test('no reference row, no turnover', () => { expect(referencePerpetualTurnover(undefined, 'BTC/USDT', now)).toBeNull(); expect(referencePerpetualTurnover(null, 'BTC/USDT', now)).toBeNull(); });

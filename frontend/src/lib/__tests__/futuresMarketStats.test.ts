@@ -135,9 +135,14 @@ describe('units, and no provider branding', () => {
     expect(barCode).toContain('}, [baseAsset]);');
   });
 
-  it('dims a stale figure rather than presenting it as live', () => {
+  it('marks a stale figure in the markup; the archive design draws it at full contrast (owner, 2026-09-24)', () => {
     expect(barCode).toContain("derivatives.stale ? ' is-stale' : ''");
     expect(read('src/pages/trade-terminal/FuturesTerminal.css')).toContain('.value.is-stale');
+    // The owner read the dimmed «Открытый интерес» as a contrast bug. The
+    // figure is a bounded last-good value, so on the default design it is
+    // drawn like its neighbours; the class stays for every other reader.
+    expect(read('src/pages/trade-terminal/ArchiveTerminalPreview.css'))
+      .toContain('#archive-terminal-preview .ticker-item .value.is-stale { opacity:1; }');
   });
 });
 

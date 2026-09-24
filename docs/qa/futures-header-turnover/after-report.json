@@ -1,0 +1,76 @@
+{
+  "label": "after",
+  "dist": "/tmp/claude-0/-home-user--/3aa28e0f-5e9a-5b55-a5ca-126a4a881276/scratchpad/wt-hdr/frontend/dist",
+  "views": {
+    "1440": {
+      "cells": {
+        "turnover": {
+          "label": "Оборот за 24ч (USDT)",
+          "text": "8,234,567,890.12",
+          "className": "value",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        },
+        "openInterest": {
+          "label": "Открытый интерес (BTC)",
+          "text": "126,305.2302",
+          "className": "value is-stale",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        },
+        "mark": {
+          "label": "Маркировочная цена",
+          "text": "83,529.85",
+          "className": "value archive-mark-index",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        }
+      },
+      "menu": [
+        "Профиль",
+        "Админка",
+        "Выйти"
+      ],
+      "adminChipInRow": 0,
+      "outside": [
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net"
+      ]
+    },
+    "1920": {
+      "cells": {
+        "turnover": {
+          "label": "Оборот за 24ч (USDT)",
+          "text": "8,234,567,890.12",
+          "className": "value",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        },
+        "openInterest": {
+          "label": "Открытый интерес (BTC)",
+          "text": "126,305.2302",
+          "className": "value is-stale",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        },
+        "mark": {
+          "label": "Маркировочная цена",
+          "text": "83,529.85",
+          "className": "value archive-mark-index",
+          "opacity": "1",
+          "color": "rgb(255, 255, 255)"
+        }
+      },
+      "menu": [
+        "Профиль",
+        "Админка",
+        "Выйти"
+      ],
+      "adminChipInRow": 0,
+      "outside": [
+        "https://fonts.googleapis.com",
+        "https://cdn.jsdelivr.net"
+      ]
+    }
+  }
+}
