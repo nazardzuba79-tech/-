@@ -205,9 +205,13 @@
 #archive-terminal-preview .archive-protection-fields input { min-width:0; width:100%; border:1px solid #2a3948; background:#172432; color:var(--text-primary); padding:10px; border-radius:7px; font-size:13px; }
 #archive-terminal-preview .archive-order-protection small { font-size:11px; line-height:16px; color:var(--text-secondary); }
 #archive-terminal-preview .archive-pair-filter { margin-left:auto; padding:0 12px; display:flex; align-items:center; gap:6px; font-size:11px; white-space:nowrap; color:var(--text-secondary); }
-#archive-terminal-preview .bottom-tabs { padding:0; gap:18px; }
+/* LINES BLEND (owner, 2026-09-24, beside the reference): the tab strip has
+   no line of its own — only the chosen tab's 2px gold underline — the
+   heading row has no hairline under it, and the pinned columns have no
+   1px seam: figures fade into them over 48px. */
+#archive-terminal-preview .bottom-tabs { padding:0; gap:18px; border-bottom:0; box-shadow:none; }
 #archive-terminal-preview .bottom-tab .reference-tab-count { background:transparent; padding:0 0 0 4px; font-size:inherit; color:inherit; }
-#archive-terminal-preview .bottom-tab .reference-tab-pnl { margin-left:8px; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; }
+#archive-terminal-preview .bottom-tab .reference-tab-pnl { margin-left:8px; font-size:12px; font-weight:500; font-variant-numeric:tabular-nums; }
 #archive-terminal-preview .bottom-tab .reference-tab-pnl.text-buy { color:var(--buy); }
 #archive-terminal-preview .bottom-tab .reference-tab-pnl.text-sell { color:var(--sell); }
 #archive-terminal-preview .bottom-tabs .bottom-tab { font-size:13px; font-weight:550; color:#dce3ed; }
@@ -264,7 +268,17 @@
    of meeting the titles text-on-text (owner, 2026-09-23: «верхній текст не
    залазить на нижній»). The rule is drawn inside the cell, not as a border:
    a collapsed border does not travel with a sticky heading. */
-#archive-terminal-preview .futures-positions-table thead th::after { content:''; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--border); pointer-events:none; }
+#archive-terminal-preview .futures-positions-table thead th::after { content:none; }
+/* The rows' separators blend too. They are the cells' inline
+   `border-top:1px solid var(--border)` (hence !important) and the reference
+   sheet's 1px #2a2a31 on the row: between rows they take the panel's raised
+   tone, between the headings and the first row nothing. Same 1px, so the
+   64px row does not move. Desktop only; the phone rows are cards. */
+@media (min-width:901px) {
+  #archive-terminal-preview .futures-position-row { border-top:0; }
+  #archive-terminal-preview .futures-positions-table tbody td { border-top:1px solid var(--panel-alt) !important; }
+  #archive-terminal-preview .futures-positions-table tbody tr:first-child td { border-top-color:transparent !important; }
+}
 /* Every heading stays on ONE line (the owner, 2026-09-23: the two-line
    «Цена / Входа», «Цена / маркировки», «Цена / ликвид.» beside one-line
    titles read as text stacked on text). A title is never wrapped to make a
@@ -298,9 +312,7 @@
      pinned column's measured width (`--pin-start`, set by the panel).
    Desktop only: on a phone the rows are cards and `td::before` is a label. */
 @media (min-width:901px) {
-  #archive-terminal-preview .futures-positions-scroll[data-hidden-end=true] .futures-positions-table :is(th,td):last-child { box-shadow:inset 1px 0 0 var(--border); }
-  #archive-terminal-preview .futures-positions-scroll[data-hidden-end=true] .futures-positions-table :is(th,td):last-child::before { content:''; position:absolute; top:0; bottom:0; right:100%; width:34px; pointer-events:none; background:linear-gradient(90deg,transparent,var(--pos-cell-bg) 85%); }
-  #archive-terminal-preview .futures-positions-scroll[data-hidden-start=true] .futures-positions-table :is(th,td):first-child { box-shadow:inset -1px 0 0 var(--border); }
+  #archive-terminal-preview .futures-positions-scroll[data-hidden-end=true] .futures-positions-table :is(th,td):last-child::before { content:''; position:absolute; top:0; bottom:0; right:100%; width:48px; pointer-events:none; background:linear-gradient(90deg,transparent,var(--pos-cell-bg) 80%); }
   #archive-terminal-preview .futures-positions-scroll[data-hidden-start=true] { -webkit-mask-image:linear-gradient(90deg,#000 var(--pin-start,0px),transparent var(--pin-start,0px),#000 calc(var(--pin-start,0px) + 30px)); mask-image:linear-gradient(90deg,#000 var(--pin-start,0px),transparent var(--pin-start,0px),#000 calc(var(--pin-start,0px) + 30px)); }
 }
 
