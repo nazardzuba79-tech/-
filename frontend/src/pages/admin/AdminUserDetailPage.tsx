@@ -4,6 +4,7 @@ import { api, ApiError } from '../../lib/api';
 import { railDisplay } from './depositRails';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
+import { formatLastLoginAt } from './lastLoginLabel';
 import { Skeleton } from '../../components/Skeleton';
 
 type Detail = Awaited<ReturnType<typeof api.getAdminUserDetail>>;
@@ -175,7 +176,7 @@ export function AdminUserDetailPage() {
           <Row label="Регистрация" value={new Date(detail.createdAt).toLocaleString('ru-RU')} />
           <Row label="IP при регистрации" value={detail.registrationIp ?? '—'} />
           <Row label="Верификация" value={<Badge text={kycBadge.text} color={kycBadge.color} bg={kycBadge.bg} />} />
-          <Row label="Последний вход" value={detail.lastLoginAt ? new Date(detail.lastLoginAt).toLocaleString('ru-RU') : 'Ни разу не входил'} />
+          <Row label="Последний вход" value={detail.lastLoginAt ? formatLastLoginAt(detail.lastLoginAt) : 'Ни разу не входил'} />
           <Row
             label="Статус"
             value={

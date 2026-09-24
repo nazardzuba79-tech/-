@@ -18,8 +18,12 @@ test('display states communicate live, market closed, last quote and unavailable
   const at = Date.UTC(2026, 8, 13, 9, 30);
   expect(cfdDisplayState({ price:'1', status:'live', stale:false, asOf:at }).label).toMatch(/^Live/);
   expect(cfdDisplayState({ price:'1', status:'market_closed', stale:false, asOf:at }).label).toMatch(/^Market closed/);
-  expect(cfdDisplayState({ price:'1', status:'stale', stale:true, asOf:at }).label).toMatch(/^Last quote/);
+  expect(cfdDisplayState({ price:'1', status:'stale', stale:true, asOf:at }).label).toBe('Last quote');
+  expect(cfdDisplayState({ price:'1', status:'sampled', stale:false, asOf:at })).toEqual({label:'Last quote',tone:'stale'});
   expect(cfdDisplayState({ price:null, status:'unavailable', stale:false, asOf:null })).toEqual({label:'Price unavailable',tone:'off'});
+  for (const technical of ['Snapshot','Снимок','Знімок','UTC','6h']) {
+    expect(cfdDisplayState({ price:'1', status:'sampled', stale:false, asOf:at }, 'en').label).not.toContain(technical);
+  }
   expect(formatCfdAsOf(at)).toBe('09:30 UTC');
 });
 
@@ -77,6 +81,11 @@ test('customer CFD layout stays compact without verbose practice or per-row stat
   expect(ticker).not.toContain('cfd-product-badge');
   expect(ticker).not.toContain('>MARKET<');
   expect(instruments).not.toContain('cfd-optionState');
+  const presentation=read('lib/cfdPresentation.ts');
+  const overview=read('components/CfdMarketOverview.tsx');
+  expect(presentation).not.toContain('sampledDisplayText');
+  expect(overview).not.toContain('formatCfdAsOf');
+  expect(overview).not.toContain('copy.updated');
 });
 
 test('homepage market cards deep-link to the selected real terminal and instrument', () => {
