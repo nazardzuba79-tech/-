@@ -35,9 +35,44 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
     await repo.commit(actor,1,fixture,'commit-test','hash');
     queries=[];const p=await repo.live(actor);
     expect(p?.revision).toBe(2);expect(p).toEqual(deriveNativeLiveProjection({...fixture,revision:2}));
+    const receipt=await db.nativeDemoRevision.findUniqueOrThrow({where:{userId_revision:{userId:actor.userId,revision:2}}});
+    expect(receipt.payload).toEqual(JSON.parse(JSON.stringify(compact(revisionPayload({...fixture,revision:2})))));
+    queries=[];await repo.live(actor);
     expect(queries.some(q=>q.includes('NativeDemoRevision'))).toBe(false);
     expect(queries.some(q=>q.includes('"NativeDemoAccount"."payload"'))).toBe(false);
     expect(queries.some(q=>/^(INSERT|UPDATE|DELETE)/.test(q))).toBe(false);
+  });
+  test('command context retains both authorization checks with one joined DB read each',async()=>{
+    queries=[];await repo.commandContext(actor,'new-key','new-hash');
+    expect(queries.filter(q=>q.includes('FROM "User"'))).toHaveLength(2);
+    expect(queries.filter(q=>q.includes('FROM "public"."Session"'))).toHaveLength(0);
+    expect(queries.filter(q=>q.includes('NativeDemoRevision'))).toHaveLength(1);
+    expect(queries.filter(q=>q.includes('NativeDemoAccount'))).toHaveLength(1);
+  });
+  test.each(['blocked','wrong-role','revoked'])('%s actor cannot commit or create a receipt',async variant=>{
+    if(variant==='blocked')await db.user.update({where:{id:actor.userId},data:{blockedAt:new Date()}});
+    if(variant==='wrong-role')await db.user.update({where:{id:actor.userId},data:{role:'USER'}});
+    if(variant==='revoked')await db.session.update({where:{id:actor.sessionId},data:{revokedAt:new Date()}});
+    const before=await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}});
+    await expect(repo.commit(actor,1,fixture,`denied-${variant}`,'hash')).rejects.toMatchObject({code:'private_access_denied'});
+    expect(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}})).toEqual(before);
+    expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(1);
+  });
+  test('revocation after projection write is caught by final authorization and rolls back all writes',async()=>{
+    await db.$executeRawUnsafe(`CREATE FUNCTION native_test_revoke_session() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN UPDATE "Session" SET "revokedAt"=now() WHERE "userId"=NEW."userId"; RETURN NEW; END $$`);
+    await db.$executeRawUnsafe(`CREATE TRIGGER native_test_revoke_session AFTER UPDATE ON "NativeDemoLiveProjection"
+      FOR EACH ROW EXECUTE FUNCTION native_test_revoke_session()`);
+    try{
+      const before=await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}});
+      await expect(repo.commit(actor,1,fixture,'revoke-during-commit','hash')).rejects.toMatchObject({code:'private_access_denied'});
+      expect(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}})).toEqual(before);
+      expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(1);
+      expect((await db.nativeDemoLiveProjection.findUniqueOrThrow({where:{userId:actor.userId}})).revision).toBe(1);
+    }finally{
+      await db.$executeRawUnsafe('DROP TRIGGER native_test_revoke_session ON "NativeDemoLiveProjection"');
+      await db.$executeRawUnsafe('DROP FUNCTION native_test_revoke_session()');
+    }
   });
   test('projection write failure rolls back authority AND immutable revision',async()=>{
     await repo.commit(actor,1,fixture,'commit-test','hash');

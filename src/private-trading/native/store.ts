@@ -1,4 +1,4 @@
-import { commandRead, commandScope } from './commandScope';
+import { commandCheck, commandScope } from './commandScope';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
 import { privateTradingConfig, PrivateTradingConfig } from '../access';
@@ -225,14 +225,21 @@ export class PrismaNativeRepository implements NativeRepository {
     // Prepare immutable JSON before taking the account lock. Never download
     // the entire revision we just inserted: the caller already owns it.
     const result={...next,revision:expected+1};
-    const accountPayload=json(result),receiptPayload=json(revisionPayload(result));
+    // The immutable receipt is the stored account without the re-derivable
+    // checkpoint/session fields. Compact and serialize the journal only once.
+    const accountPayload=json(result);
+    const {checkpoint:_checkpoint,checkpointSnapshot:_checkpointSnapshot,executionSession:_session,executionPending:_pending,...receiptPayload}=accountPayload as unknown as StoredNativeAccount;
     const projectionData=this.projectionData(result);
     const trace=commandScope();
     const timed=async<T>(stage:string,run:()=>Promise<T>):Promise<T>=>{
       const started=Date.now();trace?.trace(stage);
       try{return await run();}finally{trace?.trace(stage+'.end',{durationMs:Date.now()-started});}
     };
-    await commandRead('repository.commit_authorization',()=>this.owner(this.db,actor));
+    // The transaction rechecks authorization after taking the account lock,
+    // before its first financial write, and again immediately before commit.
+    // A separate pre-transaction check duplicated those reads without adding
+    // a state that could safely commit after revocation.
+    commandCheck();
     beforeWrite?.();
     return this.db.$transaction(async tx=>{
       trace?.trace('transaction.enter');
@@ -243,7 +250,7 @@ export class PrismaNativeRepository implements NativeRepository {
       beforeWrite?.();
       const changed=await timed('transaction.account_write',()=>tx.nativeDemoAccount.updateMany({where:{userId:actor.userId,revision:expected},data:{revision:expected+1,payload:accountPayload}}));
       if(changed.count!==1)throw new PrivateTradingError('account_changed','Счёт изменился в другой вкладке. Обновите расчёт',409);
-      await timed('transaction.receipt_write',()=>tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:result.revision,requestKey:key,requestHash:hash,payload:receiptPayload},select:{revision:true}}));
+      await timed('transaction.receipt_write',()=>tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:result.revision,requestKey:key,requestHash:hash,payload:receiptPayload as unknown as Prisma.InputJsonValue},select:{revision:true}}));
       await timed('transaction.projection_write',()=>this.writeProjection(tx,actor,result,projectionData));
       await timed('transaction.final_authorization',()=>this.owner(tx,actor));beforeWrite?.();return result;
     },{timeout:10000,maxWait:2000});
