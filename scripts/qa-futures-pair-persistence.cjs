@@ -140,6 +140,18 @@ const waitForServer = () => new Promise((resolve, reject) => {
  * Every field is read off the LIVE page, never off a stylesheet or a
  * prop — a rule that is written but overridden cannot pass this.
  */
+/** The profile menu's entries, in order (href or label), read by opening it
+ *  and closing it again. «Админка» lives here since 2026-09-24. */
+async function profileMenu(page) {
+  const button = page.locator('.top-nav-profile-btn');
+  if (!(await button.count()) || !(await button.isVisible())) return null;
+  await button.click();
+  await page.waitForSelector('.top-nav-profile-menu', { timeout: 3000 });
+  const entries = await page.$$eval('.top-nav-profile-menu > *', els => els.map(el => el.getAttribute('href') || el.textContent.trim()));
+  await button.click();
+  await page.waitForSelector('.top-nav-profile-menu', { state: 'detached', timeout: 3000 }).catch(() => {});
+  return entries;
+}
 const state = (page) => page.evaluate(() => {
   const text = (sel) => document.querySelector(sel)?.textContent?.trim() ?? null;
   const box = (sel) => {
@@ -356,16 +368,15 @@ const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${LABEL}-${
       report[key]['header-markets'] = markets.header;
       if (!MEASURE_ONLY && width > 900) {
         const m = markets.header;
-        assert.ok(m.admin, `${key}: no admin chip on /markets`);
-        assert.equal(m.clusterOrder.indexOf('nav-admin-chip') + 1, m.clusterOrder.indexOf('nav-wallet-link'),
+        // «Админка» left the row for the profile menu (owner, 2026-09-24).
+        assert.ok(!m.admin, `${key}: an admin chip is still in the /markets header row`);
+        assert.equal(m.clusterOrder.indexOf('nav-wallet-link') + 1, m.clusterOrder.indexOf('deposit-button'),
           `${key}: /markets cluster reads ${m.clusterOrder.join(' | ')}`);
-        assert.ok(m.admin.right <= m.wallet.left, `${key}: /markets admin chip is not left of the wallet`);
         assert.ok(m.wallet.right <= m.deposit.left, `${key}: /markets wallet is not left of the deposit button`);
-        const tops = [m.admin.top, m.wallet.top, m.deposit.top];
+        const tops = [m.wallet.top, m.deposit.top];
         assert.ok(Math.max(...tops) - Math.min(...tops) <= 4, `${key}: /markets header wrapped (tops ${tops.join(', ')})`);
         assert.equal(m.clipped.length, 0, `${key}: /markets header text is clipped: ${JSON.stringify(m.clipped)}`);
         assert.equal(markets.overflowX, 0, `${key}: /markets scrolls sideways by ${markets.overflowX}px`);
-        assert.notEqual(m.admin.background, m.deposit.background, `${key}: /markets admin chip wears the deposit's fill`);
         // THE SECTIONS STILL FIT. On main an admin header was 51px short at
         // this width and cut «Админка» in half under «Кошелёк»; nothing may
         // be clipped off the end now.
@@ -452,37 +463,28 @@ const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${LABEL}-${
         }
       }
 
-      // ── 3. Админка beside Кошелёк ──────────────────────────────────────
+      // ── 3. Админка in the profile menu (owner, 2026-09-24) ─────────────
       const header = onBtc.header;
       report[key]['header'] = header;
+      const menu = await profileMenu(page);
+      report[key]['profile-menu'] = menu;
       if (!MEASURE_ONLY) {
         assert.equal(header.clipped.length, 0, `${key}: header text is clipped: ${JSON.stringify(header.clipped)}`);
         assert.equal(onBtc.overflowX, 0, `${key}: the page scrolls sideways by ${onBtc.overflowX}px`);
         assert.ok(header.adminInDrawer, `${key}: the drawer lost its admin entry`);
+        // Not in the row at any width; in the menu, between «Профиль» and «Выйти».
+        assert.ok(!header.admin, `${key}: an admin chip is still in the header row`);
+        assert.ok(menu, `${key}: no profile menu to open`);
+        assert.deepEqual(menu.slice(0, 2), ['/settings', '/admin'], `${key}: the profile menu reads ${JSON.stringify(menu)}`);
+        assert.equal(menu.length, 3, `${key}: the profile menu reads ${JSON.stringify(menu)}`);
         if (width > 900) {
-          assert.ok(header.admin, `${key}: no admin chip in the header`);
           assert.ok(header.wallet, `${key}: no wallet link in the header`);
-          // Directly before the wallet, in DOM order AND on screen.
           const order = header.clusterOrder;
-          assert.equal(order.indexOf('nav-admin-chip') + 1, order.indexOf('nav-wallet-link'),
+          assert.equal(order.indexOf('nav-wallet-link') + 1, order.indexOf('deposit-button'),
             `${key}: the cluster reads ${order.join(' | ')}`);
-          assert.ok(header.admin.right <= header.wallet.left, `${key}: the admin chip is not left of the wallet`);
           assert.ok(header.wallet.right <= header.deposit.left, `${key}: the wallet is not left of the deposit button`);
-          // ONE ROW: all three sit in the same band, nothing wrapped.
-          const tops = [header.admin.top, header.wallet.top, header.deposit.top];
+          const tops = [header.wallet.top, header.deposit.top];
           assert.ok(Math.max(...tops) - Math.min(...tops) <= 4, `${key}: the header wrapped (tops ${tops.join(', ')})`);
-          assert.ok(header.admin.height >= 28 && header.admin.height <= 40, `${key}: the chip is ${header.admin.height}px tall`);
-          // Its own colour, and NOT the deposit gold.
-          assert.notEqual(header.admin.background, header.deposit.background, `${key}: the admin chip wears the deposit's fill`);
-          assert.notEqual(header.admin.color, header.wallet.color, `${key}: the admin chip wears the wallet's label colour`);
-          const violet = /rgba?\((\d+), (\d+), (\d+)/.exec(header.admin.color);
-          assert.ok(violet && Number(violet[3]) > Number(violet[1]) && Number(violet[1]) >= Number(violet[2]),
-            `${key}: the admin label is ${header.admin.color}, which is not a violet`);
-        } else {
-          // On a phone the cluster has room for the CTA and the profile
-          // control and nothing else; the drawer carries admin instead.
-          assert.ok(!header.admin || header.admin.display === 'none' || header.admin.width === 0,
-            `${key}: the admin chip is still in the phone header`);
         }
       }
 

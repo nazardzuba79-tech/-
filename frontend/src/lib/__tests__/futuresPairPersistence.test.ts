@@ -269,80 +269,44 @@ describe('3. the contract name in an open position is the control', () => {
 
 // ── 3. Админка sits beside the wallet, in its own colour ─────────────────
 
-describe('4. the admin entry in the header', () => {
-  it('is no longer a product section on the left', () => {
+describe('4. the admin entry lives in the profile menu (owner, 2026-09-24)', () => {
+  // The owner first had «Админка» moved out of the product sections into a
+  // violet chip beside «Кошелёк»; on 2026-09-24 they asked for it to go into
+  // the profile menu, with «Профиль» and «Выйти», and out of the header row.
+  const MENU = NAV_CODE.slice(NAV_CODE.indexOf('className="top-nav-profile-menu"'));
+  const menu = MENU.slice(0, MENU.indexOf('</div>'));
+
+  it('is not a product section on the left, and not a chip in the account row', () => {
     const leftNav = NAV_CODE.slice(NAV_CODE.indexOf('className="main-nav'), NAV_CODE.indexOf('className="header-actions'));
     expect(leftNav).toContain("to=\"/otc\"");
     expect(leftNav).not.toContain('to="/admin"');
+    const row = NAV_CODE.slice(NAV_CODE.indexOf('className="header-actions'), NAV_CODE.indexOf('className="top-nav-profile-wrap"'));
+    expect(row).not.toContain('to="/admin"');
+    expect(NAV_CODE).not.toContain('nav-admin-chip');
+    expect(INDEX_CSS).not.toContain('nav-admin-chip');
   });
 
-  it('renders once in the account cluster, immediately before «Кошелёк»', () => {
-    const cluster = NAV_CODE.slice(NAV_CODE.indexOf('className="header-actions'));
-    const admin = cluster.indexOf('to="/admin"');
-    const wallet = cluster.indexOf('nav-wallet-link');
-    const deposit = cluster.indexOf('deposit-button');
-    expect(admin).toBeGreaterThan(-1);
-    // ... OTC | [Админка] [Кошелёк] [Депозит]
-    expect(admin).toBeLessThan(wallet);
-    expect(wallet).toBeLessThan(deposit);
-    expect(NAV_CODE.match(/to="\/admin"/g)).toHaveLength(2); // desktop cluster + mobile drawer
-  });
-
-  it('is still admin-only, on exactly the same gate', () => {
-    expect(NAV_CODE).toContain('{isAdmin&&<Link to="/admin" className={`nav-item nav-admin nav-admin-chip');
+  it('sits in the profile menu between «Профиль» and «Выйти», admin-only on the same gate', () => {
+    const profile = menu.indexOf('to="/settings"');
+    const admin = menu.indexOf('{isAdmin&&<Link to="/admin" className="top-nav-profile-admin"');
+    const logout = menu.indexOf('onClick={handleLogout}');
+    expect(profile).toBeGreaterThan(-1);
+    expect(admin).toBeGreaterThan(profile);
+    expect(logout).toBeGreaterThan(admin);
+    // Choosing it closes the menu, like «Профиль».
+    expect(menu).toContain('<Link to="/admin" className="top-nav-profile-admin" onClick={()=>setProfileMenuOpen(false)}>');
     expect(NAV_CODE).toContain('api.getMe().then(me=>{setIsAdmin(me.isAdmin)');
+    // Menu + mobile drawer, nowhere else.
+    expect(NAV_CODE.match(/to="\/admin"/g)).toHaveLength(2);
   });
 
-  it('is a muted violet chip, and shares no colour with the deposit CTA', () => {
-    const chip = INDEX_CSS.match(/\n\.global-header \.header-actions > \.nav-admin-chip \{([^}]+)\}/)![1];
-    expect(chip).toMatch(/background: linear-gradient\(180deg, #23213c, #1a1930\)/);
-    // A hairline, not a filled button: an inset ring, as the wallet chip
-    // beside it uses, so both keep identical height and padding.
-    expect(chip).toContain('box-shadow: inset 0 0 0 1px #3a3868');
-    expect(chip).toContain('color: #c3c1ff');
-    expect(chip).toContain('min-height: 32px');
-    // NOT the deposit gold, in any of its spellings.
-    const gold = /--h-accent|#f3ce71|#f0c964|#f6d98a/;
-    expect(chip).not.toMatch(gold);
-    // And nothing acid: every colour it uses is on the blue-violet side —
-    // blue leads, red follows, green trails — and the two FILL tones are
-    // dark, so the chip sits on the header rather than glowing off it.
-    const rgb = (colour: string) => [1, 3, 5].map((i) => parseInt(colour.slice(i, i + 2), 16));
-    const colours = chip.match(/#[0-9a-f]{6}/g)!;
-    for (const colour of colours) {
-      const [r, g, b] = rgb(colour);
-      expect({ colour, violet: b > r && r >= g }).toEqual({ colour, violet: true });
-    }
-    for (const fill of ['#23213c', '#1a1930']) {
-      expect(Math.max(...rgb(fill))).toBeLessThan(0x50);
-    }
-    // The label is the one light tone, and it is light enough to read.
-    expect(Math.min(...rgb('#c3c1ff'))).toBeGreaterThan(0xb0);
-  });
-
-  it('states where it is without borrowing the gold underline', () => {
-    expect(INDEX_CSS).toContain('.global-header .header-actions > .nav-admin-chip.nav-active::after {\n  content: none;\n}');
-  });
-
-  it('steps aside on a phone, where the drawer already carries it', () => {
-    // There is more than one 860px tier in this sheet; the one that owns
-    // the account cluster is the one that names the wallet link.
-    const mobile = (INDEX_CSS.match(/@media \(max-width: 860px\) \{[\s\S]*?\n\}/g) ?? [])
-      .find((block) => block.includes('.nav-wallet-link'))!;
-    expect(mobile).toBeDefined();
-    expect(mobile).toContain('.global-header .header-actions > .nav-admin-chip');
-    expect(mobile).toContain('display: none;');
-    // The drawer's own entry is still there, and is the same violet family.
+  it('keeps the drawer entry on a phone, in the same violet family', () => {
     expect(NAV_CODE).toContain('styles.adminBadge');
     expect(NAV).toMatch(/adminBadge:\{[^}]*color:'#c3c1ff'/);
   });
 
-  it('keeps the terminal header from wrapping by collapsing the left nav when it is present', () => {
-    // Unchanged rule, re-stated: the admin entry is ~110px of header, and
-    // at 1440–1519 the product sections go to the drawer so the two
-    // clusters cannot collide. `:has(.nav-admin)` still matches — the
-    // class moved across the header, not off it.
-    expect(INDEX_CSS).toContain('.trade-terminal.terminal-studio .global-header:has(.nav-admin) .main-nav,');
-    expect(readSource('components/Nav.tsx')).toContain('nav-item nav-admin nav-admin-chip');
+  it('no longer collapses the terminal\'s product nav for admins: the row is the same as everyone\'s', () => {
+    expect(INDEX_CSS).not.toContain(':has(.nav-admin)');
+    expect(INDEX_CSS).toContain('.top-nav-profile-menu .top-nav-profile-admin svg {\n  color: var(--h-admin);\n}');
   });
 });

@@ -234,9 +234,9 @@ describe('no route stylesheet may move the shared authenticated header', () => {
 const HEADER_CLASSES = [
   'global-header', 'top-nav-bar', 'header-left', 'header-brand', 'brand-separator',
   'main-nav', 'nav-desktop-links', 'nav-item', 'nav-item-wrap', 'nav-dropdown',
-  'nav-secondary', 'nav-admin', 'nav-chevron', 'nav-active',
+  'nav-secondary', 'nav-chevron', 'nav-active',
   'header-actions', 'nav-desktop-right', 'deposit-button', 'header-extra-action',
-  'top-nav-profile-wrap', 'top-nav-profile-btn', 'top-nav-profile-menu',
+  'top-nav-profile-wrap', 'top-nav-profile-btn', 'top-nav-profile-menu', 'top-nav-profile-admin',
   'top-nav-profile-avatar', 'header-icon', 'profile-control',
   'mobile-menu', 'nav-burger', 'nav-mobile-menu',
 ];

@@ -319,13 +319,6 @@ body {
 .nav-item.nav-secondary:hover {
   color: var(--h-text);
 }
-.nav-item.nav-admin {
-  color: var(--h-admin);
-}
-.nav-item.nav-admin:hover {
-  color: #a6a5ff;
-  background: rgba(139, 138, 246, 0.08);
-}
 .nav-item.nav-active {
   color: var(--h-text);
   background: rgba(240,201,100, 0.06);
@@ -620,6 +613,13 @@ body {
 .top-nav-profile-menu button:hover {
   color: #ffffff;
   background: var(--h-hover);
+}
+/* «Админка» lives in this menu, between «Профиль» and «Выйти» (owner,
+   2026-09-24: out of the header row, into the menu). Admin-only, the same
+   gate as before; the icon keeps the header's admin hue so it is found at
+   a glance, the label reads like its neighbours. */
+.top-nav-profile-menu .top-nav-profile-admin svg {
+  color: var(--h-admin);
 }
 @keyframes topNavMenuIn {
   from {
@@ -2261,7 +2261,7 @@ a:hover > .nav-card-icon {
 }
 
 /* Use the existing full navigation drawer before desktop links collide
-   with the account actions, including the additional admin link. */
+   with the account actions. */
 @media (max-width: 1439px) {
   .trade-terminal.terminal-studio .global-header .main-nav,
   .trade-terminal.terminal-studio .global-header .brand-separator { display: none; }
@@ -2280,14 +2280,6 @@ a:hover > .nav-card-icon {
    back from 1531px, where it fits with room to spare. */
 @media (min-width: 1440px) and (max-width: 1530px) {
   .trade-terminal.terminal-studio .global-header .nav-item.nav-secondary { display: none; }
-}
-/* The admin link adds ~110px: measured collision with the account actions up to 1514px. */
-@media (min-width: 1440px) and (max-width: 1519px) {
-  .trade-terminal.terminal-studio .global-header:has(.nav-admin) .main-nav,
-  .trade-terminal.terminal-studio .global-header:has(.nav-admin) .brand-separator { display: none; }
-  .trade-terminal.terminal-studio .global-header:has(.nav-admin) .mobile-menu { display: grid; }
-  .trade-terminal.terminal-studio .nav-mobile-menu.open { display: flex; }
-  .trade-terminal.terminal-studio .nav-mobile-menu { top:48px; max-height:calc(100dvh - 48px); }
 }
 
 /* Owner's Futures reference: header styling stays in the eager shell. */
@@ -2380,133 +2372,6 @@ a:hover > .nav-card-icon {
 .global-header .header-actions > .nav-wallet-link.nav-active::after {
   right: 2px;
   left: 2px;
-}
-/* ── Админка: a service chip, not a product link ──────────────────────────
-
-   The owner's complaint was that it read as one more menu item and got
-   lost between Crypto Card and OTC. It now sits at the head of the account
-   cluster, immediately before «Кошелёк», so the right of the header reads
-   `Админка | Кошелёк | Депозит` — service, money, action.
-
-   THE COLOUR IS DELIBERATELY NOT THE DEPOSIT GOLD. Gold in this header
-   means "this moves money, press it"; a second gold control beside the CTA
-   would be a second call to action for a section that is neither. So the
-   chip takes the header's existing admin hue (`--h-admin`, #8b8af6) and
-   builds the same construction the wallet chip uses in bronze: a deep
-   blue-violet fill several steps down in value, a hairline a step up from
-   it, and a light violet label. Muted on purpose — the fill is close to
-   the header's own surface in lightness, so the chip is legible without
-   glowing, and it is a chip rather than a filled button so the cluster
-   still has exactly one primary control in it.
-
-   The hairline is an inset shadow for the same reason the wallet's is:
-   it keeps the chip's height and padding identical to its neighbour's
-   rather than adding two pixels on both axes.
-
-   Appended after the wallet block so it wins the ties against both the
-   header's own `.nav-item` padding and the terminal's. */
-.global-header .header-actions > .nav-admin-chip {
-  padding: 0 13px;
-  margin: 8px 0;
-  gap: 7px;
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  border-radius: 6px;
-  background: linear-gradient(180deg, #23213c, #1a1930);
-  box-shadow: inset 0 0 0 1px #3a3868;
-  color: #c3c1ff;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0;
-  transition: background 150ms ease, box-shadow 150ms ease, color 150ms ease;
-}
-.global-header .header-actions > .nav-admin-chip svg {
-  color: var(--h-admin);
-  transition: color 150ms ease;
-}
-.global-header .header-actions > .nav-admin-chip:hover {
-  background: linear-gradient(180deg, #2c2949, #211f3b);
-  box-shadow: inset 0 0 0 1px #4b4886;
-  color: #ddddff;
-}
-.global-header .header-actions > .nav-admin-chip:hover svg {
-  color: #a6a5ff;
-}
-/* Pressed reads as pressed — the same flipped gradient the wallet chip
-   uses, so the pair behaves identically under the finger. */
-.global-header .header-actions > .nav-admin-chip:active {
-  background: linear-gradient(0deg, #2c2949, #211f3b);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .45), inset 0 0 0 1px #5a5799;
-  color: #ecebff;
-}
-.global-header .header-actions > .nav-admin-chip:focus-visible {
-  outline: 2px solid #8b8af6;
-  outline-offset: 2px;
-}
-/* THE CHIP COSTS THE LEFT OF THE HEADER 100px, SO THE LEFT IS GIVEN IT BACK.
-
-   `.header-actions` never shrinks, so every pixel the account cluster gains
-   comes out of the product sections. Measured on /markets at 1440 with an
-   admin account: the sections need 786px and are handed 732, which cuts OTC
-   off the end. On main, with the admin link still on the left, the same
-   54px shortfall cut «Админка» itself in half underneath «Кошелёк» — that
-   overlap is the "gets lost" the owner reported, and it is what this tier
-   removes rather than moves.
-
-   Two steps, each gated on a header that ACTUALLY carries the chip, so a
-   non-admin header is byte-for-byte unchanged at every width:
-
-     · below 1520 the row is given real headroom back — the sections drop
-       from 11px to 6px of side padding (80px across the eight of them),
-       the account cluster's own gap tightens 8px to 6px, and the chip
-       gives back 4px of its padding, which the sections receive because
-       `.header-actions` never shrinks;
-     · below 1400 Crypto Card and OTC step into the drawer, exactly as they
-       already do below 1050, because even that no longer fits.
-
-   THE FIRST ATTEMPT AT THIS TIER TOOK BACK EXACTLY WHAT WAS MISSING and
-   nothing more: 7px of padding fitted 722 into 732 here, and then the
-   GitHub runner — a different font stack, so slightly different intrinsic
-   text widths — came out 3px short and dropped OTC off the end. Ten pixels
-   of slack is not slack; a row tuned that finely is one font substitution
-   away from breaking on somebody's machine. These numbers leave ~40px on
-   this machine and ~27px on the runner, which is what makes the rule hold
-   rather than happen to hold. The QA run records the slack, not just the
-   pass, so the next drift is visible before it clips anything.
-
-   The Futures terminal is not affected by any of it: it already sends its
-   whole product nav to the burger from 1519 down when the admin entry is
-   present (see the `:has(.nav-admin)` tier further down). */
-@media (min-width: 1051px) and (max-width: 1519px) {
-  .global-header:has(.nav-admin-chip) .main-nav .nav-item {
-    padding: 0 6px;
-  }
-  .global-header:has(.nav-admin-chip) .header-actions {
-    gap: 6px;
-  }
-  .global-header:has(.nav-admin-chip) .header-actions > .nav-admin-chip {
-    padding: 0 11px;
-    gap: 6px;
-  }
-  .global-header:has(.nav-admin-chip) .header-actions > .deposit-button + * {
-    margin-left: 6px;
-  }
-}
-@media (min-width: 1051px) and (max-width: 1399px) {
-  .global-header:has(.nav-admin-chip) .main-nav .nav-item.nav-secondary {
-    display: none;
-  }
-}
-/* The current-section underline would draw a gold bar under a violet chip.
-   The chip states its own "you are here" by brightening instead. */
-.global-header .header-actions > .nav-admin-chip.nav-active {
-  background: linear-gradient(180deg, #312e52, #252243);
-  box-shadow: inset 0 0 0 1px #56529a;
-  color: #ecebff;
-}
-.global-header .header-actions > .nav-admin-chip.nav-active::after {
-  content: none;
 }
 
 /* 8px of gap + 8px here = a 16px step between the money pair and whatever
@@ -2601,12 +2466,7 @@ a:hover > .nav-card-icon {
    drawer's own link list and in the bottom mobile navigation, which is
    where a phone reaches for it. */
 @media (max-width: 860px) {
-  .global-header .header-actions > .nav-wallet-link,
-  /* The admin chip goes with it, and for the same reason: below 860 the
-     right block has room for the deposit CTA and the profile control and
-     nothing else. Admin is still in the drawer's own link list, which is
-     where a phone reaches for it. */
-  .global-header .header-actions > .nav-admin-chip {
+  .global-header .header-actions > .nav-wallet-link {
     display: none;
   }
 }

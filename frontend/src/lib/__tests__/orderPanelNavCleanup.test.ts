@@ -424,10 +424,10 @@ describe('8. mobile access', () => {
     // /markets. Below 860 the product sections are already in the drawer,
     // and so is the wallet, so the header link goes with them.
     const css = readFileSync(resolve(frontend, 'src/index.css'), 'utf8');
-    // The admin chip moved into the same cluster and steps aside with it,
-    // so the rule now carries two selectors; the wallet link is still the
-    // first of them.
-    const block = /@media \(max-width: 860px\) \{\s*\.global-header \.header-actions > \.nav-wallet-link,[\s\S]*?display: none;/;
+    // The admin chip that briefly shared this rule has left the row for
+    // the profile menu (owner, 2026-09-24), so the wallet link is its only
+    // selector again.
+    const block = /@media \(max-width: 860px\) \{\s*\.global-header \.header-actions > \.nav-wallet-link[\s,{][\s\S]*?display: none;/;
     expect(css).toMatch(block);
     // And ONLY there. The unconditional rule that styles the desktop link
     // must still be present and must not hide it — the desktop link is the

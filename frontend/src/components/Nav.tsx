@@ -62,16 +62,13 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         </nav>
       </div>
       <div className="header-actions nav-desktop-right">
-        {/* Service, not navigation, and not a call to action: a dark
-            violet chip beside the wallet. Deliberately NOT the deposit
-            gold — one accent per header — and deliberately a chip rather
-            than a filled button, so the cluster still has exactly one
-            primary control in it. Admin-only, exactly as before. */}
-        {isAdmin&&<Link to="/admin" className={`nav-item nav-admin nav-admin-chip${active==='/admin'?' nav-active is-active':''}`}><Landmark size={14}/>{t('nav.admin')}</Link>}
+        {/* «Админка» is not in this row: it lives in the profile menu,
+            between «Профиль» and «Выйти» (owner, 2026-09-24), admin-only on
+            the same gate, and in the mobile drawer as before. */}
         {WALLET_LINK&&<Link to={WALLET_LINK.to} className={`nav-item top-nav-link nav-wallet-link${active===WALLET_LINK.to?' nav-active is-active':''}`}>{quoteAsset&&<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 10h18M7 15h2m3 0h1"/></svg>}{WALLET_LINK.label}</Link>}
         <button onClick={()=>setShowDeposit(true)} onPointerEnter={prefetchDepositConfig} onFocus={prefetchDepositConfig} className="deposit-button top-nav-fund-btn"><span>{t('wallet.deposit')}</span></button>
         {rightExtra&&<div className="header-extra-action">{rightExtra}</div>}<LanguageSwitcher variant="pill" quoteAsset={quoteAsset}/>
-        <div className="top-nav-profile-wrap" ref={profileMenuRef}><button type="button" className="header-icon profile-control top-nav-profile-btn" onClick={()=>setProfileMenuOpen(o=>!o)} aria-expanded={profileMenuOpen}><span className="top-nav-profile-avatar">{avatarUrl?<img src={avatarUrl} alt=""/>:<UserRound size={13}/>}</span><span>{t('nav.profile')}</span><ChevronDown size={11} className={`nav-chevron${profileMenuOpen?' nav-chevron-open':''}`}/></button>{profileMenuOpen&&<div className="top-nav-profile-menu"><Link to="/settings" onClick={()=>setProfileMenuOpen(false)}>{t('nav.profile')}</Link><button type="button" onClick={handleLogout}><LogOut size={14}/>{t('nav.logout')}</button></div>}</div>
+        <div className="top-nav-profile-wrap" ref={profileMenuRef}><button type="button" className="header-icon profile-control top-nav-profile-btn" onClick={()=>setProfileMenuOpen(o=>!o)} aria-expanded={profileMenuOpen}><span className="top-nav-profile-avatar">{avatarUrl?<img src={avatarUrl} alt=""/>:<UserRound size={13}/>}</span><span>{t('nav.profile')}</span><ChevronDown size={11} className={`nav-chevron${profileMenuOpen?' nav-chevron-open':''}`}/></button>{profileMenuOpen&&<div className="top-nav-profile-menu"><Link to="/settings" onClick={()=>setProfileMenuOpen(false)}><UserRound size={14}/>{t('nav.profile')}</Link>{isAdmin&&<Link to="/admin" className="top-nav-profile-admin" onClick={()=>setProfileMenuOpen(false)}><Landmark size={14}/>{t('nav.admin')}</Link>}<button type="button" onClick={handleLogout}><LogOut size={14}/>{t('nav.logout')}</button></div>}</div>
       </div>
       <div className={`nav-mobile-menu${mobileOpen?' open':''}`}>
         <button className="deposit-button" onPointerDown={prefetchDepositConfig} onClick={()=>{setShowDeposit(true);setMobileOpen(false);}} style={{justifyContent:'center',marginBottom:4}}>{t('wallet.deposit')}</button>
