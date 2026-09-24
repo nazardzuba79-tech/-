@@ -88,7 +88,9 @@
 #archive-terminal-preview .rb-ratio[data-available=true] span { color:var(--sell); }
 #archive-terminal-preview .rb-ratio[data-available=true] span:first-of-type { color:var(--buy); }
 #archive-terminal-preview .rb-center { min-height:var(--book-center-height); padding:0 10px; gap:0 12px; flex-wrap:nowrap; border-top:0; border-bottom:0; }
-#archive-terminal-preview .rb-center strong { font-size:20px; font-weight:600; letter-spacing:-.2px; }
+/* 17px, not the reference's 20: the owner found 20 jumped out against the
+   13px rows; it is still the largest figure in the book. */
+#archive-terminal-preview .rb-center strong { font-size:17px; font-weight:600; letter-spacing:-.2px; }
 #archive-terminal-preview .rb-center .rb-arrow { width:.7em; font-size:.85em; }
 #archive-terminal-preview .rb-mark { display:inline-flex; align-items:center; gap:4px; color:var(--accent); font-size:13px; line-height:18px; font-weight:500; text-decoration:underline dotted; text-underline-offset:3px; }
 #archive-terminal-preview .rb-mark svg { width:11px; height:11px; flex:0 0 auto; }
