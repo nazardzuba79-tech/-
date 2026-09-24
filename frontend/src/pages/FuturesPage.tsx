@@ -9,6 +9,7 @@ import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
 import { FuturesTerminalStatus } from '../components/FuturesTerminalStatus';
+import { FuturesContractDetails } from '../components/FuturesContractDetails';
 import { ArchiveAccountActivity } from '../components/ArchiveTerminalDetails';
 import { Calculator } from 'lucide-react';
 import { ArchiveTopAssets } from '../components/ArchiveTopAssets';
@@ -664,6 +665,12 @@ export function FuturesPage() {
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
+              /* The archive terminal draws the reference's book: the mark
+                 price beside the last, the 28px pitch, and the figures held
+                 to one repaint a second so they pull the eye less. The
+                 feed, the tape and the order form are not held. */
+              archive={archivePreview}
+              markPrice={archivePreview ? reference.get(symbol)?.markPrice ?? null : undefined}
               onPickPrice={(value) => {
                 pickedSeq.current += 1;
                 setPickedPrice({ symbol, value, seq: pickedSeq.current });
@@ -704,6 +711,9 @@ export function FuturesPage() {
               calculatorDraft={calculatorDraft ?? undefined}
               onOpenCalculator={() => setCalculatorOpen(true)}
             />
+            {/* The contract's facts under the ticket, on the design the owner
+               looks at. Read-only; the ticket above is untouched. */}
+            {archivePreview && <FuturesContractDetails symbol={symbol} />}
           </div>
         </div>
 
