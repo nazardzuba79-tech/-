@@ -207,6 +207,14 @@
 #archive-terminal-preview .fo-submitPair button:disabled { opacity:.9; cursor:not-allowed; }
 #archive-terminal-preview .fo-submitPair button:not(:disabled):hover { filter:brightness(1.08); }
 #archive-terminal-preview .futures-account-summary { border-color:var(--border); background:var(--panel) !important; margin-top:16px; }
+@media (min-width:1025px) {
+  #archive-terminal-preview .futures-account-summary { padding:12px 14px 14px !important; gap:10px !important; }
+  #archive-terminal-preview .futures-account-heading { min-height:24px; }
+  #archive-terminal-preview .futures-account-heading button { flex:0 0 24px; width:24px; height:24px; }
+  #archive-terminal-preview .futures-account-figures { row-gap:4px; }
+  #archive-terminal-preview .futures-account-actions { margin-top:0 !important; }
+  #archive-terminal-preview .futures-account-actions button { height:32px; min-height:32px; }
+}
 #archive-terminal-preview :is(th,.futures-account-summary) { font-size:11px; }
 /* CONTRACT DETAILS under the ticket: the header's facts for the selected
    contract in one quiet list, the same 11px labels and tabular figures as
