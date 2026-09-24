@@ -143,3 +143,34 @@ describe('4. this is polish, not a redesign — and not a mobile redesign', () =
     expect(CSS).toContain('#archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px;');
   });
 });
+
+describe('5. text contrast at the reference level', () => {
+  it('draws figures and headings in white, and leaves the captions grey', () => {
+    // Owner, 2026-09-24: «шрифт більш контрастний, всюди, де це є у байбіта».
+    expect(rule('#archive-terminal-preview')).toContain('--text-primary:#ffffff');
+    expect(rule('#archive-terminal-preview :is(.reference-order-heading,.fcd-title)')).toContain('color:var(--text-primary)');
+    expect(rule('#archive-terminal-preview .rb-row > span:not(:first-of-type)')).toContain('color:var(--text-primary)');
+    expect(CSS).not.toMatch(/#archive-terminal-preview \{[^}]*--archive-label:#fff/);
+  });
+
+  it('gives units their figure\'s colour and size, and LONG / SHORT the reference colours at full strength', () => {
+    const units = CSS.match(/#archive-terminal-preview :is\(\.futures-position-unit,\.futures-account-stat \.fa-unit,\.fcd-unit\) \{([^}]*)\}/);
+    expect(units).not.toBeNull();
+    expect(units![1]).toContain('color:inherit');
+    expect(units![1]).toContain('font-size:inherit');
+    // The later rule wins: the last .buy / .sell / :disabled declarations in the sheet.
+    const last = (selector: string) => {
+      const all = [...CSS.matchAll(new RegExp(`(?:^|\\n)${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'g'))];
+      return all[all.length - 1][1];
+    };
+    expect(last('#archive-terminal-preview .fo-submitPair .buy')).toContain('background:#1ace88');
+    expect(last('#archive-terminal-preview .fo-submitPair .sell')).toContain('background:#f55065');
+    expect(last('#archive-terminal-preview .fo-submitPair button:disabled')).toContain('opacity:1');
+    expect(last('#archive-terminal-preview .fo-submitPair button')).toContain('height:42px');
+  });
+
+  it('brightens the terminal chart axis to the reference tone', () => {
+    const chart = read('components/PriceChart.tsx');
+    expect(chart).toContain("textColor: terminal ? '#f3f4f6' : '#a3adba'");
+  });
+});

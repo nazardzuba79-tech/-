@@ -404,3 +404,31 @@
 #archive-terminal-preview .fo-tpslNote { color:var(--text-secondary); font-size:12px; line-height:1.45; margin:6px 0; }
 #archive-terminal-preview .fo-tpslBox { padding:8px 0; font-size:12px; }
 #archive-terminal-preview .futures-position-contract small { white-space:nowrap; }
+/* TEXT CONTRAST, as on the reference (owner, 2026-09-24: «шрифт більш
+   контрастний, всюди, де це є у байбіта»). Read off the owner's Bybit
+   screenshot: its figures, headings and chosen tab reach white (glyph peaks
+   246–255 of 255) and its price axis 243; ours stopped at 225–235 and 211.
+   The captions stay grey — the reference's contrast is white figures over
+   quiet labels, not everything bright. */
+#archive-terminal-preview { --text-primary:#ffffff; }
+#archive-terminal-preview :is(.reference-order-heading,.fcd-title) { color:var(--text-primary); }
+#archive-terminal-preview .rb-row > span:not(:first-of-type) { color:var(--text-primary); }
+/* Units take their figure's colour and size, as on the reference: «0.230 BTC»
+   green, «19,741.70 USDT» white, «2,102.4412 USDT» green — measured off the
+   owner's Bybit screenshot, the unit's glyphs match the number's. Ours were
+   a smaller tertiary grey (owner: «не тільки цифри контрасніші, але і usdt»). */
+#archive-terminal-preview :is(.futures-position-unit,.futures-account-stat .fa-unit,.fcd-unit) { color:inherit; font-size:inherit; font-weight:inherit; opacity:1; }
+#archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized)[data-unit]::after { color:inherit; font-size:inherit; font-weight:inherit; opacity:1; }
+/* LONG / SHORT in the reference's colours, and never dimmed (owner: «кнопки
+   контрасніші, такі ж самі як на скріні 1:1»). Read off that screenshot:
+   #1ace88 and #f55065 with white 700 labels, full strength even with no
+   quantity entered. Ours showed #00c67c / #ff3453 at 90% opacity while
+   disabled. Disabled still refuses the click and keeps its cursor. */
+#archive-terminal-preview .fo-submitPair .buy { background:#1ace88; color:#fff; }
+#archive-terminal-preview .fo-submitPair .sell { background:#f55065; color:#fff; }
+#archive-terminal-preview .fo-submitPair button:disabled { opacity:1; }
+/* LONG / SHORT at the reference's proportion (owner: «кнопки… не такі
+   товсті»): on the owner's Bybit screenshot each button is 49×162px, height
+   0.30 of its width; ours were 48px on a ~138px face (0.35). 42px restores
+   0.30 at 1440. */
+#archive-terminal-preview .fo-submitPair button { height:42px; min-height:42px; }
