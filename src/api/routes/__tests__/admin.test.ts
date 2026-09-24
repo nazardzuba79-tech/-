@@ -77,3 +77,28 @@ describe('GET /admin/clients', () => {
     expect(noKyc.latestKyc).toBeNull();
   });
 });
+
+
+describe('GET /admin/alerts-summary', () => {
+  it('requires an admin account', async () => {
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } } as any;
+    const res = await request(buildApp(prisma)).get('/api/v1/admin/alerts-summary').set('Authorization', authHeader('user-1'));
+    expect(res.status).toBe(403);
+  });
+
+  it('returns only the newest opaque ids and never the full admin lists', async () => {
+    const prisma = {
+      user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) },
+      deposit: { findFirst: jest.fn().mockResolvedValue({ id: 'dep-new' }) },
+      withdrawal: { findFirst: jest.fn().mockResolvedValue({ id: 'wd-new' }) },
+      kycSubmission: { findFirst: jest.fn().mockResolvedValue({ id: 'kyc-new' }) },
+    } as any;
+    const res = await request(buildApp(prisma)).get('/api/v1/admin/alerts-summary').set('Authorization', authHeader('admin-1'));
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(res.body).toEqual({ depositId: 'dep-new', withdrawalId: 'wd-new', kycId: 'kyc-new' });
+    expect(prisma.deposit.findFirst).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' }, select: { id: true } });
+    expect(prisma.withdrawal.findFirst).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' }, select: { id: true } });
+    expect(prisma.kycSubmission.findFirst).toHaveBeenCalledWith({ orderBy: { createdAt: 'desc' }, select: { id: true } });
+  });
+});
