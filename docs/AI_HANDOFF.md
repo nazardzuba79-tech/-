@@ -3637,3 +3637,12 @@ withdrawal was placed.
 - Concrete existing production OPEN trace: 9198ms server HTTP duration; account JSON update 3054ms, immutable revision insert 1264ms, repository context 1539ms. The trace actually dispatches HISTORICAL_DEMO despite live reference metadata. Pool/network/Prisma versus PostgreSQL-internal cost cannot be separated by existing traces. No latency fix claimed; approved instrumentation/controlled validation remains required.
 - Credential incident confirmed: six credential-bearing URL occurrences in the local technical transcript, detected via a streamed presence-only scan. Zero incident-credential matches in current worktree/PR commits, PR content, six Actions job logs and six decoded artifact ZIPs (100 files). No secret value was emitted by these scans. Owner-authorized production credential rotation remains necessary; no rotation or transcript deletion performed.
 - Detailed classification, timing table and limitations: `docs/qa/production-health-followup-20260924.md`. Keep draft / not release-ready while OPEN profiling and credential remediation remain unresolved.
+
+### 2026-09-24 — Codex — Admin last-login Kyiv calendar display
+
+- Based on freshly fetched main `22ac04b99f02a6501692cee4b8c507577becf914`, branch `codex/admin-last-login-kyiv`; implementation commit `4497db20096eef9e884be73cc77377a081d9bacb`.
+- Material files: `frontend/src/pages/admin/AdminUsersPage.tsx`, `AdminUserDetailPage.tsx`, new `lastLoginLabel.ts`, and focused `adminLastLoginKyiv.test.ts`. Both admin user surfaces now show `Сегодня, HH:mm`, `Вчера, HH:mm`, or the full Kyiv date. The list's recent-login dot follows the same calendar date. Unrelated deposit highlighting still uses its existing 24-hour window.
+- Tests: 6 calendar/DST cases PASS; 18 focused admin UI cases PASS; frontend production TypeScript/Vite build PASS. No backend, auth, financial logic, deposits, or other admin behavior changed.
+- Preserved all current-main work, including the deployed Futures chart optimization. The earlier uncommitted Futures investigation remains isolated in its own worktree and is not included here. No deploy or merge.
+
+- Audit PR #231 sync: merged current main 36006631058f16002386dfdf85c242577b8f5843 (PR #234) into the review branch; retained both handoff entries and the Kyiv calendar/24-hour activity-dot behavior. No PR was merged to main by this audit.

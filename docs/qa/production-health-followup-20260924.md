@@ -1,6 +1,8 @@
 # Production health follow-up — 24 September 2026
 
-This follows [the initial audit](production-health-audit-20260924.md). Base: `22ac04b99f02a6501692cee4b8c507577becf914`. No merge, deploy, production trade, schema/config/credential change, or production cleanup.
+This follows [the initial audit](production-health-audit-20260924.md). Initial base: `22ac04b99f02a6501692cee4b8c507577becf914`. No merge, deploy, production trade, schema/config/credential change, or production cleanup.
+
+Synced with current main 36006631058f16002386dfdf85c242577b8f5843 after PR #234 arrived during verification; both handoff records retained. Source-guard baseline files were unaffected by that admin-only change.
 
 ## Confirmed CFD defect and fix
 
