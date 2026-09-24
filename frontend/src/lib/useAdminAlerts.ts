@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { api } from './api';
 
-// Admin alerts are not trading-state freshness. One minute keeps the chime useful.
-// without downloading three full admin lists four times a minute on every page.
+// A notification chime is not trading-state freshness. One tiny cursor request
+// per visible minute is enough; detailed admin lists load only on admin pages.
 const POLL_MS = 60_000;
 const SOUND_PREF_KEY = 'exchange_admin_alert_sound';
 
@@ -22,10 +22,6 @@ export function setAdminAlertSoundEnabled(enabled: boolean) {
   }
 }
 
-// Short two-tone chime, synthesized with the Web Audio API — no audio asset
-// to bundle or license. Browsers only block *autoplay on page load*; a
-// sound triggered later by a poll, in a tab the admin already interacted
-// with (e.g. logging in), plays fine.
 function playChime() {
   try {
     const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -48,58 +44,46 @@ function playChime() {
     });
     setTimeout(() => ctx.close(), 700);
   } catch {
-    // best-effort notification sound — never let it break the page
+    // Notification audio is best-effort and must never break navigation.
   }
 }
 
-function findNewIds(ids: string[], seen: Set<string> | null): boolean {
-  if (seen === null) return false; // first poll after mount — this is the baseline, not a new arrival
-  return ids.some((id) => !seen.has(id));
+type AlertCursor = { depositId: string | null; withdrawalId: string | null; kycId: string | null };
+
+function changed(previous: AlertCursor | null, next: AlertCursor): boolean {
+  return previous !== null && (
+    previous.depositId !== next.depositId ||
+    previous.withdrawalId !== next.withdrawalId ||
+    previous.kycId !== next.kycId
+  );
 }
 
 /**
- * Polls for brand-new deposits, withdrawal requests, and KYC submissions
- * while an admin is anywhere in the app, and plays a short chime the
- * moment one appears — so they don't have to keep the /admin tab open and
- * stare at it. Only alerts on items that show up *after* this hook first
- * mounts in this tab (never replays a backlog on load), and respects the
- * mute toggle (see AdminLayout).
+ * Global admin chime. The first successful read establishes a baseline and
+ * never replays old items. Hidden tabs make zero polling requests and refresh
+ * once when visible again.
  */
 export function useAdminAlertSound(enabled: boolean) {
-  const seenDeposits = useRef<Set<string> | null>(null);
-  const seenWithdrawals = useRef<Set<string> | null>(null);
-  const seenKyc = useRef<Set<string> | null>(null);
+  const cursor = useRef<AlertCursor | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
+    let running = false;
 
     async function poll() {
-      if (document.hidden) return;
+      if (cancelled || running || document.hidden) return;
+      running = true;
       try {
-        const [deposits, withdrawals, clients] = await Promise.all([
-          api.getAdminDeposits(),
-          api.getAdminWithdrawals(),
-          api.getAllClients(),
-        ]);
+        const next = await api.getAdminAlertSummary();
         if (cancelled) return;
-
-        const kycIds = clients.filter((c) => c.latestKyc).map((c) => c.latestKyc!.id);
-        const depositIds = deposits.map((d) => d.id);
-        const withdrawalIds = withdrawals.map((w) => w.id);
-
-        const hasNew =
-          findNewIds(depositIds, seenDeposits.current) ||
-          findNewIds(withdrawalIds, seenWithdrawals.current) ||
-          findNewIds(kycIds, seenKyc.current);
-
-        seenDeposits.current = new Set(depositIds);
-        seenWithdrawals.current = new Set(withdrawalIds);
-        seenKyc.current = new Set(kycIds);
-
+        const hasNew = changed(cursor.current, next);
+        cursor.current = next;
         if (hasNew && isAdminAlertSoundEnabled()) playChime();
       } catch {
-        // Transient — the next poll retries. Never surface this as a user-facing error.
+        // Transient — preserve the last successful cursor and retry later.
+      } finally {
+        running = false;
       }
     }
 
