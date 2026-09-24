@@ -48,14 +48,8 @@ const approvedCardSources: Record<string, string> = {
   "frontend/tailwind.crypto-card.config.js": "d2021c8b7de7d4be48d0a42f5902cfef95d3cbd03fa70bc5f457c99946953c53"
 };
 // Production base cb29b7f1afce7fb17cf68462573949166933640e. Six Copy-only
-// fingerprints were advanced for the explicitly approved identity-bound blue
-// badge: page/adapter/type wiring, inline SVG placement and its CSS only.
-// copyVerifiedBadge and the existing canonical/renderer fingerprints verify
-// those boundaries separately. The later authorized Spot task may change
-// TradePage independently; Card's authenticated route is asserted below instead
-// of freezing an unrelated product page. The later source-aware Copy labels
-// replace the removed global/contextual wrappers. Exact source reversals below
-// permit only those inline additions; no financial calculation/hash is relaxed.
+// Merged identity, deposit and public-data wiring is protected at the current
+// approved baseline; behavior tests independently protect financial outcomes.
 // Source guards rebased to merged main 22ac04b99f02a6501692cee4b8c507577becf914.
 // Financial response fixtures and behavior assertions remain independent and unchanged.
 const preservedMainSources: Record<string, string> = {
