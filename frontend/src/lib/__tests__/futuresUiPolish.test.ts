@@ -301,7 +301,7 @@ test.each([
     // component, and `markPrice`, the reference quote's mark the book
     // already had beside it. Display only: the depth transport, the tape,
     // order payloads, execution and accounts are unchanged.
-    "5e9068e365179adc7dab42b104fa22f458294b7b56b0e2aedc7e6be7f7f6bb2d"
+    "d09eddc77544cf5933da6eaa8141b916c51a047f59ae2df76c03c8cb366f2733"
   ],
   [
     "components/FuturesPairList.tsx",
