@@ -21,7 +21,11 @@ describe('Render free-tier bandwidth guardrails', () => {
   test('admin notification polling is bounded and sleeps with a hidden tab', () => {
     const source = read('frontend/src/lib/useAdminAlerts.ts');
     expect(source).toContain('const POLL_MS = 60_000');
-    expect(source).toContain('if (document.hidden) return');
+    expect(source).toContain('api.getAdminAlertSummary()');
+    expect(source).not.toContain('api.getAdminDeposits()');
+    expect(source).not.toContain('api.getAdminWithdrawals()');
+    expect(source).not.toContain('api.getAllClients()');
+    expect(source).toContain('document.hidden');
     expect(source).toContain("document.addEventListener('visibilitychange', onVisibility)");
     expect(source).toContain("document.removeEventListener('visibilitychange', onVisibility)");
   });
