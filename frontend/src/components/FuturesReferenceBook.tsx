@@ -4,15 +4,33 @@ import type { FuturesTrade, FuturesDepthStatus } from '../lib/futuresDepth';
 
 import { aggregateSpotBook, formatSpotBookNumber, spotBookMetrics, spotGroupSteps, spotLevelPrice,
   type SpotBookLevel, type SpotDepthLevel } from '../lib/spotOrderBook';
-import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_ROW_HEIGHT, REFERENCE_CENTER_HEIGHT } from '../lib/referenceBook';
+import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_ROW_HEIGHT, REFERENCE_CENTER_HEIGHT,
+  ARCHIVE_ROW_HEIGHT, ARCHIVE_CENTER_HEIGHT, ARCHIVE_BOOK_HOLD_MS } from '../lib/referenceBook';
+import { useHeldFrame } from '../lib/useHeldFrame';
+
+/** One empty tape for every render that has none, so "no trades" is never a new value. */
+const NO_TRADES: FuturesTrade[] = [];
 
 /** Exact-contract Futures presentation; price picking never submits an order. */
-export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice = null, trades = [], status = 'live' }: {
+export function FuturesReferenceBook({ bids: liveBids, asks: liveAsks, pair, onPickPrice, lastPrice: liveLastPrice = null, markPrice: liveMarkPrice,
+  trades: liveTrades = NO_TRADES, status: liveStatus = 'live', archive = false }: {
   bids: SpotBookLevel[]; asks: SpotBookLevel[]; pair: string; lastPrice?:number|null; trades?:FuturesTrade[];
+  /** The contract's mark price, drawn beside the last price as the reference
+   *  does. `null` is "not known yet" and draws the slot empty; leaving the
+   *  prop out means the design has no mark slot and draws the spread. */
+  markPrice?: number | null;
   /** What the feed says these levels currently are. See futuresDepth. */
   status?: FuturesDepthStatus;
+  /** The archive terminal's book: the reference's 28px pitch and 48px
+   *  centre band (the CSS reads the same numbers back through the panel's
+   *  variables), and the figures held to one repaint a second. Every other
+   *  design keeps the 20px pitch and paints every publish. */
+  archive?: boolean;
   onPickPrice: (price: string) => void;
 }) {
+  const rowHeight = archive ? ARCHIVE_ROW_HEIGHT : REFERENCE_ROW_HEIGHT;
+  const centerHeight = archive ? ARCHIVE_CENTER_HEIGHT : REFERENCE_CENTER_HEIGHT;
+  const holdMs = archive ? ARCHIVE_BOOK_HOLD_MS : 0;
   const { t } = useLanguage();
   const [base, quote] = pair.split('/');
   const [tab, setTab] = useState<'book' | 'trades'>('book');
@@ -20,6 +38,18 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
   const [selection, setSelection] = useState<{ pair: string; step: number } | null>(null);
   const [height, setHeight] = useState(472);
   const body = useRef<HTMLDivElement>(null);
+  /**
+   * WHAT THE PANEL SHOWS IS THE FEED, HELD.
+   *
+   * Everything the feed publishes — levels, last, mark, tape, status — is
+   * one frame, and the frame is what is held, so a row's figures and its
+   * bar never come from two different publishes. Grouping, the view mode
+   * and a price click are the trader's own actions and are not held: they
+   * take effect on the frame on screen, immediately.
+   */
+  const frame = useHeldFrame(useMemo(() => ({ bids: liveBids, asks: liveAsks, lastPrice: liveLastPrice, markPrice: liveMarkPrice, trades: liveTrades, status: liveStatus }),
+    [liveBids, liveAsks, liveLastPrice, liveMarkPrice, liveTrades, liveStatus]), holdMs, pair);
+  const { bids, asks, lastPrice, markPrice, trades, status } = frame;
   const metrics = useMemo(() => spotBookMetrics(bids, asks), [bids, asks]);
   // Freeze the available grid after the first valid snapshot, without carrying it across pairs.
   const grid = useRef<{ pair: string; steps: number[] } | null>(null);
@@ -27,7 +57,7 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
   if (!grid.current && metrics.mid !== null) grid.current = { pair, steps: spotGroupSteps(metrics.mid) };
   const steps = grid.current?.steps ?? spotGroupSteps(null);
   const step = selection?.pair === pair && steps.includes(selection.step) ? selection.step : steps[0];
-  const count = referenceRowCount(height, mode === 'both');
+  const count = referenceRowCount(height, mode === 'both', rowHeight, centerHeight);
   const buy = useMemo(() => aggregateSpotBook(bids, step, 'BUY').slice(0, count), [bids, step, count]);
   const sell = useMemo(() => aggregateSpotBook(asks, step, 'SELL').slice(0, count), [asks, step, count]);
   /**
@@ -144,7 +174,9 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
     </button>;
   });
 
-  return <div data-sampled-book={status === 'sampled' || undefined} className="reference-book" style={{'--book-row-height': `${REFERENCE_ROW_HEIGHT}px`, '--book-center-height': `${REFERENCE_CENTER_HEIGHT}px`} as React.CSSProperties}>
+  const mark = markPrice !== undefined && markPrice !== null && Number.isFinite(markPrice) && markPrice > 0 ? markPrice : null;
+
+  return <div data-sampled-book={status === 'sampled' || undefined} className="reference-book" style={{'--book-row-height': `${rowHeight}px`, '--book-center-height': `${centerHeight}px`} as React.CSSProperties}>
     <div className="rb-tabs" role="tablist" aria-label={t('trade.orderBook')}>
       <button type="button" role="tab" aria-selected={tab === 'book'} onClick={() => setTab('book')}>{t('trade.orderBook')}</button>
       <button type="button" role="tab" aria-selected={tab === 'trades'} onClick={() => setTab('trades')}>{t('trade.trades')}</button>
@@ -183,13 +215,20 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
               time the direction flipped, so the price itself slid sideways
               on a tick that had not changed a single digit. The slot is
               always present and always the same width; only its glyph
-              changes. */}
+              changes. It leads the number, where the reference draws it. */}
           <strong className={last === null ? '' : direction} title={last === null ? 'Mid · (best bid + best ask) / 2' : t('trade.lastPrice')}>
-            <span className="rb-last">{last !== null ? referencePrice(last) : metrics.mid !== null ? referencePrice(metrics.mid) : '—'}</span>
             <span className="rb-arrow" aria-hidden="true">{direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''}</span>
+            <span className="rb-last">{last !== null ? referencePrice(last) : metrics.mid !== null ? referencePrice(metrics.mid) : '—'}</span>
           </strong>
           {last === null && metrics.mid !== null && <small className="rb-mid-label" title="(best bid + best ask) / 2">Mid</small>}
-          <span title={t('trade.spread')}>{t('trade.spread')} {metrics.spread !== null ? formatSpotBookNumber(metrics.spread) : '—'}</span>
+          {/* The reference's second figure is the mark price under a flag;
+              designs without one keep the spread. */}
+          {markPrice !== undefined
+            ? <span className="rb-mark" title={t('futures.markPrice')}>
+                <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1v10.5h1.2V7.6h5.8L7.9 4.9l1.6-2.7H3.7V1z" fill="currentColor" /></svg>
+                <span>{mark !== null ? referencePrice(mark) : '—'}</span>
+              </span>
+            : <span title={t('trade.spread')}>{t('trade.spread')} {metrics.spread !== null ? formatSpotBookNumber(metrics.spread) : '—'}</span>}
         </div>
         {mode !== 'asks' && <div className="rb-stack rb-bids">{waiting ? placeholders('bid') : rows(buy, 'bid')}</div>}
       </div>
