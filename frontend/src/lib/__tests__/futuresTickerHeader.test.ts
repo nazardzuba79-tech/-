@@ -201,11 +201,7 @@ test.each([
     .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
     'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
-  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '')
-    // Admin-only bandwidth optimization: the global chime now reads a tiny
-    // cursor instead of three complete admin lists. It is additive and cannot
-    // alter any Futures/Spot request path this fingerprint protects.
-    .replace("  // Admin notification cursor: deliberately tiny. Detailed admin lists are\n  // fetched only by their own pages, not by the global navigation chime.\n  getAdminAlertSummary: () =>\n    request<{ depositId: string | null; withdrawalId: string | null; kycId: string | null }>('/admin/alerts-summary'),\n\n", '') : normalized;
+  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '') : normalized;
   expect(hash(source)).toBe(expected);
 });
 
