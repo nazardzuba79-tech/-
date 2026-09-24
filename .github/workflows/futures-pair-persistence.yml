@@ -1,5 +1,5 @@
-# A refresh keeps the contract, a position's name opens it, and Админка
-# sits beside Кошелёк.
+# A refresh keeps the contract, a position's name opens it, Админка lives in
+# the profile menu, and the header's 24h turnover and open interest read.
 #
 # The three claims are pinned twice on purpose: the jest suite states the
 # logic and the wiring, and the browser run presses F5 and presses the
@@ -21,6 +21,14 @@ on:
       - 'frontend/src/pages/trade-terminal/FuturesMobile.css'
       - 'frontend/src/lib/__tests__/futuresPairPersistence.test.ts'
       - 'scripts/qa-futures-pair-persistence.cjs'
+      - 'frontend/src/components/FuturesTickerBar.tsx'
+      - 'frontend/src/components/FuturesTurnover.tsx'
+      - 'frontend/src/lib/terminalPresentation.ts'
+      - 'frontend/src/lib/__tests__/futuresTickerHeader.test.ts'
+      - 'frontend/src/lib/__tests__/futuresMarketStats.test.ts'
+      - 'frontend/src/lib/__tests__/terminalPresentation.test.ts'
+      - 'frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts'
+      - 'scripts/qa-futures-header-turnover.cjs'
       - '.github/workflows/futures-pair-persistence.yml'
 
 permissions:
@@ -54,6 +62,9 @@ jobs:
           frontend/src/lib/__tests__/futuresUiPolish.test.ts
           frontend/src/lib/__tests__/orderPanelNavCleanup.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+          frontend/src/lib/__tests__/futuresMarketStats.test.ts
+          frontend/src/lib/__tests__/terminalPresentation.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
       - name: Disposable browser tooling
@@ -66,6 +77,16 @@ jobs:
           sudo ln -s /tmp/pair-persistence-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
       - name: Refresh, ticker click and header cluster at 1440 and 390
         run: node scripts/qa-futures-pair-persistence.cjs --label ci
+      # The production state of the header's market statistics: the server's
+      # cross-venue section carries a stale open interest and no turnover
+      # (Binance Futures refuses the backend's region). The turnover must come
+      # from the header's own Bybit reference row, the open interest must read
+      # at its neighbours' contrast, and «Админка» must sit in the profile menu.
+      - name: Header turnover, open-interest contrast and the profile menu at 1920 and 1440
+        env:
+          QA_LABEL: after
+          QA_OUT: docs/qa/futures-pair-persistence/ci-header-turnover
+        run: node scripts/qa-futures-header-turnover.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
