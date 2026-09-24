@@ -6,12 +6,18 @@ on:
       - 'src/api/routes/displaySnapshots.ts'
       - 'src/api/routes/cfd.ts'
       - 'src/api/routes/marketData.ts'
+      - 'src/api/routes/marketLive.ts'
+      - 'src/api/routes/__tests__/marketLiveGzip.test.ts'
       - 'src/api/routes/__tests__/sampledDisplayBudget.test.ts'
+      - 'src/api/routes/marketLive.ts'
+      - 'src/api/routes/__tests__/marketLiveGzip.test.ts'
       - 'src/services/FuturesDisplayTrades.ts'
       - 'src/services/marketData/live/collectorServer.ts'
       - 'src/index.ts'
       - 'frontend/src/lib/*Display*'
       - 'frontend/src/lib/displaySnapshotCache.ts'
+      - 'frontend/src/lib/useAdminAlerts.ts'
+      - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/__tests__/futuresCandles.test.ts'
       - 'frontend/src/lib/__tests__/directFuturesReference.test.ts'
@@ -20,6 +26,8 @@ on:
       - 'frontend/src/lib/directFuturesReference.ts'
       - 'frontend/src/lib/useCfdTickers.ts'
       - 'frontend/src/lib/useLiveMarket.ts'
+      - 'frontend/src/lib/useAdminAlerts.ts'
+      - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/liveMarketStore.ts'
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/components/CfdChart.tsx'
@@ -77,6 +85,7 @@ jobs:
           frontend/src/lib/__tests__/homeLiveMarket.test.ts
           frontend/src/lib/__tests__/homeMarketSnapshot.test.ts
           frontend/src/lib/__tests__/homeHeroStream.test.ts
+          frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
       - name: Execution and collector remain independent
         run: >-
           npx jest --runInBand --silent --runTestsByPath
