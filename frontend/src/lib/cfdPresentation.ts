@@ -1,4 +1,3 @@
-import { sampledDisplayText } from './sampledDisplayCopy';
 import { cfdMarketCopy } from './cfdDisplayCopy';
 export { ageCfdTickerRows } from './cfdTickerFreshness';
 export { cfdMarketCopy } from './cfdDisplayCopy';
@@ -29,11 +28,10 @@ export function formatCfdAsOf(value:number|null|undefined):string{
 export function cfdDisplayState(q:{price:string|null;status?:string;stale?:boolean;asOf?:number|null}|undefined,lang='en'):{label:string;tone:'live'|'closed'|'stale'|'off'}{
   const copy=cfdMarketCopy(lang);
   if(!q||q.price===null)return{label:copy.priceUnavailable,tone:'off'};
-  const time=formatCfdAsOf(q.asOf);
-  if(q.status==='sampled')return{label:sampledDisplayText(lang,q.asOf,6*60*60*1000).label,tone:'closed'};
-  if(q.status==='market_closed')return{label:`${copy.marketClosed}${time?` · ${time}`:''}`,tone:'closed'};
-  if(q.stale===true||q.status==='stale')return{label:`${copy.lastQuote}${time?` · ${time}`:''}`,tone:'stale'};
-  return{label:`${copy.live}${time?` · ${time}`:''}`,tone:'live'};
+  if(q.status==='sampled')return{label:copy.lastQuote,tone:'stale'};
+  if(q.status==='market_closed')return{label:copy.marketClosed,tone:'closed'};
+  if(q.stale===true||q.status==='stale')return{label:copy.lastQuote,tone:'stale'};
+  return{label:copy.live,tone:'live'};
 }
 
 /** Kept for old financial components, even though the visible CFD surface is read-only. */
