@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { api } from './api';
 
-// Admin alerts are not trading-state freshness. One minute keeps the chime useful\n// without downloading three full admin lists four times a minute on every page.\nconst POLL_MS = 60_000;
+// Admin alerts are not trading-state freshness. One minute keeps the chime useful.
+// without downloading three full admin lists four times a minute on every page.
+const POLL_MS = 60_000;
 const SOUND_PREF_KEY = 'exchange_admin_alert_sound';
 
 export function isAdminAlertSoundEnabled(): boolean {
