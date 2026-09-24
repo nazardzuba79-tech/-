@@ -4,6 +4,7 @@ import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { depositsRouter } from '../deposits';
+import { TreasuryWalletService } from '../../../services/TreasuryWalletService';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
@@ -12,7 +13,7 @@ function authHeader(userId: string) {
 function buildApp(prisma: any = {}, priceSource: any = { getTicker: jest.fn().mockResolvedValue(null) }) {
   const app = express();
   app.use(express.json());
-  const fullPrisma = { treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) }, ...prisma };
+  const fullPrisma = { treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) }, ...prisma };
   app.use('/api/v1', depositsRouter(fullPrisma, priceSource));
   return app;
 }
@@ -98,13 +99,97 @@ describe('deposits routes', () => {
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
 
       const prisma = {
-        treasuryWallet: { findUnique: jest.fn().mockResolvedValue({ chain: 'bitcoin', address: 'bc1qadmin-set' }) },
+        treasuryWallet: { findMany: jest.fn().mockResolvedValue([{ chain: 'bitcoin', address: 'bc1qadmin-set' }]) },
       };
       const res = await request(buildApp(prisma))
         .get('/api/v1/deposit-chains?includeConfig=true')
         .set('Authorization', authHeader('user-1'));
 
       expect(res.body.chains.find((c: any) => c.chain === 'bitcoin').address).toBe('bc1qadmin-set');
+    });
+
+    // The panel's «Загрузка сетей…» was six override reads in sequence.
+    // Every chain now resolves from ONE read, with no per-chain lookups.
+    it('reads the address overrides for every chain in one query', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+      process.env.ETHEREUM_TREASURY_ADDRESS = '0xenv';
+      process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+      const findMany = jest.fn().mockResolvedValue([{ chain: 'ethereum', address: '0xadmin' }]);
+      const findUnique = jest.fn();
+      const res = await request(buildApp({ treasuryWallet: { findMany, findUnique } }))
+        .get('/api/v1/deposit-chains?includeConfig=true')
+        .set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(findMany).toHaveBeenCalledTimes(1);
+      expect(findUnique).not.toHaveBeenCalled();
+      const byChain = Object.fromEntries(res.body.chains.map((c: any) => [c.chain, c.address]));
+      expect(byChain.bitcoin).toBe('bc1qexample');
+      expect(byChain.ethereum).toBe('0xadmin');
+    });
+
+    // Addresses almost never change: the list is resolved once and served
+    // from memory until an admin edits an address.
+    it('serves the list from memory and re-reads only after an address changes', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+      let rows: any[] = [];
+      const findMany = jest.fn(async () => rows);
+      const upsert = jest.fn(async ({ create }: any) => { rows = [{ chain: create.chain, address: create.address }]; return rows[0]; });
+      // One client shared by the deposits router and the admin write, as in
+      // src/index.ts — the change counter is kept per client.
+      const prisma = { treasuryWallet: { findMany, upsert } };
+      const app = express();
+      app.use('/api/v1', depositsRouter(prisma as any, { getTicker: jest.fn().mockResolvedValue(null) } as any));
+      const get = () => request(app).get('/api/v1/deposit-chains?includeConfig=true').set('Authorization', authHeader('user-1'));
+
+      const first = await get();
+      const second = await get();
+      expect(findMany).toHaveBeenCalledTimes(1);
+      expect(second.body.version).toBe(first.body.version);
+      expect(first.body.version).toMatch(/^[0-9a-f]{16}$/);
+
+      // An admin changes the bitcoin address through the service every
+      // writer uses; the next open sees it, under a new fingerprint.
+      await new TreasuryWalletService(prisma as any).upsert('bitcoin', 'bc1qadmin-new', 'admin-1');
+      const third = await get();
+      expect(findMany).toHaveBeenCalledTimes(2);
+      expect(third.body.chains.find((c: any) => c.chain === 'bitcoin').address).toBe('bc1qadmin-new');
+      expect(third.body.version).not.toBe(first.body.version);
+    });
+
+    it('answers the fingerprint alone, without a session, from memory', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+      const findMany = jest.fn().mockResolvedValue([]);
+      const app = buildApp({ treasuryWallet: { findMany } });
+      const full = await request(app).get('/api/v1/deposit-chains?includeConfig=true').set('Authorization', authHeader('user-1'));
+      const check = await request(app).get('/api/v1/deposit-config-version');
+
+      expect(check.status).toBe(200);
+      expect(check.body).toEqual({ version: full.body.version });
+      expect(JSON.stringify(check.body)).not.toContain('bc1qexample');
+      expect(findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('omits every chain, still 200, when the override read fails', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+      const findMany = jest.fn().mockRejectedValue(new Error('db down'));
+      const res = await request(buildApp({ treasuryWallet: { findMany } }))
+        .get('/api/v1/deposit-chains?includeConfig=true')
+        .set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body.chains).toEqual([]);
+      expect(res.body.version).toBeUndefined();
+      // A failure is not remembered: the next open reads again.
+      findMany.mockResolvedValueOnce([]);
+      const retry = await request(buildApp({ treasuryWallet: { findMany } }))
+        .get('/api/v1/deposit-chains?includeConfig=true')
+        .set('Authorization', authHeader('user-1'));
+      expect(retry.body.chains.map((c: any) => c.chain)).toEqual(['bitcoin']);
     });
 
     // The bare array is the older contract. Adding a field to the envelope

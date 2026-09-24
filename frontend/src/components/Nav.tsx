@@ -8,6 +8,7 @@ import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
+import { prefetchDepositConfig } from '../lib/useDepositOptions';
 import { TopGainersTicker } from './TopGainersTicker';
 import type { LiveQuote } from '../lib/liveMarketTypes';
 import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
@@ -68,12 +69,12 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
             primary control in it. Admin-only, exactly as before. */}
         {isAdmin&&<Link to="/admin" className={`nav-item nav-admin nav-admin-chip${active==='/admin'?' nav-active is-active':''}`}><Landmark size={14}/>{t('nav.admin')}</Link>}
         {WALLET_LINK&&<Link to={WALLET_LINK.to} className={`nav-item top-nav-link nav-wallet-link${active===WALLET_LINK.to?' nav-active is-active':''}`}>{quoteAsset&&<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M3 10h18M7 15h2m3 0h1"/></svg>}{WALLET_LINK.label}</Link>}
-        <button onClick={()=>setShowDeposit(true)} className="deposit-button top-nav-fund-btn"><span>{t('wallet.deposit')}</span></button>
+        <button onClick={()=>setShowDeposit(true)} onPointerEnter={prefetchDepositConfig} onFocus={prefetchDepositConfig} className="deposit-button top-nav-fund-btn"><span>{t('wallet.deposit')}</span></button>
         {rightExtra&&<div className="header-extra-action">{rightExtra}</div>}<LanguageSwitcher variant="pill" quoteAsset={quoteAsset}/>
         <div className="top-nav-profile-wrap" ref={profileMenuRef}><button type="button" className="header-icon profile-control top-nav-profile-btn" onClick={()=>setProfileMenuOpen(o=>!o)} aria-expanded={profileMenuOpen}><span className="top-nav-profile-avatar">{avatarUrl?<img src={avatarUrl} alt=""/>:<UserRound size={13}/>}</span><span>{t('nav.profile')}</span><ChevronDown size={11} className={`nav-chevron${profileMenuOpen?' nav-chevron-open':''}`}/></button>{profileMenuOpen&&<div className="top-nav-profile-menu"><Link to="/settings" onClick={()=>setProfileMenuOpen(false)}>{t('nav.profile')}</Link><button type="button" onClick={handleLogout}><LogOut size={14}/>{t('nav.logout')}</button></div>}</div>
       </div>
       <div className={`nav-mobile-menu${mobileOpen?' open':''}`}>
-        <button className="deposit-button" onClick={()=>{setShowDeposit(true);setMobileOpen(false);}} style={{justifyContent:'center',marginBottom:4}}>{t('wallet.deposit')}</button>
+        <button className="deposit-button" onPointerDown={prefetchDepositConfig} onClick={()=>{setShowDeposit(true);setMobileOpen(false);}} style={{justifyContent:'center',marginBottom:4}}>{t('wallet.deposit')}</button>
         {LINKS.map(l=><Fragment key={l.to}><Link to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} style={{...styles.mobileLink,...(active===l.to?styles.linkActive:{})}}>{l.label}</Link>{l.to==='/trade'&&<Link to="/trade?market=cfd" style={{...styles.mobileLink,paddingLeft:20,fontSize:13}}>{t('trade.cfdTab')}</Link>}</Fragment>)}
         <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{t('nav.card')}</Link>
         <Link to="/otc" style={{...styles.mobileLink,...(active==='/otc'?styles.linkActive:{})}}>{t('nav.otc')}</Link>

@@ -2,6 +2,8 @@ export interface DepositConfig {
   chains: { chain: string; nativeAsset: string; tokens: string[]; supportedAssets: string[]; address?: string }[];
   minDepositUsd: number;
   usdPeggedAssets: string[];
+  /** The server's fingerprint of this exact list (newer APIs only). */
+  version?: string;
 }
 
 export function validDepositConfig(value: unknown): value is DepositConfig {

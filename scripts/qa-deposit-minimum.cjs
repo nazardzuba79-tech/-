@@ -276,10 +276,18 @@ async function main() {
         await page.screenshot({ path: path.join(output, `provider-outage-${width}.png`), fullPage: true });
         providerDown = false; report.browser.push({ width, belowMinimumApproval: 'PASS', pendingApproval: 'PASS', exactAmounts: ['100', '299', '350.123456'], reload: 'PASS', outage: 'PASS', overflow: false });
       }
+      const configRequests = [];
+      page.on('request', r => { const at = new URL(r.url()).pathname.replace('/api/v1', '');
+        if (/^\/deposit-(chains|config-version|address)/.test(at)) configRequests.push(at); });
       await page.goto(origin + '/wallet?action=deposit');
       await page.getByText('Минимальная сумма пополнения — от 300 $ в эквиваленте.', { exact: true }).waitFor();
       await page.screenshot({ path: path.join(output, 'deposit-warning.png'), fullPage: true });
-      report.browser.push({ depositWarning: 'PASS' });
+      // The addresses are downloaded once; opening again asks only the fingerprint.
+      assert.deepEqual(configRequests, ['/deposit-chains']);
+      await page.reload();
+      await page.getByText('Минимальная сумма пополнения — от 300 $ в эквиваленте.', { exact: true }).waitFor();
+      assert.deepEqual(configRequests, ['/deposit-chains', '/deposit-config-version']);
+      report.browser.push({ depositWarning: 'PASS', reopenAsksFingerprintOnly: 'PASS' });
       assert.deepEqual(errors, []); console.log('PASS browser 1440 + 390');
     }
     await test('Every credited row has exactly one admin approval audit; balances and referrals reconcile', async () => {
