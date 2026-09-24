@@ -2,7 +2,7 @@ import { runCfdDisplaySelfTest } from '../../services/marketData/cfd/CfdDisplayS
 
 describe('CFD display startup self-test', () => {
   it('waits for warm-up, retries transient failures, and stops probing successful legs', async () => {
-    const sleep = jest.fn(async () => undefined);
+    const sleep = jest.fn(async (_ms: number) => undefined);
     const log = jest.fn();
     const getQuotes = jest.fn()
       .mockResolvedValueOnce([{ last: null }, { last: null }])
@@ -47,7 +47,7 @@ describe('CFD display startup self-test', () => {
   });
 
   it('does not throw or poll forever when an upstream remains unavailable', async () => {
-    const sleep = jest.fn(async () => undefined);
+    const sleep = jest.fn(async (_ms: number) => undefined);
     const log = jest.fn();
     const getQuotes = jest.fn(async () => [{ last: null }]);
     const getOhlc = jest.fn(async () => { throw new Error('down'); });
@@ -75,7 +75,7 @@ describe('CFD display startup self-test', () => {
   });
 
   it('accepts the first healthy probe and performs no retries', async () => {
-    const sleep = jest.fn(async () => undefined);
+    const sleep = jest.fn(async (_ms: number) => undefined);
     const getQuotes = jest.fn(async () => [{ last: 1 }]);
     const getOhlc = jest.fn(async () => ({ bars: [{}, {}] }));
 
