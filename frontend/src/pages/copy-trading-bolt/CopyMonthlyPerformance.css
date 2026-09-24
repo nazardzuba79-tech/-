@@ -1,0 +1,76 @@
+/* «Статистика по месяцам»: the entry on the light profile, and the dark
+   dialog it opens (the same surface as the Copy deposit dialog). The dialog
+   is portalled to <body>, outside the page's own styles, so every rule here
+   is self-contained. */
+
+.copytrading-bolt-root.profile-view .monthly-performance-entry { padding-block: 14px; }
+.copytrading-bolt-root.profile-view .monthly-performance-entry .profile-panel-heading { margin-bottom: 0; align-items: center; gap: 12px; }
+.copytrading-bolt-root.profile-view .monthly-performance-open { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; min-height: 38px; padding: 8px 14px; border: 1px solid #f7a600; border-radius: 8px; background: #fff; color: #6b4a08; font: 600 13px/1.3 'Inter', sans-serif; cursor: pointer; transition: background-color 120ms ease; }
+.copytrading-bolt-root.profile-view .monthly-performance-open:hover { background: #fff6e0; }
+.copytrading-bolt-root.profile-view .monthly-performance-open:focus-visible { outline: 2px solid #f7a600; outline-offset: 3px; }
+
+.copy-monthly-dialog { position: fixed; inset: 0; box-sizing: border-box; width: min(920px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow: hidden; color: #eaecef; border: 1px solid #2f3440; border-radius: 16px; background: #14171d; box-shadow: 0 24px 80px #000a; font-family: 'Inter', system-ui, sans-serif; }
+.copy-monthly-dialog[open] { display: flex; }
+.copy-monthly-dialog::backdrop { background: #05070bc2; }
+.copy-monthly-dialog .mcp-shell { display: flex; flex-direction: column; gap: 18px; width: 100%; min-height: 0; padding: 24px 26px 20px; overflow-y: auto; }
+.copy-monthly-dialog .mcp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.copy-monthly-dialog .mcp-trader { display: inline-block; margin-bottom: 6px; color: #f7a600; font-size: 12px; font-weight: 600; letter-spacing: .02em; }
+.copy-monthly-dialog h2 { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 700; letter-spacing: -.02em; color: #fff; }
+.copy-monthly-dialog .mcp-header p { margin: 6px 0 0; color: #9aa3b2; font-size: 14px; line-height: 1.4; }
+.copy-monthly-dialog .mcp-close { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; border: 1px solid #2f3440; border-radius: 8px; background: transparent; color: #c3cad6; cursor: pointer; }
+.copy-monthly-dialog .mcp-close:hover { background: #222731; color: #fff; }
+.copy-monthly-dialog :focus-visible { outline: 2px solid #f7a600; outline-offset: 2px; }
+
+.copy-monthly-dialog .mcp-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+.copy-monthly-dialog .mcp-table-wrap { min-width: 0; overflow-x: auto; border: 1px solid #262b35; border-radius: 12px; background: #181b22; }
+.copy-monthly-dialog .mcp-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.copy-monthly-dialog .mcp-table th,
+.copy-monthly-dialog .mcp-table td { height: 38px; padding: 0 10px; border-bottom: 1px solid #22262f; text-align: center; white-space: nowrap; font-size: 13px; }
+.copy-monthly-dialog .mcp-table thead th { height: 44px; color: #f7a600; font-weight: 700; font-size: 14px; background: #1b1f27; }
+.copy-monthly-dialog .mcp-table th[scope="row"] { position: sticky; left: 0; z-index: 1; min-width: 96px; text-align: left; padding-left: 16px; color: #dfe3ea; font-weight: 500; background: #181b22; }
+.copy-monthly-dialog .mcp-table thead th:first-child { position: sticky; left: 0; z-index: 2; text-align: left; padding-left: 16px; }
+.copy-monthly-dialog .mcp-table tfoot th,
+.copy-monthly-dialog .mcp-table tfoot td { height: 48px; border-bottom: 0; border-top: 1px solid #343a47; background: #1d212a; }
+.copy-monthly-dialog .mcp-table tfoot th[scope="row"] { color: #f7a600; font-weight: 700; font-size: 15px; background: #1d212a; }
+.copy-monthly-dialog .mcp-cell { min-width: 84px; padding: 5px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.copy-monthly-dialog .mcp-cell:hover { background: #222731; }
+.copy-monthly-dialog .mcp-cell.mcp-selected { border-color: #f7a600; background: #2a2518; }
+.copy-monthly-dialog .mcp-cell.mcp-partial span::after,
+.copy-monthly-dialog .mcp-cell.mcp-partial strong::after { content: '*'; margin-left: 1px; color: #7d8594; }
+.copy-monthly-dialog .mcp-empty { color: #5d6573; }
+.copy-monthly-dialog .mcp-positive { color: #0ecb81; }
+.copy-monthly-dialog .mcp-negative { color: #f6465d; }
+.copy-monthly-dialog .mcp-neutral { color: #c3cad6; }
+.copy-monthly-dialog tfoot .mcp-cell strong { font-size: 14px; font-weight: 700; }
+
+.copy-monthly-dialog .mcp-detail { padding: 16px 16px 6px; border: 1px solid #262b35; border-radius: 12px; background: #181b22; }
+.copy-monthly-dialog .mcp-detail h3 { margin: 0; font-size: 16px; font-weight: 700; color: #fff; }
+.copy-monthly-dialog .mcp-coverage { margin: 6px 0 0; color: #9aa3b2; font-size: 12px; line-height: 1.4; }
+.copy-monthly-dialog .mcp-detail dl { margin: 12px 0 0; }
+.copy-monthly-dialog .mcp-detail dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid #22262f; }
+.copy-monthly-dialog .mcp-detail dt { color: #9aa3b2; font-size: 13px; white-space: nowrap; }
+.copy-monthly-dialog .mcp-detail dd { margin: 0; color: #eaecef; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.copy-monthly-dialog .mcp-note { margin: 0; color: #7d8594; font-size: 12px; line-height: 1.5; }
+.copy-monthly-dialog .mcp-none { margin: 0; color: #9aa3b2; }
+
+@media (max-width: 760px) {
+  .copy-monthly-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 14px; }
+  .copy-monthly-dialog .mcp-shell { padding: 18px 14px 16px; gap: 14px; }
+  .copy-monthly-dialog h2 { font-size: 20px; }
+  .copy-monthly-dialog .mcp-header p { font-size: 13px; }
+  .copy-monthly-dialog .mcp-body { grid-template-columns: minmax(0, 1fr); }
+  .copy-monthly-dialog .mcp-table th,
+  .copy-monthly-dialog .mcp-table td { padding: 0 2px; font-size: 12.5px; }
+  .copy-monthly-dialog .mcp-table th[scope="row"],
+  .copy-monthly-dialog .mcp-table thead th:first-child { min-width: 0; width: 1%; padding-left: 12px; padding-right: 6px; }
+  .copy-monthly-dialog .mcp-cell { min-width: 0; padding: 4px 5px; }
+  .copy-monthly-dialog tfoot .mcp-cell strong { font-size: 13px; }
+  .copy-monthly-dialog .mcp-table tfoot th[scope="row"] { font-size: 14px; }
+}
+@media (max-width: 520px) {
+  .copytrading-bolt-root.profile-view .monthly-performance-entry .profile-panel-heading { flex-wrap: wrap; }
+  .copytrading-bolt-root.profile-view .monthly-performance-open { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .copytrading-bolt-root.profile-view .monthly-performance-open { transition: none; }
+}

@@ -35,6 +35,7 @@ on:
       - 'frontend/src/lib/copyTradingMoney.ts'
       - 'frontend/src/lib/modeledCopyData.ts'
       - 'frontend/src/lib/dailyReturnChart.ts'
+      - 'frontend/src/lib/monthlyCopyPerformance.ts'
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
@@ -67,6 +68,7 @@ on:
       - 'frontend/src/lib/__tests__/copyTrading*.test.ts'
       - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
       - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
+      - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
   push:
     branches: [main]
@@ -103,6 +105,7 @@ on:
       - 'frontend/src/lib/copyTradingMoney.ts'
       - 'frontend/src/lib/modeledCopyData.ts'
       - 'frontend/src/lib/dailyReturnChart.ts'
+      - 'frontend/src/lib/monthlyCopyPerformance.ts'
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
@@ -135,6 +138,7 @@ on:
       - 'frontend/src/lib/__tests__/copyTrading*.test.ts'
       - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
       - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
+      - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
 
 permissions:
@@ -187,6 +191,16 @@ jobs:
           npm test -- --runInBand --runTestsByPath
           frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts
           frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts
+      # «Статистика по месяцам»: the month table is derived in the browser
+      # from each strategy's own dailyResults. It must agree with the
+      # server's canonical monthly summary for BOTH traders over real HTTP,
+      # and opening it or moving between months and years must send nothing.
+      - name: Monthly performance (Nazar + Ksenia)
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/copyMonthlyPerformance.test.ts
+          frontend/src/lib/__tests__/copyMonthlyPerformanceModal.test.ts
+          src/services/copyTrading/__tests__/monthlyCopyPerformanceContract.test.ts
       - name: Copy privacy, retry and period regressions
         run: >-
           npm test -- --runInBand --runTestsByPath
@@ -237,6 +251,13 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-daily-progression.cjs
+      # «Статистика по месяцам» at 1440 and 390 for both traders: each dialog
+      # prints its own trader's months (recomputed from the API's daily rows),
+      # and opening it or moving between months and years sends no request.
+      - name: Browser QA - monthly performance, no request on open or switch
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
+        run: node scripts/qa-copy-monthly-performance.cjs
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
@@ -248,4 +269,5 @@ jobs:
             docs/qa/copy-loading-ksenia/
             docs/qa/copy-never-loading/
             docs/qa/copy-daily-progression/
+            docs/qa/copy-monthly-performance/
           retention-days: 7

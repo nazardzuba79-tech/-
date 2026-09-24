@@ -35,6 +35,7 @@ const deps = {
   publicSignedUsdt, publicUsdtNumber, dailyReturnChart, formatSyntheticHistoryDate,
   Avatar: empty, VipBadge: empty, FavoriteButton: empty, CopyButton: empty, ArrowLeft: empty,
   Check: empty, BarChart3: empty, Users: empty, FollowerHistory: empty, TradingProfilePanel: empty, VerifiedBadge,
+  MonthlyPerformanceLauncher: empty,
   ProfilePerformanceChart: ({ period }: { period: string }) => React.createElement('div', { 'data-yellow-period': period }),
 };
 const compiled = ts.transpileModule(`${declarations.join('\n')}\nexports.Profile=Profile;`, {
