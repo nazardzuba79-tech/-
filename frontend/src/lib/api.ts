@@ -1169,11 +1169,6 @@ export const api = {
       } | null;
     }>('/kyc/me'),
 
-  // Admin notification cursor: deliberately tiny. Detailed admin lists are
-  // fetched only by their own pages, not by the global navigation chime.
-  getAdminAlertSummary: () =>
-    request<{ depositId: string | null; withdrawalId: string | null; kycId: string | null }>('/admin/alerts-summary'),
-
   // Admin: every client with their latest KYC submission (if any)
   getAllClients: () =>
     request<
