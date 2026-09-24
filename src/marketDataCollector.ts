@@ -8,6 +8,7 @@ import { DerivPublicStreamQuoteSource } from './services/marketData/cfd/DerivPub
 import { EiaOilDisplaySource } from './services/marketData/cfd/EiaOilDisplaySource';
 import { CfdDisplayQuoteRouter } from './services/marketData/cfd/CfdDisplayQuoteRouter';
 import { BiquoteCfdOhlcSource } from './services/marketData/cfd/BiquoteCfdOhlcSource';
+import { runCfdDisplaySelfTest } from './services/marketData/cfd/CfdDisplaySelfTest';
 
 const token = process.env.MARKET_DATA_COLLECTOR_TOKEN;
 if (!token) throw new Error('MARKET_DATA_COLLECTOR_TOKEN is required');
@@ -41,27 +42,6 @@ const cfdDisplay={
   diagnostics:()=>cfdDisplayRouter.diagnostics(),
 };
 
-function runCfdDisplaySelfTest():void{
-  void Promise.allSettled([
-    cfdDisplayRouter.getQuotes(),
-    cfdOhlc.getOhlc('XAUUSD','15m',20),
-    cfdOhlc.getOhlc('WTIUSD','15m',20),
-  ]).then(([quotesResult,xauResult,wtiResult])=>{
-    const quotes=quotesResult.status==='fulfilled'?quotesResult.value:[];
-    const priced=quotes.filter(q=>q.last!==null&&Number.isFinite(q.last)&&q.last>0).length;
-    console.log(JSON.stringify({
-      event:'cfd_display_selftest',
-      quoteRows:quotes.length,
-      pricedRows:priced,
-      xauOhlcBars:xauResult.status==='fulfilled'?xauResult.value.bars.length:0,
-      wtiOhlcBars:wtiResult.status==='fulfilled'?wtiResult.value.bars.length:0,
-      quotesOk:quotesResult.status==='fulfilled',
-      xauOhlcOk:xauResult.status==='fulfilled',
-      wtiOhlcOk:wtiResult.status==='fulfilled',
-    }));
-  }).catch(()=>{});
-}
-
 const runtime = collectorServer(
   collector.feed,
   token,
@@ -76,7 +56,15 @@ runtime.server.listen(Number(process.env.PORT || 10000), bindHost, () => {
   console.log(`Market data collector listening on ${bindHost}:${process.env.PORT || 10000}`);
   collector.start();
   cfdDeriv.start();
-  runCfdDisplaySelfTest();
+  // Do not judge public feeds at the exact millisecond the process starts:
+  // Deriv is still handshaking and an isolated BiQuote timeout is ordinary.
+  // The smoke test runs in the background, retries only failed legs, and
+  // never blocks the API or touches Prisma/Neon.
+  void runCfdDisplaySelfTest({
+    getQuotes:()=>cfdDisplayRouter.getQuotes(),
+    getOhlc:(symbol,interval,limit)=>cfdOhlc.getOhlc(symbol,interval,limit),
+    log:(result)=>console.log(JSON.stringify({event:'cfd_display_selftest',...result})),
+  });
 });
 let stopping = false;
 for (const signal of ['SIGINT','SIGTERM'] as const) process.on(signal, () => {
