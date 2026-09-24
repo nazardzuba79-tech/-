@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'node:http';
 import zlib from 'node:zlib';
+import request from 'supertest';
 import type { AddressInfo } from 'net';
 import { marketLiveRouter, shouldGzipLiveStream } from '../marketLive';
 import { LiveFeed } from '../../../services/marketData/live/contract';
@@ -68,6 +69,25 @@ async function listen(app: express.Express) {
 }
 
 describe('live stream compression', () => {
+  it('returns 204 and never subscribes when the production SSE kill switch is off', async () => {
+    const previous = process.env.MARKET_LIVE_SSE_ENABLED;
+    process.env.MARKET_LIVE_SSE_ENABLED = '0';
+    const feed = new LiveFeed('disabled-by-env');
+    feed.status = 'live';
+    feed.publish('snapshot', [ticker('spot:BTCUSDT', 100)]);
+    const app = express();
+    app.use('/api/v1', marketLiveRouter(feed));
+    try {
+      const res = await request(app).get('/api/v1/market/live').set('Accept-Encoding', 'gzip').expect(204);
+      expect(res.headers['content-encoding']).toBeUndefined();
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(feed.subscriberCount).toBe(0);
+    } finally {
+      if (previous === undefined) delete process.env.MARKET_LIVE_SSE_ENABLED;
+      else process.env.MARKET_LIVE_SSE_ENABLED = previous;
+    }
+  });
+
   it('negotiates: gzip only for a client that asks, and never when disabled by env', () => {
     const asks = { header: () => 'gzip, deflate, br' } as any;
     const doesNot = { header: () => 'identity' } as any;
