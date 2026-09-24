@@ -1,6 +1,7 @@
 import { marketDataStore, type MarketState } from '../marketDataStore';
 import { assetMetadataStore } from '../assetMetadataStore';
 import { api } from '../api';
+import { readDisplayJson } from '../displaySnapshotCache';
 
 /**
  * The client-side half of the load argument.
@@ -23,7 +24,9 @@ jest.mock('../api', () => ({
   },
 }));
 
-const getMarketSnapshot = api.getMarketSnapshot as jest.Mock;
+jest.mock('../displaySnapshotCache', () => ({ readDisplayJson: jest.fn(), DISPLAY_REFRESH_MS: 60_000 }));
+
+const getMarketSnapshot = readDisplayJson as jest.Mock;
 const getAssetIcons = api.getAssetIcons as jest.Mock;
 
 function snapshot(overrides: Record<string, unknown> = {}) {
@@ -108,7 +111,7 @@ describe('marketDataStore', () => {
     await flush();
     expect(getMarketSnapshot).toHaveBeenCalledTimes(1);
 
-    jest.advanceTimersByTime(3000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
     // One tick, one request — not one per subscriber.
@@ -151,30 +154,28 @@ describe('marketDataStore', () => {
   });
 
   it('polls at the fastest cadence any live subscriber asked for', async () => {
-    const offSlow = marketDataStore.subscribe(() => {}, 15_000);
-    const offFast = marketDataStore.subscribe(() => {}, 3_000);
+    const offSlow = marketDataStore.subscribe(() => {}, 120_000);
+    const offFast = marketDataStore.subscribe(() => {}, 60_000);
     await flush();
     const baseline = getMarketSnapshot.mock.calls.length;
 
-    jest.advanceTimersByTime(3_000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
-    // The 15s subscriber is served the 3s data — nobody is ever given
-    // staler data than they asked for.
+    // The slower subscriber shares the permitted one-minute display refresh.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(baseline + 1);
     offSlow();
     offFast();
   });
 
-  it('never polls faster than the backend ticker TTL, however low the request', async () => {
+  it('never polls faster than the sampled display budget, however low the request', async () => {
     const off = marketDataStore.subscribe(() => {}, 100);
     await flush();
     const baseline = getMarketSnapshot.mock.calls.length;
 
-    jest.advanceTimersByTime(2_900);
+    jest.advanceTimersByTime(59_900);
     await flush();
-    // Floored at 3s: polling under the backend's 5s ticker cache cannot
-    // return fresher data, it can only cost requests.
+    // Sampled display requests are capped at one per minute.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(baseline);
 
     jest.advanceTimersByTime(200);
@@ -243,7 +244,7 @@ describe('marketDataStore', () => {
     expect(state!.tickers.size).toBe(1);
 
     getMarketSnapshot.mockRejectedValueOnce(new Error('network'));
-    jest.advanceTimersByTime(3000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
     expect(state!.status).toBe('error');

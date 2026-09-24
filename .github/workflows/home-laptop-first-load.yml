@@ -1,5 +1,6 @@
 name: Homepage laptop first-load
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'frontend/src/pages/home/**'
@@ -13,7 +14,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: home-laptop-first-load-${{ github.event.pull_request.number }}
+  group: home-laptop-first-load-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   validate:

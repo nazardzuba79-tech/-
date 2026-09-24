@@ -15,12 +15,21 @@ test('live ticker implementation is unreachable from financial services',()=>{
   for(const path of outside)expect(code(path)).not.toMatch(/BybitLiveTickerCollector|BybitTickerBook|MarketDataCollectorClient|LiveFeed|liveReferenceCollector|liveReference/);
   const index=code('src/index.ts');
   const injection=index.split('\n').filter(line=>line.includes('liveReferenceCollector'));
-  expect(injection).toHaveLength(5);
+  expect(injection.map(line=>line.trim())).toEqual([
+    'const liveReferenceCollector = collectorFromEnv();',
+    'const venueUniverseSource = liveReferenceCollector',
+    '? new CollectorUniverseProvider(liveReferenceCollector)',
+    'liveReferenceCollector?.feed ?? null',
+    "app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));",
+    "app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));",
+    'liveReferenceCollector?.start();',
+    'liveReferenceCollector?.stop();',
+  ]);
   expect(injection.filter(line=>line.includes('marketOptionsRouter'))).toEqual([
     "app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));"
   ]);
   expect(code('src/api/routes/marketOptions.ts')).not.toMatch(/router\.(post|put|delete|patch)\(|PositionService|Balance/);
-  expect(injection.find(line=>line.includes('new MarketDataGateway'))).toBeDefined();
+  expect(index).toMatch(/new MarketDataGateway\([\s\S]*?liveReferenceCollector\?\.feed \?\? null\s*\)/);
   expect(code('src/services/marketData/MarketDataGateway.ts')).toContain("this.kraken.getTickersWithMeta()");
 });
 test('collector entry has no database, secrets file, trading, or private provider endpoint dependency',()=>{

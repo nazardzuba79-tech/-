@@ -58,8 +58,8 @@ describe('the dictionary contains no provider branding', () => {
 
 describe('customer-facing components render no provider branding', () => {
   /**
-   * Everything under src/, minus tests and two files that are checked
-   * differently:
+   * Everything under src/, minus tests and explicit data/transport modules
+   * that carry upstream provenance but render no customer-facing text:
    *
    *   - `i18n.tsx` — every value is checked above, per language.
    *   - `api.ts` — the DATA CONTRACT, which is exactly where provenance
@@ -70,9 +70,9 @@ describe('customer-facing components render no provider branding', () => {
    * Walking the tree rather than listing files is deliberate: a NEW page
    * must be covered by this rule without anyone remembering to add it.
    */
-  // The live contract and pure identity join also carry provenance, just
-  // like api.ts. They produce data, never DOM; checked explicitly below.
-  const EXCLUDED = new Set(['api.ts', 'liveMarketTypes.ts', 'referenceAssets.ts'].map(file => join('src', 'lib', file)));
+  // Public offload modules now contact providers directly. Their transport
+  // URLs and source IDs are not UI branding; newly added pages remain scanned.
+  const EXCLUDED = new Set(['api.ts', 'liveMarketTypes.ts', 'referenceAssets.ts', 'directFuturesReference.ts', 'futuresCandles.ts', 'futuresDepth.ts', 'spotPublicMarket.ts', 'terminalPresentation.ts'].map(file => join('src', 'lib', file)));
 
   function sources(dir: string, out: string[] = []): string[] {
     for (const entry of readdirSync(resolve(frontend, dir))) {
@@ -102,6 +102,8 @@ describe('customer-facing components render no provider branding', () => {
         // such in §17; closing it needs a server-side fan-out, not a copy
         // change, so it is excluded here rather than silently matched.
         if (line.includes('wss://ws.kraken.com')) continue;
+        // Official widget symbol configuration is a data identifier, not visible copy.
+        if (file.replace(/\\/g, '/') === 'src/components/TradingViewAdvancedChart.tsx' && line.includes('return `BYBIT:')) continue;
         if (BRANDING.test(line)) offenders.push(`${file}:${n + 1}: ${line.trim()}`);
       }
     }

@@ -1,7 +1,7 @@
 import { CfdMarketDataService } from '../../CfdMarketDataService';
 import { ArbitrageService } from '../../ArbitrageService';
 import { KrakenMarketDataService } from '../../KrakenMarketDataService';
-import { ProviderUnavailableError } from '../ProviderHealth';
+import { HttpProviderClient, ProviderHealth, ProviderUnavailableError } from '../ProviderHealth';
 
 /**
  * The failure matrix for the two providers this task moved onto the shared
@@ -34,10 +34,19 @@ describe('provider failure matrix', () => {
     'XAU/USD': { symbol: 'XAU/USD', close: '2400.10', percent_change: '0.42' },
   };
 
-  // This matrix isolates transport/circuit behavior under a sufficient TEST quota.
-  // CfdQuoteSafety separately verifies that the Basic budget denies retries.
+  // Adapter checks retain the real Basic budget; transport retries below are
+  // exercised directly without bypassing the CFD credit limiter.
   function cfd(fetchFn: jest.Mock, policy: Record<string, unknown> = FAST) {
-    return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy, {creditsPerMinute:100,creditsPerDay:10000});
+    return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy, {creditsPerMinute:8,creditsPerDay:800});
+  }
+
+  // Transport retries are tested at their actual shared boundary. The CFD
+  // adapter's hard 8-credit budget must never be raised for a test.
+  function transport(fetchFn: jest.Mock, policy: Record<string, unknown> = FAST) {
+    return new HttpProviderClient('Twelve Data', {
+      ...policy, fetchFn: fetchFn as unknown as typeof fetch,
+      health: new ProviderHealth('twelvedata-test'),
+    });
   }
 
   // ── Twelve Data / CFD ───────────────────────────────────────────────
@@ -48,26 +57,26 @@ describe('provider failure matrix', () => {
       .mockResolvedValueOnce(response({}, false, 503))
       .mockResolvedValueOnce(response(goldQuote));
 
-    const tickers = await cfd(fetchFn).getTickers();
+    const tickers: any = await transport(fetchFn).getJson('https://td.test/quote');
 
     expect(fetchFn).toHaveBeenCalledTimes(2);
-    expect(tickers.find((t) => t.symbol === 'XAUUSD')!.price).toBe('2400.10');
+    expect(tickers['XAU/USD'].close).toBe('2400.10');
   });
 
   it('honours Retry-After on a 429 instead of hammering a metered provider', async () => {
     // A Retry-After longer than the retry budget stops immediately rather
     // than burning further credits against a provider that just said no.
     const fetchFn = jest.fn().mockResolvedValue(response({}, false, 429, { 'retry-after': '120' }));
-    const service = cfd(fetchFn);
+    const service = transport(fetchFn);
 
-    await expect(service.getTickers()).rejects.toThrow(/HTTP 429/);
+    await expect(service.getJson('https://td.test/quote')).rejects.toThrow(/HTTP 429/);
     expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
   it('retries a transport timeout within a bounded budget, never unbounded', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('ETIMEDOUT'));
 
-    await expect(cfd(fetchFn).getTickers()).rejects.toThrow(/Failed to reach Twelve Data/);
+    await expect(transport(fetchFn).getJson('https://td.test/quote')).rejects.toThrow(/Failed to reach Twelve Data/);
     // 1 initial attempt + the default 2 retries. Bounded, by construction.
     expect(fetchFn).toHaveBeenCalledTimes(3);
   });
@@ -76,15 +85,15 @@ describe('provider failure matrix', () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('down'));
     // retries:0 so each getTickers() call is exactly one outbound attempt,
     // making the 4-failure threshold easy to count.
-    const service = cfd(fetchFn, { retries: 0 });
+    const service = transport(fetchFn, { retries: 0 });
 
     for (let i = 0; i < 4; i++) {
-      await expect(service.getTickers()).rejects.toThrow();
+      await expect(service.getJson('https://td.test/quote')).rejects.toThrow();
     }
     expect(fetchFn).toHaveBeenCalledTimes(4);
 
     // Circuit is OPEN: the next call must not reach the network at all.
-    await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+    await expect(service.getJson('https://td.test/quote')).rejects.toBeInstanceOf(ProviderUnavailableError);
     expect(fetchFn).toHaveBeenCalledTimes(4);
   });
 
@@ -102,17 +111,17 @@ describe('provider failure matrix', () => {
         .mockRejectedValueOnce(new Error('down'))
         .mockRejectedValueOnce(new Error('down'))
         .mockResolvedValue(response(goldQuote));
-      const service = cfd(fetchFn, { retries: 0 });
+      const service = transport(fetchFn, { retries: 0 });
 
-      for (let i = 0; i < 4; i++) await expect(service.getTickers()).rejects.toThrow();
-      await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+      for (let i = 0; i < 4; i++) await expect(service.getJson('https://td.test/quote')).rejects.toThrow();
+      await expect(service.getJson('https://td.test/quote')).rejects.toBeInstanceOf(ProviderUnavailableError);
       expect(fetchFn).toHaveBeenCalledTimes(4);
 
       // Past the 30s cooldown the next caller is the single probe, and its
       // success closes the circuit.
       now += 31_000;
-      const recovered = await service.getTickers();
-      expect(recovered.find((t) => t.symbol === 'XAUUSD')).toBeDefined();
+      const recovered: any = await service.getJson('https://td.test/quote');
+      expect(recovered['XAU/USD']).toBeDefined();
       expect(fetchFn).toHaveBeenCalledTimes(5);
     } finally {
       (Date.now as jest.Mock).mockRestore();
@@ -139,7 +148,7 @@ describe('provider failure matrix', () => {
     }
   });
 
-  it('stops serving once the stale budget expires rather than aging a price indefinitely', async () => {
+  it('old reference observations stay visibly stale and cannot authorize execution', async () => {
     let now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
     try {
@@ -149,7 +158,10 @@ describe('provider failure matrix', () => {
       await service.getTickers();
       now += 10 * 60_000; // far past TTL + stale budget
 
-      await expect(service.getTickers()).rejects.toThrow();
+      const stale = await service.getTickersWithMeta();
+      expect(stale.stale).toBe(true);
+      expect((await service.getQuotes()).find(q => q.symbol === 'XAUUSD')).toMatchObject({status:'stale',stale:true});
+      await expect(service.getFreshQuote('XAUUSD')).rejects.toThrow();
     } finally {
       (Date.now as jest.Mock).mockRestore();
     }

@@ -1,3 +1,4 @@
+import * as terminalPresentation from '../terminalPresentation';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -33,8 +34,8 @@ test('actual parent synchronously withholds mismatched depth before any new-pair
   expect(selectVisible(btc, 'BTC/USDT')).toBe(btc);
   expect(selectVisible(btc, 'MOG/USDT')).toEqual({ bids: [], asks: [] });
   expect(selectVisible(mog, 'BTC/USDT')).toEqual({ bids: [], asks: [] });
-  expect(pageSource).toContain('setBook({ pair, bids: res.bids, asks: res.asks })');
-  expect(pageSource).toContain('setBook({ pair, bids: snapshot.bids, asks: snapshot.asks })');
+  expect(pageSource).toContain('setBook({ pair, bids: res.bids, asks: res.asks, asOf: res.asOf })');
+  expect(pageSource).toContain('readSpotPublicBook(pair)');
   expect(pageSource).toContain('bids={visibleBook.bids}'); expect(pageSource).toContain('asks={visibleBook.asks}');
 });
 
@@ -50,6 +51,7 @@ test('actual stateful BTC → MOG → BTC book initializes grouping before paint
       useState: (initial: any) => { const at = index++; if (!(at in state)) state[at] = typeof initial === 'function' ? initial() : initial;
         return [state[at], (value: any) => { state[at] = typeof value === 'function' ? value(state[at]) : value; }]; } };
     if (name === '../lib/spotOrderBook') return helpers;
+    if (name === '../lib/terminalPresentation') return terminalPresentation;
     if (name === '../lib/formatNumber') return numberFormat;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     return requireFrontend(name);
@@ -62,8 +64,8 @@ test('actual stateful BTC → MOG → BTC book initializes grouping before paint
   const flush = () => effects.splice(0).forEach(effect => effect());
   const btc = book('BTC/USDT', '80000', '80010'), mog = book('MOG/USDT', '0.0000001090', '0.0000001091');
   let view = render(btc); flush();
-  view.select.props.onChange({ target: { value: '10' } });
-  expect(render(btc).select.props.value).toBe(10);
+  view.select.props.onChange({ target: { value: '1' } });
+  expect(render(btc).select.props.value).toBe(1);
   expect(render(btc, 'MOG/USDT').rows).toEqual([]); flush();
   view = render(mog); // Intentionally assert BEFORE effects run.
   expect(view.select.props.value).toBe(helpers.defaultSpotGroupStep(0.00000010905));
@@ -76,7 +78,7 @@ test('actual stateful BTC → MOG → BTC book initializes grouping before paint
   expect(render(book('MOG/USDT', '0.0000001190', '0.0000001191')).select.props.value).toBe(manual); flush();
   expect(render(mog, 'BTC/USDT').rows).toEqual([]); flush();
   view = render(btc);
-  expect(view.select.props.value).toBe(10);
+  expect(view.select.props.value).toBe(helpers.defaultSpotGroupStep(80005));
   expect(view.rows).toHaveLength(2);
   expect(view.rows.every(row => row.props.level.price > 70000)).toBe(true);
 });
@@ -96,6 +98,7 @@ function renderTicker(spotPrecision: boolean) {
   new Function('require', 'exports', compile(readFileSync(resolve(frontend, 'src/components/TickerBar.tsx'), 'utf8')))((name: string) => {
     if (name === 'react') return { ...React, useEffect: () => {}, useState: () => [null, () => {}] };
     if (name === '../lib/spotOrderBook') return helpers;
+    if (name === '../lib/terminalPresentation') return terminalPresentation;
     if (name === '../lib/formatNumber') return numberFormat;
     if (name === '../lib/api') return { api: {} };
     if (name === '../lib/priceChange') return { parseChangePercent: Number };

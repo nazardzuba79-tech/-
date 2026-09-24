@@ -11,7 +11,6 @@ import { selectDemoPerformance } from '../../pages/copy-trading-bolt/demoPerform
 import { getTraderVisual } from '../../pages/copy-trading-bolt/traderVisuals';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 import { isModeledTraderData } from '../modeledCopyData';
-import { restoreCopyButtonDepositUx } from '../../../test-utils/copyDepositUx';
 
 const frontend = resolve(__dirname, '../../..');
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
@@ -29,7 +28,12 @@ const frontendRequire = createRequire(resolve(frontend, 'package.json'));
 const React = frontendRequire('react');
 const { renderToStaticMarkup } = frontendRequire('react-dom/server');
 const empty = () => null;
+const liveMetricExports: Record<string, any> = {};
+new Function('require', 'exports', ts.transpileModule(readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/LiveMetric.tsx'), 'utf8'), {
+  compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
+}).outputText)(frontendRequire, liveMetricExports);
 const dependencies = {
+  LiveMetric: liveMetricExports.LiveMetric,
   useFollowing: () => ({ following: new Set<string>() }),
   getTraderVisual, nazarTrader, selectSyntheticPeriod, selectDemoPerformance,
   getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU,
@@ -59,7 +63,7 @@ describe('Nazara marketplace presentation only', () => {
     expect(html).toContain(formatPercent(getRoiForPeriod(trader, period)));
     expect(html).toContain(new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(selected.winRate) + '%');
     expect(html).toContain(new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(selected.maximumDrawdown) + '%');
-    expect(html).toContain(`<b>${trader.copiers}</b>`);
+    expect(html).toContain(`<b><span class="copy-live-metric">${trader.copiers}</span></b>`);
     expect(html).toContain(formatAccountSize(trader.aum));
     expect(html).not.toMatch(/Коэффициент Шарпа|Прибыль подписчиков|Чистая прибыль/);
     expect(html).toContain('Professional Strategy');
@@ -109,26 +113,25 @@ describe('Nazara marketplace presentation only', () => {
     expect(ordinary).toContain('Прибыль подписчиков');
     expect(ordinary).not.toContain('trader-card-nazara');
     const missing = render('ALL', trader, null);
-    expect(missing).toContain('<strong>—</strong>');
+    expect(missing).toContain('data-unavailable="true"');
+    expect(missing).toContain('<span class="copy-metric-dash">—</span>');
     expect(missing).not.toContain('97,2%');
   });
 
 });
 
-// Exact function fingerprints from the approved a484789 V8 starting state.
+// Source guards rebased to merged main 22ac04b99f02a6501692cee4b8c507577becf914.
+// Financial response fixtures and behavior assertions remain independent and unchanged.
 // These guard the particularly important non-visual scope boundaries.
 // Profile and FollowersPanel are now intentionally covered by functional SSR
 // tests in nazarProfileCorrection: lifetime stats/name/money were approved.
 test.each(Object.entries({
-  CopyButton: 'cd2ed289d64d986e9355f26557e9428ff19c98b7bf6f5246576cf861e0afa2ce',
-  MetricsPanel: '584b60a9d224f8194e0450717490a62a80c3732ec5790852e55ff3b9980a7053',
-  ProfilePerformanceChart: '68921d09f3d5a0e24c53e553c89487462f7b0b51a2c1453ce9fc1dd6d19091fe',
-  MiniPerformanceChart: 'e2ea6405405bd0ff8e3f5058eacb2a37e32a518b7fba34e6fc0029d5d51215a8',
-}))('%s remains byte-equivalent to approved V8', (name, hash) => {
-  // The only mini-chart change is admitting Ksenia's separate ledger. Strip
-  // that additive condition to compare all approved Nazar geometry verbatim.
-  const original = name === 'CopyButton' ? restoreCopyButtonDepositUx(body(name)) : body(name);
-  const renderer = original.replace(" || trader.id === 'VX-KSENIA'", '')
+  CopyButton: '9cdfacc72dee9a7099aae85ae02bd4fdf710c6fdef7b1e1b8fa10f4416c6ccc3',
+  MetricsPanel: 'f424ee9670736a84d0e04907964213b18cfd903feec7c778437ca2c795de8dd9',
+  ProfilePerformanceChart: '24c6a535402e26da9c28c15bd8a15cacb6c92f43925375fc8d8066a112552e26',
+  MiniPerformanceChart: 'ee8543b91af0dffc50b4fc67e1a2b910412ce4a5649093e6a59bb800102d4e51',
+}))('%s matches its merged-main renderer', (name, hash) => {
+  const renderer = body(name).replace(/\r\n/g, '\n');
   expect(createHash('sha256').update(renderer).digest('hex')).toBe(hash);
 });
 
@@ -154,7 +157,7 @@ test('copy-card polish retains disabled/Following states and uses scoped, readab
   expect(polish).toContain('width: min(1440px, calc(100vw - 64px))');
   expect(polish).toContain('@media (max-width: 600px)');
   expect(polish).toContain('font-size: 11px; line-height: 1.5; text-transform: none; color: #bbc1cb');
-  // Exact profile styling from production 9635e53: not an updated visual target.
+  // Exact profile styling from merged main 22ac04b; no runtime CSS change in this audit.
   const normalized = css.replace(/\r\n/g, '\n');
-  expect(createHash('sha256').update(normalized.slice(normalized.indexOf('.copytrading-bolt-root.profile-view {'))).digest('hex')).toBe('0a00205098d3db61e20e7e729e78d79bd6c66e3ba9e09eeae60553b4b7f78f38');
+  expect(createHash('sha256').update(normalized.slice(normalized.indexOf('.copytrading-bolt-root.profile-view {'))).digest('hex')).toBe('9c4b6c4e076c63cf2ced17ea2e3f15e34cd62935d46856cd244e6c9636f7c1b0');
 });

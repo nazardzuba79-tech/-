@@ -103,9 +103,10 @@ describe('the homepage does not borrow another route\'s stylesheet', () => {
   it('7. route splitting is intact: the homepage is eager, the rest are not', () => {
     const app = read('src/App.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     expect(app).toContain("from './pages/home/HomePage'");
-    for (const page of ['TradePage', 'FuturesPage', 'WalletPage', 'CopyTradingPage']) {
+    for (const page of ['TradePage', 'FuturesPage', 'WalletPage']) {
       expect(app).toMatch(new RegExp(`lazy\\(\\(\\) => import\\([^)]*${page}`));
     }
+    expect(app).toMatch(/const CopyTradingPage = lazy\(\(\) => \{\s*prefetchCopyMarketplace\(\);\s*return import\('\.\/pages\/CopyTradingPage'\)/);
   });
 
   it('no homepage file imports another route\'s stylesheet', () => {
@@ -144,7 +145,7 @@ describe('the homepage does not borrow another route\'s stylesheet', () => {
           // stops meaning what it says.
           const src = readFileSync(full, 'utf8');
           if (src.match(new RegExp(`import\\s+['"][^'"]*[/']${needle.replace('.', '\\.')}['"]`))) {
-            found.push(full.slice(full.indexOf('src/')));
+            found.push(full.split('\\').join('/').slice(full.split('\\').join('/').indexOf('src/')));
           }
         }
       };

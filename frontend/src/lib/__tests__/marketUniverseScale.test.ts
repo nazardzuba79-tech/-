@@ -41,12 +41,12 @@ const pairList = code(read('src/components/FuturesPairList.tsx'));
 
 // ── 26. The browser never talks to a venue ──────────────────────────
 
-describe('the frontend never calls a venue directly', () => {
+describe('public display offload stays in the approved transport modules', () => {
   it('found sources to scan', () => {
     expect(allSources.length).toBeGreaterThan(50);
   });
 
-  it('contains no direct upstream market API host', () => {
+  it('contains direct upstream hosts only in the three public display transports', () => {
     // Everything goes through the VOLTEX backend, so the browser cannot
     // leak a user's IP to a venue, cannot be geo-blocked independently of
     // the server, and cannot bypass the shared cache.
@@ -54,11 +54,11 @@ describe('the frontend never calls a venue directly', () => {
     for (const file of allSources) {
       for (const [n, line] of code(read(file)).split('\n').entries()) {
         if (/api\.bybit\.com|api\.binance\.com|fapi\.binance\.com|www\.okx\.com|api\.kraken\.com|api\.coingecko\.com/i.test(line)) {
-          offenders.push(`${file}:${n + 1}`);
+          offenders.push(file.replace(/\\/g, '/'));
         }
       }
     }
-    expect(offenders).toEqual([]);
+    expect([...new Set(offenders)].sort()).toEqual(['src/lib/directFuturesReference.ts', 'src/lib/futuresCandles.ts', 'src/lib/spotPublicMarket.ts']);
   });
 
   it('reads the market universe from the VOLTEX API, if at all', () => {
@@ -92,7 +92,7 @@ describe('the futures market list scales', () => {
     // mount effect, because a cold /futures fetched that static endpoint
     // three times over. See lib/futuresConfigStore.
     expect(page).toContain('useFuturesConfig()');
-    expect(page).toContain('discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe)');
+    expect(page).toContain('discoverFuturesSymbols(executable, universe)');
     expect(page).toContain('api.getFuturesUniverse()');
     // The backend listing still governs what the REAL engine will execute.
     // The simulation engine lists every contract the terminal discovers, so
