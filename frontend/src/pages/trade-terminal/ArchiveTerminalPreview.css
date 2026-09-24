@@ -405,6 +405,12 @@
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:auto; min-width:72px; height:26px; min-height:26px; margin:0; padding:4px 10px !important; border:0 !important; border-radius:999px !important; background:var(--control) !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)):hover { background:var(--control-hover) !important; }
 #archive-terminal-preview .futures-position-actions { gap:6px !important; flex-wrap:nowrap; }
+/* The stacked pair on a narrow panel: 22px pills with a 3px gap, 47px in
+   all — the row's 64px less its 16px of padding and the 1px rule above it —
+   so the joined cell never makes the row taller than its neighbours. */
+#archive-terminal-preview .futures-position-close-pair { gap:3px; }
+#archive-terminal-preview .futures-position-close-pair .futures-position-close { height:22px; min-height:22px; min-width:0; padding:3px 9px !important; line-height:16px; }
+#archive-terminal-preview .futures-position-actions--joined .fut-tpslTrigger:has(.fut-tpslAdd) { min-width:0; padding:4px 9px !important; }
 #archive-terminal-preview .fut-tpslAdd { display:inline; min-width:0; height:auto; min-height:0; padding:0; color:#fff !important; font-size:inherit !important; font-weight:inherit !important; line-height:inherit; }
 #archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized) { font-size:13px; line-height:18px; font-weight:500; }
 #archive-terminal-preview .fut-tpslTrigger > span { flex-direction:column; align-items:flex-start; gap:4px; }
