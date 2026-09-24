@@ -121,8 +121,11 @@
 /* ORDER TYPE TABS: the row where the order is chosen gets room — 18px between
    types instead of 8, taller hit areas — and the chosen type is unmistakable:
    still the gold word in bold, now on a 2px gold underline as well (the
-   owner asked for it to stand out more, 2026-09-24). */
-#archive-terminal-preview .order-family-tabs { gap:18px; border-color:var(--border); padding-inline:0; }
+   owner asked for it to stand out more, 2026-09-24). The gap gives way
+   before the labels do: with a classic scrollbar on the column the row is
+   ~287px wide at 1440, and a fixed 18px pushed «Take Profit» 6px past its
+   edge. 244px is the Russian labels' own width plus slack; 8px the old gap. */
+#archive-terminal-preview .order-family-tabs { gap:clamp(8px,calc((100% - 244px) / 3),18px); border-color:var(--border); padding-inline:0; }
 #archive-terminal-preview .order-family-tabs button { font-size:13px; line-height:20px; font-weight:500; padding-inline:0; color:var(--text-secondary); border-bottom:2px solid transparent; border-radius:0; }
 #archive-terminal-preview .order-family-tabs button:hover { color:var(--text-primary); }
 #archive-terminal-preview .order-family-tabs button.active { color:var(--accent); font-weight:700; border-bottom-color:var(--accent); }
