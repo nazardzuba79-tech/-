@@ -1,5 +1,6 @@
 name: Futures design and Pro integration
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'frontend/src/**'
@@ -9,7 +10,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: futures-integration-${{ github.event.pull_request.number }}
+  group: futures-integration-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   regressions:
