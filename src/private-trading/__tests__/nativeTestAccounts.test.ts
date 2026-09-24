@@ -62,7 +62,15 @@ function fixture() {
     nativeDemoLiveProjection: {
       upsert: jest.fn(async ({ create }: any) => ({ userId: create.userId })),
     },
-    $queryRaw: jest.fn(async () => []),
+    $queryRaw: jest.fn(async (parts: TemplateStringsArray, ...values: string[]) => {
+      if (parts.join('?').includes('FROM "User" u LEFT JOIN "Session" s')) {
+        const [sessionId, userId] = values;
+        const user = users[userId], session = sessions[sessionId];
+        return user ? [{ role: user.role, blockedAt: user.blockedAt,
+          sessionUserId: session?.userId ?? null, revokedAt: session?.revokedAt ?? null }] : [];
+      }
+      return [];
+    }),
     $transaction: jest.fn(async (run: any) => run(db)),
     balance: new Proxy({}, { get: () => forbidden }),
     futuresBalance: new Proxy({}, { get: () => forbidden }),
@@ -131,7 +139,10 @@ describe('explicit native test identities, without admin permissions', () => {
   });
   test('allowlist removed during awaited authorization is rechecked', async () => {
     const f = fixture();
-    f.db.user.findUnique.mockImplementation(async () => { process.env.PRIVATE_TRADING_TEST_USER_IDS = SECOND; return f.users[TESTER]; });
+    const read = f.db.$queryRaw.getMockImplementation();
+    f.db.$queryRaw.mockImplementation(async (...args: unknown[]) => {
+      const result = await read(...args); process.env.PRIVATE_TRADING_TEST_USER_IDS = SECOND; return result;
+    });
     await expect(assertNativeTrader(f.db, f.actor(), f.config)).rejects.toMatchObject({ status: 403 });
   });
   test('test native access denied when feature off but real-Futures fence remains', async () => {
