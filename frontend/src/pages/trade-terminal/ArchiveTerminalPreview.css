@@ -118,10 +118,14 @@
 #archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] { border-color:#3a3f48; }
 #archive-terminal-preview .fo-mlRow { gap:10px; }
 #archive-terminal-preview .fo-mlTriggerLevBtn { color:var(--accent); }
-#archive-terminal-preview .order-family-tabs { gap:8px; border-color:var(--border); padding-inline:0; }
-#archive-terminal-preview .order-family-tabs button { font-size:13px; line-height:20px; font-weight:500; padding-inline:0; color:var(--text-secondary); border-bottom-color:transparent; }
+/* ORDER TYPE TABS: the row where the order is chosen gets room — 18px between
+   types instead of 8, taller hit areas — and the chosen type is unmistakable:
+   still the gold word in bold, now on a 2px gold underline as well (the
+   owner asked for it to stand out more, 2026-09-24). */
+#archive-terminal-preview .order-family-tabs { gap:18px; border-color:var(--border); padding-inline:0; }
+#archive-terminal-preview .order-family-tabs button { font-size:13px; line-height:20px; font-weight:500; padding-inline:0; color:var(--text-secondary); border-bottom:2px solid transparent; border-radius:0; }
 #archive-terminal-preview .order-family-tabs button:hover { color:var(--text-primary); }
-#archive-terminal-preview .order-family-tabs button.active { color:var(--accent); font-weight:700; border-bottom-color:transparent; }
+#archive-terminal-preview .order-family-tabs button.active { color:var(--accent); font-weight:700; border-bottom-color:var(--accent); }
 #archive-terminal-preview :is(.fo-label,.fo-fieldCaption,.order-family-label) { font-size:11px; color:var(--text-secondary); }
 #archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input) { background:#1e2126; border:1px solid transparent; border-radius:5px; min-height:42px; transition:border-color 120ms ease, background-color 120ms ease; }
 #archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input):hover { background:#23272e; border-color:transparent; }
@@ -155,10 +159,10 @@
    panel's own 14px. */
 @media (min-width:901px) {
   #archive-terminal-preview .fo-panel { padding:14px 14px 18px; }
-  #archive-terminal-preview .fo-form { gap:12px; }
+  #archive-terminal-preview .fo-form { gap:14px; }
   #archive-terminal-preview .fo-form > .fo-mlWrap { top:14px; left:14px; right:14px; }
   #archive-terminal-preview .order-family-tabs { margin-top:50px; border-bottom:0; }
-  #archive-terminal-preview .order-family-tabs button { padding-block:6px; }
+  #archive-terminal-preview .order-family-tabs button { padding-block:9px 7px; }
   #archive-terminal-preview .percent-slider-continuous { gap:6px; padding:4px 5px 0; }
 }
 #archive-terminal-preview :is(input,button,select) { font-family:var(--font-family); font-variant-numeric:tabular-nums; }
@@ -168,9 +172,11 @@
    inside the box. Same rows, same figures, same order. */
 #archive-terminal-preview .fo-infoBox { background:transparent; border:0; border-top:1px solid var(--border); border-radius:0; padding:12px 0 0; }
 #archive-terminal-preview :is(.fo-infoRow > :first-child,.futures-account-summary .fa-label) { color:var(--archive-label) !important; }
-#archive-terminal-preview .fo-submitPair { gap:10px; position:static; box-shadow:none; }
+/* LONG / SHORT are the screen's main call to action: 48px tall (were 44),
+   same colours — size carries the weight, not saturation. */
+#archive-terminal-preview .fo-submitPair { gap:12px; position:static; box-shadow:none; }
 /* The reference's action weight: 15px at 700 on the same 44px pill. */
-#archive-terminal-preview .fo-submitPair button { position:static; box-shadow:none; border-radius:999px; height:44px; min-height:44px; font-size:15px; font-weight:700; color:#fff; border:0; }
+#archive-terminal-preview .fo-submitPair button { position:static; box-shadow:none; border-radius:999px; height:48px; min-height:48px; font-size:15px; font-weight:700; color:#fff; border:0; }
 #archive-terminal-preview .fo-submitPair .buy { background:#00c67c; color:#fff; }
 #archive-terminal-preview .fo-submitPair .sell { background:#ff3453; color:#fff; }
 #archive-terminal-preview .fo-submitPair button:disabled { opacity:.9; cursor:not-allowed; }

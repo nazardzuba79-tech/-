@@ -78,10 +78,14 @@ describe('2. the trading panel takes the reference hierarchy', () => {
       .toContain('border-color:var(--accent)');
   });
 
-  it('marks the active order type by colour and weight, with no underline', () => {
+  it('marks the active order type by colour, weight and a gold underline', () => {
+    // The reference marked it by colour and weight alone; on 2026-09-24 the
+    // owner asked for the chosen type to stand out more, so it also carries a
+    // 2px underline in the same gold. Colour and weight are unchanged.
     const active = rule('#archive-terminal-preview .order-family-tabs button.active');
     expect(active).toContain('font-weight:700');
-    expect(active).toContain('border-bottom-color:transparent');
+    expect(active).toContain('border-bottom-color:var(--accent)');
+    expect(rule('#archive-terminal-preview .order-family-tabs button')).toContain('border-bottom:2px solid transparent');
   });
 
   it('gives the size slider a SOLID thumb and keeps all five preset buttons', () => {
