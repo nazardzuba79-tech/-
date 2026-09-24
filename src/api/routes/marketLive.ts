@@ -140,6 +140,16 @@ export function marketLiveRouter(source: LiveSource | null, logTermination: SseT
   const router = Router();
   let clients = 0;
   router.get('/market/live', (req,res) => {
+    // The shipped production browser no longer consumes this legacy SSE path:
+    // public market display uses bounded HTTP snapshots / direct venue sockets.
+    // Keep the route for staging/QA, but allow production to hard-stop old
+    // cached EventSource clients with HTTP 204. 204 is intentional: browsers
+    // stop reconnecting an EventSource after it, so a stale bundle cannot burn
+    // Render egress in a reconnect loop.
+    if (process.env.MARKET_LIVE_SSE_ENABLED === '0') {
+      res.set('Cache-Control', 'no-store').status(204).end();
+      return;
+    }
     if (clients >= 2000) { res.status(503).end(); return; }
     // `!!source` matters: headers are flushed below for BOTH paths, so a
     // Content-Encoding decided here can no longer be taken back. The
