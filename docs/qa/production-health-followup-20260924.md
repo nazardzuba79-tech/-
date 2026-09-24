@@ -55,6 +55,10 @@ Source fingerprints were calculated from **git show of the fixed, fetched main S
 database-gated suites skipped (63 tests).** The skips are 50 Futures/native
 PostgreSQL tests and 13 Banking referral PostgreSQL tests. All 63 are explicitly
 enabled against the disposable CI PostgreSQL; they are not counted as local PASS.
+An initial CI rerun passed 5,085 tests but skipped the 17 advisory-lock cases,
+whose dedicated opt-in is VOLTEX_PG_TEST_URL. The workflow now sets that URL
+explicitly to the same disposable loopback database and rejects any skipped
+tests in the full-run JSON. Final results are linked in the PR.
 
 ## Existing production OPEN: measured breakdown
 

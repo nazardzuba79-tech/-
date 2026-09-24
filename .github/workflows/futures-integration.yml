@@ -35,6 +35,7 @@ jobs:
       DATABASE_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_native_egress_test?schema=public
       DIRECT_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_native_egress_test?schema=public
       NATIVE_EGRESS_TEST_DATABASE_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_native_egress_test?schema=public
+      VOLTEX_PG_TEST_URL: postgresql://integration_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_native_egress_test?schema=public
       PRIVATE_TRADING_DB_TESTS: '1'
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +67,15 @@ jobs:
         run: npm test -- --runInBand --silent --json --outputFile=full-regression-tests.json
         env:
           BANKING_DB_TESTS: '1'
+      - name: Require all database-gated tests to execute
+        run: |
+          node - <<'NODE'
+          const result = require('./full-regression-tests.json');
+          console.log({ passed: result.numPassedTests, failed: result.numFailedTests, skipped: result.numPendingTests });
+          if (!result.success || result.numFailedTests || result.numPendingTests || result.numRuntimeErrorTestSuites) {
+            throw new Error('Full regression must pass without skipped database suites');
+          }
+          NODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:

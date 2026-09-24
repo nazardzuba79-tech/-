@@ -3646,3 +3646,4 @@ withdrawal was placed.
 - Preserved all current-main work, including the deployed Futures chart optimization. The earlier uncommitted Futures investigation remains isolated in its own worktree and is not included here. No deploy or merge.
 
 - Audit PR #231 sync: merged current main 36006631058f16002386dfdf85c242577b8f5843 (PR #234) into the review branch; retained both handoff entries and the Kyiv calendar/24-hour activity-dot behavior. No PR was merged to main by this audit.
+- Follow-up CI artifact audit: the first full CI run passed 5085 with 17 advisory-lock tests skipped. Added the explicit disposable VOLTEX_PG_TEST_URL opt-in and a zero-skipped JSON gate; final counts are recorded in PR #231.
