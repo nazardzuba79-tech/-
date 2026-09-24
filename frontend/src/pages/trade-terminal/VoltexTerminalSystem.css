@@ -32,23 +32,25 @@
    and CFD shells. Changing a value here changes all three, which is the
    whole point of it being one block. */
 :is(#archive-terminal-preview, .trade-terminal.vx-terminal) {
-  /* 2026-09-24: the owner approved the lighter palette of the HTML concept
-     («темний занадто темний» on the first draft, then the lighter one) and
-     asked for it on the terminal. Values are the concept's own tokens:
-     canvas #171c25, panel #1d232e, raised #262d3a (+hover #2d3544), line
-     #2e3644, text #f0f3f7 / #c0c8d5 / #9ba5b5, buy #2ebd85. The accent
-     stays VOLTEX gold. The chart plot takes the panel colour so the chart
-     no longer sits in a darker well than the panels around it. */
-  --studio-canvas:#171c25; --workspace-bg:#1d232e; --studio-panel:#1d232e;
-  --panel:#1d232e; --panel-alt:#262d3a; --studio-raised:#262d3a; --panel-alt-hover:#2d3544;
-  --bg-primary:#171c25; --bg-secondary:#1d232e; --bg-tertiary:#262d3a;
-  --toolbar-bg:#1d232e; --chart-bg:#1d232e; --voltex-plot-background:#1d232e;
-  --border:#2e3644; --border-color:#2e3644; --panel-border:#2e3644; --layer-border:#2e3644;
-  --field-line:#3d4757; --control:#313a49; --control-hover:#3a4455;
-  --text-primary:#f0f3f7; --text-secondary:#c0c8d5; --text-tertiary:#9ba5b5;
-  --archive-label:#c0c8d5;
+  /* 2026-09-24: the owner first approved the lighter palette of the HTML
+     concept, then, seeing it beside the reference terminals, found it too
+     light («фон здається занадто світлий») and asked for the surfaces 1:1
+     from the reference's dark theme. Sampled from the owner's screenshot:
+     header, right panel, bottom panel and chart are all #181a20 over a
+     #0b0e11 page; the raised surface is #1e2329, the line #2b3139, the
+     control frame #474d57, text #eaecef / #b7bdc6 / #848e9c, buy #0ecb81,
+     sell #f6465d. The accent stays VOLTEX gold. Every panel, the chart
+     included, takes the one panel colour. */
+  --studio-canvas:#0b0e11; --workspace-bg:#181a20; --studio-panel:#181a20;
+  --panel:#181a20; --panel-alt:#1e2329; --studio-raised:#1e2329; --panel-alt-hover:#2b3139;
+  --bg-primary:#0b0e11; --bg-secondary:#181a20; --bg-tertiary:#1e2329;
+  --toolbar-bg:#181a20; --chart-bg:#181a20; --voltex-plot-background:#181a20;
+  --border:#2b3139; --border-color:#2b3139; --panel-border:#2b3139; --layer-border:#2b3139;
+  --field-line:#474d57; --control:#2b3139; --control-hover:#474d57;
+  --text-primary:#eaecef; --text-secondary:#b7bdc6; --text-tertiary:#848e9c;
+  --archive-label:#b7bdc6;
   --accent:#f0b90b; --accent-yellow:#f0b90b; --color-accent:#f0b90b;
-  --color-buy:#2ebd85; --buy:#2ebd85; --color-sell:#f6465d; --sell:#f6465d;
+  --color-buy:#0ecb81; --buy:#0ecb81; --color-sell:#f6465d; --sell:#f6465d;
   --font-family:'Inter Terminal',Inter,system-ui,sans-serif;
   color:var(--text-primary); background:var(--studio-canvas); font-family:var(--font-family);
   font-variant-numeric:tabular-nums;
