@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { LANGUAGES, type Lang } from '../lib/i18n';
 
@@ -63,17 +63,23 @@ export function LanguageSwitcher({ variant = 'icon', quoteAsset }: { variant?: '
   );
 }
 
-/** The flag of the language's country, 3:2, simplified to what reads at
- *  20×14px. A hairline ring keeps the white fields (Japan, Korea) visible
- *  on the dark header. In the list the name follows, so there it is
- *  decorative; on the button it is the only thing naming the language. */
+/** The flag of the language's country as a round 18px badge (owner,
+ *  2026-09-24). The 3:2 flag is drawn as before and a 20×20 window of it
+ *  is clipped to a circle — centred, or on the canton / star side where the
+ *  flag's emblem sits there. A hairline ring keeps the white fields (Japan,
+ *  Korea) visible on the dark header. In the list the name follows, so
+ *  there it is decorative; on the button it names the language. */
+const FLAG_WINDOW: Record<Lang, number> = { en: 0, zh: 0, ru: 5, es: 5, hi: 5, ja: 5, ko: 5 };
 function FlagIcon({ lang, label, decorative = false }: { lang: Lang; label: string; decorative?: boolean }) {
+  const clip = `flag-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const x = FLAG_WINDOW[lang] ?? 5;
   return (
-    <svg className="language-flag" width="20" height="14" viewBox="0 0 30 20" style={styles.flag}
+    <svg className="language-flag" width="18" height="18" viewBox={`${x} 0 20 20`} style={styles.flag}
       {...(decorative ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label })}>
       {!decorative && <title>{label}</title>}
-      {FLAGS[lang] ?? FLAGS.en}
-      <rect x="0.25" y="0.25" width="29.5" height="19.5" rx="2" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.5" />
+      <defs><clipPath id={clip}><circle cx={x + 10} cy="10" r="10" /></clipPath></defs>
+      <g clipPath={`url(#${clip})`}>{FLAGS[lang] ?? FLAGS.en}</g>
+      <circle cx={x + 10} cy="10" r="9.7" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="0.6" />
     </svg>
   );
 }
@@ -182,7 +188,7 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 60,
     minWidth: 150,
   },
-  flag: { display: 'block', flex: '0 0 auto', borderRadius: 2 },
+  flag: { display: 'block', flex: '0 0 auto', borderRadius: '50%' },
   option: {
     display: 'flex',
     alignItems: 'center',
