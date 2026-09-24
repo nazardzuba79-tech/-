@@ -404,3 +404,12 @@
 #archive-terminal-preview .fo-tpslNote { color:var(--text-secondary); font-size:12px; line-height:1.45; margin:6px 0; }
 #archive-terminal-preview .fo-tpslBox { padding:8px 0; font-size:12px; }
 #archive-terminal-preview .futures-position-contract small { white-space:nowrap; }
+/* TEXT CONTRAST, as on the reference (owner, 2026-09-24: «шрифт більш
+   контрастний, всюди, де це є у байбіта»). Read off the owner's Bybit
+   screenshot: its figures, headings and chosen tab reach white (glyph peaks
+   246–255 of 255) and its price axis 243; ours stopped at 225–235 and 211.
+   The captions stay grey — the reference's contrast is white figures over
+   quiet labels, not everything bright. */
+#archive-terminal-preview { --text-primary:#ffffff; }
+#archive-terminal-preview :is(.reference-order-heading,.fcd-title) { color:var(--text-primary); }
+#archive-terminal-preview .rb-row > span:not(:first-of-type) { color:var(--text-primary); }

@@ -143,3 +143,18 @@ describe('4. this is polish, not a redesign — and not a mobile redesign', () =
     expect(CSS).toContain('#archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px;');
   });
 });
+
+describe('5. text contrast at the reference level', () => {
+  it('draws figures and headings in white, and leaves the captions grey', () => {
+    // Owner, 2026-09-24: «шрифт більш контрастний, всюди, де це є у байбіта».
+    expect(rule('#archive-terminal-preview')).toContain('--text-primary:#ffffff');
+    expect(rule('#archive-terminal-preview :is(.reference-order-heading,.fcd-title)')).toContain('color:var(--text-primary)');
+    expect(rule('#archive-terminal-preview .rb-row > span:not(:first-of-type)')).toContain('color:var(--text-primary)');
+    expect(CSS).not.toMatch(/#archive-terminal-preview \{[^}]*--archive-label:#fff/);
+  });
+
+  it('brightens the terminal chart axis to the reference tone', () => {
+    const chart = read('components/PriceChart.tsx');
+    expect(chart).toContain("textColor: terminal ? '#f3f4f6' : '#a3adba'");
+  });
+});
