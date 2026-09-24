@@ -177,6 +177,28 @@
 #archive-terminal-preview .fo-submitPair button:not(:disabled):hover { filter:brightness(1.08); }
 #archive-terminal-preview .futures-account-summary { border-color:var(--border); background:var(--panel) !important; margin-top:16px; }
 #archive-terminal-preview :is(th,.futures-account-summary) { font-size:11px; }
+/* CONTRACT DETAILS under the ticket: the header's facts for the selected
+   contract in one quiet list, the same 11px labels and tabular figures as
+   the account block above it, collapsible like the leverage tiers. */
+/* The column is a flex column and the ticket used to be its only growing
+   child, so it shrank under the new block and its tiers box drew over it.
+   The ticket keeps its own height (and still grows into spare room, so the
+   block sits at the bottom); the column scrolls when the two exceed it. */
+#archive-terminal-preview .order-form-area > .fo-panel { flex:1 0 auto; }
+#archive-terminal-preview .futures-contract-details { margin:0 14px 14px; padding:0; border-top:1px solid var(--border); font-size:11px; flex:0 0 auto; }
+#archive-terminal-preview .fcd-title { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:13px 0; font-size:13px; font-weight:600; line-height:18px; color:var(--text-secondary); cursor:pointer; list-style:none; }
+#archive-terminal-preview .fcd-title::-webkit-details-marker { display:none; }
+#archive-terminal-preview .fcd-title::after { content:''; width:6px; height:6px; flex:0 0 6px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin-right:2px; }
+#archive-terminal-preview .futures-contract-details[open] .fcd-title::after { transform:rotate(225deg); }
+#archive-terminal-preview .fcd-title:hover { color:var(--text-primary); }
+#archive-terminal-preview .fcd-rows { display:flex; flex-direction:column; gap:0; padding-bottom:4px; }
+#archive-terminal-preview .fcd-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:24px; }
+#archive-terminal-preview .fcd-label { color:var(--archive-label); white-space:nowrap; }
+#archive-terminal-preview .fcd-value { color:var(--text-primary); font-size:12px; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+#archive-terminal-preview .fcd-value .up { color:var(--buy); }
+#archive-terminal-preview .fcd-value .down { color:var(--sell); }
+#archive-terminal-preview .fcd-unit { color:var(--text-tertiary); margin:0 4px; font-size:11px; }
+#archive-terminal-preview .fcd-value .fcd-unit:last-child { margin-right:0; }
 #archive-terminal-preview td { font-size:12px; }
 #archive-terminal-preview .market-ticker-static { background:#080a0f; border-color:var(--border); }
 #archive-terminal-preview .ticker-bar .ticker-item > :is(.label,.value,.archive-price-change,.futures-funding-values) { line-height:20px; }

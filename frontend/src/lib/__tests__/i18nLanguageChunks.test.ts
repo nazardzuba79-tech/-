@@ -147,7 +147,7 @@ describe('translation integrity', () => {
         // name in an open position, which now opens that contract.
         // `futures.orderError.serverUnavailable` names a command the host
         // answered for a restarting API (a code-less 502/503/504).
-        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable'];
+        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable', 'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty'];
         return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
@@ -436,5 +436,22 @@ describe('no wrong-language flash', () => {
     expect(module_).toContain("setState({ lang: 'ru', dict: RU })");
     const effect = module_.slice(module_.indexOf('useEffect(() => {'), module_.indexOf('function setLang'));
     expect(effect).not.toContain('localStorage.setItem');
+  });
+});
+
+// ── Contract details under the order ticket ──────────────────────────
+
+describe('contract details keys', () => {
+  const keys = [
+    'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle',
+    'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
+  ];
+
+  it('are present in every language, each a distinct, non-empty phrase', () => {
+    for (const code of LOCALES) {
+      const values = keys.map(key => dicts[code][key]);
+      expect({ code, missing: keys.filter((key, i) => typeof values[i] !== 'string' || values[i].trim() === '') }).toEqual({ code, missing: [] });
+      expect({ code, distinct: new Set(values).size }).toEqual({ code, distinct: keys.length });
+    }
   });
 });
