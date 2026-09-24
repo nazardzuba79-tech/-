@@ -103,13 +103,59 @@ test('center uses the fresh selected-contract execution; stale execution cannot 
  const trade={id:'latest',price:'100.50',quantity:'0.1',time:Date.now(),side:'BUY'};
  await render('BTC/USDT',bids,asks,[trade]);expect(host.querySelector('.rb-center strong')!.textContent).toBe('100.50');
  await render('BTC/USDT',bids,asks,[{...trade,time:Date.now()-30001}]);
- // The arrow is no longer glued to the front of the number. It has its own
- // fixed-width slot AFTER the price, as the reference terminal draws it, so
- // that a flip from up to down cannot shift the digits sideways. Asserted as
- // the two parts rather than as one concatenated string, which is what the
+ // The arrow is not glued into the number. It has its own fixed-width slot
+ // BEFORE the price, where the owner's Bybit screenshot draws it, so that a
+ // flip from up to down cannot shift the digits sideways. Asserted as the
+ // two parts rather than as one concatenated string, which is what the
  // panel actually guarantees.
  const centre=host.querySelector('.rb-center strong')!;
  expect(centre.querySelector('.rb-last')!.textContent).toBe('100.25');
  expect(centre.querySelector('.rb-arrow')!.textContent).toBe('↓');
- expect(centre.textContent).toBe('100.25↓');
+ expect(centre.textContent).toBe('↓100.25');
+});
+
+test('mark price: drawn under the flag when the design passes one, the spread otherwise, never a fake figure',async()=>{
+ const mount=async(props:any)=>{await act(async()=>root.render(React.createElement(Book,{pair:'BTC/USDT',bids,asks,onPickPrice:pick,trades:[],lastPrice:100.25,...props})));};
+ await mount({});expect(host.querySelector('.rb-mark')).toBeNull();expect(host.querySelector('.rb-center')!.textContent).toContain('trade.spread');
+ await mount({markPrice:100.31});const mark=host.querySelector('.rb-mark')!;
+ expect(mark.textContent).toBe('100.31');expect(mark.getAttribute('title')).toBe('futures.markPrice');expect(mark.querySelector('svg')).not.toBeNull();
+ expect(host.querySelector('.rb-center')!.textContent).not.toContain('trade.spread');
+ for(const bad of [null,0,NaN,-1]){await mount({markPrice:bad});expect(host.querySelector('.rb-mark')!.textContent).toBe('—');}
+});
+
+test('the archive book takes the reference pitch and centre band, and the CSS reads the same numbers',async()=>{
+ await act(async()=>root.render(React.createElement(Book,{pair:'BTC/USDT',bids,asks,onPickPrice:pick,archive:true})));
+ const panel=host.querySelector('.reference-book') as HTMLElement;
+ expect(panel.style.getPropertyValue('--book-row-height')).toBe('28px');
+ expect(panel.style.getPropertyValue('--book-center-height')).toBe('48px');
+ // Without the flag the earlier pitch stands, so no other design moves.
+ await act(async()=>root.render(React.createElement(Book,{pair:'BTC/USDT',bids,asks,onPickPrice:pick})));
+ expect(panel.style.getPropertyValue('--book-row-height')).toBe(`${REFERENCE_ROW_HEIGHT}px`);
+ expect(referenceRowCount(600,true,28,48)).toBe(9);expect(referenceRowCount(600,true)).toBe(14);
+});
+
+/**
+ * The hold: the ladder may change on screen at most once per holdMs. The
+ * first frame after a quiet spell shows at once; frames inside the window
+ * fold into one repaint at its end, newest wins; a pair change is never
+ * held. Grouping is the trader's own action and takes effect immediately
+ * on the frame on screen.
+ */
+test('held repaints: leading edge, then at most one repaint per window, newest frame wins, pair change bypasses',async()=>{
+ jest.useFakeTimers();
+ try{
+  const at=(price:number)=>[level(price,1),level(price-1,2),level(price-2,3)];
+  const mount=async(b:any[],pair='BTC/USDT')=>{await act(async()=>root.render(React.createElement(Book,{pair,bids:b,asks,onPickPrice:pick,archive:true})));};
+  const first=()=>Number(host.querySelector('.rb-bids .rb-row span')!.textContent!.replace(/,/g,''));
+  await mount(at(100));expect(first()).toBe(100);
+  // Inside the window: not shown yet.
+  await act(async()=>{jest.advanceTimersByTime(300);});await mount(at(101));expect(first()).toBe(100);
+  await act(async()=>{jest.advanceTimersByTime(300);});await mount(at(102));expect(first()).toBe(100);
+  // Window closes: one repaint, with the newest frame, not the first one folded.
+  await act(async()=>{jest.advanceTimersByTime(450);});expect(first()).toBe(102);
+  // A quiet spell, then a change: shown at once.
+  await act(async()=>{jest.advanceTimersByTime(1500);});await mount(at(103));expect(first()).toBe(103);
+  // A new pair opens on its own ladder immediately, never on the old one.
+  await mount(at(50),'ETH/USDT');expect(first()).toBe(50);
+ }finally{jest.useRealTimers();}
 });

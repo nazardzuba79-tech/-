@@ -47,7 +47,24 @@ export function visibleDepthRatio(bids: SpotDepthLevel[], asks: SpotDepthLevel[]
 export const REFERENCE_ROW_HEIGHT = 20;
 export const REFERENCE_CENTER_HEIGHT = 36;
 
+/**
+ * The archive terminal's pitch, taken 1:1 from the owner's Bybit screenshot
+ * (2026-09-24, 2000px wide): a 26px bar and a 2px gap per level, a 48px band
+ * for the last and mark price between the ladders. The other designs keep
+ * the 20px pitch above; this is the one the owner looks at.
+ */
+export const ARCHIVE_ROW_HEIGHT = 28;
+export const ARCHIVE_CENTER_HEIGHT = 48;
+/**
+ * How often the archive book's figures may change on screen. The feed
+ * publishes every 400ms; the owner asked for the numbers to move more
+ * slowly than that, so they distract less. One repaint a second keeps the
+ * book readable as a book and still current to the eye. Display only —
+ * see useHeldFrame.
+ */
+export const ARCHIVE_BOOK_HOLD_MS = 1000;
+
 /** Whole rows only: reserve the center price band before dividing the stacks. */
-export function referenceRowCount(height: number, both: boolean): number {
-  return Math.max(1, Math.min(30, Math.floor((height - REFERENCE_CENTER_HEIGHT) / (both ? 2 : 1) / REFERENCE_ROW_HEIGHT)));
+export function referenceRowCount(height: number, both: boolean, rowHeight = REFERENCE_ROW_HEIGHT, centerHeight = REFERENCE_CENTER_HEIGHT): number {
+  return Math.max(1, Math.min(30, Math.floor((height - centerHeight) / (both ? 2 : 1) / rowHeight)));
 }

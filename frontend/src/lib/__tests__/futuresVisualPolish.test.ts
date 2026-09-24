@@ -98,30 +98,81 @@ describe('2. the trading panel takes the reference hierarchy', () => {
   });
 });
 
+/**
+ * 2026-09-24: the owner put this panel beside a Bybit screenshot (2000px
+ * wide) and asked for that book 1:1 — "більш насичений", with the figures
+ * moving more slowly. The numbers below are read off that image: a 26px bar
+ * in a 28px row, 13px white figures with only the price coloured, ask bars
+ * at about .30 and bid bars at about .18 over the panel, no rule lines
+ * around a 48px centre band, the arrow leading the last price and the mark
+ * price under a flag. The .12–.20 bars this section used to pin came from
+ * the earlier Binance recording and are superseded by that request.
+ */
 describe('3. the order book takes the reference treatment, and only its paint', () => {
-  it('draws depth bars that read, on both sides, still inset as separate bars', () => {
-    const alpha = (selector: string) => Number(/rgba\([^)]*,\s*([\d.]+)\)/.exec(rule(selector))![1]);
-    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeGreaterThanOrEqual(0.12);
-    expect(alpha('#archive-terminal-preview .rb-row.bid .rb-depth')).toBeGreaterThanOrEqual(0.12);
-    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeLessThanOrEqual(0.2);
+  const alpha = (selector: string) => Number(/rgba\([^)]*,\s*([\d.]+)\)/.exec(rule(selector))![1]);
+
+  it('draws depth bars at the reference weight: asks about .30, bids about .18', () => {
+    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeGreaterThanOrEqual(0.26);
+    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeLessThanOrEqual(0.34);
+    expect(alpha('#archive-terminal-preview .rb-row.bid .rb-depth')).toBeGreaterThanOrEqual(0.15);
+    expect(alpha('#archive-terminal-preview .rb-row.bid .rb-depth')).toBeLessThanOrEqual(0.22);
+    // Separate bars, not one block: a 1px gap above and below each bar.
+    expect(rule('#archive-terminal-preview .rb-row .rb-depth')).toContain('inset:1px 0');
   });
 
-  it('leads each row with its price, in the side colour', () => {
+  it('leads each row with its price, in the side colour, and the other two figures in white', () => {
     expect(rule('#archive-terminal-preview .rb-row.ask > span:first-of-type')).toContain('font-weight:500');
     expect(rule('#archive-terminal-preview .rb-row.bid > span:first-of-type')).toContain('font-weight:500');
+    const row = rule('#archive-terminal-preview .rb-row');
+    expect(row).toContain('font-size:13px');
+    expect(row).toMatch(/color:#f[0-9a-f]{5}/);
   });
 
-  it('separates the mid band from both ladders', () => {
+  it('draws the centre band without rule lines, the mark price under a flag in the accent', () => {
     const center = rule('#archive-terminal-preview .rb-center');
-    expect(center).toContain('border-top:1px solid var(--border)');
-    expect(center).toContain('border-bottom:1px solid var(--border)');
+    expect(center).toContain('border-top:0');
+    expect(center).toContain('border-bottom:0');
+    expect(center).toContain('min-height:var(--book-center-height)');
+    // The mark price was drawn in the accent like the reference; on
+    // 2026-09-24 the owner found the centre row noisy and asked for the mark
+    // to be smaller and calmer, so it is the tertiary grey at 12px.
+    const mark = rule('#archive-terminal-preview .rb-mark');
+    expect(mark).toContain('color:var(--text-tertiary)');
+    expect(mark).toContain('font-size:12px');
+    const book = strip(read('components/FuturesReferenceBook.tsx'));
+    expect(book.indexOf('className="rb-arrow"')).toBeLessThan(book.indexOf('className="rb-last"'));
   });
 
-  it('does not change the row pitch the depth window is computed from', () => {
-    // Row count = panel height ÷ this constant. A CSS-only row height would
-    // make the rendered ladder and the requested depth disagree, and the
-    // owner chose 20px for visible depth in an earlier task.
-    expect(read('lib/referenceBook.ts')).toContain('export const REFERENCE_ROW_HEIGHT = 20;');
+  it('sizes the header last price to the reference proportion, below the pair name', () => {
+    // Owner, 2026-09-24: the 17px price looked «чуть великий» beside Bybit's.
+    // 15px sits under the 16px pair name, as Bybit's price sits under its symbol.
+    expect(rule('#archive-terminal-preview .ticker-bar .value.price')).toContain('font-size:15px');
+    expect(rule('#archive-terminal-preview .ticker-bar .pair-name')).toContain('font-size:16px');
+  });
+
+  it('keeps the pitch the depth window is computed from in one place, per design', () => {
+    // Row count = panel height ÷ the pitch, and the CSS reads the same
+    // number back through --book-row-height. The other designs keep the
+    // 20px the owner chose earlier; the archive terminal takes the
+    // reference's 28px and 48px band, passed in by the page.
+    const lib = read('lib/referenceBook.ts');
+    expect(lib).toContain('export const REFERENCE_ROW_HEIGHT = 20;');
+    expect(lib).toContain('export const ARCHIVE_ROW_HEIGHT = 28;');
+    expect(lib).toContain('export const ARCHIVE_CENTER_HEIGHT = 48;');
+    const book = strip(read('components/FuturesReferenceBook.tsx'));
+    expect(book).toContain('const rowHeight = archive ? ARCHIVE_ROW_HEIGHT : REFERENCE_ROW_HEIGHT;');
+    expect(book).toContain('const centerHeight = archive ? ARCHIVE_CENTER_HEIGHT : REFERENCE_CENTER_HEIGHT;');
+    expect(PAGE).toContain('archive={archivePreview}');
+    expect(PAGE).toContain('markPrice={archivePreview ? reference.get(symbol)?.markPrice ?? null : undefined}');
+  });
+
+  it('holds the archive book to one repaint a second, and only the archive book', () => {
+    expect(read('lib/referenceBook.ts')).toContain('export const ARCHIVE_BOOK_HOLD_MS = 1000;');
+    const book = strip(read('components/FuturesReferenceBook.tsx'));
+    expect(book).toContain('const holdMs = archive ? ARCHIVE_BOOK_HOLD_MS : 0;');
+    // The hold is the frame the feed published, not a smoothing of it.
+    expect(book).toContain('useHeldFrame(');
+    expect(book).not.toMatch(/transition/);
   });
 });
 

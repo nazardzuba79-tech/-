@@ -37,7 +37,11 @@
 #archive-terminal-preview .ticker-bar .ticker-item { grid-area:auto; display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0; padding:0; border:0; }
 #archive-terminal-preview .ticker-bar .label { font-size:11px; line-height:16px; color:var(--archive-label); white-space:nowrap; }
 #archive-terminal-preview .ticker-bar .value:not(.price) { font-size:13px; line-height:19px; font-weight:550; color:var(--text-primary); white-space:nowrap; }
-#archive-terminal-preview .ticker-bar .value.price { font-size:17px; line-height:21px; font-weight:600; color:var(--text-primary); }
+/* The last price at the reference's proportion (owner, 2026-09-24: «чуть
+   великий»). Read off the owner's Bybit screenshot, its digits stand at 0.94
+   of the symbol's capitals and 1.2 of the stat figures; at 17px ours stood at
+   1.07 and 1.3. 15px puts them at 0.94 and 1.15. */
+#archive-terminal-preview .ticker-bar .value.price { font-size:15px; line-height:20px; font-weight:600; color:var(--text-primary); }
 #archive-terminal-preview .ticker-bar .pair-name { display:flex; gap:6px; align-items:center; font-size:16px; font-weight:650; }
 #archive-terminal-preview .ticker-bar .value.up { color:var(--buy); }
 #archive-terminal-preview .ticker-bar .value.down { color:var(--sell); }
@@ -63,20 +67,41 @@
 #archive-terminal-preview .terminal-chart-shell :is(.chart-tab.active,.chart-tool-btn.active) { color:var(--accent); background:#f0b90b12; }
 #archive-terminal-preview .drawing-rail { background:var(--panel); border-color:var(--border); }
 #archive-terminal-preview .drawing-rail .tool-btn { color:#a6b2c8; }
-#archive-terminal-preview .reference-book { --buy:#28aa7c; --sell:#db5966; background:var(--panel); }
+/* ORDER BOOK, 1:1 WITH THE OWNER'S BYBIT SCREENSHOT (2026-09-24, 2000px wide).
+   Read off the image, not eyeballed: a 26px bar in a 28px row, 13px figures
+   with the quantity and total in white and only the price in the side colour,
+   bars filled from the right at about .30 (asks) and .18 (bids) over the
+   panel, no rule lines around a 48px centre band where the last price is led
+   by its arrow and the mark price sits under a flag in the accent. The .15
+   bars this replaces came from the earlier Binance recording; the owner has
+   since put this panel beside Bybit's and asked for that one. The pitch is
+   set on the panel by the component (--book-row-height), so the row count
+   and the CSS cannot disagree, and nothing here animates. */
+#archive-terminal-preview .reference-book { --buy:#2ebd85; --sell:#f6465d; background:var(--panel); }
 #archive-terminal-preview :is(.rb-controls,.rb-columns,.rb-center) { background:var(--panel); border-color:var(--border); }
-#archive-terminal-preview .rb-columns { font-size:11px; color:var(--text-secondary); }
-#archive-terminal-preview .rb-row { font-size:12px; font-weight:400; padding-inline:10px; color:#d7dde5; }
+#archive-terminal-preview .rb-columns { flex-basis:26px; font-size:12px; color:var(--text-secondary); }
+#archive-terminal-preview .rb-row { font-size:13px; font-weight:400; padding-inline:10px; color:#f4f6f8; }
 #archive-terminal-preview .rb-row.ask > span:first-of-type { color:var(--sell); font-weight:500; }
 #archive-terminal-preview .rb-row.bid > span:first-of-type { color:var(--buy); font-weight:500; }
-#archive-terminal-preview .rb-row.bid .rb-depth { background:rgba(40,170,124,.15); }
-#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(219,89,102,.15); }
-#archive-terminal-preview .rb-ratio[data-available=true] { background:rgba(219,89,102,.10); }
-#archive-terminal-preview .rb-ratio > i { background:#1a302d; }
+#archive-terminal-preview .rb-row .rb-depth { inset:1px 0; }
+#archive-terminal-preview .rb-row.bid .rb-depth { background:rgba(46,189,133,.18); }
+#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(246,70,93,.30); }
+#archive-terminal-preview .rb-row.is-placeholder .rb-depth { display:none; }
+#archive-terminal-preview .rb-ratio[data-available=true] { background:rgba(246,70,93,.14); }
+#archive-terminal-preview .rb-ratio > i { background:rgba(46,189,133,.22); }
 #archive-terminal-preview .rb-ratio[data-available=true] span { color:var(--sell); }
 #archive-terminal-preview .rb-ratio[data-available=true] span:first-of-type { color:var(--buy); }
-#archive-terminal-preview .rb-center { min-height:42px; padding:5px 10px; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
-#archive-terminal-preview .rb-center strong { font-size:20px; font-weight:650; }
+#archive-terminal-preview .rb-center { min-height:var(--book-center-height); padding:0 10px; gap:0 12px; flex-wrap:nowrap; border-top:0; border-bottom:0; }
+/* 17px, not the reference's 20: the owner found 20 jumped out against the
+   13px rows; it is still the largest figure in the book. */
+#archive-terminal-preview .rb-center strong { font-size:17px; font-weight:600; letter-spacing:-.2px; }
+#archive-terminal-preview .rb-center .rb-arrow { width:.7em; font-size:.85em; }
+/* The mark price is a quiet second figure (owner, 2026-09-24: the centre
+   row read as noisy — last price, arrow, mark and gold together): 12px,
+   regular weight, the tertiary grey, no underline, a smaller flag. Only
+   the last price keeps colour. */
+#archive-terminal-preview .rb-mark { display:inline-flex; align-items:center; gap:3px; color:var(--text-tertiary); font-size:12px; line-height:16px; font-weight:400; text-decoration:none; }
+#archive-terminal-preview .rb-mark svg { width:9px; height:9px; flex:0 0 auto; opacity:.8; }
 /* The grouping step is a flat control, like every select in the trading
    panel beside it: the reference's filled surface, no frame. The 1px
    border is kept transparent so the control's size does not move. */

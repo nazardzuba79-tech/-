@@ -275,7 +275,10 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
             text beside it reads as under-weighted, and two do not. */}
         <span className="pair-identity">
           <span className="pair-name">{symbol}{archive && <small className="archive-perpetual">{t('futures.perpetual')}</small>}</span>
-          <span className="pair-asset">{archive ? `${assetName ?? baseAsset} ${quoteAsset}` : assetName}</span>
+          {/* Only the asset's own name, as the reference prints «Bitcoin»
+              under BTCUSDT — never the pair spelled a second time (owner,
+              2026-09-24: «З низу не дублювати, а писати назву актива»). */}
+          <span className="pair-asset">{assetName}</span>
         </span>
         <span className="pair-arrow" aria-hidden="true" />
       </div>
