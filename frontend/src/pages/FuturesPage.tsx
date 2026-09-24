@@ -178,6 +178,21 @@ export function FuturesPage() {
    * accounts keep the exact shared-store object they used before.
    */
   const visibleAccount = nativeExecution?.account ?? account;
+  /** Sum of the open positions' unrealized P&L when every row is valued and
+   *  settles in the same asset; otherwise nothing, never a partial total. */
+  const openPnlTotal = useMemo(() => {
+    const rows = visibleAccount.positions.data;
+    if (!rows?.length) return null;
+    let value = 0;
+    const assets = new Set<string>();
+    for (const row of rows) {
+      const pnl = row.unrealizedPnl === null ? NaN : parseFloat(row.unrealizedPnl);
+      if (!Number.isFinite(pnl)) return null;
+      value += pnl;
+      assets.add(row.symbol.split('/')[1] ?? '');
+    }
+    return assets.size === 1 ? { value, asset: [...assets][0] } : null;
+  }, [visibleAccount.positions.data]);
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'positions'>('chart');
@@ -723,6 +738,16 @@ export function FuturesPage() {
               >
                 {t(tab.labelKey)}
                 {tab.id === 'positions' && <span className="reference-tab-count">{`(${visibleAccount.positions.data?.length ?? '—'})`}</span>}
+                {/* The open exposure's total, on the tab that holds it: the
+                    sum of the rows' own unrealized figures, in their one
+                    quote asset, coloured by sign like the rows. Nothing is
+                    added across assets and nothing is invented for a row
+                    the server has not valued. */}
+                {tab.id === 'positions' && archivePreview && openPnlTotal && (
+                  <span className={`reference-tab-pnl ${openPnlTotal.value >= 0 ? 'text-buy' : 'text-sell'}`} title={t('futures.colUnrealized')}>
+                    {openPnlTotal.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {openPnlTotal.asset}
+                  </span>
+                )}
                 {tab.id === 'orders' && <span className="reference-tab-count">{`(${visibleAccount.orders.data?.length ?? '—'})`}</span>}
               </button>
             ))}
