@@ -24,7 +24,7 @@ function fixture(pathname){
  for(const width of [1920,1280,768,390]){
   const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});await context.addInitScript(()=>{localStorage.setItem('exchange_lang','ru');localStorage.setItem('exchange_token','local-cfd-qa');localStorage.removeItem('voltex_cfd_practice_v1');});
   await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url());if(!['GET','HEAD'].includes(req.method())){report.blockedWrites++;return route.abort();}if(u.origin===origin)return route.continue();denied.add(u.hostname);return route.abort();});
-  const displayRequests=[];context.on('request',req=>{if(new URL(req.url()).pathname.startsWith('/api/v1/cfd/display/'))displayRequests.push(req.url());});
+  const displayRequests=[];context.on('request',req=>{if(new URL(req.url()).pathname==='/api/v1/cfd/display/tickers')displayRequests.push(req.url());});
   const page=await context.newPage();page.setDefaultTimeout(45_000);activePage=page;page.on('pageerror',e=>report.pageErrors.push({width,error:e.message}));await page.goto(origin+'/trade?market=cfd&symbol=XAUUSD',{waitUntil:'domcontentloaded'});
   // One bounded cold-provider warmup retry is allowed; steady state remains six hours.
   // Public no-key feeds can legitimately omit one instrument for a moment, so
@@ -52,7 +52,12 @@ function fixture(pathname){
   // Otherwise the first context can count its still-finishing cold request as
   // a reload request even though the reload itself was served from storage.
   await page.waitForTimeout(750);const before=displayRequests.length;
+  const reloadSymbol=selectedSymbol==='WTIUSD'?'XAUUSD':'WTIUSD';
+  await page.locator('.cfd-option').filter({has:page.locator('.cfd-optionSymbol',{hasText:reloadSymbol})}).first().click();
+  await page.waitForFunction(symbol=>document.querySelector('.cfd-option.active .cfd-optionSymbol')?.textContent?.trim()===symbol,reloadSymbol);
+  if(new URL(page.url()).searchParams.get('symbol')!==reloadSymbol)report.findings.push(`CFD selection URL mismatch at ${width}px`);
   await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')==='ready',null,{timeout:15000});await page.waitForTimeout(1000);
+  if((await page.locator('.cfd-option.active .cfd-optionSymbol').innerText()).trim()!==reloadSymbol)report.findings.push(`CFD selection was lost on reload at ${width}px`);
   if(displayRequests.length!==before)report.findings.push(`CFD snapshot was re-downloaded on reload at ${width}px`);
   // Customer UI intentionally renders no snapshot/cache/feed-age marker.
   await context.close();activePage=null;
