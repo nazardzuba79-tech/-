@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { api } from './api';
+import { getAdminAlertSummary, type AdminAlertSummary } from './adminAlertApi';
 
 // A notification chime is not trading-state freshness. One tiny cursor request
 // per visible minute is enough; detailed admin lists load only on admin pages.
@@ -48,9 +48,7 @@ function playChime() {
   }
 }
 
-type AlertCursor = { depositId: string | null; withdrawalId: string | null; kycId: string | null };
-
-function changed(previous: AlertCursor | null, next: AlertCursor): boolean {
+function changed(previous: AdminAlertSummary | null, next: AdminAlertSummary): boolean {
   return previous !== null && (
     previous.depositId !== next.depositId ||
     previous.withdrawalId !== next.withdrawalId ||
@@ -64,7 +62,7 @@ function changed(previous: AlertCursor | null, next: AlertCursor): boolean {
  * once when visible again.
  */
 export function useAdminAlertSound(enabled: boolean) {
-  const cursor = useRef<AlertCursor | null>(null);
+  const cursor = useRef<AdminAlertSummary | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -75,7 +73,7 @@ export function useAdminAlertSound(enabled: boolean) {
       if (cancelled || running || document.hidden) return;
       running = true;
       try {
-        const next = await api.getAdminAlertSummary();
+        const next = await getAdminAlertSummary();
         if (cancelled) return;
         const hasNew = changed(cursor.current, next);
         cursor.current = next;
