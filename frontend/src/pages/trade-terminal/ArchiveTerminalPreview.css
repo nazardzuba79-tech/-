@@ -15,7 +15,7 @@
  * The composition below — the grid, the track map, the areas — stays here,
  * because it is written against this terminal's DOM and belongs to it alone.
  */
-#archive-terminal-preview .global-header { background:#181a20; --bg:#181a20; height:48px; min-height:48px; padding-inline:20px; border-bottom:1px solid var(--border); }
+#archive-terminal-preview .global-header { background:var(--panel); --bg:var(--panel); height:48px; min-height:48px; padding-inline:20px; border-bottom:1px solid var(--border); }
 #archive-terminal-preview .header-brand { color:#f1f5f9; }
 #archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:550; }
 #archive-terminal-preview .terminal {
@@ -43,17 +43,21 @@
 #archive-terminal-preview .ticker-bar .value.down { color:var(--sell); }
 #archive-terminal-preview .futures-secondary-price :is(.label,.value) { font-size:10px; }
 #archive-terminal-preview :is(.chart-area,.orderbook-area,.order-form-area,.bottom-panel) { min-width:0; border-radius:0; box-shadow:none; background:var(--panel); border:0; }
+/* The studio sheets still paint these three in their own dark (#12161c);
+   on the archive terminal every surface is the panel token, so a palette
+   change is one edit and no island is left behind. */
+#archive-terminal-preview :is(.bottom-content,.drawing-rail-shell,.reference-order-heading) { background:var(--panel); }
 #archive-terminal-preview .chart-area { grid-area:2 / 1 / 3 / 2; }
 #archive-terminal-preview .orderbook-area { grid-area:2 / 2 / 3 / 3; border-left:1px solid var(--border); }
 #archive-terminal-preview .order-form-area { grid-area:1 / 3 / 4 / 4; border-left:1px solid var(--border); overflow-y:auto; min-height:0; }
 #archive-terminal-preview .bottom-panel { grid-area:3 / 1 / 4 / 3; height:auto; min-height:0; max-height:none; border-top:1px solid var(--border); }
 #archive-terminal-preview .bottom-content { min-width:0; min-height:0; overflow:hidden; }
 /* Keep the table's scrollbar at the bottom of its own panel, beside the independent trading rail. */
-#archive-terminal-preview .futures-positions-scroll { min-height:0; overflow-x:scroll !important; overscroll-behavior:contain; scrollbar-width:auto; scrollbar-color:#657082 #171e2a; }
+#archive-terminal-preview .futures-positions-scroll { min-height:0; overflow-x:scroll !important; overscroll-behavior:contain; scrollbar-width:auto; scrollbar-color:#657082 var(--studio-canvas); }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar { width:10px; height:10px; }
-#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:#171e2a; }
-#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:#657082; border:2px solid #171e2a; border-radius:8px; }
-#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-corner { background:#171e2a; }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:var(--studio-canvas); }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:#657082; border:2px solid var(--studio-canvas); border-radius:8px; }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-corner { background:var(--studio-canvas); }
 #archive-terminal-preview .reference-order-heading { display:none; }
 #archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px; min-height:40px; padding-inline:14px; font-size:12px; }
 #archive-terminal-preview .terminal-chart-heading { color:var(--text-primary); }
@@ -80,8 +84,8 @@
 /* The grouping step is a flat control, like every select in the trading
    panel beside it: the reference's filled surface, no frame. The 1px
    border is kept transparent so the control's size does not move. */
-#archive-terminal-preview .rb-controls select { background:#1e2126; border:1px solid transparent; border-radius:5px; font-weight:600; }
-#archive-terminal-preview .rb-controls select:hover { background:#23272e; }
+#archive-terminal-preview .rb-controls select { background:var(--panel-alt); border:1px solid transparent; border-radius:5px; font-weight:600; }
+#archive-terminal-preview .rb-controls select:hover { background:var(--panel-alt-hover); }
 #archive-terminal-preview .rb-controls select:focus-visible { border-color:var(--accent); }
 #archive-terminal-preview .order-form-area .reference-order-heading { display:flex; align-items:center; margin:0; padding:0 14px; height:42px; min-height:42px; font-size:14px; font-weight:600; border-bottom:1px solid var(--border); }
 #archive-terminal-preview .archive-trading-heading { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-right:14px; }
@@ -93,9 +97,9 @@
    hierarchy from the reference». What moved, and only this:
 
    · Every control is a FLAT FILLED SURFACE, not a box in a frame. Fields
-     and both selects share one neutral graphite fill (#1e2126, the
-     reference's input tone) instead of the blue-tinted #172432 with a
-     #2a3948 frame. The border is kept at 1px TRANSPARENT so each control's
+     and both selects share one neutral graphite fill (var(--panel-alt), the
+     reference's input tone) instead of the blue-tinted var(--panel-alt) with a
+     var(--field-line) frame. The border is kept at 1px TRANSPARENT so each control's
      outer size is byte-for-byte what it was: hover and focus still light
      that same border, so the affordance survives without the permanent
      frame. Radius 7 → 5, the reference's.
@@ -113,9 +117,9 @@
    heading icons: the heading keeps exactly the Calculator it had. */
 #archive-terminal-preview .fo-panel { padding:10px 14px 14px; background:var(--panel); height:auto; overflow:visible; }
 #archive-terminal-preview .fo-form { gap:14px; padding:12px 0 0; }
-#archive-terminal-preview .fo-mlTrigger { background:#1e2126; border:1px solid transparent; border-radius:5px; height:32px; min-height:32px; padding:0 10px; font-size:14px; font-weight:600; transition:background-color 120ms ease, border-color 120ms ease; }
-#archive-terminal-preview .fo-mlTrigger:hover:not(:disabled) { background:#23272e; }
-#archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] { border-color:#3a3f48; }
+#archive-terminal-preview .fo-mlTrigger { background:var(--panel-alt); border:1px solid transparent; border-radius:5px; height:32px; min-height:32px; padding:0 10px; font-size:14px; font-weight:600; transition:background-color 120ms ease, border-color 120ms ease; }
+#archive-terminal-preview .fo-mlTrigger:hover:not(:disabled) { background:var(--panel-alt-hover); }
+#archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] { border-color:var(--field-line); }
 #archive-terminal-preview .fo-mlRow { gap:10px; }
 #archive-terminal-preview .fo-mlTriggerLevBtn { color:var(--accent); }
 #archive-terminal-preview .order-family-tabs { gap:8px; border-color:var(--border); padding-inline:0; }
@@ -123,8 +127,8 @@
 #archive-terminal-preview .order-family-tabs button:hover { color:var(--text-primary); }
 #archive-terminal-preview .order-family-tabs button.active { color:var(--accent); font-weight:700; border-bottom-color:transparent; }
 #archive-terminal-preview :is(.fo-label,.fo-fieldCaption,.order-family-label) { font-size:11px; color:var(--text-secondary); }
-#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input) { background:#1e2126; border:1px solid transparent; border-radius:5px; min-height:42px; transition:border-color 120ms ease, background-color 120ms ease; }
-#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input):hover { background:#23272e; border-color:transparent; }
+#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input) { background:var(--panel-alt); border:1px solid transparent; border-radius:5px; min-height:42px; transition:border-color 120ms ease, background-color 120ms ease; }
+#archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input):hover { background:var(--panel-alt-hover); border-color:transparent; }
 #archive-terminal-preview :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input):focus-within { border-color:var(--accent); }
 #archive-terminal-preview .fo-input { background:transparent; font-size:14px; font-weight:600; color:#f8fafc; }
 /* The size slider, as the reference draws it: a thin neutral track, small
@@ -133,12 +137,12 @@
    thing you hold. The five preset percentages stay: they are buttons that
    set the size, not decoration, so they keep their places and only drop to
    the muted tone the reference gives its scale. */
-#archive-terminal-preview .percent-slider-track input::-webkit-slider-runnable-track { height:3px; border-radius:3px; background:linear-gradient(to right,var(--accent) var(--size-percent),#3a3f48 var(--size-percent)); }
+#archive-terminal-preview .percent-slider-track input::-webkit-slider-runnable-track { height:3px; border-radius:3px; background:linear-gradient(to right,var(--accent) var(--size-percent),var(--field-line) var(--size-percent)); }
 #archive-terminal-preview .percent-slider-track input::-webkit-slider-thumb { height:14px; width:14px; margin-top:-5.5px; border:2px solid var(--panel); border-radius:50%; background:var(--accent); box-shadow:0 0 0 1px var(--accent); }
-#archive-terminal-preview .percent-slider-track input::-moz-range-track { height:3px; border-radius:3px; background:#3a3f48; }
+#archive-terminal-preview .percent-slider-track input::-moz-range-track { height:3px; border-radius:3px; background:var(--field-line); }
 #archive-terminal-preview .percent-slider-track input::-moz-range-progress { height:3px; background:var(--accent); }
 #archive-terminal-preview .percent-slider-track input::-moz-range-thumb { height:10px; width:10px; border:2px solid var(--panel); border-radius:50%; background:var(--accent); box-shadow:0 0 0 1px var(--accent); }
-#archive-terminal-preview .percent-slider-marks span { width:9px; height:9px; top:9.5px; border:2px solid #3a3f48; background:#1e2126; }
+#archive-terminal-preview .percent-slider-marks span { width:9px; height:9px; top:9.5px; border:2px solid var(--field-line); background:var(--panel-alt); }
 #archive-terminal-preview .percent-slider-presets button { font-size:11px; color:var(--text-tertiary); padding:0; }
 #archive-terminal-preview .percent-slider-presets button:hover { color:var(--text-secondary); }
 #archive-terminal-preview .percent-slider-presets button[aria-pressed="true"] { color:var(--accent); font-weight:600; }
@@ -202,7 +206,7 @@
 #archive-terminal-preview .archive-order-protection small { display:block; margin-top:9px; }
 #archive-terminal-preview :is(.archive-order-protection,.archive-pair-filter) input[type=checkbox] { accent-color:var(--accent); width:14px; height:14px; margin:0; }
 #archive-terminal-preview .archive-protection-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-#archive-terminal-preview .archive-protection-fields input { min-width:0; width:100%; border:1px solid #2a3948; background:#172432; color:var(--text-primary); padding:10px; border-radius:7px; font-size:13px; }
+#archive-terminal-preview .archive-protection-fields input { min-width:0; width:100%; border:1px solid var(--field-line); background:var(--panel-alt); color:var(--text-primary); padding:10px; border-radius:7px; font-size:13px; }
 #archive-terminal-preview .archive-order-protection small { font-size:11px; line-height:16px; color:var(--text-secondary); }
 #archive-terminal-preview .archive-pair-filter { margin-left:auto; padding:0 12px; display:flex; align-items:center; gap:6px; font-size:11px; white-space:nowrap; color:var(--text-secondary); }
 #archive-terminal-preview .bottom-tabs { padding:0; gap:18px; }
@@ -292,8 +296,8 @@
 }
 
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar { height:10px; }
-#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:#171e2a; }
-#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:#657082; border-radius:5px; border:2px solid #171e2a; }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:var(--studio-canvas); }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:#657082; border-radius:5px; border:2px solid var(--studio-canvas); }
 #archive-terminal-preview .futures-position-row:hover td { --pos-cell-bg:var(--panel-alt); background:var(--pos-cell-bg); }
 #archive-terminal-preview .futures-position-realized { border-bottom:0; text-decoration:none; }
 #archive-terminal-preview .futures-positions-table td.text-buy { color:var(--buy) !important; }
@@ -313,16 +317,16 @@
 #archive-terminal-preview .futures-position-roi { grid-column:1; font-size:12px; line-height:17px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
 #archive-terminal-preview .futures-position-approx { grid-column:1; display:block; font-size:12px; line-height:17px; color:inherit; opacity:1; }
 /* Match protection and close pills, including the inherited inner chip dimensions. */
-#archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:auto; min-width:72px; height:26px; min-height:26px; margin:0; padding:4px 10px !important; border:0 !important; border-radius:999px !important; background:#454b55 !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
-#archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)):hover { background:#626c7a !important; }
+#archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:auto; min-width:72px; height:26px; min-height:26px; margin:0; padding:4px 10px !important; border:0 !important; border-radius:999px !important; background:var(--control) !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
+#archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)):hover { background:var(--control-hover) !important; }
 #archive-terminal-preview .futures-position-actions { gap:6px !important; flex-wrap:nowrap; }
 #archive-terminal-preview .fut-tpslAdd { display:inline; min-width:0; height:auto; min-height:0; padding:0; color:#fff !important; font-size:inherit !important; font-weight:inherit !important; line-height:inherit; }
 #archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized) { font-size:13px; line-height:18px; font-weight:500; }
 #archive-terminal-preview .fut-tpslTrigger > span { flex-direction:column; align-items:flex-start; gap:4px; }
 #archive-terminal-preview .fut-tpslChip { font-size:11px !important; font-weight:550 !important; background:transparent !important; padding:0 !important; }
 #archive-terminal-preview .archive-protection-fields input:disabled { opacity:.6; }
-#archive-terminal-preview .nav-wallet-link { display:inline-flex; align-items:center; gap:7px; background:#161c2b; border:1px solid #293246; border-radius:5px; color:#e2e8f0; box-shadow:none; }
-#archive-terminal-preview .nav-wallet-link:hover { background:#202a3b; border-color:#45536a; color:#fff; }
+#archive-terminal-preview .nav-wallet-link { display:inline-flex; align-items:center; gap:7px; background:var(--panel-alt); border:1px solid var(--border); border-radius:5px; color:var(--text-primary); box-shadow:none; }
+#archive-terminal-preview .nav-wallet-link:hover { background:var(--panel-alt-hover); border-color:var(--field-line); color:#fff; }
 #archive-terminal-preview .nav-wallet-link svg { color:var(--accent); }
 /* The admin chip in the terminal's own header: the same construction this
    sheet gives the wallet chip beside it — flat fill, real 1px border, 5px
@@ -337,33 +341,33 @@
 #archive-terminal-preview .archive-pnl-open { grid-column:2; grid-row:1 / 4; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; margin:0; padding:3px; border:0; border-radius:4px; color:#bdc9da; background:transparent; cursor:pointer; }
 #archive-terminal-preview .archive-pnl-open:hover { color:var(--accent); border-color:var(--accent); }
 #archive-terminal-preview .order-family-tabs button { border-left:0; border-right:0; box-shadow:none; }
-#archive-terminal-preview .archive-tool-dialog { position:fixed; inset:0; margin:auto; width:min(440px,calc(100vw - 32px)); max-height:90dvh; padding:0; border:1px solid #364258; border-radius:14px; background:#101722; color:#e2e8f0; box-shadow:0 24px 100px #0008; font-family:var(--font-family); }
+#archive-terminal-preview .archive-tool-dialog { position:fixed; inset:0; margin:auto; width:min(440px,calc(100vw - 32px)); max-height:90dvh; padding:0; border:1px solid var(--border); border-radius:14px; background:var(--panel); color:var(--text-primary); box-shadow:0 24px 100px #0008; font-family:var(--font-family); }
 #archive-terminal-preview .archive-tool-dialog::backdrop { background:#03070bc9; }
-#archive-terminal-preview .archive-tool-dialog > header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid #29344a; font-size:14px; }
+#archive-terminal-preview .archive-tool-dialog > header { display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--border); font-size:14px; }
 #archive-terminal-preview .archive-tool-dialog > header button { display:flex; background:transparent; border:0; color:#b7c6d7; padding:4px; cursor:pointer; }
-#archive-terminal-preview .archive-profit-card { padding:28px; background:radial-gradient(ellipse at bottom right,#473c173d,transparent 65%),#101722; }
+#archive-terminal-preview .archive-profit-card { padding:28px; background:radial-gradient(ellipse at bottom right,#473c173d,transparent 65%),var(--panel); }
 #archive-terminal-preview .archive-profit-contract { display:flex; align-items:center; gap:12px; margin:32px 0 26px; }
 #archive-terminal-preview .archive-profit-contract strong { font-size:20px; }
 #archive-terminal-preview .archive-profit-contract span { font-size:12px; }
-#archive-terminal-preview .archive-card-caption { display:block; color:#96a7bc; font-size:12px; }
+#archive-terminal-preview .archive-card-caption { display:block; color:var(--text-tertiary); font-size:12px; }
 #archive-terminal-preview .archive-profit-amount { display:block; font-size:38px; line-height:1.4; letter-spacing:-1px; margin-top:8px; font-weight:650; }
 #archive-terminal-preview .archive-profit-amount small { font-size:16px; letter-spacing:0; }
 #archive-terminal-preview .archive-profit-roi { font-size:24px; font-weight:550; }
-#archive-terminal-preview .archive-profit-card dl { display:grid; grid-template-columns:1fr 1fr; gap:24px; padding-top:26px; margin:28px 0 0; border-top:1px solid #29344a; }
-#archive-terminal-preview .archive-tool-dialog dt { color:#96a7bc; font-size:12px; }
+#archive-terminal-preview .archive-profit-card dl { display:grid; grid-template-columns:1fr 1fr; gap:24px; padding-top:26px; margin:28px 0 0; border-top:1px solid var(--border); }
+#archive-terminal-preview .archive-tool-dialog dt { color:var(--text-tertiary); font-size:12px; }
 #archive-terminal-preview .archive-tool-dialog dd { margin:7px 0 0; font-size:16px; font-weight:550; }
 #archive-terminal-preview .archive-calculator-body { padding:22px; }
 #archive-terminal-preview .archive-calculator-sides { display:flex; gap:8px; margin:18px 0; }
-#archive-terminal-preview .archive-calculator-sides button { flex:1; padding:9px; border:1px solid #334155; border-radius:6px; background:#172432; color:#c7d2e0; }
+#archive-terminal-preview .archive-calculator-sides button { flex:1; padding:9px; border:1px solid var(--field-line); border-radius:6px; background:var(--panel-alt); color:var(--text-primary); }
 #archive-terminal-preview .archive-calculator-sides button[aria-pressed=true] { color:#f0b90b; border-color:#9e7a11; background:#f0b90b10; }
 #archive-terminal-preview .archive-calculator-fields { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 #archive-terminal-preview .archive-calculator-fields label { font-size:12px; color:#b3c0d1; }
-#archive-terminal-preview .archive-calculator-fields input { display:block; width:100%; min-width:0; margin-top:7px; padding:10px; font-size:14px; color:#e2e8f0; border:1px solid #334155; border-radius:7px; background:#172432; }
-#archive-terminal-preview .archive-calculator-results { margin:20px 0; padding:16px; border:1px solid #29344a; border-radius:8px; }
+#archive-terminal-preview .archive-calculator-fields input { display:block; width:100%; min-width:0; margin-top:7px; padding:10px; font-size:14px; color:var(--text-primary); border:1px solid var(--field-line); border-radius:7px; background:var(--panel-alt); }
+#archive-terminal-preview .archive-calculator-results { margin:20px 0; padding:16px; border:1px solid var(--border); border-radius:8px; }
 #archive-terminal-preview .archive-calculator-results > div { display:flex; align-items:center; justify-content:space-between; padding:5px 0; }
 #archive-terminal-preview .archive-calculator-results dd { margin:0; }
-#archive-terminal-preview .archive-calculator-body > small { font-size:11px; line-height:16px; color:#96a7bc; }
-#archive-terminal-preview > .archive-top-assets { order:3; flex:0 0 28px; height:28px; min-height:28px; display:flex; align-items:center; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; background:#0b1019; border-top:1px solid var(--border); }
+#archive-terminal-preview .archive-calculator-body > small { font-size:11px; line-height:16px; color:var(--text-tertiary); }
+#archive-terminal-preview > .archive-top-assets { order:3; flex:0 0 28px; height:28px; min-height:28px; display:flex; align-items:center; overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; background:var(--panel); border-top:1px solid var(--border); }
 #archive-terminal-preview .archive-top-assets > :is(button,.archive-top-asset) { flex:1 0 auto; display:flex; align-items:center; justify-content:center; gap:8px; min-height:26px; margin:0; padding:0 14px; border:0; border-right:1px solid var(--border); background:transparent; color:var(--text-secondary); font-size:11px; line-height:16px; white-space:nowrap; }
 #archive-terminal-preview .archive-top-assets strong { font-size:11px; font-weight:600; }
 #archive-terminal-preview .archive-top-assets button { cursor:pointer; }

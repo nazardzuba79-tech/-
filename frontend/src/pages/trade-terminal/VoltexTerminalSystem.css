@@ -32,13 +32,23 @@
    and CFD shells. Changing a value here changes all three, which is the
    whole point of it being one block. */
 :is(#archive-terminal-preview, .trade-terminal.vx-terminal) {
-  --studio-canvas:#080a0f; --workspace-bg:#10141e; --studio-panel:#10141e;
-  --panel:#10141e; --panel-alt:#161c2b; --studio-raised:#161c2b;
-  --bg-primary:#080a0f; --bg-secondary:#10141e; --bg-tertiary:#161c2b;
-  --toolbar-bg:#10141e; --chart-bg:#10141e; --voltex-plot-background:#0b1019;
-  --border:#232b40; --border-color:#232b40; --panel-border:#232b40; --layer-border:#232b40;
-  --text-primary:#e2e8f0; --text-secondary:#a6b2c8; --text-tertiary:#8c9bb3;
-  --archive-label:#b8c2d1;
+  /* 2026-09-24: the owner first approved the lighter palette of the HTML
+     concept, then, seeing it beside the reference terminals, found it too
+     light («фон здається занадто світлий») and asked for the surfaces 1:1
+     from the reference's dark theme. Sampled from the owner's screenshot:
+     header, right panel, bottom panel and chart are all #181a20 over a
+     #0b0e11 page; the raised surface is #1e2329, the line #2b3139, the
+     control frame #474d57, text #eaecef / #b7bdc6 / #848e9c, buy #0ecb81,
+     sell #f6465d. The accent stays VOLTEX gold. Every panel, the chart
+     included, takes the one panel colour. */
+  --studio-canvas:#0b0e11; --workspace-bg:#181a20; --studio-panel:#181a20;
+  --panel:#181a20; --panel-alt:#1e2329; --studio-raised:#1e2329; --panel-alt-hover:#2b3139;
+  --bg-primary:#0b0e11; --bg-secondary:#181a20; --bg-tertiary:#1e2329;
+  --toolbar-bg:#181a20; --chart-bg:#181a20; --voltex-plot-background:#181a20;
+  --border:#2b3139; --border-color:#2b3139; --panel-border:#2b3139; --layer-border:#2b3139;
+  --field-line:#474d57; --control:#2b3139; --control-hover:#474d57;
+  --text-primary:#eaecef; --text-secondary:#b7bdc6; --text-tertiary:#848e9c;
+  --archive-label:#b7bdc6;
   --accent:#f0b90b; --accent-yellow:#f0b90b; --color-accent:#f0b90b;
   --color-buy:#0ecb81; --buy:#0ecb81; --color-sell:#f6465d; --sell:#f6465d;
   --font-family:'Inter Terminal',Inter,system-ui,sans-serif;

@@ -26,8 +26,14 @@ it('the palette is declared once, and both terminals read that one block', () =>
   // the HIGHEST specificity among its arguments, so the id still weighs 100,
   // which is what decided the winner among those ten stylesheets before.
   expect(css).toMatch(/:is\(#archive-terminal-preview,\s*\.trade-terminal\.vx-terminal\)/);
-  for (const token of ['--bg-primary:#080a0f', '--accent-yellow:#f0b90b',
-    '--color-buy:#0ecb81', '--color-sell:#f6465d', '--panel:#10141e', '--border-color:#232b40']) {
+  // 2026-09-24: the owner first approved the HTML concept's lighter palette,
+  // then found it too light beside the reference and asked for the
+  // reference's dark theme 1:1 — page #0b0e11, panel #181a20, line #2b3139,
+  // buy #0ecb81 (the green the terminal shipped with). The accent stays
+  // VOLTEX gold. Still one block, still read by all three terminals —
+  // which is the property pinned here.
+  for (const token of ['--bg-primary:#0b0e11', '--accent-yellow:#f0b90b',
+    '--color-buy:#0ecb81', '--color-sell:#f6465d', '--panel:#181a20', '--border-color:#2b3139']) {
     expect(css).toContain(token);
   }
   // …and the copy it replaced is gone, so there is nothing to drift against.
