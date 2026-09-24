@@ -20,6 +20,9 @@ type Tab = 'open' | 'history';
  * itself is the server's, unrounded until this call, and the caller decides
  * how many decimals the column carries.
  */
+/** Panel width under which the two action columns become one. See `narrow`. */
+const NARROW_ACTIONS_PX = 1250;
+
 function group(value: number, digits: number): string {
   if (!Number.isFinite(value)) return '—';
   return value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -131,6 +134,20 @@ export function FuturesPositionsPanel({
    * chart's and the rail's business.
    */
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * NARROW: TP/SL and «Закрыть как» share one column.
+   *
+   * Below ~1250px of panel (a 1440 screen with the order ticket beside it)
+   * the eleven-column row is ~146px wider than the panel and scrolls under
+   * the pinned edges. The two action columns are the one place the row can
+   * give without losing a figure or wrapping a heading (which the owner
+   * rejected): the TP/SL pill sits beside the two close pills stacked, in
+   * one column, and the P&L card button moves onto the ROI line. Decided
+   * from the PANEL's measured width, never the viewport — the chart and
+   * the rail own how wide the panel is — and only on desktop: the phone
+   * cards keep every column as its own labelled block.
+   */
+  const [narrow, setNarrow] = useState(false);
   useEffect(() => {
     const region = scrollRef.current;
     if (!region || typeof ResizeObserver === 'undefined') return;
@@ -143,6 +160,9 @@ export function FuturesPositionsPanel({
       const pinned = region.querySelector('thead th');
       const pinStart = `${pinned ? Math.round(pinned.getBoundingClientRect().width) : 0}px`;
       if (region.style.getPropertyValue('--pin-start') !== pinStart) region.style.setProperty('--pin-start', pinStart);
+      const compact = archive && region.clientWidth >= 901 && region.clientWidth < NARROW_ACTIONS_PX;
+      region.dataset.narrow = String(compact);
+      setNarrow(previous => previous === compact ? previous : compact);
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -152,7 +172,7 @@ export function FuturesPositionsPanel({
     region.addEventListener('scroll', measure, { passive: true });
     return () => { observer.disconnect(); region.removeEventListener('scroll', measure); };
     // The region is (re)mounted with the rows and the tab; sizes are the observer's.
-  }, [positions, tab]);
+  }, [positions, tab, archive]);
   const history = account.positionHistory.data;
   const activeResource = tab === 'open' ? account.positions : account.positionHistory;
 
@@ -370,17 +390,29 @@ export function FuturesPositionsPanel({
             <table className="futures-positions-table" style={styles.table}>
               <thead>
                 <tr>
+                  {/* The hints say what a heading abbreviates — the owner
+                      himself asked what «Стоим.» is (2026-09-23), and a
+                      trader will too. A title, so nothing is added to the
+                      one-line heading the owner asked to keep. */}
                   <Th>{t('futures.colContracts')}</Th>
                   <Th>{t('futures.colQty')}</Th>
-                  <Th>{t('futures.colValue')}</Th>
-                  <Th>{t('futures.margin')}</Th>
+                  {/* The archive design drops the notional «Стоим.» column
+                      (owner, 2026-09-24) and names the trader's own money
+                      by its professional name, «Начальная маржа». */}
+                  {!archive && <Th title={t('futures.hintValue')}>{t('futures.colValue')}</Th>}
+                  <Th title={t('futures.hintMargin')}>{archive ? t('futures.initialMarginPct') : t('futures.margin')}</Th>
                   <Th>{t('futures.colEntry')}</Th>
-                  <Th>{t('futures.colMark')}</Th>
-                  <Th>{t('futures.colLiq')}</Th>
-                  <Th>{t('futures.colUnrealized')}</Th>
-                  <Th>{t('futures.colRealized')}</Th>
-                  <Th>{t('futures.tpsl')}</Th>
-                  <Th>{t('futures.colCloseAs')}</Th>
+                  <Th title={t('futures.hintMark')}>{t('futures.colMark')}</Th>
+                  <Th title={t('futures.hintLiq')}>{t('futures.colLiq')}</Th>
+                  {/* Narrow: the heading drops its «(ROI)» suffix — the
+                      ROI is still the cell's second line and the hint names
+                      it — because that one word is what keeps the row wider
+                      than a 1440 panel (owner: no heading may wrap). */}
+                  <Th title={t('futures.hintUnrealized')}>{narrow ? t('futures.colUnrealized').replace(/\s*\(ROI\)\s*$/, '') : t('futures.colUnrealized')}</Th>
+                  <Th title={t('futures.hintRealized')}>{t('futures.colRealized')}</Th>
+                  {narrow
+                    ? <Th>{t('futures.tpsl')} · {t('futures.colCloseAs')}</Th>
+                    : <><Th>{t('futures.tpsl')}</Th><Th>{t('futures.colCloseAs')}</Th></>}
                 </tr>
               </thead>
               <tbody>
@@ -464,16 +496,16 @@ export function FuturesPositionsPanel({
                       <Td label={t('futures.colQty')} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
                         {groupQuantity(formatPositionQuantity(p.size, p.symbol))} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
                       </Td>
-                      <Td label={t('futures.colValue')} className="mono">
+                      {!archive && <Td label={t('futures.colValue')} className="mono">
                         {value === null ? '—' : (
                           <>{group(value, 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         )}
-                      </Td>
+                      </Td>}
                       {/* The trader's own money in the trade: the initial
                           margin the position posts — size × entry ÷ leverage
                           on Cross, the posted amount on Isolated. The
                           server's figure, the same one ROI is measured on. */}
-                      <Td label={t('futures.margin')} className="mono">
+                      <Td label={archive ? t('futures.initialMarginPct') : t('futures.margin')} className="mono">
                         {Number.isFinite(parseFloat(p.initialMargin)) ? (
                           <>{group(parseFloat(p.initialMargin), 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         ) : '—'}
@@ -483,6 +515,11 @@ export function FuturesPositionsPanel({
                       <Td label={t('futures.colLiq')} className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
+                      {/* The archive terminal prints a USDT figure with two
+                          decimals and no «≈ USD» line under it: the line
+                          repeated the figure above it to the cent, and cost
+                          the row a third line. Elsewhere the fuller form
+                          stays. */}
                       <Td label={t('futures.colUnrealized')} className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">
                           <span className="futures-position-figure">
@@ -490,12 +527,12 @@ export function FuturesPositionsPanel({
                               className="futures-position-money"
                               data-unit={pnl !== null ? quoteAsset : undefined}
                               data-positive={pnl !== null && pnl > 0 ? 'true' : undefined}
-                            >{pnl !== null ? group(pnl, 4) : '—'}</span>
+                            >{pnl !== null ? group(pnl, archive ? 2 : 4) : '—'}</span>
                             <small
                               className="futures-position-roi"
                               data-positive={roe !== null && roe > 0 ? 'true' : undefined}
                             >{roe !== null ? `${group(roe, 2)}%` : '—'}</small>
-                            {pnl !== null && <small className="futures-position-approx">≈{group(pnl, 2)} USD</small>}
+                            {!archive && pnl !== null && <small className="futures-position-approx">≈{group(pnl, 2)} USD</small>}
                             {archive && <button type="button" className="archive-pnl-open" title={t('futures.pnlCard')} aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
                               onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
                           </span>
@@ -507,60 +544,85 @@ export function FuturesPositionsPanel({
                             className="futures-position-realized"
                             data-unit={Number.isFinite(realized) ? quoteAsset : undefined}
                             data-positive={Number.isFinite(realized) && realized > 0 ? 'true' : undefined}
-                          >{Number.isFinite(realized) ? group(realized, 4) : '—'}</span>
-                          {Number.isFinite(realized) && <small className="futures-position-approx">≈{group(realized, 2)} USD</small>}
+                          >{Number.isFinite(realized) ? group(realized, archive ? 2 : 4) : '—'}</span>
+                          {!archive && Number.isFinite(realized) && <small className="futures-position-approx">≈{group(realized, 2)} USD</small>}
                         </div>
                       </Td>
-                      <Td label={t('futures.tpsl')}>
-                        {/* Real server-held protection, carried on the same
-                            positions payload this table already reads — no
-                            extra endpoint and no extra timer. */}
-                        <FuturesPositionProtectionCell
-                          compactTrigger={archive}
-                          positionId={p.id}
-                          protection={p.protection ?? null}
-                          onSaved={() => execution.refresh(['positions'])}
-                        />
-                      </Td>
-                      <Td label={t('futures.colCloseAs')}>
-                        <div className="futures-position-actions">
-                          {/* «Лимитный» opens «Закрытие по лимиту» for THIS
-                              position — the reference's dialog, which places
-                              a reduce-only LIMIT sized and priced there. The
-                              order form is not involved: its Long/Short pair
-                              could open the opposite side, and a close never
-                              should. */}
-                          <button type="button" className="futures-position-close" data-limit-close-open={p.id}
-                            onClick={() => setLimitClose(p)}>
-                            {t('futures.closeLimit')}
-                          </button>
-                          <button
-                            type="button"
-                            className="futures-position-close"
-                            onClick={() => handleClose(p.id)}
-                            disabled={closingId === p.id}
-                          >
-                            {closingId === p.id ? t('futures.closing') : t('futures.closeMarket')}
-                          </button>
-                          {/* The P&L card, as a compact icon button with a
-                              name — only where a card service exists. */}
-                          {!archive && execution.showPnlCard && (
+                      {/* TP/SL and the two close pills: two columns, or one
+                          on a narrow panel (see `narrow`). The elements are
+                          built once and placed, so both layouts carry the
+                          same controls with the same handlers. */}
+                      {(() => {
+                        /* Real server-held protection, carried on the same
+                           positions payload this table already reads — no
+                           extra endpoint and no extra timer. */
+                        const protection = (
+                          <FuturesPositionProtectionCell
+                            compactTrigger={archive}
+                            compactLabel={narrow}
+                            positionId={p.id}
+                            protection={p.protection ?? null}
+                            onSaved={() => execution.refresh(['positions'])}
+                          />
+                        );
+                        /* «Лимитный» opens «Закрытие по лимиту» for THIS
+                           position — the reference's dialog, which places
+                           a reduce-only LIMIT sized and priced there. The
+                           order form is not involved: its Long/Short pair
+                           could open the opposite side, and a close never
+                           should. */
+                        const closes = (
+                          <>
+                            <button type="button" className="futures-position-close" data-limit-close-open={p.id}
+                              onClick={() => setLimitClose(p)}>
+                              {t('futures.closeLimit')}
+                            </button>
                             <button
                               type="button"
-                              className="futures-position-card"
-                              title={t('futures.pnlCard')}
-                              aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
-                              onClick={() => execution.showPnlCard!(p.id)}
+                              className="futures-position-close"
+                              onClick={() => handleClose(p.id)}
+                              disabled={closingId === p.id}
                             >
-                              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none"
-                                stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
-                                <path d="M8 15l3-3.5 2.4 2.4L16.5 10" />
-                              </svg>
+                              {closingId === p.id ? t('futures.closing') : t('futures.closeMarket')}
                             </button>
-                          )}
-                        </div>
-                      </Td>
+                          </>
+                        );
+                        if (narrow) return (
+                          <Td label={`${t('futures.tpsl')} · ${t('futures.colCloseAs')}`}>
+                            <div className="futures-position-actions futures-position-actions--joined">
+                              {protection}
+                              <div className="futures-position-close-pair">{closes}</div>
+                            </div>
+                          </Td>
+                        );
+                        return (
+                          <>
+                            <Td label={t('futures.tpsl')}>{protection}</Td>
+                            <Td label={t('futures.colCloseAs')}>
+                              <div className="futures-position-actions">
+                                {closes}
+                                {/* The P&L card, as a compact icon button with a
+                                    name — only where a card service exists. */}
+                                {!archive && execution.showPnlCard && (
+                                  <button
+                                    type="button"
+                                    className="futures-position-card"
+                                    title={t('futures.pnlCard')}
+                                    aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
+                                    onClick={() => execution.showPnlCard!(p.id)}
+                                  >
+                                    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none"
+                                      stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+                                      <path d="M8 15l3-3.5 2.4 2.4L16.5 10" />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
+                            </Td>
+                          </>
+                        );
+                      })()}
                     </tr>
                   );
                 })}
@@ -612,8 +674,8 @@ export function FuturesPositionsPanel({
   );
 }
 
-function Th({ children }: { children?: React.ReactNode }) {
-  return <th style={styles.th}>{children}</th>;
+function Th({ children, title }: { children?: React.ReactNode; title?: string }) {
+  return <th style={styles.th} title={title}>{children}</th>;
 }
 function Td({ children, className, style, label }: { children: React.ReactNode; className?: string; style?: React.CSSProperties; label?: string }) {
   return (

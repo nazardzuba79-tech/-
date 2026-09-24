@@ -147,7 +147,12 @@ describe('translation integrity', () => {
         // name in an open position, which now opens that contract.
         // `futures.orderError.serverUnavailable` names a command the host
         // answered for a restarting API (a code-less 502/503/504).
-        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable'];
+        // `futures.hint*` are the six title hints on the positions table's
+        // abbreviated headings (2026-09-24: the owner asked what «Стоим.»
+        // is; the heading itself stays one line, the hint is a title).
+        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
+          'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
+          'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized'];
         return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
@@ -167,6 +172,17 @@ describe('translation integrity', () => {
       const keys = [...readLocale(code).matchAll(/^\s*'(home\.ecosystem\.[^']+)':/gm)].map(match => match[1]);
       expect({ code, keys: keys.sort() }).toEqual({ code, keys: [...restoredEcosystemKeys].sort() });
       for (const key of restoredEcosystemKeys) expect(dicts[code][key].trim()).not.toBe('');
+    }
+  });
+
+  it('carries the six positions-heading hints in every language, translated', () => {
+    for (const key of ['futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized']) {
+      const lines = LOCALES.map((code) => {
+        const line = readLocale(code).split('\n').find((l) => l.includes(`'${key}':`));
+        expect({ code, key, line }).not.toEqual({ code, key, line: undefined });
+        return line!.slice(line!.indexOf(':') + 1).trim();
+      });
+      expect({ key, distinct: new Set(lines).size }).toEqual({ key, distinct: LOCALES.length });
     }
   });
 
@@ -436,5 +452,22 @@ describe('no wrong-language flash', () => {
     expect(module_).toContain("setState({ lang: 'ru', dict: RU })");
     const effect = module_.slice(module_.indexOf('useEffect(() => {'), module_.indexOf('function setLang'));
     expect(effect).not.toContain('localStorage.setItem');
+  });
+});
+
+// ── Contract details under the order ticket ──────────────────────────
+
+describe('contract details keys', () => {
+  const keys = [
+    'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle',
+    'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
+  ];
+
+  it('are present in every language, each a distinct, non-empty phrase', () => {
+    for (const code of LOCALES) {
+      const values = keys.map(key => dicts[code][key]);
+      expect({ code, missing: keys.filter((key, i) => typeof values[i] !== 'string' || values[i].trim() === '') }).toEqual({ code, missing: [] });
+      expect({ code, distinct: new Set(values).size }).toEqual({ code, distinct: keys.length });
+    }
   });
 });

@@ -80,10 +80,14 @@ describe('2. the trading panel takes the reference hierarchy', () => {
       .toContain('border-color:var(--accent)');
   });
 
-  it('marks the active order type by colour and weight, with no underline', () => {
+  it('marks the active order type by colour, weight and a gold underline', () => {
+    // The reference marked it by colour and weight alone; on 2026-09-24 the
+    // owner asked for the chosen type to stand out more, so it also carries a
+    // 2px underline in the same gold. Colour and weight are unchanged.
     const active = rule('#archive-terminal-preview .order-family-tabs button.active');
     expect(active).toContain('font-weight:700');
-    expect(active).toContain('border-bottom-color:transparent');
+    expect(active).toContain('border-bottom-color:var(--accent)');
+    expect(rule('#archive-terminal-preview .order-family-tabs button')).toContain('border-bottom:2px solid transparent');
   });
 
   it('gives the size slider a SOLID thumb and keeps all five preset buttons', () => {
@@ -100,30 +104,81 @@ describe('2. the trading panel takes the reference hierarchy', () => {
   });
 });
 
+/**
+ * 2026-09-24: the owner put this panel beside a Bybit screenshot (2000px
+ * wide) and asked for that book 1:1 — "більш насичений", with the figures
+ * moving more slowly. The numbers below are read off that image: a 26px bar
+ * in a 28px row, 13px white figures with only the price coloured, ask bars
+ * at about .30 and bid bars at about .18 over the panel, no rule lines
+ * around a 48px centre band, the arrow leading the last price and the mark
+ * price under a flag. The .12–.20 bars this section used to pin came from
+ * the earlier Binance recording and are superseded by that request.
+ */
 describe('3. the order book takes the reference treatment, and only its paint', () => {
-  it('draws depth bars that read, on both sides, still inset as separate bars', () => {
-    const alpha = (selector: string) => Number(/rgba\([^)]*,\s*([\d.]+)\)/.exec(rule(selector))![1]);
-    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeGreaterThanOrEqual(0.12);
-    expect(alpha('#archive-terminal-preview .rb-row.bid .rb-depth')).toBeGreaterThanOrEqual(0.12);
-    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeLessThanOrEqual(0.2);
+  const alpha = (selector: string) => Number(/rgba\([^)]*,\s*([\d.]+)\)/.exec(rule(selector))![1]);
+
+  it('draws depth bars at the reference weight: asks about .30, bids about .18', () => {
+    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeGreaterThanOrEqual(0.26);
+    expect(alpha('#archive-terminal-preview .rb-row.ask .rb-depth')).toBeLessThanOrEqual(0.34);
+    expect(alpha('#archive-terminal-preview .rb-row.bid .rb-depth')).toBeGreaterThanOrEqual(0.15);
+    expect(alpha('#archive-terminal-preview .rb-row.bid .rb-depth')).toBeLessThanOrEqual(0.22);
+    // Separate bars, not one block: a 1px gap above and below each bar.
+    expect(rule('#archive-terminal-preview .rb-row .rb-depth')).toContain('inset:1px 0');
   });
 
-  it('leads each row with its price, in the side colour', () => {
+  it('leads each row with its price, in the side colour, and the other two figures in white', () => {
     expect(rule('#archive-terminal-preview .rb-row.ask > span:first-of-type')).toContain('font-weight:500');
     expect(rule('#archive-terminal-preview .rb-row.bid > span:first-of-type')).toContain('font-weight:500');
+    const row = rule('#archive-terminal-preview .rb-row');
+    expect(row).toContain('font-size:13px');
+    expect(row).toMatch(/color:#f[0-9a-f]{5}/);
   });
 
-  it('separates the mid band from both ladders', () => {
+  it('draws the centre band without rule lines, the mark price under a flag in the accent', () => {
     const center = rule('#archive-terminal-preview .rb-center');
-    expect(center).toContain('border-top:1px solid var(--border)');
-    expect(center).toContain('border-bottom:1px solid var(--border)');
+    expect(center).toContain('border-top:0');
+    expect(center).toContain('border-bottom:0');
+    expect(center).toContain('min-height:var(--book-center-height)');
+    // The mark price was drawn in the accent like the reference; on
+    // 2026-09-24 the owner found the centre row noisy and asked for the mark
+    // to be smaller and calmer, so it is the tertiary grey at 12px.
+    const mark = rule('#archive-terminal-preview .rb-mark');
+    expect(mark).toContain('color:var(--text-tertiary)');
+    expect(mark).toContain('font-size:12px');
+    const book = strip(read('components/FuturesReferenceBook.tsx'));
+    expect(book.indexOf('className="rb-arrow"')).toBeLessThan(book.indexOf('className="rb-last"'));
   });
 
-  it('does not change the row pitch the depth window is computed from', () => {
-    // Row count = panel height ÷ this constant. A CSS-only row height would
-    // make the rendered ladder and the requested depth disagree, and the
-    // owner chose 20px for visible depth in an earlier task.
-    expect(read('lib/referenceBook.ts')).toContain('export const REFERENCE_ROW_HEIGHT = 20;');
+  it('sizes the header last price to the reference proportion, below the pair name', () => {
+    // Owner, 2026-09-24: the 17px price looked «чуть великий» beside Bybit's.
+    // 15px sits under the 16px pair name, as Bybit's price sits under its symbol.
+    expect(rule('#archive-terminal-preview .ticker-bar .value.price')).toContain('font-size:15px');
+    expect(rule('#archive-terminal-preview .ticker-bar .pair-name')).toContain('font-size:16px');
+  });
+
+  it('keeps the pitch the depth window is computed from in one place, per design', () => {
+    // Row count = panel height ÷ the pitch, and the CSS reads the same
+    // number back through --book-row-height. The other designs keep the
+    // 20px the owner chose earlier; the archive terminal takes the
+    // reference's 28px and 48px band, passed in by the page.
+    const lib = read('lib/referenceBook.ts');
+    expect(lib).toContain('export const REFERENCE_ROW_HEIGHT = 20;');
+    expect(lib).toContain('export const ARCHIVE_ROW_HEIGHT = 28;');
+    expect(lib).toContain('export const ARCHIVE_CENTER_HEIGHT = 48;');
+    const book = strip(read('components/FuturesReferenceBook.tsx'));
+    expect(book).toContain('const rowHeight = archive ? ARCHIVE_ROW_HEIGHT : REFERENCE_ROW_HEIGHT;');
+    expect(book).toContain('const centerHeight = archive ? ARCHIVE_CENTER_HEIGHT : REFERENCE_CENTER_HEIGHT;');
+    expect(PAGE).toContain('archive={archivePreview}');
+    expect(PAGE).toContain('markPrice={archivePreview ? reference.get(symbol)?.markPrice ?? null : undefined}');
+  });
+
+  it('holds the archive book to one repaint a second, and only the archive book', () => {
+    expect(read('lib/referenceBook.ts')).toContain('export const ARCHIVE_BOOK_HOLD_MS = 1000;');
+    const book = strip(read('components/FuturesReferenceBook.tsx'));
+    expect(book).toContain('const holdMs = archive ? ARCHIVE_BOOK_HOLD_MS : 0;');
+    // The hold is the frame the feed published, not a smoothing of it.
+    expect(book).toContain('useHeldFrame(');
+    expect(book).not.toMatch(/transition/);
   });
 });
 
@@ -139,9 +194,51 @@ describe('4. this is polish, not a redesign — and not a mobile redesign', () =
     expect(rule('#archive-terminal-preview .fo-form')).toContain('gap:14px; padding:12px 0 0');
   });
 
+  it('compacts the unified account card only where the support tab is docked', () => {
+    // 2026-09-24, owner: the card should take less height. Below 1025px the
+    // support launcher floats over the column, so the shared 48px foot that
+    // keeps Deposit/Transfer clear of it must stay there.
+    const docked = /@media \(min-width:1025px\) \{([\s\S]*?)\n\}/.exec(CSS);
+    expect(docked).not.toBeNull();
+    expect(docked![1]).toContain('.futures-account-summary { padding:12px 14px 14px !important; gap:10px !important; }');
+    expect(docked![1]).toContain('.futures-account-actions button { height:32px; min-height:32px; }');
+    expect(CSS.replace(docked![0], '')).not.toMatch(/\.futures-account-summary \{[^}]*padding/);
+  });
+
   it('leaves the shared heading band at one height beside the chart', () => {
     // Стакан/Сделки share this band with the chart's own tabs; changing the
     // book's alone would put two different header heights side by side.
     expect(CSS).toContain('#archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px;');
+  });
+});
+
+describe('5. text contrast at the reference level', () => {
+  it('draws figures and headings in white, and leaves the captions grey', () => {
+    // Owner, 2026-09-24: «шрифт більш контрастний, всюди, де це є у байбіта».
+    expect(rule('#archive-terminal-preview')).toContain('--text-primary:#ffffff');
+    expect(rule('#archive-terminal-preview :is(.reference-order-heading,.fcd-title)')).toContain('color:var(--text-primary)');
+    expect(rule('#archive-terminal-preview .rb-row > span:not(:first-of-type)')).toContain('color:var(--text-primary)');
+    expect(CSS).not.toMatch(/#archive-terminal-preview \{[^}]*--archive-label:#fff/);
+  });
+
+  it('gives units their figure\'s colour and size, and LONG / SHORT the reference colours at full strength', () => {
+    const units = CSS.match(/#archive-terminal-preview :is\(\.futures-position-unit,\.futures-account-stat \.fa-unit,\.fcd-unit\) \{([^}]*)\}/);
+    expect(units).not.toBeNull();
+    expect(units![1]).toContain('color:inherit');
+    expect(units![1]).toContain('font-size:inherit');
+    // The later rule wins: the last .buy / .sell / :disabled declarations in the sheet.
+    const last = (selector: string) => {
+      const all = [...CSS.matchAll(new RegExp(`(?:^|\\n)${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'g'))];
+      return all[all.length - 1][1];
+    };
+    expect(last('#archive-terminal-preview .fo-submitPair .buy')).toContain('background:#1ace88');
+    expect(last('#archive-terminal-preview .fo-submitPair .sell')).toContain('background:#f55065');
+    expect(last('#archive-terminal-preview .fo-submitPair button:disabled')).toContain('opacity:1');
+    expect(last('#archive-terminal-preview .fo-submitPair button')).toContain('height:42px');
+  });
+
+  it('brightens the terminal chart axis to the reference tone', () => {
+    const chart = read('components/PriceChart.tsx');
+    expect(chart).toContain("textColor: terminal ? '#f3f4f6' : '#a3adba'");
   });
 });

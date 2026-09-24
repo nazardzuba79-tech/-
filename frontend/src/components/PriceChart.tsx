@@ -413,8 +413,10 @@ export function PriceChart({
         // as numbers, and 11px of #c7d2e0 on #101014 was drawing the thin
         // strokes of 8, 3 and 5 with a single dim pixel. A point larger and
         // a tone brighter is the whole difference between a figure you read
-        // and one you decipher; the axes are still quieter than the candles.
-        textColor: terminal ? '#dbe3ee' : '#a3adba',
+        // and one you decipher. The terminal's axis now matches the Bybit
+        // reference's (owner, 2026-09-24: more contrast): its price scale
+        // reads at ~243 of 255, where #dbe3ee read at 211.
+        textColor: terminal ? '#f3f4f6' : '#a3adba',
         fontFamily: 'Inter, Arial, sans-serif',
         fontSize: terminal ? 12 : 11,
       },

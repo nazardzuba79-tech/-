@@ -287,7 +287,21 @@ test.each([
     // FuturesPage changes only the depth transport mode from sampled REST to
     // the existing direct Bybit public WebSocket, with Cloudflare public REST
     // as fallback. Order payloads, execution, accounts and private APIs are unchanged.
-    "052913ce7f8f042c46f2d6c6bce8bd910a3a79033e8a6daa77faf03ecd3e47ec"
+    //
+    // Re-taken for the contract details under the order ticket on the
+    // archive design. TWO lines differ: one import of the read-only
+    // `FuturesContractDetails` component and one render site after the
+    // order form, gated on `archivePreview`. No hook, handler, request or
+    // layout class of this page changed; the ticket, the book, the
+    // positions and the account block are byte-identical.
+    //
+    // Re-taken 2026-09-24 for the archive order book: the page passes two
+    // props to FuturesReferenceBook — `archive`, which selects the
+    // reference's 28px pitch and the one-repaint-a-second hold inside the
+    // component, and `markPrice`, the reference quote's mark the book
+    // already had beside it. Display only: the depth transport, the tape,
+    // order payloads, execution and accounts are unchanged.
+    "d09eddc77544cf5933da6eaa8141b916c51a047f59ae2df76c03c8cb366f2733"
   ],
   [
     "components/FuturesPairList.tsx",
