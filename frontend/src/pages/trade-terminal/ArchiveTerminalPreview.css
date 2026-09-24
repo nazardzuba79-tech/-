@@ -50,14 +50,15 @@
 #archive-terminal-preview .bottom-content { min-width:0; min-height:0; overflow:hidden; }
 /* Keep the table's scrollbar at the bottom of its own panel, beside the independent trading rail. */
 /* A quiet scrollbar (owner, 2026-09-24: the 10px grey bar on its own dark
-   track was too visible for the premium look): 6px, no track, a faint
-   thumb that brightens while the pointer is over the table. */
-#archive-terminal-preview .futures-positions-scroll { min-height:0; overflow-x:scroll !important; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:rgba(132,142,156,.28) transparent; }
-#archive-terminal-preview .futures-positions-scroll:hover { scrollbar-color:rgba(132,142,156,.5) transparent; }
-#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar { width:6px; height:6px; }
+   track was too visible for the premium look, and still a little visible
+   at 6px — but it stays, it is not hidden): thin, no track, a thumb at 16%
+   that rises to 36% while the pointer is over the table. */
+#archive-terminal-preview .futures-positions-scroll { min-height:0; overflow-x:scroll !important; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:rgba(132,142,156,.16) transparent; }
+#archive-terminal-preview .futures-positions-scroll:hover { scrollbar-color:rgba(132,142,156,.36) transparent; }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar { width:4px; height:4px; }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:transparent; }
-#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:rgba(132,142,156,.28); border:0; border-radius:3px; }
-#archive-terminal-preview .futures-positions-scroll:hover::-webkit-scrollbar-thumb { background:rgba(132,142,156,.5); }
+#archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:rgba(132,142,156,.16); border:0; border-radius:2px; }
+#archive-terminal-preview .futures-positions-scroll:hover::-webkit-scrollbar-thumb { background:rgba(132,142,156,.36); }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-corner { background:transparent; }
 #archive-terminal-preview .reference-order-heading { display:none; }
 #archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px; min-height:40px; padding-inline:14px; font-size:12px; }
@@ -242,7 +243,7 @@
 /* The padding floor is 14px (was 5): the owner would rather the figures keep
    28px of air between them and the panel scroll sideways under its own
    scrollbar than have them squeezed to fit. */
-@supports (width:1cqw) { #archive-terminal-preview .futures-positions-table { --pos-pnl-extra:clamp(0px,calc((100cqw - 1300px) / 12),20px); --pos-cell-x:clamp(14px,calc((100cqw - 1240px - 2 * var(--pos-pnl-extra)) / 22),16px); } }
+@supports (width:1cqw) { #archive-terminal-preview .futures-positions-table { --pos-pnl-extra:clamp(0px,calc((100cqw - 1400px) / 12),20px); --pos-cell-x:clamp(14px,calc((100cqw - 1240px - 2 * var(--pos-pnl-extra)) / 22),16px); } }
 /* NARROW PANEL (under 1250px, flagged by the component): TP/SL and «Закрыть
    как» share one column, so the row has ten columns and twenty side
    paddings over ~1024px of figures. The padding comes down to 4px where the
@@ -259,7 +260,7 @@
    they get up to 20px more room after them — only out of the panel's spare
    width (`--pos-pnl-extra`, counted in the padding above), never by making
    a row scroll that fitted. */
-#archive-terminal-preview .futures-positions-table :is(th,td):is(:nth-child(8),:nth-child(9)) { padding-inline-end:calc(var(--pos-cell-x) + var(--pos-pnl-extra)) !important; }
+#archive-terminal-preview .futures-positions-table :is(th,td):is(:nth-child(7),:nth-child(8)) { padding-inline-end:calc(var(--pos-cell-x) + var(--pos-pnl-extra)) !important; }
 /* `height:40px`: the studio sheet pins the heading to `height:30px` with
    `padding:0 !important`; one explicit height keeps the band the same at
    every width the geometry check measures, with room for a two-line title. */
@@ -291,7 +292,7 @@
 #archive-terminal-preview .futures-position-unit { color:var(--text-tertiary); font-size:11.5px; font-weight:400; }
 #archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized)[data-unit]::after { font-size:11.5px; font-weight:400; opacity:.8; }
 #archive-terminal-preview .futures-position-empty { color:var(--text-tertiary) !important; font-weight:400; }
-#archive-terminal-preview .futures-positions-table td:is(:nth-child(3),:nth-child(4),:nth-child(5)) { color:#f8fafc !important; }
+#archive-terminal-preview .futures-positions-table td:is(:nth-child(3),:nth-child(4)) { color:#f8fafc !important; }
 /* Both edges are pinned, as the reference pins them: the contract at the
    left, «Закрыть как» at the right, both opaque, so the close pills are on
    screen at every width and the figures scroll UNDER them — a scroll region

@@ -396,8 +396,11 @@ export function FuturesPositionsPanel({
                       one-line heading the owner asked to keep. */}
                   <Th>{t('futures.colContracts')}</Th>
                   <Th>{t('futures.colQty')}</Th>
-                  <Th title={t('futures.hintValue')}>{t('futures.colValue')}</Th>
-                  <Th title={t('futures.hintMargin')}>{t('futures.margin')}</Th>
+                  {/* The archive design drops the notional «Стоим.» column
+                      (owner, 2026-09-24) and names the trader's own money
+                      by its professional name, «Начальная маржа». */}
+                  {!archive && <Th title={t('futures.hintValue')}>{t('futures.colValue')}</Th>}
+                  <Th title={t('futures.hintMargin')}>{archive ? t('futures.initialMarginPct') : t('futures.margin')}</Th>
                   <Th>{t('futures.colEntry')}</Th>
                   <Th title={t('futures.hintMark')}>{t('futures.colMark')}</Th>
                   <Th title={t('futures.hintLiq')}>{t('futures.colLiq')}</Th>
@@ -493,16 +496,16 @@ export function FuturesPositionsPanel({
                       <Td label={t('futures.colQty')} className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}>
                         {groupQuantity(formatPositionQuantity(p.size, p.symbol))} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span>
                       </Td>
-                      <Td label={t('futures.colValue')} className="mono">
+                      {!archive && <Td label={t('futures.colValue')} className="mono">
                         {value === null ? '—' : (
                           <>{group(value, 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         )}
-                      </Td>
+                      </Td>}
                       {/* The trader's own money in the trade: the initial
                           margin the position posts — size × entry ÷ leverage
                           on Cross, the posted amount on Isolated. The
                           server's figure, the same one ROI is measured on. */}
-                      <Td label={t('futures.margin')} className="mono">
+                      <Td label={archive ? t('futures.initialMarginPct') : t('futures.margin')} className="mono">
                         {Number.isFinite(parseFloat(p.initialMargin)) ? (
                           <>{group(parseFloat(p.initialMargin), 2)} <span className="futures-position-unit">{quoteAsset}</span></>
                         ) : '—'}
