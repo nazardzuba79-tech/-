@@ -229,16 +229,29 @@
    «Цена Входа · Цена марк. · Цена ликвид.» ten pixels apart everywhere. The
    row never starts scrolling at a width where it used to fit. */
 #archive-terminal-preview .futures-positions-scroll { container-type:inline-size; }
-#archive-terminal-preview .futures-positions-table { --pos-cell-x:5px; width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
-@supports (width:1cqw) { #archive-terminal-preview .futures-positions-table { --pos-cell-x:clamp(5px,calc((100cqw - 1240px) / 22),16px); } }
+#archive-terminal-preview .futures-positions-table { --pos-cell-x:5px; --pos-pnl-extra:0px; width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
+@supports (width:1cqw) { #archive-terminal-preview .futures-positions-table { --pos-pnl-extra:clamp(0px,calc((100cqw - 1300px) / 12),20px); --pos-cell-x:clamp(5px,calc((100cqw - 1240px - 2 * var(--pos-pnl-extra)) / 22),16px); } }
 #archive-terminal-preview .futures-positions-table :is(th,td) { --pos-cell-bg:var(--panel); width:auto; padding:8px var(--pos-cell-x); padding-inline:var(--pos-cell-x) !important; white-space:nowrap; text-align:left; }
 /* The heading of the contract column starts where the contract name does,
    past the side bar. */
 #archive-terminal-preview .futures-positions-table th:first-child { padding-left:calc(var(--pos-cell-x) + 10px) !important; }
+/* The two P&L columns carry the longest headings, a three-line figure and
+   the P&L card button (owner, 2026-09-23: «текст зажимається» there), so
+   they get up to 20px more room after them — only out of the panel's spare
+   width (`--pos-pnl-extra`, counted in the padding above), never by making
+   a row scroll that fitted. */
+#archive-terminal-preview .futures-positions-table :is(th,td):is(:nth-child(8),:nth-child(9)) { padding-inline-end:calc(var(--pos-cell-x) + var(--pos-pnl-extra)) !important; }
 /* `height:40px`: the studio sheet pins the heading to `height:30px` with
    `padding:0 !important`; one explicit height keeps the band the same at
    every width the geometry check measures, with room for a two-line title. */
-#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:40px; font-size:11px; font-weight:400; line-height:1.25; vertical-align:bottom; border-bottom:0; position:sticky; top:0; z-index:1; }
+#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:40px; font-size:11px; font-weight:400; line-height:1.25; vertical-align:middle; border-bottom:0; position:sticky; top:0; z-index:1; }
+/* The heading band reads as its own strip, as on the reference: titles in
+   the middle of it, a hairline under it, so the first row's figures start
+   clear of the titles and rows scrolling up pass UNDER a ruled band instead
+   of meeting the titles text-on-text (owner, 2026-09-23: «верхній текст не
+   залазить на нижній»). The rule is drawn inside the cell, not as a border:
+   a collapsed border does not travel with a sticky heading. */
+#archive-terminal-preview .futures-positions-table thead th::after { content:''; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--border); pointer-events:none; }
 /* Every heading stays on ONE line (the owner, 2026-09-23: the two-line
    «Цена / Входа», «Цена / маркировки», «Цена / ликвид.» beside one-line
    titles read as text stacked on text). A title is never wrapped to make a
@@ -296,9 +309,9 @@
 #archive-terminal-preview :is(.futures-position-contract small,.archive-cell-secondary) { display:block; color:var(--text-tertiary); font-size:10px; line-height:16px; margin-top:4px; font-weight:400; }
 #archive-terminal-preview .futures-position-contract small { font-size:11px; font-weight:500; margin-top:3px; white-space:nowrap; color:var(--accent); }
 #archive-terminal-preview .futures-position-perp { font-style:normal; font-size:11px; color:var(--text-primary); background:transparent; }
-#archive-terminal-preview .futures-position-figure { display:grid; grid-template-columns:max-content 22px; align-items:center; gap:0 6px; }
-#archive-terminal-preview .futures-position-roi { grid-column:1; font-size:12px; line-height:16px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
-#archive-terminal-preview .futures-position-approx { grid-column:1; display:block; font-size:12px; line-height:16px; color:inherit; opacity:1; }
+#archive-terminal-preview .futures-position-figure { display:grid; grid-template-columns:max-content 22px; align-items:center; gap:0 10px; }
+#archive-terminal-preview .futures-position-roi { grid-column:1; font-size:12px; line-height:17px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
+#archive-terminal-preview .futures-position-approx { grid-column:1; display:block; font-size:12px; line-height:17px; color:inherit; opacity:1; }
 /* Match protection and close pills, including the inherited inner chip dimensions. */
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:auto; min-width:72px; height:26px; min-height:26px; margin:0; padding:4px 10px !important; border:0 !important; border-radius:999px !important; background:#454b55 !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)):hover { background:#626c7a !important; }
@@ -358,7 +371,7 @@
 #archive-terminal-preview .archive-top-assets-status { padding-inline:14px; color:var(--text-tertiary); font-size:11px; }
 @media(min-width:1800px) {
   #archive-terminal-preview .terminal { grid-template-columns:minmax(0,1fr) 292px 350px; }
-  #archive-terminal-preview .futures-positions-table th { font-size:13px; }
+  #archive-terminal-preview .futures-positions-table th { font-size:12px; }
 }
 @media(max-width:1400px) { #archive-terminal-preview .ticker-bar { gap:14px; padding-inline:12px; } }
 @media(max-width:1200px) {

@@ -53,6 +53,7 @@ const WIDTHS = (arg('--widths', '1920x1080,1664x900,1440x900,1366x768,390x844'))
 // The brief asks for screenshots at these three; the other two are measured
 // for clipping and overflow only.
 const SHOT_WIDTHS = new Set(['1440x900', '1664x900', '390x844']);
+const MARKET_EDGE = 'https://market.voltextech.net';
 
 const express = require('express');
 const { chromium } = (()=>{try{return require('playwright');}catch{return require('/opt/node22/lib/node_modules/playwright');}})();
@@ -269,6 +270,22 @@ async function showOnMobile(page, which) {
       const key = `${width}x${height}`;
       const mobile = width <= 900;
       const context = await browser.newContext({ viewport: { width, height }, locale: 'en-US' });
+      // The page reaches only the fixture, as in qa-limit-close. On a runner
+      // with internet the book otherwise subscribes to Bybit's real stream,
+      // and the grouping check reads a live best ask: CI on #220 got
+      // 84,325.00, already a multiple of 5, so grouping to 5 changed nothing.
+      // The REST fallback reads the public market edge, so the edge's
+      // display paths are answered by the fixture's own.
+      await context.route('**/*', async (route) => {
+        const url = route.request().url();
+        if (url.startsWith(`http://127.0.0.1:${PORT}/`)) return route.continue();
+        if (url.startsWith(`${MARKET_EDGE}/market/display/`)) {
+          const response = await route.fetch({ url: `http://127.0.0.1:${PORT}/api/v1${url.slice(MARKET_EDGE.length)}` });
+          return route.fulfill({ response, headers: { ...response.headers(), 'access-control-allow-origin': '*' } });
+        }
+        return route.abort();
+      });
+      await context.routeWebSocket('**/*', socket => socket.close());
       const page = await context.newPage();
       const pageErrors = [];
       page.on('pageerror', (e) => pageErrors.push((e.stack || String(e)).split('\n')[0]));
