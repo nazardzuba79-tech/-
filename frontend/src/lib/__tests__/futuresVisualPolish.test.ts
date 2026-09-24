@@ -141,6 +141,17 @@ describe('4. this is polish, not a redesign — and not a mobile redesign', () =
     expect(rule('#archive-terminal-preview .fo-form')).toContain('gap:14px; padding:12px 0 0');
   });
 
+  it('compacts the unified account card only where the support tab is docked', () => {
+    // 2026-09-24, owner: the card should take less height. Below 1025px the
+    // support launcher floats over the column, so the shared 48px foot that
+    // keeps Deposit/Transfer clear of it must stay there.
+    const docked = /@media \(min-width:1025px\) \{([\s\S]*?)\n\}/.exec(CSS);
+    expect(docked).not.toBeNull();
+    expect(docked![1]).toContain('.futures-account-summary { padding:12px 14px 14px !important; gap:10px !important; }');
+    expect(docked![1]).toContain('.futures-account-actions button { height:32px; min-height:32px; }');
+    expect(CSS.replace(docked![0], '')).not.toMatch(/\.futures-account-summary \{[^}]*padding/);
+  });
+
   it('leaves the shared heading band at one height beside the chart', () => {
     // Стакан/Сделки share this band with the chart's own tabs; changing the
     // book's alone would put two different header heights side by side.

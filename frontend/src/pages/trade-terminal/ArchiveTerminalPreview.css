@@ -183,6 +183,20 @@
 #archive-terminal-preview .fo-submitPair button:not(:disabled):hover { filter:brightness(1.08); }
 #archive-terminal-preview .futures-account-summary { border-color:var(--border); background:var(--panel) !important; margin-top:16px; }
 #archive-terminal-preview :is(th,.futures-account-summary) { font-size:11px; }
+/* Unified account, compact: same five figures and two actions, less air.
+   The 48px foot the shared rule reserves for the support tab is not needed
+   where that tab is docked (≥1025px): the column already stops above it,
+   so the card closes on its own 14px. Rows 4px apart, a 24px heading, 32px
+   actions. Narrower screens, where the launcher floats, keep the reserve.
+   The actions' 2px top margin is an inline style, hence !important. */
+@media (min-width:1025px) {
+  #archive-terminal-preview .futures-account-summary { padding:12px 14px 14px !important; gap:10px !important; }
+  #archive-terminal-preview .futures-account-heading { min-height:24px; }
+  #archive-terminal-preview .futures-account-heading button { flex:0 0 24px; width:24px; height:24px; }
+  #archive-terminal-preview .futures-account-figures { row-gap:4px; }
+  #archive-terminal-preview .futures-account-actions { margin-top:0 !important; }
+  #archive-terminal-preview .futures-account-actions button { height:32px; min-height:32px; }
+}
 #archive-terminal-preview td { font-size:12px; }
 #archive-terminal-preview .market-ticker-static { background:#080a0f; border-color:var(--border); }
 #archive-terminal-preview .ticker-bar .ticker-item > :is(.label,.value,.archive-price-change,.futures-funding-values) { line-height:20px; }
