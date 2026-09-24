@@ -78,10 +78,14 @@ describe('2. the trading panel takes the reference hierarchy', () => {
       .toContain('border-color:var(--accent)');
   });
 
-  it('marks the active order type by colour and weight, with no underline', () => {
+  it('marks the active order type by colour, weight and a gold underline', () => {
+    // The reference marked it by colour and weight alone; on 2026-09-24 the
+    // owner asked for the chosen type to stand out more, so it also carries a
+    // 2px underline in the same gold. Colour and weight are unchanged.
     const active = rule('#archive-terminal-preview .order-family-tabs button.active');
     expect(active).toContain('font-weight:700');
-    expect(active).toContain('border-bottom-color:transparent');
+    expect(active).toContain('border-bottom-color:var(--accent)');
+    expect(rule('#archive-terminal-preview .order-family-tabs button')).toContain('border-bottom:2px solid transparent');
   });
 
   it('gives the size slider a SOLID thumb and keeps all five preset buttons', () => {
@@ -135,6 +139,17 @@ describe('4. this is polish, not a redesign — and not a mobile redesign', () =
     // Outside it, the panel keeps main's own padding and form rhythm.
     expect(rule('#archive-terminal-preview .fo-panel')).toContain('padding:10px 14px 14px');
     expect(rule('#archive-terminal-preview .fo-form')).toContain('gap:14px; padding:12px 0 0');
+  });
+
+  it('compacts the unified account card only where the support tab is docked', () => {
+    // 2026-09-24, owner: the card should take less height. Below 1025px the
+    // support launcher floats over the column, so the shared 48px foot that
+    // keeps Deposit/Transfer clear of it must stay there.
+    const docked = /@media \(min-width:1025px\) \{([\s\S]*?)\n\}/.exec(CSS);
+    expect(docked).not.toBeNull();
+    expect(docked![1]).toContain('.futures-account-summary { padding:12px 14px 14px !important; gap:10px !important; }');
+    expect(docked![1]).toContain('.futures-account-actions button { height:32px; min-height:32px; }');
+    expect(CSS.replace(docked![0], '')).not.toMatch(/\.futures-account-summary \{[^}]*padding/);
   });
 
   it('leaves the shared heading band at one height beside the chart', () => {
