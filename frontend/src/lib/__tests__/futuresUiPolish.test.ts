@@ -287,7 +287,14 @@ test.each([
     // FuturesPage changes only the depth transport mode from sampled REST to
     // the existing direct Bybit public WebSocket, with Cloudflare public REST
     // as fallback. Order payloads, execution, accounts and private APIs are unchanged.
-    "052913ce7f8f042c46f2d6c6bce8bd910a3a79033e8a6daa77faf03ecd3e47ec"
+    //
+    // Re-taken for the contract details under the order ticket on the
+    // archive design. TWO lines differ: one import of the read-only
+    // `FuturesContractDetails` component and one render site after the
+    // order form, gated on `archivePreview`. No hook, handler, request or
+    // layout class of this page changed; the ticket, the book, the
+    // positions and the account block are byte-identical.
+    "a630c750990798275a10ddf94a6b90458c47b259d3495d27740a3263a79f8a58"
   ],
   [
     "components/FuturesPairList.tsx",

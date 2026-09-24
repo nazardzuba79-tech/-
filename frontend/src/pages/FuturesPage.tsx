@@ -9,6 +9,7 @@ import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
 import { FuturesTerminalStatus } from '../components/FuturesTerminalStatus';
+import { FuturesContractDetails } from '../components/FuturesContractDetails';
 import { ArchiveAccountActivity } from '../components/ArchiveTerminalDetails';
 import { Calculator } from 'lucide-react';
 import { ArchiveTopAssets } from '../components/ArchiveTopAssets';
@@ -704,6 +705,9 @@ export function FuturesPage() {
               calculatorDraft={calculatorDraft ?? undefined}
               onOpenCalculator={() => setCalculatorOpen(true)}
             />
+            {/* The contract's facts under the ticket, on the design the owner
+               looks at. Read-only; the ticket above is untouched. */}
+            {archivePreview && <FuturesContractDetails symbol={symbol} />}
           </div>
         </div>
 
