@@ -256,6 +256,17 @@ function expectedUsagePercent(part, equity) {
 
 async function accountSummary(page, state) {
   await workspace(page, 'trade');
+  // The command response is authoritative, but React applies the matching
+  // execution context on its next render. Order-book presentation can add
+  // another paint before that render on slower/mobile CI. Wait for the exact
+  // returned equity instead of asserting against a one-render-old card.
+  // This does NOT relax the financial assertion: a wrong/stuck value still
+  // fails after the short UI-settle window.
+  const expectedBalance = Number(state.account.equity).toFixed(2);
+  await page.waitForFunction((expected) => {
+    const text = document.querySelector('.futures-account-balance .fa-amount')?.textContent ?? '';
+    return text.replace(/,/g, '').trim() === expected;
+  }, expectedBalance, { timeout: 3000 });
   const g = await page.locator('.futures-account-summary').evaluate(e => ({
     balance: e.querySelector('.futures-account-balance .fa-value')?.textContent,
     available: e.querySelector('.futures-account-available .fa-value')?.textContent,
