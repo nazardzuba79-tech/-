@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { api } from './api';
 
-const POLL_MS = 15_000;
+// Admin alerts are not trading-state freshness. One minute keeps the chime useful\n// without downloading three full admin lists four times a minute on every page.\nconst POLL_MS = 60_000;
 const SOUND_PREF_KEY = 'exchange_admin_alert_sound';
 
 export function isAdminAlertSoundEnabled(): boolean {
@@ -73,6 +73,7 @@ export function useAdminAlertSound(enabled: boolean) {
     let cancelled = false;
 
     async function poll() {
+      if (document.hidden) return;
       try {
         const [deposits, withdrawals, clients] = await Promise.all([
           api.getAdminDeposits(),
@@ -100,11 +101,14 @@ export function useAdminAlertSound(enabled: boolean) {
       }
     }
 
-    poll();
-    const interval = setInterval(poll, POLL_MS);
+    void poll();
+    const interval = setInterval(() => { void poll(); }, POLL_MS);
+    const onVisibility = () => { if (!document.hidden) void poll(); };
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelled = true;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [enabled]);
 }
