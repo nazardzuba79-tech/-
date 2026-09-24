@@ -3610,6 +3610,14 @@ withdrawal was placed.
 
 ### 2026-09-23 — Claude — Positions table: room between the columns, quiet units, pinned edges fade instead of slicing a word
 
+### 2026-09-24 05:20 UTC — Codex — Read-only production health audit
+
+- Main/runtime audited: `22ac04b99f02a6501692cee4b8c507577becf914`; CI-tested change: `510060ad6ee2039ccc07af3ace4d1825831049bc`; draft PR #231. This handoff/report follow-up changes documentation only.
+- Files: five existing CI workflows gained manual dispatch (four also gained branch-aware non-PR concurrency); `docs/qa/production-health-audit-20260924.md` and this handoff record actual results.
+- Preserved all current Claude/Codex runtime, mobile/desktop UX, financial math, Copy Trading, EUR mapping, database schema and historical records. No merge/deploy or production writes.
+- PASS: Futures PostgreSQL integration (93 suites / 1,722 tests), native/browser, sampled display budget, Home first-load. CFD CI failed twice on snapshot re-download after desktop reload; local equivalent passed. Full local Jest baseline has 28 failing suites / 126 failed tests. See report for explicit limitations.
+- Production read-only evidence confirms the owner's Neon project linkage, stable revision row/byte counts across the observation window, historical TOAST concentration and slow existing OPEN persistence. Next: diagnose CFD cache lifecycle with URL-level evidence, benchmark DB persistence safely, and resolve baseline tests; no speculative financial rewrite or history deletion.
+
 - Base `cf39c67a` (main after #212). Branch `claude/positions-table-room`, commit `5bc194b5`. Frontend only: `ArchiveTerminalPreview.css` (the default `archive` terminal) and `FuturesPositionsPanel.tsx`. Column names, order, figures, pills and every handler are unchanged; no trading logic touched.
 - Owner's request (after comparing with a Bybit screenshot and my HTML concept): keep our column names, «як у Bybit», text must not run into its neighbour, «дай більше свободи».
 - **Cause:** every cell had `padding-inline:5px !important` at every width, so «Цена Входа · Цена марк. · Цена ликвид.» stood 10px apart even on a 2000px screen; where the row is wider than the panel, the pinned «Закрыть как» sliced the column under it mid-word («Реализованны…»).
