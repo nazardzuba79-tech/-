@@ -19,6 +19,83 @@ async function getDepositConfig(): Promise<DepositConfig> {
   return res.json();
 }
 
+/**
+ * The deposit addresses live on the device and are downloaded again only
+ * when they change.
+ *
+ * Addresses almost never change, yet every open used to download them and
+ * wait behind «Загрузка сетей…». Now the last list is kept in localStorage
+ * together with the server's fingerprint of it. An open asks only
+ * /deposit-config-version — no addresses, no session lookup, no database
+ * read on the server — and shows the device's list once the fingerprint
+ * matches. The full list is downloaded only when the fingerprint differs
+ * (an admin changed an address) or there is no copy yet. The device copy
+ * is never shown unconfirmed: a rotated address must not appear even for a
+ * moment, and a failed check fails closed like a failed download.
+ *
+ * A copy is kept only when it is complete (every chain carries its address)
+ * and the server named its fingerprint; anything else is not stored, so an
+ * older API simply behaves as before. A hover or focus on a Deposit button
+ * starts the check early (prefetchDepositConfig), and the open a moment
+ * later joins it instead of asking twice.
+ */
+const STORED_KEY = 'voltex.depositConfig.v1';
+type StoredConfig = { version: string; config: DepositConfig };
+
+function completeConfig(value: unknown): value is DepositConfig {
+  return validDepositConfig(value) && value.chains.every(chain => typeof chain.address === 'string' && chain.address.length > 0);
+}
+
+function readStoredConfig(): StoredConfig | null {
+  try {
+    const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(STORED_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw);
+    return value && typeof value.version === 'string' && completeConfig(value.config) ? value : null;
+  } catch { return null; }
+}
+
+function writeStoredConfig(value: StoredConfig | null) {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (value) localStorage.setItem(STORED_KEY, JSON.stringify(value)); else localStorage.removeItem(STORED_KEY);
+  } catch { /* storage unavailable: the next open downloads, as before */ }
+}
+
+async function getDepositConfigVersion(): Promise<string | null> {
+  const res = await fetch(`${API_BASE}/deposit-config-version`, { cache: 'no-store' });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => null);
+  return body && typeof body.version === 'string' ? body.version : null;
+}
+
+async function syncDepositConfig(): Promise<DepositConfig> {
+  const stored = readStoredConfig();
+  if (stored && (await getDepositConfigVersion().catch(() => null)) === stored.version) return stored.config;
+  const fresh = await getDepositConfig();
+  writeStoredConfig(completeConfig(fresh) && typeof fresh.version === 'string' ? { version: fresh.version, config: fresh } : null);
+  return fresh;
+}
+
+const JOIN_MS = 10_000;
+let inflight: { at: number; promise: Promise<DepositConfig> } | null = null;
+
+/** The one entry to the deposit configuration: joins a check started a
+ * moment ago (a hover), otherwise checks the fingerprint afresh. */
+export function loadDepositConfig(): Promise<DepositConfig> {
+  if (inflight && Date.now() - inflight.at < JOIN_MS) return inflight.promise;
+  const entry = { at: Date.now(), promise: syncDepositConfig() };
+  inflight = entry;
+  entry.promise.catch(() => { if (inflight === entry) inflight = null; });
+  return entry.promise;
+}
+
+/** Start the check on intent (hover/focus of a Deposit button). */
+export function prefetchDepositConfig(): void {
+  if (!getToken()) return;
+  loadDepositConfig().catch(() => { /* the panel retries and reports on open */ });
+}
+
 export interface DepositWallet {
   chain: string;
   address: string;
@@ -54,8 +131,10 @@ export function useDepositWallets(active: boolean) {
   useEffect(() => {
     if (!active) { setState(empty); return; }
     let cancelled = false;
+    // Nothing is drawn from the device copy before the server's fingerprint
+    // confirms it: a rotated address must never be shown, even briefly.
     setState(empty);
-    getDepositConfig().then(async value => {
+    loadDepositConfig().then(async value => {
       if (cancelled) return;
       if (!validDepositConfig(value)) throw new Error('Invalid deposit configuration');
       const resolved = await Promise.all(value.chains.map(async (chain): Promise<DepositWallet | null> => {

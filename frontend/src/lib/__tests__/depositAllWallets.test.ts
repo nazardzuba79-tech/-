@@ -223,8 +223,10 @@ describe('what this change deliberately leaves alone', () => {
     expect(hook).not.toMatch(/export function useDepositOptions\b/);
     expect(read('frontend/src/pages/wallet-v3/DepositModal.tsx')).toContain('useDepositWallets');
     expect(read('frontend/src/components/DepositModal.tsx')).toContain('useDepositWallets');
-    // The deposit config is fetched in exactly one place.
-    expect(hook.match(/getDepositConfig\(\)\.then/g)?.length).toBe(1);
+    // The deposit config is read through exactly one entry, and downloaded
+    // in exactly one place behind it.
+    expect(hook.match(/loadDepositConfig\(\)\.then/g)?.length).toBe(1);
+    expect(hook.match(/await getDepositConfig\(\)/g)?.length).toBe(1);
   });
 
   it('narrows the network list to chains that actually credit the asset', () => {
@@ -265,5 +267,101 @@ describe('what this change deliberately leaves alone', () => {
     // USDT rides two chains; Bitcoin credits none of it and must not appear.
     expect(state.networks.map((w: { chain: string }) => w.chain)).toEqual(['tron', 'ethereum']);
     expect(state.networks.every((w: { assets: string[] }) => w.assets.includes('USDT'))).toBe(true);
+  });
+});
+
+describe('the addresses are downloaded again only when they change', () => {
+  const config = (address: string, version?: string) => ({
+    chains: [{ chain: 'tron', nativeAsset: 'TRX', tokens: ['USDT'], supportedAssets: ['USDT'], address }],
+    minDepositUsd: 10, usdPeggedAssets: ['USDT'], ...(version ? { version } : {}),
+  });
+  const realFetch = globalThis.fetch;
+  const realStorage = (globalThis as any).localStorage;
+  let store: Map<string, string>;
+  let calls: string[];
+  let server: { config: unknown; version: string | null; down?: boolean };
+
+  beforeEach(() => {
+    store = new Map();
+    calls = [];
+    (globalThis as any).localStorage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, value); },
+      removeItem: (key: string) => { store.delete(key); },
+    };
+    globalThis.fetch = (async (url: string) => {
+      calls.push(url.replace('/api/v1', ''));
+      if (server.down) throw new Error('offline');
+      const body = url.includes('/deposit-config-version') ? { version: server.version } : server.config;
+      return { ok: true, status: 200, json: async () => body } as any;
+    }) as any;
+  });
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+    (globalThis as any).localStorage = realStorage;
+  });
+
+  /** A fresh module each time, as after a page reload: only the device copy carries over. */
+  const load = () => evaluate('frontend/src/lib/useDepositOptions.ts', {
+    react: { useEffect: () => undefined, useMemo: (fn: () => unknown) => fn(), useState: (initial: unknown) => [initial, () => undefined] },
+    './api': { api: {}, clearToken: () => undefined, getToken: () => 'token' },
+    './depositMinimum': { depositMinimumEquivalent: () => null, validDepositConfig },
+  });
+
+  it('downloads once, then only asks the fingerprint while it matches', async () => {
+    server = { config: config('T-old', 'v1'), version: 'v1' };
+    expect((await load().loadDepositConfig()).chains[0].address).toBe('T-old');
+    expect(calls).toEqual(['/deposit-chains?includeConfig=true']);
+
+    calls = [];
+    expect((await load().loadDepositConfig()).chains[0].address).toBe('T-old');
+    expect(calls).toEqual(['/deposit-config-version']);
+  });
+
+  it('downloads the new addresses as soon as the fingerprint differs', async () => {
+    server = { config: config('T-old', 'v1'), version: 'v1' };
+    await load().loadDepositConfig();
+
+    server = { config: config('T-new', 'v2'), version: 'v2' };
+    calls = [];
+    expect((await load().loadDepositConfig()).chains[0].address).toBe('T-new');
+    expect(calls).toEqual(['/deposit-config-version', '/deposit-chains?includeConfig=true']);
+    // And the new list is what the device keeps from now on.
+    calls = [];
+    expect((await load().loadDepositConfig()).chains[0].address).toBe('T-new');
+    expect(calls).toEqual(['/deposit-config-version']);
+  });
+
+  it('keeps nothing it could not confirm later: no fingerprint, or a chain without an address', async () => {
+    server = { config: config('T-old'), version: null };
+    await load().loadDepositConfig();
+    expect(store.size).toBe(0);
+
+    server = { config: { ...config('', 'v1') }, version: 'v1' };
+    await load().loadDepositConfig();
+    expect(store.size).toBe(0);
+  });
+
+  it('fails closed when the server cannot be reached, even with a copy on the device', async () => {
+    server = { config: config('T-old', 'v1'), version: 'v1' };
+    await load().loadDepositConfig();
+
+    server = { ...server, down: true };
+    await expect(load().loadDepositConfig()).rejects.toThrow('offline');
+  });
+
+  it('lets an open join the check a hover started instead of asking twice', async () => {
+    server = { config: config('T-old', 'v1'), version: 'v1' };
+    const hook = load();
+    hook.prefetchDepositConfig();
+    await hook.loadDepositConfig();
+    expect(calls).toEqual(['/deposit-chains?includeConfig=true']);
+  });
+
+  it('never draws the device copy before the fingerprint confirms it', () => {
+    const source = read('frontend/src/lib/useDepositOptions.ts').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    const effect = source.slice(source.indexOf('export function useDepositWallets'));
+    expect(effect).not.toContain('readStoredConfig');
+    expect(effect).toContain('setState(empty);');
   });
 });

@@ -100,6 +100,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/useFuturesAccount') return { useFuturesAccount: () => overrides.account ?? accountState(), refreshFuturesAccount: () => {} };
     if (name === '../lib/useAdminAlerts') return { useAdminAlertSound: () => {} };
     if (name === '../lib/useCopyMarketplace') return { prefetchCopyMarketplace: () => {} };
+    if (name === '../lib/useDepositOptions') return { prefetchDepositConfig: () => {} };
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/futuresMath') return futuresMath;
     if (name.endsWith('.css')) return {};

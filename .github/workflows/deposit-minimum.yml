@@ -5,6 +5,8 @@ on:
       - 'src/services/DepositService.ts'
       - 'src/services/deposit-verifiers/**'
       - 'src/services/__tests__/DepositService.test.ts'
+      - 'src/services/TreasuryWalletService.ts'
+      - 'src/services/__tests__/TreasuryWalletService.test.ts'
       - 'src/api/routes/*Deposits*'
       - 'src/api/routes/deposits.ts'
       - 'src/api/routes/__tests__/*eposits*'
@@ -12,6 +14,8 @@ on:
       - 'src/config/chains.ts'
       - 'prisma/**'
       - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/useDepositOptions.ts'
+      - 'frontend/src/lib/__tests__/depositAllWallets.test.ts'
       - 'frontend/src/lib/i18n/locales/ru.ts'
       - 'frontend/src/pages/admin/AdminDepositsPage.tsx'
       - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
@@ -43,6 +47,7 @@ jobs:
           src/services/__tests__/DepositService.test.ts
           src/api/routes/__tests__/adminDeposits.test.ts
           src/api/routes/__tests__/deposits.test.ts
+          src/services/__tests__/TreasuryWalletService.test.ts
           src/api/routes/__tests__/adminOverview.test.ts
           src/config/__tests__/chains.test.ts
           src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts

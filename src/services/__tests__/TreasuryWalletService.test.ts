@@ -5,7 +5,9 @@ function makePrismaMock() {
   const store = new Map<string, any>();
   return {
     treasuryWallet: {
-      findMany: jest.fn(async () => Array.from(store.values()).sort((a, b) => a.chain.localeCompare(b.chain))),
+      findMany: jest.fn(async (args?: any) => Array.from(store.values())
+        .filter((row) => !args?.where?.chain?.in || args.where.chain.in.includes(row.chain))
+        .sort((a, b) => a.chain.localeCompare(b.chain))),
       findUnique: jest.fn(async ({ where }: any) => store.get(where.chain) ?? null),
       upsert: jest.fn(async ({ where, create, update }: any) => {
         const existing = store.get(where.chain);
@@ -141,6 +143,29 @@ describe('TreasuryWalletService', () => {
     // purely through the admin panel, on a deployment where the
     // *_TREASURY_ADDRESS env var was never set. That must work — the whole
     // point of TreasuryWalletService is "no redeploy, no env var edit".
+    it('resolveMany reads every override at once and keeps resolve()\'s rules', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qenv-default';
+      process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+      delete process.env.ETHEREUM_TREASURY_ADDRESS;
+      delete process.env.TRON_TREASURY_ADDRESS;
+      const prisma = makePrismaMock();
+      const service = new TreasuryWalletService(prisma);
+      await service.upsert('ethereum', '0xadmin-set', 'admin-1');
+      prisma.treasuryWallet.findUnique.mockClear();
+
+      const configs = await service.resolveMany(['bitcoin', 'tron', 'ethereum']);
+
+      // Order kept; tron (no address anywhere) left out; override applied.
+      expect(configs.map((c) => [c.chain, c.treasuryAddress])).toEqual([
+        ['bitcoin', 'bc1qenv-default'],
+        ['ethereum', '0xadmin-set'],
+      ]);
+      expect(prisma.treasuryWallet.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.treasuryWallet.findUnique).not.toHaveBeenCalled();
+      // Same answer resolve() gives chain by chain.
+      expect((await service.resolve('ethereum')).treasuryAddress).toBe('0xadmin-set');
+    });
+
     it('resolves using the admin override even when the env var was never set', async () => {
       const prisma = makePrismaMock();
       const service = new TreasuryWalletService(prisma);
