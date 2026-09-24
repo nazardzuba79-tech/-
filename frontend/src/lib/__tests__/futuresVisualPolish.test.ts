@@ -143,6 +143,13 @@ describe('3. the order book takes the reference treatment, and only its paint', 
     expect(book.indexOf('className="rb-arrow"')).toBeLessThan(book.indexOf('className="rb-last"'));
   });
 
+  it('sizes the header last price to the reference proportion, below the pair name', () => {
+    // Owner, 2026-09-24: the 17px price looked «чуть великий» beside Bybit's.
+    // 15px sits under the 16px pair name, as Bybit's price sits under its symbol.
+    expect(rule('#archive-terminal-preview .ticker-bar .value.price')).toContain('font-size:15px');
+    expect(rule('#archive-terminal-preview .ticker-bar .pair-name')).toContain('font-size:16px');
+  });
+
   it('keeps the pitch the depth window is computed from in one place, per design', () => {
     // Row count = panel height ÷ the pitch, and the CSS reads the same
     // number back through --book-row-height. The other designs keep the
