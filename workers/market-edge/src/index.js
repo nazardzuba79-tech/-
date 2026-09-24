@@ -9,6 +9,7 @@ const JSON_HEADERS = {
 };
 
 const EDGE_TTL_SECONDS = 15;
+const SLOW_EDGE_TTL_SECONDS = 6 * 60 * 60;
 const BOOK_LEVELS = 25;
 const SYMBOL_RE = /^[A-Z0-9]{1,28}USDT$/;
 const OKX_BAR = {
@@ -433,14 +434,16 @@ async function cfdCandles(symbol, searchParams) {
   return {...raw,symbol,fetchedAt:Date.now()};
 }
 
-async function cachedPublic(request, loader) {
+async function cachedPublic(request, loader, ttlSeconds = EDGE_TTL_SECONDS) {
   const cache = globalThis.caches?.default;
   const key = new Request(request.url, { method:"GET" });
   if (cache) {
     const hit = await cache.match(key);
     if (hit) return hit;
   }
-  const response = json(await loader());
+  const response = json(await loader(), 200, {
+    "cache-control": `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}, stale-while-revalidate=${Math.min(ttlSeconds, 300)}`
+  });
   if (cache) await cache.put(key, response.clone());
   return response;
 }
@@ -463,13 +466,13 @@ export default {
         const spotTradesMatch=url.pathname.match(/^\/market\/display\/spot-trades\/([A-Z0-9]{1,32}-[A-Z0-9]{2,12})$/);
         const spotCandlesMatch=url.pathname.match(/^\/market\/display\/spot-candles\/([A-Z0-9]{1,32}-[A-Z0-9]{2,12})$/);
         const cfdCandlesMatch=url.pathname.match(/^\/cfd\/display\/candles\/([A-Z0-9]{3,12})$/);
-        if(url.pathname==="/market/display") response=await cachedPublic(request,publicMarketSnapshot);
+        if(url.pathname==="/market/display") response=await cachedPublic(request,publicMarketSnapshot,SLOW_EDGE_TTL_SECONDS);
         else if(url.pathname==="/market/display/spot-tickers") response=await cachedPublic(request,spotTickers);
         else if(spotBookMatch) response=await cachedPublic(request,()=>spotBook(spotBookMatch[1]));
         else if(spotTradesMatch) response=await cachedPublic(request,()=>spotTrades(spotTradesMatch[1]));
         else if(spotCandlesMatch) response=await cachedPublic(request,()=>spotCandles(spotCandlesMatch[1],url.searchParams));
-        else if(url.pathname==="/cfd/display/tickers") response=await cachedPublic(request,cfdTickers);
-        else if(cfdCandlesMatch) response=await cachedPublic(request,()=>cfdCandles(cfdCandlesMatch[1],url.searchParams));
+        else if(url.pathname==="/cfd/display/tickers") response=await cachedPublic(request,cfdTickers,SLOW_EDGE_TTL_SECONDS);
+        else if(cfdCandlesMatch) response=await cachedPublic(request,()=>cfdCandles(cfdCandlesMatch[1],url.searchParams),SLOW_EDGE_TTL_SECONDS);
         else if(book) response=await cachedPublic(request,()=>futuresBook(book[1]));
         else if(trades) response=await cachedPublic(request,()=>futuresTrades(trades[1]));
         else if(url.pathname==="/market/display/futures-tickers") response=await cachedPublic(request,futuresTickers);
