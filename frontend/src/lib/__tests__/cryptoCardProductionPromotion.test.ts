@@ -47,7 +47,6 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/CardPage.tsx": "a6fb72e68a9edc6860edc2f49de4d374efc32f917b0e5ad43059b9e8853cf285",
   "frontend/tailwind.crypto-card.config.js": "d2021c8b7de7d4be48d0a42f5902cfef95d3cbd03fa70bc5f457c99946953c53"
 };
-// Production base cb29b7f1afce7fb17cf68462573949166933640e. Six Copy-only
 // Merged identity, deposit and public-data wiring is protected at the current
 // approved baseline; behavior tests independently protect financial outcomes.
 // Source guards rebased to merged main 22ac04b99f02a6501692cee4b8c507577becf914.
