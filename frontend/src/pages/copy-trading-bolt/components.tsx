@@ -55,6 +55,7 @@ import { TraderAvatarArt } from './TraderAvatarArt';
 import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';
 import { VerifiedBadge } from './VerifiedBadge';
 import { CopyDepositDialog } from './CopyDepositDialog';
+import { MonthlyPerformanceLauncher } from './CopyMonthlyPerformanceModal';
 import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
 import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
 import { LiveMetric } from './LiveMetric';
@@ -768,7 +769,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       {!detailsReady ? <div className="profile-detail-loading" role="status" aria-live="polite"><span>Загрузка аналитики…</span></div> : activeTab === 'statistics' ? <>
         <div className="profile-analytics-workspace">
           <aside><MetricsPanel metrics={strategyData ?? metrics} period={strategyData ? 'ALL' : period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} strategyMainMarkets={liveSynthetic?.mainMarkets} /></aside>
-          <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyReturnChart data={periodData} /></div>
+          <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyReturnChart data={periodData} /><MonthlyPerformanceLauncher synthetic={liveSynthetic} /></div>
         </div>
         <FollowersPanel trader={trader} metrics={metrics} synthetic={liveSynthetic} period={period} />
       </> : <TradesPanel trader={trader} periodData={periodData} />}
