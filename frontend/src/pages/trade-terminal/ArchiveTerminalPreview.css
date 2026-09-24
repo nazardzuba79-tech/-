@@ -427,3 +427,8 @@
 #archive-terminal-preview .fo-submitPair .buy { background:#1ace88; color:#fff; }
 #archive-terminal-preview .fo-submitPair .sell { background:#f55065; color:#fff; }
 #archive-terminal-preview .fo-submitPair button:disabled { opacity:1; }
+/* LONG / SHORT at the reference's proportion (owner: «кнопки… не такі
+   товсті»): on the owner's Bybit screenshot each button is 49×162px, height
+   0.30 of its width; ours were 48px on a ~138px face (0.35). 42px restores
+   0.30 at 1440. */
+#archive-terminal-preview .fo-submitPair button { height:42px; min-height:42px; }

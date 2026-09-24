@@ -166,6 +166,7 @@ describe('5. text contrast at the reference level', () => {
     expect(last('#archive-terminal-preview .fo-submitPair .buy')).toContain('background:#1ace88');
     expect(last('#archive-terminal-preview .fo-submitPair .sell')).toContain('background:#f55065');
     expect(last('#archive-terminal-preview .fo-submitPair button:disabled')).toContain('opacity:1');
+    expect(last('#archive-terminal-preview .fo-submitPair button')).toContain('height:42px');
   });
 
   it('brightens the terminal chart axis to the reference tone', () => {
