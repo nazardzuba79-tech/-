@@ -232,15 +232,18 @@
    «Цена Входа · Цена марк. · Цена ликвид.» ten pixels apart everywhere. The
    row never starts scrolling at a width where it used to fit. */
 #archive-terminal-preview .futures-positions-scroll { container-type:inline-size; }
-#archive-terminal-preview .futures-positions-table { --pos-cell-x:5px; --pos-pnl-extra:0px; width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
-@supports (width:1cqw) { #archive-terminal-preview .futures-positions-table { --pos-pnl-extra:clamp(0px,calc((100cqw - 1300px) / 12),20px); --pos-cell-x:clamp(5px,calc((100cqw - 1240px - 2 * var(--pos-pnl-extra)) / 22),16px); } }
+#archive-terminal-preview .futures-positions-table { --pos-cell-x:14px; --pos-pnl-extra:0px; width:100%; min-width:0; table-layout:auto; font-family:var(--font-family); }
+/* The padding floor is 14px (was 5): the owner would rather the figures keep
+   28px of air between them and the panel scroll sideways under its own
+   scrollbar than have them squeezed to fit. */
+@supports (width:1cqw) { #archive-terminal-preview .futures-positions-table { --pos-pnl-extra:clamp(0px,calc((100cqw - 1300px) / 12),20px); --pos-cell-x:clamp(14px,calc((100cqw - 1240px - 2 * var(--pos-pnl-extra)) / 22),16px); } }
 /* NARROW PANEL (under 1250px, flagged by the component): TP/SL and «Закрыть
    как» share one column, so the row has ten columns and twenty side
    paddings over ~1024px of figures. The padding comes down to 4px where the
    panel only just holds that, and nothing else is squeezed: no heading
    wraps, no figure shrinks. Measured at 1440: a 146px sideways scroll
    becomes none. */
-@supports (width:1cqw) { #archive-terminal-preview .futures-positions-scroll[data-narrow=true] .futures-positions-table { --pos-cell-x:clamp(4px,calc((100cqw - 1024px) / 20),16px); } }
+@supports (width:1cqw) { #archive-terminal-preview .futures-positions-scroll[data-narrow=true] .futures-positions-table { --pos-cell-x:clamp(14px,calc((100cqw - 1024px) / 20),16px); } }
 #archive-terminal-preview .futures-positions-table :is(th,td) { --pos-cell-bg:var(--panel); width:auto; padding:8px var(--pos-cell-x); padding-inline:var(--pos-cell-x) !important; white-space:nowrap; text-align:left; }
 /* The heading of the contract column starts where the contract name does,
    past the side bar. */
