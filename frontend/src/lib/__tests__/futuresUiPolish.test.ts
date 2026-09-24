@@ -287,7 +287,13 @@ test.each([
     // FuturesPage changes only the depth transport mode from sampled REST to
     // the existing direct Bybit public WebSocket, with Cloudflare public REST
     // as fallback. Order payloads, execution, accounts and private APIs are unchanged.
-    "052913ce7f8f042c46f2d6c6bce8bd910a3a79033e8a6daa77faf03ecd3e47ec"
+    // Re-taken 2026-09-24 for the open P&L on the positions tab: ONE
+    // addition — `openPnlTotal`, the sum of the rows' own unrealized P&L
+    // when every row is valued in one asset, printed beside «Позиции (n)»
+    // on the archive design. No futures value is computed anywhere new: it
+    // is the same `unrealizedPnl` the rows show, added. Order payloads,
+    // execution, accounts, transport and every other line are unchanged.
+    "716651e9ff07f2ef7ec331678d5f16a72f668f412b69f357625f037ed139e7e7"
   ],
   [
     "components/FuturesPairList.tsx",
