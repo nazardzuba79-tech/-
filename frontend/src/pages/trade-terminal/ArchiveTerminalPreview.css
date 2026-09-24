@@ -92,8 +92,12 @@
    13px rows; it is still the largest figure in the book. */
 #archive-terminal-preview .rb-center strong { font-size:17px; font-weight:600; letter-spacing:-.2px; }
 #archive-terminal-preview .rb-center .rb-arrow { width:.7em; font-size:.85em; }
-#archive-terminal-preview .rb-mark { display:inline-flex; align-items:center; gap:4px; color:var(--accent); font-size:13px; line-height:18px; font-weight:500; text-decoration:underline dotted; text-underline-offset:3px; }
-#archive-terminal-preview .rb-mark svg { width:11px; height:11px; flex:0 0 auto; }
+/* The mark price is a quiet second figure (owner, 2026-09-24: the centre
+   row read as noisy — last price, arrow, mark and gold together): 12px,
+   regular weight, the tertiary grey, no underline, a smaller flag. Only
+   the last price keeps colour. */
+#archive-terminal-preview .rb-mark { display:inline-flex; align-items:center; gap:3px; color:var(--text-tertiary); font-size:12px; line-height:16px; font-weight:400; text-decoration:none; }
+#archive-terminal-preview .rb-mark svg { width:9px; height:9px; flex:0 0 auto; opacity:.8; }
 /* The grouping step is a flat control, like every select in the trading
    panel beside it: the reference's filled surface, no frame. The 1px
    border is kept transparent so the control's size does not move. */

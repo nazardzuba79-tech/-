@@ -133,7 +133,12 @@ describe('3. the order book takes the reference treatment, and only its paint', 
     expect(center).toContain('border-top:0');
     expect(center).toContain('border-bottom:0');
     expect(center).toContain('min-height:var(--book-center-height)');
-    expect(rule('#archive-terminal-preview .rb-mark')).toContain('color:var(--accent)');
+    // The mark price was drawn in the accent like the reference; on
+    // 2026-09-24 the owner found the centre row noisy and asked for the mark
+    // to be smaller and calmer, so it is the tertiary grey at 12px.
+    const mark = rule('#archive-terminal-preview .rb-mark');
+    expect(mark).toContain('color:var(--text-tertiary)');
+    expect(mark).toContain('font-size:12px');
     const book = strip(read('components/FuturesReferenceBook.tsx'));
     expect(book.indexOf('className="rb-arrow"')).toBeLessThan(book.indexOf('className="rb-last"'));
   });
