@@ -1,0 +1,102 @@
+{
+  "revision": null,
+  "environment": "disposable loopback CI; real public display providers; no DB writes",
+  "startedAt": "2026-09-24T05:47:59.353Z",
+  "scenarios": [
+    {
+      "width": 1920,
+      "price": "96.410",
+      "sampledDisplay": true,
+      "overflow": false,
+      "rows": 13,
+      "forms": 1,
+      "submits": 1,
+      "canvases": 7,
+      "chartStatus": "ready",
+      "technicalLabels": 0,
+      "reload": {
+        "selectedSymbol": "WTIUSD",
+        "url": "http://127.0.0.1:11221/trade?market=cfd&symbol=WTIUSD",
+        "before": [
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/XAUUSD?interval=1h&limit=320",
+          "http://127.0.0.1:11221/api/v1/cfd/display/tickers",
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/WTIUSD?interval=1h&limit=320"
+        ],
+        "after": []
+      }
+    },
+    {
+      "width": 1280,
+      "price": "96.410",
+      "sampledDisplay": true,
+      "overflow": false,
+      "rows": 13,
+      "forms": 1,
+      "submits": 1,
+      "canvases": 7,
+      "chartStatus": "ready",
+      "technicalLabels": 0,
+      "reload": {
+        "selectedSymbol": "WTIUSD",
+        "url": "http://127.0.0.1:11221/trade?market=cfd&symbol=WTIUSD",
+        "before": [
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/XAUUSD?interval=1h&limit=320",
+          "http://127.0.0.1:11221/api/v1/cfd/display/tickers",
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/WTIUSD?interval=1h&limit=320"
+        ],
+        "after": []
+      }
+    },
+    {
+      "width": 768,
+      "price": "96.410",
+      "sampledDisplay": true,
+      "overflow": false,
+      "rows": 13,
+      "forms": 1,
+      "submits": 1,
+      "canvases": 7,
+      "chartStatus": "ready",
+      "technicalLabels": 0,
+      "reload": {
+        "selectedSymbol": "WTIUSD",
+        "url": "http://127.0.0.1:11221/trade?market=cfd&symbol=WTIUSD",
+        "before": [
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/XAUUSD?interval=1h&limit=320",
+          "http://127.0.0.1:11221/api/v1/cfd/display/tickers",
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/WTIUSD?interval=1h&limit=320"
+        ],
+        "after": []
+      }
+    },
+    {
+      "width": 390,
+      "price": "96.410",
+      "sampledDisplay": true,
+      "overflow": false,
+      "rows": 13,
+      "forms": 1,
+      "submits": 1,
+      "canvases": 7,
+      "chartStatus": "ready",
+      "technicalLabels": 0,
+      "reload": {
+        "selectedSymbol": "WTIUSD",
+        "url": "http://127.0.0.1:11221/trade?market=cfd&symbol=WTIUSD",
+        "before": [
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/XAUUSD?interval=1h&limit=320",
+          "http://127.0.0.1:11221/api/v1/cfd/display/tickers",
+          "http://127.0.0.1:11221/api/v1/cfd/display/candles/WTIUSD?interval=1h&limit=320"
+        ],
+        "after": []
+      }
+    }
+  ],
+  "pageErrors": [],
+  "findings": [],
+  "blockedWrites": 0,
+  "blockedExternalHosts": [
+    "fonts.googleapis.com"
+  ],
+  "completedAt": "2026-09-24T05:48:16.850Z"
+}

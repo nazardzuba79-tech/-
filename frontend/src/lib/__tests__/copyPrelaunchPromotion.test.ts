@@ -49,11 +49,16 @@ test('normal API paths replace review-only sources without altering token or req
   expect(api).toContain("('/copy-trading/identities')");
   expect(api).not.toMatch(/reviewReadPath|reviewMarketData|review-api|review-synthetic\.json|exchange-api-review/);
   const page = source('src/pages/CopyTradingPage.tsx');
-  expect(page).toContain('api.getNazarCopyTrading()');
-  expect(page).toContain('api.getKseniaCopyTrading()');
+  expect(page).toContain('useCopyMarketplace()');
+  const transport = source('src/lib/useCopyMarketplace.ts');
+  expect(transport).toContain('/copy-trading/marketplace');
+  expect(transport).toContain('Authorization: `Bearer ${token}`');
+  expect(transport).toContain('getToken() === token');
   expect(page).not.toMatch(/getSyntheticCopyTrading|advanceSimulation|resetSimulation|isAdmin|import\.meta\.env\.MODE/);
-  expect(page).toContain('window.setInterval');
-  expect(page).toContain('new Date().toISOString().slice(0, 10)');
+  const store = source('src/lib/copyMarketplaceStore.ts');
+  expect(store).toContain('this.timer = setInterval');
+  expect(store).toContain('}, 60_000)');
+  expect(store).toContain('new Date(this.now()).toISOString().slice(0, 10)');
 });
 
 test('owner media never falls back to a viewer or an unrelated administrator', () => {

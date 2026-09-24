@@ -115,6 +115,8 @@ test.each(['VX-001','VX-KSENIA'])('%s profile opens before API response and hydr
   const profile=host.querySelector('.trader-profile-page');
   expect(profile).not.toBeNull();
   expect(profile!.querySelector('h1')!.textContent).toBe(id==='VX-001'?'Nazar':'Ksenia');
+  // The identity paints immediately; analytics mount in a separate short task.
+  await act(async () => { await new Promise(resolve => dom.window.setTimeout(resolve, 25)); });
   expect(profile!.querySelectorAll('[data-unavailable]').length).toBeGreaterThan(10);
   expect(profile!.textContent).not.toContain('NaN');
   const rows=profile!.querySelectorAll('.profile-metrics-grid > div').length;
@@ -169,8 +171,8 @@ test('direct entry, lazy route and both nav surfaces start the shared prefetch',
   expect(main).toContain("=== '/copy-trading'");
   const app=readFileSync(resolve(frontend,'src/App.tsx'),'utf8');
   expect(app).toMatch(/const CopyTradingPage = lazy\(\(\) => \{[\s\S]*?prefetchCopyMarketplace\(\);[\s\S]*?return import\('\.\/pages\/CopyTradingPage'\)/);
-  const nav=readFileSync(resolve(frontend,'src/components/Nav.tsx'),'utf8');
-  for(const event of ['onMouseEnter','onFocus','onPointerDown']) expect(nav.match(new RegExp(event+"=\\{l.to === '/copy-trading'",'g'))).toHaveLength(2);
+  const nav=readFileSync(resolve(frontend,'src/components/Nav.tsx'),'utf8').replace(/\s+/g,'');
+  for(const event of ['onMouseEnter','onFocus','onPointerDown']) expect(nav.match(new RegExp(event+"=\\{l.to==='/copy-trading'",'g'))).toHaveLength(2);
 });
 test('owner image overlays initials only after successful decode',async () => {
   await mount();

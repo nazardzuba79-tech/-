@@ -98,7 +98,7 @@ const period = (available: boolean, absolutePnl: number | null = null, percent: 
 const noHistory = { periods: Object.fromEntries(PERIODS.map((p) => [p, period(false)])), ageDays: 0, startedOn: null };
 
 const CROSS = {
-  mode: 'CROSS', collateralUsd: 1000000, totalEquityUsd: 1000250.5, availableUsd: 900000, unrealizedPnlUsd: 250.5,
+  mode: 'CROSS', collateralUsd: 1000000, walletEquityUsd: 1000250.5, totalEquityUsd: 1000250.5, availableUsd: 900000, unrealizedPnlUsd: 250.5,
   initialMarginUsd: 356.89, maintenanceMarginUsd: 66.81, orderReserveUsd: 0, initialMarginRatio: 0.0005,
   maintenanceMarginRatio: 0.00006, spotUsd: null, futuresUsd: null, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
 };

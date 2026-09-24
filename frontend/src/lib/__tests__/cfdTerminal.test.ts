@@ -29,7 +29,7 @@ function mount(file:string,options:any={}){
     }
     if(name.endsWith('/displaySnapshotCache'))return{displayRefreshDelay:()=>6*60*60*1000,SLOW_DISPLAY_REFRESH_MS:6*60*60*1000,readDisplayJson:()=>api.getCfdTickers()};
     if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error,API_BASE:'/api/v1'};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
-    if(name.endsWith('/priceChange'))return{parseChangePercentOrNull:(v:any)=>v==null?null:Number(v),parseChangePercent:Number};if(name.endsWith('/useCfdTickers'))return{useCfdTickers:()=>options.feed};if(name.endsWith('/krakenSocket'))return{krakenSocket:{subscribeBook:()=>()=>{}}};if(name.endsWith('/bookFreshness'))return bookFreshness;if(name.endsWith('/tradingMode'))return{rememberTradingMode:jest.fn()};if(name==='react-router-dom')return{useSearchParams:()=>[options.params]};if(name.endsWith('.css'))return{};
+    if(name.endsWith('/priceChange'))return{parseChangePercentOrNull:(v:any)=>v==null?null:Number(v),parseChangePercent:Number};if(name.endsWith('/useCfdTickers'))return{useCfdTickers:()=>options.feed};if(name.endsWith('/krakenSocket'))return{krakenSocket:{subscribeBook:()=>()=>{}}};if(name.endsWith('/bookFreshness'))return bookFreshness;if(name.endsWith('/tradingMode'))return{rememberTradingMode:jest.fn()};if(name==='react-router-dom')return{useSearchParams:()=>[options.params,(next:any)=>{options.params=typeof next==='function'?next(options.params):next;} ]};if(name.endsWith('.css'))return{};
     if(name==='./Skeleton'){components.SkeletonRow??=()=>null;return{SkeletonRow:components.SkeletonRow};}
     if(name.startsWith('./')||name.startsWith('../components/')){const label=name.split('/').pop()!;components[label]??=()=>null;return{[label]:components[label]};}
     if(name.endsWith('/sampledDepth'))return{readSpotDisplayBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
@@ -63,6 +63,18 @@ test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD'
 });
 
 test('all thirteen canonical display instruments render without fabricated extras',()=>{const list=mount('components/CfdInstrumentList.tsx');const tree=list.render({symbol:'XAUUSD',tickers:rows,configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()});expect(nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option'))).toHaveLength(13);for(const row of rows)expect(text(tree)).toContain(row.symbol);});
+
+test('selecting a CFD survives hard reload without returning to the initial instrument',()=>{
+ const options={params:new URLSearchParams('?market=cfd&symbol=XAUUSD&keep=1'),feed:{tickers:rows,configured:true,loadError:false,reload:jest.fn()}};
+ const page=mount('pages/TradePage.tsx',options);
+ const list=nodes(page.render()).find(n=>n.type===page.components.CfdInstrumentList);
+ list.props.onChange('EURUSD');
+ expect(options.params.get('symbol')).toBe('EURUSD');expect(options.params.get('market')).toBe('cfd');expect(options.params.get('keep')).toBe('1');
+ const reloaded=mount('pages/TradePage.tsx',options);
+ expect(nodes(reloaded.render()).find(n=>n.type===reloaded.components.CfdChart).props.symbol).toBe('EURUSD');
+ options.params=new URLSearchParams('?market=cfd&symbol=WTIUSD');page.render();
+ expect(nodes(page.render()).find(n=>n.type===page.components.CfdChart).props.symbol).toBe('WTIUSD');
+});
 
 test('visible CFD right panel is a functional local practice order ticket',()=>{
  const source=read('components/CfdOrderForm.tsx');

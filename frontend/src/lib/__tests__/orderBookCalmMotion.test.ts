@@ -30,7 +30,7 @@ const code = book.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
  */
 describe('order book rows keep their DOM across a moving ladder', () => {
   it('keys a price row by its depth slot, never by the price in it', () => {
-    const rowsFn = code.slice(code.indexOf('const rows = ('), code.indexOf('return <div className="reference-book"'));
+    const rowsFn = code.slice(code.indexOf('const rows = ('), code.indexOf('return <div', code.indexOf('const rows = (')));
     expect(rowsFn).toContain('key={`${side}-${index}`}');
     // The old key. A price in the key is the regression.
     expect(rowsFn).not.toMatch(/key=\{exact\}/);
@@ -38,7 +38,7 @@ describe('order book rows keep their DOM across a moving ladder', () => {
   });
 
   it('still renders the level it was given — the slot is identity, not content', () => {
-    const rowsFn = code.slice(code.indexOf('const rows = ('), code.indexOf('return <div className="reference-book"'));
+    const rowsFn = code.slice(code.indexOf('const rows = ('), code.indexOf('return <div', code.indexOf('const rows = (')));
     // Price, size and cumulative all still come from the level, and the row
     // still submits the exact price it displays.
     expect(rowsFn).toContain('referencePrice(level.price, step)');
@@ -180,7 +180,7 @@ describe('depth bars are muted and settle between publishes', () => {
   });
 
   it('keeps the bar on a transform, so a bar change never re-lays-out the row', () => {
-    const rowsFn = code.slice(code.indexOf('const rows = ('), code.indexOf('return <div className="reference-book"'));
+    const rowsFn = code.slice(code.indexOf('const rows = ('), code.indexOf('return <div', code.indexOf('const rows = (')));
     expect(rowsFn).toContain('transform: `scaleX(');
     // A width on the DEPTH bar would lay the row out again on every tick.
     // The buy/sell ratio bar below the ladder is a different element and

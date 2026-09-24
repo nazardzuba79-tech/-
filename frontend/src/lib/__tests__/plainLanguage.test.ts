@@ -129,7 +129,7 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
   const offenders: string[] = [];
   for (const path of uiFiles(resolve(root, 'frontend/src'))) {
     // The admin console keeps its honest "Тестовый баланс" wording; see above.
-    if (path.endsWith('admin/AdminUserDetailPage.tsx')) continue;
+    if (path.split('\\').join('/').endsWith('admin/AdminUserDetailPage.tsx')) continue;
     // lib/customerError.ts holds no copy at all. Its string literals are
     // the SERVER's own sentences, listed so that each can be answered in
     // the customer's language instead — reading them as product copy would
@@ -137,7 +137,7 @@ test('hardcoded component copy speaks about the product, not about the plumbing'
     // it actually shows is the `serverError.*` wording in the seven
     // dictionaries, which __tests__/customerFacingErrors.test.ts checks
     // against this same vocabulary, in every language.
-    if (path.endsWith('lib/customerError.ts')) continue;
+    if (path.split('\\').join('/').endsWith('lib/customerError.ts')) continue;
     const rel = path.slice(resolve(root).length + 1);
     for (const text of visibleStrings(readFileSync(path, 'utf8'))) {
       if (allowed(text)) continue;

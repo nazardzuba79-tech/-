@@ -34,12 +34,12 @@ function setup() {
     bookRequestRef: { current: 0 }, bookWsVersionRef: { current: 0 },
     bookPendingRef: { current: null as null | { generation: number; request: number } } };
   const setBook = jest.fn();
-  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'api', 'setBook', 'pair', ...Object.keys(refs),
-    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api, setBook, pair, ...Object.values(refs)) as () => void;
+  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'readSpotPublicBook', 'setBook', 'pair', 'marketType', 'document', ...Object.keys(refs),
+    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api.getExternalOrderBook, setBook, pair, 'spot', { hidden: false }, ...Object.values(refs)) as () => void;
   return { requests, api, refs, setBook, callback };
 }
 const settle = async () => { for (let tick = 0; tick < 5; tick++) await Promise.resolve(); };
-const book = { bids: [], asks: [] };
+const book = { bids: [], asks: [], asOf: undefined };
 
 test('ticker state resets with the selected pair instead of briefly showing the old instrument price', () => {
   expect(source).toContain('<TickerBar key={pair} pair={pair}');

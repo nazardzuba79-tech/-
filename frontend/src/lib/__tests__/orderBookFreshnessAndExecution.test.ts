@@ -90,11 +90,11 @@ describe('3. the last real snapshot stays on screen', () => {
   it('empties the Spot ladder only when the market itself changed', () => {
     expect(tradePage).toContain('if (bookShownPairRef.current !== pair) {');
     // Exactly one place may blank it, and it is inside that guard.
-    const blanks = tradePage.match(/setBook\(\{\s*pair,\s*bids:\s*\[\],\s*asks:\s*\[\]\s*\}\)/g) ?? [];
+    const blanks = tradePage.match(/setBook\(\{\s*pair,\s*bids:\s*\[\],\s*asks:\s*\[\],\s*asOf:\s*null\s*\}\)/g) ?? [];
     expect(blanks).toHaveLength(1);
     // ...and that one blank sits inside the guard, not somewhere after it.
     const guardAt = tradePage.indexOf('if (bookShownPairRef.current !== pair) {');
-    const blankAt = tradePage.indexOf('setBook({ pair, bids: [], asks: [] })');
+    const blankAt = tradePage.indexOf('setBook({ pair, bids: [], asks: [], asOf: null })');
     expect(guardAt).toBeGreaterThan(-1);
     expect(blankAt).toBeGreaterThan(guardAt);
     expect(blankAt - guardAt).toBeLessThan(200);
@@ -130,8 +130,8 @@ describe('3. the last real snapshot stays on screen', () => {
 
 describe('4. coming back to the tab is quiet', () => {
   it('re-reads the Spot book on return without clearing it', () => {
-    expect(tradePage).toContain("document.addEventListener('visibilitychange', onVisibility)");
-    const handler = tradePage.slice(tradePage.indexOf('const onVisibility = () => {'));
+    expect(tradePage).toContain("document.addEventListener('visibilitychange',visible)");
+    const handler = tradePage.slice(tradePage.indexOf('const visible=()=>{'));
     const body = handler.slice(0, handler.indexOf('};'));
     expect(body).toContain('refreshBook()');
     // Nothing on this path may blank the ladder or raise anything.

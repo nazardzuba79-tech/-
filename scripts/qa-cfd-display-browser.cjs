@@ -53,7 +53,10 @@ function fixture(pathname){
   // a reload request even though the reload itself was served from storage.
   await page.waitForTimeout(750);const before=displayRequests.length;
   await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')==='ready',null,{timeout:15000});await page.waitForTimeout(1000);
-  if(displayRequests.length!==before)report.findings.push(`CFD snapshot was re-downloaded on reload at ${width}px`);
+  const reloadedSymbol=(await page.locator('.cfd-option.active .cfd-optionSymbol').innerText()).trim();
+  if(reloadedSymbol!==selectedSymbol)report.findings.push(`CFD selection changed on reload at ${width}px: ${selectedSymbol} -> ${reloadedSymbol}`);
+  report.scenarios[report.scenarios.length-1].reload={selectedSymbol,url:page.url(),before:displayRequests.slice(0,before),after:displayRequests.slice(before)};
+  if(displayRequests.length!==before)report.findings.push(`CFD snapshot was re-downloaded on reload at ${width}px: ${displayRequests.slice(before).map(url=>new URL(url).pathname+new URL(url).search).join(', ')}`);
   // Customer UI intentionally renders no snapshot/cache/feed-age marker.
   await context.close();activePage=null;
  }

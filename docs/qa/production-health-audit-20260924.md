@@ -1,5 +1,9 @@
 # Production health regression audit — 2026-09-24
 
+Follow-up fixes, test classification, detailed OPEN timings and the credential
+incident investigation are recorded in [the follow-up report](production-health-followup-20260924.md).
+The findings below describe the initial audit snapshot.
+
 Status: **audit completed with unresolved findings; not an all-PASS release approval**. No merge or deploy was performed. Production was read-only; all order creation/fill/close scenarios used disposable local/CI fixtures, never production accounts.
 
 ## Scope and revisions

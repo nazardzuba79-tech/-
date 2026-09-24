@@ -19,6 +19,7 @@ const priceChange = evaluate('lib/priceChange.ts');
 const marketModule = evaluate('pages/home/useHomeMarket.ts', {
   '../../lib/api': { api: {} }, '../../lib/priceChange': priceChange,
   '../../lib/futuresConfigStore': { futuresConfigStore: {} },
+  './homeMarketSnapshot': evaluate('pages/home/homeMarketSnapshot.ts'),
 });
 const liveValue = evaluate('pages/home/LiveValue.tsx', { './useHomeMarket': marketModule });
 const homeCopy = evaluate('pages/home/homeLiveCopy.ts');

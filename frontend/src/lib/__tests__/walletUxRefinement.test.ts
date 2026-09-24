@@ -77,6 +77,8 @@ function ledgerFixture(options: Record<string, any> = {}, lang = 'ru') {
     useEffect: (callback: () => any) => { effects.push(callback); },
   };
   const { AssetLedger } = evaluate(wallet + 'AssetLedger.tsx', {
+    '../../lib/toast': { useToast: () => ({ success: jest.fn(), error: jest.fn() }) },
+    '../../lib/customerError': { customerErrorText: () => 'Unavailable' },
     react: hooks, 'react-dom': { createPortal: (children: any) => children },
     'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     '../../components/CryptoIcon': { CryptoIcon: ({ symbol }: any) => React.createElement('span', { 'data-icon': symbol }) },
@@ -106,15 +108,15 @@ test('desktop ledger has exactly the six approved columns and original quantity/
   expect(html).toContain('$32 726 245,00');
 });
 
-test('the collateral column states the server-decided fact and is not a control', () => {
-  // On the Cross account a PRICED holding backs the margin; the switch only
-  // SHOWS that, and says it cannot be changed here. On a plain ledger there
-  // is no collateral and the cell is an unknown, never a zero or an "off".
-  const cross = ledgerFixture({ collateral: true, rows: [rows[0], { ...rows[1], priceUsd: null, valueUsd: null, priced: false }] });
+test('collateral displays server flags and remains locked without a change handler', () => {
+  const cross = ledgerFixture({ collateral: true, rows: [
+    { ...rows[0], collateralEnabled: true, collateralToggleable: true },
+    { ...rows[1], priceUsd: null, valueUsd: null, priced: false, collateralEnabled: false, collateralToggleable: false },
+  ] });
   const switches = nodes(cross.render(), node => node.props?.role === 'switch');
   expect(switches).toHaveLength(2);
   expect(switches.map(node => node.props['aria-checked'])).toEqual([true, false]);
-  expect(switches.every(node => node.props['aria-disabled'] === 'true' && !node.props.onClick)).toBe(true);
+  expect(switches.every(node => node.props['aria-disabled'] === true && node.props.disabled === true)).toBe(true);
   const spot = ledgerFixture({ collateral: false });
   expect(nodes(spot.render(), node => node.props?.role === 'switch')).toHaveLength(0);
   expect(normalize(text(nodes(spot.tableRows()[0], node => node.type === 'td')[4]))).toBe(fmt.EM_DASH);
@@ -620,6 +622,9 @@ function restoreApprovedHistoryTypography(source: string): string {
 
 // Exact source hashes from verified main35f7dae. Only CRLF and the narrowly
 // enumerated history typography reversal above are permitted.
+// useWalletData, DepositModal and api hashes captured from merged main 22ac04b.
+// Includes server-confirmed collateral d556d715, equity aa008377 and deposit
+// fixes ea37e441/4ec8944d. Financial behavior tests remain independent.
 test.each([
   // Re-taken for the Unified Trading Account. What changed and why the
   // guard still has teeth: the hook now ALSO reads the authoritative
@@ -633,9 +638,9 @@ test.each([
   // ratios (ANSWERED BY THE SERVER, never divided here) and a per-row
   // `walletBalance`, all pass-throughs. No format, rounding, currency or
   // masking rule in this file changed.
-  [wallet + 'useWalletData.ts', '5da69390d6944e665b8d562654398b843acc0793f82dac375212c3feee907dba'],
+  [wallet + 'useWalletData.ts', '106a63f97a16e9ecbac69fa85d15f24cbf6f4760df9ceca0d50c854a999af629'],
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
-  [wallet + 'DepositModal.tsx', '1db97b349fe86b39fd81c8a35129ebfc319d47b866b0572963483ef76c8d61e4'],
+  [wallet + 'DepositModal.tsx', '04027ee0f2343aa5748642c0f85cd9831e824999c191de0934a17da5725ac63f'],
   // Re-taken for issue #144 (+3/-2 in each of WithdrawModal and
   // TransferModal): the single line that displayed a failure now calls
   // `customerErrorText` instead of rendering `ApiError.message`, and the now
@@ -650,11 +655,6 @@ test.each([
   // import and one `refreshFuturesAccount(['balances'])` after a SUCCESSFUL
   // transfer, so the shared futures account state does not keep serving a
   // pre-transfer balance to the terminal for up to one poll interval. No
-  // financial figure, validation rule, format, amount, direction, error
-  // path or modal behaviour in this file changed — the call sits after
-  // `load()` on the success path only. The other two hashes in this suite
-  // (DepositModal.tsx, api.ts) are PRE-EXISTING failures on main cbe066e
-  // and are deliberately left untouched.
   // Re-taken for the same one-line #144 change; see WithdrawModal above.
   [wallet + 'TransferModal.tsx', '27eb01d9c3404b3134e9fbfe7622b4f6c2e69ffbd40d3e6824f919c8c7f856b3'],
   // ui.tsx re-pinned for ONE deliberate change to `Select`: its Escape
@@ -669,7 +669,7 @@ test.each([
   // processing state, not rejected. Only its union, style and mapping changed;
   // quantity/format/filter/financial meaning remain pinned by this fingerprint.
   [wallet + 'TransactionHistory.tsx', 'b9b0b0c274bef595780cf7b748685b6486a72765af6af575a170f307a5b999b3'],
-  ['frontend/src/lib/api.ts', '364345bc08c0084e09387aaad375b185ca0c854d88ffe782c396b59617705d19'],
+  ['frontend/src/lib/api.ts', '2b4e7a990546005d8bbdd2f32a45f85fcf97f3815974b2995035c8fcff5f46a9'],
   // Re-taken for the same change, on the server side: the presentation
   // profile and its 80/20 display split are gone, so every account is now
   // served its own ledger and nothing else. `valuationComplete` and

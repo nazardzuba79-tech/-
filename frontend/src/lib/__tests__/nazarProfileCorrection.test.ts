@@ -27,10 +27,16 @@ let selectedPeriod = 'ALL';
 const empty = () => null;
 // Actual profile/readout/follower/histogram markup, with only unrelated children
 // stubbed. The period state is selected explicitly; data uses the real adapter.
+const liveMetricExports: Record<string, any> = {};
+new Function('require', 'exports', ts.transpileModule(readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/LiveMetric.tsx'), 'utf8'), {
+  compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
+}).outputText)(requireFrontend, liveMetricExports);
 const deps = {
+  LiveMetric: liveMetricExports.LiveMetric,
   isModeledTraderData,
   useMemo: (fn: () => unknown) => fn(),
-  useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
+  useEffect: () => {}, // Effects do not run during this server-rendered markup check.
+  useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial === false ? true : initial, empty],
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,
   publicSignedUsdt, publicUsdtNumber, dailyReturnChart, formatSyntheticHistoryDate,
   Avatar: empty, VipBadge: empty, FavoriteButton: empty, CopyButton: empty, ArrowLeft: empty,
@@ -46,7 +52,8 @@ const baseline = toResponse(createReviewSyntheticState(new Date('2026-09-05T12:0
 const render = (trader = syntheticNazaraTrader(baseline), synthetic: typeof baseline | null = baseline) => renderToStaticMarkup(React.createElement(exportsObject.Profile, {
   trader, synthetic, onBack: empty,
 }));
-const plain = (value: string) => value.replace(/\u00a0|\u202f/g, ' ');
+// Compare financial readouts independently of the LiveMetric display wrapper.
+const plain = (value: string) => value.replace(/<span class="copy-live-metric">([^<]*)<\/span>/g, '$1').replace(/\u00a0|\u202f/g, ' ');
 
 test.each(PERIODS)('%s keeps lifetime statistics separate from the selected chart period', period => {
   selectedPeriod = period;

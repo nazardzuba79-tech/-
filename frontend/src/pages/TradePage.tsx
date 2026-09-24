@@ -57,7 +57,7 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
 
 export function TradePage() {
   const { t } = useLanguage();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   // Lets other pages (e.g. the Wallet page's "Buy" action on a zero-balance
   // asset) deep-link straight into a specific pair via ?pair=SOL/USDT —
   // validated so a malformed value just falls back to the default instead
@@ -131,6 +131,17 @@ export function TradePage() {
   }, [searchParams]);
   const selectedCfdSymbol = resolveCfdSymbol(cfdSymbol, cfdTickers);
   const cfdTicker = cfdTickers.find((t) => t.symbol === selectedCfdSymbol);
+  const selectCfdSymbol = (symbol: string) => {
+    setCfdSymbol(symbol);
+    // Keep a reload on the instrument whose display snapshot was loaded.
+    // Otherwise a cancelled cold request for the old deep-link restarts.
+    setSearchParams(current => {
+      const next = new URLSearchParams(current);
+      next.set('market', 'cfd');
+      next.set('symbol', symbol);
+      return next;
+    }, { replace: true });
+  };
 
   // The visible order book mirrors Kraken's real depth for a live, populated
   // look — actual order matching always happens on our own internal book
@@ -227,7 +238,7 @@ export function TradePage() {
           <CfdTickerBar symbol={selectedCfdSymbol} ticker={cfdTicker} />
           <main className="cfd-workspace">
             <aside className="cfd-instruments-area" aria-label={t('trade.cfdInstrument')}>
-              <CfdInstrumentList symbol={selectedCfdSymbol} onChange={setCfdSymbol}
+              <CfdInstrumentList symbol={selectedCfdSymbol} onChange={selectCfdSymbol}
                 tickers={cfdTickers} configured={cfdConfigured} loadError={cfdLoadError} onRetry={reloadCfd} />
             </aside>
             <section className="cfd-chart-area" aria-label={selectedCfdSymbol}>

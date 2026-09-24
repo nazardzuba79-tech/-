@@ -47,7 +47,7 @@ function stylesheets(): string[] {
   const out: string[] = [];
   const walk = (p: string) => {
     if (statSync(p).isDirectory()) for (const e of readdirSync(p)) walk(join(p, e));
-    else if (p.endsWith('.css')) out.push(relative(frontend, p));
+    else if (p.endsWith('.css')) out.push(relative(frontend, p).split('\\').join('/'));
   };
   walk(resolve(frontend, 'src'));
   return out.sort();
@@ -166,14 +166,19 @@ describe('no route stylesheet may move the shared authenticated header', () => {
     // assertions below would pass over an empty list.
     const files = [...new Set(pageRootResets().map((r) => r.file))].sort();
     expect(files).toEqual([
+      'src/pages/analytics/analytics.css',
+      'src/pages/banking/BankingPage.css',
       'src/pages/auth-shell/auth-shell.css',
       'src/pages/copy-trading-bolt/CopyTradingBolt.css',
       'src/pages/crypto-card-final/crypto-card.css',
       'src/pages/home/home.css',
+      'src/pages/home/hero-reference.css',
+      'src/pages/home/home-sapphire.css',
       'src/pages/markets-bolt/MarketsBolt.css',
+      'src/pages/trade-terminal/SampledDisplay.css',
       'src/pages/trade-terminal/TradeTerminal.css',
       'src/pages/wallet-v3/wallet.css',
-    ]);
+    ].sort());
   });
 
   it('and none of them shifts a box without excluding the header', () => {
@@ -266,7 +271,7 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
     expect(rule('.main-nav')).toMatch(/display:\s*flex/);
   });
 
-  it('and no route stylesheet declares a rule whose subject is a header class', () => {
+  it('only the explicitly scoped terminal and auth-shell styles target header classes', () => {
     const subjects: string[] = [];
     for (const file of stylesheets()) {
       if (file === EAGER_SHEET) continue;
@@ -283,10 +288,9 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
         }
       }
     }
-    // One documented leftover, on a page that renders no shared Nav at all:
-    // auth-shell.css styles `.header-icon` under `.vx-auth-work`, the login
-    // shell. Recorded here rather than silently allowed, so the list cannot
-    // grow without someone deciding it should.
+    // Explicit merged-main ownership: the login shell and scoped Futures
+    // archive/mobile terminal. Every selector is listed below; a new route
+    // cannot acquire shared header ownership without updating this guard.
     //
     // `.copytrading-bolt-root .mobile-menu` used to be on this list too, on
     // the reasoning that a `display: grid !important` in the archive's own
@@ -299,6 +303,17 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
     expect([...new Set(subjects)].sort()).toEqual([
       'src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon',
       'src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon:hover',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .deposit-button',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-actions',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-left',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-brand',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-extra-action',
+      'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header',
+      'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-actions',
+      'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-left',
+      'src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .global-header',
+      'src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .header-brand',
     ]);
   });
 

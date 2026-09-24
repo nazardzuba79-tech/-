@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { resolve, join } from 'path';
+import ts from 'typescript';
 
 /**
  * WHICH STYLESHEET SHIPS THE UTILITIES /register AND /wallet USE?
@@ -64,17 +65,26 @@ function classNames(files: string[]): Set<string> {
   const found = new Set<string>();
   for (const file of files) {
     const src = readFileSync(file, 'utf8');
-    for (const match of src.matchAll(/className\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([\s\S]*?)\}(?=\s*(?:\/?>|\n|\s[a-zA-Z-]+=)))/g)) {
-      const literal = match[1] ?? match[2];
-      const segments = literal !== undefined
-        ? [literal]
-        : [...(match[3] ?? '').matchAll(/['"`]([^'"`]*)['"`]/g)].map((m) => m[1]);
-      for (const segment of segments) {
-        for (const cls of segment.replace(/\$\{[^}]*\}/g, ' ').split(/\s+/)) {
-          if (cls) found.add(cls);
-        }
+    const tree = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const add = (text: string) => text.split(/\s+/).filter(Boolean).forEach(cls => found.add(cls));
+    const values = (node: ts.Node): string[] => {
+      if (ts.isStringLiteralLike(node)) return [node.text];
+      if (ts.isConditionalExpression(node)) return [...values(node.whenTrue), ...values(node.whenFalse)];
+      if (ts.isTemplateExpression(node)) {
+        return node.templateSpans.reduce((prefixes, span) => {
+          const choices = values(span.expression);
+          return prefixes.flatMap(prefix => (choices.length ? choices : ['']).map(value => prefix + value + span.literal.text));
+        }, [node.head.text]);
       }
-    }
+      const result: string[] = [];
+      ts.forEachChild(node, child => { result.push(...values(child)); });
+      return result;
+    };
+    const visit = (node: ts.Node): void => {
+      if (ts.isJsxAttribute(node) && node.name.getText(tree) === 'className' && node.initializer) values(node.initializer).forEach(add);
+      else ts.forEachChild(node, visit);
+    };
+    visit(tree);
   }
   return found;
 }
@@ -162,7 +172,7 @@ describe('the utilities layers in this repo are the three we think they are', ()
         const full = join(dir, entry.name);
         if (entry.isDirectory()) walk(full);
         else if (entry.name.endsWith('.css') && readFileSync(full, 'utf8').includes('@tailwind utilities')) {
-          carriers.push(full.slice(full.indexOf('src/')));
+          carriers.push(full.split('\\').join('/').slice(full.split('\\').join('/').indexOf('src/')));
         }
       }
     };
