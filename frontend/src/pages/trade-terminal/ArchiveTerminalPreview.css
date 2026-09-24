@@ -331,23 +331,6 @@
    stacked, each pill two pixels shorter so the pair fits the row height. */
 #archive-terminal-preview .futures-position-actions--joined { display:flex; align-items:center; gap:6px !important; }
 #archive-terminal-preview .futures-position-close-pair { display:flex; flex-direction:column; }
-/* CLOSE ALL, on the terminal the owner looks at: one quiet control at the
-   right of a slim strip above the rows; the confirmation and its report
-   take the same strip. The control was built for the Pro terminal and had
-   been left out of this design. */
-#archive-terminal-preview .futures-close-all-bar { display:flex; align-items:center; justify-content:flex-end; gap:12px; min-height:32px; padding:3px 14px; border-bottom:1px solid var(--border); font-size:12px; color:var(--text-secondary); }
-#archive-terminal-preview .futures-close-all-trigger { display:inline-flex; align-items:center; height:24px; padding:0 10px; border:1px solid var(--border); border-radius:999px; background:transparent; color:var(--text-secondary); font-size:12px; font-weight:600; line-height:1; cursor:pointer; }
-#archive-terminal-preview .futures-close-all-trigger:hover:not(:disabled) { color:var(--text-primary); border-color:#4b5563; }
-#archive-terminal-preview .futures-close-all-trigger:disabled { opacity:.5; cursor:default; }
-#archive-terminal-preview .futures-close-all-confirm { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-#archive-terminal-preview .futures-close-all-text { display:flex; align-items:baseline; gap:8px; }
-#archive-terminal-preview .futures-close-all-text strong { color:var(--text-primary); font-weight:600; }
-#archive-terminal-preview .futures-close-all-actions { display:flex; gap:6px; }
-#archive-terminal-preview :is(.futures-close-all-cancel,.futures-close-all-go) { display:inline-flex; align-items:center; height:24px; padding:0 10px; border:1px solid var(--border); border-radius:999px; background:transparent; color:var(--text-primary); font-size:12px; font-weight:600; line-height:1; cursor:pointer; }
-#archive-terminal-preview .futures-close-all-go { border-color:transparent; background:var(--sell); color:#fff; }
-#archive-terminal-preview .futures-close-all-go:hover { filter:brightness(1.1); }
-#archive-terminal-preview .futures-close-all-report { color:var(--text-secondary); }
-#archive-terminal-preview .futures-close-all-report.futures-close-all-failed { color:var(--sell); }
 /* Match protection and close pills, including the inherited inner chip dimensions. */
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)) { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; box-sizing:border-box; width:auto; min-width:72px; height:26px; min-height:26px; margin:0; padding:4px 10px !important; border:0 !important; border-radius:999px !important; background:#454b55 !important; color:#fff !important; font-size:12px !important; font-weight:600 !important; line-height:18px; white-space:nowrap; }
 #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger:has(.fut-tpslAdd)):hover { background:#626c7a !important; }
