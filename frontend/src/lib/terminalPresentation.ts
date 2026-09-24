@@ -1,4 +1,4 @@
-import type { LiveState } from './liveMarketTypes';
+import type { LiveQuote, LiveState } from './liveMarketTypes';
 
 /** Display only: preserve tiny nonzero quantities; exact values remain in tooltips. */
 export function formatBookAmount(value: number): string {
@@ -34,6 +34,35 @@ export function formatCompactBookValue(value: number, kind: 'amount' | 'total' =
     if (text.length <= 8) return text;
   }
   return full;
+}
+
+/** How old the header's own reference row may be and still name the 24h
+ * turnover: twice its five-minute REST refresh (the socket keeps it far
+ * fresher on the production site). */
+export const REFERENCE_TURNOVER_MAX_AGE_MS = 600_000;
+
+/**
+ * The same Bybit linear-perpetual turnover, read from the Futures header's
+ * OWN reference row — the row its 24h high and low already come from
+ * (`useFuturesReference`). No request is added: the row is in memory.
+ *
+ * Needed because the server's cross-venue turnover is Binance's alone (OKX
+ * publishes none) and Binance Futures refuses the backend's US region, so
+ * on production that aggregate is never available and the cell sat on «—».
+ * Same rules as `livePerpetualTurnover`: this pair's USDT-settled perpetual
+ * from Bybit, in the quote currency, fresh, never spot, never converted.
+ */
+export function referencePerpetualTurnover(row: LiveQuote | null | undefined, pair: string, now = Date.now()): number | null {
+  if (!row) return null;
+  const [base, quote] = pair.split('/');
+  if (row.marketType !== 'linear_perpetual' || row.pair !== pair ||
+      row.baseAsset !== base || row.quoteAsset !== quote || row.settleAsset !== quote ||
+      row.providerSymbol !== `${base}${quote}` || row.provider !== 'bybit' ||
+      (row.turnoverAsset !== undefined && row.turnoverAsset !== quote) || row.stale) return null;
+  const received = row.receivedAt;
+  if (!Number.isFinite(received) || received > now + 5000 || now - received > REFERENCE_TURNOVER_MAX_AGE_MS) return null;
+  const value = row.quoteVolume24h;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 /** Reference-only fallback, never spot volume, dated contracts or converted units. */

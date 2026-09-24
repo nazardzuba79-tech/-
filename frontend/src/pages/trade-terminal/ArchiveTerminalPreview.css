@@ -527,3 +527,9 @@
    0.30 of its width; ours were 48px on a ~138px face (0.35). 42px restores
    0.30 at 1440. */
 #archive-terminal-preview .fo-submitPair button { height:42px; min-height:42px; }
+/* HEADER FIGURES AT ONE CONTRAST (owner, 2026-09-24: «Открытый интерес»
+   read dimmer than the figures beside it). A last-good open interest or
+   turnover from the server's bounded stale window keeps `is-stale` in the
+   markup, but on this design it is drawn at the same strength as every
+   other header figure instead of at the shared sheet's 62% opacity. */
+#archive-terminal-preview .ticker-item .value.is-stale { opacity:1; }

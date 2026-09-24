@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import type { FuturesMarketStats, GatewaySection } from '../lib/api';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { referenceNumber } from '../lib/futuresReference';
+import { referencePerpetualTurnover } from '../lib/terminalPresentation';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
@@ -356,7 +357,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
             USDT-margined perpetuals and the upstream figure is the
             quote-currency turnover, never a converted one. */}
         <span className="label">{`${t('futures.headerTurnover24h')} (${quoteAsset})`}</span>
-        <FuturesTurnover pair={symbol} aggregate={stats24h?.turnover24hUsd ?? null} stale={Boolean(derivatives?.available && derivatives.stale)} fullPrecision={archive} />
+        <FuturesTurnover pair={symbol} aggregate={stats24h?.turnover24hUsd ?? null} stale={Boolean(derivatives?.available && derivatives.stale)} fullPrecision={archive} reference={referencePerpetualTurnover(ticker, symbol)} />
       </div>
       <div className="ticker-item">
         {/* Derivatives-market open interest, in base units when the
