@@ -499,14 +499,18 @@ async function largeValues(width) {
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positions'); await rows(s.page).first().waitFor();
       await check(`large-table-${example.id}-${width}`, async () => {
-        // The row prints the figure as the reference does (owner's Bybit
-        // screenshot, 2026-09-22): grouped and to four decimals with the unit,
-        // the ROI grouped in brackets, and the `≈ … USD` line under it. The
+        // The row prints the figure grouped and whole, never truncated or in
+        // exponent form, with the unit and the ROI grouped in brackets (the
         // brackets and the unit are drawn by the stylesheet, so innerText
-        // carries neither.
-        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 4));
+        // carries neither). Since 2026-09-24 the archive design — the one
+        // this page opens — prints the USDT figure to two decimals and no
+        // longer draws the `≈ … USD` line under it, which repeated the
+        // figure above to the cent and cost the row a third line (the
+        // owner's approved recommendation after #220). The other designs
+        // keep four decimals and the line.
+        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 2));
         assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), grouped(example.roi, 2) + '%');
-        assert.equal((await s.page.locator('.futures-position-approx').first().innerText()).trim(), `≈${grouped(example.pnl, 2)} USD`);
+        assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
         assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
         return tableLayout(s.page, width);
       });

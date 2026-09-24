@@ -239,9 +239,10 @@ async function tradeSide(s, width, side, counts) {
   // One number format across the row — comma between thousands, dot before decimals — and the trader's own money in the trade.
   const cell = async n => (await row.locator(`td:nth-child(${n})`).innerText()).replace(/\s+/g, ' ').trim();
   assert.equal(await cell(2), '1,500,000 AKE', 'Quantity is not grouped');
-  assert.equal(await cell(3), '80,700.00 USDT', 'Position value is not grouped to two decimals');
-  assert.equal(await cell(4), '2,000.00 USDT', 'Margin column does not show size × entry ÷ leverage');
-  assert((await cell(8)).includes('74,700.00') && (await cell(8)).includes('3,735.00%'), `Unrealized/ROI not grouped: ${await cell(8)}`);
+  // The archive design has no «Стоим.» column (owner, 2026-09-24): the
+  // initial margin is the third cell and the unrealized P&L the seventh.
+  assert.equal(await cell(3), '2,000.00 USDT', 'Initial margin column does not show size × entry ÷ leverage');
+  assert((await cell(7)).includes('74,700.00') && (await cell(7)).includes('3,735.00%'), `Unrealized/ROI not grouped: ${await cell(7)}`);
   await p.screenshot({ path: path.join(out, `position-${side.toLowerCase()}-${width}.png`), fullPage: width === 390 });
   // 6b. «Лимитный» on the row: a partial close as a resting LIMIT, then one that fills at the near-live price.
   let remaining = Number(QUANTITY);

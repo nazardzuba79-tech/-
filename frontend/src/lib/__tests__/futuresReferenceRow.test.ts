@@ -127,8 +127,10 @@ describe('2. the positions row carries the reference columns', () => {
     for (const key of ['futures.colEntry', 'futures.colMark', 'futures.colLiq']) {
       expect(thead![1]).toContain(key);
     }
-    // Three separate cells, not one combined price column.
-    expect(thead![1].match(/<Th>/g)?.length).toBeGreaterThanOrEqual(10);
+    // Three separate cells, not one combined price column. A heading may
+    // carry a `title` hint (2026-09-24), so the tag is matched with or
+    // without attributes.
+    expect(thead![1].match(/<Th[ >]/g)?.length).toBeGreaterThanOrEqual(10);
   });
 
   test('native Cross never presents an engine-only liquidation price as account-authoritative', () => {

@@ -35,6 +35,7 @@ export function FuturesPositionProtectionCell({
   protection,
   onSaved,
   compactTrigger = false,
+  compactLabel = false,
 }: {
   positionId: string;
   /** Server state. `null` means the payload has not said yet — unknown, not
@@ -42,6 +43,9 @@ export function FuturesPositionProtectionCell({
   protection: PositionProtection | null;
   onSaved: () => void;
   compactTrigger?: boolean;
+  /** «+ TP/SL» instead of «+ Добавить»: for a column that already carries
+   *  the TP/SL heading and has no room for the longer word. */
+  compactLabel?: boolean;
 }) {
   const execution = useFuturesExecution();
   const { t } = useLanguage();
@@ -219,7 +223,7 @@ export function FuturesPositionProtectionCell({
         style={styles.trigger}
       >
         {compactTrigger ? (
-          <span className="fut-tpslAdd" style={styles.setLabel}>+ {t('futures.addTpsl')}</span>
+          <span className="fut-tpslAdd" style={styles.setLabel}>+ {t(compactLabel ? 'futures.tpsl' : 'futures.addTpsl')}</span>
         ) : protection === null ? (
           <span style={styles.dash}>—</span>
         ) : hasAny ? (
@@ -238,7 +242,7 @@ export function FuturesPositionProtectionCell({
             )}
           </span>
         ) : (
-          <span className="fut-tpslAdd" style={styles.setLabel}>+ {t('futures.addTpsl')}</span>
+          <span className="fut-tpslAdd" style={styles.setLabel}>+ {t(compactLabel ? 'futures.tpsl' : 'futures.addTpsl')}</span>
         )}
       </button>
 
