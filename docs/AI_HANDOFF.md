@@ -3626,3 +3626,10 @@ withdrawal was placed.
 - Material files: `frontend/src/pages/admin/AdminUsersPage.tsx`, `AdminUserDetailPage.tsx`, new `lastLoginLabel.ts`, and focused `adminLastLoginKyiv.test.ts`. Both admin user surfaces now show `Сегодня, HH:mm`, `Вчера, HH:mm`, or the full Kyiv date. The list's recent-login dot follows the same calendar date. Unrelated deposit highlighting still uses its existing 24-hour window.
 - Tests: 6 calendar/DST cases PASS; 18 focused admin UI cases PASS; frontend production TypeScript/Vite build PASS. No backend, auth, financial logic, deposits, or other admin behavior changed.
 - Preserved all current-main work, including the deployed Futures chart optimization. The earlier uncommitted Futures investigation remains isolated in its own worktree and is not included here. No deploy or merge.
+
+### 2026-09-24 — Claude — Terminal header at 1440–1530: «Crypto Card» no longer runs under «Кошелёк»
+
+- Base `5ad46231`. Branch `claude/header-1440`. One rule in `frontend/src/index.css` (the shell's own header family, where the terminal header's other breakpoints live). No markup change.
+- Measured on the fixture at 1440: the eight product links end at 991px («OTC»), the account cluster starts at 912px («Кошелёк»), so «Crypto Card» and «OTC» sat under the wallet chip (owner's screenshot, 2026-09-23). The existing tiers cover ≤1439 (the drawer) and, with the admin link, 1440–1519; a non-admin header at 1440–1530 had no tier.
+- Fix: between 1440 and 1530 the two `nav-secondary` links («Crypto Card», «OTC») step out of the terminal header, as they already do below 1050 on every other page; from 1531 the full row fits (measured: no overlapping header items at 1440, 1500, 1530, 1531, 1600). Screenshots `docs/qa/header-1440/`.
+- Checks: production build PASS; `sharedHeaderStylesheetOwnership` has the same 2 failures as clean main (the rule is in the shell sheet, not a route sheet). Stated: in that band the two links are reachable from the drawer only below 1440 and from the pages themselves; a «Ещё ▾» overflow would keep them in the header and is a Nav component change. Not deployed.
