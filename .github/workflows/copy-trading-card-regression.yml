@@ -39,6 +39,7 @@ on:
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
+      - 'frontend/src/lib/adminAlertApi.ts'
       # The strings both cards render, in every locale the switcher offers.
       - 'frontend/src/lib/i18n.tsx'
       - 'frontend/src/lib/i18n/**'
@@ -109,6 +110,7 @@ on:
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
+      - 'frontend/src/lib/adminAlertApi.ts'
       # The strings both cards render, in every locale the switcher offers.
       - 'frontend/src/lib/i18n.tsx'
       - 'frontend/src/lib/i18n/**'

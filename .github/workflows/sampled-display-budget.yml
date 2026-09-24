@@ -7,16 +7,17 @@ on:
       - 'src/api/routes/cfd.ts'
       - 'src/api/routes/marketData.ts'
       - 'src/api/routes/marketLive.ts'
+      - 'src/api/routes/admin.ts'
       - 'src/api/routes/__tests__/marketLiveGzip.test.ts'
+      - 'src/api/routes/__tests__/admin.test.ts'
       - 'src/api/routes/__tests__/sampledDisplayBudget.test.ts'
-      - 'src/api/routes/marketLive.ts'
-      - 'src/api/routes/__tests__/marketLiveGzip.test.ts'
       - 'src/services/FuturesDisplayTrades.ts'
       - 'src/services/marketData/live/collectorServer.ts'
       - 'src/index.ts'
       - 'frontend/src/lib/*Display*'
       - 'frontend/src/lib/displaySnapshotCache.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
+      - 'frontend/src/lib/adminAlertApi.ts'
       - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/__tests__/futuresCandles.test.ts'
@@ -26,8 +27,6 @@ on:
       - 'frontend/src/lib/directFuturesReference.ts'
       - 'frontend/src/lib/useCfdTickers.ts'
       - 'frontend/src/lib/useLiveMarket.ts'
-      - 'frontend/src/lib/useAdminAlerts.ts'
-      - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/liveMarketStore.ts'
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/components/CfdChart.tsx'
@@ -42,8 +41,15 @@ on:
     paths:
       - 'src/api/middleware/publicDisplayCache.ts'
       - 'src/api/routes/displaySnapshots.ts'
+      - 'src/api/routes/marketLive.ts'
+      - 'src/api/routes/admin.ts'
+      - 'src/api/routes/__tests__/marketLiveGzip.test.ts'
+      - 'src/api/routes/__tests__/admin.test.ts'
       - 'src/api/routes/__tests__/sampledDisplayBudget.test.ts'
       - 'frontend/src/lib/displaySnapshotCache.ts'
+      - 'frontend/src/lib/useAdminAlerts.ts'
+      - 'frontend/src/lib/adminAlertApi.ts'
+      - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/useCfdTickers.ts'
       - 'frontend/src/components/CfdChart.tsx'
@@ -73,6 +79,7 @@ jobs:
         run: >-
           npx jest --runInBand --silent --runTestsByPath
           src/api/routes/__tests__/sampledDisplayBudget.test.ts
+          src/api/routes/__tests__/admin.test.ts
           frontend/src/lib/__tests__/homeHeroVisibility.test.ts
           frontend/src/lib/__tests__/cfdTerminal.test.ts
           frontend/src/lib/__tests__/cfdDisplayOnly.test.ts

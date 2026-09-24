@@ -28,6 +28,32 @@ export function adminRouter(prisma: PrismaClient): Router {
     }
   });
 
+  /**
+   * Tiny notification cursor for the global admin chime.
+   *
+   * The previous browser poll downloaded the complete deposits, withdrawals
+   * and client/KYC lists every 15 seconds on every page. That multiplied DB
+   * reads and Render egress even though the chime only needs to know whether
+   * the newest item changed. Keep the detailed lists on their real admin
+   * pages and return only three opaque ids here.
+   */
+  router.get('/admin/alerts-summary', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    try {
+      const [deposit, withdrawal, kyc] = await Promise.all([
+        prisma.deposit.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+        prisma.withdrawal.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+        prisma.kycSubmission.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+      ]);
+      res.set('Cache-Control', 'private, no-store').json({
+        depositId: deposit?.id ?? null,
+        withdrawalId: withdrawal?.id ?? null,
+        kycId: kyc?.id ?? null,
+      });
+    } catch {
+      res.status(503).json({ error: 'Admin alerts temporarily unavailable' });
+    }
+  });
+
   // Admin-only: every client, with their latest KYC submission (if any) —
   // the full client list, not just the pending-review queue.
   router.get('/admin/clients', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
