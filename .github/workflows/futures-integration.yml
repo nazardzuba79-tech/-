@@ -67,3 +67,5 @@ jobs:
           name: futures-integration-tests
           path: futures-integration-tests.json
           retention-days: 7
+
+# QA-only trigger for final current-main validation; do not merge this branch.
