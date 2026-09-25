@@ -3824,3 +3824,10 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Desktop margin/leverage 34→32px, price/quantity 48→44px. TP/SL 52→32px, one-line label with small shield and chevron; secondary explanation moved to title tooltip. Mobile fields remain 48px and TP/SL touch target 44px; coarse-pointer selectors retain 44px targets.
 - Frontend build PASS; 101 focused tests / six suites PASS. Disposable native browser PASS at 1920/1440/390/320: MARKET/LIMIT heights, TP/SL expansion and value retention, reduce-only gating, position details, no horizontal overflow or covered CTA, Maker/Taker strip absent. Desktop/mobile screenshots inspected.
 - Audited fingerprint refreshed for caption-to-tooltip markup only. Financial calculations, API/submission, authentication, CTA sizes, prior bot/navigation work and production data/config preserved. Awaiting CI/publication; no unresolved local regression.
+
+## Codex — 2026-09-25 — Remove marked order-summary rows
+
+- Implementation: b9654df4ed9623efb434359198ab0a4a21b0e09a; based on published main eb6a142c. Owner requested removing the approximate round-trip commission and position-limits disclosure from the trading ticket.
+- FuturesOrderForm.tsx now omits those two display rows in archive presentation. Standard ticket display, fee reserves, max-size calculations, admission checks, TP/SL and submission are preserved.
+- Updated existing native browser assertions and audited form fingerprint. Frontend build PASS; all 101 focused tests across six suites passed (fingerprint suite rerun after audited refresh). Native browser PASS at 1920/1440/390/320: removed rows absent, TP/SL retention and reduce-only gating, unchanged field and CTA geometry, no overflow or covered buttons. Desktop screenshot inspected.
+- Awaiting CI/publication. No production trades or configuration/data changes.

@@ -66,12 +66,8 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     await reduceOnly.check();
     assert.equal(await toggle.count(), 0, 'Entry protection must not appear on a reduce-only order');
     await reduceOnly.uncheck();
-    const limits = page.locator('.fo-positionLimits');
-    assert.equal(await limits.getAttribute('open'), null);
-    await limits.locator('summary').click();
-    assert(await limits.evaluate(e => e.open));
-    assert(await limits.locator('.mono').isVisible());
-    await limits.locator('summary').click();
+    assert.equal(await page.locator('.fo-positionLimits').count(), 0);
+    assert(!/Прим\. комиссии|Лимиты позиции|Максимальная позиция/.test(await page.locator('.fo-infoBox').innerText()), 'Removed summary rows still rendered');
     if (await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
     const geometry = await page.evaluate(() => {
       const rect = s => { const r = document.querySelector(s).getBoundingClientRect(); return { height: r.height, width: r.width, left: r.left, right: r.right }; };
@@ -97,7 +93,7 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     if (width > 900) await page.locator('.order-form-area').evaluate(e => { e.scrollTop = 0; });
     else await page.locator('.fo-priceField').scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(out, `${width}.png`) });
-    report.viewports.push({ width, passed: true, geometry, protectionRetained: true, limitsAccessible: true, feeStripRemoved: true });
+    report.viewports.push({ width, passed: true, geometry, protectionRetained: true, extraSummaryRowsRemoved: true, feeStripRemoved: true });
     await context.close();
   }
   assert.deepEqual(report.errors, []);

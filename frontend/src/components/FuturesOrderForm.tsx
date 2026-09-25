@@ -1035,8 +1035,9 @@ export function FuturesOrderForm({
               </span>
             </div>
           )}
-          {/* Only when the engine publishes a rate. See `feeRatePublished`. */}
-          {feeRatePublished && (
+          {/* The compact archive ticket omits this display row; fee reserves
+              still participate in sizing and admission. */}
+          {!archive && feeRatePublished && (
             <div className="fo-infoRow">
               <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estFees')}</span>
               <span className="mono">
@@ -1047,22 +1048,14 @@ export function FuturesOrderForm({
           {/* What 100% on the slider would actually buy. Suppressed entirely
               for a reduce-only ticket, where the budget is the position
               being closed and not the free balance at all. */}
-          {!reduceOnly && (archive ? (
-            <details className="fo-positionLimits">
-              <summary>{t('futures.positionLimits')}</summary>
-              <div className="fo-infoRow">
-                <span>{t('futures.maxPosition')}</span>
-                <span className="mono">{maxPositionNotional !== null ? `${formatAmount(maxPositionNotional)} ${quoteAsset}` : '—'}</span>
-              </div>
-            </details>
-          ) : (
+          {!archive && !reduceOnly && (
             <div className="fo-infoRow">
               <span style={{ color: 'var(--text-secondary)' }}>{t('futures.maxPosition')}</span>
               <span className="mono">
                 {maxPositionNotional !== null ? `${formatAmount(maxPositionNotional)} ${quoteAsset}` : '—'}
               </span>
             </div>
-          ))}
+          )}
           {/* THE FEE ROW IS CONDITIONAL, AND THAT IS THE POINT.
               The real futures engine charges nothing: there is no fee rate
               in src/futures, none in src/config/futuresConfig, and no fee
@@ -1079,7 +1072,8 @@ export function FuturesOrderForm({
               The simulation engine DOES publish `takerFeeRate` and DOES
               charge it — `quoteOrderCost` reserves the open fee and the
               close fee at admission. So where the fee is real the row is
-              shown, and where it is not the row is absent. A displayed fee
+              shown on the standard ticket; the compact archive ticket
+              omits the display without changing the reserve. A displayed fee
               that is not deducted is as wrong as an invented one. */}
         </div>
 
