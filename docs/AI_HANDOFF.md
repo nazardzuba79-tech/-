@@ -3816,3 +3816,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - FuturesOrderPanelRefinement.css: fields 60→48px, adjusted label/value line heights and padding; desktop margin/leverage 40→34px with matching tab offset; TP/SL 66→52px with smaller icon surface. Panel width, section rhythm, CTA sizes, mobile touch targets and trading behavior preserved.
 - qa-order-panel-refinement.cjs: updated field-height expectations. Frontend build PASS; native fixture browser PASS at 320/390/1440/1920 for MARKET/LIMIT dimensions, TP/SL retention and reduce-only gating, limits, CTA accessibility, no overflow, no fee strip. No application logic or backend changes.
 - Awaiting CI and publication. No unresolved local regression.
+
+## Codex — 2026-09-25 — Slim controls and one-line TP/SL
+
+- Implementation: 623f97148fb4ee784d14b53c93b00eea43815158; base published main 65b7e35f. Owner approved the compact preview and requested publication.
+- Files: FuturesOrderForm.tsx, FuturesOrderPanelRefinement.css, futuresUiPolish.test.ts and qa-order-panel-refinement.cjs.
+- Desktop margin/leverage 34→32px, price/quantity 48→44px. TP/SL 52→32px, one-line label with small shield and chevron; secondary explanation moved to title tooltip. Mobile fields remain 48px and TP/SL touch target 44px; coarse-pointer selectors retain 44px targets.
+- Frontend build PASS; 101 focused tests / six suites PASS. Disposable native browser PASS at 1920/1440/390/320: MARKET/LIMIT heights, TP/SL expansion and value retention, reduce-only gating, position details, no horizontal overflow or covered CTA, Maker/Taker strip absent. Desktop/mobile screenshots inspected.
+- Audited fingerprint refreshed for caption-to-tooltip markup only. Financial calculations, API/submission, authentication, CTA sizes, prior bot/navigation work and production data/config preserved. Awaiting CI/publication; no unresolved local regression.
