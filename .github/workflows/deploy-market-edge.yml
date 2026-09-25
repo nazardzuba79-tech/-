@@ -76,11 +76,11 @@ jobs:
           health_ok=0
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if health="$(curl --connect-timeout 5 --max-time 10 -fsS https://market.voltextech.net/health)" \
-              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v7')process.exit(1)})"; then
+              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v8')process.exit(1)})"; then
               health_ok=1
               break
             fi
-            echo "waiting_for_v7 attempt=$attempt"
+            echo "waiting_for_v8 attempt=$attempt"
             sleep 5
           done
           test "$health_ok" = "1"
@@ -98,7 +98,7 @@ jobs:
       - name: Confirm deployed Worker version and private-route isolation
         run: |
           health="$(curl --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 -fsS https://market.voltextech.net/health)"
-          printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||!['futures-edge-direct-v6','public-display-edge-v7'].includes(j.version))process.exit(1)})"
+          printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||!['futures-edge-direct-v6','public-display-edge-v7','public-display-edge-v8'].includes(j.version))process.exit(1)})"
           echo "health_identity=ok"
           private_status="$(curl --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)"
           echo "private_route_status=$private_status"

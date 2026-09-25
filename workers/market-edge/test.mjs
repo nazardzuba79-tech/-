@@ -25,7 +25,7 @@ async function run(){
     };
 
     const health=await worker.fetch(new Request("https://market.voltextech.net/health"));
-    assert.deepEqual(await health.json(),{ok:true,service:"voltex-market-edge",version:"public-display-edge-v7"});
+    assert.deepEqual(await health.json(),{ok:true,service:"voltex-market-edge",version:"public-display-edge-v8"});
 
     const book=await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-book/BTCUSDT",{headers:{authorization:"Bearer must-not-forward",cookie:"session=must-not-forward"}}));
     const bookBody=await book.json();assert.equal(book.status,200);assert.equal(bookBody.source,"bybit");assert.equal(bookBody.bids.length,25);assert.equal(bookBody.asks.length,25);
@@ -103,10 +103,12 @@ async function run(){
     assert.match(cfdResponse.headers.get("cache-control")||"",/max-age=21600/);
     const cfd=await cfdResponse.json();
     assert.equal(cfd.configured,true);assert.equal(cfd.tickers.length,13);assert.ok(cfd.tickers.every(row=>row.displayOnly===true&&row.executionAllowed===false));
+    assert.equal(cfd._display?.mode,"snapshot");assert.equal(cfd._display?.refreshMs,6*60*60*1000);assert.ok(Number.isFinite(cfd._display?.capturedAt));
     const cfdBarsResponse=await worker.fetch(new Request("https://market.voltextech.net/cfd/display/candles/XAUUSD?interval=1h&limit=50&case=cfd"));
     assert.match(cfdBarsResponse.headers.get("cache-control")||"",/max-age=21600/);
     const cfdBars=await cfdBarsResponse.json();
     assert.equal(cfdBars.symbol,"XAUUSD");assert.equal(cfdBars.bars.length,2);
+    assert.equal(cfdBars._display?.mode,"snapshot");assert.equal(cfdBars._display?.refreshMs,6*60*60*1000);assert.ok(Number.isFinite(cfdBars._display?.capturedAt));
     assert.ok(publicSeen.every(url=>!url.includes("api.voltextech.net")&&!url.includes("onrender.com")));
     assert.ok(publicSeen.some(url=>url.includes("api.kraken.com")));
     assert.ok(publicSeen.some(url=>url.includes("biquote.io")));
