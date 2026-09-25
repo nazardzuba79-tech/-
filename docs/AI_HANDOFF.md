@@ -1,5 +1,17 @@
 # AI Handoff Log
 
+## 2026-09-25 — Codex — remaining hidden-tab Render polling
+
+- Publication follow-up: owner explicitly authorized public GitHub publication, merge after green CI and automatic deployment. PR #257 initially exposed an expected order-form fingerprint mismatch and a wall-clock-dependent historical TEST fixture missing the 08:00 UTC funding event. Updated only the audited hash and test fixture: complete zero-rate boundary observations, fixed non-boundary/boundary advance cases, and isolated 08:00/16:00 fixture checks. Local form/fingerprint checks 80 PASS plus fixture checks 2 PASS; real PostgreSQL scenarios require CI. Runtime backend remains byte-unchanged. Published initial commit `927070fe56f6a553c5d9eeb401fffad3c7916880` is tree-identical to local `56ba9014`.
+
+- Owner requested completion of the current optimization and supplied explicit current-main integration/deploy instructions. Fresh-fetched main `f5c8f4a0cf0c6e0f5e1221bdf31010976066fd63`; #248/#251/#252/#253/#254/#255/#256 are already merged. Do not replay the superseded #243/#244/#250 branches.
+- Code commit: `4ac371bb` on `codex/render-idle-polling-20260925`. Material files: `FuturesOrderForm.tsx`, `catalogueStore.ts`, and their existing `futuresOrderPanel` / `cryptoCatalogue` regression suites.
+- The order form's mark-price timer now skips hidden tabs, refreshes on visibility return, and permits only one pending read per mounted symbol. Its visible 5-second cadence is unchanged. Markets catalogue pauses hidden-tab reads, shares the pending request on return, and removes its visibility listener with the last subscriber; visible 10-minute cadence is unchanged.
+- Preserved all prior Codex/Claude design, CFD, KYC and bandwidth work; no backend, trade commands, authorization, funding, liquidation, database, configuration or financial math changes.
+- Validation actually run: 7 focused Jest suites / 203 tests PASS; frontend TypeScript + Vite production build PASS; diff whitespace check PASS. New behavioral tests cover hidden mount, a hidden hour, return, slow/rejected requests, pair change, multiple subscribers and cleanup. CI/merge/deploy verification pending at this handoff commit.
+- Baseline observed: Render API live on `f5c8f4a0`, `/health` ok; CFD self-test passed after its cold-start retry. Render bandwidth API returned 44.46546 MB for 06:00Z and 41.129227 MB for 07:00Z; 08:00Z bucket incomplete. Request-log API returned no rows, so per-route production traffic attribution and a post-change monthly projection are not established. Public catalogue GET returned HTTP 200 / 81,945 transferred body bytes; this single response is not a monthly usage measurement.
+
+
 ## 2026-09-06 — Codex global prelaunch banner removal / contextual Copy notice
 
 - Owner authorized production deployment after accepting removal of the global banner with one concise explanation retained only beside modeled Copy Trading results. Branch `codex/contextual-copy-notice` starts from freshly fetched main `9cf83c51fde6498c0d4e4d416508f1807c1eb6b0`; this commit carries the complete isolated change.

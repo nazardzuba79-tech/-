@@ -26,9 +26,29 @@ class FixtureMarket {
   history=jest.fn(async(request:any):Promise<PrivateHistoricalData>=>{
     const intervalMs=request.intervalMinutes*60_000;
     const candles=[];for(let t=request.startTime;t<request.endTime;t+=intervalMs){const price=t<request.startTime+2*intervalMs?'100':'120';candles.push({timestamp:t,open:price,high:price,low:price,close:price});}
-    return {symbol:'XYZUSDT',tradeCandles:candles,markCandles: [...candles],fundingEvents:[],expectedFundingTimestamps:[],intervalMs,complete:!this.historyIncomplete,issues:this.historyIncomplete?['FIXTURE_MISSING_FUNDING']:[],fetchedAt:Date.now(),fundingScheduleModel:'CURRENT_INTERVAL_GRID_V1',instrument:instrument()};
+    // A complete fixture must include settlement boundaries even when the
+    // requested tail crosses 08:00/16:00 UTC. Zero is this fixture's actual
+    // configured rate; omitting the event correctly makes advance incomplete.
+    const fundingInterval=instrument().fundingIntervalMinutes*60_000;
+    const fundingEvents=[];
+    for(let t=Math.ceil(request.startTime/fundingInterval)*fundingInterval;t<request.endTime;t+=fundingInterval){
+      fundingEvents.push({timestamp:t,rate:'0',markPrice:candles.find(c=>c.timestamp===t)?.close??'100'});
+    }
+    return {symbol:'XYZUSDT',tradeCandles:candles,markCandles: [...candles],fundingEvents,expectedFundingTimestamps:fundingEvents.map(event=>event.timestamp),intervalMs,complete:!this.historyIncomplete,issues:this.historyIncomplete?['FIXTURE_MISSING_FUNDING']:[],fetchedAt:Date.now(),fundingScheduleModel:'CURRENT_INTERVAL_GRID_V1',instrument:instrument()};
   });
 }
+
+describe('complete historical fixture funding',()=>{
+  test.each(['2026-09-23T08:00:00Z','2026-09-23T16:00:00Z'])('includes the %s settlement in an advance tail',async(boundaryIso)=>{
+    const boundary=Date.parse(boundaryIso);
+    const data=await new FixtureMarket().history({startTime:boundary-60_000,endTime:boundary+60_000,intervalMinutes:1});
+    expect(data.complete).toBe(true);
+    expect(data.expectedFundingTimestamps).toEqual([boundary]);
+    expect(data.fundingEvents).toEqual([{timestamp:boundary,rate:'0',markPrice:'100'}]);
+    const before=await new FixtureMarket().history({startTime:boundary-60_000,endTime:boundary,intervalMinutes:1});
+    expect(before.fundingEvents).toEqual([]);
+  });
+});
 class CommitExpiryStore extends PrivateTradingStore {
   expireAtCommit=false;
   afterFirstFinalCheck:(()=>void)|undefined;
@@ -147,8 +167,8 @@ dbDescribe('private trading real TEST PostgreSQL transactions',()=>{
     const result=await waitReady(f.service,f.actor,preview.id);expect(result.status).toBe('INCOMPLETE');await expect(f.service.confirm(f.actor,preview.id,'bad-history')).rejects.toMatchObject({code:'preview_not_ready'});
     expect((await f.service.state(f.actor)).copyHistory).toHaveLength(0);
   },30000);
-  test('advance replaces one scenario version without reallocating capital or duplicating earlier journal entries',async()=>{
-    const f=await fixture();await f.store.allocate(f.actor,'1000','capital');const start=Math.floor((Date.now()-3600000)/60000)*60000;
+  test.each(['2026-09-23T06:00:00Z','2026-09-23T07:54:00Z'])('advance from %s replaces one scenario version without reallocating capital or duplicating earlier journal entries',async(startIso)=>{
+    const f=await fixture();await f.store.allocate(f.actor,'1000','capital');const start=Date.parse(startIso);
     const preview=await f.service.preview(f.actor,request({mode:'HISTORICAL_REPLAY',capital:'200',effectiveOpenedAt:new Date(start+1).toISOString(),asOf:new Date(start+300000).toISOString()}));
     expect((await waitReady(f.service,f.actor,preview.id)).status).toBe('READY');await f.service.confirm(f.actor,preview.id,'initial-history');
     const first=(await f.service.state(f.actor)).scenarios[0];const before=await f.store.read(f.actor);const oldScenario=before.state.scenarios[0];

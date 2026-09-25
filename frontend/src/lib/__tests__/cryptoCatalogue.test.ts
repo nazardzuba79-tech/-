@@ -125,6 +125,62 @@ afterEach(() => {
 
 // ── One request, shared ─────────────────────────────────────────────────
 
+describe('catalogue visibility budget', () => {
+  let previousDocument: PropertyDescriptor | undefined;
+  let document: { hidden: boolean; addEventListener: any; removeEventListener: any };
+  let events: EventTarget;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    previousDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    events = new EventTarget();
+    document = { hidden: false, addEventListener: events.addEventListener.bind(events), removeEventListener: events.removeEventListener.bind(events) };
+    Object.defineProperty(globalThis, 'document', { configurable: true, value: document });
+  });
+  afterEach(() => {
+    catalogueStore._resetForTests();
+    if (previousDocument) Object.defineProperty(globalThis, 'document', previousDocument);
+    else delete (globalThis as any).document;
+    jest.useRealTimers();
+  });
+  const visibility = () => events.dispatchEvent(new Event('visibilitychange'));
+
+  it('keeps the visible cadence and pauses for a full hidden hour without dropping data', async () => {
+    const off = catalogueStore.subscribe(() => {});
+    await catalogueStore.refresh();
+    await jest.advanceTimersByTimeAsync(10 * 60_000);
+    expect(getAssetCatalogue).toHaveBeenCalledTimes(2);
+    const assets = catalogueStore.getState().assets;
+    document.hidden = true; visibility();
+    await jest.advanceTimersByTimeAsync(60 * 60_000);
+    expect(getAssetCatalogue).toHaveBeenCalledTimes(2);
+    expect(catalogueStore.getState().assets).toBe(assets);
+    document.hidden = false; visibility(); await catalogueStore.refresh();
+    expect(getAssetCatalogue).toHaveBeenCalledTimes(3);
+    off(); visibility();
+    await jest.advanceTimersByTimeAsync(20 * 60_000);
+    expect(getAssetCatalogue).toHaveBeenCalledTimes(3);
+  });
+
+  it('hidden initial mount waits; subscribers and repeated visibility events share a pending read', async () => {
+    document.hidden = true;
+    const off = catalogueStore.subscribe(() => {});
+    const off2 = catalogueStore.subscribe(() => {});
+    expect(getAssetCatalogue).not.toHaveBeenCalled();
+    let resolve!: (value: unknown) => void;
+    getAssetCatalogue.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    document.hidden = false; visibility(); visibility();
+    await jest.advanceTimersByTimeAsync(30 * 60_000);
+    expect(getAssetCatalogue).toHaveBeenCalledTimes(1);
+    resolve(response()); await catalogueStore.refresh();
+    off(); off2();
+    // Re-subscription must attach a single listener after complete cleanup.
+    const off3 = catalogueStore.subscribe(() => {});
+    visibility(); await catalogueStore.refresh();
+    expect(getAssetCatalogue).toHaveBeenCalledTimes(2);
+    off3();
+  });
+});
+
 describe('catalogue load', () => {
   it('loads the whole catalogue with ONE request for the whole tab', async () => {
     const seen: any[] = [];
