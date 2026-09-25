@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Star, X } from 'lucide-react';
 import { Nav } from '../components/Nav';
+import { BotStrategyIcon } from './trading-bots/BotStrategyIcon';
 import { BOT_CATALOGUE, botPresentation, nextPresentationWeek, presentationPeriod, presentationWeek, validBotBudget } from '../lib/tradingBotsPresentation';
 import type { BotCategory, BotDefinition, BotPresentation } from '../lib/tradingBotsPresentation';
 import './trading-bots/TradingBots.css';
@@ -63,7 +64,7 @@ function BotModal({ bot, stats, onClose }: { bot: BotDefinition; stats: BotPrese
     return () => { element?.close(); document.body.style.overflow = oldOverflow; previous?.focus(); };
   }, []);
   return createPortal(<dialog ref={dialog} className="bots-content vb-modal" aria-labelledby="vb-dialog-title" onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) { const r = e.currentTarget.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) onClose(); } }}>
-    <div className="vb-modal-head"><span className="vb-avatar">{bot.mark}</span><div><h2 id="vb-dialog-title">{bot.name}</h2><p className="vb-pair">{bot.symbol} · {bot.strategy}</p></div><button type="button" className="vb-close" onClick={onClose} aria-label="Закрыть"><X size={20}/></button></div>
+    <div className="vb-modal-head"><BotStrategyIcon id={bot.id}/><div><h2 id="vb-dialog-title">{bot.name}</h2><p className="vb-pair">{bot.symbol} · {bot.strategy}</p></div><button type="button" className="vb-close" onClick={onClose} aria-label="Закрыть"><X size={20}/></button></div>
     <span className={`vb-risk ${bot.risk === 'Высокий' ? 'high' : ''}`}>{bot.risk} риск</span>
     <p className="vb-modal-note">{bot.detail}</p>
     <div className="vb-roi-row"><div><span className="vb-label">Модельная доходность · {period} дней</span><strong className="vb-roi">+{percent(series[series.length - 1])}</strong></div><div className="vb-periods">{([7, 30] as const).map(days => <button type="button" key={days} aria-pressed={period === days} onClick={() => setPeriod(days)}>{days}д</button>)}</div></div>
@@ -104,7 +105,7 @@ export function TradingBotsPage() {
       <section className="vb-bots" aria-label="Коллекция торговых ботов">
         {visible.map(({ bot, stats }) => {
           const featured = bot.id === 'atlas' && tab === 'all' && category === 'all' && sort === 'default';
-          const header = <div className="vb-bot-head"><span className="vb-avatar">{bot.mark}</span><div><h2>{bot.name}</h2><p className="vb-pair">{bot.symbol} · {bot.strategy}</p></div><button type="button" className="vb-heart" aria-label={`${favorites.includes(bot.id) ? 'Убрать из избранного' : 'В избранное'}: ${bot.name}`} aria-pressed={favorites.includes(bot.id)} onClick={() => toggleFavorite(bot.id)}><Star size={18} fill={favorites.includes(bot.id) ? 'currentColor' : 'none'}/></button></div>;
+          const header = <div className="vb-bot-head"><BotStrategyIcon id={bot.id}/><div><h2>{bot.name}</h2><p className="vb-pair">{bot.symbol} · {bot.strategy}</p></div><button type="button" className="vb-heart" aria-label={`${favorites.includes(bot.id) ? 'Убрать из избранного' : 'В избранное'}: ${bot.name}`} aria-pressed={favorites.includes(bot.id)} onClick={() => toggleFavorite(bot.id)}><Star size={18} fill={favorites.includes(bot.id) ? 'currentColor' : 'none'}/></button></div>;
           const footer = <div className="vb-foot"><div><small>Мин. инвестиция</small><span>{usd(bot.minimum)}</span></div><button type="button" className="vb-open" onClick={() => setSelected(bot)}>Подробнее <ArrowUpRight size={14}/></button></div>;
           const result = <><div className="vb-roi-row"><div><span className="vb-label">Модельная доходность · 30д</span><strong className="vb-roi">+{percent(stats.roi)}</strong></div><span className={`vb-risk ${bot.risk === 'Высокий' ? 'high' : ''}`}>{bot.risk} риск</span></div><Sparkline series={stats.series} name={bot.name}/><dl className="vb-metrics"><Metric label="Макс. просадка" value={percent(stats.drawdown)}/><Metric label="Прибыльные сделки" value={percent(stats.winRate)}/><Metric label="Сделок за 30 дней" value={stats.trades}/></dl></>;
           return <article className={`vb-bot${featured ? ' vb-featured' : ''}`} key={bot.id} data-bot={bot.id}>{featured ? <><div><div className="vb-feature-kicker">ЗНАКОМСТВО С GRID · 01 / 07</div>{header}<p className="vb-description">{bot.description}</p>{footer}</div><div className="vb-feature-right">{result}</div></> : <>{header}<p className="vb-description">{bot.description}</p>{result}{footer}</>}</article>;
