@@ -36,7 +36,7 @@ function normalizeBars(body:RawEnvelope,symbol:string,interval:Interval):ChartBa
 
 async function loadCandles(symbol:string,interval:Interval,signal:AbortSignal):Promise<{rows:ChartBar[];asOf:number|null;url:string}>{
   const path=`/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`;
-  const url=production()?`${MARKET_EDGE_BASE}${path}`:`${API_BASE}${path}`;
+  const url=production()?`${MARKET_EDGE_BASE}${path}&v=9`:`${API_BASE}${path}`;
   const body=await readDisplayJson<RawEnvelope>(url,SLOW_DISPLAY_REFRESH_MS,signal);
   return {rows:normalizeBars(body,symbol,interval),asOf:typeof body.fetchedAt==='number'?body.fetchedAt:null,url};
 }
