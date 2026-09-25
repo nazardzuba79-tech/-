@@ -18,21 +18,27 @@ describe('Render free-tier bandwidth guardrails', () => {
     expect(page).not.toContain('candleLoader={nativeExecution ? native.loader : undefined}');
   });
 
-  test('admin notification polling is bounded and sleeps with a hidden tab', () => {
-    const source = read('frontend/src/lib/useAdminAlerts.ts');
-    expect(source).toContain('const POLL_MS = 60_000');
-    expect(source).toContain('getAdminAlertSummary()');
-    expect(source).not.toContain('getAdminDeposits()');
-    expect(source).not.toContain('getAdminWithdrawals()');
-    expect(source).not.toContain('getAllClients()');
-    const client = read('frontend/src/lib/adminAlertApi.ts');
-    expect(client).toContain('/admin/alerts-summary');
-    expect(client).not.toContain('/admin/deposits');
-    expect(client).not.toContain('/admin/withdrawals');
-    expect(client).not.toContain('/admin/clients');
-    expect(source).toContain('document.hidden');
-    expect(source).toContain("document.addEventListener('visibilitychange', onVisibility)");
-    expect(source).toContain("document.removeEventListener('visibilitychange', onVisibility)");
+  test('admin pages do not run global alert polling, and Users never downloads full deposit history', () => {
+    const nav = read('frontend/src/components/Nav.tsx');
+    const layout = read('frontend/src/pages/admin/AdminLayout.tsx');
+    const users = read('frontend/src/pages/admin/AdminUsersPage.tsx');
+    const deposits = read('frontend/src/pages/admin/AdminDepositsPage.tsx');
+
+    expect(nav).not.toContain('useAdminAlertSound');
+    expect(layout).not.toContain('setAdminAlertSoundEnabled');
+    expect(users).toContain('getAdminRecentDepositsByUser()');
+    expect(users).not.toContain('getAdminDeposits()');
+
+    // The deposit page has exactly two code paths that read history:
+    // one shared incoming->history refresh, and one awaited post-credit read.
+    // Mount no longer fires a second parallel history request.
+    expect((deposits.match(/api\.getAdminDeposits\(\)/g) ?? []).length).toBe(2);
+    const mountStart = deposits.indexOf('useEffect(() =>');
+    const mountEnd = deposits.indexOf('}, []);', mountStart);
+    expect(mountStart).toBeGreaterThanOrEqual(0);
+    expect(mountEnd).toBeGreaterThan(mountStart);
+    expect(deposits.slice(mountStart, mountEnd)).not.toContain('getAdminDeposits()');
+    expect(deposits).toContain('reloadIncoming(false)');
   });
 
   test('production CFD display stays on Cloudflare and never falls back to Render', () => {

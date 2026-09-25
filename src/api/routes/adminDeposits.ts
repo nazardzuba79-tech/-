@@ -49,6 +49,40 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     } catch { res.status(503).json({ error: 'Failed to load deposit history' }); }
   });
 
+  // Tiny admin-user-list helper: only the newest deposit per user from the
+  // last 24 hours. The old UI downloaded the full /admin/deposits payload
+  // (all unresolved + up to 200 credited rows, with tx hashes/emails/etc.)
+  // just to draw a small "+amount asset" badge beside a user.
+  //
+  // DISTINCT ON keeps the reduction inside Postgres, so Neon sends Render
+  // one narrow row per user rather than the full deposit history.
+  router.get('/admin/deposits/recent-by-user', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    try {
+      const rows = await prisma.$queryRaw<Array<{
+        userId: string;
+        amount: { toString(): string };
+        asset: string;
+        createdAt: Date;
+      }>>`
+        SELECT DISTINCT ON ("userId")
+          "userId", "amount", "asset", "createdAt"
+        FROM "Deposit"
+        WHERE "userId" IS NOT NULL
+          AND "createdAt" >= ${cutoff}
+        ORDER BY "userId", "createdAt" DESC
+      `;
+      res.json(rows.map((row) => ({
+        userId: row.userId,
+        amount: row.amount.toString(),
+        asset: row.asset,
+        createdAt: row.createdAt,
+      })));
+    } catch {
+      res.status(503).json({ error: 'Failed to load recent deposits' });
+    }
+  });
+
   // Recent transfers to the treasury address that aren't recorded as a
   // Deposit yet — real on-chain data (see each verifier's listIncoming),
   // not anything the client submitted.

@@ -219,7 +219,10 @@ test.each([
     'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
   ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '')
     // Admin KYC email delivery (2026-09-25) — two admin-only methods, no Futures/Spot read touched.
-    .replace("  // Admin: where KYC submission copies (with the document) are emailed.\n  getKycDelivery: () => request<{ configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),\n  sendKycTestEmail: () =>\n    request<{ sent: boolean; configured: boolean; recipient: string | null }>('/kyc/admin/delivery/test', { method: 'POST' }),\n\n", '') : normalized;
+    .replace("  // Admin: where KYC submission copies (with the document) are emailed.\n  getKycDelivery: () => request<{ configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),\n  sendKycTestEmail: () =>\n    request<{ sent: boolean; configured: boolean; recipient: string | null }>('/kyc/admin/delivery/test', { method: 'POST' }),\n\n", '')
+    // Admin bandwidth optimization (2026-09-25): one compact admin-only
+    // recent-deposit read. It does not touch any Futures/Spot method.
+    .replace("  // Compact helper for the Users page. Returns only one recent deposit\n  // badge row per user from the rolling last 24h — not full deposit history.\n  getAdminRecentDepositsByUser: () =>\n    request<\n      {\n        userId: string;\n        amount: string;\n        asset: string;\n        createdAt: string;\n      }[]\n    >('/admin/deposits/recent-by-user'),\n\n", '') : normalized;
   expect(hash(source)).toBe(expected);
 });
 

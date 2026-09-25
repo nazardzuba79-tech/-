@@ -1211,6 +1211,18 @@ export const api = {
       }[]
     >('/admin/deposits'),
 
+  // Compact helper for the Users page. Returns only one recent deposit
+  // badge row per user from the rolling last 24h — not full deposit history.
+  getAdminRecentDepositsByUser: () =>
+    request<
+      {
+        userId: string;
+        amount: string;
+        asset: string;
+        createdAt: string;
+      }[]
+    >('/admin/deposits/recent-by-user'),
+
   getAdminIncomingDeposits: () =>
     request<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null }[]>(
       '/admin/deposits/incoming'

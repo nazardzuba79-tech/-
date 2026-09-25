@@ -86,19 +86,13 @@ export function AdminUsersPage() {
       .getAdminUsers()
       .then(setUsers)
       .catch(() => setLoadError(true));
-    // Already sorted newest-first by the API — first hit per userId is
-    // that user's most recent deposit, which is all the highlight needs.
+    // The server returns only the newest deposit per user from the last 24h.
+    // Do not download the full admin deposit history just to paint badges.
     api
-      .getAdminDeposits()
+      .getAdminRecentDepositsByUser()
       .then((deposits) => {
         const map = new Map<string, { amount: string; asset: string; createdAt: string }>();
-        const cutoff = Date.now() - ONE_DAY_MS;
-        for (const d of deposits) {
-          if (!d.userId) continue;
-          if (map.has(d.userId)) continue;
-          if (new Date(d.createdAt).getTime() < cutoff) continue;
-          map.set(d.userId, { amount: d.amount, asset: d.asset, createdAt: d.createdAt });
-        }
+        for (const d of deposits) map.set(d.userId, { amount: d.amount, asset: d.asset, createdAt: d.createdAt });
         setRecentDeposits(map);
       })
       .catch(() => {});

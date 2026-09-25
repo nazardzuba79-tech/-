@@ -33,7 +33,7 @@ export function AdminDepositsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDate, setFilterDate] = useState('');
 
-  function reloadIncoming() {
+  function reloadIncoming(refreshHistory = true) {
     if (incomingRequest.current) return;
     incomingRequest.current = true;
     setIncomingLoading(true);
@@ -43,15 +43,24 @@ export function AdminDepositsPage() {
         setIncoming(res.transfers);
         setFailedChains(res.failedChains);
         setIncomingError(false);
-        api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
       })
       .catch(() => setIncomingError(true))
-      .finally(() => { incomingRequest.current = false; setIncomingLoading(false); setIncomingLoaded(true); });
+      .finally(() => {
+        // The incoming route may have just persisted newly observed deposits.
+        // Load history once AFTER discovery, instead of once before and again
+        // after it. Real admin actions can opt out and refresh history in their
+        // own awaited path below.
+        if (refreshHistory) {
+          api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
+        }
+        incomingRequest.current = false;
+        setIncomingLoading(false);
+        setIncomingLoaded(true);
+      });
   }
 
   useEffect(() => {
     reloadIncoming();
-    api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
     api.getAllClients().then(setClients).catch(() => {});
   }, []);
 
@@ -67,7 +76,7 @@ export function AdminDepositsPage() {
       setMessage(result.status === 'CREDITED' ? 'Депозит зачислен.' : result.status === 'BELOW_MINIMUM'
         ? 'BELOW_MINIMUM — депозит ниже минимальной суммы. Для зачисления нужны подтверждения сети.'
         : 'Депозит ожидает подтверждений сети. Баланс не изменён.');
-      reloadIncoming();
+      reloadIncoming(false);
       await api.getAdminDeposits().then(setHistory);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось зачислить депозит.');
@@ -160,7 +169,7 @@ export function AdminDepositsPage() {
         )}
         {incomingError && <p style={{ padding: 14, color: 'var(--sell)', fontSize: 12 }}>Не удалось загрузить входящие переводы.</p>}
         {failedChains.length > 0 && <p role="alert" style={styles.errorBox}>Входящие переводы загружены не полностью ({failedChains.join(', ')}). Сохранённые переводы доступны в истории. Повторите проверку позже.</p>}
-        <button onClick={reloadIncoming} disabled={incomingLoading} style={styles.neutralBtn}>Обновить входящие</button>
+        <button onClick={() => reloadIncoming()} disabled={incomingLoading} style={styles.neutralBtn}>Обновить входящие</button>
         {!incomingLoaded && <Skeleton height={80} />}
       </div>
 

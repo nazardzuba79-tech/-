@@ -1,6 +1,5 @@
 import { Fragment, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { isAdminAlertSoundEnabled, setAdminAlertSoundEnabled } from '../../lib/useAdminAlerts';
 import { useAdminGate } from '../../lib/useAdminGate';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
@@ -12,7 +11,6 @@ import {
   ArrowUpCircleIcon,
   ArrowDownCircleIcon,
   ScrollTextIcon,
-  BellIcon,
   MenuIcon,
   XIcon,
   ChevronRightIcon,
@@ -36,7 +34,6 @@ const SECTIONS = [
  */
 export function AdminLayout() {
   const { status, me } = useAdminGate();
-  const [soundOn, setSoundOn] = useState(isAdminAlertSoundEnabled);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
 
@@ -147,45 +144,6 @@ export function AdminLayout() {
             )}
           </nav>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              onClick={() => {
-                const next = !soundOn;
-                setSoundOn(next);
-                setAdminAlertSoundEnabled(next);
-              }}
-              className="admin-nav-link"
-              style={{
-                position: 'relative',
-                width: 36,
-                height: 36,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 8,
-                border: '1px solid var(--border)',
-                background: 'var(--panel)',
-                color: soundOn ? 'var(--admin-brand)' : 'var(--text-tertiary)',
-                cursor: 'pointer',
-              }}
-              title={soundOn ? 'Звук новых событий включён' : 'Звук новых событий выключен'}
-              aria-label="Переключить звук новых событий"
-            >
-              <BellIcon size={17} />
-              {soundOn && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: 6,
-                    right: 6,
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    background: 'var(--buy)',
-                    boxShadow: '0 0 0 2px var(--panel)',
-                  }}
-                />
-              )}
-            </button>
             <div
               style={{
                 display: 'flex',

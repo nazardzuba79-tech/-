@@ -4,7 +4,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, CreditCard, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
-import { useAdminAlertSound } from '../lib/useAdminAlerts';
 import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
@@ -39,7 +38,6 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
   useEffect(()=>()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);},[]);
   useEffect(()=>setMobileOpen(false),[location.pathname]);
   useEffect(()=>{if(!getToken())return;api.getMe().then(me=>{setIsAdmin(me.isAdmin);setAvatarUrl(me.avatarUrl);}).catch(()=>{});},[]);
-  useAdminAlertSound(isAdmin);
   useEffect(()=>{if(!profileMenuOpen)return;function handler(e:MouseEvent){if(profileMenuRef.current&&!profileMenuRef.current.contains(e.target as Node))setProfileMenuOpen(false);}document.addEventListener('mousedown',handler);return()=>document.removeEventListener('mousedown',handler);},[profileMenuOpen]);
   function handleLogout(){clearToken();navigate('/');}
   return <>
