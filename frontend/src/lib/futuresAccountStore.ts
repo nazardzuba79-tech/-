@@ -30,6 +30,8 @@ import { api, getToken, onSessionChange } from './api';
  *     joins it rather than starting its own.
  *   - Reference counted: the timer starts with the first subscriber and
  *     stops with the last, so a tab away from futures polls nothing.
+ *   - A HIDDEN browser tab also keeps ZERO polling timers. Returning to the
+ *     tab immediately refreshes each resource that still has a subscriber.
  *   - Each resource polls at the FASTEST cadence any live subscriber asked
  *     for, so nobody is served staler data than they asked for.
  *
@@ -156,6 +158,19 @@ class FuturesAccountStore {
   /** The token the currently held state was fetched under. */
   private sessionToken: string | null = null;
   private sessionUnsubscribe: (() => void) | null = null;
+  private visibilityWatching = false;
+
+  private readonly onVisibilityChange = () => {
+    // A background Futures tab must be completely quiet. Timers are removed
+    // while hidden; an already in-flight request is allowed to settle, but
+    // no new poll is scheduled. When the trader returns, restart only the
+    // resources that still have live subscribers and refresh them once now.
+    for (const resource of RESOURCE_KEYS) this.retime(resource);
+    if (this.isHidden()) return;
+    for (const resource of RESOURCE_KEYS) {
+      if (this.wantedIntervalFor(resource) !== null) void this.refresh(resource);
+    }
+  };
 
   getState(): FuturesAccountState {
     return this.state;
@@ -171,6 +186,7 @@ class FuturesAccountStore {
    */
   subscribe(listener: Listener, wants: Partial<Record<ResourceKey, number>>): () => void {
     this.ensureSessionWatch();
+    this.ensureVisibilityWatch();
     this.dropStateIfSessionChanged();
 
     const key = Symbol('futures-account-subscriber');
@@ -182,12 +198,13 @@ class FuturesAccountStore {
 
     for (const resource of Object.keys(wants) as ResourceKey[]) {
       this.retime(resource);
-      if (this.needsRefresh(resource)) void this.refresh(resource);
+      if (!this.isHidden() && this.needsRefresh(resource)) void this.refresh(resource);
     }
 
     return () => {
       this.subscribers.delete(key);
       for (const resource of Object.keys(wants) as ResourceKey[]) this.retime(resource);
+      if (this.subscribers.size === 0) this.stopVisibilityWatch();
     };
   }
 
@@ -281,8 +298,24 @@ class FuturesAccountStore {
     // the new session.
     for (const resource of RESOURCE_KEYS) {
       this.retime(resource);
-      if (this.wantedIntervalFor(resource) !== null) void this.refresh(resource);
+      if (!this.isHidden() && this.wantedIntervalFor(resource) !== null) void this.refresh(resource);
     }
+  }
+
+  private isHidden(): boolean {
+    return typeof document !== 'undefined' && document.hidden;
+  }
+
+  private ensureVisibilityWatch(): void {
+    if (this.visibilityWatching || typeof document === 'undefined') return;
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    this.visibilityWatching = true;
+  }
+
+  private stopVisibilityWatch(): void {
+    if (!this.visibilityWatching || typeof document === 'undefined') return;
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.visibilityWatching = false;
   }
 
   private ensureSessionWatch(): void {
@@ -322,7 +355,7 @@ class FuturesAccountStore {
     const runtime = this.runtime[resource];
     const wanted = this.wantedIntervalFor(resource);
 
-    if (wanted === null) {
+    if (wanted === null || this.isHidden()) {
       if (runtime.timer !== null) {
         clearInterval(runtime.timer);
         runtime.timer = null;
@@ -333,7 +366,11 @@ class FuturesAccountStore {
     if (runtime.timer !== null && wanted === runtime.intervalMs) return;
     runtime.intervalMs = wanted;
     if (runtime.timer !== null) clearInterval(runtime.timer);
-    runtime.timer = setInterval(() => void this.refresh(resource), wanted);
+    runtime.timer = setInterval(() => {
+      // visibilitychange normally clears this timer immediately. The guard
+      // also covers a callback queued at the exact moment the tab hid.
+      if (!this.isHidden()) void this.refresh(resource);
+    }, wanted);
   }
 
   private patch<K extends ResourceKey>(resource: K, changes: Partial<FuturesAccountState[K]>): void {
@@ -356,6 +393,7 @@ class FuturesAccountStore {
     }
     this.sessionUnsubscribe?.();
     this.sessionUnsubscribe = null;
+    this.stopVisibilityWatch();
     this.subscribers.clear();
     this.state = emptyState();
     this.generation = 0;

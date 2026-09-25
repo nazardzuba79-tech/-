@@ -55,6 +55,8 @@ const getFuturesPositions = api.getFuturesPositions as jest.Mock;
 const getMyFuturesOrders = api.getMyFuturesOrders as jest.Mock;
 const getFuturesPositionHistory = api.getFuturesPositionHistory as jest.Mock;
 
+let visibilityDocument: EventTarget & { hidden: boolean };
+
 const BALANCES_A = [{ asset: 'USDT', available: '10000.00000000', locked: '250.00000000' }];
 const BALANCES_B = [{ asset: 'USDT', available: '333.00000000', locked: '0' }];
 const POSITIONS_A = [{
@@ -81,6 +83,12 @@ async function flush(): Promise<void> {
 
 beforeEach(() => {
   jest.useFakeTimers();
+  visibilityDocument = Object.assign(new EventTarget(), { hidden: false });
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    writable: true,
+    value: visibilityDocument,
+  });
   futuresAccountStore._resetForTests();
   setToken('token-a');
   getFuturesBalances.mockReset().mockResolvedValue(BALANCES_A);
@@ -91,6 +99,7 @@ beforeEach(() => {
 
 afterEach(() => {
   futuresAccountStore._resetForTests();
+  Reflect.deleteProperty(globalThis, 'document');
   jest.useRealTimers();
 });
 
@@ -140,6 +149,68 @@ describe('one timer and one request per resource', () => {
     jest.advanceTimersByTime(60_000);
     await flush();
     expect(getFuturesPositions).toHaveBeenCalledTimes(before);
+  });
+
+
+  test('a hidden Futures tab has ZERO account polling and refreshes immediately on return', async () => {
+    const off = futuresAccountStore.subscribe(() => {}, { balances: 5000, positions: 4000, orders: 5000 });
+    await flush();
+    expect(futuresAccountStore._timerCount).toBe(3);
+
+    getFuturesBalances.mockClear();
+    getFuturesPositions.mockClear();
+    getMyFuturesOrders.mockClear();
+
+    visibilityDocument.hidden = true;
+    visibilityDocument.dispatchEvent(new Event('visibilitychange'));
+    expect(futuresAccountStore._timerCount).toBe(0);
+
+    jest.advanceTimersByTime(60 * 60_000);
+    await flush();
+    expect(getFuturesBalances).not.toHaveBeenCalled();
+    expect(getFuturesPositions).not.toHaveBeenCalled();
+    expect(getMyFuturesOrders).not.toHaveBeenCalled();
+
+    visibilityDocument.hidden = false;
+    visibilityDocument.dispatchEvent(new Event('visibilitychange'));
+    await flush();
+
+    // Returning to the tab gets one fresh snapshot immediately, then normal
+    // cadences resume. No need to wait 4-5 seconds before the UI is current.
+    expect(getFuturesBalances).toHaveBeenCalledTimes(1);
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1);
+    expect(getMyFuturesOrders).toHaveBeenCalledTimes(1);
+    expect(futuresAccountStore._timerCount).toBe(3);
+
+    off();
+  });
+
+  test('mounting Futures while already hidden sends no account requests until visible', async () => {
+    visibilityDocument.hidden = true;
+
+    const off = futuresAccountStore.subscribe(() => {}, { balances: 5000, positions: 4000, orders: 5000 });
+    await flush();
+    expect(futuresAccountStore._timerCount).toBe(0);
+    expect(getFuturesBalances).not.toHaveBeenCalled();
+    expect(getFuturesPositions).not.toHaveBeenCalled();
+    expect(getMyFuturesOrders).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(60 * 60_000);
+    await flush();
+    expect(getFuturesBalances).not.toHaveBeenCalled();
+    expect(getFuturesPositions).not.toHaveBeenCalled();
+    expect(getMyFuturesOrders).not.toHaveBeenCalled();
+
+    visibilityDocument.hidden = false;
+    visibilityDocument.dispatchEvent(new Event('visibilitychange'));
+    await flush();
+
+    expect(getFuturesBalances).toHaveBeenCalledTimes(1);
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1);
+    expect(getMyFuturesOrders).toHaveBeenCalledTimes(1);
+    expect(futuresAccountStore._timerCount).toBe(3);
+
+    off();
   });
 
   test('a subscriber mounting mid-flight JOINS the request instead of issuing its own', async () => {
