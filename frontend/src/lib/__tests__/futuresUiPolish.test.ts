@@ -200,7 +200,11 @@ test.each([
     // than returning silently. Positions not yet known block nothing (the
     // outage rule stands); the margin bucket is left to the engine. Payload
     // unchanged.
-    "09e412107310db8e2fad8b5be4725873fac4587b03cdd1503465636a463c4815"
+    // Re-taken for hidden-tab mark polling and one pending read per symbol.
+    // Visible cadence stays 5s; order payloads and sizing math are unchanged.
+    // futuresOrderPanel exercises hidden mount/hour, resume, slow/failing reads,
+    // symbol changes and cleanup against the actual component.
+    "f03c1a3d39296912c56fb819697b068d49ec57ce559ff898506201e348c9c966"
   ],
   [
     "components/FuturesAccountSummary.tsx",

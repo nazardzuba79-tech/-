@@ -2,6 +2,8 @@
 
 ## 2026-09-25 — Codex — remaining hidden-tab Render polling
 
+- Publication follow-up: owner explicitly authorized public GitHub publication, merge after green CI and automatic deployment. PR #257 initially exposed an expected order-form fingerprint mismatch and a wall-clock-dependent historical TEST fixture missing the 08:00 UTC funding event. Updated only the audited hash and test fixture: complete zero-rate boundary observations, fixed non-boundary/boundary advance cases, and isolated 08:00/16:00 fixture checks. Local form/fingerprint checks 80 PASS plus fixture checks 2 PASS; real PostgreSQL scenarios require CI. Runtime backend remains byte-unchanged. Published initial commit `927070fe56f6a553c5d9eeb401fffad3c7916880` is tree-identical to local `56ba9014`.
+
 - Owner requested completion of the current optimization and supplied explicit current-main integration/deploy instructions. Fresh-fetched main `f5c8f4a0cf0c6e0f5e1221bdf31010976066fd63`; #248/#251/#252/#253/#254/#255/#256 are already merged. Do not replay the superseded #243/#244/#250 branches.
 - Code commit: `4ac371bb` on `codex/render-idle-polling-20260925`. Material files: `FuturesOrderForm.tsx`, `catalogueStore.ts`, and their existing `futuresOrderPanel` / `cryptoCatalogue` regression suites.
 - The order form's mark-price timer now skips hidden tabs, refreshes on visibility return, and permits only one pending read per mounted symbol. Its visible 5-second cadence is unchanged. Markets catalogue pauses hidden-tab reads, shares the pending request on return, and removes its visibility listener with the last subscriber; visible 10-minute cadence is unchanged.
