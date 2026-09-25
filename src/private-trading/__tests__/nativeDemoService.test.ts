@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { NativeDemoService, NATIVE_REFRESH_PERSIST_MS, NATIVE_COMMAND_QUEUE_LIMIT, NATIVE_QUOTE_REUSE_MS, NATIVE_COMMIT_ATTEMPTS } from '../native/service';
+import { NativeDemoService, NATIVE_REFRESH_PERSIST_MAX_MS, NATIVE_REFRESH_PERSIST_MS, nativeRefreshPersistMs, NATIVE_COMMAND_QUEUE_LIMIT, NATIVE_QUOTE_REUSE_MS, NATIVE_COMMIT_ATTEMPTS } from '../native/service';
 import { nativeAdmissionLimits } from '../native/replay';
 import { NativeAccount, NativeRepository, revisionPayload, commandHash } from '../native/store';
 import { emptyDemoState } from '../native/engine';
@@ -12,6 +12,15 @@ import { PRIVATE_QUOTE_MAX_AGE_MS } from '../marketData';
 const M=60_000, H=3_600_000;
 const H0=Date.UTC(2026,8,15,0,0,0);
 const actor:OwnerSession={userId:'owner',sessionId:'s',expiresAt:Number.MAX_SAFE_INTEGER};
+
+describe('native refresh checkpoint bandwidth cadence',()=>{
+  test('keeps the 15m default and only accepts bounded slower checkpoint persistence',()=>{
+    expect(nativeRefreshPersistMs(undefined)).toBe(NATIVE_REFRESH_PERSIST_MS);
+    expect(nativeRefreshPersistMs('3600000')).toBe(3_600_000);
+    expect(nativeRefreshPersistMs(String(NATIVE_REFRESH_PERSIST_MAX_MS))).toBe(NATIVE_REFRESH_PERSIST_MAX_MS);
+    for(const invalid of ['0','899999','21600001','1.5','nope',''])expect(nativeRefreshPersistMs(invalid)).toBe(NATIVE_REFRESH_PERSIST_MS);
+  });
+});
 class Clock{constructor(public t:number){}now=()=>this.t;}
 class MemoryRepository implements NativeRepository{
   row:NativeAccount|null=null;revisions=new Map<number,NativeAccount>();keys=new Map<string,{hash:string;row:NativeAccount}>();commits=0;
