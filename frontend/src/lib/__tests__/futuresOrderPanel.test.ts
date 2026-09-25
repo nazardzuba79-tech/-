@@ -212,11 +212,12 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   }, output, {
     confirm: overrides.confirm ?? jest.fn(() => true),
     setTimeout, clearTimeout, setInterval, clearInterval,
-  }, { addEventListener: () => {}, removeEventListener: () => {} });
+  }, overrides.document ?? { addEventListener: () => {}, removeEventListener: () => {} });
 
   const Component = output[Object.keys(output)[0]];
   return {
     components, refreshes,
+    unmount() { hooks.forEach(hook => hook?.cleanup?.()); },
     render(props: any = {}) {
       index = 0;
       const tree = Component(props);
@@ -244,6 +245,62 @@ const props = { symbol: 'BTC/USDT', onPlaced: jest.fn() };
 // the Node event loop open after the assertions finish.
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
+
+describe('order form mark polling budget', () => {
+  function pollingForm(hidden = false) {
+    const events = new EventTarget();
+    const document = {
+      hidden,
+      addEventListener: events.addEventListener.bind(events),
+      removeEventListener: events.removeEventListener.bind(events),
+    };
+    const getMark = jest.fn().mockResolvedValue({ markPrice: '50000' });
+    const form = mount(FORM, { document, api: { getFuturesMarkPrice: getMark } });
+    form.render(props);
+    return { form, getMark, document, visibility: () => events.dispatchEvent(new Event('visibilitychange')) };
+  }
+
+  test('visible cadence remains 5s; one hidden hour makes zero requests; resume and cleanup work', async () => {
+    const h = pollingForm();
+    await tick();
+    expect(h.getMark).toHaveBeenCalledTimes(1);
+    await jest.advanceTimersByTimeAsync(5000);
+    expect(h.getMark).toHaveBeenCalledTimes(2);
+    h.document.hidden = true; h.visibility();
+    await jest.advanceTimersByTimeAsync(60 * 60_000);
+    expect(h.getMark).toHaveBeenCalledTimes(2);
+    h.document.hidden = false; h.visibility(); await tick();
+    expect(h.getMark).toHaveBeenCalledTimes(3);
+    h.form.unmount(); h.visibility();
+    await jest.advanceTimersByTimeAsync(10_000);
+    expect(h.getMark).toHaveBeenCalledTimes(3);
+  });
+
+  test('hidden mount waits for visibility; slow or failed requests do not pile up', async () => {
+    const h = pollingForm(true);
+    expect(h.getMark).not.toHaveBeenCalled();
+    let reject!: (error: Error) => void;
+    h.getMark.mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail; }));
+    h.document.hidden = false; h.visibility();
+    await jest.advanceTimersByTimeAsync(30_000);
+    h.visibility();
+    expect(h.getMark).toHaveBeenCalledTimes(1);
+    reject(new Error('offline')); await tick();
+    await jest.advanceTimersByTimeAsync(5000);
+    expect(h.getMark).toHaveBeenCalledTimes(2);
+    expect(h.getMark).toHaveBeenLastCalledWith('BTC/USDT');
+    h.form.unmount();
+  });
+
+  test('changing pair starts the new read even while the old pair request is pending', async () => {
+    const h = pollingForm(); await tick();
+    h.getMark.mockImplementationOnce(pending);
+    await jest.advanceTimersByTimeAsync(5000);
+    h.form.render({ ...props, symbol: 'ETH/USDT' }); await tick();
+    expect(h.getMark.mock.calls.map(call => call[0])).toEqual(['BTC/USDT', 'BTC/USDT', 'ETH/USDT']);
+    h.form.unmount();
+  });
+});
 
 /** Drive the real order form to a priced, sized order. */
 async function orderForm(overrides: Record<string, any> = {}) {

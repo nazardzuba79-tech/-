@@ -91,7 +91,10 @@ class CatalogueStore {
     // A late subscriber renders from memory, with no request.
     if (this.state.loaded) listener(this.state);
 
-    if (this.timer === null) this.timer = setInterval(() => void this.refresh(), REFRESH_INTERVAL_MS);
+    if (this.timer === null) {
+      this.timer = setInterval(() => void this.refresh(), REFRESH_INTERVAL_MS);
+      if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
+    }
     if (!this.state.loaded) void this.refresh();
 
     return () => {
@@ -104,6 +107,7 @@ class CatalogueStore {
   /** Fetch once, shared. Concurrent callers join the in-flight promise. */
   refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
+    if (typeof document !== 'undefined' && document.hidden) return Promise.resolve();
     this.inFlight = api
       // No search/sort/filter: the WHOLE catalogue, once. Every subsequent
       // interaction is client-side, which is what makes the search instant
@@ -150,7 +154,12 @@ class CatalogueStore {
     for (const listener of this.listeners.values()) listener(state);
   }
 
+  private onVisibility = () => {
+    if (!document.hidden && this.listeners.size > 0) void this.refresh();
+  };
+
   private stop(): void {
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisibility);
     if (this.timer !== null) {
       clearInterval(this.timer);
       this.timer = null;

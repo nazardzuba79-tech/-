@@ -274,18 +274,25 @@ export function FuturesOrderForm({
 
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
     setMarkPrice(null);
     function load() {
+      if (cancelled || inFlight || (typeof document !== 'undefined' && document.hidden)) return;
+      inFlight = true;
       api
         .getFuturesMarkPrice(symbol)
         .then((res) => !cancelled && setMarkPrice(parseFloat(res.markPrice)))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => { inFlight = false; });
     }
     load();
+    // Keep the visible sizing estimate's cadence; sleeping tabs need no paint.
     const interval = setInterval(load, 5000);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', load);
     return () => {
       cancelled = true;
       clearInterval(interval);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', load);
     };
   }, [symbol]);
 
