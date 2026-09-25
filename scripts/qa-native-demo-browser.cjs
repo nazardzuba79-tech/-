@@ -424,20 +424,23 @@ async function chartFlow(width) {
     if(width===1440){
       // A transient access poll used to erase the candle, then re-enable LIVE
       // submit on recovery. Keep the actual UI selection through both polls.
-      await p.clock.install();
       let failAccess=true;
       await s.context.route('**/private-trading/access',route=>failAccess
         ?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA access outage'})})
         :route.continue());
+      // The production hook now polls access once a minute and also re-checks
+      // immediately when a tab becomes visible. Drive that explicit wake path
+      // instead of waiting a real minute in browser CI.
       const failed=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.status()===503);
-      await p.clock.runFor(15001);await failed;
+      await p.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+      await failed;
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===true);
       assert.deepEqual(JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference')),reference);
       failAccess=false;
       const recovered=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.ok());
-      await p.clock.runFor(15001);await recovered;
+      await p.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+      await recovered;
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===false);
-      await p.clock.resume();
     }
     await workspace(p, 'trade');
     const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());

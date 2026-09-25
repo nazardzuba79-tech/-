@@ -26,14 +26,17 @@ import '../trade-terminal/TerminalPremium.css';
 import './privateTrading.css';
 import './privateReferencePositions.css';
 
+const ACCESS_POLL_MS=60_000;
+
 export function PrivateTradingPage(){
   const[params]=useSearchParams(),cardId=params.get('card');
   const[access,setAccess]=useState<'loading'|'allowed'|'denied'>('loading');
   useEffect(()=>{let active=true;const controller=new AbortController();
-    async function check(){try{const result=await privateTradingApi.access(controller.signal);if(active)setAccess(result.allowed===true?'allowed':'denied');}catch{if(active)setAccess('denied');}}
-    void check();const timer=window.setInterval(()=>void check(),10_000);
-    const unsubscribe=onSessionChange(()=>{active=false;controller.abort();clearInterval(timer);setAccess('denied');});
-    return()=>{active=false;controller.abort();clearInterval(timer);unsubscribe();};
+    async function check(){if(document.hidden)return;try{const result=await privateTradingApi.access(controller.signal);if(active)setAccess(result.allowed===true?'allowed':'denied');}catch{if(active)setAccess('denied');}}
+    void check();const timer=window.setInterval(()=>void check(),ACCESS_POLL_MS);
+    const visible=()=>{if(!document.hidden)void check();};document.addEventListener('visibilitychange',visible);
+    const unsubscribe=onSessionChange(()=>{active=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);setAccess('denied');});
+    return()=>{active=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);unsubscribe();};
   },[]);
   return <div className="trade-terminal futures-terminal futures-reference futures-studio terminal-studio private-trading-terminal" data-terminal-design="studio">
     <Nav active="/futures" hideTicker/>
