@@ -46,11 +46,17 @@ export function CfdChart({symbol}:{symbol:string}){
   const[interval,setInterval]=useState<Interval>('1h'),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[retry,setRetry]=useState(0);
   const [asOf,setAsOf]=useState<number|null>(null);
   const renderedKey=useRef('');
+  const volumeUpRef=useRef('rgba(18,201,141,.28)'),volumeDownRef=useRef('rgba(239,83,80,.28)');
 
   useEffect(()=>{
     const host=hostRef.current;if(!host)return;
-    const chart=createChart(host,{autoSize:true,layout:{background:{type:ColorType.Solid,color:getComputedStyle(host).getPropertyValue('--voltex-plot-background').trim()||'#101014'},textColor:'#aeb9c4',fontFamily:'Inter, Arial, sans-serif',fontSize:11},grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{borderColor:'#2b2e36'},timeScale:{borderColor:'#2b2e36',timeVisible:true,secondsVisible:false},crosshair:{mode:0}});
-    const candles=chart.addSeries(CandlestickSeries,{upColor:'#12c98d',downColor:'#ef5350',borderVisible:false,wickUpColor:'#12c98d',wickDownColor:'#ef5350',priceLineVisible:true,priceLineColor:'#d9b95b'});
+    // A terminal's stylesheet may restate the chart's paint as tokens (the
+    // TradingView-style surface does); the values written here are the fallbacks.
+    const surface=getComputedStyle(host);const token=(name:string,fallback:string)=>surface.getPropertyValue(name).trim()||fallback;
+    const up=token('--voltex-candle-up','#12c98d'),down=token('--voltex-candle-down','#ef5350'),axisBorder=token('--voltex-axis-border','#2b2e36');
+    volumeUpRef.current=token('--voltex-volume-up','rgba(18,201,141,.28)');volumeDownRef.current=token('--voltex-volume-down','rgba(239,83,80,.28)');
+    const chart=createChart(host,{autoSize:true,layout:{background:{type:ColorType.Solid,color:token('--voltex-plot-background','#101014')},textColor:token('--voltex-axis-text','#aeb9c4'),fontFamily:'Inter, Arial, sans-serif',fontSize:11},grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{borderColor:axisBorder},timeScale:{borderColor:axisBorder,timeVisible:true,secondsVisible:false},crosshair:{mode:0}});
+    const candles=chart.addSeries(CandlestickSeries,{upColor:up,downColor:down,borderVisible:false,wickUpColor:up,wickDownColor:down,priceLineVisible:true,priceLineColor:'#d9b95b'});
     const volume=chart.addSeries(HistogramSeries,{priceFormat:{type:'volume'},priceScaleId:'volume',base:0});
     volume.priceScale().applyOptions({scaleMargins:{top:.82,bottom:0},visible:false});
     chart.priceScale('right').applyOptions({scaleMargins:{top:.08,bottom:.2}});
@@ -73,7 +79,7 @@ export function CfdChart({symbol}:{symbol:string}){
         delay=displayRefreshDelay(`${production()?MARKET_EDGE_BASE:API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`,SLOW_DISPLAY_REFRESH_MS);
         const rows=snapshot.rows;
         seriesRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,open:bar.open,high:bar.high,low:bar.low,close:bar.close})));
-        volumeRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,value:bar.volume,color:bar.close>=bar.open?'rgba(18,201,141,.28)':'rgba(239,83,80,.28)'})));
+        volumeRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,value:bar.volume,color:bar.close>=bar.open?volumeUpRef.current:volumeDownRef.current})));
         if(renderedKey.current!==key)chartRef.current?.timeScale().fitContent();
         renderedKey.current=key;setAsOf(snapshot.asOf);setStatus('ready');
       }catch{if(!cancelled&&!request.signal.aborted)setStatus('error');delay=60_000;}

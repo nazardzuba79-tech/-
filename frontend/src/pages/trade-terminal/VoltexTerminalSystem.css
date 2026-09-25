@@ -220,3 +220,57 @@
   .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(button,.btn-buy,.btn-sell):not(.ticker-item) { min-height:40px; }
   .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(input[type=text],input[type=number],select) { min-height:40px; font-size:16px; }
 }
+
+/* ── THE TRADINGVIEW SURFACE, ON SPOT AND CFD ────────────────────────────
+   Owner, 2026-09-25: «Внидряй цей дезайн і на спот, і на CFD» — the
+   surface approved and shipped on Futures (#258, ArchiveTerminalPreview.css):
+   one vertical gradient behind the whole terminal, #1f2229 at the top to
+   #101014 where the bottom panel begins and near-black at the foot; the
+   large surfaces transparent so it runs under header, chart, book and
+   ticket; hairline separators instead of the grids' painted gaps; the
+   bottom panel on its own flat #101014, as on Futures; fields outlined so
+   they read anywhere on the gradient. Same values as Futures, so the three
+   terminals are one surface. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal {
+  background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important;
+  /* !important because the token block above names the Futures id in its
+     :is(), which gives it id weight over any number of classes. */
+  --border: rgba(255,255,255,.07) !important;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.global-header, .terminal, .ticker-bar, .main-grid, .left-panel, .pairs-section, .pairs-header, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .orderbook-header, .orderbook-col-headers, .orderbook-asks, .orderbook-bids, .order-form-area, .order-form-tabs, .cfd-ticker-bar, .cfd-workspace, .cfd-instruments-area, .cfd-columns, .cfd-chart-area, .cfd-chart, .cfd-chart-toolbar, .cfd-form-area, .cfd-order-panel, .cfd-form) {
+  background: transparent !important;
+}
+/* The grids drew their column lines as 1px gaps over a lighter track; with
+   the track transparent the line is drawn by the column itself. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.left-panel, .chart-area, .orderbook-area, .cfd-instruments-area, .cfd-chart-area) { box-shadow: 1px 0 0 var(--border); }
+/* The bottom panel: one flat surface, its sticky headings included, with the
+   near-black seam above it — the Futures bottom panel. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-panel, .bottom-panel .terminal-account-header, .bottom-panel .bottom-tabs, .bottom-panel .bottom-content, .bottom-panel th, .cfd-bottom-panel, .cfd-bottom-panel .cfd-tabs) {
+  background: #101014 !important;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-panel, .cfd-bottom-panel) { box-shadow: 0 -1px 0 #08090c; }
+/* Both charts paint nothing of their own (PriceChart and CfdChart read
+   these tokens): clean white / orange candles, white axis, no ruled edge,
+   and the volume bars in the exchange's own colours — the Futures chart. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.terminal-chart-shell, .cfd-chart) {
+  --voltex-plot-background: rgba(0,0,0,0);
+  --voltex-candle-up: #ffffff; --voltex-candle-down: #ff9800;
+  --voltex-axis-text: #ffffff; --voltex-axis-border: rgba(0,0,0,0);
+  --voltex-volume-up: rgba(234,236,239,0.5); --voltex-volume-down: rgba(247,166,0,0.5);
+}
+/* Fields: a fill and a hairline relative to whatever is behind them, gold
+   while typing — the Futures ticket's fields. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-form-area .input-group, .pairs-section input, .cfd-input, .cfd-instruments-area input) {
+  background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.13) !important;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .order-form-area .input-group input { background: transparent !important; }
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-form-area .input-group:hover, .pairs-section input:hover, .cfd-input:hover, .cfd-instruments-area input:hover) {
+  background: rgba(255,255,255,.085) !important; border-color: rgba(255,255,255,.22) !important;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-form-area .input-group:focus-within, .pairs-section input:focus, .cfd-input:focus, .cfd-instruments-area input:focus) {
+  border-color: var(--accent) !important;
+}
+/* The figures under the ticket read as a quiet box on the gradient. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-form-area .order-summary, .cfd-infoBox) {
+  background: rgba(255,255,255,.03) !important; border: 1px solid rgba(255,255,255,.08) !important;
+}
