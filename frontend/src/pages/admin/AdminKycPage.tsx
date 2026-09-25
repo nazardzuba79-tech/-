@@ -1,16 +1,10 @@
 import { useEffect, useState } from 'react';
-import { api, ApiError } from '../../lib/api';
+import { api } from '../../lib/api';
 import { styles } from './adminStyles';
-import { Badge } from '../../components/Badge';
+import { KycSubmissionReview } from './KycSubmissionReview';
 import { useSearchParams } from 'react-router-dom';
 
 type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
-
-const DOC_TYPE_LABEL: Record<string, string> = {
-  PASSPORT: 'Паспорт',
-  ID_CARD: 'ID-карта',
-  DRIVERS_LICENSE: 'Водительское удостоверение',
-};
 
 /** Верификация (KYC) — очередь заявок на проверку: кто подал, когда,
  * документы прямо в админке, одобрить/отклонить с причиной. */
@@ -19,59 +13,50 @@ export function AdminKycPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('user'));
-  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
-  const [documentIsPdf, setDocumentIsPdf] = useState(false);
-  const [documentError, setDocumentError] = useState(false);
-  const [reason, setReason] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
+  const [delivery, setDelivery] = useState<{ configured: boolean; recipient: string | null } | null>(null);
+  const [testState, setTestState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   function reload() {
     api.getAllClients().then(setClients).catch(() => {});
   }
 
   useEffect(reload, []);
+  useEffect(() => { api.getKycDelivery().then(setDelivery).catch(() => {}); }, []);
+
+  async function sendTest() {
+    setTestState('sending');
+    try { setDelivery(await api.sendKycTestEmail()); setTestState('sent'); }
+    catch { setTestState('failed'); }
+  }
 
   const queue = clients.filter((c) => c.latestKyc && (showAll || c.latestKyc.status === 'PENDING'));
   const selected = queue.find((c) => c.id === selectedId) ?? queue[0] ?? null;
 
-  useEffect(() => {
-    setDocumentUrl(null);
-    setDocumentError(false);
-    if (!selected?.latestKyc) return;
-    let revoked = '';
-    api
-      .getKycDocument(selected.latestKyc.id)
-      .then(({ url, contentType }) => {
-        revoked = url;
-        setDocumentUrl(url);
-        setDocumentIsPdf(contentType === 'application/pdf');
-      })
-      .catch(() => setDocumentError(true));
-    return () => {
-      if (revoked) URL.revokeObjectURL(revoked);
-    };
-  }, [selected?.latestKyc?.id]);
-
-  async function handleReview(approve: boolean) {
-    if (!selected?.latestKyc) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await api.reviewKyc(selected.latestKyc.id, approve, approve ? undefined : reason || undefined);
-      setReason('');
-      setSelectedId(null);
-      reload();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось выполнить проверку.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <div>
       <h1 style={styles.title}>Верификация (KYC)</h1>
+
+      {delivery && (
+        <div
+          data-kyc-delivery={delivery.configured ? 'on' : 'off'}
+          style={{
+            ...styles.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16, flexWrap: 'wrap',
+            borderColor: delivery.configured ? 'var(--border)' : 'var(--sell)',
+          }}
+        >
+          <span style={{ fontSize: 13, color: delivery.configured ? 'var(--text-primary)' : 'var(--sell)' }}>
+            {delivery.configured
+              ? <>Копии заявок с документом приходят на почту <b>{delivery.recipient}</b>.</>
+              : <>Почта для документов не настроена — копии заявок никуда не отправляются. Нужны переменные KYC_ADMIN_EMAIL и SMTP_* на сервере.</>}
+            {testState === 'sent' && <> Тестовое письмо отправлено.</>}
+            {testState === 'failed' && <span style={{ color: 'var(--sell)' }}> Тестовое письмо не отправилось — проверьте настройки SMTP.</span>}
+          </span>
+          {delivery.configured && (
+            <button type="button" disabled={testState === 'sending'} onClick={sendTest} style={styles.rejectBtn}>
+              {testState === 'sending' ? 'Отправка…' : 'Отправить тестовое письмо'}
+            </button>
+          )}
+        </div>
+      )}
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 16, color: 'var(--text-secondary)' }}>
         <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
@@ -111,102 +96,11 @@ export function AdminKycPage() {
           {!selected?.latestKyc ? (
             <p style={{ color: 'var(--text-tertiary)' }}>Выберите заявку слева.</p>
           ) : (
-            <>
-              <div style={styles.row}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Email</span>
-                <span style={{ fontSize: 13 }}>{selected.email}</span>
-              </div>
-              <div style={styles.row}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>ФИО</span>
-                <span style={{ fontSize: 13 }}>{selected.latestKyc.fullName}</span>
-              </div>
-              <div style={styles.row}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Страна</span>
-                <span style={{ fontSize: 13 }}>{selected.latestKyc.country}</span>
-              </div>
-              <div style={styles.row}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Дата рождения</span>
-                <span style={{ fontSize: 13 }}>{new Date(selected.latestKyc.dateOfBirth).toLocaleDateString('ru-RU')}</span>
-              </div>
-              <div style={styles.row}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Документ</span>
-                <span style={{ fontSize: 13 }}>
-                  {DOC_TYPE_LABEL[selected.latestKyc.documentType] ?? selected.latestKyc.documentType}
-                </span>
-              </div>
-              <div style={styles.row}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Подана</span>
-                <span style={{ fontSize: 13 }}>{new Date(selected.latestKyc.createdAt).toLocaleString('ru-RU')}</span>
-              </div>
-              {selected.latestKyc.status === 'REJECTED' && selected.latestKyc.rejectionReason && (
-                <div style={styles.row}>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Причина отказа</span>
-                  <span style={{ fontSize: 13 }}>{selected.latestKyc.rejectionReason}</span>
-                </div>
-              )}
-
-              <div
-                style={{
-                  marginTop: 4,
-                  background: 'var(--panel-alt)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 6,
-                  padding: 8,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  minHeight: 160,
-                  alignItems: 'center',
-                }}
-              >
-                {documentError ? (
-                  <span style={{ color: 'var(--sell)', fontSize: 12 }}>
-                    Не удалось загрузить документ — файл отсутствует или повреждён на сервере.
-                  </span>
-                ) : documentUrl ? (
-                  documentIsPdf ? (
-                    <a href={documentUrl} target="_blank" rel="noreferrer">Открыть PDF</a>
-                  ) : (
-                    <img src={documentUrl} alt="Документ" style={{ maxWidth: '100%', maxHeight: 420, borderRadius: 4 }} />
-                  )
-                ) : (
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Загрузка документа…</span>
-                )}
-              </div>
-
-              {selected.latestKyc.status === 'PENDING' && (
-                <>
-                  <label style={styles.label}>
-                    Причина отказа (необязательно)
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      style={styles.input}
-                      placeholder="Например: нечитаемый документ"
-                    />
-                  </label>
-
-                  {error && <div style={styles.errorBox}>{error}</div>}
-
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button disabled={busy} onClick={() => handleReview(true)} style={{ ...styles.approveBtn, flex: 1 }}>
-                      Одобрить
-                    </button>
-                    <button disabled={busy} onClick={() => handleReview(false)} style={{ ...styles.rejectBtn, flex: 1 }}>
-                      Отклонить
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {selected.latestKyc.status !== 'PENDING' && (
-                <Badge
-                  text={selected.latestKyc.status === 'APPROVED' ? 'Одобрено' : 'Отклонено'}
-                  color={selected.latestKyc.status === 'APPROVED' ? 'var(--buy)' : 'var(--sell)'}
-                  bg={selected.latestKyc.status === 'APPROVED' ? 'var(--buy-dim)' : 'var(--sell-dim)'}
-                />
-              )}
-            </>
+            <KycSubmissionReview
+              submission={selected.latestKyc}
+              email={selected.email}
+              onReviewed={() => { setSelectedId(null); reload(); }}
+            />
           )}
         </div>
       </div>

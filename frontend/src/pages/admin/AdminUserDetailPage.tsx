@@ -6,6 +6,7 @@ import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { formatLastLoginAt } from './lastLoginLabel';
 import { Skeleton } from '../../components/Skeleton';
+import { KycSubmissionReview } from './KycSubmissionReview';
 
 type Detail = Awaited<ReturnType<typeof api.getAdminUserDetail>>;
 
@@ -175,7 +176,18 @@ export function AdminUserDetailPage() {
           <Row label="Роль" value={detail.isAdmin ? 'Администратор' : 'Пользователь'} />
           <Row label="Регистрация" value={new Date(detail.createdAt).toLocaleString('ru-RU')} />
           <Row label="IP при регистрации" value={detail.registrationIp ?? '—'} />
-          <Row label="Верификация" value={<Badge text={kycBadge.text} color={kycBadge.color} bg={kycBadge.bg} />} />
+          <Row
+            label="Верификация"
+            value={
+              detail.kycSubmissions.length ? (
+                <a href="#kyc" title="Открыть заявку" style={{ textDecoration: 'none' }}>
+                  <Badge text={detail.kycStatus === 'PENDING' ? `${kycBadge.text} — открыть заявку` : kycBadge.text} color={kycBadge.color} bg={kycBadge.bg} />
+                </a>
+              ) : (
+                <Badge text={kycBadge.text} color={kycBadge.color} bg={kycBadge.bg} />
+              )
+            }
+          />
           <Row label="Последний вход" value={detail.lastLoginAt ? formatLastLoginAt(detail.lastLoginAt) : 'Ни разу не входил'} />
           <Row
             label="Статус"
@@ -193,6 +205,17 @@ export function AdminUserDetailPage() {
           {detail.balances.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Баланс пуст.</p>}
           {detail.balances.map((b) => (
             <Row key={b.asset} label={b.asset} value={<span className="mono">{b.available} доступно, {b.locked} заблокировано</span>} />
+          ))}
+        </Section>
+      </div>
+
+      <div id="kyc" style={{ marginBottom: 16, scrollMarginTop: 16 }}>
+        <Section title="Заявки на верификацию (KYC)">
+          {detail.kycSubmissions.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Заявок нет.</p>}
+          {detail.kycSubmissions.map((k, i) => (
+            <div key={k.id} style={i > 0 ? { borderTop: '1px solid var(--border)', paddingTop: 12 } : undefined}>
+              <KycSubmissionReview submission={k} onReviewed={reload} />
+            </div>
           ))}
         </Section>
       </div>
@@ -342,18 +365,6 @@ export function AdminUserDetailPage() {
         ))}
       </Section>
 
-      <div style={{ height: 16 }} />
-
-      <Section title="Заявки на верификацию (KYC)">
-        {detail.kycSubmissions.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Заявок нет.</p>}
-        {detail.kycSubmissions.map((k) => (
-          <Row
-            key={k.id}
-            label={`${k.fullName} · ${k.documentType}`}
-            value={<span className="mono">{k.status} · {new Date(k.createdAt).toLocaleDateString('ru-RU')}</span>}
-          />
-        ))}
-      </Section>
     </div>
   );
 }
