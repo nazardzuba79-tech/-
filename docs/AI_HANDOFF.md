@@ -3796,3 +3796,13 @@ PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow pat
 - Frontend TypeScript/Vite build PASS; 91 targeted tests / 5 suites PASS. Existing visual-polish browser PASS at 1920/1664/1440/1366/390. New native-fixture browser PASS at 1920/1440/390/320: MARKET/LIMIT geometry, protection value retention and reduce-only exclusion, position limits, no fee strip, no horizontal overflow or covered CTA.
 - Local root build encountered shared dependency issues (stale Prisma client and missing ws types); emitted fixture code ran successfully. Clean dependency backend build is delegated to existing required CI, not claimed as locally passing.
 - Preserved native/exchange submission, auth, price/quantity/fee math, order book, position actions and mobile sticky CTA. No production data or configuration changes. Awaiting CI/publication.
+
+### 2026-09-25 — Claude — Trading bots: the modal's action reads «Копировать»
+
+- Base fresh main `f615ff39` (after Codex's #264–#267 bots navigation and icon work). Branch `claude/bots-copy-label`. Frontend only; no API, Render or Neon change.
+- Owner (screenshot of the Atlas Grid modal): «У вкладці торгові боти, має бути надпис копіювати».
+- `TradingBotsPage.tsx`: the modal's submit button label «Посмотреть план» → «Копировать». Behaviour unchanged: disabled below the bot's minimum; on submit it shows the same local «{bot} · ${amount}» line; no request is sent.
+- `scripts/qa-trading-bots.cjs`: the two button lookups renamed to «Копировать».
+- Checks run: frontend `tsc` clean; `vite build` OK; `tradingBotsPresentation.test.ts` 23/23; `qa-trading-bots.cjs` locally — all 199 checks pass at 320–1920px (minimum enforced, click shows the local plan line, Escape/focus, favourites).
+- Preserved: Codex's navigation slot, header dimensions and robot icon; the catalogue, statistics and minimum rules.
+- Unresolved: the button still only confirms locally, as before — copying a bot into a real running strategy does not exist in the product yet.
