@@ -76,10 +76,17 @@ test('bottom panel provides local practice positions and history without account
  expect(source).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition|api\.getFuturesBalances/);
 });
 
-test('CFD chart is owned by VOLTEX and uses real OHLC API rather than an external embed',()=>{
+test('CFD chart is owned by VOLTEX, auto-recovers, and has no customer retry button',()=>{
  const source=read('components/CfdChart.tsx');
  expect(source).toContain('createChart');expect(source).toContain('CandlestickSeries');expect(source).toContain('/cfd/display/candles/');
- expect(source).not.toContain('TradingViewAdvancedChart');
+ expect(source).toContain('MARKET_EDGE_BASE');expect(source).toContain('fallbackUrl');expect(source).toContain('displayRefreshDelay(snapshot.url');
+ expect(source).not.toContain('TradingViewAdvancedChart');expect(source).not.toContain('cfd-chart-retry');expect(source).not.toContain('Retry chart');
+});
+
+test('production CFD ticker feed has a bounded Render display fallback when edge fails',()=>{
+ const source=read('lib/useCfdTickers.ts');
+ expect(source).toContain('MARKET_EDGE_BASE');expect(source).toContain('/cfd/display/tickers');
+ expect(source).toContain('fallbackEndpoint');expect(source).toContain('displayRefreshDelay(endpoint,SLOW_DISPLAY_REFRESH_MS)');
 });
 
 test('ticker hook samples every six hours and keeps last good rows after a failed refresh',async()=>{
