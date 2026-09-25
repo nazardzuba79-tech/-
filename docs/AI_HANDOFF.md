@@ -3727,3 +3727,14 @@ withdrawal was placed.
   - The funding rate, its slash and the countdown are one `#ff9800` line at 13px, whatever the rate's sign. `#ff9800` is the chart's own orange. Bybit's brand `#f7a600` stays out of the sheet, as `futuresVisualPolish` §1 requires. «(8h)» is not added.
   - Guards: `futuresVisualPolish` §8 +1 test; `terminalDesignSystem` requires Spot/CFD captions to equal the Futures caption grey.
   - Checks: `terminalDesignSystem` and `futuresVisualPolish` 41/41. Computed styles were read on the fixture pages for all three terminals. Futures 390 renders with no page errors.
+
+
+## Codex — 2026-09-25 — Bot presentation catalogue and shared header
+
+- Implementation commit: 07c38a29201b250759128f96f8f357988e6ccf93 (rebased on main 87d48973fab3c9983a29c2e8f584b6d0ad3e7db1, including #262).
+- Added seven Russian-language presentation bots at /trading-bots, seeded weekly synthetic monthly returns (120–217%) visibly labelled as model results, minima $2,500–$25,000, filters/favourites/detail plan. No execution, funds, database or production changes.
+- Material files: App.tsx, Nav.tsx, index.css, HomeHeader.tsx, ArchiveTerminalPreview.css, VoltexTerminalSystem.css, TradingBotsPage.tsx, TradingBots.css, tradingBotsPresentation.ts; model tests and scripts/qa-trading-bots.cjs.
+- Preserved Claude’s approved terminal layouts, chart colours, CFD Cloudflare transport (#262), auth/account/deposit actions, and all trading logic. Removed only header inclusion from the transparent terminal-surface rules; header is solid graphite.
+- Validation after rebase: TypeScript + Vite PASS, targeted Jest 77/77, local mocked browser 122/122; desktop/mobile widths 320/390/1024/1440/1920. Evidence in docs/qa/trading-bots.
+- Four pre-existing sharedHeaderStylesheetOwnership assertions remain failing on Windows; reproduced on clean base main, documented in QA README. No claim of a green full suite. Recommend separate path/inventory ownership cleanup.
+- Owner review required before merge/deploy; no Phase 2 or unrelated financial work.

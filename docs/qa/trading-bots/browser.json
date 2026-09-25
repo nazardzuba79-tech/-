@@ -192,9 +192,6 @@
     {
       "name": "home",
       "width": 1440,
-      "tag": "HEADER",
-      "html": "<header class=\"sticky top-0 z-40 border-b border-white/6 bg-[#1a1b20]\" style=\"font-family: Arial, Helvetica, sans-serif; background: rgb(26, 27, 32);\"><div class=\"mx-auto flex h-[58px] w-full max-w-[1460px] items-center gap-6 px-6\"><a class=\"shrink-0\" aria-label=\"VOLTEX\" href=\"/\" data-discover=\"true\"><span style=\"display: inline-flex; align-items: ",
-      "connected": true,
       "background": "rgb(26, 27, 32)",
       "overflow": 0,
       "overlap": false
@@ -226,9 +223,6 @@
     {
       "name": "home",
       "width": 1024,
-      "tag": "HEADER",
-      "html": "<header class=\"sticky top-0 z-40 border-b border-white/6 bg-[#1a1b20]\" style=\"font-family: Arial, Helvetica, sans-serif; background: rgb(26, 27, 32);\"><div class=\"mx-auto flex h-[58px] w-full max-w-[1460px] items-center gap-6 px-6\"><a class=\"shrink-0\" aria-label=\"VOLTEX\" href=\"/\" data-discover=\"true\"><span style=\"display: inline-flex; align-items: ",
-      "connected": true,
       "background": "rgb(26, 27, 32)",
       "overflow": 0,
       "overlap": false
@@ -260,9 +254,6 @@
     {
       "name": "home",
       "width": 390,
-      "tag": "HEADER",
-      "html": "<header class=\"sticky top-0 z-40 border-b border-white/6 bg-[#1a1b20]\" style=\"font-family: Arial, Helvetica, sans-serif; background: rgb(26, 27, 32);\"><div class=\"mx-auto flex h-[58px] w-full max-w-[1460px] items-center gap-6 px-6\"><a class=\"shrink-0\" aria-label=\"VOLTEX\" href=\"/\" data-discover=\"true\"><span style=\"display: inline-flex; align-items: ",
-      "connected": true,
       "background": "rgb(26, 27, 32)",
       "overflow": 0,
       "overlap": false
