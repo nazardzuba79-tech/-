@@ -84,6 +84,9 @@ export interface NativeRepository {
   /** Repositories using the same DB client share scheduling, never financial state. */
   readonly commandLaneScope?: object;
   live?(actor:OwnerSession):Promise<NativeLiveProjection|null>;
+  /** Publish fresh display-only marks for the SAME authoritative revision.
+   * Never advances account/revision evidence and loses a race to any real commit. */
+  publishLive?(actor:OwnerSession,expectedRevision:number,account:NativeAccount):Promise<boolean>;
   history?(actor:OwnerSession,query:HistoryQuery):ReturnType<typeof nativeHistoryPage>;
   activate?(actor:OwnerSession):Promise<void>;
   /** One authorization envelope for the three command reads; commit still rechecks access and CAS. */
@@ -145,6 +148,21 @@ export class PrismaNativeRepository implements NativeRepository {
   }
   private async writeProjection(tx:Prisma.TransactionClient,actor:OwnerSession,account:NativeAccount,data=this.projectionData(account)){
     await tx.nativeDemoLiveProjection.upsert({where:{userId:actor.userId},create:{userId:actor.userId,...data},update:data,select:{userId:true}});
+  }
+  async publishLive(actor:OwnerSession,expectedRevision:number,account:NativeAccount):Promise<boolean>{
+    const data=this.projectionData({...account,revision:expectedRevision});
+    return this.db.$transaction(async tx=>{
+      await this.owner(tx,actor);
+      // Projection and authority are advanced atomically by a real command.
+      // Therefore an expected-revision predicate is enough to make a stale
+      // display publication lose to any concurrent financial commit.
+      const changed=await tx.nativeDemoLiveProjection.updateMany({
+        where:{userId:actor.userId,revision:expectedRevision},
+        data:{payload:data.payload,digest:data.digest},
+      });
+      await this.owner(tx,actor);
+      return changed.count===1;
+    },{timeout:10000});
   }
   async live(actor:OwnerSession):Promise<NativeLiveProjection|null>{
     await this.owner(this.db,actor);
