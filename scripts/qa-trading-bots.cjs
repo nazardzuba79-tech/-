@@ -172,4 +172,3 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
     await browser.close();server.closeAllConnections();server.close();
   }
 })().catch(e=>{console.error(e);process.exit(1);});
-
