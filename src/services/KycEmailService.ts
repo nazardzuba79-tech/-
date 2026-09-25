@@ -39,7 +39,8 @@ export class KycEmailService {
 
   constructor(transporter?: Transporter) {
     this.adminEmail = process.env.KYC_ADMIN_EMAIL;
-    this.fromEmail = process.env.KYC_FROM_EMAIL || 'kyc@voltex.local';
+    // Gmail and most relays refuse (or rewrite) a From that is not the authenticated account.
+    this.fromEmail = process.env.KYC_FROM_EMAIL || process.env.SMTP_USER || 'kyc@voltex.local';
 
     if (transporter) {
       this.transporter = transporter;
@@ -53,6 +54,25 @@ export class KycEmailService {
     } else {
       this.transporter = null;
     }
+  }
+
+  /** Whether submissions actually reach a mailbox — for the admin page, never the address in full. */
+  status(): { configured: boolean; recipient: string | null } {
+    const to = this.adminEmail ?? null;
+    const masked = to ? to.replace(/^(.{2}).*(@.*)$/, (_m, head: string, domain: string) => `${head}***${domain}`) : null;
+    return { configured: !!this.transporter && !!to, recipient: masked };
+  }
+
+  /** A test letter from the admin page: proves SMTP + KYC_ADMIN_EMAIL work before a real passport depends on it.
+   * Unlike `notifySubmission`, this one reports the failure — that is its whole point. */
+  async sendTest(): Promise<void> {
+    if (!this.transporter || !this.adminEmail) throw new Error('KYC email is not configured (SMTP_HOST / KYC_ADMIN_EMAIL)');
+    await this.transporter.sendMail({
+      from: this.fromEmail,
+      to: this.adminEmail,
+      subject: '[KYC] Тестовое письмо — почта для документов верификации настроена',
+      text: 'Если вы читаете это письмо, копии заявок на верификацию вместе с документами будут приходить сюда.',
+    });
   }
 
   /** Best-effort: a broken/unconfigured mail relay must never fail the

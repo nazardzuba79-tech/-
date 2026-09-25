@@ -146,6 +146,20 @@ export function kycRouter(prisma: PrismaClient, emailService: KycEmailService): 
     });
   });
 
+  // Admin-only: where submission copies (with the document) are emailed, and a test letter.
+  router.get('/kyc/admin/delivery', requireAuth(prisma), requireAdmin(prisma), (_req, res) => {
+    res.json(emailService.status());
+  });
+  router.post('/kyc/admin/delivery/test', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    try {
+      await emailService.sendTest();
+      res.json({ sent: true, ...emailService.status() });
+    } catch (err) {
+      console.error('[kyc] test email failed:', err);
+      res.status(502).json({ sent: false, code: 'kyc_email_failed', error: err instanceof Error ? err.message : 'send failed', ...emailService.status() });
+    }
+  });
+
   // Admin-only: stream the uploaded document image/PDF for review.
   router.get('/kyc/:id/document', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const submission = await prisma.kycSubmission.findUnique({ where: { id: req.params.id } });

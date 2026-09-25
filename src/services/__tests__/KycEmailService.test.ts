@@ -79,4 +79,23 @@ describe('KycEmailService', () => {
     expect(errSpy).toHaveBeenCalled();
     errSpy.mockRestore();
   });
+
+  it('status() masks the recipient and says whether mail is actually configured', () => {
+    process.env.KYC_ADMIN_EMAIL = 'nazar.owner@gmail.com';
+    const sendMail = jest.fn();
+    expect(new KycEmailService({ sendMail } as any).status()).toEqual({ configured: true, recipient: 'na***@gmail.com' });
+    delete process.env.SMTP_HOST;
+    expect(new KycEmailService().status()).toEqual({ configured: false, recipient: 'na***@gmail.com' });
+    delete process.env.KYC_ADMIN_EMAIL;
+    expect(new KycEmailService({ sendMail } as any).status()).toEqual({ configured: false, recipient: null });
+  });
+
+  it('sendTest() mails the admin and throws when it cannot', async () => {
+    process.env.KYC_ADMIN_EMAIL = 'nazar.owner@gmail.com';
+    const sendMail = jest.fn().mockResolvedValue({});
+    await new KycEmailService({ sendMail } as any).sendTest();
+    expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({ to: 'nazar.owner@gmail.com' }));
+    delete process.env.KYC_ADMIN_EMAIL;
+    await expect(new KycEmailService({ sendMail } as any).sendTest()).rejects.toThrow(/not configured/);
+  });
 });

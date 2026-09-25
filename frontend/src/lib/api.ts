@@ -1266,6 +1266,11 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
 
+  // Admin: where KYC submission copies (with the document) are emailed.
+  getKycDelivery: () => request<{ configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),
+  sendKycTestEmail: () =>
+    request<{ sent: boolean; configured: boolean; recipient: string | null }>('/kyc/admin/delivery/test', { method: 'POST' }),
+
   reviewKyc: (submissionId: string, approve: boolean, reason?: string) =>
     request<{ status: string }>(`/kyc/${submissionId}/review`, {
       method: 'POST',

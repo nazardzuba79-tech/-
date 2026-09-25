@@ -227,3 +227,37 @@ describe('admin-only KYC routes', () => {
     expect(res.status).toBe(400);
   });
 });
+
+/**
+ * The owner, 2026-09-25: documents are not to be kept on the exchange — each
+ * submission's copy, with the document attached, goes to the admin's mailbox
+ * (KycEmailService). The admin page shows where, and can send a test letter.
+ */
+describe('KYC email delivery for the admin', () => {
+  const admin = { user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) } } as any;
+
+  it('GET /kyc/admin/delivery reports the masked recipient', async () => {
+    const email = { notifySubmission: jest.fn(), status: jest.fn().mockReturnValue({ configured: true, recipient: 'na***@gmail.com' }) };
+    const res = await request(buildApp(admin, email)).get('/api/v1/kyc/admin/delivery').set('Authorization', authHeader('admin-1'));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ configured: true, recipient: 'na***@gmail.com' });
+  });
+
+  it('POST /kyc/admin/delivery/test sends, and reports a failure instead of hiding it', async () => {
+    const ok = { notifySubmission: jest.fn(), status: jest.fn().mockReturnValue({ configured: true, recipient: 'na***@gmail.com' }), sendTest: jest.fn().mockResolvedValue(undefined) };
+    let res = await request(buildApp(admin, ok)).post('/api/v1/kyc/admin/delivery/test').set('Authorization', authHeader('admin-1'));
+    expect(res.status).toBe(200);expect(res.body.sent).toBe(true);expect(ok.sendTest).toHaveBeenCalledTimes(1);
+    const bad = { ...ok, sendTest: jest.fn().mockRejectedValue(new Error('535 auth failed')) };
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    res = await request(buildApp(admin, bad)).post('/api/v1/kyc/admin/delivery/test').set('Authorization', authHeader('admin-1'));
+    expect(res.status).toBe(502);expect(res.body).toMatchObject({ sent: false, code: 'kyc_email_failed' });
+  });
+
+  it('both are admin-only', async () => {
+    const user = { user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } } as any;
+    const email = { notifySubmission: jest.fn(), status: jest.fn(), sendTest: jest.fn() };
+    expect((await request(buildApp(user, email)).get('/api/v1/kyc/admin/delivery').set('Authorization', authHeader('u'))).status).toBe(403);
+    expect((await request(buildApp(user, email)).post('/api/v1/kyc/admin/delivery/test').set('Authorization', authHeader('u'))).status).toBe(403);
+    expect(email.sendTest).not.toHaveBeenCalled();
+  });
+});
