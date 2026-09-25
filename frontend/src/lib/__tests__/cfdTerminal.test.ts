@@ -76,43 +76,23 @@ test('bottom panel provides local practice positions and history without account
  expect(source).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition|api\.getFuturesBalances/);
 });
 
-test('CFD chart is owned by VOLTEX, auto-recovers, and has no customer retry button',()=>{
+test('CFD chart is owned by VOLTEX, auto-recovers, and production never falls back to Render',()=>{
  const source=read('components/CfdChart.tsx');
  expect(source).toContain('createChart');expect(source).toContain('CandlestickSeries');expect(source).toContain('/cfd/display/candles/');
- expect(source).toContain('MARKET_EDGE_BASE');expect(source).toContain('fallbackUrl');expect(source).toContain('displayRefreshDelay(snapshot.url');
+ expect(source).toContain('MARKET_EDGE_BASE');expect(source).toContain('displayRefreshDelay(snapshot.url');
+ expect(source).not.toContain('fallbackUrl');expect(source).not.toContain('bounded Render');
  expect(source).not.toContain('TradingViewAdvancedChart');expect(source).not.toContain('cfd-chart-retry');expect(source).not.toContain('Retry chart');
 });
 
-test('production CFD ticker feed has a bounded Render display fallback when edge fails',()=>{
- const source=read('lib/useCfdTickers.ts');
- expect(source).toContain('MARKET_EDGE_BASE');expect(source).toContain('/cfd/display/tickers');
- expect(source).toContain('fallbackEndpoint');expect(source).toContain('displayRefreshDelay(endpoint,SLOW_DISPLAY_REFRESH_MS)');
-});
-
-test('production partial CFD edge snapshot fills only missing quote fields from bounded Render display',async()=>{
- const edge=rows.map((row,index)=>index===1?{...row,price:null,changePercent24h:undefined,provider:'biquote'}:{...row});
- const fallback=rows.map((row,index)=>index===0?{...row,price:'9999',provider:'render-should-not-win'}:index===1?{...row,price:'64.50',changePercent24h:'1.25',provider:'render-multi-source'}:{...row});
- const reads=jest.fn(async(url:string)=>url.startsWith('https://market.voltextech.net')
-   ?{configured:true,tickers:edge}
-   :{configured:true,tickers:fallback});
+test('production CFD ticker feed reads one Cloudflare snapshot and never Render',async()=>{
+ const reads=jest.fn(async()=>({configured:true,tickers:rows}));
  const hook=mount('lib/useCfdTickers.ts',{location:{hostname:'voltextech.net'},readDisplayJson:reads});
  hook.render(true);await tick();const state=hook.render(true);
- expect(reads).toHaveBeenCalledTimes(2);
+ expect(reads).toHaveBeenCalledTimes(1);
  expect(reads.mock.calls[0][0]).toBe('https://market.voltextech.net/cfd/display/tickers');
- expect(reads.mock.calls[1][0]).toBe('/api/v1/cfd/display/tickers');
- expect(state.tickers.find((row:any)=>row.symbol==='XAUUSD').price).toBe(rows[0].price);
- expect(state.tickers.find((row:any)=>row.symbol==='XAUUSD').provider).toBe('biquote');
- const silver=state.tickers.find((row:any)=>row.symbol==='XAGUSD');
- expect(silver.price).toBe('64.50');expect(silver.changePercent24h).toBe('1.25');expect(silver.provider).toBe('render-multi-source');
- expect(silver.displayOnly).toBe(true);expect(silver.executionAllowed).toBe(false);expect(state.loadError).toBe(false);
-});
-
-test('partial fallback failure keeps valid edge rows visible instead of failing the whole CFD list',async()=>{
- const edge=rows.map((row,index)=>index===1?{...row,price:null,changePercent24h:undefined}:{...row});
- const reads=jest.fn(async(url:string)=>{if(url.startsWith('https://market.voltextech.net'))return{configured:true,tickers:edge};throw new Error('render unavailable');});
- const hook=mount('lib/useCfdTickers.ts',{location:{hostname:'voltextech.net'},readDisplayJson:reads});
- hook.render(true);await tick();const state=hook.render(true);
- expect(state.tickers).toHaveLength(13);expect(state.tickers[0].price).toBe(rows[0].price);expect(state.tickers[1].price).toBeNull();expect(state.loadError).toBe(false);
+ expect(state.tickers).toHaveLength(13);expect(state.loadError).toBe(false);
+ const source=read('lib/useCfdTickers.ts');
+ expect(source).not.toContain('fallbackEndpoint');expect(source).not.toContain('fillMissingQuotes');
 });
 
 test('ticker hook samples every six hours and keeps last good rows after a failed refresh',async()=>{
