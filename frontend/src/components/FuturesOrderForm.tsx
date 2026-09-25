@@ -914,14 +914,14 @@ export function FuturesOrderForm({
         <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} continuous label={t('trade.quantity')} />
 
         {archive && execution.entryProtection && connectedFamily && !reduceOnly && <div className="archive-order-protection">
-          <button type="button" className="archive-protection-toggle" aria-label="TP/SL" aria-expanded={protectionEnabled} aria-controls={protectionPanelId} onClick={() => setBracketExpanded(enabled => !enabled)}>
+          <button type="button" className="archive-protection-toggle" aria-label="TP/SL" title={t('futures.tpslAtEntry')} aria-expanded={protectionEnabled} aria-controls={protectionPanelId} onClick={() => setBracketExpanded(enabled => !enabled)}>
             <span className="archive-protection-toggle-icon" aria-hidden="true">
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z" />
                 <path d="m8.5 12 2.5 2.5 4.5-5" />
               </svg>
             </span>
-            <span className="archive-protection-copy"><strong>TP/SL</strong><small>{t('futures.tpslAtEntry')}</small></span>
+            <span className="archive-protection-copy"><strong>TP/SL</strong></span>
             <svg className="archive-protection-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
           </button>
           <div id={protectionPanelId} hidden={!protectionEnabled}>
