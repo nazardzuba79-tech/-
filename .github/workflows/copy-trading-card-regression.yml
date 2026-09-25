@@ -19,6 +19,7 @@ on:
       # this workflow unrun; the logout assertion then went unchecked.
       - 'frontend/src/App.tsx'
       - 'frontend/src/components/Nav.tsx'
+      - 'frontend/src/components/TradingBotIcon.tsx'
       - 'frontend/src/lib/__tests__/rootRoute*.test.ts'
       - 'scripts/qa-copy-*.cjs'
       # INVARIANT 12 — the rest of what the Copy Trading page actually renders
@@ -92,6 +93,7 @@ on:
       # this workflow unrun; the logout assertion then went unchecked.
       - 'frontend/src/App.tsx'
       - 'frontend/src/components/Nav.tsx'
+      - 'frontend/src/components/TradingBotIcon.tsx'
       - 'frontend/src/lib/__tests__/rootRoute*.test.ts'
       - 'scripts/qa-copy-*.cjs'
       # INVARIANT 12 — the rest of what the Copy Trading page actually renders

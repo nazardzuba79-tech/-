@@ -3777,3 +3777,13 @@ withdrawal was placed.
 - Files: Nav.tsx, HomeHeader.tsx, index.css, ArchiveTerminalPreview.css, VoltexTerminalSystem.css, qa-trading-bots.cjs.
 - Validation: TypeScript/Vite build PASS; 118 tests in four relevant suites PASS; 199 local read-only Edge browser assertions PASS at 320/390/1024/1440/1920px. Exact desktop height, icon, final position and unclipped navigation verified. The first harness height expectation incorrectly assumed 56px for mobile Futures; scoped the new 68px assertion to desktop to preserve the existing mobile design.
 - Preserved #265 CFD icons, account/routing/auth behavior, trading mathematics, bot model labels and plan-only behavior. No backend/config changes. Awaiting CI and publication of this follow-up.
+
+
+## Codex — 2026-09-25 — Two-tone trading bot icon
+
+- Implementation: 78309f0ec66eec36828a31506e5651514fedf913; based on published main 28c6c022.
+- Owner requested a compact light robot with a small yellow accent matching the reference. Added reusable TradingBotIcon SVG with gold antenna, used in shared and homepage desktop/mobile navigation. Updated the existing browser icon selector.
+- Frontend TypeScript/Vite build PASS; existing 199 read-only Edge browser assertions PASS across 320–1920px.
+- Preserved final navigation position, approved header dimensions, authentication, bot statistics labels and all trading behavior. Pending CI/publication.
+
+PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow path triggers; normalized dependency paths in copyTradingCiCoverage.test.ts for Windows. Local coverage guard: 2/2 PASS. No runtime behavior changes.
