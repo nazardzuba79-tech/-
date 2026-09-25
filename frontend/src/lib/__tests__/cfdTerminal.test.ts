@@ -89,7 +89,7 @@ test('production CFD ticker feed reads one Cloudflare snapshot and never Render'
  const hook=mount('lib/useCfdTickers.ts',{location:{hostname:'voltextech.net'},readDisplayJson:reads});
  hook.render(true);await tick();const state=hook.render(true);
  expect(reads).toHaveBeenCalledTimes(1);
- expect(reads.mock.calls[0][0]).toBe('https://market.voltextech.net/cfd/display/tickers');
+ expect((reads.mock.calls as any)[0][0]).toBe('https://market.voltextech.net/cfd/display/tickers');
  expect(state.tickers).toHaveLength(13);expect(state.loadError).toBe(false);
  const source=read('lib/useCfdTickers.ts');
  expect(source).not.toContain('fallbackEndpoint');expect(source).not.toContain('fillMissingQuotes');
