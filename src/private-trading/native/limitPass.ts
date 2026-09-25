@@ -8,6 +8,16 @@ import { PrismaNativeRepository } from './store';
 import { nativeTestAccountIds } from './testAccounts';
 
 export const NATIVE_LIMIT_PASS_MS=10_000;
+export const NATIVE_LIMIT_PASS_MAX_MS=300_000;
+
+/** Production may deliberately sample less often to stay inside a hosting
+ * bandwidth budget. Invalid values fail closed to the established 10s
+ * cadence; nobody can accidentally disable execution or create a hot loop. */
+export function nativeLimitPassIntervalMs(raw=process.env.NATIVE_LIMIT_PASS_MS):number{
+  if(raw===undefined||raw.trim()==='')return NATIVE_LIMIT_PASS_MS;
+  const value=Number(raw);
+  return Number.isInteger(value)&&value>=NATIVE_LIMIT_PASS_MS&&value<=NATIVE_LIMIT_PASS_MAX_MS?value:NATIVE_LIMIT_PASS_MS;
+}
 /** Sampled server pass, independent of browser polling. No invented worker
  * identity: reuse the persisted, unexpired submitting session and reauthorize
  * it through the ordinary repository on every read/commit. CAS handles replicas. */
@@ -15,8 +25,11 @@ export class NativeLimitPass {
   private timer:ReturnType<typeof setInterval>|null=null;
   private running:Promise<void>|null=null;
   failures=0;
-  constructor(private service:Pick<NativeDemoService,'command'|'queued'>,private targets:()=>Promise<OwnerSession[]>,private now=Date.now){}
-  start(){if(!this.timer){this.timer=setInterval(()=>{void this.tick().catch(()=>{this.failures++;});},NATIVE_LIMIT_PASS_MS);this.timer.unref();}}
+  constructor(private service:Pick<NativeDemoService,'command'|'queued'>,private targets:()=>Promise<OwnerSession[]>,private now=Date.now,readonly intervalMs=nativeLimitPassIntervalMs()){}
+  start(){if(!this.timer){
+    console.info(`[native-limit-pass] interval_ms=${this.intervalMs}`);
+    this.timer=setInterval(()=>{void this.tick().catch(()=>{this.failures++;});},this.intervalMs);this.timer.unref();
+  }}
   async stop(){if(this.timer)clearInterval(this.timer);this.timer=null;await this.running;}
   tick():Promise<void>{
     if(this.running)return this.running;
