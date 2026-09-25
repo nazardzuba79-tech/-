@@ -32,7 +32,11 @@ describe('Render free-tier bandwidth guardrails', () => {
     // The deposit page loads history once on mount; incoming refreshes do
     // not silently pull the history payload a second time.
     expect((deposits.match(/api\.getAdminDeposits\(\)/g) ?? []).length).toBe(2);
-    expect(deposits).not.toMatch(/getAdminIncomingDepositFeed\(\)[\s\S]*?\.then\(\(res\)[\s\S]*?getAdminDeposits\(\)/);
+    const reloadStart = deposits.indexOf('function reloadIncoming()');
+    const reloadEnd = deposits.indexOf('useEffect(() =>', reloadStart);
+    expect(reloadStart).toBeGreaterThanOrEqual(0);
+    expect(reloadEnd).toBeGreaterThan(reloadStart);
+    expect(deposits.slice(reloadStart, reloadEnd)).not.toContain('getAdminDeposits()');
   });
 
   test('production CFD display stays on Cloudflare and never falls back to Render', () => {
