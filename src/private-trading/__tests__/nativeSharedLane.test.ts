@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { NativeDemoService } from '../native/service';
 import { PrismaNativeRepository } from '../native/store';
-import { NativeLimitPass } from '../native/limitPass';
+import { NativeLimitPass, NATIVE_LIMIT_PASS_MAX_MS, NATIVE_LIMIT_PASS_MS, nativeLimitPassIntervalMs } from '../native/limitPass';
 import { PrivateTradingMarketData } from '../marketData';
 import { setup, actor, key, H, H0 } from '../native/testing/liveFixture';
 
@@ -10,6 +10,15 @@ const deferred = () => {
   const promise = new Promise<void>(r => { resolve = r; });
   return { promise, resolve };
 };
+
+describe('native executor cadence budget', () => {
+  test('keeps the established default and accepts only bounded slower sampling', () => {
+    expect(nativeLimitPassIntervalMs(undefined)).toBe(NATIVE_LIMIT_PASS_MS);
+    expect(nativeLimitPassIntervalMs('60000')).toBe(60_000);
+    expect(nativeLimitPassIntervalMs(String(NATIVE_LIMIT_PASS_MAX_MS))).toBe(NATIVE_LIMIT_PASS_MAX_MS);
+    for(const invalid of ['0','9999','300001','1.5','nope',''])expect(nativeLimitPassIntervalMs(invalid)).toBe(NATIVE_LIMIT_PASS_MS);
+  });
+});
 
 describe('HTTP and executor share the native account command lane', () => {
   beforeEach(() => jest.spyOn(console, 'info').mockImplementation(() => {}));
