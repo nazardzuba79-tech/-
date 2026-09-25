@@ -122,9 +122,13 @@ describe('native demo service (fixture market, in-memory persistence)',()=>{
     const stored=f.repo.row!.commands[0];if(stored.kind!=='OPEN')throw new Error('open expected');
     expect(stored.book).toEqual({bids:[],asks:[{price:'50000.1',quantity:'10'}],timestamp:f.clock.t});
     f.clock.t+=30_000;f.market.quote={...f.market.quote,mark:'50100',last:'50100',bid:'50099.9',ask:'50100.1'};
+    const publishLive=jest.fn(async()=>true);(f.repo as any).publishLive=publishLive;
     const commits=f.repo.commits;
     v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
     expect(v.revision).toBe(2);expect(f.repo.commits).toBe(commits);
+    expect(publishLive).toHaveBeenCalledTimes(1);
+    expect(publishLive.mock.calls[0][1]).toBe(2);
+    expect(publishLive.mock.calls[0][2].snapshot.positions[0].markPrice).toBe('50100');
     expect(v.positions[0]).toMatchObject({markPrice:'50100'});
     expect(v.positions[0].unrealizedPnl).toBe('199.8');
     f.clock.t+=NATIVE_REFRESH_PERSIST_MS+M;
