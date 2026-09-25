@@ -275,3 +275,6 @@
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-form-area .order-summary, .cfd-infoBox) {
   background: rgba(255,255,255,.03) !important; border: 1px solid rgba(255,255,255,.08) !important;
 }
+/* The header captions in the Futures grey (owner, same day: «цей текст
+   таким же приглушеним»). */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.ticker-bar .label, .cfd-ticker-metric > span:first-child) { color: #71757a; font-weight: 400; }

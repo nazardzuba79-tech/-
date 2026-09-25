@@ -349,6 +349,23 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     expect(rule('#archive-terminal-preview .bottom-panel')).toContain('--panel:#101014');
   });
 
+  it('mutes the header captions and draws the funding line in one orange', () => {
+    // «зроби в нас на біржі цей текст таким же приглушеним, а 0.0100% /
+    // 03:06:32 (8h) таким же кольором» (Bybit screenshot). The chart's own
+    // orange, so § 1's «no Bybit orange» still holds.
+    // The later of the sheet's caption rules is the one that wins.
+    const captions = everyRule('#archive-terminal-preview .ticker-bar .label').split(';').map(d => d.trim());
+    expect(captions.filter(d => d.startsWith('color:')).pop()).toBe('color:#71757a');
+    expect(captions.filter(d => d.startsWith('font-weight:')).pop()).toBe('font-weight:400');
+    const funding = rule('#archive-terminal-preview .ticker-bar .futures-funding-values > :is(.value,.label)');
+    expect(funding).toContain('color:#ff9800 !important');
+    expect(funding).toContain('font-size:13px');
+    // Rate, slash and countdown are the three children that rule reaches.
+    const bar = read('components/FuturesTickerBar.tsx');
+    expect(bar).toContain('<span className="label"> / </span>');
+    expect(bar).toContain('<NextFundingCountdown intervalHours={fundingIntervalHours} />');
+  });
+
   it('draws the lines between the panels just visibly, as on Bybit', () => {
     // «зроби більш видими перегородку цієї панелі, не прям яскраво, просто
     // чуть замітна»: a white hairline at .12 — .07 vanished into the

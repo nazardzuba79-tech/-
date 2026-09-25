@@ -604,3 +604,12 @@
 #archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] {
   border-color: var(--accent) !important;
 }
+/* The header as on the owner's Bybit screenshot (2026-09-25: «зроби в нас
+   на біржі цей текст таким же приглушеним, а 0.0100% / 03:06:32 (8h) таким
+   же кольором»). The captions take the reference grey the bottom panel
+   already uses, at regular weight; the funding rate, its slash and the
+   countdown read as one orange line — the chart's own orange, which is
+   Bybit's tone to the eye without bringing its brand colour into the
+   sheet (§ 1 of the guards keeps that out). */
+#archive-terminal-preview .ticker-bar .label { color:#71757a; font-weight:400; }
+#archive-terminal-preview .ticker-bar .futures-funding-values > :is(.value,.label) { color:#ff9800 !important; font-size:13px; font-weight:550; }

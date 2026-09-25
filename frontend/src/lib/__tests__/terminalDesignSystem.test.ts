@@ -145,6 +145,13 @@ it('Spot and CFD carry the Futures TradingView surface, value for value', () => 
   expect(spotCfdChart).toContain('--voltex-volume-up: rgba(234,236,239,0.5)');
   expect(spotCfdChart).toContain('--voltex-volume-down: rgba(247,166,0,0.5)');
 
+  // The header captions take the Futures caption grey.
+  // The later of the sheet's rules for the captions is the one that wins.
+  const captionRules = archive.split('#archive-terminal-preview .ticker-bar .label {').slice(1).map(r => r.slice(0, r.indexOf('}')));
+  const futuresCaption = captionRules[captionRules.length - 1]?.match(/color:\s*(#[0-9a-f]{6})/i)?.[1];
+  expect(futuresCaption).toBe('#71757a');
+  expect(css).toContain(`${P} :is(.ticker-bar .label, .cfd-ticker-metric > span:first-child) { color: ${futuresCaption}; font-weight: 400; }`);
+
   // Fields stay visible on the gradient, as on the Futures ticket.
   expect(css).toMatch(/:is\(\.order-form-area \.input-group, \.pairs-section input, \.cfd-input, \.cfd-instruments-area input\) \{\s*background: rgba\(255,255,255,\.06\) !important; border: 1px solid rgba\(255,255,255,\.13\) !important;/);
   // The bottom panel keeps its own flat surface.
