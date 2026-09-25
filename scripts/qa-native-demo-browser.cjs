@@ -430,12 +430,12 @@ async function chartFlow(width) {
         ?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA access outage'})})
         :route.continue());
       const failed=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.status()===503);
-      await p.clock.runFor(15001);await failed;
+      await p.clock.runFor(60001);await failed;
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===true);
       assert.deepEqual(JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference')),reference);
       failAccess=false;
       const recovered=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.ok());
-      await p.clock.runFor(15001);await recovered;
+      await p.clock.runFor(60001);await recovered;
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===false);
       await p.clock.resume();
     }
