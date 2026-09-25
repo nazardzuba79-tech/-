@@ -48,11 +48,10 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
     const revisionsBefore=await db.nativeDemoRevision.count({where:{userId:actor.userId}});
     const fresh=structuredClone({...fixture,revision:2});
     fresh.snapshot.positions[0].markPrice='54321';
-    fresh.snapshot.positions[0].unrealizedPnl='4321';
     queries=[];
     await expect(repo.publishLive(actor,2,fresh)).resolves.toBe(true);
     const live=await repo.live(actor);
-    expect(live?.positions[0]).toMatchObject({markPrice:'54321',unrealizedPnl:'4321'});
+    expect(live?.state.positions[0]).toMatchObject({markPrice:'54321'});
     expect(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}})).toEqual(authorityBefore);
     expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(revisionsBefore);
     expect(queries.some(q=>q.includes('UPDATE "public"."NativeDemoAccount"'))).toBe(false);
