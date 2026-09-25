@@ -222,7 +222,9 @@ test.each([
     // native browser regression checks retention and reduce-only exclusion.
     // Compact follow-up: move the secondary TP/SL caption to its title tooltip.
     // Existing expansion, retention, validation and submission remain unchanged.
-    "86f1e021c174202e854626c7752932a961136741928289dba3fbd0f67c9bbc58"
+    // Owner removed archive fee-estimate and position-limit display rows.
+    // Audited change gates presentation only; fee reserve and sizing are intact.
+    "adc8d06cfa870c312f39a4d800403e9fcd7e57c6b1a4c06fc113722d25096803"
   ],
   [
     "components/FuturesAccountSummary.tsx",
