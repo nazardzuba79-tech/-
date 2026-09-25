@@ -220,7 +220,9 @@ test.each([
     // visible labels around unchanged inputs, max-position details wrapper.
     // Audited diff has no calculation, state or submission changes. The
     // native browser regression checks retention and reduce-only exclusion.
-    "860d33151713316cc8f3e0a795e14a4ec31500803a7ba2702e73af9641d28cba"
+    // Compact follow-up: move the secondary TP/SL caption to its title tooltip.
+    // Existing expansion, retention, validation and submission remain unchanged.
+    "86f1e021c174202e854626c7752932a961136741928289dba3fbd0f67c9bbc58"
   ],
   [
     "components/FuturesAccountSummary.tsx",
