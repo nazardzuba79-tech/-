@@ -204,11 +204,15 @@ async function newTab(ctx, token) {
     // never shown a failure that a single reload was going to fix.
     if (state.boundary) finding('E: a stale shell still left the error boundary on screen');
     if (!state.futures) finding('E: the terminal did not open after the automatic recovery');
-    // AT MOST ONE. The guard is keyed by shell+path, so a reload that returns
-    // the same stale shell must not try again.
-    if (nav.length > 3) finding(`E: ${nav.length} navigations — that is more than one recovery reload`);
-    if (!warnings.some(w => w.includes('chunk_recovery.reloading'))) {
-      finding('E: no classifiable recovery line was emitted');
+    // AT MOST ONE application-triggered recovery. Chromium can emit more
+    // main-frame navigation events than actual location.reload() calls while
+    // a stale module graph collapses, so raw framenavigated count is not a
+    // reliable reload counter. The production recovery path itself emits one
+    // structured reloading line before calling location.reload(), and its
+    // shell+path guard prevents a second call from the same shell.
+    const reloadLines = warnings.filter(w => w.includes('chunk_recovery.reloading'));
+    if (reloadLines.length !== 1) {
+      finding(`E: expected exactly one recovery reload, saw ${reloadLines.length}`);
     }
     await ctx.close(); server.close();
   }
