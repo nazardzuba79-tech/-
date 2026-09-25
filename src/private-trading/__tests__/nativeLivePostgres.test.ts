@@ -42,6 +42,25 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
     expect(queries.some(q=>q.includes('"NativeDemoAccount"."payload"'))).toBe(false);
     expect(queries.some(q=>/^(INSERT|UPDATE|DELETE)/.test(q))).toBe(false);
   });
+  test('mark-only publication updates live projection without authority or immutable revision writes',async()=>{
+    await repo.commit(actor,1,fixture,'projection-seed','hash');
+    const authorityBefore=await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}});
+    const revisionsBefore=await db.nativeDemoRevision.count({where:{userId:actor.userId}});
+    const fresh=structuredClone({...fixture,revision:2});
+    fresh.snapshot.positions[0].markPrice='54321';
+    queries=[];
+    await expect(repo.publishLive(actor,2,fresh)).resolves.toBe(true);
+    const live=await repo.live(actor);
+    expect(live?.state.positions[0]).toMatchObject({markPrice:'54321'});
+    expect(await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}})).toEqual(authorityBefore);
+    expect(await db.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(revisionsBefore);
+    expect(queries.some(q=>q.includes('UPDATE "public"."NativeDemoAccount"'))).toBe(false);
+    expect(queries.some(q=>q.includes('INSERT INTO "public"."NativeDemoRevision"'))).toBe(false);
+    // A stale worker can never overwrite the projection after authority moved.
+    await repo.commit(actor,2,{...fixture,disabledCollateralAssets:['ETH']},'authority-moved','hash2');
+    await expect(repo.publishLive(actor,2,fresh)).resolves.toBe(false);
+    expect((await repo.live(actor))?.revision).toBe(3);
+  });
   test('command context retains both authorization checks with one joined DB read each',async()=>{
     queries=[];await repo.commandContext(actor,'new-key','new-hash');
     expect(queries.filter(q=>q.includes('FROM "User"'))).toHaveLength(2);

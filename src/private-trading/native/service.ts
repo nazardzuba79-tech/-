@@ -834,7 +834,14 @@ export class NativeDemoService {
       // The books this pass executed — a fill, a partial fill, a cancellation without a fill: journaled so a later replay does exactly the same.
       for(const b of result.books)commands.push({id:`book-${randomUUID()}`,kind:'BOOK',at:b.at,seq:seqNext++,symbol:b.symbol,book:b.book});
       const next:NativeAccount={...row,commands,snapshot:result.snapshot,checkpoint:result.checkpoint};
-      if(!persist){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged,valuation);}
+      if(!persist){
+        const unchanged={...next,revision:row.revision};
+        // Keep the compact /native/live projection current without rewriting
+        // the authoritative account journal or creating an immutable revision.
+        // A concurrent real commit wins by revision CAS in publishLive.
+        await this.repository.publishLive?.(actor,row.revision,unchanged);
+        return this.authoritative(actor,this.view(unchanged),unchanged,valuation);
+      }
       // Seal only persisted live decisions AFTER OBSERVE/BOOK were appended.
       // Historical scenarios keep the minute checkpoint and OHLC replay.
       next.checkpoint=liveCheckpoint(next.snapshot,commands)??result.checkpoint;
@@ -966,8 +973,11 @@ export class NativeDemoService {
     if(!draft&&!persist){
       const stale=!row.checkpoint||at-row.checkpoint.time>=this.refreshPersistMs;
       const sessionChanged=!row.executionSession||row.executionSession.sessionId!==actor.sessionId||row.executionSession.expiresAt!==actor.expiresAt;
-      if(!stale&&!sessionChanged&&outcome(result.snapshot)===outcome(row.snapshot))
-        return this.authoritative(actor,this.view({...next,revision:row.revision}),next,valuation);
+      if(!stale&&!sessionChanged&&outcome(result.snapshot)===outcome(row.snapshot)){
+        const unchanged={...next,revision:row.revision};
+        await this.repository.publishLive?.(actor,row.revision,unchanged);
+        return this.authoritative(actor,this.view(unchanged),unchanged,valuation);
+      }
     }
     // Replay may consume the reserve. Refuse before starting any writes in that
     // case; never retry a financial command or bypass the final 60s rollback guard.
