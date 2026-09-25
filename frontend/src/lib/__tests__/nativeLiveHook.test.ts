@@ -38,14 +38,14 @@ describe('actual React native hook live lifecycle',()=>{
   });
   afterEach(async()=>{await React.act(async()=>root.unmount());dom.window.close();jest.useRealTimers();delete (globalThis as any).window;delete (globalThis as any).document;delete (globalThis as any).IS_REACT_ACT_ENVIRONMENT;});
   const tick=(ms:number)=>React.act(async()=>{jest.advanceTimersByTime(ms);});
-  test('active 30s GET; hidden no GET; visibility return refresh; ACCESS remains 15s',async()=>{
+  test('active 30s live GET; hidden makes no reads; visibility refreshes; ACCESS is bounded to 60s',async()=>{
     expect(api.live).toHaveBeenCalledTimes(1);expect(api.access).toHaveBeenCalledTimes(1);expect(api.history).not.toHaveBeenCalled();
-    await tick(30_000);expect(api.live).toHaveBeenCalledTimes(2);expect(api.access).toHaveBeenCalledTimes(3);expect(api.command).not.toHaveBeenCalled();
+    await tick(30_000);expect(api.live).toHaveBeenCalledTimes(2);expect(api.access).toHaveBeenCalledTimes(1);expect(api.command).not.toHaveBeenCalled();
     Object.defineProperty(document,'hidden',{configurable:true,value:true});
-    await tick(60_000);expect(api.live).toHaveBeenCalledTimes(2);expect(api.access).toHaveBeenCalledTimes(7);
+    await tick(60_000);expect(api.live).toHaveBeenCalledTimes(2);expect(api.access).toHaveBeenCalledTimes(1);
     Object.defineProperty(document,'hidden',{configurable:true,value:false});
     await React.act(async()=>document.dispatchEvent(new dom.window.Event('visibilitychange')));
-    expect(api.live).toHaveBeenCalledTimes(3);expect(api.activate).toHaveBeenCalledTimes(2);
+    expect(api.live).toHaveBeenCalledTimes(3);expect(api.activate).toHaveBeenCalledTimes(2);expect(api.access).toHaveBeenCalledTimes(2);
   });
   test('after final close, idle account makes no periodic reads; explicit refresh still works',async()=>{
     state={...state,revision:8,positions:[]};
