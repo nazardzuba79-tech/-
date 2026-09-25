@@ -3831,3 +3831,10 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - FuturesOrderForm.tsx now omits those two display rows in archive presentation. Standard ticket display, fee reserves, max-size calculations, admission checks, TP/SL and submission are preserved.
 - Updated existing native browser assertions and audited form fingerprint. Frontend build PASS; all 101 focused tests across six suites passed (fingerprint suite rerun after audited refresh). Native browser PASS at 1920/1440/390/320: removed rows absent, TP/SL retention and reduce-only gating, unchanged field and CTA geometry, no overflow or covered buttons. Desktop screenshot inspected.
 - Awaiting CI/publication. No production trades or configuration/data changes.
+
+## Codex — 2026-09-25 — Individual bot strategy logos
+
+- Implementation: 3878bf05d4138db6be50d3ec805c8b991dcc6c8c, based on fresh main 2f3390fd. Owner requested interesting icons/logos for the seven bots.
+- Added BotStrategyIcon.tsx with seven inline vector marks: grid cube, Ether crystal, momentum pulse, delta triangle, range waveform, rebalance orbit and breakout arrow. Muted individual accents on smooth tiles replace initials on cards and modal using the same component.
+- Files: TradingBotsPage.tsx, trading-bots/BotStrategyIcon.tsx and TradingBots.css. Decorative SVGs are hidden from assistive technology; adjacent names remain accessible. Avatar sizes, page structure, statistics labels/calculations, budgets and all trading behavior preserved. Latest admin/deposit changes from main untouched.
+- Frontend production build PASS; existing catalogue tests 23/23 PASS; existing read-only browser QA 199 checks PASS at 320–1920px, including filters, favorites, modal, mobile and shared headers. Card and mobile modal screenshots inspected. Awaiting CI/publication.
