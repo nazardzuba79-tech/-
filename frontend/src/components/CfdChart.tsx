@@ -34,16 +34,28 @@ function normalizeBars(body:RawEnvelope,symbol:string,interval:Interval):ChartBa
   return rows;
 }
 
-async function loadCandles(symbol:string,interval:Interval,signal:AbortSignal):Promise<{rows:ChartBar[];asOf:number|null}>{
-  const url=`${production()?MARKET_EDGE_BASE:API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`;
-  const body=await readDisplayJson<RawEnvelope>(url,SLOW_DISPLAY_REFRESH_MS,signal);
-  return {rows:normalizeBars(body,symbol,interval),asOf:typeof body.fetchedAt==='number'?body.fetchedAt:null};
+async function loadCandles(symbol:string,interval:Interval,signal:AbortSignal):Promise<{rows:ChartBar[];asOf:number|null;url:string}>{
+  const path=`/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`;
+  const fallbackUrl=`${API_BASE}${path}`;
+  let url=production()?`${MARKET_EDGE_BASE}${path}`:fallbackUrl;
+  let body:RawEnvelope;
+  try{
+    body=await readDisplayJson<RawEnvelope>(url,SLOW_DISPLAY_REFRESH_MS,signal);
+  }catch(error){
+    // The Cloudflare edge is preferred in production. If that public path is
+    // down or returns an invalid snapshot envelope, use the existing bounded
+    // Render display alias; it is still presentation-only and cached for 6h.
+    if(!production()||signal.aborted)throw error;
+    url=fallbackUrl;
+    body=await readDisplayJson<RawEnvelope>(url,SLOW_DISPLAY_REFRESH_MS,signal);
+  }
+  return {rows:normalizeBars(body,symbol,interval),asOf:typeof body.fetchedAt==='number'?body.fetchedAt:null,url};
 }
 
 /** Real OHLC candles only. No synthetic chart data and no explanatory labels in the customer UI. */
 export function CfdChart({symbol}:{symbol:string}){
   const hostRef=useRef<HTMLDivElement>(null),chartRef=useRef<IChartApi|null>(null),seriesRef=useRef<ISeriesApi<'Candlestick'>|null>(null),volumeRef=useRef<ISeriesApi<'Histogram'>|null>(null);
-  const[interval,setInterval]=useState<Interval>('1h'),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[retry,setRetry]=useState(0);
+  const[interval,setInterval]=useState<Interval>('1h'),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading');
   const [asOf,setAsOf]=useState<number|null>(null);
   const renderedKey=useRef('');
   const volumeUpRef=useRef('rgba(18,201,141,.28)'),volumeDownRef=useRef('rgba(239,83,80,.28)');
@@ -76,7 +88,7 @@ export function CfdChart({symbol}:{symbol:string}){
       try{
         const snapshot=await loadCandles(symbol,interval,request.signal);
         if(cancelled||request.signal.aborted)return;
-        delay=displayRefreshDelay(`${production()?MARKET_EDGE_BASE:API_BASE}/cfd/display/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`,SLOW_DISPLAY_REFRESH_MS);
+        delay=displayRefreshDelay(snapshot.url,SLOW_DISPLAY_REFRESH_MS);
         const rows=snapshot.rows;
         seriesRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,open:bar.open,high:bar.high,low:bar.low,close:bar.close})));
         volumeRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,value:bar.volume,color:bar.close>=bar.open?volumeUpRef.current:volumeDownRef.current})));
@@ -88,13 +100,12 @@ export function CfdChart({symbol}:{symbol:string}){
     const visible=()=>{if(document.hidden){if(timer)clearTimeout(timer);timer=null;controller?.abort();}else schedule(0);};
     document.addEventListener('visibilitychange',visible);void load();
     return()=>{cancelled=true;controller?.abort();if(timer)clearTimeout(timer);document.removeEventListener('visibilitychange',visible);};
-  },[symbol,interval,retry]);
+  },[symbol,interval]);
 
   return <div className="cfd-chart cfd-owned-chart" data-chart-status={status}>
     <div className="cfd-chart-toolbar"><strong>{symbol}</strong><div className="cfd-chart-intervals" role="group" aria-label="Chart interval">{INTERVALS.map(item=><button key={item} type="button" className={item===interval?'active':undefined} aria-pressed={item===interval} onClick={()=>setInterval(item)}>{item}</button>)}</div></div>
     <SampledDataNote asOf={asOf} cadenceMs={SLOW_DISPLAY_REFRESH_MS}/>
     <div className="cfd-owned-chart-canvas" ref={hostRef}/>
     {status==='loading'&&<div className="cfd-chart-overlay" aria-hidden="true"><span className="cfd-chart-loader"/></div>}
-    {status==='error'&&<button className="cfd-chart-retry" type="button" aria-label="Retry chart" onClick={()=>setRetry(value=>value+1)}>↻</button>}
   </div>;
 }
