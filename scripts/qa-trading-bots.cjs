@@ -104,9 +104,13 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       if(await page.locator('.nav-burger').isVisible()) {
         await page.locator('.nav-burger').click();
         check(width+': mobile bots link',await page.locator('.nav-mobile-menu a[href="/trading-bots"]').isVisible());
+        check(width+': mobile robot icon',await page.locator('.nav-mobile-menu a[href="/trading-bots"] svg.lucide-bot').count()===1);
+        check(width+': bots follows OTC in mobile menu',await page.locator('.nav-mobile-menu a[href="/otc"] + a[href="/trading-bots"]').count()===1);
       } else if(width>=1440) {
         const botsLink=page.locator('.main-nav > a[href="/trading-bots"]');
         check(width+': top-level active bots tab',await botsLink.isVisible()&&await botsLink.evaluate(el=>el.classList.contains('nav-active')));
+        check(width+': robot icon',await botsLink.locator('svg.lucide-bot').count()===1);
+        check(width+': bots is last product',await page.locator('.main-nav > a').last().getAttribute('href')==='/trading-bots');
         await page.locator('.main-nav .nav-item-wrap > a').focus();
         check(width+': keyboard trading menu',await page.locator('.nav-dropdown a[href="/trade"]').isVisible());
         check(width+': no duplicate bots submenu',await page.locator('.nav-dropdown a[href="/trading-bots"]').count()===0);
@@ -138,6 +142,7 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         check(name+' '+width+': shared graphite',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
         check(name+' '+width+': no overflow',layout.overflow<=1);
         check(name+' '+width+': header controls separate',!layout.overlap);
+        if(width>1024) check(name+' '+width+': approved desktop header height',layout.height===68);
         check(name+' '+width+': no clipped navigation links',layout.navClipped===0);
         await page.screenshot({path:path.join(OUT,name+'-header-'+width+'.png')});
       }

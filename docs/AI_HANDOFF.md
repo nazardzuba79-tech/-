@@ -3767,3 +3767,13 @@ withdrawal was placed.
 - Files: index.css; qa-trading-bots.cjs now checks actual nav scroll clipping and Markets after terminal routes, not just outer cluster overlap; refreshed evidence/README.
 - Frontend build PASS, expanded bot/header browser 181 assertions PASS, exact unmodified pair-persistence harness PASS at 1440/390 using Edge. Existing known chart teardown warning remains documented by that harness. Additional #263 CFD source/runtime suite: 31 PASS.
 - No financial, backend, production configuration or model-label changes. Awaiting final CI before publication.
+
+
+## Codex — 2026-09-25 — Match Bot Studio header and final bots tab
+
+- Implementation: 0964f943fe62ef4bdd92687d2ac4f8e28dbc4d9e, based on published main a0d41ed7.
+- Owner clarified: use the existing preview height, not an additional enlargement. Shared desktop/home/terminal headers now use the approved 68px smooth #1a1b20 face instead of the terminal 48px override. Mobile Futures keeps its existing 52px rule.
+- Trading Bots moved after OTC as the final product link, with a 16px Lucide robot icon in desktop/home/mobile navigation.
+- Files: Nav.tsx, HomeHeader.tsx, index.css, ArchiveTerminalPreview.css, VoltexTerminalSystem.css, qa-trading-bots.cjs.
+- Validation: TypeScript/Vite build PASS; 118 tests in four relevant suites PASS; 199 local read-only Edge browser assertions PASS at 320/390/1024/1440/1920px. Exact desktop height, icon, final position and unclipped navigation verified. The first harness height expectation incorrectly assumed 56px for mobile Futures; scoped the new 68px assertion to desktop to preserve the existing mobile design.
+- Preserved #265 CFD icons, account/routing/auth behavior, trading mathematics, bot model labels and plan-only behavior. No backend/config changes. Awaiting CI and publication of this follow-up.

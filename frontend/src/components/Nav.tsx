@@ -1,6 +1,6 @@
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronDown, CreditCard, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
+import { Bot, ChevronDown, CreditCard, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useAdminAlertSound } from '../lib/useAdminAlerts';
@@ -21,7 +21,6 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
     {to:'/markets',label:t('nav.markets')},
     {to:'/trade',label:t('nav.trade')},
     {to:'/futures',label:t('nav.futures')},
-    {to:'/trading-bots',label:'Торговые боты'},
     {to:'/banking',label:'Banking & Earn'},
     {to:'/wallet',label:t('nav.wallet')},
     {to:'/copy-trading',label:t('nav.copyTrading')},
@@ -54,6 +53,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
           </div>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}
           <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{t('nav.card')}</Link>
           <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active==='/otc'?' nav-active is-active':''}`}>{t('nav.otc')}</Link>
+          <Link to="/trading-bots" className={`nav-item top-nav-link${active==='/trading-bots'?' nav-active is-active':''}`}><Bot size={16} aria-hidden="true"/>Торговые боты</Link>
           {/* Админка is NOT a product section. It used to sit here, after
               OTC, reading as one more place to trade and getting lost
               between Crypto Card and the wallet. It now renders once, in
@@ -76,6 +76,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         {LINKS.map(l=><Fragment key={l.to}><Link to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} style={{...styles.mobileLink,...(active===l.to?styles.linkActive:{})}}>{l.label}</Link>{l.to==='/trade'&&<Link to="/trade?market=cfd" style={{...styles.mobileLink,paddingLeft:20,fontSize:13}}>{t('trade.cfdTab')}</Link>}</Fragment>)}
         <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{t('nav.card')}</Link>
         <Link to="/otc" style={{...styles.mobileLink,...(active==='/otc'?styles.linkActive:{})}}>{t('nav.otc')}</Link>
+        <Link to="/trading-bots" style={{...styles.mobileLink,...styles.cardLink,...(active==='/trading-bots'?styles.linkActive:{})}}><Bot size={16} aria-hidden="true"/>Торговые боты</Link>
         {isAdmin&&<Link to="/admin" style={{...styles.mobileLink,...styles.adminBadge,...(active==='/admin'?styles.adminBadgeActive:{})}}><Landmark size={14}/>{t('nav.admin')}</Link>}
         <div style={styles.mobileDivider}/><Link to="/settings" style={{...styles.mobileLink,...styles.cardLink,...(active==='/settings'?styles.linkActive:{})}}><UserRound size={15}/>{t('nav.profile')}</Link>
         {rightExtra&&<div style={styles.mobileRightExtra}>{rightExtra}</div>}<div style={styles.mobileLangRow}><LanguageSwitcher/></div><button onClick={handleLogout} style={{...styles.logoutBtn,width:'100%'}}><LogOut size={14}/>{t('nav.logout')}</button>

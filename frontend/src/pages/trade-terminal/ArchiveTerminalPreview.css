@@ -15,7 +15,7 @@
  * The composition below — the grid, the track map, the areas — stays here,
  * because it is written against this terminal's DOM and belongs to it alone.
  */
-#archive-terminal-preview .global-header { background:var(--h-bg-1); --bg:var(--h-bg-1); height:48px; min-height:48px; padding-inline:20px; border-bottom:1px solid var(--h-border); }
+#archive-terminal-preview .global-header { background:var(--h-bg-1); --bg:var(--h-bg-1); height:var(--exchange-header-height); min-height:var(--exchange-header-height); padding-inline:20px; border-bottom:1px solid var(--h-border); }
 #archive-terminal-preview .header-brand { color:#f1f5f9; }
 #archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:600; }
 #archive-terminal-preview .terminal {
