@@ -23,29 +23,6 @@ function parseTickerPayload(value:unknown):CfdTickerRow[]|null{
   return value.length>0&&rows.length===0?null:ageCfdTickerRows(rows);
 }
 
-function needsFallback(rows:CfdTickerRow[]):boolean{
-  return rows.some(row=>row.price===null||row.changePercent24h===undefined);
-}
-
-function fillMissingQuotes(primary:CfdTickerRow[],fallback:CfdTickerRow[]):CfdTickerRow[]{
-  const alternatives=new Map(fallback.map(row=>[row.symbol,row]));
-  return primary.map(row=>{
-    const alternative=alternatives.get(row.symbol);
-    if(!alternative)return row;
-    const fillPrice=row.price===null&&alternative.price!==null;
-    const fillChange=row.changePercent24h===undefined&&alternative.changePercent24h!==undefined;
-    if(!fillPrice&&!fillChange)return row;
-    if(fillPrice){
-      // When the quote itself comes from the fallback, carry its provenance,
-      // freshness and market-state fields too; execution remains impossible.
-      return{...row,...alternative,symbol:row.symbol,
-        changePercent24h:row.changePercent24h??alternative.changePercent24h,
-        displayOnly:true,executionAllowed:false};
-    }
-    return{...row,changePercent24h:alternative.changePercent24h,displayOnly:true,executionAllowed:false};
-  });
-}
-
 export function useCfdTickers(enabled = true){
   const[tickers,setTickers]=useState<CfdTickerRow[]>([]),[configured,setConfigured]=useState(true),[loadError,setLoadError]=useState(false);
   const reloadRef=useRef<()=>void>(()=>{});
@@ -58,46 +35,12 @@ export function useCfdTickers(enabled = true){
       if(cancelled||document.hidden||inFlight)return;
       inFlight=true;lastAttempt=Date.now();let delay=POLL_MS;
       try{
-        const fallbackEndpoint=`${API_BASE.replace(/\/$/,'')}/cfd/display/tickers`;
-        let endpoint=production()?`${MARKET_EDGE_BASE}/cfd/display/tickers`:fallbackEndpoint;
-        let res:Awaited<ReturnType<typeof api.getCfdTickers>>;
-        try{
-          res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(endpoint,SLOW_DISPLAY_REFRESH_MS);
-        }catch(error){
-          // Public edge is the normal production path. Render is a bounded
-          // display-only fallback, used only when the edge/DNS/provider path
-          // is unavailable; a successful fallback is cached for the same 6h.
-          if(!production())throw error;
-          endpoint=fallbackEndpoint;
-          res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(endpoint,SLOW_DISPLAY_REFRESH_MS);
-        }
+        const endpoint=production()?MARKET_EDGE_BASE+'/cfd/display/tickers':`${API_BASE.replace(/\/$/,'')}/cfd/display/tickers`;
+        const res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(endpoint,SLOW_DISPLAY_REFRESH_MS);
         if(cancelled)return;
-        let rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
+        const rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
         if(rows===null)throw new Error('Invalid CFD snapshot');
         delay=displayRefreshDelay(endpoint,SLOW_DISPLAY_REFRESH_MS);
-
-        // A successful edge response can still be PARTIAL: BiQuote may omit
-        // some metals, oil or FX quotes while other rows are valid. In that
-        // case do one bounded read from the existing Render multi-source
-        // display alias and fill only fields the edge did not provide.
-        // Existing edge prices always win; no financial/execution route is used.
-        if(production()&&endpoint!==fallbackEndpoint&&needsFallback(rows)){
-          try{
-            const fallback=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(fallbackEndpoint,SLOW_DISPLAY_REFRESH_MS);
-            if(cancelled)return;
-            const fallbackRows=fallback&&typeof fallback==='object'?parseTickerPayload(fallback.tickers):null;
-            if(fallbackRows!==null){
-              rows=fillMissingQuotes(rows,fallbackRows);
-              delay=Math.min(delay,displayRefreshDelay(fallbackEndpoint,SLOW_DISPLAY_REFRESH_MS));
-              if(typeof fallback.configured==='boolean')setConfigured(fallback.configured);
-            }
-          }catch{
-            // Keep the valid edge rows visible. The shared display-cache
-            // failure cooldown is one minute, so retry the missing rows then.
-            delay=Math.min(delay,60_000);
-          }
-        }
-
         setLoadError(false);if(typeof res.configured==='boolean')setConfigured(res.configured);
         setTickers(rows.map(row=>({...row,status:row.price===null?'unavailable':row.marketClosed?'market_closed':'sampled',displayOnly:true,executionAllowed:false})));
       }catch{if(!cancelled){setLoadError(true);setTickers(old=>old.map(row=>({...row,status:'stale',stale:true})));}delay=60_000;}
