@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Bot, Menu, X } from 'lucide-react';
 import { api, getToken } from '../../lib/api';
 import { Key, useLanguage } from '../../lib/i18n';
 import { Logo } from '../../components/Logo';
@@ -52,7 +52,7 @@ export function HomeHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/6 bg-[#1a1b20]" style={{fontFamily:'Arial, Helvetica, sans-serif',background:'#1a1b20'}}>
-      <div className="mx-auto flex h-[58px] w-full max-w-[1460px] items-center gap-6 px-6">
+      <div className="mx-auto flex h-[58px] min-[1025px]:h-[68px] w-full max-w-[1460px] items-center gap-6 px-6">
         <Link to="/" className="shrink-0" aria-label="VOLTEX">
           <Logo />
         </Link>
@@ -67,7 +67,7 @@ export function HomeHeader() {
               {t(l.labelKey)}
             </Link>
           ))}
-          <Link to="/trading-bots" className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white">Торговые боты</Link>
+          <Link to="/trading-bots" className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"><Bot size={16} aria-hidden="true"/>Торговые боты</Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -136,7 +136,7 @@ export function HomeHeader() {
                 {t(l.labelKey)}
               </Link>
             ))}
-            <Link to="/trading-bots" onClick={() => setOpen(false)} className="whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white">Торговые боты</Link>
+            <Link to="/trading-bots" onClick={() => setOpen(false)} className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white"><Bot size={16} aria-hidden="true"/>Торговые боты</Link>
           </div>
         </nav>
       )}

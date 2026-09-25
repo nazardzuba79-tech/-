@@ -203,6 +203,7 @@ body {
    never shrink. That is what previously forced this whole block into an
    !important war and pushed the burger up to 1160px. */
 .global-header {
+  --exchange-header-height: 68px;
   --h-bg-1: #1a1b20;
   --h-bg-2: #1a1b20;
   --h-border: #2c2e35;
@@ -218,7 +219,7 @@ body {
   --h-admin: #8b8af6;
   --h-positive: #4cae7e;
   --h-negative: #e0747b;
-  height: 64px;
+  height: var(--exchange-header-height);
   display: flex;
   align-items: stretch;
   justify-content: space-between;
@@ -655,7 +656,7 @@ body {
 .nav-mobile-menu {
   display: none;
   position: absolute;
-  top: 64px;
+  top: 68px;
   left: 0;
   right: 0;
   flex-direction: column;
@@ -664,7 +665,7 @@ body {
   background: #0c1018;
   border-bottom: 1px solid var(--h-border);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
-  max-height: calc(100vh - 64px);
+  max-height: calc(100vh - 68px);
   overflow-y: auto;
   z-index: 21;
 }
@@ -684,7 +685,7 @@ body {
   flex-shrink: 0;
   overflow: hidden;
   position: sticky;
-  top: 64px;
+  top: 68px;
   z-index: 19;
   background: linear-gradient(180deg, #0a0e15, #080b11);
   border-bottom: 1px solid #161d27;
@@ -2270,7 +2271,7 @@ a:hover > .nav-card-icon {
   .trade-terminal.terminal-studio .global-header .brand-separator { display: none; }
   .trade-terminal.terminal-studio .global-header .mobile-menu { display: grid; }
   .trade-terminal.terminal-studio .nav-mobile-menu.open { display: flex; }
-  .trade-terminal.terminal-studio .nav-mobile-menu { top:48px; max-height:calc(100dvh - 48px); }
+  .trade-terminal.terminal-studio .nav-mobile-menu { top:var(--exchange-header-height); max-height:calc(100dvh - var(--exchange-header-height)); }
 }
 @media (max-width: 1024px) {
   .trade-terminal.terminal-studio .nav-mobile-menu { top:56px; max-height:calc(100dvh - 56px); }
@@ -2290,7 +2291,7 @@ a:hover > .nav-card-icon {
 :is(.futures-reference,.market-reference) > .global-header .deposit-button { box-shadow:none; }
 
 /* Measured Bybit typography; keep shell ownership here, not in a lazy route. */
-:is(.futures-reference,.market-reference) > .global-header { font-family:Arial, Helvetica, sans-serif; height:48px; padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#1a1b20; }
+:is(.futures-reference,.market-reference) > .global-header { font-family:Arial, Helvetica, sans-serif; height:var(--exchange-header-height); padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#1a1b20; }
 :is(.futures-reference,.market-reference) > .global-header::before { content:none; }
 /* THE TERMINAL'S OWN NAV RULE IS THE ONE THAT WINS, so the legibility fix
    has to land here too — the base `.nav-item` never applies on this page.
@@ -2480,4 +2481,11 @@ a:hover > .nav-card-icon {
   .global-header .main-nav { gap:0; }
   .global-header .main-nav .nav-item { padding-inline:6px; }
   .global-header .brand-separator { margin-inline:12px; }
+}
+
+/* Bot Studio desktop header: match the approved 68px face; retain mobile density. */
+@media (max-width: 1024px) {
+  .global-header { --exchange-header-height:56px; height:56px; }
+  .global-header .nav-mobile-menu { top:56px; max-height:calc(100dvh - 56px); }
+  .market-ticker { top:56px; }
 }
