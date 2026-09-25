@@ -1053,6 +1053,7 @@ export const HI: Record<Key, string> = {
   'futures.estLiqPrice': 'अनुमानित लिक्विडेशन प्राइस',
   'futures.estFees': 'अनुमानित शुल्क (ओपन + क्लोज)',
   'futures.maxPosition': 'अधिकतम पोजीशन',
+  'futures.positionLimits': 'पोज़िशन सीमाएँ',
   'futures.approxEntry': 'अनुमानित एंट्री प्राइस',
   'futures.tpslAtEntry': 'टेक प्रॉफिट / स्टॉप लॉस',
   'futures.tpslReduceOnlyOff': 'रिड्यूस-ओनली ऑर्डर पोजीशन बंद करता है। सुरक्षा पोजीशन पर ही लगाई जाती है।',

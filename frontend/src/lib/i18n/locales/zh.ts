@@ -1077,6 +1077,7 @@ export const ZH: Record<Key, string> = {
   'futures.estLiqPrice': '预计强平价格',
   'futures.estFees': '预估手续费（开仓＋平仓）',
   'futures.maxPosition': '最大仓位',
+  'futures.positionLimits': '仓位限额',
   'futures.approxEntry': '预估开仓价',
   'futures.tpslAtEntry': '止盈 / 止损',
   'futures.tpslReduceOnlyOff': '只减仓订单用于平仓，保护需直接设在仓位上。',

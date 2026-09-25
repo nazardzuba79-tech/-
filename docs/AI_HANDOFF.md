@@ -3788,6 +3788,15 @@ withdrawal was placed.
 
 PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow path triggers; normalized dependency paths in copyTradingCiCoverage.test.ts for Windows. Local coverage guard: 2/2 PASS. No runtime behavior changes.
 
+## Codex — 2026-09-25 — Approved Futures order panel refinement
+
+- Implementation: b7fc070a7543bfae15ccada79e96e9506c264b76, based on published main f615ff394a765a478ee1bb8b31e4ded1ae035d4d. Owner approved application/publication and explicitly requested removing the Maker/Taker strip.
+- Files: FuturesOrderForm.tsx, FuturesPage.tsx, scoped FuturesOrderPanelRefinement.css, seven locale files, dedicated browser harness and related CI workflows.
+- Larger equal-height price/quantity fields (60px), desktop CTA 50px (existing mobile 52px preserved), +5px section gaps, quieter service labels, shield TP/SL disclosure and compact position-limits details. Removed FuturesTerminalStatus mount only; actual fee estimates/calculations remain unchanged.
+- Frontend TypeScript/Vite build PASS; 91 targeted tests / 5 suites PASS. Existing visual-polish browser PASS at 1920/1664/1440/1366/390. New native-fixture browser PASS at 1920/1440/390/320: MARKET/LIMIT geometry, protection value retention and reduce-only exclusion, position limits, no fee strip, no horizontal overflow or covered CTA.
+- Local root build encountered shared dependency issues (stale Prisma client and missing ws types); emitted fixture code ran successfully. Clean dependency backend build is delegated to existing required CI, not claimed as locally passing.
+- Preserved native/exchange submission, auth, price/quantity/fee math, order book, position actions and mobile sticky CTA. No production data or configuration changes. Awaiting CI/publication.
+
 ### 2026-09-25 — Claude — Trading bots: the modal's action reads «Копировать»
 
 - Base fresh main `f615ff39` (after Codex's #264–#267 bots navigation and icon work). Branch `claude/bots-copy-label`. Frontend only; no API, Render or Neon change.
@@ -3797,3 +3806,6 @@ PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow pat
 - Checks run: frontend `tsc` clean; `vite build` OK; `tradingBotsPresentation.test.ts` 23/23; `qa-trading-bots.cjs` locally — all 199 checks pass at 320–1920px (minimum enforced, click shows the local plan line, Escape/focus, favourites).
 - Preserved: Codex's navigation slot, header dimensions and robot icon; the catalogue, statistics and minimum rules.
 - Unresolved: the button still only confirms locally, as before — copying a bot into a real running strategy does not exist in the product yet.
+
+PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved markup/removal and excluded the single new positionLimits locale key by name while preserving every older dictionary byte. All 285 tests in the nine pair/header guard suites now pass locally. Synced #268 bot button label unchanged.
+

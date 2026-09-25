@@ -216,7 +216,11 @@ test.each([
     // Visible cadence stays 5s; order payloads and sizing math are unchanged.
     // futuresOrderPanel exercises hidden mount/hour, resume, slow/failing reads,
     // symbol changes and cleanup against the actual component.
-    "f03c1a3d39296912c56fb819697b068d49ec57ce559ff898506201e348c9c966"
+    // Owner-approved 2026-09-25: shield/caption/chevron TP/SL markup,
+    // visible labels around unchanged inputs, max-position details wrapper.
+    // Audited diff has no calculation, state or submission changes. The
+    // native browser regression checks retention and reduce-only exclusion.
+    "860d33151713316cc8f3e0a795e14a4ec31500803a7ba2702e73af9641d28cba"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -322,7 +326,8 @@ test.each([
     // visibility return refreshes immediately. Execution/price/account
     // freshness paths are separate and unchanged; marketUniverseScale pins
     // the new cadence and visibility contract explicitly.
-    "8bb07efb31e04933749330acd1b6daf7a7e8b9211333bc677c0efc6c5b9ae869"
+    // Owner-approved removal of the Maker/Taker display component and import.
+    "0a9a45b74cf02e34404a6f4e6061e073ebbd7b4e4fc0a1d05414d89e9226f328"
   ],
   [
     "components/FuturesPairList.tsx",

@@ -1053,6 +1053,7 @@ export const JA: Record<Key, string> = {
   'futures.estLiqPrice': '推定清算価格',
   'futures.estFees': '推定手数料（新規＋決済）',
   'futures.maxPosition': '最大ポジション',
+  'futures.positionLimits': 'ポジション上限',
   'futures.approxEntry': '推定エントリー価格',
   'futures.tpslAtEntry': 'テイクプロフィット / ストップロス',
   'futures.tpslReduceOnlyOff': 'リデュースオンリー注文はポジションを決済します。保護はポジション側に設定します。',

@@ -1053,6 +1053,7 @@ export const ES: Record<Key, string> = {
   'futures.estLiqPrice': 'Precio de liquidación estimado',
   'futures.estFees': 'Comisiones est. (abrir + cerrar)',
   'futures.maxPosition': 'Posición máxima',
+  'futures.positionLimits': 'Límites de posición',
   'futures.approxEntry': 'Precio de entrada aprox.',
   'futures.tpslAtEntry': 'Take Profit / Stop Loss',
   'futures.tpslReduceOnlyOff': 'Una orden de solo reducción cierra una posición. La protección se establece sobre la posición.',
