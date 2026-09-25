@@ -43,7 +43,7 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
   // hidden tabs make neither request until visibility returns.
   expect(voltexLoop).toContain('setInterval(loadMark, 4000)');
   expect(voltexLoop).toContain('setInterval(loadFunding, 60_000)');
-  expect(voltexLoop).toContain('if (document.hidden) return');
+  expect(voltexLoop).toContain("typeof document !== 'undefined' && document.hidden");
   expect(voltexLoop).toContain("document.addEventListener('visibilitychange', visible)");
   // And no external venue's data may enter this loop or substitute for
   // one of its figures.
@@ -79,7 +79,7 @@ test('external derivatives reference polling sleeps hidden tabs and is one-minut
   const effect = source.slice(source.indexOf('  useEffect(() => {', first + 1), source.indexOf('  }, [baseAsset]);'));
   expect(effect).toContain('getFuturesMarketStats(baseAsset)');
   expect(effect).toContain('setInterval(refresh, 60_000)');
-  expect(effect).toContain('if (document.hidden) return');
+  expect(effect).toContain("typeof document !== 'undefined' && document.hidden");
   expect(effect).toContain("document.addEventListener('visibilitychange', visible)");
 });
 
