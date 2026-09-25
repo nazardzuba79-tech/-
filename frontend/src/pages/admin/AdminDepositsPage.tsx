@@ -169,7 +169,7 @@ export function AdminDepositsPage() {
         )}
         {incomingError && <p style={{ padding: 14, color: 'var(--sell)', fontSize: 12 }}>Не удалось загрузить входящие переводы.</p>}
         {failedChains.length > 0 && <p role="alert" style={styles.errorBox}>Входящие переводы загружены не полностью ({failedChains.join(', ')}). Сохранённые переводы доступны в истории. Повторите проверку позже.</p>}
-        <button onClick={reloadIncoming} disabled={incomingLoading} style={styles.neutralBtn}>Обновить входящие</button>
+        <button onClick={() => reloadIncoming()} disabled={incomingLoading} style={styles.neutralBtn}>Обновить входящие</button>
         {!incomingLoaded && <Skeleton height={80} />}
       </div>
 
