@@ -55,6 +55,8 @@ const getFuturesPositions = api.getFuturesPositions as jest.Mock;
 const getMyFuturesOrders = api.getMyFuturesOrders as jest.Mock;
 const getFuturesPositionHistory = api.getFuturesPositionHistory as jest.Mock;
 
+let visibilityDocument: EventTarget & { hidden: boolean };
+
 const BALANCES_A = [{ asset: 'USDT', available: '10000.00000000', locked: '250.00000000' }];
 const BALANCES_B = [{ asset: 'USDT', available: '333.00000000', locked: '0' }];
 const POSITIONS_A = [{
@@ -81,6 +83,12 @@ async function flush(): Promise<void> {
 
 beforeEach(() => {
   jest.useFakeTimers();
+  visibilityDocument = Object.assign(new EventTarget(), { hidden: false });
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    writable: true,
+    value: visibilityDocument,
+  });
   futuresAccountStore._resetForTests();
   setToken('token-a');
   getFuturesBalances.mockReset().mockResolvedValue(BALANCES_A);
@@ -91,6 +99,7 @@ beforeEach(() => {
 
 afterEach(() => {
   futuresAccountStore._resetForTests();
+  delete (globalThis as typeof globalThis & { document?: unknown }).document;
   jest.useRealTimers();
 });
 
@@ -144,9 +153,6 @@ describe('one timer and one request per resource', () => {
 
 
   test('a hidden Futures tab has ZERO account polling and refreshes immediately on return', async () => {
-    const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden');
-    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-
     const off = futuresAccountStore.subscribe(() => {}, { balances: 5000, positions: 4000, orders: 5000 });
     await flush();
     expect(futuresAccountStore._timerCount).toBe(3);
@@ -155,8 +161,8 @@ describe('one timer and one request per resource', () => {
     getFuturesPositions.mockClear();
     getMyFuturesOrders.mockClear();
 
-    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
-    document.dispatchEvent(new Event('visibilitychange'));
+    visibilityDocument.hidden = true;
+    visibilityDocument.dispatchEvent(new Event('visibilitychange'));
     expect(futuresAccountStore._timerCount).toBe(0);
 
     jest.advanceTimersByTime(60 * 60_000);
@@ -165,8 +171,8 @@ describe('one timer and one request per resource', () => {
     expect(getFuturesPositions).not.toHaveBeenCalled();
     expect(getMyFuturesOrders).not.toHaveBeenCalled();
 
-    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-    document.dispatchEvent(new Event('visibilitychange'));
+    visibilityDocument.hidden = false;
+    visibilityDocument.dispatchEvent(new Event('visibilitychange'));
     await flush();
 
     // Returning to the tab gets one fresh snapshot immediately, then normal
@@ -177,13 +183,10 @@ describe('one timer and one request per resource', () => {
     expect(futuresAccountStore._timerCount).toBe(3);
 
     off();
-    if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden);
-    else delete (document as { hidden?: boolean }).hidden;
   });
 
   test('mounting Futures while already hidden sends no account requests until visible', async () => {
-    const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden');
-    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    visibilityDocument.hidden = true;
 
     const off = futuresAccountStore.subscribe(() => {}, { balances: 5000, positions: 4000, orders: 5000 });
     await flush();
@@ -198,8 +201,8 @@ describe('one timer and one request per resource', () => {
     expect(getFuturesPositions).not.toHaveBeenCalled();
     expect(getMyFuturesOrders).not.toHaveBeenCalled();
 
-    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-    document.dispatchEvent(new Event('visibilitychange'));
+    visibilityDocument.hidden = false;
+    visibilityDocument.dispatchEvent(new Event('visibilitychange'));
     await flush();
 
     expect(getFuturesBalances).toHaveBeenCalledTimes(1);
@@ -208,8 +211,6 @@ describe('one timer and one request per resource', () => {
     expect(futuresAccountStore._timerCount).toBe(3);
 
     off();
-    if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden);
-    else delete (document as { hidden?: boolean }).hidden;
   });
 
   test('a subscriber mounting mid-flight JOINS the request instead of issuing its own', async () => {
