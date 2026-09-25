@@ -65,14 +65,19 @@ test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD'
 test('all thirteen canonical display instruments render without fabricated extras',()=>{const list=mount('components/CfdInstrumentList.tsx');const tree=list.render({symbol:'XAUUSD',tickers:rows,configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()});expect(nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option'))).toHaveLength(13);for(const row of rows)expect(text(tree)).toContain(row.symbol);});
 
 test('CFD instrument icons are premium inline SVG with zero remote asset requests',()=>{
- const icon=read('components/CfdInstrumentIcon.tsx'),list=read('components/CfdInstrumentList.tsx'),css=read('pages/trade-terminal/CfdTerminal.css');
+ const icon=read('components/CfdInstrumentIcon.tsx'),iconCss=read('components/CfdInstrumentIcon.css');
+ const list=read('components/CfdInstrumentList.tsx'),markets=read('components/CfdMarketsSection.tsx');
  expect(icon).toContain('<svg');expect(icon).not.toMatch(/<img\b|https?:\/\/|src=/);
+ expect(icon).toContain("import './CfdInstrumentIcon.css'");
  expect(list).toContain("import { CfdInstrumentIcon } from './CfdInstrumentIcon'");
  expect(list).toContain('<CfdInstrumentIcon symbol={tk.symbol}/>');
+ expect(markets).toContain("import { CfdInstrumentIcon } from './CfdInstrumentIcon'");
+ expect(markets).toContain('<CfdInstrumentIcon symbol={tk.symbol} compact/>');
  expect(list).not.toContain('CFD_ICON_BY_SYMBOL');
  for(const symbol of ['XAUUSD','XAGUSD','XPTUSD','XPDUSD','WTIUSD','XBRUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD'])
-   expect(css).toContain(`.cfd-instrumentIcon-${symbol}`);
- expect(css).toContain('radial-gradient');expect(css).toContain('linear-gradient');
+   expect(iconCss).toContain(`.cfd-instrumentIcon-${symbol}`);
+ expect(iconCss).toContain('radial-gradient');expect(iconCss).toContain('linear-gradient');
+ expect(iconCss).toContain('.cfd-instrumentIcon--compact');
 });
 
 test('visible CFD right panel is a functional local practice order ticket',()=>{
