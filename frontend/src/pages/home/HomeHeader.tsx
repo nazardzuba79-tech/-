@@ -1,6 +1,7 @@
+import { TradingBotIcon } from '../../components/TradingBotIcon';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bot, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { api, getToken } from '../../lib/api';
 import { Key, useLanguage } from '../../lib/i18n';
 import { Logo } from '../../components/Logo';
@@ -67,7 +68,7 @@ export function HomeHeader() {
               {t(l.labelKey)}
             </Link>
           ))}
-          <Link to="/trading-bots" className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"><Bot size={16} aria-hidden="true"/>Торговые боты</Link>
+          <Link to="/trading-bots" className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"><TradingBotIcon/>Торговые боты</Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -136,7 +137,7 @@ export function HomeHeader() {
                 {t(l.labelKey)}
               </Link>
             ))}
-            <Link to="/trading-bots" onClick={() => setOpen(false)} className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white"><Bot size={16} aria-hidden="true"/>Торговые боты</Link>
+            <Link to="/trading-bots" onClick={() => setOpen(false)} className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white"><TradingBotIcon/>Торговые боты</Link>
           </div>
         </nav>
       )}

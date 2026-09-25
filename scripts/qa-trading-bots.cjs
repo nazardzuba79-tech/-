@@ -104,12 +104,12 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       if(await page.locator('.nav-burger').isVisible()) {
         await page.locator('.nav-burger').click();
         check(width+': mobile bots link',await page.locator('.nav-mobile-menu a[href="/trading-bots"]').isVisible());
-        check(width+': mobile robot icon',await page.locator('.nav-mobile-menu a[href="/trading-bots"] svg.lucide-bot').count()===1);
+        check(width+': mobile robot icon',await page.locator('.nav-mobile-menu a[href="/trading-bots"] svg.trading-bot-icon').count()===1);
         check(width+': bots follows OTC in mobile menu',await page.locator('.nav-mobile-menu a[href="/otc"] + a[href="/trading-bots"]').count()===1);
       } else if(width>=1440) {
         const botsLink=page.locator('.main-nav > a[href="/trading-bots"]');
         check(width+': top-level active bots tab',await botsLink.isVisible()&&await botsLink.evaluate(el=>el.classList.contains('nav-active')));
-        check(width+': robot icon',await botsLink.locator('svg.lucide-bot').count()===1);
+        check(width+': robot icon',await botsLink.locator('svg.trading-bot-icon').count()===1);
         check(width+': bots is last product',await page.locator('.main-nav > a').last().getAttribute('href')==='/trading-bots');
         await page.locator('.main-nav .nav-item-wrap > a').focus();
         check(width+': keyboard trading menu',await page.locator('.nav-dropdown a[href="/trade"]').isVisible());
