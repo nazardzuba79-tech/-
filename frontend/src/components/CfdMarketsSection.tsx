@@ -5,7 +5,7 @@ import { useLanguage, localeOf } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent, parseChangePercentOrNull } from '../lib/priceChange';
 import { useCfdTickers } from '../lib/useCfdTickers';
-import { CFD_ICON_BY_SYMBOL } from './CfdInstrumentList';
+import { CfdInstrumentIcon } from './CfdInstrumentIcon';
 
 const OVERVIEW_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'TRX/USDT', 'DOGE/USDT'];
 const TICKER_STRIP_PAIRS = [...OVERVIEW_PAIRS];
@@ -92,7 +92,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
             const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
             return (
               <div key={tk.symbol} style={styles.tickerStripItem}>
-                <span style={{ fontWeight: 700 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'} {tk.symbol}</span>
+                <span style={{ display:'inline-flex',alignItems:'center',gap:7,fontWeight:700 }}><CfdInstrumentIcon symbol={tk.symbol} compact/>{tk.symbol}</span>
                 <span className="mono" style={{ color: 'var(--text-secondary)' }}>
                   {tk.price ?? '—'}
                 </span>
@@ -157,7 +157,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                   const changeText = change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
                   return (
                     <Link key={tk.symbol} to={`/trade?market=cfd&symbol=${encodeURIComponent(tk.symbol)}`} className="market-dashboard__row market-dashboard__cfd-row">
-                      <CfdMark symbol={tk.symbol} />
+                      <CfdInstrumentIcon symbol={tk.symbol}/>
                       <span className="market-dashboard__row-label">
                         <strong>{tk.symbol}</strong>
                         <small>{tk.name}</small>
@@ -226,7 +226,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                   const changeText = change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
                   return (
                     <Link key={tk.symbol} to={`/trade?market=cfd&symbol=${encodeURIComponent(tk.symbol)}`} className="market-dashboard__row market-dashboard__popular-row">
-                      <CfdMark symbol={tk.symbol} />
+                      <CfdInstrumentIcon symbol={tk.symbol}/>
                       <span className="market-dashboard__row-label market-dashboard__popular-label">
                         <strong>{tk.symbol}</strong>
                         <small>{tk.name}</small>
@@ -285,24 +285,6 @@ function PerformanceChart({ points }: { points: number[] }) {
       <polyline className="market-dashboard__chart-glow" points={coords.join(' ')} />
       <polyline className="market-dashboard__chart-line" points={coords.join(' ')} />
     </svg>
-  );
-}
-
-function CfdMark({ symbol }: { symbol: string }) {
-  const upper = symbol.toUpperCase();
-  const mark = upper.startsWith('XAU')
-    ? { glyph: '◆', color: '#e4a900' }
-    : upper.startsWith('EUR')
-      ? { glyph: '€', color: '#1749a8' }
-      : upper.startsWith('GBP')
-        ? { glyph: '£', color: '#8b2635' }
-        : upper.includes('JPY')
-          ? { glyph: '¥', color: '#b8303a' }
-          : { glyph: '$', color: '#22262c' };
-  return (
-    <span className="market-dashboard__coin" style={{ background: mark.color }} aria-hidden="true">
-      {mark.glyph}
-    </span>
   );
 }
 
