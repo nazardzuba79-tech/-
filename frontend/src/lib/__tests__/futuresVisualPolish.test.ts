@@ -32,6 +32,11 @@ const rule = (selector: string) => {
   if (!match) throw new Error(`no rule for ${selector}`);
   return match[1];
 };
+/** Every declaration block for an exact selector, joined — for a selector the sheet declares more than once. */
+const everyRule = (selector: string) => {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return [...CSS.matchAll(new RegExp(`(?:^|\\n)${escaped} \\{([^}]*)\\}`, 'g'))].map(m => m[1]).join(';');
+};
 
 describe('1. what the brief said NOT to copy', () => {
   it('keeps the current order types — no duplicated «Лимитный», nothing added or renamed', () => {
@@ -215,13 +220,13 @@ describe('4. this is polish, not a redesign — and not a mobile redesign', () =
 describe('5. text contrast at the reference level', () => {
   it('draws figures and headings in white, and leaves the captions grey', () => {
     // Owner, 2026-09-24: «шрифт більш контрастний, всюди, де це є у байбіта».
-    expect(rule('#archive-terminal-preview')).toContain('--text-primary:#ffffff');
+    expect(everyRule('#archive-terminal-preview')).toContain('--text-primary:#ffffff');
     expect(rule('#archive-terminal-preview :is(.reference-order-heading,.fcd-title)')).toContain('color:var(--text-primary)');
     expect(rule('#archive-terminal-preview .rb-row > span:not(:first-of-type)')).toContain('color:var(--text-primary)');
     expect(CSS).not.toMatch(/#archive-terminal-preview \{[^}]*--archive-label:#fff/);
   });
 
-  it('gives units their figure\'s colour and size, and LONG / SHORT the reference colours at full strength', () => {
+  it('gives units their figure\'s colour and size (the margin\'s «USDT» excepted, § 6), and LONG / SHORT the reference colours at full strength', () => {
     const units = CSS.match(/#archive-terminal-preview :is\(\.futures-position-unit,\.futures-account-stat \.fa-unit,\.fcd-unit\) \{([^}]*)\}/);
     expect(units).not.toBeNull();
     expect(units![1]).toContain('color:inherit');
@@ -240,5 +245,48 @@ describe('5. text contrast at the reference level', () => {
   it('brightens the terminal chart axis to the reference tone', () => {
     const chart = read('components/PriceChart.tsx');
     expect(chart).toContain("textColor: terminal ? '#f3f4f6' : '#a3adba'");
+  });
+});
+
+describe('6. the bottom panel as on the reference: darker, seamless, quiet captions', () => {
+  // Owner, 2026-09-24: «чуть чорнішою… як у байбіт», «безшовну», «і ці
+  // перегородки у байбіт не видні», «usdt сірим в точності як у байбіт».
+  // Approved on the live preview before it came to the exchange.
+  it('paints the whole panel one darker surface, with a near-black seam above it', () => {
+    const panel = rule('#archive-terminal-preview .bottom-panel');
+    expect(panel).toContain('--panel:#101014');
+    expect(panel).toContain('border-top:1px solid #08090c');
+    // The dialogs the rows open float over the whole terminal and keep its surface.
+    expect(everyRule('#archive-terminal-preview')).toContain('--terminal-panel:var(--panel)');
+    expect(rule('#archive-terminal-preview .bottom-panel dialog')).toContain('--panel:var(--terminal-panel)');
+    expect(rule('#archive-terminal-preview .futures-position-row:hover td')).toContain('--pos-cell-bg:#1a1b21');
+  });
+
+  it('draws no line inside it: not under the tabs, not between rows, not beside «Закрыть как»', () => {
+    expect(rule('#archive-terminal-preview .bottom-panel .terminal-account-header')).toContain('border-bottom-color:transparent');
+    // The 1px stays, transparent, so the 64px row does not move.
+    expect(CSS).toContain('#archive-terminal-preview .futures-positions-table tbody td { border-top:1px solid transparent !important; }');
+    expect(CSS).not.toContain('border-top:1px solid var(--panel-alt) !important');
+    expect(CSS).not.toMatch(/\[data-hidden-end=true\] \.futures-positions-table :is\(th,td\):last-child \{[^}]*box-shadow/);
+    // The figures still fade out under the pinned column.
+    expect(CSS).toMatch(/\[data-hidden-end=true\] \.futures-positions-table :is\(th,td\):last-child::before \{[^}]*linear-gradient/);
+  });
+
+  it('keeps tab titles and headings the reference grey, «Все рынки» bright', () => {
+    expect(rule('#archive-terminal-preview .bottom-tabs .bottom-tab')).toContain('color:#71757a');
+    expect(rule('#archive-terminal-preview .bottom-tabs .bottom-tab.active')).toContain('color:#fff');
+    expect(rule('#archive-terminal-preview .futures-positions-table th')).toContain('color:#71757a !important');
+    expect(rule('#archive-terminal-preview .archive-pair-filter')).toContain('color:#eaecef');
+  });
+
+  it('draws the margin\'s «USDT» grey and smaller, the quantity\'s and P&L\'s units in their figure\'s colour', () => {
+    const quote = rule('#archive-terminal-preview .futures-positions-table td:not(.text-buy):not(.text-sell) .futures-position-unit');
+    expect(quote).toContain('color:#71757a');
+    expect(quote).toContain('font-size:.85em');
+    expect(quote).toContain('font-weight:400');
+    // The quantity cell is the one carrying the side colour — that is what the selector leaves out.
+    expect(read('components/FuturesPositionsPanel.tsx')).toContain("className={`mono ${p.side === 'LONG' ? 'text-buy' : 'text-sell'}`}");
+    // The later of the sheet's two ::after rules is the one that wins.
+    expect(everyRule('#archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized)[data-unit]::after').split(';').filter(d => /color:/.test(d)).pop()).toContain('color:inherit');
   });
 });
