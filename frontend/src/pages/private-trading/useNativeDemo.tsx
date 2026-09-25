@@ -13,6 +13,7 @@ import { useNativeHistory } from './useNativeHistory';
 const NATIVE_WARM_PREFIX='voltex:native-state:v2:';
 const NATIVE_WARM_MAX_AGE_MS=2*60_000;
 const NATIVE_WARM_MAX_BYTES=50_000;
+const NATIVE_ACCESS_POLL_MS=60_000;
 
 /** Scope browser warm state to the exact authenticated session. The token is
  * already stored by the app, but it is never copied into a cache key/value. */
@@ -109,20 +110,27 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     const message=privateErrorText(e);errorRef.current=message;setError(message);
   },[resetSession]);
   useEffect(()=>{alive.current=true;const controller=new AbortController();let cancelled=false;
-    async function check(){try{
-      if(!getToken()){resetSession();setBinding('ordinary');return;}
-      const a=await nativeDemoApi.access(controller.signal);
-      if(cancelled)return;
-      const owner=a.allowed===true&&a.nativeAvailable===true&&a.simulationOnly===true;
-      setAllowed(owner);
-      setBinding(current=>owner?'owner':current==='owner'?'owner':'ordinary');
-    }catch{
-      // Outage, not a verdict. Keep the last server transcript on screen but
-      // disable every write until access is confirmed again.
-      if(!cancelled)suspend();
-    }finally{if(!cancelled)setChecked(true);}}
-    void check();const timer=window.setInterval(check,15000),off=onSessionChange(()=>{resetSession();setBinding('unknown');setChecked(false);void check();});
-    return()=>{cancelled=true;alive.current=false;controller.abort();clearInterval(timer);off();};
+    async function check(){
+      if(document.hidden)return;
+      try{
+        if(!getToken()){resetSession();setBinding('ordinary');return;}
+        const a=await nativeDemoApi.access(controller.signal);
+        if(cancelled)return;
+        const owner=a.allowed===true&&a.nativeAvailable===true&&a.simulationOnly===true;
+        setAllowed(owner);
+        setBinding(current=>owner?'owner':current==='owner'?'owner':'ordinary');
+      }catch{
+        // Outage, not a verdict. Keep the last server transcript on screen but
+        // disable every write until access is confirmed again.
+        if(!cancelled)suspend();
+      }finally{if(!cancelled)setChecked(true);}
+    }
+    void check();
+    const timer=window.setInterval(()=>{void check();},NATIVE_ACCESS_POLL_MS);
+    const visible=()=>{if(!document.hidden)void check();};
+    document.addEventListener('visibilitychange',visible);
+    const off=onSessionChange(()=>{resetSession();setBinding('unknown');setChecked(false);void check();});
+    return()=>{cancelled=true;alive.current=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);off();};
   },[resetSession,suspend]);
   useEffect(()=>{if(!requested||!allowed)return;let cancelled=false;const controller=new AbortController();
     nativeDemoApi.activate(controller.signal).then(()=>nativeDemoApi.live(controller.signal)).then(s=>{if(!cancelled)commitState(s);}).catch(e=>{if(!cancelled)fail(e);});
