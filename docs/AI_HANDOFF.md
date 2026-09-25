@@ -3738,3 +3738,10 @@ withdrawal was placed.
 - Validation after rebase: TypeScript + Vite PASS, targeted Jest 77/77, local mocked browser 122/122; desktop/mobile widths 320/390/1024/1440/1920. Evidence in docs/qa/trading-bots.
 - Four pre-existing sharedHeaderStylesheetOwnership assertions remain failing on Windows; reproduced on clean base main, documented in QA README. No claim of a green full suite. Recommend separate path/inventory ownership cleanup.
 - Owner review required before merge/deploy; no Phase 2 or unrelated financial work.
+
+## Codex — 2026-09-25 — Bot modal copy follow-up
+
+- Follow-up to implementation 3894b7a9: shortened the repeated notice to «Демонстрационные данные» and plan status to «Запуск ботов пока недоступен».
+- Kept the model ROI labels, catalogue layout and financial behaviour unchanged. Did not fabricate an insufficient-balance error.
+- Files: TradingBotsPage.tsx and QA README. Vite build PASS; local browser confirmed both exact strings after opening Atlas and clicking the plan action.
+- Local review server rebuilt. No production changes or deployment. Existing baseline test caveat remains unchanged.

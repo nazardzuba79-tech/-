@@ -9,7 +9,7 @@ import './trading-bots/TradingBots.css';
 
 const usd = (n: number) => '$' + n.toLocaleString('en-US');
 const percent = (n: number) => n.toFixed(2) + '%';
-const MODEL_NOTICE = 'Модельные результаты. Не являются фактической или гарантированной доходностью.';
+const MODEL_NOTICE = 'Демонстрационные данные';
 const FAVORITES_KEY = 'voltex.bot-catalogue.favorites.v1';
 function loadFavorites(): string[] {
   try {
@@ -75,7 +75,7 @@ function BotModal({ bot, stats, onClose }: { bot: BotDefinition; stats: BotPrese
       <label htmlFor="vb-budget">Планируемая инвестиция</label><div className="vb-field"><input id="vb-budget" value={budget} onChange={e => { setBudget(e.target.value); setSaved(false); }} inputMode="decimal" aria-describedby="vb-budget-hint" aria-invalid={!valid}/><span>USD</span></div>
       <p id="vb-budget-hint" className="vb-budget-hint">Минимальная сумма — {usd(bot.minimum)}.</p>
       <button className="vb-modal-action" type="submit" disabled={!valid}>Посмотреть план</button>
-      {saved && <div className="vb-plan" role="status"><strong>{bot.name} · {usd(Number(budget))}</strong><p>Предварительный план. Запуск торговли пока недоступен, средства не списываются.</p></div>}
+      {saved && <div className="vb-plan" role="status"><strong>{bot.name} · {usd(Number(budget))}</strong><p>Запуск ботов пока недоступен.</p></div>}
     </form>
   </dialog>, document.body);
 }

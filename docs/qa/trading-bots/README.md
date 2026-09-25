@@ -2,7 +2,7 @@
 
 The seven bots are a presentation catalogue, not an execution service. Monthly
 figures are explicitly labelled **Модельная доходность**. The page and detail
-dialog state that these are not actual or guaranteed returns. No balance,
+dialog identify the figures as **Демонстрационные данные**. No balance,
 deposit, order, scheduler, database or backend implementation was changed.
 
 ## Behaviour
@@ -13,8 +13,8 @@ deposit, order, scheduler, database or backend implementation was changed.
   page updates at the boundary and also refreshes after focus/visibility changes.
 - Drawdowns and seven-day returns are computed from the same model curve.
 - Filter, sorting, local favourites, accessible native dialog and budget validation.
-- The detail action prepares a local plan; it clearly says trading is unavailable
-  and no funds are deducted.
+- The detail action prepares a local plan; it clearly says bot launch is unavailable.
+  No funds are deducted, and no balance error is fabricated.
 - Shared solid graphite header, preserved logo/actions/authentication. Bot entry
   in the Trading menu, mobile menu and homepage navigation.
 - Homepage uses its compact menu below 1440 px so the additional item fits.
