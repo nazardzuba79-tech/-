@@ -35,6 +35,17 @@ describe('Render free-tier bandwidth guardrails', () => {
     expect(source).toContain("document.removeEventListener('visibilitychange', onVisibility)");
   });
 
+  test('production CFD display stays on Cloudflare and never falls back to Render', () => {
+    const tickers = read('frontend/src/lib/useCfdTickers.ts');
+    const chart = read('frontend/src/components/CfdChart.tsx');
+    expect(tickers).toContain('MARKET_EDGE_BASE');
+    expect(tickers).not.toContain('fallbackEndpoint');
+    expect(tickers).not.toContain('fillMissingQuotes');
+    expect(chart).toContain('MARKET_EDGE_BASE');
+    expect(chart).not.toContain('fallbackUrl');
+    expect(chart).not.toContain('bounded Render');
+  });
+
   test('the server keeps an explicit hard stop for the unused legacy SSE route', () => {
     const source = read('src/api/routes/marketLive.ts');
     expect(source).toContain("process.env.MARKET_LIVE_SSE_ENABLED === '0'");
