@@ -27,7 +27,7 @@ function mount(file:string,options:any={}){
       const module:any={};const code=ts.transpileModule(read('lib/useCompactAccountPanel.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
       new Function('require','exports',code)(()=>react,module);return module;
     }
-    if(name.endsWith('/displaySnapshotCache'))return{displayRefreshDelay:()=>6*60*60*1000,SLOW_DISPLAY_REFRESH_MS:6*60*60*1000,readDisplayJson:()=>api.getCfdTickers()};
+    if(name.endsWith('/displaySnapshotCache'))return{displayRefreshDelay:()=>6*60*60*1000,SLOW_DISPLAY_REFRESH_MS:6*60*60*1000,readDisplayJson:(url:string)=>options.readDisplayJson?options.readDisplayJson(url):api.getCfdTickers()};
     if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error,API_BASE:'/api/v1'};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
     if(name.endsWith('/priceChange'))return{parseChangePercentOrNull:(v:any)=>v==null?null:Number(v),parseChangePercent:Number};if(name.endsWith('/useCfdTickers'))return{useCfdTickers:()=>options.feed};if(name.endsWith('/krakenSocket'))return{krakenSocket:{subscribeBook:()=>()=>{}}};if(name.endsWith('/bookFreshness'))return bookFreshness;if(name.endsWith('/tradingMode'))return{rememberTradingMode:jest.fn()};if(name==='react-router-dom')return{useSearchParams:()=>[options.params]};if(name.endsWith('.css'))return{};
     if(name==='./Skeleton'){components.SkeletonRow??=()=>null;return{SkeletonRow:components.SkeletonRow};}
@@ -35,7 +35,7 @@ function mount(file:string,options:any={}){
     if(name.endsWith('/sampledDepth'))return{readSpotDisplayBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     if(name.endsWith('/spotPublicMarket'))return{readSpotPublicBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     return req(name);
-  },output,{setInterval,clearInterval,setTimeout,clearTimeout},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
+  },output,{setInterval,clearInterval,setTimeout,clearTimeout,location:options.location},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
   return{components,render(props={}){index=0;const fn:any=Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};
 }
 
@@ -87,6 +87,32 @@ test('production CFD ticker feed has a bounded Render display fallback when edge
  const source=read('lib/useCfdTickers.ts');
  expect(source).toContain('MARKET_EDGE_BASE');expect(source).toContain('/cfd/display/tickers');
  expect(source).toContain('fallbackEndpoint');expect(source).toContain('displayRefreshDelay(endpoint,SLOW_DISPLAY_REFRESH_MS)');
+});
+
+test('production partial CFD edge snapshot fills only missing quote fields from bounded Render display',async()=>{
+ const edge=rows.map((row,index)=>index===1?{...row,price:null,changePercent24h:undefined,provider:'biquote'}:{...row});
+ const fallback=rows.map((row,index)=>index===0?{...row,price:'9999',provider:'render-should-not-win'}:index===1?{...row,price:'64.50',changePercent24h:'1.25',provider:'render-multi-source'}:{...row});
+ const reads=jest.fn(async(url:string)=>url.startsWith('https://market.voltextech.net')
+   ?{configured:true,tickers:edge}
+   :{configured:true,tickers:fallback});
+ const hook=mount('lib/useCfdTickers.ts',{location:{hostname:'voltextech.net'},readDisplayJson:reads});
+ hook.render(true);await tick();const state=hook.render(true);
+ expect(reads).toHaveBeenCalledTimes(2);
+ expect(reads.mock.calls[0][0]).toBe('https://market.voltextech.net/cfd/display/tickers');
+ expect(reads.mock.calls[1][0]).toBe('/api/v1/cfd/display/tickers');
+ expect(state.tickers.find((row:any)=>row.symbol==='XAUUSD').price).toBe(rows[0].price);
+ expect(state.tickers.find((row:any)=>row.symbol==='XAUUSD').provider).toBe('biquote');
+ const silver=state.tickers.find((row:any)=>row.symbol==='XAGUSD');
+ expect(silver.price).toBe('64.50');expect(silver.changePercent24h).toBe('1.25');expect(silver.provider).toBe('render-multi-source');
+ expect(silver.displayOnly).toBe(true);expect(silver.executionAllowed).toBe(false);expect(state.loadError).toBe(false);
+});
+
+test('partial fallback failure keeps valid edge rows visible instead of failing the whole CFD list',async()=>{
+ const edge=rows.map((row,index)=>index===1?{...row,price:null,changePercent24h:undefined}:{...row});
+ const reads=jest.fn(async(url:string)=>{if(url.startsWith('https://market.voltextech.net'))return{configured:true,tickers:edge};throw new Error('render unavailable');});
+ const hook=mount('lib/useCfdTickers.ts',{location:{hostname:'voltextech.net'},readDisplayJson:reads});
+ hook.render(true);await tick();const state=hook.render(true);
+ expect(state.tickers).toHaveLength(13);expect(state.tickers[0].price).toBe(rows[0].price);expect(state.tickers[1].price).toBeNull();expect(state.loadError).toBe(false);
 });
 
 test('ticker hook samples every six hours and keeps last good rows after a failed refresh',async()=>{
