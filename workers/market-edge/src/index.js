@@ -441,7 +441,15 @@ async function cachedPublic(request, loader, ttlSeconds = EDGE_TTL_SECONDS) {
     const hit = await cache.match(key);
     if (hit) return hit;
   }
-  const response = json(await loader(), 200, {
+  const payload = await loader();
+  // The browser's bounded display cache accepts only explicit VOLTEX
+  // snapshot envelopes. Render's /cfd/display aliases already add this
+  // metadata; the public edge must preserve the same contract or production
+  // CFD rejects an otherwise-valid response and paints an empty terminal.
+  const body = ttlSeconds === SLOW_EDGE_TTL_SECONDS && payload && typeof payload === "object" && !Array.isArray(payload)
+    ? { ...payload, _display: { mode:"snapshot", capturedAt:Date.now(), refreshMs:ttlSeconds * 1000 } }
+    : payload;
+  const response = json(body, 200, {
     "cache-control": `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}, stale-while-revalidate=${Math.min(ttlSeconds, 300)}`
   });
   if (cache) await cache.put(key, response.clone());
@@ -457,7 +465,7 @@ export default {
     try {
       let response;
       if (url.pathname === "/health") {
-        response = json({ ok:true, service:"voltex-market-edge", version:"public-display-edge-v7" },200,{"cache-control":"no-store"});
+        response = json({ ok:true, service:"voltex-market-edge", version:"public-display-edge-v8" },200,{"cache-control":"no-store"});
       } else {
         const book=url.pathname.match(/^\/market\/display\/futures-book\/([A-Z0-9]{1,28}USDT)$/);
         const trades=url.pathname.match(/^\/market\/display\/futures-trades\/([A-Z0-9]{1,28}USDT)$/);
