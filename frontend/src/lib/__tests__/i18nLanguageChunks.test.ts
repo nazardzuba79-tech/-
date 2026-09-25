@@ -150,12 +150,14 @@ describe('translation integrity', () => {
         // `futures.hint*` are the six title hints on the positions table's
         // abbreviated headings (2026-09-24: the owner asked what «Стоим.»
         // is; the heading itself stays one line, the hint is a title).
-        const addedSinceDigest = ['futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
+        const addedSinceDigest = ['futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized'];
         return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
+      // Added for the approved compact order-panel disclosure; older copy remains frozen.
+      expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.

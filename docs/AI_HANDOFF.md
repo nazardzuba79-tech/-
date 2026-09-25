@@ -3806,3 +3806,6 @@ PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow pat
 - Checks run: frontend `tsc` clean; `vite build` OK; `tradingBotsPresentation.test.ts` 23/23; `qa-trading-bots.cjs` locally — all 199 checks pass at 320–1920px (minimum enforced, click shows the local plan line, Escape/focus, favourites).
 - Preserved: Codex's navigation slot, header dimensions and robot icon; the catalogue, statistics and minimum rules.
 - Unresolved: the button still only confirms locally, as before — copying a bot into a real running strategy does not exist in the product yet.
+
+PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved markup/removal and excluded the single new positionLimits locale key by name while preserving every older dictionary byte. All 285 tests in the nine pair/header guard suites now pass locally. Synced #268 bot button label unchanged.
+
