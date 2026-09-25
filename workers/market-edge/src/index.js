@@ -21,6 +21,28 @@ const SPOT_INTERVAL_MINUTES = { "1m":"1", "5m":"5", "15m":"15", "1h":"60", "4h":
 const KRAKEN_ASSET = { BTC:"XBT", DOGE:"XDG" };
 const SPOT_SLUG_RE = /^[A-Z0-9]{1,32}-[A-Z0-9]{2,12}$/;
 const CFD_SYMBOLS = { XAUUSD:"XAUUSD", XAGUSD:"XAGUSD", XPTUSD:"XPTUSD", XPDUSD:"XPDUSD", WTIUSD:"USOIL", XBRUSD:"UKOIL", EURUSD:"EURUSD", GBPUSD:"GBPUSD", USDJPY:"USDJPY", AUDUSD:"AUDUSD", USDCAD:"USDCAD", USDCHF:"USDCHF", NZDUSD:"NZDUSD" };
+const CFD_NAMES = {
+  XAUUSD:"Gold Spot", XAGUSD:"Silver Spot", XPTUSD:"Platinum Spot", XPDUSD:"Palladium Spot",
+  WTIUSD:"Crude Oil WTI Spot", XBRUSD:"Brent Spot", EURUSD:"Euro vs US Dollar",
+  GBPUSD:"British Pound vs US Dollar", USDJPY:"US Dollar vs Japanese Yen",
+  AUDUSD:"Australian Dollar vs US Dollar", USDCAD:"US Dollar vs Canadian Dollar",
+  USDCHF:"US Dollar vs Swiss Franc", NZDUSD:"New Zealand Dollar vs US Dollar"
+};
+const DERIV_PUBLIC_WS_URL="wss://api.derivws.com/trading/v1/options/ws/public";
+const DERIV_CFD_IDS = {
+  EURUSD:"frxEURUSD", GBPUSD:"frxGBPUSD", USDJPY:"frxUSDJPY", AUDUSD:"frxAUDUSD",
+  USDCAD:"frxUSDCAD", USDCHF:"frxUSDCHF", NZDUSD:"frxNZDUSD",
+  XAUUSD:"frxXAUUSD", XAGUSD:"frxXAGUSD", XPTUSD:"frxXPTUSD", XPDUSD:"frxXPDUSD"
+};
+const EIA_OIL = {
+  WTIUSD:{providerSymbol:"RWTC",title:"Cushing, OK WTI Spot Price FOB",file:"RWTCD.htm"},
+  XBRUSD:{providerSymbol:"RBRTE",title:"Europe Brent Spot Price FOB",file:"RBRTED.htm"}
+};
+const FRANKFURTER_FX = {
+  EURUSD:{quote:"EUR",invert:true}, GBPUSD:{quote:"GBP",invert:true}, USDJPY:{quote:"JPY",invert:false},
+  AUDUSD:{quote:"AUD",invert:true}, USDCAD:{quote:"CAD",invert:false}, USDCHF:{quote:"CHF",invert:false},
+  NZDUSD:{quote:"NZD",invert:true}
+};
 const CFD_INTERVALS = new Set(["1m","5m","15m","30m","1h","4h","1d"]);
 
 function json(body, status = 200, extra = {}) {
@@ -66,6 +88,18 @@ async function publicJson(url) {
   });
   if (!response.ok) throw new Error(`provider_http_${response.status}`);
   return response.json();
+}
+
+async function publicText(url) {
+  const response = await fetch(url, {
+    method:"GET",
+    headers:{ accept:"text/html" },
+    redirect:"follow",
+  });
+  if (!response.ok) throw new Error(`provider_http_${response.status}`);
+  const body=await response.text();
+  if(body.length>2_000_000)throw new Error("provider_body_too_large");
+  return body;
 }
 
 async function firstPublicJson(urls) {
@@ -404,25 +438,127 @@ async function spotTickers() {
   }))};
 }
 
-async function cfdTickers() {
-  const url=new URL("https://biquote.io/api/latest");
+function cfdMissingRow(symbol){
+  return {symbol,name:CFD_NAMES[symbol]??symbol,price:null,status:"unavailable",stale:false,marketClosed:false,
+    displayOnly:true,executionAllowed:false,provider:"cloudflare-multisource",providerSymbol:CFD_SYMBOLS[symbol]??symbol,
+    providerTimestamp:null,fetchedAt:null,asOf:null,maxQuoteAgeMs:120000};
+}
+function cfdPositive(value){const n=Number(value);return Number.isFinite(n)&&n>0?n:null;}
+function cfdEpochMs(value){const n=Number(value);return Number.isFinite(n)&&n>0?(n<10_000_000_000?Math.trunc(n*1000):Math.trunc(n)):null;}
+
+async function cfdBiquoteQuotes(){
+  const out=new Map(),url=new URL("https://biquote.io/api/latest");
   for(const provider of Object.values(CFD_SYMBOLS))url.searchParams.append("symbols",provider);
-  const raw=await publicJson(url.toString()),now=Date.now(),tickers=[];
+  let raw;try{raw=await publicJson(url.toString());}catch{return out;}
+  const now=Date.now();
   for(const [symbol,providerSymbol] of Object.entries(CFD_SYMBOLS)){
-    const row=raw?.[providerSymbol],price=Number(row?.mid);
-    const at=typeof row?.timestamp==="number"&&Number.isFinite(row.timestamp)?(row.timestamp<1e12?row.timestamp*1000:row.timestamp)
-      :typeof row?.timestamp==="string"?(/^\d+(?:\.\d+)?$/.test(row.timestamp)?(Number(row.timestamp)<1e12?Number(row.timestamp)*1000:Number(row.timestamp)):Date.parse(row.timestamp)):NaN;
-    tickers.push({
-      symbol,name:symbol,price:Number.isFinite(price)&&price>0?String(price):null,
-      changePercent24h:Number.isFinite(Number(row?.dayDiffPercent))?String(row.dayDiffPercent):undefined,
-      status:Number.isFinite(price)&&price>0?(row?.marketState==="closed"?"market_closed":row?.stale===true?"stale":"sampled"):"unavailable",
+    const row=raw?.[providerSymbol],price=cfdPositive(row?.mid);if(price===null)continue;
+    const at=typeof row?.timestamp==="string"&&!/^\d+(?:\.\d+)?$/.test(row.timestamp)?Date.parse(row.timestamp):cfdEpochMs(row?.timestamp);
+    const change=Number(row?.dayDiffPercent);
+    out.set(symbol,{symbol,name:CFD_NAMES[symbol]??symbol,price:String(price),
+      ...(Number.isFinite(change)?{changePercent24h:String(change)}:{}),
+      status:row?.marketState==="closed"?"market_closed":row?.stale===true?"stale":"sampled",
       stale:row?.stale===true,marketClosed:row?.marketState==="closed",displayOnly:true,executionAllowed:false,
-      provider:"biquote",providerSymbol,providerTimestamp:Number.isFinite(at)?at:null,fetchedAt:now,asOf:Number.isFinite(at)?at:now,maxQuoteAgeMs:120000
-    });
+      provider:"biquote",providerSymbol,providerTimestamp:Number.isFinite(at)?at:null,fetchedAt:now,
+      asOf:Number.isFinite(at)?at:now,maxQuoteAgeMs:120000});
   }
-  return {source:"biquote-edge",configured:true,tickers};
+  return out;
 }
 
+async function cfdDerivQuotes(symbols){
+  const targets=symbols.filter(symbol=>DERIV_CFD_IDS[symbol]);
+  const out=new Map();
+  if(!targets.length||typeof WebSocket!=="function")return out;
+  const providerToSymbol=new Map(targets.map(symbol=>[DERIV_CFD_IDS[symbol],symbol]));
+  await new Promise(resolve=>{
+    let settled=false,ws;
+    const finish=()=>{if(settled)return;settled=true;clearTimeout(timer);try{if(ws&&ws.readyState<2)ws.close(1000,"snapshot");}catch{}resolve();};
+    const timer=setTimeout(finish,1800);
+    try{ws=new WebSocket(DERIV_PUBLIC_WS_URL);}catch{finish();return;}
+    ws.addEventListener("open",()=>{
+      for(const symbol of targets){try{ws.send(JSON.stringify({ticks:DERIV_CFD_IDS[symbol],subscribe:1,req_id:`cfd:${symbol}`}));}catch{}}
+    });
+    ws.addEventListener("message",event=>{
+      let raw;try{raw=JSON.parse(typeof event.data==="string"?event.data:"");}catch{return;}
+      if(raw?.msg_type!=="tick"||!raw.tick)return;
+      const providerSymbol=typeof raw.tick.symbol==="string"?raw.tick.symbol:"",symbol=providerToSymbol.get(providerSymbol);
+      const price=cfdPositive(raw.tick.quote),at=cfdEpochMs(raw.tick.epoch),now=Date.now();
+      if(!symbol||price===null||at===null||at>now+1000)return;
+      const stale=now-at>120000;
+      out.set(symbol,{symbol,name:CFD_NAMES[symbol]??symbol,price:String(price),status:stale?"stale":"sampled",
+        stale,marketClosed:false,displayOnly:true,executionAllowed:false,provider:"deriv",providerSymbol,
+        providerTimestamp:at,fetchedAt:now,asOf:at,maxQuoteAgeMs:120000});
+      if(out.size===targets.length)finish();
+    });
+    ws.addEventListener("error",finish,{once:true});
+    ws.addEventListener("close",finish,{once:true});
+  });
+  return out;
+}
+
+const EIA_MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function eiaPlain(html){return html.replace(/<[^>]*>/g," ").replace(/&nbsp;|&#160;|&#xA0;/gi," ").replace(/&amp;/g,"&").replace(/\s+/g," ").trim();}
+function eiaNumber(value){return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)&&Number.isFinite(Number(value))?Number(value):null;}
+function parseEiaOil(html,symbol,receivedAt){
+  const meta=EIA_OIL[symbol],plain=eiaPlain(html);if(!meta||!plain.includes(meta.title)||!plain.includes("Dollars per Barrel"))return null;
+  let latest=null;
+  for(const row of html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){
+    const cells=[...row[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(cell=>eiaPlain(cell[1]));
+    if(cells.length!==6)continue;
+    const m=cells[0].match(/^(\d{4})\s+([A-Z][a-z]{2})-\s*(\d{1,2})\s+to\s+([A-Z][a-z]{2})-\s*(\d{1,2})$/);if(!m)continue;
+    const month=EIA_MONTHS.indexOf(m[2]);if(month<0)continue;
+    const start=Date.UTC(Number(m[1]),month,Number(m[3]));if(new Date(start).getUTCDay()!==1)continue;
+    for(let day=0;day<5;day++){const price=eiaNumber(cells[day+1]);if(price===null)continue;const at=start+day*86400000;if(at>receivedAt+86400000)continue;if(!latest||at>latest.at)latest={at,price};}
+  }
+  if(!latest)return null;
+  return {symbol,name:CFD_NAMES[symbol]??symbol,price:String(latest.price),status:"market_closed",stale:true,marketClosed:true,
+    displayOnly:true,executionAllowed:false,provider:"eia",providerSymbol:meta.providerSymbol,
+    providerTimestamp:latest.at,fetchedAt:receivedAt,asOf:latest.at,maxQuoteAgeMs:86400000};
+}
+async function cfdEiaOilQuotes(symbols){
+  const out=new Map(),targets=symbols.filter(symbol=>EIA_OIL[symbol]);
+  await Promise.all(targets.map(async symbol=>{
+    try{const meta=EIA_OIL[symbol],now=Date.now(),html=await publicText(`https://www.eia.gov/dnav/pet/hist/${meta.file}`),row=parseEiaOil(html,symbol,now);if(row)out.set(symbol,row);}catch{}
+  }));
+  return out;
+}
+
+async function cfdFrankfurterQuotes(symbols){
+  const targets=symbols.filter(symbol=>FRANKFURTER_FX[symbol]);const out=new Map();if(!targets.length)return out;
+  const quotes=[...new Set(targets.map(symbol=>FRANKFURTER_FX[symbol].quote))].join(",");
+  let body;try{body=await publicJson(`https://api.frankfurter.dev/v2/rates?base=usd&quotes=${encodeURIComponent(quotes.toLowerCase())}`);}catch{return out;}
+  if(!Array.isArray(body))return out;
+  const rates=new Map(body.flatMap(row=>typeof row?.quote==="string"&&cfdPositive(row.rate)!==null?[[row.quote.toUpperCase(),{rate:Number(row.rate),date:row.date}]]:[]));
+  const now=Date.now();
+  for(const symbol of targets){
+    const meta=FRANKFURTER_FX[symbol],entry=rates.get(meta.quote);if(!entry)continue;
+    const price=meta.invert?1/entry.rate:entry.rate;if(!Number.isFinite(price)||price<=0)continue;
+    const at=typeof entry.date==="string"?Date.parse(`${entry.date}T00:00:00Z`):NaN;
+    out.set(symbol,{symbol,name:CFD_NAMES[symbol]??symbol,price:String(price),status:"stale",stale:true,marketClosed:false,
+      displayOnly:true,executionAllowed:false,provider:"frankfurter",providerSymbol:`USD/${meta.quote}`,
+      providerTimestamp:Number.isFinite(at)?at:null,fetchedAt:now,asOf:Number.isFinite(at)?at:now,maxQuoteAgeMs:86400000});
+  }
+  return out;
+}
+
+async function cfdTickers() {
+  const merged=await cfdBiquoteQuotes();
+  let missing=Object.keys(CFD_SYMBOLS).filter(symbol=>!merged.has(symbol));
+  if(missing.length){
+    const deriv=await cfdDerivQuotes(missing);for(const [symbol,row] of deriv)if(!merged.has(symbol))merged.set(symbol,row);
+  }
+  missing=Object.keys(CFD_SYMBOLS).filter(symbol=>!merged.has(symbol));
+  if(missing.some(symbol=>EIA_OIL[symbol])){
+    const eia=await cfdEiaOilQuotes(missing);for(const [symbol,row] of eia)if(!merged.has(symbol))merged.set(symbol,row);
+  }
+  missing=Object.keys(CFD_SYMBOLS).filter(symbol=>!merged.has(symbol));
+  if(missing.some(symbol=>FRANKFURTER_FX[symbol])){
+    const fx=await cfdFrankfurterQuotes(missing);for(const [symbol,row] of fx)if(!merged.has(symbol))merged.set(symbol,row);
+  }
+  const tickers=Object.keys(CFD_SYMBOLS).map(symbol=>merged.get(symbol)??cfdMissingRow(symbol));
+  return {source:"cloudflare-cfd-multisource",configured:true,
+    sources:[...new Set(tickers.filter(row=>row.price!==null).map(row=>row.provider))],tickers};
+}
 async function cfdCandles(symbol, searchParams) {
   const provider=CFD_SYMBOLS[symbol],interval=searchParams.get("interval")||"15m";
   const limit=Math.max(20,Math.min(500,Number(searchParams.get("limit")||"240")));
@@ -465,7 +601,7 @@ export default {
     try {
       let response;
       if (url.pathname === "/health") {
-        response = json({ ok:true, service:"voltex-market-edge", version:"public-display-edge-v8" },200,{"cache-control":"no-store"});
+        response = json({ ok:true, service:"voltex-market-edge", version:"public-display-edge-v9" },200,{"cache-control":"no-store"});
       } else {
         const book=url.pathname.match(/^\/market\/display\/futures-book\/([A-Z0-9]{1,28}USDT)$/);
         const trades=url.pathname.match(/^\/market\/display\/futures-trades\/([A-Z0-9]{1,28}USDT)$/);
