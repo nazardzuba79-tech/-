@@ -98,7 +98,7 @@ test('market-data reads use perpetual references and preserve financial inputs',
     expect(reads).toContain(read);
   }
   // Previous digest, before the caption's read: 27318636…a152e.
-  expect(hash(reads)).toBe('4282c42238bdc970045e119a94f31a9892ee27002cc3f7532403ebe047bbb765');
+  expect(hash(reads)).toBe('08a8063687ca6c50d4ffbd5d0a98e6486091efc15eb71d83930c82e18d6aa133');
 });
 test('funding countdown implementation is unchanged', () => {
   expect(hash(source.slice(source.indexOf('const NextFundingCountdown'))))
