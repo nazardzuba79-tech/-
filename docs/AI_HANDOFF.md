@@ -3727,3 +3727,43 @@ withdrawal was placed.
   - The funding rate, its slash and the countdown are one `#ff9800` line at 13px, whatever the rate's sign. `#ff9800` is the chart's own orange. Bybit's brand `#f7a600` stays out of the sheet, as `futuresVisualPolish` §1 requires. «(8h)» is not added.
   - Guards: `futuresVisualPolish` §8 +1 test; `terminalDesignSystem` requires Spot/CFD captions to equal the Futures caption grey.
   - Checks: `terminalDesignSystem` and `futuresVisualPolish` 41/41. Computed styles were read on the fixture pages for all three terminals. Futures 390 renders with no page errors.
+
+
+## Codex — 2026-09-25 — Bot presentation catalogue and shared header
+
+- Implementation commit: 07c38a29201b250759128f96f8f357988e6ccf93 (rebased on main 87d48973fab3c9983a29c2e8f584b6d0ad3e7db1, including #262).
+- Added seven Russian-language presentation bots at /trading-bots, seeded weekly synthetic monthly returns (120–217%) visibly labelled as model results, minima $2,500–$25,000, filters/favourites/detail plan. No execution, funds, database or production changes.
+- Material files: App.tsx, Nav.tsx, index.css, HomeHeader.tsx, ArchiveTerminalPreview.css, VoltexTerminalSystem.css, TradingBotsPage.tsx, TradingBots.css, tradingBotsPresentation.ts; model tests and scripts/qa-trading-bots.cjs.
+- Preserved Claude’s approved terminal layouts, chart colours, CFD Cloudflare transport (#262), auth/account/deposit actions, and all trading logic. Removed only header inclusion from the transparent terminal-surface rules; header is solid graphite.
+- Validation after rebase: TypeScript + Vite PASS, targeted Jest 77/77, local mocked browser 122/122; desktop/mobile widths 320/390/1024/1440/1920. Evidence in docs/qa/trading-bots.
+- Four pre-existing sharedHeaderStylesheetOwnership assertions remain failing on Windows; reproduced on clean base main, documented in QA README. No claim of a green full suite. Recommend separate path/inventory ownership cleanup.
+- Owner review required before merge/deploy; no Phase 2 or unrelated financial work.
+
+## Codex — 2026-09-25 — Bot modal copy follow-up
+
+- Follow-up to implementation 3894b7a9: shortened the repeated notice to «Демонстрационные данные» and plan status to «Запуск ботов пока недоступен».
+- Kept the model ROI labels, catalogue layout and financial behaviour unchanged. Did not fabricate an insufficient-balance error.
+- Files: TradingBotsPage.tsx and QA README. Vite build PASS; local browser confirmed both exact strings after opening Atlas and clicking the plan action.
+- Local review server rebuilt. No production changes or deployment. Existing baseline test caveat remains unchanged.
+
+
+## Codex — 2026-09-25 — Remove duplicate bot notices
+
+- Follow-up to 14be82fd: removed the repeated demo-data notice and unavailable-status sentence at the owner's request.
+- Cards and modal retain explicit model-return labels. The plan result shows only the selected strategy and budget; it makes no execution or balance claim.
+- Files: TradingBotsPage.tsx, QA README. Vite build PASS; local browser confirms removed strings, model label and plan-only result. No production changes.
+
+## Codex — 2026-09-25 — Top-level trading bots navigation
+
+- Follow-up to d3c313a2570b52d9f458ba21ce507db93b16e4f2: moved Trading Bots next to Futures in the shared desktop navbar; kept one mobile entry and removed the duplicate Trading submenu item.
+- Updated the visual-polish guard to assert the approved solid shared header while preserving the terminal gradient. Updated browser assertions and screenshots for the actual top-level tab and non-overlapping controls.
+- Validation: frontend TypeScript/Vite build PASS; 179 tests in seven relevant suites PASS; 135 Edge browser assertions PASS at 320/390/1024/1440/1920px. Local jsdom supplied outside the repository, with no package/lockfile changes.
+- Preserved other agents' Futures/Spot/CFD behavior, financial logic, authentication and model-return labels. Publishing is pending latest-main sync, GitHub checks and confirmed Render workspace.
+
+## Codex — 2026-09-25 — Laptop navigation fit before publication
+
+- Based on synced head de9ef5d370631c6319f97811ccaac234de444ea3 (main #263 preserved).
+- GitHub's pair-persistence browser check reproduced 52px of clipped product links on Markets at 1440px after adding the bot tab. Kept type sizes and reclaimed link/separator spacing at 1440–1679px; below 1440px the shared full drawer keeps every destination accessible.
+- Files: index.css; qa-trading-bots.cjs now checks actual nav scroll clipping and Markets after terminal routes, not just outer cluster overlap; refreshed evidence/README.
+- Frontend build PASS, expanded bot/header browser 181 assertions PASS, exact unmodified pair-persistence harness PASS at 1440/390 using Edge. Existing known chart teardown warning remains documented by that harness. Additional #263 CFD source/runtime suite: 31 PASS.
+- No financial, backend, production configuration or model-label changes. Awaiting final CI before publication.

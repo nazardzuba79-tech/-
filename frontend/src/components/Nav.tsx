@@ -21,6 +21,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
     {to:'/markets',label:t('nav.markets')},
     {to:'/trade',label:t('nav.trade')},
     {to:'/futures',label:t('nav.futures')},
+    {to:'/trading-bots',label:'Торговые боты'},
     {to:'/banking',label:'Banking & Earn'},
     {to:'/wallet',label:t('nav.wallet')},
     {to:'/copy-trading',label:t('nav.copyTrading')},
@@ -47,7 +48,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         <button className="mobile-menu nav-burger" onClick={()=>setMobileOpen(v=>!v)} aria-label={t('nav.menu')} aria-expanded={mobileOpen}>{mobileOpen?<X size={18}/>:<Menu size={18}/>}</button>
         <Link to="/trade" className="header-brand" style={styles.logo}><Logo/></Link><span className="brand-separator top-nav-divider" aria-hidden="true"/>
         <nav className="main-nav nav-desktop-links" aria-label={t('nav.menu')}>
-          {DESKTOP_LINKS.map(l=>l.to==='/trade'?<div key={l.to} className="nav-item-wrap" onMouseEnter={()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);setTradeMenuOpen(true);}} onMouseLeave={()=>{tradeMenuCloseTimer.current=window.setTimeout(()=>setTradeMenuOpen(false),250);}}>
+          {DESKTOP_LINKS.map(l=>l.to==='/trade'?<div key={l.to} className="nav-item-wrap" onFocus={()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);setTradeMenuOpen(true);}} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setTradeMenuOpen(false);}} onKeyDown={e=>{if(e.key==='Escape')setTradeMenuOpen(false);}} onMouseEnter={()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);setTradeMenuOpen(true);}} onMouseLeave={()=>{tradeMenuCloseTimer.current=window.setTimeout(()=>setTradeMenuOpen(false),250);}}>
             <Link to={l.to} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`} aria-haspopup="menu" aria-expanded={tradeMenuOpen}>{l.label}<ChevronDown size={12} className={`nav-chevron${tradeMenuOpen?' nav-chevron-open':''}`}/></Link>
             {tradeMenuOpen&&<div className="nav-dropdown" role="menu"><Link to="/trade" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span></Link><Link to="/trade?market=cfd" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.cfdTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeCfdDesc')}</span></Link></div>}
           </div>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}

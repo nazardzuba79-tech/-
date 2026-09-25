@@ -51,13 +51,13 @@ export function HomeHeader() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/6 bg-[#05070a]">
+    <header className="sticky top-0 z-40 border-b border-white/6 bg-[#1a1b20]" style={{fontFamily:'Arial, Helvetica, sans-serif',background:'#1a1b20'}}>
       <div className="mx-auto flex h-[58px] w-full max-w-[1460px] items-center gap-6 px-6">
         <Link to="/" className="shrink-0" aria-label="VOLTEX">
           <Logo />
         </Link>
 
-        <nav className="hidden items-center gap-[2px] lg:flex" aria-label={t('home.nav.main')}>
+        <nav className="hidden items-center gap-[2px] min-[1440px]:flex" aria-label={t('home.nav.main')}>
           {LINKS.map((l) => (
             <Link
               key={l.to}
@@ -67,6 +67,7 @@ export function HomeHeader() {
               {t(l.labelKey)}
             </Link>
           ))}
+          <Link to="/trading-bots" className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white">Торговые боты</Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -115,7 +116,7 @@ export function HomeHeader() {
             onClick={() => setOpen((v) => !v)}
             aria-label={t('nav.menu')}
             aria-expanded={open}
-            className="ml-1 rounded-[5px] p-1.5 text-home-muted transition-colors hover:text-white lg:hidden"
+            className="ml-1 rounded-[5px] p-1.5 text-home-muted transition-colors hover:text-white min-[1440px]:hidden"
           >
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -123,7 +124,7 @@ export function HomeHeader() {
       </div>
 
       {open && (
-        <nav className="border-t border-white/6 px-6 py-3 lg:hidden" aria-label={t('home.nav.mobile')}>
+        <nav className="border-t border-white/6 px-6 py-3 min-[1440px]:hidden" aria-label={t('home.nav.mobile')}>
           <div className="grid grid-cols-2 gap-1">
             {LINKS.map((l) => (
               <Link
@@ -135,6 +136,7 @@ export function HomeHeader() {
                 {t(l.labelKey)}
               </Link>
             ))}
+            <Link to="/trading-bots" onClick={() => setOpen(false)} className="whitespace-nowrap rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:bg-white/[0.05] hover:text-white">Торговые боты</Link>
           </div>
         </nav>
       )}
