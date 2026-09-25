@@ -43,7 +43,6 @@ export function AdminDepositsPage() {
         setIncoming(res.transfers);
         setFailedChains(res.failedChains);
         setIncomingError(false);
-        api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
       })
       .catch(() => setIncomingError(true))
       .finally(() => { incomingRequest.current = false; setIncomingLoading(false); setIncomingLoaded(true); });
