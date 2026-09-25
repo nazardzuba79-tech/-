@@ -15,7 +15,7 @@ function kindOf(symbol:string):IconKind{
 /**
  * Premium CFD instrument mark rendered entirely as inline SVG.
  *
- * No <img>, remote asset, provider icon, CDN or API request is involved.
+ * No image element, remote asset, provider icon, CDN or API request is involved.
  * The surrounding terminal already contains the symbol/name for accessible
  * identification, so this mark is decorative.
  */
