@@ -98,3 +98,75 @@ it('the shared sheet styles, and never lays out, the shells it does not own', ()
     && !/ticker|cfd-selected-instrument|cfd-ticker-metric/.test(b));
   expect(layout).toEqual([]);
 });
+
+it('Spot and CFD carry the Futures TradingView surface, value for value', () => {
+  // Owner, 2026-09-25: «Внидряй цей дезайн і на спот, і на CFD» — the
+  // surface approved on Futures (#258). Pinned against the Futures sheet
+  // itself, so the three terminals cannot drift apart in either direction.
+  const archive = read('src/pages/trade-terminal/ArchiveTerminalPreview.css');
+  const css = read(SYSTEM);
+  const P = '.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal';
+  // The rule for `selector` that declares `needle` — a selector such as the
+  // Futures root heads several rules in its sheet.
+  const block = (source: string, selector: string, needle = '--') => {
+    for (let at = source.indexOf(`${selector} {`); at >= 0; at = source.indexOf(`${selector} {`, at + 1)) {
+      const body = source.slice(at, source.indexOf('}', at));
+      if (body.includes(needle)) return body;
+    }
+    throw new Error(`no rule for ${selector} declaring ${needle}`);
+  };
+  const gradient = (text: string) => text.match(/background:\s*(linear-gradient\([^;]*\))\s*!important/)?.[1];
+
+  const futuresRoot = block(archive, '#archive-terminal-preview', 'linear-gradient');
+  const spotCfdRoot = block(css, P, 'linear-gradient');
+  expect(gradient(spotCfdRoot)).toBeDefined();
+  expect(gradient(spotCfdRoot)).toBe(gradient(futuresRoot));
+  // The panels' hairline is the Futures one. The token block names the
+  // Futures id inside :is(), which outweighs any number of classes; without
+  // !important the hairlines stay #2b3139.
+  const hairline = futuresRoot.match(/--border:\s*([^;]+);/)?.[1];
+  expect(hairline).toBe('rgba(255,255,255,.12)');
+  expect(spotCfdRoot).toContain(`--border: ${hairline} !important`);
+  // The bottom panel sits under that same line, as on Futures.
+  expect(block(css, `${P} :is(.bottom-panel, .cfd-bottom-panel)`, 'box-shadow')).toContain('box-shadow: 0 -1px 0 var(--border)');
+
+  // Both charts paint nothing of their own and take the Futures chart tokens.
+  const futuresChart = block(archive, '#archive-terminal-preview .terminal-chart-shell');
+  const spotCfdChart = block(css, `${P} :is(.terminal-chart-shell, .cfd-chart)`);
+  for (const token of ['--voltex-plot-background: rgba(0,0,0,0)', '--voltex-candle-up: #ffffff',
+    '--voltex-candle-down: #ff9800', '--voltex-axis-text: #ffffff', '--voltex-axis-border: rgba(0,0,0,0)']) {
+    expect(futuresChart).toContain(token);
+    expect(spotCfdChart).toContain(token);
+  }
+  // «Синій колір ні, обєм залишаємо як і зараз є на біржі»: the CFD volume
+  // takes exactly the colours PriceChart already draws on Spot and Futures.
+  const priceChart = read('src/components/PriceChart.tsx');
+  expect(priceChart).toContain("'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)'");
+  expect(spotCfdChart).toContain('--voltex-volume-up: rgba(234,236,239,0.5)');
+  expect(spotCfdChart).toContain('--voltex-volume-down: rgba(247,166,0,0.5)');
+
+  // The header captions take the Futures caption grey.
+  // The later of the sheet's rules for the captions is the one that wins.
+  const captionRules = archive.split('#archive-terminal-preview .ticker-bar .label {').slice(1).map(r => r.slice(0, r.indexOf('}')));
+  const futuresCaption = captionRules[captionRules.length - 1]?.match(/color:\s*(#[0-9a-f]{6})/i)?.[1];
+  expect(futuresCaption).toBe('#71757a');
+  expect(css).toContain(`${P} :is(.ticker-bar .label, .cfd-ticker-metric > span:first-child) { color: ${futuresCaption}; font-weight: 400; }`);
+
+  // Fields stay visible on the gradient, as on the Futures ticket.
+  expect(css).toMatch(/:is\(\.order-form-area \.input-group, \.pairs-section input, \.cfd-input, \.cfd-instruments-area input\) \{\s*background: rgba\(255,255,255,\.06\) !important; border: 1px solid rgba\(255,255,255,\.13\) !important;/);
+  // The bottom panel keeps its own flat surface.
+  expect(css).toMatch(/\.cfd-bottom-panel \.cfd-tabs\) \{\s*background: #101014 !important;/);
+});
+
+it('the CFD chart reads its paint from the stylesheet, with its old colours as fallbacks', () => {
+  const chart = read('src/components/CfdChart.tsx');
+  for (const [token, fallback] of [['--voltex-candle-up', '#12c98d'], ['--voltex-candle-down', '#ef5350'],
+    ['--voltex-axis-border', '#2b2e36'], ['--voltex-axis-text', '#aeb9c4'], ['--voltex-plot-background', '#101014'],
+    ['--voltex-volume-up', 'rgba(18,201,141,.28)'], ['--voltex-volume-down', 'rgba(239,83,80,.28)']]) {
+    expect(chart).toContain(`token('${token}','${fallback}')`);
+  }
+  // No literal paint left behind the tokens.
+  expect(chart).toContain('upColor:up,downColor:down,borderVisible:false,wickUpColor:up,wickDownColor:down');
+  expect(chart).toContain('color:bar.close>=bar.open?volumeUpRef.current:volumeDownRef.current');
+  expect(chart).not.toContain("borderColor:'#2b2e36'");
+});

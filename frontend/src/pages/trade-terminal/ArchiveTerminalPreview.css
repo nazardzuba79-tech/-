@@ -57,15 +57,15 @@
 /* THE BOTTOM PANEL AS ON THE REFERENCE (owner, 2026-09-24: «чуть чорнішою…
    як у байбіт», «безшовну», «і ці перегородки у байбіт не видні»; approved
    on the live preview). Read off the owner's Bybit screenshot: one #101014
-   surface behind tabs, headings, rows and both pinned columns, a near-black
-   seam above it instead of the grey rule, and no line anywhere inside it —
+   surface behind tabs, headings, rows and both pinned columns, the panels'
+   hairline above it (2026-09-25; it was a near-black seam), and no line anywhere inside it —
    not under the tab strip, not between rows, not beside «Закрыть как».
    Every surface in the panel paints var(--panel), so the one token moves
    all of them together. The dialogs the rows open («Закрытие по лимиту»,
    the position card) are declared inside the panel but float over the whole
    terminal: they keep the terminal's own surface. */
 #archive-terminal-preview { --terminal-panel:var(--panel); }
-#archive-terminal-preview .bottom-panel { grid-area:3 / 1 / 4 / 3; height:auto; min-height:0; max-height:none; --panel:#101014; border-top:1px solid #08090c; }
+#archive-terminal-preview .bottom-panel { grid-area:3 / 1 / 4 / 3; height:auto; min-height:0; max-height:none; --panel:#101014; border-top:1px solid var(--border); }
 #archive-terminal-preview .bottom-panel dialog { --panel:var(--terminal-panel); }
 #archive-terminal-preview .bottom-content { min-width:0; min-height:0; overflow:hidden; }
 /* Keep the table's scrollbar at the bottom of its own panel, beside the independent trading rail. */
@@ -566,10 +566,15 @@
    bottom panel's own surface — where that panel begins. The large surfaces
    are transparent so the gradient runs under header, chart, order book and
    ticket; fields, buttons, popovers, dialogs and the bottom panel keep
-   their fills. */
+   their fills.
+   The lines between the panels: owner, same day, beside a Bybit screenshot —
+   «зроби більш видими перегородку цієї панелі, не прям яскраво, просто чуть
+   замітна». .07 all but vanished into the gradient; .12 reads as Bybit's
+   hairline, and the bottom panel's top edge takes the same line instead of
+   the near-black seam, which the gradient had made invisible. */
 #archive-terminal-preview {
   background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important;
-  --border: rgba(255,255,255,.07);
+  --border: rgba(255,255,255,.12);
 }
 #archive-terminal-preview :is(.global-header, .terminal, .ticker-bar, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .reference-book, .rb-tabs, .rb-controls, .rb-columns, .rb-center, .order-form-area, .reference-order-heading, .fo-panel, .futures-account-summary, .archive-top-assets) {
   background: transparent !important;
@@ -599,3 +604,12 @@
 #archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] {
   border-color: var(--accent) !important;
 }
+/* The header as on the owner's Bybit screenshot (2026-09-25: «зроби в нас
+   на біржі цей текст таким же приглушеним, а 0.0100% / 03:06:32 (8h) таким
+   же кольором»). The captions take the reference grey the bottom panel
+   already uses, at regular weight; the funding rate, its slash and the
+   countdown read as one orange line — the chart's own orange, which is
+   Bybit's tone to the eye without bringing its brand colour into the
+   sheet (§ 1 of the guards keeps that out). */
+#archive-terminal-preview .ticker-bar .label { color:#71757a; font-weight:400; }
+#archive-terminal-preview .ticker-bar .futures-funding-values > :is(.value,.label) { color:#ff9800 !important; font-size:13px; font-weight:550; }
