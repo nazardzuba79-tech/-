@@ -101,8 +101,17 @@ const restsWithoutPrice=(c:NativeCommand)=>c.kind==='CANCEL'
 const marketOutage=(e:unknown)=>e instanceof PrivateMarketDataError?e.status>=500||e.status===429
   :e instanceof Error&&(e.name==='TimeoutError'||(e instanceof TypeError&&e.message==='fetch failed'));
 const MINUTE=60_000;
-/** A plain refresh is persisted only when something happened or the stored canonical checkpoint is this old. */
+/** Established default: unchanged unless production explicitly opts into a
+ * slower checkpoint-only persistence cadence. Financial outcomes still
+ * persist immediately on the same command that produces them. */
 export const NATIVE_REFRESH_PERSIST_MS=15*MINUTE;
+export const NATIVE_REFRESH_PERSIST_MAX_MS=6*60*MINUTE;
+export function nativeRefreshPersistMs(raw=process.env.NATIVE_REFRESH_PERSIST_MS):number{
+  if(raw===undefined||raw.trim()==='')return NATIVE_REFRESH_PERSIST_MS;
+  const value=Number(raw);
+  return Number.isInteger(value)&&value>=NATIVE_REFRESH_PERSIST_MS&&value<=NATIVE_REFRESH_PERSIST_MAX_MS
+    ?value:NATIVE_REFRESH_PERSIST_MS;
+}
 /**
  * Commands waiting per account, beyond the one running. Two tabs, a burst
  * of closes and the 30-second refresh all fit; a runaway client does not.
@@ -189,7 +198,7 @@ export class NativeDemoService {
   private readonly lanes:Map<string,CommandLane>;
   private quotes=new Map<string,{at:number;quote:PrivateFreshQuote}>();
   private marks=new Map<string,{at:number;mark:PrivateMark}>();
-  constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now){
+  constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now,private readonly refreshPersistMs=nativeRefreshPersistMs()){
     const scope=repository.commandLaneScope;
     this.lanes=(scope&&repositoryLanes.get(scope))||new Map<string,CommandLane>();
     if(scope)repositoryLanes.set(scope,this.lanes);
@@ -807,7 +816,7 @@ export class NativeDemoService {
       }
       let seqNext=instruction?seq+1:seq;
       const changed=!!instruction||!!result.observed||result.books.length>0||outcome(result.snapshot)!==outcome(row.snapshot);
-      const stale=!row.checkpoint||this.now()-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
+      const stale=!row.checkpoint||this.now()-row.checkpoint.time>=this.refreshPersistMs;
       const executionPending=result.snapshot.orders.some(o=>!o.historical&&o.type==='LIMIT'&&(o.status==='OPEN'||o.status==='PARTIALLY_FILLED'))
         ||result.snapshot.positions.some(p=>!p.historical&&p.status==='OPEN');
       const sessionChanged=executionPending&&(!row.executionSession||row.executionSession.sessionId!==actor.sessionId||row.executionSession.expiresAt!==actor.expiresAt);
@@ -953,9 +962,9 @@ export class NativeDemoService {
     // day, each commit rewriting the whole journal into the account row and
     // an immutable revision, until commands timed out or met JOURNAL_LIMIT.
     // A fill, a trigger, a liquidation or a cancellation changes the outcome
-    // and is journaled at once; otherwise one observation per 15 minutes is.
+    // and is journaled at once; otherwise one bounded checkpoint observation is persisted on the configured cadence.
     if(!draft&&!persist){
-      const stale=!row.checkpoint||at-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
+      const stale=!row.checkpoint||at-row.checkpoint.time>=this.refreshPersistMs;
       const sessionChanged=!row.executionSession||row.executionSession.sessionId!==actor.sessionId||row.executionSession.expiresAt!==actor.expiresAt;
       if(!stale&&!sessionChanged&&outcome(result.snapshot)===outcome(row.snapshot))
         return this.authoritative(actor,this.view({...next,revision:row.revision}),next,valuation);
