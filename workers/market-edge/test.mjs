@@ -6,7 +6,7 @@ const makeAsks=()=>Array.from({length:50},(_,i)=>[String(101+i/100),String(i+1)]
 const jsonResponse=body=>new Response(JSON.stringify(body),{status:200,headers:{"content-type":"application/json"}});
 
 async function run(){
-  const originalFetch=globalThis.fetch, originalCaches=globalThis.caches;
+  const originalFetch=globalThis.fetch, originalCaches=globalThis.caches, originalWebSocket=globalThis.WebSocket;
   delete globalThis.caches;
   try{
     const seen=[];
@@ -25,7 +25,7 @@ async function run(){
     };
 
     const health=await worker.fetch(new Request("https://market.voltextech.net/health"));
-    assert.deepEqual(await health.json(),{ok:true,service:"voltex-market-edge",version:"public-display-edge-v8"});
+    assert.deepEqual(await health.json(),{ok:true,service:"voltex-market-edge",version:"public-display-edge-v9"});
 
     const book=await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-book/BTCUSDT",{headers:{authorization:"Bearer must-not-forward",cookie:"session=must-not-forward"}}));
     const bookBody=await book.json();assert.equal(book.status,200);assert.equal(bookBody.source,"bybit");assert.equal(bookBody.bids.length,25);assert.equal(bookBody.asks.length,25);
@@ -54,6 +54,20 @@ async function run(){
     assert.equal((await (await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-candles/BTCUSDT?interval=60&limit=320&fallback=okx"))).json()).source,"okx");
     assert.ok(fallbackSeen.every(url=>!url.includes("api.voltextech.net")&&!url.includes("onrender.com")));
 
+    const wsSeen=[];
+    class FakeWebSocket{
+      constructor(url){this.url=url;this.readyState=0;this.listeners={};wsSeen.push(String(url));queueMicrotask(()=>{this.readyState=1;this.emit("open",{});});}
+      addEventListener(type,listener){(this.listeners[type]??=[]).push(listener);}
+      emit(type,event){for(const listener of this.listeners[type]??[])listener(event);}
+      send(text){
+        const request=JSON.parse(text),supported=new Set(["frxXAGUSD","frxXPTUSD","frxUSDJPY","frxAUDUSD"]);
+        if(!supported.has(request.ticks))return;
+        queueMicrotask(()=>this.emit("message",{data:JSON.stringify({msg_type:"tick",tick:{symbol:request.ticks,quote:request.ticks==="frxXAGUSD"?64.5:request.ticks==="frxXPTUSD"?1800:request.ticks==="frxUSDJPY"?150.1:0.66,epoch:Math.floor(Date.now()/1000)}})}));
+      }
+      close(){if(this.readyState>=2)return;this.readyState=3;queueMicrotask(()=>this.emit("close",{}));}
+    }
+    globalThis.WebSocket=FakeWebSocket;
+
     const publicSeen=[];
     globalThis.fetch=async(url,options={})=>{
       publicSeen.push(String(url));
@@ -72,9 +86,20 @@ async function run(){
         if(u.pathname.includes("recent-trade")&&category==="spot")return jsonResponse({retCode:0,result:{category:"spot",list:[{symbol:"BTCUSDT",execId:"spot-t1",price:"100.5",size:"0.2",time:"1790150000800",side:"Buy"}]}});
       }
       if(u.hostname==="biquote.io"&&u.pathname==="/api/latest"){
-        const payload={};
-        for(const symbol of u.searchParams.getAll("symbols"))payload[symbol]={symbol,mid:"100.25",timestamp:"2026-09-23T14:00:00Z",dayDiffPercent:1.25,marketState:"open",stale:false};
+        const payload={},available=new Set(["XAUUSD","XPDUSD","EURUSD","GBPUSD","USDCAD"]);
+        for(const symbol of u.searchParams.getAll("symbols"))if(available.has(symbol))payload[symbol]={symbol,mid:symbol==="XAUUSD"?"4305.20":"100.25",timestamp:new Date().toISOString(),dayDiffPercent:1.25,marketState:"open",stale:false};
         return jsonResponse(payload);
+      }
+      if(u.hostname==="www.eia.gov"&&u.pathname.includes("/dnav/pet/hist/")){
+        const wti=u.pathname.endsWith("RWTCD.htm"),title=wti?"Cushing, OK WTI Spot Price FOB":"Europe Brent Spot Price FOB";
+        const values=wti?["90.10","90.20","90.30","90.40","90.50"]:["95.10","95.20","95.30","95.40","95.50"];
+        return new Response(`<html><h1>${title}</h1><p>Dollars per Barrel</p><table><tr><td>2026 Sep-21 to Sep-25</td>${values.map(v=>`<td>${v}</td>`).join("")}</tr></table></html>`,{status:200,headers:{"content-type":"text/html"}});
+      }
+      if(u.hostname==="api.frankfurter.dev"&&u.pathname==="/v2/rates"){
+        return jsonResponse([
+          {date:"2026-09-24",base:"USD",quote:"CHF",rate:0.8},
+          {date:"2026-09-24",base:"USD",quote:"NZD",rate:1.7}
+        ]);
       }
       if(u.hostname==="biquote.io"&&u.pathname.endsWith("/ohlc")){
         const provider=decodeURIComponent(u.pathname.split("/")[2]);
@@ -102,7 +127,15 @@ async function run(){
     const cfdResponse=await worker.fetch(new Request("https://market.voltextech.net/cfd/display/tickers?case=cfd"));
     assert.match(cfdResponse.headers.get("cache-control")||"",/max-age=21600/);
     const cfd=await cfdResponse.json();
-    assert.equal(cfd.configured,true);assert.equal(cfd.tickers.length,13);assert.ok(cfd.tickers.every(row=>row.displayOnly===true&&row.executionAllowed===false));
+    assert.equal(cfd.configured,true);assert.equal(cfd.source,"cloudflare-cfd-multisource");assert.equal(cfd.tickers.length,13);
+    assert.ok(cfd.tickers.every(row=>row.displayOnly===true&&row.executionAllowed===false));
+    assert.ok(cfd.tickers.every(row=>row.price!==null));
+    assert.deepEqual(new Set(cfd.sources),new Set(["biquote","deriv","eia","frankfurter"]));
+    assert.equal(cfd.tickers.find(row=>row.symbol==="XAUUSD").provider,"biquote");
+    assert.equal(cfd.tickers.find(row=>row.symbol==="XAGUSD").provider,"deriv");
+    assert.equal(cfd.tickers.find(row=>row.symbol==="WTIUSD").provider,"eia");
+    assert.equal(cfd.tickers.find(row=>row.symbol==="USDCHF").provider,"frankfurter");
+    assert.ok(wsSeen.some(url=>url==="wss://api.derivws.com/trading/v1/options/ws/public"));
     assert.equal(cfd._display?.mode,"snapshot");assert.equal(cfd._display?.refreshMs,6*60*60*1000);assert.ok(Number.isFinite(cfd._display?.capturedAt));
     const cfdBarsResponse=await worker.fetch(new Request("https://market.voltextech.net/cfd/display/candles/XAUUSD?interval=1h&limit=50&case=cfd"));
     assert.match(cfdBarsResponse.headers.get("cache-control")||"",/max-age=21600/);
@@ -112,12 +145,15 @@ async function run(){
     assert.ok(publicSeen.every(url=>!url.includes("api.voltextech.net")&&!url.includes("onrender.com")));
     assert.ok(publicSeen.some(url=>url.includes("api.kraken.com")));
     assert.ok(publicSeen.some(url=>url.includes("biquote.io")));
+    assert.ok(publicSeen.some(url=>url.includes("www.eia.gov")));
+    assert.ok(publicSeen.some(url=>url.includes("api.frankfurter.dev")));
 
     assert.equal((await worker.fetch(new Request("https://market.voltextech.net/health",{method:"POST"}))).status,405);
     assert.equal((await worker.fetch(new Request("https://market.voltextech.net/private/orders"))).status,404);
     console.log("market-edge worker tests passed");
   }finally{
     globalThis.fetch=originalFetch;if(originalCaches!==undefined)globalThis.caches=originalCaches;
+    if(originalWebSocket===undefined)delete globalThis.WebSocket;else globalThis.WebSocket=originalWebSocket;
   }
 }
 run().catch(error=>{console.error(error);process.exit(1);});
