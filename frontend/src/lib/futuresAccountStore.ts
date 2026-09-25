@@ -366,7 +366,11 @@ class FuturesAccountStore {
     if (runtime.timer !== null && wanted === runtime.intervalMs) return;
     runtime.intervalMs = wanted;
     if (runtime.timer !== null) clearInterval(runtime.timer);
-    runtime.timer = setInterval(() => void this.refresh(resource), wanted);
+    runtime.timer = setInterval(() => {
+      // visibilitychange normally clears this timer immediately. The guard
+      // also covers a callback queued at the exact moment the tab hid.
+      if (!this.isHidden()) void this.refresh(resource);
+    }, wanted);
   }
 
   private patch<K extends ResourceKey>(resource: K, changes: Partial<FuturesAccountState[K]>): void {
