@@ -54,7 +54,19 @@
 #archive-terminal-preview .chart-area { grid-area:2 / 1 / 3 / 2; }
 #archive-terminal-preview .orderbook-area { grid-area:2 / 2 / 3 / 3; border-left:1px solid var(--border); }
 #archive-terminal-preview .order-form-area { grid-area:1 / 3 / 4 / 4; border-left:1px solid var(--border); overflow-y:auto; min-height:0; }
-#archive-terminal-preview .bottom-panel { grid-area:3 / 1 / 4 / 3; height:auto; min-height:0; max-height:none; border-top:1px solid var(--border); }
+/* THE BOTTOM PANEL AS ON THE REFERENCE (owner, 2026-09-24: «чуть чорнішою…
+   як у байбіт», «безшовну», «і ці перегородки у байбіт не видні»; approved
+   on the live preview). Read off the owner's Bybit screenshot: one #101014
+   surface behind tabs, headings, rows and both pinned columns, a near-black
+   seam above it instead of the grey rule, and no line anywhere inside it —
+   not under the tab strip, not between rows, not beside «Закрыть как».
+   Every surface in the panel paints var(--panel), so the one token moves
+   all of them together. The dialogs the rows open («Закрытие по лимиту»,
+   the position card) are declared inside the panel but float over the whole
+   terminal: they keep the terminal's own surface. */
+#archive-terminal-preview { --terminal-panel:var(--panel); }
+#archive-terminal-preview .bottom-panel { grid-area:3 / 1 / 4 / 3; height:auto; min-height:0; max-height:none; --panel:#101014; border-top:1px solid #08090c; }
+#archive-terminal-preview .bottom-panel dialog { --panel:var(--terminal-panel); }
 #archive-terminal-preview .bottom-content { min-width:0; min-height:0; overflow:hidden; }
 /* Keep the table's scrollbar at the bottom of its own panel, beside the independent trading rail. */
 #archive-terminal-preview .futures-positions-scroll { min-height:0; overflow-x:scroll !important; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:rgba(132,142,156,.16) transparent; }
@@ -66,6 +78,7 @@
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-corner { background:transparent; }
 #archive-terminal-preview .reference-order-heading { display:none; }
 #archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px; min-height:40px; padding-inline:14px; font-size:12px; }
+#archive-terminal-preview .bottom-panel .terminal-account-header { border-bottom-color:transparent; }
 #archive-terminal-preview .terminal-chart-heading { color:var(--text-primary); }
 #archive-terminal-preview :is(.terminal-chart-heading button,.rb-tab,.bottom-tab) { font-size:12px; font-weight:550; }
 #archive-terminal-preview .terminal-chart-shell .chart-toolbar { background:var(--panel); height:38px; min-height:38px; border-color:var(--border); padding:4px 10px; gap:8px; }
@@ -265,10 +278,10 @@
 #archive-terminal-preview .archive-protection-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 #archive-terminal-preview .archive-protection-fields input { min-width:0; width:100%; border:1px solid var(--field-line); background:var(--panel-alt); color:var(--text-primary); padding:10px; border-radius:7px; font-size:13px; }
 #archive-terminal-preview .archive-order-protection small { font-size:11px; line-height:16px; color:var(--text-secondary); }
-#archive-terminal-preview .archive-pair-filter { margin-left:auto; padding:0 12px; display:flex; align-items:center; gap:6px; font-size:11px; white-space:nowrap; color:var(--text-secondary); }
+#archive-terminal-preview .archive-pair-filter { margin-left:auto; padding:0 12px; display:flex; align-items:center; gap:6px; font-size:11px; white-space:nowrap; color:#eaecef; }
 #archive-terminal-preview .bottom-tabs { padding:0; gap:18px; border-bottom:0; box-shadow:none; }
 #archive-terminal-preview .bottom-tab .reference-tab-count { background:transparent; padding:0 0 0 4px; font-size:inherit; color:inherit; }
-#archive-terminal-preview .bottom-tabs .bottom-tab { font-size:13px; font-weight:550; color:#dce3ed; }
+#archive-terminal-preview .bottom-tabs .bottom-tab { font-size:13px; font-weight:550; color:#71757a; }
 #archive-terminal-preview .bottom-tabs .bottom-tab:hover { color:#fff; }
 #archive-terminal-preview .bottom-tabs .bottom-tab.active { color:#fff; border-bottom-color:#f0b90b; box-shadow:inset 0 -2px 0 #f0b90b; }
 /* THE ROW NEVER COMPRESSES (owner, 2026-09-22, production screenshot).
@@ -315,7 +328,7 @@
 /* `height:40px`: the studio sheet pins the heading to `height:30px` with
    `padding:0 !important`; one explicit height keeps the band the same at
    every width the geometry check measures, with room for a two-line title. */
-#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:var(--archive-label) !important; height:40px; font-size:11px; font-weight:400; line-height:1.25; vertical-align:middle; border-bottom:0; position:sticky; top:0; z-index:1; }
+#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:#71757a !important; height:40px; font-size:11px; font-weight:400; line-height:1.25; vertical-align:middle; border-bottom:0; position:sticky; top:0; z-index:1; }
 /* The heading band reads as its own strip, as on the reference: titles in
    the middle of it, a hairline under it, so the first row's figures start
    clear of the titles and rows scrolling up pass UNDER a ruled band instead
@@ -323,15 +336,13 @@
    залазить на нижній»). The rule is drawn inside the cell, not as a border:
    a collapsed border does not travel with a sticky heading. */
 #archive-terminal-preview .futures-positions-table thead th::after { content:none; }
-/* The rows' separators blend too. They are the cells' inline
-   `border-top:1px solid var(--border)` (hence !important) and the reference
-   sheet's 1px #2a2a31 on the row: between rows they take the panel's raised
-   tone, between the headings and the first row nothing. Same 1px, so the
-   64px row does not move. Desktop only; the phone rows are cards. */
+/* No separators between rows, as on the reference. They are the cells'
+   inline `border-top:1px solid var(--border)` (hence !important) and the
+   reference sheet's 1px #2a2a31 on the row: the 1px stays, transparent, so
+   the 64px row does not move. Desktop only; the phone rows are cards. */
 @media (min-width:901px) {
   #archive-terminal-preview .futures-position-row { border-top:0; }
-  #archive-terminal-preview .futures-positions-table tbody td { border-top:1px solid var(--panel-alt) !important; }
-  #archive-terminal-preview .futures-positions-table tbody tr:first-child td { border-top-color:transparent !important; }
+  #archive-terminal-preview .futures-positions-table tbody td { border-top:1px solid transparent !important; }
 }
 /* Every heading stays on ONE line (the owner, 2026-09-23: the two-line
    «Цена / Входа», «Цена / маркировки», «Цена / ликвид.» beside one-line
@@ -366,7 +377,6 @@
      pinned column's measured width (`--pin-start`, set by the panel).
    Desktop only: on a phone the rows are cards and `td::before` is a label. */
 @media (min-width:901px) {
-  #archive-terminal-preview .futures-positions-scroll[data-hidden-end=true] .futures-positions-table :is(th,td):last-child { box-shadow:inset 1px 0 0 var(--border); }
   #archive-terminal-preview .futures-positions-scroll[data-hidden-end=true] .futures-positions-table :is(th,td):last-child::before { content:''; position:absolute; top:0; bottom:0; right:100%; width:48px; pointer-events:none; background:linear-gradient(90deg,transparent,var(--pos-cell-bg) 80%); }
   #archive-terminal-preview .futures-positions-scroll[data-hidden-start=true] { -webkit-mask-image:linear-gradient(90deg,#000 var(--pin-start,0px),transparent var(--pin-start,0px),#000 calc(var(--pin-start,0px) + 30px)); mask-image:linear-gradient(90deg,#000 var(--pin-start,0px),transparent var(--pin-start,0px),#000 calc(var(--pin-start,0px) + 30px)); }
 }
@@ -374,7 +384,7 @@
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar { height:10px; }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-track { background:var(--studio-canvas); }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-thumb { background:#657082; border-radius:5px; border:2px solid var(--studio-canvas); }
-#archive-terminal-preview .futures-position-row:hover td { --pos-cell-bg:var(--panel-alt); background:var(--pos-cell-bg); }
+#archive-terminal-preview .futures-position-row:hover td { --pos-cell-bg:#1a1b21; background:var(--pos-cell-bg); }
 #archive-terminal-preview .futures-position-realized { border-bottom:0; text-decoration:none; }
 #archive-terminal-preview .futures-positions-table td.text-buy { color:var(--buy) !important; }
 #archive-terminal-preview .futures-positions-table td.text-sell { color:var(--sell) !important; }
@@ -514,6 +524,14 @@
    a smaller tertiary grey (owner: «не тільки цифри контрасніші, але і usdt»). */
 #archive-terminal-preview :is(.futures-position-unit,.futures-account-stat .fa-unit,.fcd-unit) { color:inherit; font-size:inherit; font-weight:inherit; opacity:1; }
 #archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized)[data-unit]::after { color:inherit; font-size:inherit; font-weight:inherit; opacity:1; }
+/* …except the money the trader posted (owner, 2026-09-24: «usdt сірим в
+   точності як у байбіт»). On the reference's «Стоим.» column the unit is the
+   quiet caption grey and smaller than the figure — «25,130.80 USDT»: glyph
+   peak #6d6d71 against white digits, 11px of ink against 13 — while the
+   quantity «9.37 ETH» and the P&L «138.6798 USDT» keep their figure's
+   colour. The quantity cell is the one with a side colour. `.85em` keeps
+   that proportion on the 13px row (11px) and the phone's 14px card. */
+#archive-terminal-preview .futures-positions-table td:not(.text-buy):not(.text-sell) .futures-position-unit { color:#71757a; font-size:.85em; font-weight:400; }
 /* LONG / SHORT in the reference's colours, and never dimmed (owner: «кнопки
    контрасніші, такі ж самі як на скріні 1:1»). Read off that screenshot:
    #1ace88 and #f55065 with white 700 labels, full strength even with no
