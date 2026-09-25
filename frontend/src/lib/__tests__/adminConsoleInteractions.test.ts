@@ -71,8 +71,10 @@ test('deposit discovery is on demand, coalesces overlapping clicks and never pol
   jest.useFakeTimers({ doNotFake: ['setImmediate'] });
   try {
     await mountDeposits();
+    expect(api.getAdminDeposits).toHaveBeenCalledTimes(1);
     await click('Обновить входящие'); await click('Обновить входящие');
     expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(1);
+    expect(api.getAdminDeposits).toHaveBeenCalledTimes(1);
     await act(async () => { release({ transfers: [], failedChains: [] }); await flush(); });
     await act(async () => { jest.advanceTimersByTime(60 * 60_000); await flush(); });
     expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(1);
