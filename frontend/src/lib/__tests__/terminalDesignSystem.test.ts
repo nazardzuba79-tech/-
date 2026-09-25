@@ -121,9 +121,14 @@ it('Spot and CFD carry the Futures TradingView surface, value for value', () => 
   const spotCfdRoot = block(css, P, 'linear-gradient');
   expect(gradient(spotCfdRoot)).toBeDefined();
   expect(gradient(spotCfdRoot)).toBe(gradient(futuresRoot));
-  // The token block names the Futures id inside :is(), which outweighs any
-  // number of classes; without !important the hairlines stay #2b3139.
-  expect(spotCfdRoot).toContain('--border: rgba(255,255,255,.07) !important');
+  // The panels' hairline is the Futures one. The token block names the
+  // Futures id inside :is(), which outweighs any number of classes; without
+  // !important the hairlines stay #2b3139.
+  const hairline = futuresRoot.match(/--border:\s*([^;]+);/)?.[1];
+  expect(hairline).toBe('rgba(255,255,255,.12)');
+  expect(spotCfdRoot).toContain(`--border: ${hairline} !important`);
+  // The bottom panel sits under that same line, as on Futures.
+  expect(block(css, `${P} :is(.bottom-panel, .cfd-bottom-panel)`, 'box-shadow')).toContain('box-shadow: 0 -1px 0 var(--border)');
 
   // Both charts paint nothing of their own and take the Futures chart tokens.
   const futuresChart = block(archive, '#archive-terminal-preview .terminal-chart-shell');

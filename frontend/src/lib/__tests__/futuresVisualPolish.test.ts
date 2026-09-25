@@ -254,10 +254,15 @@ describe('6. the bottom panel as on the reference: darker, seamless, quiet capti
   // Owner, 2026-09-24: «чуть чорнішою… як у байбіт», «безшовну», «і ці
   // перегородки у байбіт не видні», «usdt сірим в точності як у байбіт».
   // Approved on the live preview before it came to the exchange.
-  it('paints the whole panel one darker surface, with a near-black seam above it', () => {
+  it('paints the whole panel one darker surface, with the panels\' hairline above it', () => {
     const panel = rule('#archive-terminal-preview .bottom-panel');
     expect(panel).toContain('--panel:#101014');
-    expect(panel).toContain('border-top:1px solid #08090c');
+    // 2026-09-25, beside a Bybit screenshot: «зроби більш видими перегородку
+    // цієї панелі, не прям яскраво, просто чуть замітна» — the near-black
+    // seam had vanished into the gradient; the panel now sits under the
+    // same hairline as every other panel (§ 8 pins its strength).
+    expect(panel).toContain('border-top:1px solid var(--border)');
+    expect(panel).not.toContain('#08090c');
     // The dialogs the rows open float over the whole terminal and keep its surface.
     expect(everyRule('#archive-terminal-preview')).toContain('--terminal-panel:var(--panel)');
     expect(rule('#archive-terminal-preview .bottom-panel dialog')).toContain('--panel:var(--terminal-panel)');
@@ -342,6 +347,18 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     expect(CSS).toMatch(/:is\(\.global-header, \.terminal, \.ticker-bar, \.chart-area, \.terminal-chart-shell[^)]*\.fo-panel[^)]*\) \{\s*background: transparent !important;/);
     // The bottom panel keeps its approved flat surface (§ 6).
     expect(rule('#archive-terminal-preview .bottom-panel')).toContain('--panel:#101014');
+  });
+
+  it('draws the lines between the panels just visibly, as on Bybit', () => {
+    // «зроби більш видими перегородку цієї панелі, не прям яскраво, просто
+    // чуть замітна»: a white hairline at .12 — .07 vanished into the
+    // gradient, and anything past ~.15 starts to read as a frame.
+    const surface = everyRule('#archive-terminal-preview');
+    expect(surface).toContain('--border: rgba(255,255,255,.12)');
+    expect(surface).not.toContain('--border: rgba(255,255,255,.07)');
+    for (const panel of ['.orderbook-area', '.order-form-area']) {
+      expect(rule(`#archive-terminal-preview ${panel}`)).toContain('border-left:1px solid var(--border)');
+    }
   });
 
   it('lets the chart show the gradient, with clean white / orange candles and a white axis', () => {
