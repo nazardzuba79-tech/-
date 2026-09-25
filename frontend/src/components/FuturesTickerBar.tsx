@@ -120,7 +120,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
     // its client method are untouched — internal risk and the Analytics
     // VOLTEX section still read them.
     function loadMark() {
-      if (document.hidden) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
       api
         .getFuturesMarkPrice(symbol)
         .then((res) => {
@@ -131,7 +131,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
         .catch(() => {});
     }
     function loadFunding() {
-      if (document.hidden) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
       api
         .getFuturesFundingRate(symbol, 1)
         .then((res) => {
@@ -150,16 +150,16 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
     const markInterval = setInterval(loadMark, 4000);
     const fundingInterval = setInterval(loadFunding, 60_000);
     const visible = () => {
-      if (document.hidden) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
       loadMark();
       loadFunding();
     };
-    document.addEventListener('visibilitychange', visible);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visible);
     return () => {
       cancelled = true;
       clearInterval(markInterval);
       clearInterval(fundingInterval);
-      document.removeEventListener('visibilitychange', visible);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visible);
     };
   }, [symbol]);
 
@@ -177,7 +177,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
         .catch(() => {});
     }
     const refresh = () => {
-      if (document.hidden) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
       load();
     };
     refresh();
@@ -185,11 +185,11 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
     // minute matches its source/cache scale and hidden tabs do no work.
     const interval = setInterval(refresh, 60_000);
     const visible = () => { if (!document.hidden) refresh(); };
-    document.addEventListener('visibilitychange', visible);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visible);
     return () => {
       cancelled = true;
       clearInterval(interval);
-      document.removeEventListener('visibilitychange', visible);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visible);
     };
   }, [baseAsset]);
 
