@@ -1,3 +1,5 @@
+import './CfdInstrumentIcon.css';
+
 type IconKind='metal'|'wti'|'brent'|'fx';
 
 const METALS=new Set(['XAUUSD','XAGUSD','XPTUSD','XPDUSD']);
@@ -17,9 +19,9 @@ function kindOf(symbol:string):IconKind{
  * The surrounding terminal already contains the symbol/name for accessible
  * identification, so this mark is decorative.
  */
-export function CfdInstrumentIcon({symbol}:{symbol:string}){
+export function CfdInstrumentIcon({symbol,compact=false}:{symbol:string;compact?:boolean}){
   const kind=kindOf(symbol);
-  return <span className={`cfd-instrumentIcon cfd-instrumentIcon-${symbol} cfd-instrumentIcon-${kind}`} aria-hidden="true">
+  return <span className={`cfd-instrumentIcon cfd-instrumentIcon-${symbol} cfd-instrumentIcon-${kind}${compact?' cfd-instrumentIcon--compact':''}`} aria-hidden="true">
     <svg viewBox="0 0 32 32" focusable="false">
       {kind==='metal'&&<>
         <path className="cfd-icon-primary" d="M8.25 21.25 11.1 11.5h9.8l2.85 9.75H8.25Z"/>
