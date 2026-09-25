@@ -119,7 +119,8 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
     // was never an answer to that question. `/futures/open-interest` and
     // its client method are untouched — internal risk and the Analytics
     // VOLTEX section still read them.
-    function load() {
+    function loadMark() {
+      if (typeof document !== 'undefined' && document.hidden) return;
       api
         .getFuturesMarkPrice(symbol)
         .then((res) => {
@@ -128,6 +129,9 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
           setIndexPrice(parseFloat(res.indexPrice));
         })
         .catch(() => {});
+    }
+    function loadFunding() {
+      if (typeof document !== 'undefined' && document.hidden) return;
       api
         .getFuturesFundingRate(symbol, 1)
         .then((res) => {
@@ -137,11 +141,25 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
         })
         .catch(() => {});
     }
-    load();
-    const interval = setInterval(load, 4000);
+    loadMark();
+    loadFunding();
+    // Mark/index drive the account display and keep their existing 4s cadence.
+    // The latest SETTLED funding record changes on the settlement boundary, not
+    // every four seconds, so one visible-minute refresh is ample and avoids
+    // repeatedly downloading the same DB-backed history row.
+    const markInterval = setInterval(loadMark, 4000);
+    const fundingInterval = setInterval(loadFunding, 60_000);
+    const visible = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      loadMark();
+      loadFunding();
+    };
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visible);
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      clearInterval(markInterval);
+      clearInterval(fundingInterval);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visible);
     };
   }, [symbol]);
 
@@ -158,14 +176,20 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
         // `available` flag is what decides whether a figure renders.
         .catch(() => {});
     }
-    load();
-    // Slower than the 4s VOLTEX loop on purpose: a rolling 24h turnover
-    // and an open-interest snapshot do not move on that timescale, and
-    // the server caches them for 15-30s anyway.
-    const interval = setInterval(load, 30_000);
+    const refresh = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      load();
+    };
+    refresh();
+    // Rolling turnover/open-interest is reference display data; one visible
+    // minute matches its source/cache scale and hidden tabs do no work.
+    const interval = setInterval(refresh, 60_000);
+    const visible = () => { if (!document.hidden) refresh(); };
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visible);
     return () => {
       cancelled = true;
       clearInterval(interval);
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visible);
     };
   }, [baseAsset]);
 
