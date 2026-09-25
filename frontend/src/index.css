@@ -2262,6 +2262,10 @@ a:hover > .nav-card-icon {
 /* Use the existing full navigation drawer before desktop links collide
    with the account actions. */
 @media (max-width: 1439px) {
+  .global-header .main-nav,
+  .global-header .brand-separator { display: none; }
+  .global-header .mobile-menu { display: grid; }
+  .global-header .nav-mobile-menu.open { display: flex; }
   .trade-terminal.terminal-studio .global-header .main-nav,
   .trade-terminal.terminal-studio .global-header .brand-separator { display: none; }
   .trade-terminal.terminal-studio .global-header .mobile-menu { display: grid; }
@@ -2468,4 +2472,12 @@ a:hover > .nav-card-icon {
   .global-header .header-actions > .nav-wallet-link {
     display: none;
   }
+}
+
+/* The new top-level bot tab must fit without clipping OTC or squeezing
+   account controls. Keep the approved type size; reclaim link spacing on laptops. */
+@media (min-width: 1440px) and (max-width: 1679px) {
+  .global-header .main-nav { gap:0; }
+  .global-header .main-nav .nav-item { padding-inline:6px; }
+  .global-header .brand-separator { margin-inline:12px; }
 }

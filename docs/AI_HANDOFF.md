@@ -3759,3 +3759,11 @@ withdrawal was placed.
 - Updated the visual-polish guard to assert the approved solid shared header while preserving the terminal gradient. Updated browser assertions and screenshots for the actual top-level tab and non-overlapping controls.
 - Validation: frontend TypeScript/Vite build PASS; 179 tests in seven relevant suites PASS; 135 Edge browser assertions PASS at 320/390/1024/1440/1920px. Local jsdom supplied outside the repository, with no package/lockfile changes.
 - Preserved other agents' Futures/Spot/CFD behavior, financial logic, authentication and model-return labels. Publishing is pending latest-main sync, GitHub checks and confirmed Render workspace.
+
+## Codex — 2026-09-25 — Laptop navigation fit before publication
+
+- Based on synced head de9ef5d370631c6319f97811ccaac234de444ea3 (main #263 preserved).
+- GitHub's pair-persistence browser check reproduced 52px of clipped product links on Markets at 1440px after adding the bot tab. Kept type sizes and reclaimed link/separator spacing at 1440–1679px; below 1440px the shared full drawer keeps every destination accessible.
+- Files: index.css; qa-trading-bots.cjs now checks actual nav scroll clipping and Markets after terminal routes, not just outer cluster overlap; refreshed evidence/README.
+- Frontend build PASS, expanded bot/header browser 181 assertions PASS, exact unmodified pair-persistence harness PASS at 1440/390 using Edge. Existing known chart teardown warning remains documented by that harness. Additional #263 CFD source/runtime suite: 31 PASS.
+- No financial, backend, production configuration or model-label changes. Awaiting final CI before publication.

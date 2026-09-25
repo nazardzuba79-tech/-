@@ -5,6 +5,7 @@
     "1920: no horizontal overflow",
     "1920: solid graphite header",
     "1920: header clusters separate",
+    "1920: no clipped navigation links",
     "1920: positive model range",
     "1920: model disclosure visible",
     "1920: modal opens",
@@ -26,6 +27,7 @@
     "1440: no horizontal overflow",
     "1440: solid graphite header",
     "1440: header clusters separate",
+    "1440: no clipped navigation links",
     "1440: positive model range",
     "1440: model disclosure visible",
     "1440: modal opens",
@@ -47,6 +49,7 @@
     "1024: no horizontal overflow",
     "1024: solid graphite header",
     "1024: header clusters separate",
+    "1024: no clipped navigation links",
     "1024: positive model range",
     "1024: model disclosure visible",
     "1024: modal opens",
@@ -59,12 +62,14 @@
     "1024: favorite retained",
     "1024: category filter",
     "1024: minimum sorting",
+    "1024: mobile bots link",
     "1024: zero writes",
     "1024: zero uncaught errors",
     "390: seven bots",
     "390: no horizontal overflow",
     "390: solid graphite header",
     "390: header clusters separate",
+    "390: no clipped navigation links",
     "390: positive model range",
     "390: model disclosure visible",
     "390: modal opens",
@@ -84,6 +89,7 @@
     "320: no horizontal overflow",
     "320: solid graphite header",
     "320: header clusters separate",
+    "320: no clipped navigation links",
     "320: positive model range",
     "320: model disclosure visible",
     "320: modal opens",
@@ -100,39 +106,79 @@
     "320: zero writes",
     "320: zero uncaught errors",
     "Monday boundary refreshes an open page",
+    "futures 1920: shared graphite",
+    "futures 1920: no overflow",
+    "futures 1920: header controls separate",
+    "futures 1920: no clipped navigation links",
+    "spot 1920: shared graphite",
+    "spot 1920: no overflow",
+    "spot 1920: header controls separate",
+    "spot 1920: no clipped navigation links",
+    "cfd 1920: shared graphite",
+    "cfd 1920: no overflow",
+    "cfd 1920: header controls separate",
+    "cfd 1920: no clipped navigation links",
+    "markets 1920: shared graphite",
+    "markets 1920: no overflow",
+    "markets 1920: header controls separate",
+    "markets 1920: no clipped navigation links",
+    "home 1920: graphite and no overlapping controls",
+    "home 1920: no uncaught errors",
+    "1920: bots route preserves authentication",
     "futures 1440: shared graphite",
     "futures 1440: no overflow",
     "futures 1440: header controls separate",
+    "futures 1440: no clipped navigation links",
     "spot 1440: shared graphite",
     "spot 1440: no overflow",
     "spot 1440: header controls separate",
+    "spot 1440: no clipped navigation links",
     "cfd 1440: shared graphite",
     "cfd 1440: no overflow",
     "cfd 1440: header controls separate",
+    "cfd 1440: no clipped navigation links",
+    "markets 1440: shared graphite",
+    "markets 1440: no overflow",
+    "markets 1440: header controls separate",
+    "markets 1440: no clipped navigation links",
     "home 1440: graphite and no overlapping controls",
     "home 1440: no uncaught errors",
     "1440: bots route preserves authentication",
     "futures 1024: shared graphite",
     "futures 1024: no overflow",
     "futures 1024: header controls separate",
+    "futures 1024: no clipped navigation links",
     "spot 1024: shared graphite",
     "spot 1024: no overflow",
     "spot 1024: header controls separate",
+    "spot 1024: no clipped navigation links",
     "cfd 1024: shared graphite",
     "cfd 1024: no overflow",
     "cfd 1024: header controls separate",
+    "cfd 1024: no clipped navigation links",
+    "markets 1024: shared graphite",
+    "markets 1024: no overflow",
+    "markets 1024: header controls separate",
+    "markets 1024: no clipped navigation links",
     "home 1024: graphite and no overlapping controls",
     "home 1024: no uncaught errors",
     "1024: bots route preserves authentication",
     "futures 390: shared graphite",
     "futures 390: no overflow",
     "futures 390: header controls separate",
+    "futures 390: no clipped navigation links",
     "spot 390: shared graphite",
     "spot 390: no overflow",
     "spot 390: header controls separate",
+    "spot 390: no clipped navigation links",
     "cfd 390: shared graphite",
     "cfd 390: no overflow",
     "cfd 390: header controls separate",
+    "cfd 390: no clipped navigation links",
+    "markets 390: shared graphite",
+    "markets 390: no overflow",
+    "markets 390: header controls separate",
+    "markets 390: no clipped navigation links",
     "home 390: graphite and no overlapping controls",
     "home 390: no uncaught errors",
     "390: bots route preserves authentication"
@@ -144,7 +190,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "font": "Arial, Helvetica, sans-serif",
-      "headerOverlap": false
+      "headerOverlap": false,
+      "navClipped": 0
     },
     {
       "width": 1440,
@@ -152,7 +199,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "font": "Arial, Helvetica, sans-serif",
-      "headerOverlap": false
+      "headerOverlap": false,
+      "navClipped": 0
     },
     {
       "width": 1024,
@@ -160,7 +208,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "font": "Arial, Helvetica, sans-serif",
-      "headerOverlap": false
+      "headerOverlap": false,
+      "navClipped": 0
     },
     {
       "width": 390,
@@ -168,7 +217,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "font": "Arial, Helvetica, sans-serif",
-      "headerOverlap": false
+      "headerOverlap": false,
+      "navClipped": 0
     },
     {
       "width": 320,
@@ -176,7 +226,55 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "font": "Arial, Helvetica, sans-serif",
-      "headerOverlap": false
+      "headerOverlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "futures",
+      "width": 1920,
+      "background": "rgb(26, 27, 32)",
+      "texture": "none",
+      "overflow": 0,
+      "height": 48,
+      "overlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "spot",
+      "width": 1920,
+      "background": "rgb(26, 27, 32)",
+      "texture": "none",
+      "overflow": 0,
+      "height": 48,
+      "overlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "cfd",
+      "width": 1920,
+      "background": "rgb(26, 27, 32)",
+      "texture": "none",
+      "overflow": 0,
+      "height": 48,
+      "overlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "markets",
+      "width": 1920,
+      "background": "rgb(26, 27, 32)",
+      "texture": "none",
+      "overflow": 0,
+      "height": 64,
+      "overlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "home",
+      "width": 1920,
+      "background": "rgb(26, 27, 32)",
+      "overflow": 0,
+      "overlap": false
     },
     {
       "name": "futures",
@@ -185,7 +283,8 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "spot",
@@ -194,7 +293,8 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "cfd",
@@ -203,7 +303,18 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "markets",
+      "width": 1440,
+      "background": "rgb(26, 27, 32)",
+      "texture": "none",
+      "overflow": 0,
+      "height": 64,
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "home",
@@ -219,7 +330,8 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "spot",
@@ -228,7 +340,8 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "cfd",
@@ -237,7 +350,18 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "markets",
+      "width": 1024,
+      "background": "rgb(26, 27, 32)",
+      "texture": "none",
+      "overflow": 0,
+      "height": 64,
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "home",
@@ -253,7 +377,8 @@
       "texture": "none",
       "overflow": 0,
       "height": 52,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "spot",
@@ -262,7 +387,8 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "cfd",
@@ -271,7 +397,18 @@
       "texture": "none",
       "overflow": 0,
       "height": 48,
-      "overlap": false
+      "overlap": false,
+      "navClipped": 0
+    },
+    {
+      "name": "markets",
+      "width": 390,
+      "background": "rgb(26, 27, 32)",
+      "texture": "none",
+      "overflow": 0,
+      "height": 56,
+      "overlap": false,
+      "navClipped": 0
     },
     {
       "name": "home",

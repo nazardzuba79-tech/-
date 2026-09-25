@@ -67,12 +67,14 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       const layout=await page.evaluate(()=>{
         const h=document.querySelector('.global-header'),s=getComputedStyle(h);
         const left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect();
-        return {width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth,background:s.backgroundColor,texture:s.backgroundImage,font:s.fontFamily,headerOverlap:left.right>right.left+1};
+        const nav=h.querySelector('.main-nav');
+        return {width:innerWidth,overflow:document.documentElement.scrollWidth-innerWidth,background:s.backgroundColor,texture:s.backgroundImage,font:s.fontFamily,headerOverlap:left.right>right.left+1,navClipped:Math.max(0,nav.scrollWidth-nav.clientWidth)};
       });
       report.layouts.push(layout);
       check(width+': no horizontal overflow',layout.overflow<=1);
       check(width+': solid graphite header',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
       check(width+': header clusters separate',!layout.headerOverlap);
+      check(width+': no clipped navigation links',layout.navClipped===0);
       await page.screenshot({path:path.join(OUT,'bots-'+width+'.png'),fullPage:true});
       const values=await page.locator('.vb-bot .vb-roi').allTextContents();
       check(width+': positive model range',values.every(v=>parseFloat(v.replace('+',''))>=120&&parseFloat(v.replace('+',''))<=217));
@@ -99,7 +101,7 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       await page.getByRole('button',{name:'Все стратегии',exact:true}).click();
       await page.getByLabel('Сортировка ботов').selectOption('minimum');
       check(width+': minimum sorting',await page.locator('[data-bot]').first().getAttribute('data-bot')==='atlas');
-      if(width<700) {
+      if(await page.locator('.nav-burger').isVisible()) {
         await page.locator('.nav-burger').click();
         check(width+': mobile bots link',await page.locator('.nav-mobile-menu a[href="/trading-bots"]').isVisible());
       } else if(width>=1440) {
@@ -123,19 +125,20 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
     const after=await page.locator('.vb-bot .vb-roi').allTextContents();
     check('Monday boundary refreshes an open page',JSON.stringify(before)!==JSON.stringify(after));
     await context.close();
-    for(const width of [1440,1024,390]) {
+    for(const width of [1920,1440,1024,390]) {
       const context=await browser.newContext({viewport:{width,height:900}});
       await context.addInitScript(()=>{localStorage.setItem('exchange_token','local-qa-only');localStorage.setItem('exchange_lang','ru');});
       await context.route('**/*',route=>new URL(route.request().url()).origin===base ? route.continue() : route.abort());
       const page=await context.newPage();
-      for(const [name,url] of [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']]) {
+      for(const [name,url] of [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd'],['markets','/markets']]) {
         await page.goto(base+url);
         await page.locator('header').first().waitFor();
-        const layout=await page.locator('header').first().evaluate(h=>{const s=getComputedStyle(h),left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect();return {background:s.backgroundColor,texture:s.backgroundImage,overflow:document.documentElement.scrollWidth-innerWidth,height:h.getBoundingClientRect().height,overlap:left.right>right.left+1};});
+        const layout=await page.locator('header').first().evaluate(h=>{const s=getComputedStyle(h),left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect(),nav=h.querySelector('.main-nav');return {background:s.backgroundColor,texture:s.backgroundImage,overflow:document.documentElement.scrollWidth-innerWidth,height:h.getBoundingClientRect().height,overlap:left.right>right.left+1,navClipped:Math.max(0,nav.scrollWidth-nav.clientWidth)};});
         report.layouts.push({name,width,...layout});
         check(name+' '+width+': shared graphite',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
         check(name+' '+width+': no overflow',layout.overflow<=1);
         check(name+' '+width+': header controls separate',!layout.overlap);
+        check(name+' '+width+': no clipped navigation links',layout.navClipped===0);
         await page.screenshot({path:path.join(OUT,name+'-header-'+width+'.png')});
       }
       await context.close();

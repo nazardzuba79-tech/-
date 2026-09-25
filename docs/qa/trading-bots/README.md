@@ -17,15 +17,19 @@ deposit, order, scheduler, database or backend implementation was changed.
   a bot was launched. No funds are deducted, and no balance error is fabricated.
 - Shared solid graphite header, preserved logo/actions/authentication. Bots have
   a top-level tab next to Futures, plus mobile and homepage navigation entries.
-- Homepage uses its compact menu below 1440 px so the additional item fits.
+- Shared navigation and homepage use the compact menu below 1440 px. Laptop
+  link spacing leaves all product entries readable without clipping.
 
 ## Validation
 
 - TypeScript and Vite production build: PASS.
 - Bot model, order-panel/navigation and full visual-polish suites: 179 tests PASS.
-- Production-bundle browser harness: 135 assertions PASS in Microsoft Edge.
+- Production-bundle browser harness: 181 assertions PASS in Microsoft Edge.
+- Exact pair-persistence/header CI harness: PASS at 1440/390; the existing
+  known chart teardown warning remains classified by that unchanged harness.
+- Latest-main CFD cache-busting regression: 31 tests PASS after sync with #263.
 - Catalogue widths: 320, 390, 1024, 1440, 1920 px.
-- Futures, Spot, CFD and signed-out homepage headers: 390, 1024, 1440 px.
+- Futures, Spot, CFD, Markets and signed-out homepage headers: 390, 1024, 1440, 1920 px.
 - No page overflow, overlapping header clusters, bot-page uncaught errors or
   non-read API requests. Auth redirect preserved; keyboard menu, dialog Escape
   and focus restoration checked. Open-page weekly rollover checked with a clock.
