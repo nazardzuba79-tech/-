@@ -1,0 +1,59 @@
+/* Owner-approved order-panel preview, 2026-09-25. Presentation only;
+   contract prices, fees, sizing, protection and submission stay in the form. */
+#archive-terminal-preview .fo-panel {
+  --order-service-label:color-mix(in srgb,var(--archive-label) 87%,var(--panel));
+}
+#archive-terminal-preview .fo-field { --fo-field-height:60px; }
+#archive-terminal-preview .fo-field > .fo-fieldCaption {
+  top:8px; left:12px; font-size:13px; line-height:17px; font-weight:600; color:#d8dbe1;
+}
+#archive-terminal-preview .fo-field .fo-fieldRow { border-radius:7px; }
+#archive-terminal-preview .fo-field :is(.fo-input,.fo-markPrice) {
+  font-size:17px; line-height:22px; font-weight:600; padding:26px 0 8px 12px;
+}
+#archive-terminal-preview .fo-fieldTrailing { padding-right:12px; }
+#archive-terminal-preview .fo-field .fo-input::placeholder { font-weight:400; }
+#archive-terminal-preview .fo-infoRow > :first-child { color:var(--order-service-label) !important; }
+#archive-terminal-preview :is(.fo-reduceOnlyRow,.archive-calculator-slot .archive-calculator-trigger) { color:var(--order-service-label); }
+#archive-terminal-preview .fo-infoBox { padding-top:16px; gap:10px; }
+#archive-terminal-preview .fo-positionLimits { border-top:1px solid var(--border); padding-top:10px; color:var(--order-service-label); }
+#archive-terminal-preview .fo-positionLimits summary {
+  display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:28px;
+  font-size:12px; cursor:pointer; list-style:none;
+}
+#archive-terminal-preview .fo-positionLimits summary::-webkit-details-marker { display:none; }
+#archive-terminal-preview .fo-positionLimits summary::after {
+  content:''; width:6px; height:6px; border-right:1.5px solid currentColor;
+  border-bottom:1.5px solid currentColor; transform:rotate(45deg); margin:0 4px 3px;
+}
+#archive-terminal-preview .fo-positionLimits[open] summary::after { transform:rotate(225deg); }
+#archive-terminal-preview .fo-positionLimits .fo-infoRow { padding-top:8px; flex-wrap:wrap; }
+#archive-terminal-preview .fo-positionLimits .fo-infoRow > span { font-size:11px; }
+#archive-terminal-preview .fo-positionLimits summary:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+#archive-terminal-preview .archive-order-protection {
+  padding:0; gap:0; border:1px solid #4a4332; border-radius:8px;
+  background:linear-gradient(115deg,#f3ce7109,transparent 80%);
+}
+#archive-terminal-preview .archive-protection-toggle { min-height:66px; gap:11px; padding:13px; border-radius:8px; }
+#archive-terminal-preview .archive-protection-toggle-icon {
+  flex:0 0 32px; width:32px; height:34px; border:0; border-radius:7px; background:#f3ce710c; color:#f3ce71;
+}
+#archive-terminal-preview .archive-protection-copy { flex:1; min-width:0; }
+#archive-terminal-preview .archive-protection-copy strong { display:block; font-size:14px; font-weight:600; }
+#archive-terminal-preview .archive-protection-copy small { margin-top:2px; font-size:12px; line-height:16px; font-weight:400; color:var(--order-service-label); }
+#archive-terminal-preview .archive-protection-chevron { flex:none; color:var(--text-secondary); }
+#archive-terminal-preview .archive-protection-toggle[aria-expanded=true] .archive-protection-chevron { transform:rotate(180deg); }
+#archive-terminal-preview .archive-protection-fields { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:0 13px 13px; }
+#archive-terminal-preview .archive-protection-fields label { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:12px; color:#d8dbe1; }
+#archive-terminal-preview .archive-protection-fields input { min-height:44px; }
+@media(min-width:901px) {
+  #archive-terminal-preview .fo-form { gap:19px; }
+  #archive-terminal-preview .fo-mlTrigger { height:40px; min-height:40px; }
+  #archive-terminal-preview .order-family-tabs { margin-top:63px; }
+  #archive-terminal-preview .fo-submitPair button { height:50px; min-height:50px; }
+}
+@media(max-width:900px) {
+  #archive-terminal-preview .fo-panel { gap:17px; }
+  #archive-terminal-preview .fo-positionLimits summary { min-height:44px; }
+  #archive-terminal-preview .fo-field .fo-markPrice { font-size:16px; }
+}

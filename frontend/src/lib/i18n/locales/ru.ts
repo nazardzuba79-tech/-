@@ -1099,6 +1099,7 @@ export const RU = {
   'futures.estLiqPrice': 'Прим. цена ликвидации',
   'futures.estFees': 'Прим. комиссии (откр. + закр.)',
   'futures.maxPosition': 'Максимальная позиция',
+  'futures.positionLimits': 'Лимиты позиции',
   'futures.approxEntry': 'Прим. цена входа',
   'futures.tpslAtEntry': 'Тейк-профит / Стоп-лосс',
   'futures.tpslReduceOnlyOff': 'Ордер «только уменьшение» закрывает позицию. Защита ставится на саму позицию.',

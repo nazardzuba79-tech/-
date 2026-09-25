@@ -12,6 +12,8 @@ on:
   pull_request:
     paths:
       - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
+      - 'frontend/src/pages/trade-terminal/FuturesOrderPanelRefinement.css'
+      - 'frontend/src/pages/FuturesPage.tsx'
       - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
       - 'frontend/src/components/CfdChart.tsx'
       - 'frontend/src/lib/__tests__/terminalDesignSystem.test.ts'

@@ -8,7 +8,6 @@ import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesCalculator, type CalculatorDraft } from '../components/FuturesCalculator';
-import { FuturesTerminalStatus } from '../components/FuturesTerminalStatus';
 import { FuturesContractDetails } from '../components/FuturesContractDetails';
 import { ArchiveAccountActivity } from '../components/ArchiveTerminalDetails';
 import { Calculator } from 'lucide-react';
@@ -55,6 +54,7 @@ import './trade-terminal/TerminalPremium.css';
 import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/ArchiveTerminalPreview.css';
 import './trade-terminal/FuturesMobile.css';
+import './trade-terminal/FuturesOrderPanelRefinement.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately
@@ -696,10 +696,6 @@ export function FuturesPage() {
               <h2 className="reference-order-heading">{t('nav.trade')}</h2>
               <button type="button" className="archive-calculator-trigger" data-open-calculator="true" title={t('calc.title')} aria-label={t('calc.title')} onClick={() => setCalculatorOpen(true)}><Calculator size={19} /></button>
             </div> : <h2 className="reference-order-heading">{t('nav.trade')}</h2>}
-            <FuturesTerminalStatus
-              status={book.symbol === symbol ? book.status : 'connecting'}
-              asOf={book.symbol === symbol ? book.asOf : null}
-            />
             <FuturesOrderForm
               key={symbol}
               archive={archivePreview}

@@ -1053,6 +1053,7 @@ export const KO: Record<Key, string> = {
   'futures.estLiqPrice': '예상 청산 가격',
   'futures.estFees': '예상 수수료 (진입 + 청산)',
   'futures.maxPosition': '최대 포지션',
+  'futures.positionLimits': '포지션 한도',
   'futures.approxEntry': '예상 진입가',
   'futures.tpslAtEntry': '익절 / 손절',
   'futures.tpslReduceOnlyOff': '감소 전용 주문은 포지션을 종료합니다. 보호는 포지션에 직접 설정합니다.',

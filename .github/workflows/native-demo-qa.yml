@@ -10,6 +10,7 @@ on:
       - 'scripts/qa-large-numbers-browser.cjs'
       - 'scripts/qa-limit-close.cjs'
       - 'scripts/qa-pnl-card.cjs'
+      - 'scripts/qa-order-panel-refinement.cjs'
       - 'jest.config.js'
       - '.github/workflows/native-demo-qa.yml'
 permissions:
@@ -53,6 +54,11 @@ jobs:
         env:
           PNL_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-pnl-card.cjs
+      - name: Order panel protection, limits and CTA layout at 320–1920px
+        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/native-browser/node_modules/playwright
+        run: node scripts/qa-order-panel-refinement.cjs
       - name: Large financial values keep their layout (desktop and phone)
         if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
         env:
@@ -73,4 +79,5 @@ jobs:
             docs/qa/native-demo/
             docs/qa/limit-close/
             docs/qa/pnl-card/
+            docs/qa/order-panel-refinement/
           retention-days: 7

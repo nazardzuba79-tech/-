@@ -914,19 +914,20 @@ export function FuturesOrderForm({
         <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} continuous label={t('trade.quantity')} />
 
         {archive && execution.entryProtection && connectedFamily && !reduceOnly && <div className="archive-order-protection">
-          <button type="button" className="archive-protection-toggle" aria-expanded={protectionEnabled} aria-controls={protectionPanelId} onClick={() => setBracketExpanded(enabled => !enabled)}>
+          <button type="button" className="archive-protection-toggle" aria-label="TP/SL" aria-expanded={protectionEnabled} aria-controls={protectionPanelId} onClick={() => setBracketExpanded(enabled => !enabled)}>
             <span className="archive-protection-toggle-icon" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M5 12h14" />
-                {!protectionEnabled && <path d="M12 5v14" />}
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z" />
+                <path d="m8.5 12 2.5 2.5 4.5-5" />
               </svg>
             </span>
-            TP/SL
+            <span className="archive-protection-copy"><strong>TP/SL</strong><small>{t('futures.tpslAtEntry')}</small></span>
+            <svg className="archive-protection-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
           </button>
           <div id={protectionPanelId} hidden={!protectionEnabled}>
             <div className="archive-protection-fields">
-              <input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(e.target.value)} />
-              <input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(e.target.value)} />
+              <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(e.target.value)} /></label>
+              <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(e.target.value)} /></label>
             </div>
           </div>
         </div>}
@@ -1046,14 +1047,22 @@ export function FuturesOrderForm({
           {/* What 100% on the slider would actually buy. Suppressed entirely
               for a reduce-only ticket, where the budget is the position
               being closed and not the free balance at all. */}
-          {!reduceOnly && (
+          {!reduceOnly && (archive ? (
+            <details className="fo-positionLimits">
+              <summary>{t('futures.positionLimits')}</summary>
+              <div className="fo-infoRow">
+                <span>{t('futures.maxPosition')}</span>
+                <span className="mono">{maxPositionNotional !== null ? `${formatAmount(maxPositionNotional)} ${quoteAsset}` : '—'}</span>
+              </div>
+            </details>
+          ) : (
             <div className="fo-infoRow">
               <span style={{ color: 'var(--text-secondary)' }}>{t('futures.maxPosition')}</span>
               <span className="mono">
                 {maxPositionNotional !== null ? `${formatAmount(maxPositionNotional)} ${quoteAsset}` : '—'}
               </span>
             </div>
-          )}
+          ))}
           {/* THE FEE ROW IS CONDITIONAL, AND THAT IS THE POINT.
               The real futures engine charges nothing: there is no fee rate
               in src/futures, none in src/config/futuresConfig, and no fee

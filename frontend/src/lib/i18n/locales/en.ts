@@ -1080,6 +1080,7 @@ export const EN: Record<Key, string> = {
   'futures.estLiqPrice': 'Est. liquidation price',
   'futures.estFees': 'Est. fees (open + close)',
   'futures.maxPosition': 'Maximum position',
+  'futures.positionLimits': 'Position limits',
   'futures.approxEntry': 'Approx. entry price',
   'futures.tpslAtEntry': 'Take Profit / Stop Loss',
   'futures.tpslReduceOnlyOff': 'Reduce-only orders close a position. Protection is set on the position itself.',
