@@ -142,6 +142,76 @@ describe('one timer and one request per resource', () => {
     expect(getFuturesPositions).toHaveBeenCalledTimes(before);
   });
 
+
+  test('a hidden Futures tab has ZERO account polling and refreshes immediately on return', async () => {
+    const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden');
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+
+    const off = futuresAccountStore.subscribe(() => {}, { balances: 5000, positions: 4000, orders: 5000 });
+    await flush();
+    expect(futuresAccountStore._timerCount).toBe(3);
+
+    getFuturesBalances.mockClear();
+    getFuturesPositions.mockClear();
+    getMyFuturesOrders.mockClear();
+
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(futuresAccountStore._timerCount).toBe(0);
+
+    jest.advanceTimersByTime(60 * 60_000);
+    await flush();
+    expect(getFuturesBalances).not.toHaveBeenCalled();
+    expect(getFuturesPositions).not.toHaveBeenCalled();
+    expect(getMyFuturesOrders).not.toHaveBeenCalled();
+
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flush();
+
+    // Returning to the tab gets one fresh snapshot immediately, then normal
+    // cadences resume. No need to wait 4-5 seconds before the UI is current.
+    expect(getFuturesBalances).toHaveBeenCalledTimes(1);
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1);
+    expect(getMyFuturesOrders).toHaveBeenCalledTimes(1);
+    expect(futuresAccountStore._timerCount).toBe(3);
+
+    off();
+    if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden);
+    else delete (document as { hidden?: boolean }).hidden;
+  });
+
+  test('mounting Futures while already hidden sends no account requests until visible', async () => {
+    const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden');
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+
+    const off = futuresAccountStore.subscribe(() => {}, { balances: 5000, positions: 4000, orders: 5000 });
+    await flush();
+    expect(futuresAccountStore._timerCount).toBe(0);
+    expect(getFuturesBalances).not.toHaveBeenCalled();
+    expect(getFuturesPositions).not.toHaveBeenCalled();
+    expect(getMyFuturesOrders).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(60 * 60_000);
+    await flush();
+    expect(getFuturesBalances).not.toHaveBeenCalled();
+    expect(getFuturesPositions).not.toHaveBeenCalled();
+    expect(getMyFuturesOrders).not.toHaveBeenCalled();
+
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await flush();
+
+    expect(getFuturesBalances).toHaveBeenCalledTimes(1);
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1);
+    expect(getMyFuturesOrders).toHaveBeenCalledTimes(1);
+    expect(futuresAccountStore._timerCount).toBe(3);
+
+    off();
+    if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden);
+    else delete (document as { hidden?: boolean }).hidden;
+  });
+
   test('a subscriber mounting mid-flight JOINS the request instead of issuing its own', async () => {
     const gate = deferred<typeof POSITIONS_A>();
     getFuturesPositions.mockReturnValueOnce(gate.promise);
