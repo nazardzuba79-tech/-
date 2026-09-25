@@ -33,7 +33,7 @@ export function AdminDepositsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterDate, setFilterDate] = useState('');
 
-  function reloadIncoming() {
+  function reloadIncoming(refreshHistory = true) {
     if (incomingRequest.current) return;
     incomingRequest.current = true;
     setIncomingLoading(true);
@@ -45,12 +45,22 @@ export function AdminDepositsPage() {
         setIncomingError(false);
       })
       .catch(() => setIncomingError(true))
-      .finally(() => { incomingRequest.current = false; setIncomingLoading(false); setIncomingLoaded(true); });
+      .finally(() => {
+        // The incoming route may have just persisted newly observed deposits.
+        // Load history once AFTER discovery, instead of once before and again
+        // after it. Real admin actions can opt out and refresh history in their
+        // own awaited path below.
+        if (refreshHistory) {
+          api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
+        }
+        incomingRequest.current = false;
+        setIncomingLoading(false);
+        setIncomingLoaded(true);
+      });
   }
 
   useEffect(() => {
     reloadIncoming();
-    api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
     api.getAllClients().then(setClients).catch(() => {});
   }, []);
 
@@ -66,7 +76,7 @@ export function AdminDepositsPage() {
       setMessage(result.status === 'CREDITED' ? 'Депозит зачислен.' : result.status === 'BELOW_MINIMUM'
         ? 'BELOW_MINIMUM — депозит ниже минимальной суммы. Для зачисления нужны подтверждения сети.'
         : 'Депозит ожидает подтверждений сети. Баланс не изменён.');
-      reloadIncoming();
+      reloadIncoming(false);
       await api.getAdminDeposits().then(setHistory);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Не удалось зачислить депозит.');
