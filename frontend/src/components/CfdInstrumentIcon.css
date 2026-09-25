@@ -1,0 +1,31 @@
+.cfd-instrumentIcon{
+  --cfd-icon-primary:#dce5ee;--cfd-icon-secondary:#8fa0b1;--cfd-icon-glow:rgba(143,160,177,.16);
+  position:relative;display:inline-grid;place-items:center;flex:0 0 34px;width:34px;height:34px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.11);border-radius:11px;
+  background:radial-gradient(circle at 28% 20%,var(--cfd-icon-glow),transparent 58%),linear-gradient(145deg,rgba(31,38,47,.96),rgba(10,13,18,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 0 rgba(0,0,0,.34),0 5px 13px rgba(0,0,0,.24);
+  vertical-align:middle;
+}
+.cfd-instrumentIcon::after{content:"";position:absolute;inset:1px;border-radius:9px;border:1px solid rgba(255,255,255,.025);pointer-events:none}
+.cfd-instrumentIcon svg{width:23px;height:23px;overflow:visible;filter:drop-shadow(0 2px 3px rgba(0,0,0,.32))}
+.cfd-instrumentIcon path,.cfd-instrumentIcon circle{vector-effect:non-scaling-stroke}
+.cfd-icon-primary{fill:none;stroke:var(--cfd-icon-primary);stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.cfd-icon-secondary{fill:none;stroke:var(--cfd-icon-secondary);stroke-width:1.25;stroke-linecap:round;stroke-linejoin:round}
+.cfd-icon-shine{fill:none;stroke:rgba(255,255,255,.8);stroke-width:1.1;stroke-linecap:round}
+.cfd-icon-fill-soft{fill:var(--cfd-icon-glow)}
+.cfd-instrumentIcon-XAUUSD{--cfd-icon-primary:#f6c453;--cfd-icon-secondary:#b9852d;--cfd-icon-glow:rgba(246,196,83,.24)}
+.cfd-instrumentIcon-XAGUSD{--cfd-icon-primary:#e7edf4;--cfd-icon-secondary:#9daab7;--cfd-icon-glow:rgba(217,228,239,.18)}
+.cfd-instrumentIcon-XPTUSD{--cfd-icon-primary:#d6e8f7;--cfd-icon-secondary:#89a5ba;--cfd-icon-glow:rgba(178,211,235,.18)}
+.cfd-instrumentIcon-XPDUSD{--cfd-icon-primary:#b9c9db;--cfd-icon-secondary:#7189a5;--cfd-icon-glow:rgba(145,168,197,.2)}
+.cfd-instrumentIcon-WTIUSD{--cfd-icon-primary:#e2a25f;--cfd-icon-secondary:#9f6d3e;--cfd-icon-glow:rgba(226,162,95,.2)}
+.cfd-instrumentIcon-XBRUSD{--cfd-icon-primary:#76c9e7;--cfd-icon-secondary:#4b91b0;--cfd-icon-glow:rgba(118,201,231,.19)}
+.cfd-instrumentIcon-EURUSD{--cfd-icon-primary:#6ea8ff;--cfd-icon-secondary:#7fd3b6;--cfd-icon-glow:rgba(110,168,255,.18)}
+.cfd-instrumentIcon-GBPUSD{--cfd-icon-primary:#b899ff;--cfd-icon-secondary:#f0c66d;--cfd-icon-glow:rgba(184,153,255,.18)}
+.cfd-instrumentIcon-USDJPY{--cfd-icon-primary:#7da8ff;--cfd-icon-secondary:#ef7d83;--cfd-icon-glow:rgba(125,168,255,.17)}
+.cfd-instrumentIcon-AUDUSD{--cfd-icon-primary:#67c7a2;--cfd-icon-secondary:#dcbf67;--cfd-icon-glow:rgba(103,199,162,.17)}
+.cfd-instrumentIcon-USDCAD{--cfd-icon-primary:#78a8ff;--cfd-icon-secondary:#ef8585;--cfd-icon-glow:rgba(120,168,255,.17)}
+.cfd-instrumentIcon-USDCHF{--cfd-icon-primary:#7da8ff;--cfd-icon-secondary:#e46c72;--cfd-icon-glow:rgba(125,168,255,.17)}
+.cfd-instrumentIcon-NZDUSD{--cfd-icon-primary:#6bd3d8;--cfd-icon-secondary:#779bff;--cfd-icon-glow:rgba(107,211,216,.17)}
+.cfd-instrumentIcon--compact{flex-basis:24px;width:24px;height:24px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 3px 8px rgba(0,0,0,.2)}
+.cfd-instrumentIcon--compact::after{border-radius:6px}
+.cfd-instrumentIcon--compact svg{width:17px;height:17px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.28))}
