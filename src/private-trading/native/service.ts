@@ -109,7 +109,7 @@ export const NATIVE_REFRESH_PERSIST_MAX_MS=6*60*MINUTE;
 export function nativeRefreshPersistMs(raw=process.env.NATIVE_REFRESH_PERSIST_MS):number{
   if(raw===undefined||raw.trim()==='')return NATIVE_REFRESH_PERSIST_MS;
   const value=Number(raw);
-  return Number.isInteger(value)&&value>=this.refreshPersistMs&&value<=NATIVE_REFRESH_PERSIST_MAX_MS
+  return Number.isInteger(value)&&value>=NATIVE_REFRESH_PERSIST_MS&&value<=NATIVE_REFRESH_PERSIST_MAX_MS
     ?value:NATIVE_REFRESH_PERSIST_MS;
 }
 /**
