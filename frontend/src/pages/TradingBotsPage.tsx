@@ -9,7 +9,6 @@ import './trading-bots/TradingBots.css';
 
 const usd = (n: number) => '$' + n.toLocaleString('en-US');
 const percent = (n: number) => n.toFixed(2) + '%';
-const MODEL_NOTICE = 'Демонстрационные данные';
 const FAVORITES_KEY = 'voltex.bot-catalogue.favorites.v1';
 function loadFavorites(): string[] {
   try {
@@ -69,13 +68,12 @@ function BotModal({ bot, stats, onClose }: { bot: BotDefinition; stats: BotPrese
     <p className="vb-modal-note">{bot.detail}</p>
     <div className="vb-roi-row"><div><span className="vb-label">Модельная доходность · {period} дней</span><strong className="vb-roi">+{percent(series[series.length - 1])}</strong></div><div className="vb-periods">{([7, 30] as const).map(days => <button type="button" key={days} aria-pressed={period === days} onClick={() => setPeriod(days)}>{days}д</button>)}</div></div>
     <Sparkline series={series} name={bot.name} large/>
-    <p className="vb-disclosure">{MODEL_NOTICE}</p>
     <dl className="vb-metrics vb-modal-metrics"><Metric label="Макс. просадка · 30д" value={percent(stats.drawdown)}/><Metric label="Прибыльные сделки · 30д" value={percent(stats.winRate)}/><Metric label="Сделок · 30д" value={stats.trades}/></dl>
     <form className="vb-config" onSubmit={e => { e.preventDefault(); if (valid) setSaved(true); }}>
       <label htmlFor="vb-budget">Планируемая инвестиция</label><div className="vb-field"><input id="vb-budget" value={budget} onChange={e => { setBudget(e.target.value); setSaved(false); }} inputMode="decimal" aria-describedby="vb-budget-hint" aria-invalid={!valid}/><span>USD</span></div>
       <p id="vb-budget-hint" className="vb-budget-hint">Минимальная сумма — {usd(bot.minimum)}.</p>
       <button className="vb-modal-action" type="submit" disabled={!valid}>Посмотреть план</button>
-      {saved && <div className="vb-plan" role="status"><strong>{bot.name} · {usd(Number(budget))}</strong><p>Запуск ботов пока недоступен.</p></div>}
+      {saved && <div className="vb-plan" role="status"><strong>{bot.name} · {usd(Number(budget))}</strong></div>}
     </form>
   </dialog>, document.body);
 }
@@ -113,7 +111,7 @@ export function TradingBotsPage() {
         })}
         {!visible.length && <p className="vb-empty">Добавьте подходящие стратегии в избранное с помощью звёздочки.</p>}
       </section>
-      <footer className="vb-bottom"><strong>VOLTEX Bot Studio</strong><span>{MODEL_NOTICE}</span></footer>
+      <footer className="vb-bottom"><strong>VOLTEX Bot Studio</strong></footer>
     </main>
     {selected && <BotModal key={selected.id} bot={selected} stats={botPresentation(selected, week)} onClose={() => setSelected(null)}/>}
   </div>;

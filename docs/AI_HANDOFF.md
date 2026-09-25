@@ -3745,3 +3745,10 @@ withdrawal was placed.
 - Kept the model ROI labels, catalogue layout and financial behaviour unchanged. Did not fabricate an insufficient-balance error.
 - Files: TradingBotsPage.tsx and QA README. Vite build PASS; local browser confirmed both exact strings after opening Atlas and clicking the plan action.
 - Local review server rebuilt. No production changes or deployment. Existing baseline test caveat remains unchanged.
+
+
+## Codex — 2026-09-25 — Remove duplicate bot notices
+
+- Follow-up to 14be82fd: removed the repeated demo-data notice and unavailable-status sentence at the owner's request.
+- Cards and modal retain explicit model-return labels. The plan result shows only the selected strategy and budget; it makes no execution or balance claim.
+- Files: TradingBotsPage.tsx, QA README. Vite build PASS; local browser confirms removed strings, model label and plan-only result. No production changes.
