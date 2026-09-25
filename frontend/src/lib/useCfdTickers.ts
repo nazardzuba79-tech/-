@@ -35,7 +35,7 @@ export function useCfdTickers(enabled = true){
       if(cancelled||document.hidden||inFlight)return;
       inFlight=true;lastAttempt=Date.now();let delay=POLL_MS;
       try{
-        const endpoint=production()?MARKET_EDGE_BASE+'/cfd/display/tickers':`${API_BASE.replace(/\/$/,'')}/cfd/display/tickers`;
+        const endpoint=production()?MARKET_EDGE_BASE+'/cfd/display/tickers?v=9':`${API_BASE.replace(/\/$/,'')}/cfd/display/tickers`;
         const res=await readDisplayJson<Awaited<ReturnType<typeof api.getCfdTickers>>>(endpoint,SLOW_DISPLAY_REFRESH_MS);
         if(cancelled)return;
         const rows=res&&typeof res==='object'?parseTickerPayload(res.tickers):null;
