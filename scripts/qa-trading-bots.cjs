@@ -82,9 +82,9 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       await page.locator('[data-bot="atlas"] .vb-open').click();
       check(width+': modal opens',await page.locator('dialog[open]').count()===1);
       await page.locator('#vb-budget').fill('2499');
-      check(width+': minimum enforced',await page.getByRole('button',{name:'Посмотреть план',exact:true}).isDisabled());
+      check(width+': minimum enforced',await page.getByRole('button',{name:'Копировать',exact:true}).isDisabled());
       await page.locator('#vb-budget').fill('2500');
-      await page.getByRole('button',{name:'Посмотреть план',exact:true}).click();
+      await page.getByRole('button',{name:'Копировать',exact:true}).click();
       check(width+': local plan shown',await page.locator('.vb-plan').isVisible());
       await page.getByRole('button',{name:'7д',exact:true}).click();
       check(width+': 7-day period',await page.getByRole('button',{name:'7д',exact:true}).getAttribute('aria-pressed')==='true');

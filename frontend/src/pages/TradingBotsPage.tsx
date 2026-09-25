@@ -72,7 +72,7 @@ function BotModal({ bot, stats, onClose }: { bot: BotDefinition; stats: BotPrese
     <form className="vb-config" onSubmit={e => { e.preventDefault(); if (valid) setSaved(true); }}>
       <label htmlFor="vb-budget">Планируемая инвестиция</label><div className="vb-field"><input id="vb-budget" value={budget} onChange={e => { setBudget(e.target.value); setSaved(false); }} inputMode="decimal" aria-describedby="vb-budget-hint" aria-invalid={!valid}/><span>USD</span></div>
       <p id="vb-budget-hint" className="vb-budget-hint">Минимальная сумма — {usd(bot.minimum)}.</p>
-      <button className="vb-modal-action" type="submit" disabled={!valid}>Посмотреть план</button>
+      <button className="vb-modal-action" type="submit" disabled={!valid}>Копировать</button>
       {saved && <div className="vb-plan" role="status"><strong>{bot.name} · {usd(Number(budget))}</strong></div>}
     </form>
   </dialog>, document.body);

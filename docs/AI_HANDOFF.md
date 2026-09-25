@@ -3787,3 +3787,13 @@ withdrawal was placed.
 - Preserved final navigation position, approved header dimensions, authentication, bot statistics labels and all trading behavior. Pending CI/publication.
 
 PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow path triggers; normalized dependency paths in copyTradingCiCoverage.test.ts for Windows. Local coverage guard: 2/2 PASS. No runtime behavior changes.
+
+### 2026-09-25 — Claude — Trading bots: the modal's action reads «Копировать»
+
+- Base fresh main `f615ff39` (after Codex's #264–#267 bots navigation and icon work). Branch `claude/bots-copy-label`. Frontend only; no API, Render or Neon change.
+- Owner (screenshot of the Atlas Grid modal): «У вкладці торгові боти, має бути надпис копіювати».
+- `TradingBotsPage.tsx`: the modal's submit button label «Посмотреть план» → «Копировать». Behaviour unchanged: disabled below the bot's minimum; on submit it shows the same local «{bot} · ${amount}» line; no request is sent.
+- `scripts/qa-trading-bots.cjs`: the two button lookups renamed to «Копировать».
+- Checks run: frontend `tsc` clean; `vite build` OK; `tradingBotsPresentation.test.ts` 23/23; `qa-trading-bots.cjs` locally — all 199 checks pass at 320–1920px (minimum enforced, click shows the local plan line, Escape/focus, favourites).
+- Preserved: Codex's navigation slot, header dimensions and robot icon; the catalogue, statistics and minimum rules.
+- Unresolved: the button still only confirms locally, as before — copying a bot into a real running strategy does not exist in the product yet.
