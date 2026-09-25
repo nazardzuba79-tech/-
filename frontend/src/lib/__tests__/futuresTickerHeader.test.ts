@@ -38,6 +38,13 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
   // The VOLTEX financial reads are still here, still per symbol.
   expect(voltexLoop).toContain('api\n        .getFuturesMarkPrice(symbol)');
   expect(voltexLoop).toContain('.getFuturesFundingRate(symbol, 1)');
+  // Financial display freshness is bounded by what can actually change:
+  // mark/index keep 4s, settled funding is one visible-minute read, and
+  // hidden tabs make neither request until visibility returns.
+  expect(voltexLoop).toContain('setInterval(loadMark, 4000)');
+  expect(voltexLoop).toContain('setInterval(loadFunding, 60_000)');
+  expect(voltexLoop).toContain('if (document.hidden) return');
+  expect(voltexLoop).toContain("document.addEventListener('visibilitychange', visible)");
   // And no external venue's data may enter this loop or substitute for
   // one of its figures.
   expect(voltexLoop).not.toMatch(/binance|bybit|okx|deribit|bitget|MarketStats/i);
@@ -67,6 +74,15 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
 // price, index price and the settled funding rate — are byte-unchanged,
 // as the behavioural tests above re-prove.
 // Exact perpetual display replaces spot references; financial reads remain protected above.
+test('external derivatives reference polling sleeps hidden tabs and is one-minute bounded', () => {
+  const first = source.indexOf('  }, [symbol]);');
+  const effect = source.slice(source.indexOf('  useEffect(() => {', first + 1), source.indexOf('  }, [baseAsset]);'));
+  expect(effect).toContain('getFuturesMarketStats(baseAsset)');
+  expect(effect).toContain('setInterval(refresh, 60_000)');
+  expect(effect).toContain('if (document.hidden) return');
+  expect(effect).toContain("document.addEventListener('visibilitychange', visible)");
+});
+
 test('market-data reads use perpetual references and preserve financial inputs', () => {
   const reads = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
   // What the re-take is allowed to have changed, pinned so the digest
