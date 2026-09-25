@@ -3785,3 +3785,5 @@ withdrawal was placed.
 - Owner requested a compact light robot with a small yellow accent matching the reference. Added reusable TradingBotIcon SVG with gold antenna, used in shared and homepage desktop/mobile navigation. Updated the existing browser icon selector.
 - Frontend TypeScript/Vite build PASS; existing 199 read-only Edge browser assertions PASS across 320–1920px.
 - Preserved final navigation position, approved header dimensions, authentication, bot statistics labels and all trading behavior. Pending CI/publication.
+
+PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow path triggers; normalized dependency paths in copyTradingCiCoverage.test.ts for Windows. Local coverage guard: 2/2 PASS. No runtime behavior changes.

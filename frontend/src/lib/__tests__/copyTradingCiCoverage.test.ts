@@ -72,7 +72,7 @@ function importClosure(entries: string[]): string[] {
       if (resolved) queue.push(resolved);
     }
   }
-  return [...seen].map(file => relative(ROOT, file)).sort();
+  return [...seen].map(file => relative(ROOT, file).replace(/\\/g, '/')).sort();
 }
 
 /** The workflow's `paths:` entries, both triggers, as written. */
