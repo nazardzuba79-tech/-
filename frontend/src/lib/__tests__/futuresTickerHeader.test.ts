@@ -201,7 +201,9 @@ test.each([
     .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
     'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
-  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '') : normalized;
+  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '')
+    // Admin KYC email delivery (2026-09-25) — two admin-only methods, no Futures/Spot read touched.
+    .replace("  // Admin: where KYC submission copies (with the document) are emailed.\n  getKycDelivery: () => request<{ configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),\n  sendKycTestEmail: () =>\n    request<{ sent: boolean; configured: boolean; recipient: string | null }>('/kyc/admin/delivery/test', { method: 'POST' }),\n\n", '') : normalized;
   expect(hash(source)).toBe(expected);
 });
 
