@@ -26,6 +26,7 @@ function adminPrisma(overrides: any = {}) {
     },
     ignoredIncomingTransfer: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn().mockResolvedValue({}) },
     treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) },
+    $queryRaw: jest.fn().mockResolvedValue([]),
     ...overrides,
   };
 }
@@ -78,6 +79,54 @@ describe('admin deposits routes', () => {
       expect(res.body).toEqual([
         expect.objectContaining({ userEmail: 'alice@team.com', asset: 'BTC', amount: '0.05', status: 'CREDITED' }),
       ]);
+    });
+  });
+
+  describe('GET /admin/deposits/recent-by-user', () => {
+    it('returns one compact recent row per user without loading full deposit history', async () => {
+      const queryRaw = jest.fn().mockResolvedValue([
+        {
+          userId: 'user-1',
+          amount: { toString: () => '1250.50' },
+          asset: 'USDT',
+          createdAt: new Date('2026-09-25T12:00:00.000Z'),
+        },
+        {
+          userId: 'user-2',
+          amount: { toString: () => '0.25' },
+          asset: 'BTC',
+          createdAt: new Date('2026-09-25T11:00:00.000Z'),
+        },
+      ]);
+      const findMany = jest.fn();
+      const prisma = adminPrisma({
+        $queryRaw: queryRaw,
+        deposit: { findMany, findUnique: jest.fn(), upsert: jest.fn() },
+      });
+      const app = buildApp(prisma);
+
+      const res = await request(app)
+        .get('/api/v1/admin/deposits/recent-by-user')
+        .set('Authorization', authHeader('admin-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([
+        { userId: 'user-1', amount: '1250.50', asset: 'USDT', createdAt: '2026-09-25T12:00:00.000Z' },
+        { userId: 'user-2', amount: '0.25', asset: 'BTC', createdAt: '2026-09-25T11:00:00.000Z' },
+      ]);
+      expect(queryRaw).toHaveBeenCalledTimes(1);
+      expect(findMany).not.toHaveBeenCalled();
+    });
+
+    it('still requires an admin account', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .get('/api/v1/admin/deposits/recent-by-user')
+        .set('Authorization', authHeader('u1'));
+
+      expect(res.status).toBe(403);
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
     });
   });
 
