@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as futuresMath from '../futuresMath';
+import * as formatNumber from '../formatNumber';
 import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
 
 /**
@@ -157,6 +158,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, p?: any) => (p ? `${key}:${JSON.stringify(p)}` : key) }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/futuresMath') return futuresMath;
+    if (name === '../lib/formatNumber') return formatNumber;
     /**
      * The engine seam (PR: original terminal + account/execution adapter).
      *
@@ -510,14 +512,15 @@ describe('C. leverage selection does not change any calculation', () => {
       await tick();
       const tree = f.render();
       const rows = byClass(tree, 'fo-infoRow').map((r) => text(r));
-      // 50 000 / leverage, formatted by the untouched expression.
-      expect(rows.join(' ')).toContain((50_000 / leverage).toFixed(2));
+      // 50 000 / leverage, spelled by the terminal's money rule
+      // (lib/formatNumber: grouped to cents).
+      expect(rows.join(' ')).toContain(formatNumber.formatAmount(50_000 / leverage));
     }
   });
 
   test('order value is the untouched notional', async () => {
     const f = await pricedForm();
-    expect(text(f.tree)).toContain((50_000).toFixed(2));
+    expect(text(f.tree)).toContain(formatNumber.formatAmount(50_000));
   });
 });
 
@@ -1214,8 +1217,8 @@ describe('a selected historical candle is not admitted by the venue', () => {
     await tick();
     const rows = byClass(f.render(), 'fo-infoRow').map((r: any) => text(r)).join(' ');
     // Order value 1 500 000 × 0.05, not 1 500 000 × the 50 000 mark.
-    expect(rows).toContain((1_500_000 * 0.05).toFixed(2));
-    expect(rows).not.toContain((1_500_000 * 50_000).toFixed(2));
+    expect(rows).toContain(formatNumber.formatAmount(1_500_000 * 0.05));
+    expect(rows).not.toContain(formatNumber.formatAmount(1_500_000 * 50_000));
   });
 
   test('a reducing order with a bar selected is still held to the venue', async () => {

@@ -41,7 +41,19 @@ function restoreFormPresentation(source) {
   .replace('[pickedPrice, pickedPriceSequence]', '[pickedPrice]')
   .replace('<details className="fo-tiersBox">','<div className="fo-tiersBox">')
   .replace('<summary className="fo-tiersTitle">', '<div className="fo-tiersTitle">')
-  .replace('</summary>', '</div>').replace('</details>', '</div>');
+  .replace('</summary>', '</div>').replace('</details>', '</div>')
+  // The info-box figures are SPELLED by lib/formatNumber (grouped money,
+  // tiered prices; owner 2026-09-25). The values, their order and the rows'
+  // conditions are the audited ones — only the spelling call differs.
+  .replace("import { formatAmount, formatPrice } from '../lib/formatNumber';\n", '')
+  .replace(/        \{\/\* Every figure below is printed by the terminal's own rules[\s\S]*?how it is typed\. \*\/\}\n/, '')
+  .replace('formatAmount(notional)', 'notional.toFixed(2)')
+  .replace('formatAmount(requiredMargin)', 'requiredMargin.toFixed(2)')
+  .replace('formatPrice(liqPreviewLong)', 'liqPreviewLong.toFixed(2)')
+  .replace('formatPrice(liqPreviewShort)', 'liqPreviewShort.toFixed(2)')
+  .replace('formatPrice(effectivePrice)', 'effectivePrice.toFixed(2)')
+  .replace('formatAmount(orderCosting.feeReserve, 4)', 'orderCosting.feeReserve.toFixed(4)')
+  .replace('formatAmount(maxPositionNotional)', 'maxPositionNotional.toFixed(2)');
 }
 describe('Futures UI-only reconciliation',()=>{
 // Frozen from main 00c6dc3; exclude only CSS imports, style declarations and visual attributes.

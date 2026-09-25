@@ -21,6 +21,7 @@ import {
   QUANTITY_DECIMALS,
 } from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { formatAmount, formatPrice } from '../lib/formatNumber';
 import { OrderFamilyTabs, type OrderFamily } from './OrderFamilyPresentation';
 
 /** Owner-approved position-size presets. The track still snaps to 0 as
@@ -986,11 +987,17 @@ export function FuturesOrderForm({
           </div>
         )}
 
+        {/* Every figure below is printed by the terminal's own rules
+            (lib/formatNumber): money grouped to cents — «7,007,265.22 USDT»,
+            as the account panel beside it prints «797,810.19 USDT» — and
+            prices at their tiered precision. The input fields above stay
+            raw, as on the reference: grouping is how a figure is read, not
+            how it is typed. */}
         <div className="fo-infoBox">
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.orderValue')}</span>
             <span className="mono">
-              {orderSizeKnown ? `${notional.toFixed(2)} ${quoteAsset}` : '—'}
+              {orderSizeKnown ? `${formatAmount(notional)} ${quoteAsset}` : '—'}
             </span>
           </div>
           {/* A reducing order posts nothing: it releases the position's
@@ -999,7 +1006,7 @@ export function FuturesOrderForm({
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.margin')}</span>
             <span className="mono">
-              {orderSizeKnown && !reduceOnly ? `${requiredMargin.toFixed(2)} ${quoteAsset}` : '—'}
+              {orderSizeKnown && !reduceOnly ? `${formatAmount(requiredMargin)} ${quoteAsset}` : '—'}
             </span>
           </div>
           {/* Long and short, in that order, coloured the same as the two
@@ -1008,9 +1015,9 @@ export function FuturesOrderForm({
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estLiqPrice')}</span>
             <span className="mono fo-sidePair">
-              <span className="fo-sidePairLong">{liqPreviewLong ? liqPreviewLong.toFixed(2) : '—'}</span>
+              <span className="fo-sidePairLong">{liqPreviewLong ? formatPrice(liqPreviewLong) : '—'}</span>
               <span className="fo-sidePairSep">/</span>
-              <span className="fo-sidePairShort">{liqPreviewShort ? liqPreviewShort.toFixed(2) : '—'}</span>
+              <span className="fo-sidePairShort">{liqPreviewShort ? formatPrice(liqPreviewShort) : '—'}</span>
             </span>
           </div>
           {/* A MARKET order has no price field, so the price it will be
@@ -1023,7 +1030,7 @@ export function FuturesOrderForm({
             <div className="fo-infoRow">
               <span style={{ color: 'var(--text-secondary)' }}>{t('futures.approxEntry')}</span>
               <span className="mono">
-                {orderSizeKnown ? `${effectivePrice.toFixed(2)} ${quoteAsset}` : '—'}
+                {orderSizeKnown ? `${formatPrice(effectivePrice)} ${quoteAsset}` : '—'}
               </span>
             </div>
           )}
@@ -1032,7 +1039,7 @@ export function FuturesOrderForm({
             <div className="fo-infoRow">
               <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estFees')}</span>
               <span className="mono">
-                {orderSizeKnown ? `${orderCosting.feeReserve.toFixed(4)} ${quoteAsset}` : '—'}
+                {orderSizeKnown ? `${formatAmount(orderCosting.feeReserve, 4)} ${quoteAsset}` : '—'}
               </span>
             </div>
           )}
@@ -1043,7 +1050,7 @@ export function FuturesOrderForm({
             <div className="fo-infoRow">
               <span style={{ color: 'var(--text-secondary)' }}>{t('futures.maxPosition')}</span>
               <span className="mono">
-                {maxPositionNotional !== null ? `${maxPositionNotional.toFixed(2)} ${quoteAsset}` : '—'}
+                {maxPositionNotional !== null ? `${formatAmount(maxPositionNotional)} ${quoteAsset}` : '—'}
               </span>
             </div>
           )}

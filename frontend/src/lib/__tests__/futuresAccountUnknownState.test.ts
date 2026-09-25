@@ -163,7 +163,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
-    if (name === '../lib/formatNumber') return { formatPrice: String };
+    if (name === '../lib/formatNumber') return { formatPrice: String, formatAmount: String };
     if (name === '../lib/futuresMath') return futuresMath;
     if (name === './spotOrderPresentation') return orderPresentation;
     if (name === './FuturesPositionProtection') return { FuturesPositionProtectionCell: () => null };

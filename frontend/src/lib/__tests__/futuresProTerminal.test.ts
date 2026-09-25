@@ -360,9 +360,9 @@ describe('7. margin is never the order value', () => {
     expect(code).toContain("{t('futures.orderValue')}");
     expect(code).toContain("{t('futures.margin')}");
     const valueRow = code.slice(code.indexOf("{t('futures.orderValue')}"));
-    expect(valueRow.slice(0, 220)).toContain('notional.toFixed(2)');
+    expect(valueRow.slice(0, 220)).toContain('formatAmount(notional)');
     const marginRow = code.slice(code.indexOf("{t('futures.margin')}"));
-    expect(marginRow.slice(0, 220)).toContain('requiredMargin.toFixed(2)');
+    expect(marginRow.slice(0, 220)).toContain('formatAmount(requiredMargin)');
   });
 
   it('the maximum position comes from the function the slider sizes with', () => {

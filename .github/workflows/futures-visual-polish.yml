@@ -13,6 +13,10 @@ on:
     paths:
       - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
       - 'frontend/src/components/FuturesOrderForm.tsx'
+      - 'frontend/src/components/FuturesPositionsPanel.tsx'
+      - 'frontend/src/lib/formatNumber.ts'
+      - 'frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts'
+      - 'frontend/src/lib/__tests__/futuresProTerminal.test.ts'
       - 'frontend/src/components/FuturesReferenceBook.tsx'
       - 'frontend/src/components/PercentSlider.tsx'
       - 'frontend/src/components/OrderFamilyPresentation.tsx'
@@ -44,7 +48,7 @@ jobs:
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Brief guards
-        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/referenceBook.test.ts
+        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
       - name: Disposable browser tooling

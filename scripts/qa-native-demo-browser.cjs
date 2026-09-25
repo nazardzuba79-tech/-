@@ -306,7 +306,8 @@ async function normalFlow(width) {
       assert(Number.isFinite(seeded) && seeded > 0, `LIMIT price was not seeded from the live last price: ${seeded}`);
       await qty(p).fill('5');
       await p.waitForFunction(() => { const row = document.querySelector('.fo-infoRow'); return row && !row.textContent.includes('—'); });
-      const expected = (seeded * 5).toFixed(2);
+      // Grouped to cents, as the ticket spells money (lib/formatNumber).
+      const expected = (seeded * 5).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const valueText = await p.locator('.fo-infoRow').first().innerText();
       assert(valueText.includes(expected), `Position value did not follow quantity × price: ${valueText}, expected ${expected}`);
       assert(!(await button(p, 'LONG').isDisabled()), 'Valid priced quantity still left Long disabled');
