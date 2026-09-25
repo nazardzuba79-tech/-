@@ -213,8 +213,8 @@
 #archive-terminal-preview .fo-infoBox { background:transparent; border:0; border-top:1px solid var(--border); border-radius:0; padding:12px 0 0; }
 #archive-terminal-preview :is(.fo-infoRow > :first-child,.futures-account-summary .fa-label) { color:var(--archive-label) !important; }
 #archive-terminal-preview .fo-submitPair { gap:12px; position:static; box-shadow:none; }
-/* The reference's action weight: 15px at 700 on the same 44px pill. */
-#archive-terminal-preview .fo-submitPair button { position:static; box-shadow:none; border-radius:999px; height:44px; min-height:44px; font-size:15px; font-weight:700; color:#fff; border:0; }
+/* Owner-approved order-panel polish: 15px at 700 on a 48px primary action pill. */
+#archive-terminal-preview .fo-submitPair button { position:static; box-shadow:none; border-radius:999px; height:48px; min-height:48px; font-size:15px; font-weight:700; color:#fff; border:0; }
 #archive-terminal-preview .fo-submitPair .buy { background:#00c67c; color:#fff; }
 #archive-terminal-preview .fo-submitPair .sell { background:#ff3453; color:#fff; }
 #archive-terminal-preview .fo-submitPair button:disabled { opacity:.9; cursor:not-allowed; }
@@ -548,7 +548,7 @@
    товсті»): on the owner's Bybit screenshot each button is 49×162px, height
    0.30 of its width; ours were 48px on a ~138px face (0.35). 42px restores
    0.30 at 1440. */
-#archive-terminal-preview .fo-submitPair button { height:42px; min-height:42px; }
+#archive-terminal-preview .fo-submitPair button { height:48px; min-height:48px; }
 /* HEADER FIGURES AT ONE CONTRAST (owner, 2026-09-24: «Открытый интерес»
    read dimmer than the figures beside it). A last-good open interest or
    turnover from the server's bounded stale window keeps `is-stale` in the
