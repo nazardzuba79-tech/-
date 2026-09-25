@@ -20,8 +20,6 @@ type Tab = 'open' | 'history';
  * itself is the server's, unrounded until this call, and the caller decides
  * how many decimals the column carries.
  */
-/** Panel width under which the two action columns become one. See `narrow`. */
-const NARROW_ACTIONS_PX = 1250;
 
 function group(value: number, digits: number): string {
   if (!Number.isFinite(value)) return '—';
@@ -137,17 +135,24 @@ export function FuturesPositionsPanel({
   /**
    * NARROW: TP/SL and «Закрыть как» share one column.
    *
-   * Below ~1250px of panel (a 1440 screen with the order ticket beside it)
-   * the eleven-column row is ~146px wider than the panel and scrolls under
-   * the pinned edges. The two action columns are the one place the row can
-   * give without losing a figure or wrapping a heading (which the owner
+   * Whenever the wide row does not fit the panel, it scrolls under the
+   * pinned edges — and TP/SL, the column just before «Закрыть как», is the
+   * one that disappears under it: «+ Добави…» fading into the pinned column
+   * (owner, 2026-09-25). The two action columns are the one place the row
+   * can give without losing a figure or wrapping a heading (which the owner
    * rejected): the TP/SL pill sits beside the two close pills stacked, in
-   * one column, and the P&L card button moves onto the ROI line. Decided
-   * from the PANEL's measured width, never the viewport — the chart and
-   * the rail own how wide the panel is — and only on desktop: the phone
-   * cards keep every column as its own labelled block.
+   * one column, so it is pinned too, and the P&L card button moves onto
+   * the ROI line. Decided from the wide row's own MEASURED width against
+   * the PANEL's — never the viewport (the chart and the rail own how wide
+   * the panel is), and never a fixed breakpoint: a fixed 1250px went stale
+   * once the row lost a column, and left 1250–1356px of panel where the
+   * pill was cut. Desktop only: the phone cards keep every column as its
+   * own labelled block.
    */
   const [narrow, setNarrow] = useState(false);
+  /** Per tab: the wide row's width (re-read whenever it is laid out wide)
+   *  and whether that tab's table is laid out narrow right now. */
+  const layoutRef = useRef<Record<string, { wide: number; narrow: boolean }>>({});
   useEffect(() => {
     const region = scrollRef.current;
     if (!region || typeof ResizeObserver === 'undefined') return;
@@ -160,9 +165,16 @@ export function FuturesPositionsPanel({
       const pinned = region.querySelector('thead th');
       const pinStart = `${pinned ? Math.round(pinned.getBoundingClientRect().width) : 0}px`;
       if (region.style.getPropertyValue('--pin-start') !== pinStart) region.style.setProperty('--pin-start', pinStart);
-      const compact = archive && region.clientWidth >= 901 && region.clientWidth < NARROW_ACTIONS_PX;
+      // Laid out wide, the region scrolls exactly as far as the row is
+      // wider than the panel; laid out narrow, the last wide width decides
+      // when there is room to go back. Each tab has its own table.
+      const layout = layoutRef.current[tab] ?? (layoutRef.current[tab] = { wide: 0, narrow: false });
+      if (!layout.narrow) layout.wide = region.scrollWidth;
+      const compact = archive && region.clientWidth >= 901 && region.clientWidth < layout.wide - 1;
+      layout.narrow = compact;
       region.dataset.narrow = String(compact);
-      setNarrow(previous => previous === compact ? previous : compact);
+      // Only the open-positions row changes its markup when narrow.
+      if (tab === 'open') setNarrow(previous => previous === compact ? previous : compact);
     };
     measure();
     const observer = new ResizeObserver(measure);

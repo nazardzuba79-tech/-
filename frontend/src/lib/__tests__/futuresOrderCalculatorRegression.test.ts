@@ -19,10 +19,10 @@ describe('Futures quantity calculator and LIMIT readiness regression', () => {
   test('quantity drives position value and margin only from a positive real price', () => {
     expect(FORM).toContain('const notional = effectivePrice && quantity ? effectivePrice * quantityNumber : 0;');
     expect(FORM).toContain("&& quantity !== '' && Number.isFinite(quantityNumber) && quantityNumber > 0;");
-    expect(FORM).toContain("orderSizeKnown ? `${notional.toFixed(2)} ${quoteAsset}` : '—'");
+    expect(FORM).toContain("orderSizeKnown ? `${formatAmount(notional)} ${quoteAsset}` : '—'");
     // The margin row is dashed for a reduce-only order as well: a close
     // posts no margin, so quoting one under it was a number nobody pays.
-    expect(FORM).toContain("orderSizeKnown && !reduceOnly ? `${requiredMargin.toFixed(2)} ${quoteAsset}` : '—'");
+    expect(FORM).toContain("orderSizeKnown && !reduceOnly ? `${formatAmount(requiredMargin)} ${quoteAsset}` : '—'");
   });
 
   test('an empty/zero LIMIT can no longer reach the execution engine', () => {

@@ -27,10 +27,11 @@ export function formatPrice(value: number): string {
   return value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
-/** An asset amount (base-asset volume, order size): "2,881.61". */
-export function formatAmount(value: number): string {
+/** An asset amount (base-asset volume, order size, money): "2,881.61".
+ *  `digits` for the few amounts quoted finer than cents, e.g. a fee. */
+export function formatAmount(value: number, digits = 2): string {
   if (!Number.isFinite(value)) return '—';
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return value.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 /** Large turnover, shortened: "222.57M", "41.2B". */

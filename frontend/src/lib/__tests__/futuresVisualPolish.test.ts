@@ -244,7 +244,9 @@ describe('5. text contrast at the reference level', () => {
 
   it('brightens the terminal chart axis to the reference tone', () => {
     const chart = read('components/PriceChart.tsx');
-    expect(chart).toContain("textColor: terminal ? '#f3f4f6' : '#a3adba'");
+    // The terminal tone is the fallback; a terminal's sheet may restate it
+    // as a token (§ 8: the Futures terminal draws its axis white).
+    expect(chart).toContain("textColor: token('--voltex-axis-text', terminal ? '#f3f4f6' : '#a3adba')");
   });
 });
 
@@ -290,3 +292,84 @@ describe('6. the bottom panel as on the reference: darker, seamless, quiet capti
     expect(everyRule('#archive-terminal-preview .futures-positions-table :is(.futures-position-money,.futures-position-realized)[data-unit]::after').split(';').filter(d => /color:/.test(d)).pop()).toContain('color:inherit');
   });
 });
+
+describe('7. the order ticket prints figures by the terminal\'s rules; TP/SL never under the pinned column', () => {
+  // Owner, 2026-09-25: «7007265.22 без розділювачів, поруч 797,810.19 —
+  // роби, як по правилам правильно», and the «+ Добавить» pill cut by the
+  // pinned «Закрыть как».
+  const FORM = strip(read('components/FuturesOrderForm.tsx'));
+  const PANEL = strip(read('components/FuturesPositionsPanel.tsx'));
+  const infoBox = FORM.slice(FORM.indexOf('<div className="fo-infoBox">'), FORM.indexOf("{t('futures.maxPosition')}") + 400);
+
+  it('groups money to cents and prints prices at their precision, in every info row', () => {
+    expect(FORM).toContain("import { formatAmount, formatPrice } from '../lib/formatNumber';");
+    expect(infoBox).toContain('formatAmount(maxPositionNotional)');
+    expect(infoBox).toContain('formatAmount(notional)');
+    expect(infoBox).toContain('formatAmount(requiredMargin)');
+    expect(infoBox).toContain('formatPrice(liqPreviewLong)');
+    expect(infoBox).toContain('formatPrice(liqPreviewShort)');
+    expect(infoBox).toContain('formatAmount(orderCosting.feeReserve, 4)');
+    // No figure in the box is spelled raw any more.
+    expect(infoBox).not.toMatch(/\.toFixed\(/);
+  });
+
+  it('spells the figures the way the account panel beside them does', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { formatAmount, formatPrice } = require('../formatNumber');
+    expect(formatAmount(7007265.22)).toBe('7,007,265.22');
+    expect(formatAmount(797810.19)).toBe('797,810.19');
+    expect(formatAmount(0.12344, 4)).toBe('0.1234');
+    expect(formatPrice(70118.2)).toBe('70,118.20');
+    expect(formatPrice(0.046193)).toBe('0.046193');
+  });
+
+  it('merges TP/SL into the pinned column whenever the wide row does not fit — measured, not a fixed breakpoint', () => {
+    expect(PANEL).not.toContain('NARROW_ACTIONS_PX');
+    expect(PANEL).toContain('if (!layout.narrow) layout.wide = region.scrollWidth;');
+    expect(PANEL).toContain('const compact = archive && region.clientWidth >= 901 && region.clientWidth < layout.wide - 1;');
+    expect(PANEL).toContain("if (tab === 'open') setNarrow(previous => previous === compact ? previous : compact);");
+  });
+});
+
+describe('8. the TradingView surface (owner, 2026-09-25)', () => {
+  // «Зроби нашу біржу у такому фоні», then «вверх чуть темнішим», «поля
+  // видими», «синій колір ні — обєм залишаємо як і зараз».
+  const CHART = read('components/PriceChart.tsx');
+
+  it('runs one vertical gradient behind the terminal, darker at the top, into the bottom panel\'s own surface', () => {
+    const surface = everyRule('#archive-terminal-preview');
+    expect(surface).toContain('background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important');
+    expect(CSS).toMatch(/:is\(\.global-header, \.terminal, \.ticker-bar, \.chart-area, \.terminal-chart-shell[^)]*\.fo-panel[^)]*\) \{\s*background: transparent !important;/);
+    // The bottom panel keeps its approved flat surface (§ 6).
+    expect(rule('#archive-terminal-preview .bottom-panel')).toContain('--panel:#101014');
+  });
+
+  it('lets the chart show the gradient, with clean white / orange candles and a white axis', () => {
+    const shell = everyRule('#archive-terminal-preview .terminal-chart-shell');
+    expect(shell).toContain('--voltex-plot-background: rgba(0,0,0,0)');
+    expect(shell).toContain('--voltex-candle-up: #ffffff');
+    expect(shell).toContain('--voltex-candle-down: #ff9800');
+    expect(shell).toContain('--voltex-axis-text: #ffffff');
+    // The chart reads them, with every other chart's values as fallbacks.
+    expect(CHART).toContain("const candleUp = token('--voltex-candle-up', '#eaecef');");
+    expect(CHART).toContain("const candleDown = token('--voltex-candle-down', '#f7a600');");
+    expect(CHART).toContain("borderColor: token('--voltex-axis-border', '#292c34')");
+  });
+
+  it('keeps the volume bars the exchange\'s own colours — no blue', () => {
+    expect(CHART).toContain("color: c.close >= c.open ? 'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)',");
+    expect(CHART.toLowerCase()).not.toContain('#2962ff');
+  });
+
+  it('outlines the ticket\'s fields so they read on any part of the gradient, gold while typing', () => {
+    expect(CSS).toMatch(/:is\(\.fo-mlTrigger, \.fo-priceInputRow, \.fo-qtyInputRow[^)]*\) \{\s*background: rgba\(255,255,255,\.06\) !important; border: 1px solid rgba\(255,255,255,\.13\) !important;/);
+    expect(CSS).toMatch(/:is\(\.fo-priceInputRow, \.fo-qtyInputRow, \.order-family-input\):focus-within,[\s\S]{0,200}\{\s*border-color: var\(--accent\) !important;/);
+  });
+
+  it('sets the row\'s ticker, margin line and ROI at the figures\' 13px, as the reference does', () => {
+    expect(rule('#archive-terminal-preview .futures-position-ticker b')).toContain('font-size:13px');
+    expect(everyRule('#archive-terminal-preview .futures-position-contract small')).toContain('font-size:13px');
+    expect(rule('#archive-terminal-preview .futures-position-roi')).toContain('font-size:13px');
+  });
+});
+

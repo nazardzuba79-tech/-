@@ -401,8 +401,12 @@ export function PriceChart({
 
     // Keep the plot clean; axes, the crosshair and actual indicator/order
     // lines provide the price reference without a permanent background grid.
-    const plotBackground = typeof getComputedStyle === 'function'
-      ? getComputedStyle(containerRef.current).getPropertyValue('--voltex-plot-background').trim() : '';
+    const surface = typeof getComputedStyle === 'function' ? getComputedStyle(containerRef.current) : null;
+    // A terminal's stylesheet may restate the chart's paint as tokens (the
+    // Futures terminal's TradingView-style surface does); every other chart
+    // keeps the values written here.
+    const token = (name: string, fallback: string) => surface?.getPropertyValue(name).trim() || fallback;
+    const plotBackground = token('--voltex-plot-background', '');
     const chart = createChart(containerRef.current, {
       layout: {
         // Match the terminal surface, including the axes and drawing rail.
@@ -416,7 +420,7 @@ export function PriceChart({
         // and one you decipher. The terminal's axis now matches the Bybit
         // reference's (owner, 2026-09-24: more contrast): its price scale
         // reads at ~243 of 255, where #dbe3ee read at 211.
-        textColor: terminal ? '#f3f4f6' : '#a3adba',
+        textColor: token('--voltex-axis-text', terminal ? '#f3f4f6' : '#a3adba'),
         fontFamily: 'Inter, Arial, sans-serif',
         fontSize: terminal ? 12 : 11,
       },
@@ -428,8 +432,8 @@ export function PriceChart({
       // price axis — a graphite/blue tone rather than near-black makes the
       // axis read as an intentional part of the chart instead of text
       // floating in empty space.
-      rightPriceScale: { borderColor: '#292c34' },
-      timeScale: { borderColor: '#292c34', timeVisible: true },
+      rightPriceScale: { borderColor: token('--voltex-axis-border', '#292c34') },
+      timeScale: { borderColor: token('--voltex-axis-border', '#292c34'), timeVisible: true },
       crosshair: terminal
         ? {
             mode: CrosshairMode.Normal,
@@ -443,12 +447,14 @@ export function PriceChart({
     // default green/red, guaranteed to actually apply since we set it
     // directly on the series rather than hoping a third-party widget
     // honors a config flag.
+    const candleUp = token('--voltex-candle-up', '#eaecef');
+    const candleDown = token('--voltex-candle-down', '#f7a600');
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: '#eaecef',
-      downColor: '#f7a600',
+      upColor: candleUp,
+      downColor: candleDown,
       borderVisible: false,
-      wickUpColor: '#eaecef',
-      wickDownColor: '#f7a600',
+      wickUpColor: candleUp,
+      wickDownColor: candleDown,
       // The current-price line + its axis tag were "too weak" by design
       // request: a single accent color regardless of up/down direction
       // reads as one deliberate "you are here" marker, rather than

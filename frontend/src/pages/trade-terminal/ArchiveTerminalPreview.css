@@ -397,10 +397,14 @@
 #archive-terminal-preview .archive-side-badge.text-sell { background:#f6465d15; }
 #archive-terminal-preview .archive-leverage-badge { background:#f0b90b15; color:var(--accent); }
 #archive-terminal-preview :is(.futures-position-contract small,.archive-cell-secondary) { display:block; color:var(--text-tertiary); font-size:10px; line-height:16px; margin-top:4px; font-weight:400; }
-#archive-terminal-preview .futures-position-contract small { font-size:11px; font-weight:500; margin-top:3px; white-space:nowrap; color:var(--accent); }
+/* Row type as on the reference (owner, 2026-09-25): the margin line reads
+   at the figures' size, as Bybit's «Марж. торговля 10.00x» does, not as a
+   footnote; the ticker is one whole size, not 12.5px. */
+#archive-terminal-preview .futures-position-contract small { font-size:13px; font-weight:500; margin-top:3px; white-space:nowrap; color:var(--accent); }
+#archive-terminal-preview .futures-position-ticker b { font-size:13px; }
 #archive-terminal-preview .futures-position-perp { font-style:normal; font-size:11px; color:var(--text-primary); background:transparent; }
 #archive-terminal-preview .futures-position-figure { display:grid; grid-template-columns:max-content 22px; align-items:center; gap:0 10px; }
-#archive-terminal-preview .futures-position-roi { grid-column:1; font-size:12px; line-height:17px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
+#archive-terminal-preview .futures-position-roi { grid-column:1; font-size:13px; line-height:17px; border-radius:0; background:transparent; padding:0; color:inherit; opacity:1; }
 #archive-terminal-preview .futures-position-approx { grid-column:1; display:block; font-size:12px; line-height:17px; color:inherit; opacity:1; }
 /* Narrow: the card button sits after the ROI on the second line instead
    of in a column of its own, which is 32px the row no longer needs. */
@@ -551,3 +555,47 @@
    markup, but on this design it is drawn at the same strength as every
    other header figure instead of at the shared sheet's 62% opacity. */
 #archive-terminal-preview .ticker-item .value.is-stale { opacity:1; }
+
+/* THE TRADINGVIEW SURFACE (owner, 2026-09-25, from a TradingView screenshot:
+   «зроби нашу біржу у такому фоні, у таких красивих і чистих кольорах»;
+   then, on the live preview, «вверх чуть темнішим», «поля видими», «синій
+   колір ні — обєм залишаємо»). One vertical gradient behind the whole
+   terminal instead of flat panels: read off the screenshot, TradingView
+   runs #2b2f39 under its toolbar to near-black at the foot; the owner asked
+   for a darker top, so ours starts at #1f2229 and passes #101014 — the
+   bottom panel's own surface — where that panel begins. The large surfaces
+   are transparent so the gradient runs under header, chart, order book and
+   ticket; fields, buttons, popovers, dialogs and the bottom panel keep
+   their fills. */
+#archive-terminal-preview {
+  background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important;
+  --border: rgba(255,255,255,.07);
+}
+#archive-terminal-preview :is(.global-header, .terminal, .ticker-bar, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .reference-book, .rb-tabs, .rb-controls, .rb-columns, .rb-center, .order-form-area, .reference-order-heading, .fo-panel, .futures-account-summary, .archive-top-assets) {
+  background: transparent !important;
+}
+/* The chart paints nothing of its own so the gradient shows through it
+   (PriceChart reads these tokens); its candles are the screenshot's clean
+   white and orange, its axis figures white with no ruled edge. Volume keeps
+   the exchange's own colours (owner: no blue). */
+#archive-terminal-preview .terminal-chart-shell {
+  --voltex-plot-background: rgba(0,0,0,0);
+  --voltex-candle-up: #ffffff; --voltex-candle-down: #ff9800;
+  --voltex-axis-text: #ffffff; --voltex-axis-border: rgba(0,0,0,0);
+}
+/* On a gradient any fixed fill matches the background somewhere, and the
+   ticket's fields disappeared into it («не зрозуміло де вписувати ордер»).
+   They take a fill and a hairline relative to whatever is behind them:
+   always a step lighter, always outlined; hover lifts the line, typing
+   turns it gold. */
+#archive-terminal-preview :is(.fo-mlTrigger, .fo-priceInputRow, .fo-qtyInputRow, .order-family-input, .rb-controls select, .archive-protection-fields input) {
+  background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.13) !important;
+}
+#archive-terminal-preview :is(.fo-mlTrigger:hover:not(:disabled), .fo-priceInputRow:hover, .fo-qtyInputRow:hover, .order-family-input:hover, .rb-controls select:hover, .archive-protection-fields input:hover) {
+  background: rgba(255,255,255,.085) !important; border-color: rgba(255,255,255,.22) !important;
+}
+#archive-terminal-preview :is(.fo-priceInputRow, .fo-qtyInputRow, .order-family-input):focus-within,
+#archive-terminal-preview :is(.rb-controls select, .archive-protection-fields input):focus-visible,
+#archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] {
+  border-color: var(--accent) !important;
+}

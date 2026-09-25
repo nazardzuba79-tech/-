@@ -186,7 +186,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/terminalPresentation') return terminalPresentation;
   if (name === '../lib/spotOrderBook') return bookMath;
-    if (name === '../lib/formatNumber') return { formatPrice: String };
+    if (name === '../lib/formatNumber') return { formatPrice: String, formatAmount: String };
     if (name === '../lib/futuresMath') return futuresMath;
     if (name === './spotOrderPresentation') return assetReads;
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
