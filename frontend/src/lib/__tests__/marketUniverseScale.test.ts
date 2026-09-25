@@ -94,6 +94,12 @@ describe('the futures market list scales', () => {
     expect(page).toContain('useFuturesConfig()');
     expect(page).toContain('discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe)');
     expect(page).toContain('api.getFuturesUniverse()');
+    // Catalogue discovery is not price freshness: five minutes plus an
+    // immediate visibility refresh keeps listings current without burning
+    // Render bandwidth in background tabs.
+    expect(page).toContain('window.setInterval(refresh, 5 * 60_000)');
+    expect(page).toContain('if (document.hidden) return');
+    expect(page).toContain("document.addEventListener('visibilitychange', visible)");
     // The backend listing still governs what the REAL engine will execute.
     // The simulation engine lists every contract the terminal discovers, so
     // it is the one account that does not read this whitelist — which is a

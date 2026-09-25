@@ -301,7 +301,12 @@ test.each([
     // component, and `markPrice`, the reference quote's mark the book
     // already had beside it. Display only: the depth transport, the tape,
     // order payloads, execution and accounts are unchanged.
-    "d09eddc77544cf5933da6eaa8141b916c51a047f59ae2df76c03c8cb366f2733"
+    // Re-taken 2026-09-25 for bandwidth only: the discovery catalogue
+    // poll is 5 minutes instead of 1 minute, hidden tabs skip it, and
+    // visibility return refreshes immediately. Execution/price/account
+    // freshness paths are separate and unchanged; marketUniverseScale pins
+    // the new cadence and visibility contract explicitly.
+    "8bb07efb31e04933749330acd1b6daf7a7e8b9211333bc677c0efc6c5b9ae869"
   ],
   [
     "components/FuturesPairList.tsx",
