@@ -29,14 +29,16 @@ describe('Render free-tier bandwidth guardrails', () => {
     expect(users).toContain('getAdminRecentDepositsByUser()');
     expect(users).not.toContain('getAdminDeposits()');
 
-    // The deposit page loads history once on mount; incoming refreshes do
-    // not silently pull the history payload a second time.
+    // The deposit page has exactly two code paths that read history:
+    // one shared incoming->history refresh, and one awaited post-credit read.
+    // Mount no longer fires a second parallel history request.
     expect((deposits.match(/api\.getAdminDeposits\(\)/g) ?? []).length).toBe(2);
-    const reloadStart = deposits.indexOf('function reloadIncoming()');
-    const reloadEnd = deposits.indexOf('useEffect(() =>', reloadStart);
-    expect(reloadStart).toBeGreaterThanOrEqual(0);
-    expect(reloadEnd).toBeGreaterThan(reloadStart);
-    expect(deposits.slice(reloadStart, reloadEnd)).not.toContain('getAdminDeposits()');
+    const mountStart = deposits.indexOf('useEffect(() =>');
+    const mountEnd = deposits.indexOf('}, []);', mountStart);
+    expect(mountStart).toBeGreaterThanOrEqual(0);
+    expect(mountEnd).toBeGreaterThan(mountStart);
+    expect(deposits.slice(mountStart, mountEnd)).not.toContain('getAdminDeposits()');
+    expect(deposits).toContain('reloadIncoming(false)');
   });
 
   test('production CFD display stays on Cloudflare and never falls back to Render', () => {
