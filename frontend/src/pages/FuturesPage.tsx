@@ -341,12 +341,24 @@ export function FuturesPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const refresh = () => api.getFuturesUniverse().then(result => {
-      if (!cancelled && result.available) setUniverse(result);
-    }).catch(() => {});
-    void refresh();
-    const timer = window.setInterval(refresh, 60_000);
-    return () => { cancelled = true; clearInterval(timer); };
+    // Listings change on the scale of minutes/days, not ticks. Keep the
+    // cached catalogue warm without downloading ~10 KB from Render every
+    // minute in a terminal tab left open all day.
+    const refresh = () => {
+      if (document.hidden) return;
+      void api.getFuturesUniverse().then(result => {
+        if (!cancelled && result.available) setUniverse(result);
+      }).catch(() => {});
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 5 * 60_000);
+    const visible = () => { if (!document.hidden) refresh(); };
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', visible);
+    };
   }, []);
 
   useEffect(() => {
