@@ -23,6 +23,7 @@ const CopyTradingPage = lazy(() => {
   return import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage }));
 });
 const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
+const TradingBotsPage = lazy(() => import('./pages/TradingBotsPage').then((m) => ({ default: m.TradingBotsPage })));
 const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
 const ReferralRedirectPage = lazy(() => import('./pages/ReferralRedirectPage').then((m) => ({ default: m.ReferralRedirectPage })));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
@@ -102,6 +103,7 @@ export function App() {
         <Route path="/dashboard" element={<Navigate to="/wallet" replace />} />
         <Route path="/copy-trading" element={<RequireAuth><CopyTradingPage /></RequireAuth>} />
         <Route path="/arbitrage" element={<RequireAuth><ArbitragePage /></RequireAuth>} />
+        <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
         <Route path="/:code" element={<ReferralRedirectPage />} />

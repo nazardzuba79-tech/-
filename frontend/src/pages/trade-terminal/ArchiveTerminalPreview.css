@@ -15,9 +15,9 @@
  * The composition below — the grid, the track map, the areas — stays here,
  * because it is written against this terminal's DOM and belongs to it alone.
  */
-#archive-terminal-preview .global-header { background:var(--panel); --bg:var(--panel); height:48px; min-height:48px; padding-inline:20px; border-bottom:1px solid var(--border); }
+#archive-terminal-preview .global-header { background:var(--h-bg-1); --bg:var(--h-bg-1); height:48px; min-height:48px; padding-inline:20px; border-bottom:1px solid var(--h-border); }
 #archive-terminal-preview .header-brand { color:#f1f5f9; }
-#archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:550; }
+#archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:600; }
 #archive-terminal-preview .terminal {
   display:grid; grid-template-columns:minmax(0,1fr) 270px 326px;
   grid-template-rows:56px minmax(280px,1fr) 230px;
@@ -576,7 +576,7 @@
   background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important;
   --border: rgba(255,255,255,.12);
 }
-#archive-terminal-preview :is(.global-header, .terminal, .ticker-bar, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .reference-book, .rb-tabs, .rb-controls, .rb-columns, .rb-center, .order-form-area, .reference-order-heading, .fo-panel, .futures-account-summary, .archive-top-assets) {
+#archive-terminal-preview :is(.terminal, .ticker-bar, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .reference-book, .rb-tabs, .rb-controls, .rb-columns, .rb-center, .order-form-area, .reference-order-heading, .fo-panel, .futures-account-summary, .archive-top-assets) {
   background: transparent !important;
 }
 /* The chart paints nothing of its own so the gradient shows through it

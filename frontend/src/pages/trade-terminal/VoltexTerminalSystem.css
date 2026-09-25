@@ -78,11 +78,11 @@
    far larger change than this task, and one that would touch Futures. */
 
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .global-header {
-  background:#181a20; --bg:#181a20; height:48px; min-height:48px;
-  padding-inline:20px; border-bottom:1px solid var(--border);
+  background:var(--h-bg-1); --bg:var(--h-bg-1); height:48px; min-height:48px;
+  padding-inline:20px; border-bottom:1px solid var(--h-border);
 }
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .header-brand { color:#f1f5f9; }
-.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:550; }
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:600; }
 
 /* THE TOP STRIP. Futures settled on 56px with a 11px label over a 17px
    figure, and the lesson from the mark/index pair is carried over: one
@@ -238,7 +238,7 @@
      :is(), which gives it id weight over any number of classes. */
   --border: rgba(255,255,255,.12) !important;
 }
-.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.global-header, .terminal, .ticker-bar, .main-grid, .left-panel, .pairs-section, .pairs-header, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .orderbook-header, .orderbook-col-headers, .orderbook-asks, .orderbook-bids, .order-form-area, .order-form-tabs, .cfd-ticker-bar, .cfd-workspace, .cfd-instruments-area, .cfd-columns, .cfd-chart-area, .cfd-chart, .cfd-chart-toolbar, .cfd-form-area, .cfd-order-panel, .cfd-form) {
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.terminal, .ticker-bar, .main-grid, .left-panel, .pairs-section, .pairs-header, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .orderbook-header, .orderbook-col-headers, .orderbook-asks, .orderbook-bids, .order-form-area, .order-form-tabs, .cfd-ticker-bar, .cfd-workspace, .cfd-instruments-area, .cfd-columns, .cfd-chart-area, .cfd-chart, .cfd-chart-toolbar, .cfd-form-area, .cfd-order-panel, .cfd-form) {
   background: transparent !important;
 }
 /* The grids drew their column lines as 1px gaps over a lighter track; with

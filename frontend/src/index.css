@@ -203,10 +203,10 @@ body {
    never shrink. That is what previously forced this whole block into an
    !important war and pushed the burger up to 1160px. */
 .global-header {
-  --h-bg-1: #0c1018;
-  --h-bg-2: #0a0e15;
-  --h-border: #1c2330;
-  --h-text: #e8ecf3;
+  --h-bg-1: #1a1b20;
+  --h-bg-2: #1a1b20;
+  --h-border: #2c2e35;
+  --h-text: #f2f3f5;
   --h-text-2: #9aa4b4;
   --h-text-3: #7d8794;
   --h-hover: rgba(255, 255, 255, 0.04);
@@ -228,14 +228,13 @@ body {
   z-index: 20;
   flex-shrink: 0;
   border-bottom: 1px solid var(--h-border);
-  background: linear-gradient(180deg, var(--h-bg-1), var(--h-bg-2));
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02), 0 6px 24px rgba(0, 0, 0, 0.18);
-  /* The reference's own body face, scoped to the header and ticker rather
-     than swapped in globally — the rest of the exchange keeps Inter. */
-  font-family: 'DM Sans', var(--font-ui);
+  background: var(--h-bg-1);
+  box-shadow: none;
+  /* Approved Bot Studio header face only; terminal content keeps its own type. */
+  font-family: Arial, Helvetica, sans-serif;
 }
 .global-header::before {
-  content: '';
+  content: none;
   position: absolute;
   inset: 0;
   background:
@@ -2283,18 +2282,18 @@ a:hover > .nav-card-icon {
 }
 
 /* Owner's Futures reference: header styling stays in the eager shell. */
-:is(.futures-reference,.market-reference) > .global-header { background:#1b1b23; border-bottom:1px solid #2b2b35; box-shadow:none; }
+:is(.futures-reference,.market-reference) > .global-header { background:#1a1b20; border-bottom:1px solid #2c2e35; box-shadow:none; }
 :is(.futures-reference,.market-reference) > .global-header .deposit-button { box-shadow:none; }
 
 /* Measured Bybit typography; keep shell ownership here, not in a lazy route. */
-:is(.futures-reference,.market-reference) > .global-header { font-family:'Inter Terminal', Inter, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; height:48px; padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#181a20; }
+:is(.futures-reference,.market-reference) > .global-header { font-family:Arial, Helvetica, sans-serif; height:48px; padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#1a1b20; }
 :is(.futures-reference,.market-reference) > .global-header::before { content:none; }
 /* THE TERMINAL'S OWN NAV RULE IS THE ONE THAT WINS, so the legibility fix
    has to land here too — the base `.nav-item` never applies on this page.
    Weight 400 at 14px in #d1d4dc is where the owner said the row stopped
    looking sharp; 550 puts a full pixel under each stem without turning
    navigation into headings, and the ramp's brightest tone finishes it. */
-:is(.futures-reference,.market-reference) > .global-header .nav-item { font-family:inherit; font-size:14px; font-weight:550; color:var(--h-text); letter-spacing:0; line-height:20px; margin:0; padding:0 12px; border-radius:0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+:is(.futures-reference,.market-reference) > .global-header .nav-item { font-family:inherit; font-size:14px; font-weight:600; color:var(--h-text); letter-spacing:0; line-height:20px; margin:0; padding:0 12px; border-radius:0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 :is(.futures-reference,.market-reference) > .global-header .nav-active { color:var(--h-accent); background:transparent; }
 :is(.futures-reference,.market-reference) > .global-header .nav-active::after { bottom:0; height:2px; }
 :is(.futures-reference,.market-reference) > .global-header .header-icon,
