@@ -75,14 +75,14 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
       return { price: rect('.fo-priceField'), quantity: rect('.fo-qtyInputRow'), long: rect('.fo-submitPair .buy'), short: rect('.fo-submitPair .sell'), overflow: document.documentElement.scrollWidth - innerWidth };
     });
     assert.equal(geometry.overflow, 0, 'Horizontal page overflow');
-    assert.equal(geometry.price.height, 60); assert.equal(geometry.quantity.height, 60);
+    assert.equal(geometry.price.height, 48); assert.equal(geometry.quantity.height, 48);
     assert(Math.abs(geometry.price.width - geometry.quantity.width) < 1);
     assert.equal(geometry.long.height, geometry.short.height);
     assert(geometry.long.height >= 50);
     assert(Math.abs(geometry.long.width - geometry.short.width) < 1);
     await page.locator('.order-family-tabs').getByText('Рыночный', { exact: true }).click();
     const marketHeight = await page.locator('.fo-priceField').evaluate(e => e.getBoundingClientRect().height);
-    assert.equal(marketHeight, 60, 'Market price field must match quantity height');
+    assert.equal(marketHeight, 48, 'Market price field must match quantity height');
     await page.locator('.order-family-tabs').getByText('Лимитный', { exact: true }).click();
     for (const side of ['buy', 'sell']) {
       const button = page.locator('.fo-submitPair .' + side);

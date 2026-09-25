@@ -3,13 +3,13 @@
 #archive-terminal-preview .fo-panel {
   --order-service-label:color-mix(in srgb,var(--archive-label) 87%,var(--panel));
 }
-#archive-terminal-preview .fo-field { --fo-field-height:60px; }
+#archive-terminal-preview .fo-field { --fo-field-height:48px; }
 #archive-terminal-preview .fo-field > .fo-fieldCaption {
-  top:8px; left:12px; font-size:13px; line-height:17px; font-weight:600; color:#d8dbe1;
+  top:5px; left:12px; font-size:12px; line-height:15px; font-weight:600; color:#d8dbe1;
 }
 #archive-terminal-preview .fo-field .fo-fieldRow { border-radius:7px; }
 #archive-terminal-preview .fo-field :is(.fo-input,.fo-markPrice) {
-  font-size:17px; line-height:22px; font-weight:600; padding:26px 0 8px 12px;
+  font-size:16px; line-height:20px; font-weight:600; padding:20px 0 6px 12px;
 }
 #archive-terminal-preview .fo-fieldTrailing { padding-right:12px; }
 #archive-terminal-preview .fo-field .fo-input::placeholder { font-weight:400; }
@@ -34,9 +34,9 @@
   padding:0; gap:0; border:1px solid #4a4332; border-radius:8px;
   background:linear-gradient(115deg,#f3ce7109,transparent 80%);
 }
-#archive-terminal-preview .archive-protection-toggle { min-height:66px; gap:11px; padding:13px; border-radius:8px; }
+#archive-terminal-preview .archive-protection-toggle { min-height:52px; gap:10px; padding:8px 12px; border-radius:8px; }
 #archive-terminal-preview .archive-protection-toggle-icon {
-  flex:0 0 32px; width:32px; height:34px; border:0; border-radius:7px; background:#f3ce710c; color:#f3ce71;
+  flex:0 0 28px; width:28px; height:30px; border:0; border-radius:6px; background:#f3ce710c; color:#f3ce71;
 }
 #archive-terminal-preview .archive-protection-copy { flex:1; min-width:0; }
 #archive-terminal-preview .archive-protection-copy strong { display:block; font-size:14px; font-weight:600; }
@@ -48,8 +48,8 @@
 #archive-terminal-preview .archive-protection-fields input { min-height:44px; }
 @media(min-width:901px) {
   #archive-terminal-preview .fo-form { gap:19px; }
-  #archive-terminal-preview .fo-mlTrigger { height:40px; min-height:40px; }
-  #archive-terminal-preview .order-family-tabs { margin-top:63px; }
+  #archive-terminal-preview .fo-mlTrigger { height:34px; min-height:34px; }
+  #archive-terminal-preview .order-family-tabs { margin-top:57px; }
   #archive-terminal-preview .fo-submitPair button { height:50px; min-height:50px; }
 }
 @media(max-width:900px) {
