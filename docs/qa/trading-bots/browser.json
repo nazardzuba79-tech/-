@@ -17,7 +17,9 @@
     "1920: favorite retained",
     "1920: category filter",
     "1920: minimum sorting",
+    "1920: top-level active bots tab",
     "1920: keyboard trading menu",
+    "1920: no duplicate bots submenu",
     "1920: zero writes",
     "1920: zero uncaught errors",
     "1440: seven bots",
@@ -36,7 +38,9 @@
     "1440: favorite retained",
     "1440: category filter",
     "1440: minimum sorting",
+    "1440: top-level active bots tab",
     "1440: keyboard trading menu",
+    "1440: no duplicate bots submenu",
     "1440: zero writes",
     "1440: zero uncaught errors",
     "1024: seven bots",
@@ -98,28 +102,37 @@
     "Monday boundary refreshes an open page",
     "futures 1440: shared graphite",
     "futures 1440: no overflow",
+    "futures 1440: header controls separate",
     "spot 1440: shared graphite",
     "spot 1440: no overflow",
+    "spot 1440: header controls separate",
     "cfd 1440: shared graphite",
     "cfd 1440: no overflow",
+    "cfd 1440: header controls separate",
     "home 1440: graphite and no overlapping controls",
     "home 1440: no uncaught errors",
     "1440: bots route preserves authentication",
     "futures 1024: shared graphite",
     "futures 1024: no overflow",
+    "futures 1024: header controls separate",
     "spot 1024: shared graphite",
     "spot 1024: no overflow",
+    "spot 1024: header controls separate",
     "cfd 1024: shared graphite",
     "cfd 1024: no overflow",
+    "cfd 1024: header controls separate",
     "home 1024: graphite and no overlapping controls",
     "home 1024: no uncaught errors",
     "1024: bots route preserves authentication",
     "futures 390: shared graphite",
     "futures 390: no overflow",
+    "futures 390: header controls separate",
     "spot 390: shared graphite",
     "spot 390: no overflow",
+    "spot 390: header controls separate",
     "cfd 390: shared graphite",
     "cfd 390: no overflow",
+    "cfd 390: header controls separate",
     "home 390: graphite and no overlapping controls",
     "home 390: no uncaught errors",
     "390: bots route preserves authentication"
@@ -171,7 +184,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "spot",
@@ -179,7 +193,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "cfd",
@@ -187,7 +202,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "home",
@@ -202,7 +218,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "spot",
@@ -210,7 +227,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "cfd",
@@ -218,7 +236,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "home",
@@ -233,7 +252,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 52
+      "height": 52,
+      "overlap": false
     },
     {
       "name": "spot",
@@ -241,7 +261,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "cfd",
@@ -249,7 +270,8 @@
       "background": "rgb(26, 27, 32)",
       "texture": "none",
       "overflow": 0,
-      "height": 48
+      "height": 48,
+      "overlap": false
     },
     {
       "name": "home",

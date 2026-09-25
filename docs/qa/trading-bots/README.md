@@ -15,15 +15,15 @@ deposit, order, scheduler, database or backend implementation was changed.
 - Filter, sorting, local favourites, accessible native dialog and budget validation.
 - The detail action shows only the selected plan and budget. It does not claim
   a bot was launched. No funds are deducted, and no balance error is fabricated.
-- Shared solid graphite header, preserved logo/actions/authentication. Bot entry
-  in the Trading menu, mobile menu and homepage navigation.
+- Shared solid graphite header, preserved logo/actions/authentication. Bots have
+  a top-level tab next to Futures, plus mobile and homepage navigation entries.
 - Homepage uses its compact menu below 1440 px so the additional item fits.
 
 ## Validation
 
 - TypeScript and Vite production build: PASS.
-- Bot model and existing order-panel/navigation suites: 77 tests PASS.
-- Production-bundle browser harness: 122 assertions PASS in Microsoft Edge.
+- Bot model, order-panel/navigation and full visual-polish suites: 179 tests PASS.
+- Production-bundle browser harness: 135 assertions PASS in Microsoft Edge.
 - Catalogue widths: 320, 390, 1024, 1440, 1920 px.
 - Futures, Spot, CFD and signed-out homepage headers: 390, 1024, 1440 px.
 - No page overflow, overlapping header clusters, bot-page uncaught errors or

@@ -103,8 +103,11 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
         await page.locator('.nav-burger').click();
         check(width+': mobile bots link',await page.locator('.nav-mobile-menu a[href="/trading-bots"]').isVisible());
       } else if(width>=1440) {
+        const botsLink=page.locator('.main-nav > a[href="/trading-bots"]');
+        check(width+': top-level active bots tab',await botsLink.isVisible()&&await botsLink.evaluate(el=>el.classList.contains('nav-active')));
         await page.locator('.main-nav .nav-item-wrap > a').focus();
-        check(width+': keyboard trading menu',await page.getByRole('menuitem',{name:/Торговые боты/}).isVisible());
+        check(width+': keyboard trading menu',await page.locator('.nav-dropdown a[href="/trade"]').isVisible());
+        check(width+': no duplicate bots submenu',await page.locator('.nav-dropdown a[href="/trading-bots"]').count()===0);
       }
       check(width+': zero writes',writes.length===0);
       check(width+': zero uncaught errors',errors.length===0);
@@ -128,10 +131,11 @@ const check = (name, condition) => { assert.ok(condition, name); report.checks.p
       for(const [name,url] of [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']]) {
         await page.goto(base+url);
         await page.locator('header').first().waitFor();
-        const layout=await page.locator('header').first().evaluate(h=>{const s=getComputedStyle(h);return {background:s.backgroundColor,texture:s.backgroundImage,overflow:document.documentElement.scrollWidth-innerWidth,height:h.getBoundingClientRect().height};});
+        const layout=await page.locator('header').first().evaluate(h=>{const s=getComputedStyle(h),left=h.querySelector('.header-left').getBoundingClientRect(),right=h.querySelector('.header-actions').getBoundingClientRect();return {background:s.backgroundColor,texture:s.backgroundImage,overflow:document.documentElement.scrollWidth-innerWidth,height:h.getBoundingClientRect().height,overlap:left.right>right.left+1};});
         report.layouts.push({name,width,...layout});
         check(name+' '+width+': shared graphite',layout.background==='rgb(26, 27, 32)'&&layout.texture==='none');
         check(name+' '+width+': no overflow',layout.overflow<=1);
+        check(name+' '+width+': header controls separate',!layout.overlap);
         await page.screenshot({path:path.join(OUT,name+'-header-'+width+'.png')});
       }
       await context.close();

@@ -3752,3 +3752,10 @@ withdrawal was placed.
 - Follow-up to 14be82fd: removed the repeated demo-data notice and unavailable-status sentence at the owner's request.
 - Cards and modal retain explicit model-return labels. The plan result shows only the selected strategy and budget; it makes no execution or balance claim.
 - Files: TradingBotsPage.tsx, QA README. Vite build PASS; local browser confirms removed strings, model label and plan-only result. No production changes.
+
+## Codex — 2026-09-25 — Top-level trading bots navigation
+
+- Follow-up to d3c313a2570b52d9f458ba21ce507db93b16e4f2: moved Trading Bots next to Futures in the shared desktop navbar; kept one mobile entry and removed the duplicate Trading submenu item.
+- Updated the visual-polish guard to assert the approved solid shared header while preserving the terminal gradient. Updated browser assertions and screenshots for the actual top-level tab and non-overlapping controls.
+- Validation: frontend TypeScript/Vite build PASS; 179 tests in seven relevant suites PASS; 135 Edge browser assertions PASS at 320/390/1024/1440/1920px. Local jsdom supplied outside the repository, with no package/lockfile changes.
+- Preserved other agents' Futures/Spot/CFD behavior, financial logic, authentication and model-return labels. Publishing is pending latest-main sync, GitHub checks and confirmed Render workspace.

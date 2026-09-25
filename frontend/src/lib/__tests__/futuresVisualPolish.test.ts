@@ -344,7 +344,9 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
   it('runs one vertical gradient behind the terminal, darker at the top, into the bottom panel\'s own surface', () => {
     const surface = everyRule('#archive-terminal-preview');
     expect(surface).toContain('background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important');
-    expect(CSS).toMatch(/:is\(\.global-header, \.terminal, \.ticker-bar, \.chart-area, \.terminal-chart-shell[^)]*\.fo-panel[^)]*\) \{\s*background: transparent !important;/);
+    expect(CSS).toMatch(/:is\(\.terminal, \.ticker-bar, \.chart-area, \.terminal-chart-shell[^)]*\.fo-panel[^)]*\) \{\s*background: transparent !important;/);
+    // The shared navigation has the owner's approved solid graphite surface.
+    expect(everyRule('#archive-terminal-preview .global-header')).toContain('background:var(--h-bg-1)');
     // The bottom panel keeps its approved flat surface (§ 6).
     expect(rule('#archive-terminal-preview .bottom-panel')).toContain('--panel:#101014');
   });
@@ -406,4 +408,3 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     expect(rule('#archive-terminal-preview .futures-position-roi')).toContain('font-size:13px');
   });
 });
-
