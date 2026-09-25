@@ -3809,3 +3809,10 @@ PR #267 CI follow-up: added TradingBotIcon.tsx to both Copy Trading workflow pat
 
 PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved markup/removal and excluded the single new positionLimits locale key by name while preserving every older dictionary byte. All 285 tests in the nine pair/header guard suites now pass locally. Synced #268 bot button label unchanged.
 
+
+## Codex — 2026-09-25 — Compact highlighted order controls
+
+- Implementation a9be41f9802e3671db2d404b0b68b504202440ba, based on published main f9c0ac05. Owner marked margin/leverage, price, quantity and TP/SL as too tall.
+- FuturesOrderPanelRefinement.css: fields 60→48px, adjusted label/value line heights and padding; desktop margin/leverage 40→34px with matching tab offset; TP/SL 66→52px with smaller icon surface. Panel width, section rhythm, CTA sizes, mobile touch targets and trading behavior preserved.
+- qa-order-panel-refinement.cjs: updated field-height expectations. Frontend build PASS; native fixture browser PASS at 320/390/1440/1920 for MARKET/LIMIT dimensions, TP/SL retention and reduce-only gating, limits, CTA accessibility, no overflow, no fee strip. No application logic or backend changes.
+- Awaiting CI and publication. No unresolved local regression.
