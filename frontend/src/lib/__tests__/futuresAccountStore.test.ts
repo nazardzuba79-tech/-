@@ -99,7 +99,7 @@ beforeEach(() => {
 
 afterEach(() => {
   futuresAccountStore._resetForTests();
-  delete (globalThis as typeof globalThis & { document?: unknown }).document;
+  Reflect.deleteProperty(globalThis, 'document');
   jest.useRealTimers();
 });
 
