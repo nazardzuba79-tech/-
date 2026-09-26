@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { Delivery, handle, message, RETENTION_MS, validEvent } from './src/core.js';
+import { acceptEvent, Delivery, handle, message, RETENTION_MS, validEvent } from './src/core.js';
 
 const now = Date.now();
 const event = (extra = {}) => ({ eventId: 'synthetic-1', eventType: 'DEPOSIT_DISCOVERED', timestamp: now, amount: '15', asset: 'USDT', network: 'TRC20', ...extra });
@@ -88,4 +88,61 @@ test('public deposit endpoint verifies exact signed body; browser, tampering, st
   assert.equal((await handle(signed(event({ eventType: 'KYC_SUBMITTED' })), e)).status, 400);
   assert.equal((await handle(signed(event({ document: 'never allowed' })), e)).status, 400);
   assert.equal(calls, 1);
+});
+
+const registration = (extra = {}) => ({ eventId: 'synthetic-user', eventType: 'NEW_USER_REGISTERED',
+  userId: 'synthetic-user', email: 'synthetic@example.invalid', role: 'USER', timestamp: now, ...extra });
+test('registration Telegram text always includes title, email, user ID and actual registration date/time', () => {
+  assert.equal(message(registration()), `Нова реєстрація VOLTEX\n\nEmail: synthetic@example.invalid\nUser ID: synthetic-user\nЧас реєстрації (UTC): ${new Date(now).toISOString()}`);
+});
+test('registration requires USER, email, matching user/event ID and a bounded timestamp', async () => {
+  for (const extra of [{ role: 'ADMIN' }, { role: 'SERVICE' }, { role: undefined }, { email: undefined },
+    { email: 'invalid' }, { email: 'x\ny@example.test' }, { userId: undefined }, { userId: 'different-id' },
+    { timestamp: now - RETENTION_MS }, { timestamp: now + 120_000 }]) {
+    assert.equal(validEvent(registration(extra), 'NEW_USER_REGISTERED', now), false, JSON.stringify(extra));
+  }
+  for (const field of ['password', 'passwordHash', 'jwt', 'sessionToken', 'apiKey', 'secret']) {
+    const result = await acceptEvent(registration({ [field]: 'NEVER_SEND' }), 'NEW_USER_REGISTERED', env);
+    assert.equal(result.status, 400, field);
+  }
+});
+test('signed registration endpoint rejects browser, unsigned, tampered, wrong-route and wrong-type events', async () => {
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519'); let calls = 0;
+  const e = { ...env, DEPOSIT_SIGNING_PUBLIC_KEY: publicKey.export({ format: 'jwk' }).x, EVENTS: {
+    idFromName: name => { assert.equal(name, 'NEW_USER_REGISTERED:synthetic-user'); return name; },
+    get: () => ({ fetch: async () => { calls++; return Response.json({ status: 'SENT' }); } }),
+  } };
+  const signed = (data = registration(), headers = {}, signedPath = '/v1/registration', tamper = false) => {
+    const body = JSON.stringify(data), ts = String(Date.now());
+    return new Request('https://notify.test/v1/registration', { method: 'POST', body: tamper ? body + ' ' : body,
+      headers: { 'x-voltex-timestamp': ts, 'x-voltex-signature': sign(null, Buffer.from(`voltex-notifications-v1\n${ts}\n${signedPath}\n${body}`), privateKey).toString('base64url'), ...headers } });
+  };
+  assert.equal((await handle(signed(), e)).status, 200);
+  assert.equal((await handle(new Request('https://notify.test/v1/registration', { method: 'POST', body: JSON.stringify(registration()) }), e)).status, 401);
+  assert.equal((await handle(signed(registration(), { origin: 'https://voltextech.net' }), e)).status, 403);
+  assert.equal((await handle(signed(registration(), { 'sec-fetch-site': 'same-site' }), e)).status, 403);
+  assert.equal((await handle(signed(registration(), {}, '/v1/deposit'), e)).status, 401);
+  assert.equal((await handle(signed(registration(), {}, '/v1/registration', true), e)).status, 401);
+  assert.equal((await handle(signed(event()), e)).status, 400);
+  assert.equal((await handle(signed(registration({ role: 'ADMIN' })), e)).status, 400);
+  assert.equal(calls, 1);
+});
+for (const mode of ['success', 'failure', 'timeout']) test(`registration ${mode}: one attempt and no retained email`, async () => {
+  const s = storage(); let calls = 0;
+  const send = async (_url, init) => {
+    calls++; assert.match(JSON.parse(init.body).text, /Email: synthetic@example.invalid/);
+    if (mode === 'timeout') throw new Error('synthetic-secret');
+    return Response.json(mode === 'success' ? { ok: true, result: { message_id: 123 } } : { ok: false }, { status: mode === 'success' ? 200 : 503 });
+  };
+  const d = new Delivery({ storage: s }, env, send, () => now);
+  const results = await Promise.all(Array.from({ length: 10 }, () => d.fetch(req(registration())).then(r => r.json())));
+  assert.equal(results.filter(r => r.status !== 'DUPLICATE').length, 1);
+  assert.equal(calls, 1);
+  assert.equal(s.snapshot().record.status, mode === 'success' ? 'SENT' : mode === 'failure' ? 'FAILED' : 'UNKNOWN');
+  assert.deepEqual(Object.keys(s.snapshot().record).sort(), ['eventId', 'eventType', 'status', 'timestamp']);
+  assert.doesNotMatch(JSON.stringify(s.snapshot()), /synthetic@example|email|password/);
+  const restart = new Delivery({ storage: s }, env, send, () => now);
+  assert.equal((await (await restart.fetch(req(registration()))).json()).status, 'DUPLICATE');
+  assert.equal(calls, 1);
+  assert.equal(s.snapshot().alarm, now + RETENTION_MS);
 });

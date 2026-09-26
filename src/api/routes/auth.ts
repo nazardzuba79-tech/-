@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
 import { generateReferralCode } from '../../services/referralCode';
 import { CountryDetectionService } from '../../services/CountryDetectionService';
+import { notifyUserRegistered } from '../../services/TelegramNotifications';
 
 // Real login metadata for the account's Security Log — never a placeholder.
 // req.ip depends on `trust proxy` being set (see index.ts) to reflect the
@@ -208,6 +209,13 @@ export function authRouter(
     // authentication reads that column any more; it is informational.
     const session = await createSession(prisma, user.id, req);
     res.status(201).json({ token: issueToken(user.id, session.id) });
+
+    // The account and session already exist and the response has been sent.
+    // No query, transaction, outbox or retry is added for this notification.
+    if (user.role === 'USER') {
+      void notifyUserRegistered({ id: user.id, email: user.email, role: user.role, createdAt: user.createdAt })
+        .catch(() => console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'));
+    }
 
     // After the response: the new account has no country yet, so offer one.
     backfillCountry(user.id, req);
