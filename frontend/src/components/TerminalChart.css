@@ -134,25 +134,29 @@
   --rail-toggle-top: 80%;
   /* The toggle is positioned against this shell in BOTH states now, so the
      expanded shell needs the containing block the collapsed one already
-     had. Its `overflow:hidden` still clips the tools, not the chip: the
-     chip is 26px inside a 44px rail. */
+     had. 2026-09-26: with TradingView's full rail the tools reach past
+     four fifths of the chart, so the chip now hangs on the chart's edge
+     just outside the rail — the shell lets it overflow — rather than
+     covering a tool. Same height in both states, so it still never jumps. */
   position: relative;
+  overflow: visible;
 }
 .trade-terminal.futures-reference .terminal-chart-shell .drawing-rail-toggle {
   order: 0;
   flex: 0 0 auto;
   position: absolute;
   top: var(--rail-toggle-top);
-  left: 5px;
+  left: 100%;
   transform: translateY(-50%);
-  z-index: 3;
-  width: 26px;
-  min-width: 26px;
-  height: 22px;
-  min-height: 22px;
+  z-index: 7;
+  width: 16px;
+  min-width: 16px;
+  height: 30px;
+  min-height: 30px;
   margin: 0;
   border: 1px solid #39434f;
-  border-radius: 5px;
+  border-left: 0;
+  border-radius: 0 5px 5px 0;
   /* BRIGHT, NOT DIM. At --text-secondary on --panel-alt this chip was the
      quietest thing in the chart area while being the only way to get the
      tools back. Near-white on a lifted surface reads as a control. */
