@@ -25,3 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+// Tells the boot guard in index.html that the entry chunk ran and React owns
+// #root from here on: a failure after this point is the ErrorBoundary's to
+// handle, not a reason for the guard to reload.
+document.documentElement.setAttribute('data-app-started', '');

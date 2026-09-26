@@ -3,6 +3,137 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- BOOT GUARD. A classic inline script, so it runs before the entry
+         chunk and still runs when the entry chunk is the thing that failed.
+
+         On Cloudflare Pages a MISSING /assets/* file is not a 404: the SPA
+         fallback answers 200 with this page as text/html, and _headers stamps
+         it `immutable`. A browser that asks for a chunk in the deploy window
+         (an old shell, or a new shell whose file the edge has not caught up
+         with) stores HTML under a script URL and never asks again, so a plain
+         reload fails identically. When the entry chunk is the victim, React
+         never starts and the page stays black.
+
+         So, only when the app has NOT started and #root is empty:
+           1. re-fetch the affected /assets files with cache: 'reload', which
+              replaces the poisoned copies in the HTTP cache;
+           2. reload ONCE per shell per tab (sessionStorage guard);
+           3. otherwise show a readable screen with a button, never a blank one.
+         After the app has started, a lazy-chunk failure is the ErrorBoundary's
+         job (src/lib/chunkRecovery.ts); this only keeps a screen that React
+         left empty from staying empty. Nothing here reads tokens or storage
+         other than its own guard key. -->
+    <script>
+      (function () {
+        var w = window, d = document, KEY = 'voltex.boot-heal.';
+        var failed = [], decided = false, screenEl = null, screenKind = '', emptyTimer = 0;
+        var TEXT = {
+          busy: ['Обновляем страницу…', ''],
+          slow: ['Страница загружается дольше обычного', 'Проверьте подключение к интернету или обновите страницу.'],
+          failed: ['Не удалось загрузить страницу', 'Проверьте подключение к интернету и обновите страницу.']
+        };
+        function asset(u) { return typeof u === 'string' && u.indexOf(location.origin + '/assets/') === 0 ? u : ''; }
+        function started() { return d.documentElement.hasAttribute('data-app-started'); }
+        function empty() { var r = d.getElementById('root'); return !r || r.childElementCount === 0; }
+        function shell() {
+          var s = d.querySelector('script[type="module"][src]'), src = s ? s.getAttribute('src') || '' : '';
+          return src.slice(src.lastIndexOf('/') + 1) || 'dev';
+        }
+        function log(outcome) { try { console.warn('voltex.bootstrap.boot_guard.' + outcome + ' shell=' + shell()); } catch (e) {} }
+        function candidates(extra) {
+          var out = [], i, list;
+          function add(u) { u = asset(u); if (u && out.indexOf(u) < 0 && out.length < 80) out.push(u); }
+          for (i = 0; i < extra.length; i++) add(extra[i]);
+          for (i = 0; i < failed.length; i++) add(failed[i]);
+          list = d.querySelectorAll('script[src],link[href]');
+          for (i = 0; i < list.length; i++) add(list[i].src || list[i].href);
+          try { list = performance.getEntriesByType('resource'); for (i = 0; i < list.length; i++) add(list[i].name); } catch (e) {}
+          return out;
+        }
+        // A cached copy that is HTML (or not OK) under an /assets name is the
+        // poison; only-if-cached looks without touching the network. Where a
+        // browser cannot look, the file is simply fetched again.
+        function refresh(u, force) {
+          var looked = force ? Promise.resolve(true) : fetch(u, { cache: 'only-if-cached', mode: 'same-origin' }).then(function (r) {
+            return !r.ok || /text\/html/i.test(r.headers.get('content-type') || '');
+          }, function () { return true; });
+          return looked.then(function (bad) { if (bad) return fetch(u, { cache: 'reload', credentials: 'same-origin' }); }).then(null, function () {});
+        }
+        function heal(extra) {
+          extra = extra || [];
+          if (!w.fetch || !w.Promise) return { then: function (f) { f(); } };
+          var urls = candidates(extra), jobs = [], i;
+          for (i = 0; i < urls.length; i++) jobs.push(refresh(urls[i], extra.indexOf(urls[i]) >= 0 || failed.indexOf(urls[i]) >= 0));
+          return Promise.race([Promise.all(jobs), new Promise(function (r) { setTimeout(r, 6000); })]);
+        }
+        function show(kind) {
+          if (!d.body) return;
+          if (!screenEl) {
+            screenEl = d.createElement('div');
+            screenEl.id = 'boot-recovery';
+            screenEl.setAttribute('role', 'alert');
+            screenEl.style.cssText = 'position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:#0b0e11;color:#eaecef;font:14px/1.6 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center';
+            d.body.appendChild(screenEl);
+          }
+          screenKind = kind;
+          screenEl.setAttribute('data-kind', kind);
+          while (screenEl.firstChild) screenEl.removeChild(screenEl.firstChild);
+          var box = d.createElement('div'), h = d.createElement('div'), t = TEXT[kind];
+          box.style.cssText = 'max-width:420px';
+          h.style.cssText = 'font-size:20px;font-weight:800;margin-bottom:8px';
+          h.textContent = t[0];
+          box.appendChild(h);
+          if (t[1]) { var p = d.createElement('div'); p.style.cssText = 'color:#a3adba;margin-bottom:16px'; p.textContent = t[1]; box.appendChild(p); }
+          if (kind !== 'busy') {
+            var b = d.createElement('button');
+            b.type = 'button';
+            b.textContent = 'Обновить страницу';
+            b.style.cssText = 'background:#f7a600;color:#0b0e11;border:0;border-radius:24px;padding:12px 28px;font-weight:800;font-size:14px;cursor:pointer';
+            b.onclick = function () { b.disabled = true; show('busy'); heal([]).then(function () { location.reload(); }); };
+            box.appendChild(b);
+          }
+          screenEl.appendChild(box);
+        }
+        function hide() { if (screenEl && screenEl.parentNode) screenEl.parentNode.removeChild(screenEl); screenEl = null; screenKind = ''; }
+        function recover() {
+          if (decided || started() || !empty()) return;
+          decided = true;
+          var key = KEY + shell(), spent = true;
+          try { spent = sessionStorage.getItem(key) !== null; if (!spent) sessionStorage.setItem(key, '1'); } catch (e) { spent = true; }
+          if (spent) { log('exhausted'); show('failed'); return; }
+          log('reloading');
+          show('busy');
+          heal([]).then(function () { location.reload(); });
+          // The reload did not take this page away: say so rather than wait forever.
+          setTimeout(function () { show('failed'); }, 12000);
+        }
+        w.addEventListener('error', function (e) {
+          var t = e && e.target, u;
+          if (!t || t === w || !t.tagName) return;
+          u = asset(t.src || t.href || '');
+          if (!u) return;
+          if (failed.indexOf(u) < 0) failed.push(u);
+          if (!started()) setTimeout(recover, 400);
+        }, true);
+        w.addEventListener('load', function () { setTimeout(function () { if (!started()) recover(); }, 3000); });
+        setTimeout(function () { if (!started() && empty() && !decided) show('slow'); }, 20000);
+        function watch() {
+          var r = d.getElementById('root');
+          if (!r || !w.MutationObserver) return;
+          new MutationObserver(function () {
+            if (!started()) return;
+            if (!empty()) {
+              clearTimeout(emptyTimer); emptyTimer = 0;
+              if (screenKind === 'slow' || (screenKind === 'failed' && !decided)) hide();
+              return;
+            }
+            if (!emptyTimer) emptyTimer = setTimeout(function () { emptyTimer = 0; if (started() && empty()) show('failed'); }, 4000);
+          }).observe(r, { childList: true });
+        }
+        if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', watch); else watch();
+        w.__voltexBoot = { heal: heal };
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="mask-icon" href="/favicon.svg" color="#f7a600" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -26,6 +26,19 @@
  * precisely why the owner's manual «Перезагрузить страницу» always worked.
  *
  * So this does that reload for them, ONCE, and only for this failure.
+ *
+ * WHY A PLAIN RELOAD WAS NOT ENOUGH (measured on voltextech.net, 2026-09-26).
+ *
+ * Cloudflare Pages answers a MISSING /assets/* file with the SPA's index.html
+ * — status 200, text/html — and _headers stamps it
+ * `public, max-age=31536000, immutable` like any other asset. A browser that
+ * asks for a chunk in the deploy window therefore stores HTML under that
+ * script's URL for a year, and a reload re-uses the poisoned copy without
+ * asking: the same failure, every time, until the cache is cleared. So the
+ * reload below is preceded by a re-fetch of the failed file with
+ * `cache: 'reload'`, which replaces the cached copy (see healThenReload). The
+ * boot guard in index.html does the same when the ENTRY chunk is the victim —
+ * the case where React never starts and this module never runs.
  */
 
 /**
@@ -106,6 +119,58 @@ export interface RecoveryEnvironment {
   doc?: Pick<Document, 'querySelector'>;
   path?: string;
   reload?: () => void;
+  /** Replaces poisoned cached copies before the reload. Defaults to the boot
+   *  guard's (index.html), or a plain cache-bypassing re-fetch. */
+  heal?: (urls: string[]) => Promise<unknown> | unknown;
+}
+
+/** The longest a reload waits for the cache to be healed. The reload happens
+ *  either way — a heal that hangs must not become a page that never reloads. */
+export const HEAL_TIMEOUT_MS = 6000;
+
+/** The failed module's URL, where the engine names it (Chromium, Firefox,
+ *  Vite's CSS preload). Safari does not; the boot guard's heal then looks at
+ *  what the page actually loaded. */
+export function failedModuleUrl(error: unknown): string | null {
+  const message = (error as { message?: unknown } | null)?.message;
+  if (typeof message !== 'string') return null;
+  const absolute = message.match(/https?:\/\/[^\s'"()]+?\.(?:m?js|css)\b/);
+  if (absolute) return absolute[0];
+  const relative = message.match(/\/assets\/[^\s'"()]+?\.(?:m?js|css)\b/);
+  if (!relative) return null;
+  return typeof location === 'undefined' ? relative[0] : `${location.origin}${relative[0]}`;
+}
+
+type BootGuard = { heal?: (urls: string[]) => Promise<unknown> };
+
+function defaultHeal(urls: string[]): Promise<unknown> {
+  const w = (typeof window === 'undefined' ? undefined : window) as (Window & { __voltexBoot?: BootGuard }) | undefined;
+  if (w?.__voltexBoot?.heal) return w.__voltexBoot.heal(urls);
+  if (!w || typeof w.fetch !== 'function') return Promise.resolve();
+  return Promise.all(urls.map(u => w.fetch(u, { cache: 'reload', credentials: 'same-origin' }).catch(() => undefined)));
+}
+
+/**
+ * Replace the failed files' cached copies, then reload — within
+ * HEAL_TIMEOUT_MS whatever the heal does. Also what the boundary's
+ * «Перезагрузить страницу» button does, so the manual reload cannot trip over
+ * the same poisoned copy either.
+ */
+export function healThenReload(urls: string[], env: RecoveryEnvironment = {}): void {
+  const reload = env.reload ?? (() => location.reload());
+  const heal = env.heal ?? defaultHeal;
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    reload();
+  };
+  const timer = setTimeout(go, HEAL_TIMEOUT_MS);
+  Promise.resolve()
+    .then(() => heal(urls))
+    .catch(() => undefined)
+    .then(go);
 }
 
 /**
@@ -135,7 +200,8 @@ export function attemptChunkRecovery(error: unknown, env: RecoveryEnvironment = 
     return false;
   }
   report('reloading', error);
-  (env.reload ?? (() => location.reload()))();
+  const url = failedModuleUrl(error);
+  healThenReload(url ? [url] : [], env);
   return true;
 }
 
