@@ -64,12 +64,16 @@ jobs:
           # Supply it only in the disposable runner; production is untouched.
           sudo mkdir -p /opt/node22/lib/node_modules
           sudo ln -s /tmp/visual-polish-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
-      - name: Trading panel and order book at 1920, 1664, 1440, 1366 and 390
+      - name: Trading panel and order book at desktop plus 360, 390 and 430 mobile widths
         run: node scripts/qa-futures-visual-polish.cjs --label ci
+      - name: Spot and CFD parity against the approved Futures design
+        run: node scripts/qa-spot-cfd-terminal.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: futures-visual-polish-${{ github.sha }}
-          path: docs/qa/futures-visual-polish/ci-*
+          path: |
+            docs/qa/futures-visual-polish/ci-*
+            docs/qa/spot-cfd-terminal/*
           retention-days: 7
           if-no-files-found: warn
