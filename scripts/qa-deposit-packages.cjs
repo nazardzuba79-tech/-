@@ -479,6 +479,113 @@ async function main() {
       assert.ok(!/deposit\.(update|updateMany|upsert|create|createMany)\([^;]*userId/.test(src), 'watcher must not write Deposit.userId');
     });
 
+    await test('Ignore + accumulation: old wallet transfer ignored/restored; 15 → 115 → 300 in one card; credit once; counters', async () => {
+      const queue = async () => (await admin.get('/admin/deposit-queue')).body;
+      const w = await makeUser('wallet15');
+      const unattributedBefore = (await queue()).counts.UNATTRIBUTED;
+      // 1. An old wallet transfer is ignored with a reason: it leaves Непривязанные, the row stays intact.
+      fixture.send(4000, '777'); await scan();
+      const old = await row(4000);
+      assert.equal((await queue()).counts.UNATTRIBUTED, unattributedBefore + 1);
+      const bad = await admin.post(`/admin/deposits/${old.id}/ignore`, { reason: 'OTHER' });
+      assert.equal(bad.status, 400); // «Другое» needs a note
+      const ig = await admin.post(`/admin/deposits/${old.id}/ignore`, { reason: 'HISTORICAL_WALLET_OPERATION' });
+      assert.equal(ig.status, 200, JSON.stringify(ig.body));
+      let q = await queue();
+      assert.equal(q.counts.UNATTRIBUTED, unattributedBefore);
+      const ignoredRow = q.rows.find((r) => r.txHash === hash(4000));
+      assert.equal(ignoredRow.state, 'IGNORED'); assert.equal(ignoredRow.ignoredReason, 'HISTORICAL_WALLET_OPERATION'); assert.ok(ignoredRow.ignoredAt);
+      assert.ok(q.counts.IGNORED >= 1);
+      const kept = await row(4000);
+      assert.equal(kept.amount.toString(), '777'); assert.equal(kept.txHash, old.txHash); assert.equal(kept.asset, 'USDT'); assert.equal(kept.chain, 'tron');
+      assert.deepEqual(kept.blockTimestamp, old.blockTimestamp); assert.equal(kept.ignoredByAdminId, ADMIN);
+      assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_IGNORED', metadata: { path: ['depositId'], equals: old.id } } }), 1);
+      // 2–3. An ignored transfer cannot be attributed, joins no package and changes no balance.
+      assert.equal((await attribute(4000, w)).status, 409);
+      assert.equal(await balance(w), '0');
+      assert.ok(!q.packages.some((p) => p.transfers.some((t) => t.txHash === hash(4000))));
+      await scan(); assert.equal((await row(4000)).ignoredAt !== null, true); // a rescan keeps it ignored
+      // 4. Restore puts it back in the queue (ADMIN only), no balance change.
+      assert.equal((await as(w).post(`/admin/deposits/${old.id}/restore`)).status, 403);
+      assert.equal((await admin.post(`/admin/deposits/${old.id}/restore`)).status, 200);
+      q = await queue();
+      assert.equal(q.rows.find((r) => r.txHash === hash(4000)).state, 'UNATTRIBUTED');
+      assert.equal(q.counts.UNATTRIBUTED, unattributedBefore + 1);
+      assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_IGNORE_RESTORED' } }), 1);
+      assert.equal(await balance(w), '0');
+      await admin.post(`/admin/deposits/${old.id}/ignore`, { reason: 'OWN_TRANSFER' }); // back to ignored for the rest
+      // 5. 15 USDT → attach → Ожидает доплаты, remaining 285, balance unchanged.
+      fixture.send(4001, '15'); await scan();
+      assert.equal((await attribute(4001, w)).status, 200);
+      let p = (await queue()).packages.find((x) => x.userId === w);
+      assert.deepEqual([p.state, p.total, p.remaining, p.transfers.length], ['AWAITING_TOPUP', '15', '285', 1]);
+      assert.equal(await balance(w), '0');
+      // An attributed transfer inside an active package cannot be ignored (detach first).
+      assert.equal((await admin.post(`/admin/deposits/${(await row(4001)).id}/ignore`, { reason: 'OWN_TRANSFER' })).body.code, 'IN_PACKAGE');
+      // 6. +100 → 15 + 100 = 115, remaining 185; the 15 is still there.
+      fixture.send(4002, '100'); await scan(); await attribute(4002, w);
+      p = (await queue()).packages.find((x) => x.userId === w);
+      assert.deepEqual([p.state, p.total, p.remaining], ['AWAITING_TOPUP', '115', '185']);
+      assert.deepEqual(p.transfers.map((t) => t.amount).sort(), ['100', '15']);
+      for (const t of p.transfers) { assert.ok(t.txHash && t.confirmations >= 19 && t.blockTimestamp && t.finalized); }
+      // 7. +185 → 300, READY; one card for user + network + asset.
+      fixture.send(4003, '185'); await scan(); await attribute(4003, w);
+      q = await queue();
+      const mine = q.packages.filter((x) => x.userId === w);
+      assert.equal(mine.length, 1);
+      p = mine[0];
+      assert.deepEqual([p.state, p.total, p.remaining, p.minimumReached], ['READY', '300', '0', true]);
+      assert.deepEqual(p.transfers.map((t) => t.amount).sort(), ['100', '15', '185']);
+      // 8. Before the admin's confirmation: balance unchanged.
+      assert.equal(await balance(w), '0');
+      // 12. Counters: packages, not transfers.
+      assert.equal(q.packageCounts.READY, q.packages.filter((x) => x.state === 'READY').length);
+      assert.equal(q.packageCounts.AWAITING_TOPUP, q.packages.filter((x) => x.state === 'AWAITING_TOPUP').length);
+      assert.equal(q.counts.UNATTRIBUTED, q.rows.filter((r) => r.state === 'UNATTRIBUTED').length);
+      assert.equal(q.counts.IGNORED, q.rows.filter((r) => r.state === 'IGNORED').length);
+      assert.ok(!q.rows.some((r) => r.state === 'UNATTRIBUTED' && r.ignoredAt));
+      // 9–10. Confirm credits +300 exactly once; a double confirm adds nothing.
+      const pv = await preview(w);
+      const key = crypto.randomUUID();
+      const [c1, c2] = await Promise.all([confirm(pv, key), confirm(pv, key)]);
+      assert.equal(c1.status, 200); assert.equal(c2.status, 200); assert.equal(c1.body.batchId, c2.body.batchId);
+      assert.equal(await balance(w), '300');
+      assert.equal((await confirm(pv, crypto.randomUUID())).status, 409);
+      assert.equal(await balance(w), '300');
+      q = await queue();
+      assert.ok(!q.packages.some((x) => x.userId === w));
+      const batch = q.creditedBatches.find((b) => b.userId === w);
+      assert.equal(batch.totalAmount, '300'); assert.deepEqual(batch.transfers.map((t) => t.amount).sort(), ['100', '15', '185']);
+      for (const n of [4001, 4002, 4003]) assert.equal((await row(n)).status, 'CREDITED');
+      // 11. A CREDITED transfer cannot be ignored; nothing about it changes.
+      const credited = await row(4001);
+      const refuse = await admin.post(`/admin/deposits/${credited.id}/ignore`, { reason: 'OWN_TRANSFER' });
+      assert.equal(refuse.status, 409); assert.equal(refuse.body.code, 'CREDITED');
+      const after = await row(4001);
+      assert.equal(after.ignoredAt, null); assert.equal(after.userId, w); assert.equal(after.amount.toString(), '15');
+      // An attributed transfer outside a package (not yet final) needs explicit confirmation to ignore.
+      fixture.send(4004, '5', { solidified: false, block: fixture.state.head - 2 }); await scan(); await attribute(4004, w);
+      const needs = await admin.post(`/admin/deposits/${(await row(4004)).id}/ignore`, { reason: 'NOT_CLIENT_DEPOSIT' });
+      assert.equal(needs.body.code, 'CONFIRM_ASSIGNED');
+      assert.equal((await admin.post(`/admin/deposits/${(await row(4004)).id}/ignore`, { reason: 'NOT_CLIENT_DEPOSIT', confirmAssigned: true })).status, 200);
+      assert.equal(await balance(w), '300');
+      report.accumulation = { example: '15 → 115 → 300', credited: '300', ignoredOldTransfer: 'kept, restorable' };
+    });
+
+    await test('Migration backfill: transfers hidden with the old «Игнорировать» stay out of Непривязанные (unattributed, uncredited only)', async () => {
+      const sql = fs.readFileSync('prisma/migrations/20260926180000_deposit_ignore/migration.sql', 'utf8');
+      const update = sql.slice(sql.indexOf('UPDATE "Deposit" d'), sql.indexOf(';', sql.indexOf('UPDATE "Deposit" d')) + 1);
+      fixture.send(4100, '42'); fixture.send(4101, '43'); await scan();
+      const legacyOwner = await makeUser('legacyowner');
+      await attribute(4101, legacyOwner);
+      for (const n of [4100, 4101]) await prisma.ignoredIncomingTransfer.create({ data: { chain: 'tron', txHash: hash(n) } });
+      await db.query(update);
+      assert.equal((await row(4100)).ignoredReason, 'LEGACY_IGNORE');
+      assert.equal((await row(4101)).ignoredAt, null); // attributed: never hidden by the backfill
+      const q = (await admin.get('/admin/deposit-queue')).body;
+      assert.equal(q.rows.find((r) => r.txHash === hash(4100)).state, 'IGNORED');
+    });
+
     await test('Daytime schedule (Kyiv): first admin open after 07:00, 12/16/20 slots, no night scans, no night catch-up, dedupe; manual always; load', async () => {
       const { instantOf, localTime } = require('../dist/services/deposits/depositWatchSchedule');
       const TZ = 'Europe/Kyiv';
@@ -594,6 +701,7 @@ async function browserQa(ctx) {
   const { app, fixture, scan, attribute, balance, makeUser, auth, output, report, prisma } = ctx;
   const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
   const client = await makeUser('browser');
+  const ignoreWidths = [[320, 720], [360, 740], [390, 844], [430, 900], [1440, 900]];
   const who = { current: ADMIN };
   app.get('/api/v1/me', (_req, res) => res.json(who.current === ADMIN
     ? { id: ADMIN, email: 'admin@deposit.invalid', role: 'ADMIN', isAdmin: true, displayName: 'LOCAL QA' }
@@ -668,6 +776,48 @@ async function browserQa(ctx) {
       report.browser.push({ width, attributeWithoutCredit: 'PASS', remaining285: 'PASS', ready300: 'PASS', cancelNoEffect: 'PASS', confirmOnce: 'PASS',
         clientBeforeConfirm: 'nothing pending', clientAfterConfirm: 'credited visible', overflow: false, hiddenTabRequests: 0, queueLoads, consoleErrors: 0 });
       console.log(`PASS browser ${width}`);
+      await context.close();
+    }
+    // «Игнорировать» → «Игнорированные» → «Вернуть в очередь» at every width, no horizontal overflow on any tab.
+    for (const [width, height] of ignoreWidths) {
+      const context = await browser.newContext({ viewport: { width, height } });
+      await context.route('**/*', (route) => (new URL(route.request().url()).origin === origin ? route.continue() : route.abort()));
+      const page = await context.newPage();
+      const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+      page.on('dialog', (d) => d.accept());
+      const n = 7000 + width;
+      clock.t += 5 * 60_000; fixture.send(n, '777'); await scan();
+      who.current = ADMIN;
+      await page.goto(origin + '/admin/deposits#unattributed');
+      const item = page.locator('[data-deposit-row]').filter({ has: page.locator(`[title="${hash(n)}"]`) });
+      await item.waitFor();
+      await item.getByRole('button', { name: 'Игнорировать' }).click();
+      const modal = page.locator('[data-ignore-modal]');
+      await modal.getByLabel('Историческая операция кошелька').check();
+      await page.screenshot({ path: path.join(output, `ignore-modal-${width}.png`), fullPage: false });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1), false, `modal overflow at ${width}`);
+      await modal.locator('[data-confirm-ignore]').click();
+      await page.getByRole('status').filter({ hasText: 'Игнорированные' }).waitFor();
+      assert.equal(await item.count(), 0);
+      assert.ok((await prisma.deposit.findUniqueOrThrow({ where: { chain_txHash: { chain: 'tron', txHash: hash(n) } } })).ignoredAt);
+      for (const tab of ['unattributed', 'topup', 'network', 'ready', 'review', 'credited', 'ignored']) {
+        await page.locator(`[data-deposit-tab="${tab}"]`).click();
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1), false, `overflow at ${width} on ${tab}`);
+      }
+      await page.screenshot({ path: path.join(output, `ignored-tab-${width}.png`), fullPage: true });
+      const ignoredItem = page.locator('[data-ignored-row]').filter({ has: page.locator(`[title="${hash(n)}"]`) });
+      await ignoredItem.getByText('Историческая операция кошелька').waitFor();
+      await ignoredItem.getByRole('button', { name: 'Вернуть в очередь' }).click();
+      await page.getByRole('status').filter({ hasText: 'возвращён в очередь' }).waitFor();
+      assert.equal((await prisma.deposit.findUniqueOrThrow({ where: { chain_txHash: { chain: 'tron', txHash: hash(n) } } })).ignoredAt, null);
+      await page.locator('[data-deposit-tab="topup"]').click();
+      await page.screenshot({ path: path.join(output, `topup-cards-${width}.png`), fullPage: true });
+      // Leave it ignored again so later widths start from a clean queue.
+      await request(app).post(`/api/v1/admin/deposits/${(await prisma.deposit.findUniqueOrThrow({ where: { chain_txHash: { chain: 'tron', txHash: hash(n) } } })).id}/ignore`)
+        .set('Authorization', auth(ADMIN)).send({ reason: 'HISTORICAL_WALLET_OPERATION' });
+      assert.deepEqual(errors, []);
+      report.browser.push({ width, ignoreModal: 'PASS', ignoredTab: 'PASS', restore: 'PASS', overflow: false });
+      console.log(`PASS browser ignore ${width}`);
       await context.close();
     }
   } finally { await browser.close(); await new Promise((r) => server.close(r)); }

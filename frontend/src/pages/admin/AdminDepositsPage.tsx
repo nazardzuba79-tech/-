@@ -6,20 +6,21 @@ import { CopyValue, RailLabel } from './AdminPrimitives';
 import { Skeleton } from '../../components/Skeleton';
 import { CreditDepositDrawer } from './CreditDepositDrawer';
 import {
-  adminDepositApi, AdminDepositApiError, STATE_LABEL,
-  type DepositPackage, type DepositQueue, type DepositQueueRow, type WatcherStatus,
+  adminDepositApi, AdminDepositApiError, STATE_LABEL, IGNORE_REASON_LABEL,
+  type CreditedBatch, type DepositPackage, type DepositQueue, type DepositQueueRow, type IgnoreReason, type WatcherStatus,
 } from './adminDepositApi';
 
 type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
-type Tab = 'unattributed' | 'topup' | 'network' | 'ready' | 'review' | 'credited';
+type Tab = 'unattributed' | 'topup' | 'network' | 'ready' | 'review' | 'credited' | 'ignored';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unattributed', label: 'Непривязанные' },
   { key: 'topup', label: 'Ожидают доплаты' },
-  { key: 'network', label: 'Ожидают подтверждений сети' },
+  { key: 'network', label: 'Ожидают подтверждений' },
   { key: 'ready', label: 'Готовы к проверке' },
   { key: 'review', label: 'Требуют уточнения' },
   { key: 'credited', label: 'Зачисленные' },
+  { key: 'ignored', label: 'Игнорированные' },
 ];
 /** Queue re-read while the tab is visible. A hidden tab schedules nothing. */
 const REFRESH_MS = 60_000;
@@ -90,19 +91,32 @@ export function AdminDepositsPage() {
       review: rows.filter((r) => r.state === 'NEEDS_REVIEW' && !packages.some((p) => p.transfers.some((t) => t.id === r.id))),
       reviewPackages: packages.filter((p) => p.state === 'NEEDS_REVIEW'),
       credited: rows.filter((r) => r.state === 'CREDITED'),
+      ignored: rows.filter((r) => r.state === 'IGNORED'),
+      batches: queue?.creditedBatches ?? [],
       topup: packages.filter((p) => p.state === 'AWAITING_TOPUP'),
       ready: packages.filter((p) => p.state === 'READY'),
     };
   }, [queue]);
 
+  // Transfers for Непривязанные / Ожидают подтверждений / Игнорированные;
+  // PACKAGES (one user + asset + network) for Ожидают доплаты / Готовы.
   const counts: Record<Tab, number> = {
     unattributed: queue?.counts.UNATTRIBUTED ?? 0,
-    topup: lists.topup.length,
+    topup: queue?.packageCounts?.AWAITING_TOPUP ?? lists.topup.length,
     network: queue?.counts.AWAITING_CONFIRMATIONS ?? 0,
-    ready: lists.ready.length,
+    ready: queue?.packageCounts?.READY ?? lists.ready.length,
     review: lists.review.length + lists.reviewPackages.length,
     credited: queue?.counts.CREDITED ?? 0,
+    ignored: queue?.counts.IGNORED ?? lists.ignored.length,
   };
+  const [ignoring, setIgnoring] = useState<DepositQueueRow | null>(null);
+
+  async function restore(row: DepositQueueRow) {
+    if (!window.confirm('Вернуть перевод в очередь «Непривязанные»? Баланс не изменится.')) return;
+    setMessage(null); setError(null);
+    try { await adminDepositApi.restore(row.id); setMessage('Перевод возвращён в очередь. Баланс не изменён.'); await reload(); }
+    catch (err) { setError(err instanceof AdminDepositApiError ? err.message : 'Не удалось вернуть перевод.'); }
+  }
 
   async function attribute(row: DepositQueueRow, userId: string | null, reassign: boolean) {
     setMessage(null); setError(null);
@@ -143,7 +157,7 @@ export function AdminDepositsPage() {
       {queue && tab === 'unattributed' && (
         <section id="unattributed" data-deposit-section="unattributed">
           {lists.unattributed.length === 0 && <Empty text="Непривязанных переводов нет." />}
-          {lists.unattributed.map((r) => <UnattributedRow key={r.id} row={r} clients={clients} onAttribute={attribute} />)}
+          {lists.unattributed.map((r) => <UnattributedRow key={r.id} row={r} clients={clients} onAttribute={attribute} onIgnore={() => setIgnoring(r)} />)}
         </section>
       )}
       {queue && (tab === 'topup' || tab === 'ready') && (
@@ -166,11 +180,28 @@ export function AdminDepositsPage() {
         </section>
       )}
       {queue && tab === 'credited' && (
-        <section data-deposit-section="credited">
-          {lists.credited.length === 0 && <Empty text="Зачисленных пополнений пока нет." />}
-          {lists.credited.map((r) => <TransferRow key={r.id} row={r} />)}
-          {lists.credited.length > 0 && <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Показаны последние {lists.credited.length} из {queue.counts.CREDITED}.</p>}
+        <section data-deposit-section="credited" style={{ display: 'grid', gap: 12 }}>
+          {lists.batches.length === 0 && lists.credited.length === 0 && <Empty text="Зачисленных пополнений пока нет." />}
+          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
+            {lists.batches.map((b) => <CreditedBatchCard key={b.id} batch={b} />)}
+          </div>
+          {/* Transfers credited before packages existed (no batch). */}
+          {lists.credited.filter((r) => !r.batchId).map((r) => <TransferRow key={r.id} row={r} />)}
         </section>
+      )}
+      {queue && tab === 'ignored' && (
+        <section data-deposit-section="ignored">
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 8px' }}>
+            Не являются депозитами клиентов. Записи сохранены, в накопления и зачисления не входят.
+          </p>
+          {lists.ignored.length === 0 && <Empty text="Игнорированных переводов нет." />}
+          {lists.ignored.map((r) => <IgnoredRow key={r.id} row={r} onRestore={() => restore(r)} />)}
+        </section>
+      )}
+      {ignoring && (
+        <IgnoreModal row={ignoring} onClose={() => setIgnoring(null)} onDone={async () => {
+          setIgnoring(null); setMessage('Перевод перенесён в «Игнорированные». Запись сохранена, баланс не изменён.'); await reload();
+        }} />
       )}
 
       <OtherNetworksFeed onDone={reload} />
@@ -210,14 +241,25 @@ function PackageCard({ pkg: p, onCredit }: { pkg: DepositPackage; onCredit: () =
       <Line label="Пользователь">{p.userEmail ?? p.userId}</Line>
       <Line label="Актив / сеть">{p.asset} / {network(p.chain)}</Line>
       <Line label="Подтверждённые переводы"><span className="mono" data-package-parts>{p.transfers.map((t) => t.amount).join(' + ')} {p.asset}</span></Line>
-      <Line label="Всего подтверждено"><strong className="mono" data-package-total>{p.total} {p.asset}</strong></Line>
+      <ul data-package-transfer-list style={{ listStyle: 'none', margin: '2px 0 4px', padding: 0, display: 'grid', gap: 4 }}>
+        {p.transfers.map((t) => (
+          <li key={t.id} data-package-transfer={t.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11.5, padding: '4px 8px', borderRadius: 6, background: 'var(--panel-alt)', minWidth: 0 }}>
+            <span style={{ minWidth: 0 }}>
+              <span className="mono" title={t.txHash} style={{ display: 'block', overflowWrap: 'anywhere', color: 'var(--text-secondary)' }}>{t.txHash.slice(0, 8)}…{t.txHash.slice(-6)}</span>
+              <span style={{ color: 'var(--text-tertiary)' }}>{t.blockTimestamp ? when(t.blockTimestamp) : 'время блока неизвестно'} · подтв. {t.confirmations}/{t.minConfirmations}{t.finalized ? ' ✓' : ''} · подтверждён сетью</span>
+            </span>
+            <strong className="mono" style={{ whiteSpace: 'nowrap' }}>{t.amount} {p.asset}</strong>
+          </li>
+        ))}
+      </ul>
+      <Line label="Всего накоплено"><strong className="mono" data-package-total>{p.total} {p.asset}</strong></Line>
       {p.unconfirmedCount > 0 && <Line label="Ещё не подтверждено сетью"><span className="mono">{p.unconfirmedTotal} {p.asset} ({p.unconfirmedCount})</span></Line>}
       <Line label="Минимум">{p.minDepositUsd} USD</Line>
-      {!p.minimumReached && p.remaining !== null && <Line label="Осталось доплатить"><span className="mono" data-package-remaining>{p.remaining} {p.asset}</span></Line>}
+      {p.remaining !== null && <Line label="Осталось доплатить"><span className="mono" data-package-remaining>{p.remaining} {p.asset}</span></Line>}
       {!p.minimumReached && p.remaining === null && p.remainingUsd !== null && <Line label="Осталось доплатить"><span className="mono">≈ {p.remainingUsd} USD</span></Line>}
       <Line label="Статус"><span data-package-status>{STATE_LABEL[p.state]}</span></Line>
       {ready
-        ? <button type="button" data-open-package={p.key} onClick={onCredit} style={{ ...styles.approveBtn, marginTop: 8 }}>Проверить и зачислить</button>
+        ? <button type="button" data-open-package={p.key} onClick={onCredit} style={{ ...styles.approveBtn, marginTop: 8 }}>Проверить и зачислить {p.total} {p.asset}</button>
         : <Line label="Зачислить"><span data-package-credit="unavailable" style={{ color: 'var(--text-tertiary)' }}>недоступно</span></Line>}
     </article>
   );
@@ -249,7 +291,7 @@ function TransferFacts({ row }: { row: DepositQueueRow }) {
 
 const ROW_GRID = '150px 0.8fr 70px 1fr 1.1fr 1.4fr';
 
-function UnattributedRow({ row, clients, onAttribute }: { row: DepositQueueRow; clients: Client[]; onAttribute: (row: DepositQueueRow, userId: string | null, reassign: boolean) => void }) {
+function UnattributedRow({ row, clients, onAttribute, onIgnore }: { row: DepositQueueRow; clients: Client[]; onAttribute: (row: DepositQueueRow, userId: string | null, reassign: boolean) => void; onIgnore: () => void }) {
   const [picked, setPicked] = useState(row.claims.length === 1 ? row.claims[0].userId : '');
   const [busy, setBusy] = useState(false);
   return (
@@ -265,8 +307,82 @@ function UnattributedRow({ row, clients, onAttribute }: { row: DepositQueueRow; 
           onClick={async () => { setBusy(true); await onAttribute(row, picked, false); setBusy(false); }}>
           Привязать к пользователю
         </button>
+        <button type="button" data-ignore={row.id} disabled={busy} style={styles.neutralBtn} onClick={onIgnore}>Игнорировать</button>
       </div>
     </div>
+  );
+}
+
+const REASONS: IgnoreReason[] = ['HISTORICAL_WALLET_OPERATION', 'OWN_TRANSFER', 'NOT_CLIENT_DEPOSIT', 'OTHER'];
+
+/** «Игнорировать»: a reason is required; the transfer row is kept. */
+function IgnoreModal({ row, onClose, onDone }: { row: DepositQueueRow; onClose: () => void; onDone: () => Promise<void> }) {
+  const [reason, setReason] = useState<IgnoreReason | ''>('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canSubmit = !!reason && (reason !== 'OTHER' || note.trim().length > 0) && !busy;
+  return (
+    <>
+      <div style={styles.drawerOverlay} onClick={() => { if (!busy) onClose(); }} />
+      <div role="dialog" aria-modal="true" aria-labelledby="ignore-title" data-ignore-modal={row.id}
+        style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 'min(440px, calc(100vw - 32px))', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
+          background: 'var(--panel)', color: 'var(--text-primary)', borderRadius: 12, boxShadow: '0 20px 50px rgba(15,17,21,.25)', padding: 18, zIndex: 1001, boxSizing: 'border-box' }}>
+        <strong id="ignore-title" style={{ fontSize: 15 }}>Игнорировать перевод</strong>
+        <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '6px 0 10px', overflowWrap: 'anywhere' }}>
+          {row.amount} {row.asset} · {row.txHash.slice(0, 10)}…{row.txHash.slice(-8)}. Запись не удаляется: она уйдёт из «Непривязанные» в «Игнорированные» и не будет участвовать в накоплениях.
+        </p>
+        <fieldset style={{ border: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+          <legend style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>Причина</legend>
+          {REASONS.map((r) => (
+            <label key={r} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13 }}>
+              <input type="radio" name="ignore-reason" value={r} checked={reason === r} onChange={() => setReason(r)} /> {IGNORE_REASON_LABEL[r]}
+            </label>
+          ))}
+        </fieldset>
+        {reason === 'OTHER' && (
+          <input aria-label="Причина (другое)" placeholder="Коротко опишите причину" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)}
+            style={{ ...styles.input, width: '100%', boxSizing: 'border-box', marginTop: 8 }} />
+        )}
+        {error && <p role="alert" style={{ ...styles.errorBox, marginTop: 10 }}>{error}</p>}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 14 }}>
+          <button type="button" disabled={busy} style={styles.neutralBtn} onClick={onClose}>Отмена</button>
+          <button type="button" data-confirm-ignore disabled={!canSubmit} style={styles.rejectBtn} onClick={async () => {
+            if (!reason) return;
+            setBusy(true); setError(null);
+            try { await adminDepositApi.ignore(row.id, reason, reason === 'OTHER' ? note.trim() : null); await onDone(); }
+            catch (err) { setError(err instanceof AdminDepositApiError ? err.message : 'Не удалось игнорировать перевод.'); }
+            finally { setBusy(false); }
+          }}>{busy ? 'Сохранение…' : 'Игнорировать'}</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function IgnoredRow({ row, onRestore }: { row: DepositQueueRow; onRestore: () => void }) {
+  return (
+    <div data-ignored-row={row.id} className="row-hover admin-history-grid admin-deposit-row" style={{ ...styles.tableRow, gridTemplateColumns: ROW_GRID, minWidth: 0 }}>
+      <TransferFacts row={row} />
+      <div style={{ display: 'grid', gap: 4, fontSize: 12 }}>
+        <span><b>{IGNORE_REASON_LABEL[row.ignoredReason ?? ''] ?? row.ignoredReason}</b>{row.ignoredNote ? `: ${row.ignoredNote}` : ''}</span>
+        <span style={{ color: 'var(--text-tertiary)' }}>Скрыт: {when(row.ignoredAt)}</span>
+        <button type="button" data-restore={row.id} style={styles.neutralBtn} onClick={onRestore}>Вернуть в очередь</button>
+      </div>
+    </div>
+  );
+}
+
+function CreditedBatchCard({ batch: b }: { batch: CreditedBatch }) {
+  return (
+    <article data-credited-batch={b.id} style={{ ...styles.card, display: 'grid', gap: 2 }}>
+      <Line label="Пользователь">{b.userEmail ?? b.userId}</Line>
+      <Line label="Актив / сеть">{b.asset} / {network(b.chain)}</Line>
+      <Line label="Переводы"><span className="mono">{b.transfers.map((t) => t.amount).join(' + ')} {b.asset}</span></Line>
+      <Line label="Зачислено"><strong className="mono" style={{ color: 'var(--buy)' }}>{b.totalAmount} {b.asset}</strong></Line>
+      <Line label="Дата">{when(b.createdAt)}</Line>
+      <Line label="Статус">{STATE_LABEL.CREDITED}</Line>
+    </article>
   );
 }
 

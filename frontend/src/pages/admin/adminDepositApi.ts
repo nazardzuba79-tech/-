@@ -4,7 +4,7 @@ import { API_BASE, getToken } from '../../lib/api';
  * amount, status and state here comes from the server; nothing is sent back
  * that could set an amount or a status. */
 
-export type DepositRowState = 'CREDITED' | 'NEEDS_REVIEW' | 'UNATTRIBUTED' | 'AWAITING_CONFIRMATIONS' | 'AWAITING_TOPUP' | 'READY';
+export type DepositRowState = 'CREDITED' | 'NEEDS_REVIEW' | 'UNATTRIBUTED' | 'AWAITING_CONFIRMATIONS' | 'AWAITING_TOPUP' | 'READY' | 'IGNORED';
 
 export interface DepositQueueRow {
   id: string;
@@ -29,7 +29,32 @@ export interface DepositQueueRow {
   source: string | null;
   state: DepositRowState;
   claims: { userId: string; email: string | null; at: string }[];
+  ignoredAt: string | null;
+  ignoredReason: string | null;
+  ignoredNote: string | null;
+  ignoredByAdminId: string | null;
 }
+
+export interface CreditedBatch {
+  id: string;
+  userId: string;
+  userEmail: string | null;
+  chain: string;
+  asset: string;
+  totalAmount: string;
+  createdAt: string;
+  approvedByAdminId: string;
+  transfers: { id: string; txHash: string; amount: string; confirmations: number; blockTimestamp: string | null }[];
+}
+
+export type IgnoreReason = 'HISTORICAL_WALLET_OPERATION' | 'OWN_TRANSFER' | 'NOT_CLIENT_DEPOSIT' | 'OTHER';
+export const IGNORE_REASON_LABEL: Record<string, string> = {
+  HISTORICAL_WALLET_OPERATION: 'Историческая операция кошелька',
+  OWN_TRANSFER: 'Мой собственный перевод',
+  NOT_CLIENT_DEPOSIT: 'Не является депозитом клиента',
+  OTHER: 'Другое',
+  LEGACY_IGNORE: 'Скрыт ранее (старая лента)',
+};
 
 export interface DepositPackage {
   key: string;
@@ -83,8 +108,10 @@ export interface DepositQueue {
   asOf: string;
   minDepositUsd: number;
   counts: Record<DepositRowState, number> & { uncreditedTotal: number; truncated: boolean };
+  packageCounts: { AWAITING_TOPUP: number; READY: number; NEEDS_REVIEW: number };
   packages: DepositPackage[];
   rows: DepositQueueRow[];
+  creditedBatches: CreditedBatch[];
   watcher: WatcherStatus;
 }
 
@@ -114,6 +141,10 @@ export const adminDepositApi = {
   queue: () => call<DepositQueue>('/admin/deposit-queue'),
   attribute: (depositId: string, userId: string | null, reassign = false) =>
     call<{ depositId: string; userId: string | null; changed: boolean }>(`/admin/deposits/${encodeURIComponent(depositId)}/attribute`, { method: 'POST', body: { userId, reassign } }),
+  ignore: (depositId: string, reason: IgnoreReason, note: string | null, confirmAssigned = false) =>
+    call<{ depositId: string; ignoredAt: string; reason: string }>(`/admin/deposits/${encodeURIComponent(depositId)}/ignore`, { method: 'POST', body: { reason, note, confirmAssigned } }),
+  restore: (depositId: string) =>
+    call<{ depositId: string; restored: boolean }>(`/admin/deposits/${encodeURIComponent(depositId)}/restore`, { method: 'POST', body: {} }),
   checkTx: (params: { chain: string; txHash: string; asset: string }) =>
     call<{ ok: boolean; reason?: string; error?: string; amount?: string; confirmations?: number; finalized?: boolean; status?: string | null; depositId?: string | null; blockTimestamp?: string | null }>(
       '/admin/deposits/check-tx', { method: 'POST', body: params }),
@@ -136,6 +167,7 @@ export const STATE_LABEL: Record<DepositRowState, string> = {
   READY: 'Готов к проверке',
   NEEDS_REVIEW: 'Требует уточнения',
   CREDITED: 'Зачислен',
+  IGNORED: 'Игнорирован',
 };
 
 /** A browser-generated idempotency key, one per opened confirmation. */

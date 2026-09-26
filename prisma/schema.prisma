@@ -339,6 +339,14 @@ model Deposit {
   /// a package preview is valid only while every revision it saw is unchanged.
   revision      Int      @default(0)
   creditedAt    DateTime?
+  /// «Игнорировать»: an admin marked this transfer as not a client deposit
+  /// (e.g. old wallet history, own transfer). The row is kept intact; it only
+  /// leaves the working queue and can never join a package. Restorable.
+  ignoredAt     DateTime?
+  /// HISTORICAL_WALLET_OPERATION | OWN_TRANSFER | NOT_CLIENT_DEPOSIT | OTHER | LEGACY_IGNORE
+  ignoredReason String?
+  ignoredNote   String?
+  ignoredByAdminId String?
   batchId       String?
   batch         DepositBatch? @relation(fields: [batchId], references: [id], onDelete: Restrict)
 
@@ -348,6 +356,7 @@ model Deposit {
   @@index([userId])
   @@index([status, userId, chain, asset])
   @@index([batchId])
+  @@index([ignoredAt])
 }
 
 /// One admin-approved credit of a user's accumulated package: the real

@@ -64,7 +64,7 @@ export class DepositBatchService {
 
   private async packageRows(userId: string, chain: string, asset: string) {
     return this.prisma.deposit.findMany({
-      where: { userId, chain, asset: asset.toUpperCase(), status: { not: 'CREDITED' }, batchId: null },
+      where: { userId, chain, asset: asset.toUpperCase(), status: { not: 'CREDITED' }, batchId: null, ignoredAt: null },
       orderBy: { id: 'asc' }, include: { user: { select: { email: true } } },
     });
   }
@@ -170,7 +170,7 @@ export class DepositBatchService {
     for (const row of locked) {
       const seen = byId.get(row.id)!;
       if (row.status === 'CREDITED' || row.batchId) throw new DepositBatchError('ALREADY_CREDITED', 'Этот пакет уже зачислен.');
-      if (row.revision !== seen.revision || row.userId !== params.userId || row.verifyError) {
+      if (row.revision !== seen.revision || row.userId !== params.userId || row.verifyError || row.ignoredAt) {
         throw new DepositBatchError('PACKAGE_CHANGED', 'Состав пакета изменился. Проверьте его заново.');
       }
       const proof = proofs.get(row.id);
@@ -179,8 +179,8 @@ export class DepositBatchService {
     if (locked.length !== ids.length) throw new DepositBatchError('PACKAGE_CHANGED', 'Состав пакета изменился. Проверьте его заново.');
     // The package must still be exactly this set: nothing new slipped in.
     const current = await tx.deposit.findMany({
-      where: { userId: params.userId, chain: params.chain, asset, status: { not: 'CREDITED' }, batchId: null },
-      select: { id: true, revision: true, amount: true, status: true, verifiedAt: true, finalized: true, verifyError: true, confirmations: true, userId: true, batchId: true, chain: true, asset: true },
+      where: { userId: params.userId, chain: params.chain, asset, status: { not: 'CREDITED' }, batchId: null, ignoredAt: null },
+      select: { id: true, revision: true, amount: true, status: true, verifiedAt: true, finalized: true, verifyError: true, confirmations: true, userId: true, batchId: true, chain: true, asset: true, ignoredAt: true },
     });
     const min = minConfirmationsFor(params.chain);
     const stillEligible = current.filter((r) => isPackageEligible(r as Deposit, min));
@@ -198,7 +198,7 @@ export class DepositBatchService {
     for (const row of locked) {
       const { proof } = proofs.get(row.id)!;
       const updated = await tx.deposit.updateMany({
-        where: { id: row.id, status: { not: 'CREDITED' }, batchId: null, revision: row.revision },
+        where: { id: row.id, status: { not: 'CREDITED' }, batchId: null, ignoredAt: null, revision: row.revision },
         data: { status: 'CREDITED', batchId: batch.id, creditedAt: now, confirmations: proof.confirmations,
           finalized: proof.finalized, verifiedAt: new Date(proofs.get(row.id)!.at), revision: { increment: 1 } },
       });
