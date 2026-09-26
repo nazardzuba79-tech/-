@@ -4014,3 +4014,27 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - ONE synthetic production request (2026-09-26 16:13:38 UTC; name «VOLTEX Support QA», qa-support@example.invalid, TECHNICAL, «Production support form test. No action required.»): **502 `delivery_failed`, provider code `E_RECIPIENT_NOT_ALLOWED`** — Cloudflare refused the recipient, i.e. `voltex.crypto@gmail.com` is not (yet) a verified Email Routing destination address. No email was sent. Nothing was written anywhere.
 - The owner then verified `voltex.crypto@gmail.com` as an Email Routing destination. One more production request (2026-09-26 16:20:45 UTC, same synthetic data): **200 `{ ok: true }`** — the email provider accepted delivery to voltex.crypto@gmail.com. Gmail inbox and the Reply-To behaviour are for the owner to confirm (not visible from here).
 - Full `npx jest` on the branch vs main `ebba6795`: branch-only failures were (1) `futuresTickerHeader` api.ts fingerprint — the approved removal of the chat methods is now restored by name in the normalisation, 35/35; (2) `registerWalletTailwindOwnership` build-output case (`isSelected`) — fails identically on main when `frontend/dist` exists (skipped without a build), pre-existing; (3) `futuresColdOpenRecovery` — passes when re-run (the full run overlapped the main merge).
+## Claude — 2026-09-26 — KYC documents: browser → Cloudflare edge → admin email (Render/Neon metadata only)
+
+- **Base / branch:** fresh origin/main, rebased onto `482c7293` (#296, support form via `workers/support-edge`); branch `claude/kyc-edge-email`; PR #297. Design, before/after and failure table: `docs/KYC_EDGE.md`.
+- **Before:** `POST /kyc/submit` (multer, ≤ 8 MB) wrote `uploads/kyc/<uuid>` on Render's disk, `KycEmailService` re-read it for an SMTP attachment, and admin preview streamed it again via `GET /kyc/:id/document`.
+- **After:**
+  - The form uploads to the new Worker `workers/kyc-edge` (Workers Free, `kyc.voltextech.net`). It validates auth header, origin, size, declared MIME and magic bytes, then calls signed `/internal/kyc/authorize` (with the user's bearer; writes nothing; submissionId = HMAC(user, requestId)).
+  - It emails via the Email Routing `send_email` binding, locked to `voltex.crypto@gmail.com`, and **only then** calls signed `/internal/kyc/submission-confirmed`: one transaction, user row `FOR UPDATE`, id = submissionId, `documentImagePath` NULL.
+  - `/kyc/submit` → 410. No multer, no disk writes. Legacy rows keep their preview.
+  - Render trusts the edge via its Ed25519 public key, fetched over HTTPS on demand or pinned with `KYC_EDGE_PUBLIC_KEY`. **No new Render secret.** The private key is created once inside the deploy runner.
+- **Frontend:** same fields and button. Images are re-encoded (≤ 2400 px, JPEG 0.85, EXIF dropped) and the size line shows the real size. PDF ≤ 4 MB.
+  - Delivered-but-unrecorded submissions show «На рассмотрении» and retry only a sealed receipt.
+  - Admin: «Документ отправлен на email администратора» + Message-ID, no document request; «Проверено» / «Отклонить».
+  - 320 px: a selected file's name widened the form by 13 px. Fixed with `grid-cols-1 min-w-0` on the file field only.
+- **Found in real workerd (`wrangler dev --local`):** the platform replaces the Message-ID. The edge now records the id that `send()` returns.
+- **Checks run:**
+  - Worker `node --test` 26/26; `wrangler deploy --dry-run` OK; local workerd probe: 201, both signatures verified, send_email called, idempotency cache honoured.
+  - Backend + frontend `tsc` clean. KYC/admin/pinned suites: 164/164 after the rebase. `kycEdgePostgres.test.ts` is skipped locally (no PostgreSQL here); it runs in CI.
+  - `scripts/qa-kyc-edge.cjs` PASS locally (production bundle + real core.js + real routers + in-memory DB). JPEG / PNG / PDF, email reject, callback failure, fake magic bytes, 401 / 409 probes, 320–1440, admin approve/reject. Render meter: 0 multipart bodies, 0 document reads, 0 `uploads/kyc` files, largest body 432 B.
+  - Full `npx jest`: branch 27 failing suites vs main 28, with the same 27 on both. The 28th (`kyc.test.ts` on main) is an artifact: the main run used the branch's regenerated Prisma client.
+- **Preserved:** Codex's and Claude's admin console styles, `KycEmailService` and its Nodemailer compatibility suite (no longer wired), support email, and all trading/deposit/withdrawal code (untouched).
+- **Unresolved / owner:**
+  - `voltex.crypto@gmail.com` is a verified Email Routing destination (owner, 2026-09-26, per the support-edge entry). The KYC production send is not yet run.
+  - Rate limits: `KYC_RATE_LIMIT` binding (namespace 7302, 5/min per IP; support-edge owns 7301) + an isolate window + Render per-user 10/h.
+  - At 320 px the name/date inputs' right edge is clipped by the card. The classes are unchanged from main and not touched here.

@@ -87,6 +87,12 @@ export function adminRouter(prisma: PrismaClient): Router {
                 status: latest.status,
                 rejectionReason: latest.rejectionReason,
                 createdAt: latest.createdAt,
+                // EMAIL = the document went to the admin mailbox via the KYC edge;
+                // LEGACY_FILE = uploaded to this server before the edge existed.
+                documentDelivery: latest.documentDelivery === 'EMAIL' ? 'EMAIL' : latest.documentImagePath ? 'LEGACY_FILE' : 'NONE',
+                emailMessageId: latest.emailMessageId,
+                documentMimeType: latest.documentMimeType,
+                documentSizeBytes: latest.documentSizeBytes,
               }
             : null,
         };

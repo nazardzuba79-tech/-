@@ -1,0 +1,41 @@
+# VOLTEX KYC document edge (Cloudflare Workers Free).
+# Browser → this Worker → Cloudflare Email Routing → voltex.crypto@gmail.com.
+# Isolated from Pages (frontend/), market-edge, Render and Neon storage.
+# No KV / D1 / R2 / DO: the document is never stored or given a URL.
+name = "voltex-kyc-edge"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+account_id = "c379227476dedde6dff09c787ffdb510"
+workers_dev = false
+preview_urls = false
+
+routes = [
+  { pattern = "kyc.voltextech.net", custom_domain = true }
+]
+
+[vars]
+VOLTEX_API_ORIGIN = "https://api.voltextech.net"
+ALLOWED_ORIGINS = "https://voltextech.net,https://www.voltextech.net,https://localhost,capacitor://localhost"
+
+# Email Routing send binding. Sends to a VERIFIED destination address are
+# free on every plan; the restriction below means this Worker can address
+# no one else, whatever a request says.
+[[send_email]]
+name = "KYC_MAIL"
+destination_address = "voltex.crypto@gmail.com"
+
+# Per-IP limit at the Cloudflare location, before any Render call or email.
+# Also: a per-isolate IP window in core.js (8 / 10 min) and a per-user limit on
+# Render's authorize step (10 / hour). Own namespace: support-edge uses 7301.
+[[ratelimits]]
+name = "KYC_RATE_LIMIT"
+namespace_id = "7302"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60
+
+# Secret (never in git): KYC_EDGE_SIGNING_JWK — Ed25519 private JWK, created
+# once by .github/workflows/deploy-kyc-edge.yml inside the runner and put
+# straight into the Worker. Render verifies with the public half.

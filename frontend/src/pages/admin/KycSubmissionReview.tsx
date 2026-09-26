@@ -23,6 +23,16 @@ export interface KycSubmissionView {
   rejectionReason: string | null;
   createdAt: string;
   reviewedAt?: string | null;
+  /** EMAIL: the KYC edge mailed the document to the admin (nothing on this server).
+   *  LEGACY_FILE: uploaded to the server before the edge; preview still works. */
+  documentDelivery?: 'EMAIL' | 'LEGACY_FILE' | 'NONE';
+  emailMessageId?: string | null;
+  documentMimeType?: string | null;
+  documentSizeBytes?: number | null;
+}
+
+function formatSize(bytes: number): string {
+  return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} МБ` : `${Math.max(1, Math.round(bytes / 1024))} КБ`;
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
@@ -50,12 +60,15 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const emailed = submission.documentDelivery === 'EMAIL';
 
   useEffect(() => {
     setDocumentUrl(null);
     setDocumentMissing(false);
     setReason('');
     setError(null);
+    // New submissions: the document is in the admin mailbox, not on this server — no request at all.
+    if (emailed) return;
     let revoked = '';
     let cancelled = false;
     api
@@ -71,7 +84,7 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
       cancelled = true;
       if (revoked) URL.revokeObjectURL(revoked);
     };
-  }, [submission.id]);
+  }, [submission.id, emailed]);
 
   async function review(approve: boolean, why = reason.trim()) {
     setBusy(true);
@@ -114,7 +127,19 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
           minHeight: 160,
         }}
       >
-        {documentMissing ? (
+        {emailed ? (
+          <div data-kyc-document-emailed style={{ fontSize: 12.5, lineHeight: 1.6, textAlign: 'center', color: 'var(--text-primary)' }}>
+            <b>Документ отправлен на email администратора</b>
+            <div style={{ color: 'var(--text-secondary)' }}>
+              Письмо «[KYC] Новая заявка — {submission.fullName}{email ? ` — ${email}` : ''}»
+              {submission.documentMimeType && <> · {submission.documentMimeType === 'application/pdf' ? 'PDF' : submission.documentMimeType === 'image/png' ? 'PNG' : 'JPEG'}</>}
+              {submission.documentSizeBytes ? <> · {formatSize(submission.documentSizeBytes)}</> : null}
+            </div>
+            {submission.emailMessageId && (
+              <div style={{ color: 'var(--text-tertiary)', fontSize: 11, wordBreak: 'break-all' }}>Message-ID: {submission.emailMessageId}</div>
+            )}
+          </div>
+        ) : documentMissing ? (
           <span style={{ color: 'var(--sell)', fontSize: 12, textAlign: 'center', lineHeight: 1.5 }}>
             Документ на бирже не хранится — его копия приходит на почту администратора в момент подачи заявки.
             Ищите письмо «[KYC] Новая заявка на верификацию» с этим именем.
@@ -160,7 +185,7 @@ export function KycSubmissionReview({ submission, email, onReviewed }: {
           )}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" disabled={busy} onClick={() => review(true)} style={{ ...styles.approveBtn, flex: 1 }}>
-              Одобрить
+              Проверено
             </button>
             <button type="button" disabled={busy} onClick={() => review(false)} style={{ ...styles.rejectBtn, flex: 1 }}>
               Отклонить

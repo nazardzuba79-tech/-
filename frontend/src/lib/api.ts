@@ -1138,23 +1138,8 @@ export const api = {
       { id: string; pair: string; side: 'BUY' | 'SELL'; price: string; quantity: string; executedAt: string }[]
     >(`/trades/me${pair ? `?pair=${encodeURIComponent(pair)}` : ''}`),
 
-  // KYC verification
-  submitKyc: (fields: {
-    country: string;
-    fullName: string;
-    dateOfBirth: string;
-    documentType: 'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE';
-    document: File;
-  }) => {
-    const form = new FormData();
-    form.append('country', fields.country);
-    form.append('fullName', fields.fullName);
-    form.append('dateOfBirth', fields.dateOfBirth);
-    form.append('documentType', fields.documentType);
-    form.append('document', fields.document);
-    return requestForm<{ id: string; status: string }>('/kyc/submit', form);
-  },
-
+  // KYC verification. The document itself is uploaded by lib/kycEdge.ts to
+  // the Cloudflare KYC edge, never to this API.
   getMyKyc: () =>
     request<{
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -1278,10 +1263,8 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
 
-  // Admin: where KYC submission copies (with the document) are emailed.
-  getKycDelivery: () => request<{ configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),
-  sendKycTestEmail: () =>
-    request<{ sent: boolean; configured: boolean; recipient: string | null }>('/kyc/admin/delivery/test', { method: 'POST' }),
+  // Admin: where new KYC documents are emailed (by the KYC edge, not this API).
+  getKycDelivery: () => request<{ mode: 'EDGE_EMAIL'; configured: boolean; recipient: string | null }>('/kyc/admin/delivery'),
 
   reviewKyc: (submissionId: string, approve: boolean, reason?: string) =>
     request<{ status: string }>(`/kyc/${submissionId}/review`, {

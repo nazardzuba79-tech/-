@@ -7,26 +7,20 @@ import { useSearchParams } from 'react-router-dom';
 type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
 
 /** Верификация (KYC) — очередь заявок на проверку: кто подал, когда,
- * документы прямо в админке, одобрить/отклонить с причиной. */
+ * проверено/отклонить с причиной. Документы новых заявок приходят на почту
+ * администратора через Cloudflare KYC edge и на сервер биржи не попадают. */
 export function AdminKycPage() {
   const [searchParams] = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('user'));
   const [delivery, setDelivery] = useState<{ configured: boolean; recipient: string | null } | null>(null);
-  const [testState, setTestState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   function reload() {
     api.getAllClients().then(setClients).catch(() => {});
   }
 
   useEffect(reload, []);
   useEffect(() => { api.getKycDelivery().then(setDelivery).catch(() => {}); }, []);
-
-  async function sendTest() {
-    setTestState('sending');
-    try { setDelivery(await api.sendKycTestEmail()); setTestState('sent'); }
-    catch { setTestState('failed'); }
-  }
 
   const queue = clients.filter((c) => c.latestKyc && (showAll || c.latestKyc.status === 'PENDING'));
   const selected = queue.find((c) => c.id === selectedId) ?? queue[0] ?? null;
@@ -45,16 +39,9 @@ export function AdminKycPage() {
         >
           <span style={{ fontSize: 13, color: delivery.configured ? 'var(--text-primary)' : 'var(--sell)' }}>
             {delivery.configured
-              ? <>Копии заявок с документом приходят на почту <b>{delivery.recipient}</b>.</>
-              : <>Почта для документов не настроена — копии заявок никуда не отправляются. Нужны переменные KYC_ADMIN_EMAIL и SMTP_* на сервере.</>}
-            {testState === 'sent' && <> Тестовое письмо отправлено.</>}
-            {testState === 'failed' && <span style={{ color: 'var(--sell)' }}> Тестовое письмо не отправилось — проверьте настройки SMTP.</span>}
+              ? <>Документы новых заявок приходят на почту <b>{delivery.recipient}</b> через Cloudflare — через сервер биржи они не проходят и здесь не хранятся.</>
+              : <>KYC-шлюз Cloudflare сейчас недоступен — пока он не заработает, новые заявки не принимаются.</>}
           </span>
-          {delivery.configured && (
-            <button type="button" disabled={testState === 'sending'} onClick={sendTest} style={styles.rejectBtn}>
-              {testState === 'sending' ? 'Отправка…' : 'Отправить тестовое письмо'}
-            </button>
-          )}
         </div>
       )}
 

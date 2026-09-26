@@ -36,7 +36,7 @@ import { cardRouter } from './api/routes/card';
 import { apiKeysRouter } from './api/routes/apiKeys';
 import { reservesRouter } from './api/routes/reserves';
 import { futuresRouter } from './api/routes/futures';
-import { KycEmailService } from './services/KycEmailService';
+import { KycEdgeTrust } from './services/KycEdgeTrust';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
 import { CfdMarketDataService } from './services/CfdMarketDataService';
@@ -110,7 +110,9 @@ const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY,
 const cfdPositionService = new CfdPositionService(prisma, cfdDataService, () => cfdLiquidationEngine.wake());
 const walletPortfolioService = new WalletPortfolioService(prisma, marketDataService, cfdDataService);
 const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
-const kycEmailService = new KycEmailService();
+// KYC documents go browser -> Cloudflare KYC edge -> admin email; Render only
+// verifies the edge's signed metadata calls (public key, no new secret).
+const kycEdgeTrust = new KycEdgeTrust();
 
 const futuresEngine = new MatchingEngine();
 const markPriceService = new MarkPriceService(marketDataService);
@@ -246,7 +248,7 @@ app.use('/api/v1', arbitrageRouter(arbitrageService));
 app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));
 app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));
-app.use('/api/v1', kycRouter(prisma, kycEmailService));
+app.use('/api/v1', kycRouter(prisma, kycEdgeTrust));
 app.use('/api/v1', adminRouter(prisma));
 app.use('/api/v1', adminUsersRouter(prisma, demoTradingService));
 app.use('/api/v1', adminAuditLogRouter(prisma));
