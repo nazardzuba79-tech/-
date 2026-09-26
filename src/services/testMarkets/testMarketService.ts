@@ -21,12 +21,19 @@ export interface PublicTestAsset {
   isTestAsset: true;
   isTradable: false;
   status: string;
+  listingArmed: boolean;
   listingAt: string;
   initialPrice: number;
   state: TestMarketState;
 }
 
+/** Freeze an unarmed listing one millisecond before its first tick. */
+export function effectiveTestMarketNow(asset: TestAssetConfig, now: number): number {
+  return asset.listingArmed ? now : Math.min(now, asset.listingAt - 1);
+}
+
 export function publicTestAsset(asset: TestAssetConfig, now: number): PublicTestAsset {
+  const marketNow = effectiveTestMarketNow(asset, now);
   return {
     pair: asset.pair,
     symbol: asset.symbol,
@@ -35,9 +42,10 @@ export function publicTestAsset(asset: TestAssetConfig, now: number): PublicTest
     isTestAsset: true,
     isTradable: false,
     status: TEST_ASSET_STATUS_LABEL,
+    listingArmed: asset.listingArmed,
     listingAt: new Date(asset.listingAt).toISOString(),
     initialPrice: asset.initialPrice,
-    state: getCurrentTestMarketState(simulationFor(asset), now),
+    state: getCurrentTestMarketState(simulationFor(asset), marketNow),
   };
 }
 
@@ -50,13 +58,14 @@ export class UnsupportedTestIntervalError extends Error {}
  * listing there are none; nothing after `now` is ever included.
  */
 export function testMarketCandles(asset: TestAssetConfig, interval: string, now: number, limit = 300): ChartCandle[] {
+  const marketNow = effectiveTestMarketNow(asset, now);
   const size = SIM_INTERVALS[interval];
   if (!size) throw new UnsupportedTestIntervalError(`Unsupported interval: ${interval}`);
   const offset = SIM_INTERVAL_OFFSETS[interval] ?? 0;
   const count = Math.max(1, Math.min(Math.floor(limit) || 300, 1000));
-  const currentBucket = Math.floor((now - offset) / size) * size + offset;
+  const currentBucket = Math.floor((marketNow - offset) / size) * size + offset;
   const from = Math.max(asset.listingAt, currentBucket - (count - 1) * size);
-  const fiveMinute = simulationFor(asset).candles5m(now, from);
+  const fiveMinute = simulationFor(asset).candles5m(marketNow, from);
   return aggregateCandles(fiveMinute, size, offset)
     .filter((candle) => candle.openTime >= currentBucket - (count - 1) * size)
     .slice(-count)
