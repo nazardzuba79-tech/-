@@ -233,13 +233,14 @@ app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma, marketDataService));
 // USDT/TRC20 deposit watcher: observes and proves transfers only (never
-// credits, never notifies). Automatic scan every 6 h (4 a day) once an admin
-// enables it in Admin → Пополнения; paused by default.
+// credits, never notifies). Daytime schedule (Europe/Kyiv): first admin open
+// after 07:00, then 12:00/16:00/20:00; nothing at night. Off until an admin
+// enables it in Admin → Пополнения.
 const depositWatchTreasury = new TreasuryWalletService(prisma);
 const depositWatch = new DepositWatchService(prisma, (chain) => depositWatchTreasury.resolve(chain));
 const depositWatchScheduler = new DepositWatchScheduler(depositWatch);
 app.use('/api/v1', depositWatchInternalRouter(depositWatch));
-app.use('/api/v1', adminDepositsRouter(prisma, marketDataService, { watch: depositWatch, onWatcherToggle: (on, last) => depositWatchScheduler.setEnabled(on, last) }));
+app.use('/api/v1', adminDepositsRouter(prisma, marketDataService, { watch: depositWatch }));
 app.use('/api/v1', adminWalletsRouter(prisma));
 app.use('/api/v1', withdrawalsRouter(prisma));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));
@@ -299,7 +300,7 @@ async function start() {
   liquidationStreamService.start();
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
-  void depositWatchScheduler.start();
+  depositWatchScheduler.start();
   // Catch up on support emails a previous process left pending (e.g. one
   // stopped right after answering). Reads nothing when mail is unconfigured.
   supportNotificationOutbox.start();

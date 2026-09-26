@@ -28,7 +28,6 @@ import { KNOWN_CHAINS, TX_HASH_PATTERN, resolveChainConfig } from './deposits';
  */
 export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSource, options: {
   watch?: DepositWatchService;
-  onWatcherToggle?: (enabled: boolean, lastScheduledRunAt: number | null) => void;
 } = {}): Router {
   const router = Router();
   const treasuryWallets = new TreasuryWalletService(prisma);
@@ -235,14 +234,23 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     catch (err) { console.error(err); res.status(503).json({ error: 'Watcher run failed' }); }
   });
 
+  // The day's first automatic scan: Admin → Пополнения calls this on open.
+  // The service runs it only once per Kyiv day, 07:00–22:00, when automatic
+  // scans are enabled and no scan finished within the dedupe window;
+  // otherwise it answers NOT_DUE and does nothing. Never credits.
+  router.post('/admin/deposit-watch/open', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    try {
+      const s = await watch.runOnce('admin_open');
+      res.json({ ran: s.ran, ok: s.ok, skipped: s.skipped ?? null, notDueReason: s.notDueReason ?? null, newTransfers: s.newTransfers, error: s.error });
+    } catch (err) { console.error(err); res.status(503).json({ error: 'Watcher run failed' }); }
+  });
+
   router.post('/admin/deposit-watch/enabled', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = z.object({ enabled: z.boolean() }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     try {
       await watch.setEnabled(parsed.data.enabled, req.userId!);
-      const status = await watch.status();
-      options.onWatcherToggle?.(parsed.data.enabled, status.lastScheduledRunAt ? Date.parse(status.lastScheduledRunAt) : null);
-      res.json(status);
+      res.json(await watch.status());
     } catch { res.status(503).json({ error: 'Failed to update watcher' }); }
   });
 

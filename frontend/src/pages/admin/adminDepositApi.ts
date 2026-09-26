@@ -69,12 +69,14 @@ export interface WatcherStatus {
   lastRunOk: boolean | null;
   lastRunTrigger: string | null;
   lastScheduledRunAt: string | null;
+  lastAdminOpenRunAt: string | null;
   nextScheduledRunAt: string | null;
+  adminOpenDueToday: boolean;
   lastRunSummary: { error?: string | null; newTransfers?: number; pagesRead?: number; providerCalls?: number; backlog?: boolean; durationMs?: number } | null;
   providerStatus: string | null;
   unverifiedOrUnfinalized: number;
   cursors: { address: string; asset: string; scannedThrough: string; lagMs: number; windowInProgress: boolean; windowStart: string | null; windowEnd: string | null; lastError: string | null; lastErrorAt: string | null }[];
-  policy: { intervalMinutes: number; pageSize: number; maxPagesPerRun: number; overlapMinutes: number; initialBackfillDays: number };
+  policy: { timeZone: string; slots: string[]; dayStart: string; nightStart: string; dedupeMinutes: number; pageSize: number; maxPagesPerRun: number; overlapMinutes: number; initialBackfillDays: number };
 }
 
 export interface DepositQueue {
@@ -120,6 +122,9 @@ export const adminDepositApi = {
   confirm: (params: { userId: string; chain: string; asset: string; depositIds: string[]; token: string; idempotencyKey: string }) =>
     call<{ status: 'CREDITED'; batchId: string; totalAmount: string; asset: string; depositIds: string[]; replayed: boolean }>(
       '/admin/deposit-packages/confirm', { method: 'POST', body: params }),
+  /** The day's first automatic scan; the server decides (NOT_DUE otherwise). */
+  openTrigger: () => call<{ ran: boolean; ok: boolean; skipped: string | null; notDueReason: string | null; newTransfers: number; error: string | null }>(
+    '/admin/deposit-watch/open', { method: 'POST', body: {} }),
   runWatcher: () => call<{ ok: boolean; skipped?: string; error?: string | null; newTransfers: number }>('/admin/deposit-watch/run', { method: 'POST', body: {} }),
   setWatcherEnabled: (enabled: boolean) => call<WatcherStatus>('/admin/deposit-watch/enabled', { method: 'POST', body: { enabled } }),
 };

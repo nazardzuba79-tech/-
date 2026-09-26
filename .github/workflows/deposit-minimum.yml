@@ -65,6 +65,7 @@ jobs:
           src/services/deposit-verifiers/__tests__/SolanaDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/TonDepositVerifier.test.ts
           src/services/deposit-verifiers/__tests__/incomingBudget.test.ts
+          src/services/deposits/__tests__/depositWatchSchedule.test.ts
           frontend/src/lib/__tests__/depositAllWallets.test.ts
           frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts

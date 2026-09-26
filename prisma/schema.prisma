@@ -427,8 +427,9 @@ model DepositWatchCursor {
 }
 
 /// Watcher switch, lease and last-run report, one row per network.
-/// enabled defaults to false: automatic scans (default every 6 h) do nothing
-/// until an admin turns them on. Pausing keeps every cursor and queued transfer.
+/// enabled defaults to false: automatic scans (daytime schedule, Europe/Kyiv)
+/// do nothing until an admin turns them on. Pausing keeps every cursor and
+/// queued transfer.
 model DepositWatchState {
   id              String    @id
   enabled         Boolean   @default(false)
@@ -442,6 +443,9 @@ model DepositWatchState {
   /// Start of the last AUTOMATIC run; the cadence is measured from it, so an
   /// admin's manual scan neither delays nor advances the schedule.
   lastScheduledRunAt DateTime?
+  /// Start of the day's admin-open scan (first opening of Admin → Пополнения
+  /// after 07:00 Europe/Kyiv); at most one per Kyiv day.
+  lastAdminOpenRunAt DateTime?
   lastRunSummary  Json?
   providerStatus  String?
   updatedAt       DateTime  @updatedAt

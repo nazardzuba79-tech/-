@@ -58,8 +58,8 @@ function queue(watcher: any = {}) {
     packages: [pkgView('topup', ['15', '20'], '35', 'AWAITING_TOPUP', '265'), pkgView('ready', ['15', '285'], '300', 'READY', '0')],
     rows: [row('free', '400', 'UNATTRIBUTED', { userId: null, userEmail: null, claims: [{ userId: 'c1', email: 'claimer@example.invalid', at: new Date().toISOString() }] })],
     watcher: { chain: 'tron', enabled: false, running: false, lastRunStartedAt: null, lastRunFinishedAt: null, lastSuccessAt: null, lastRunOk: null, lastRunTrigger: null,
-      lastScheduledRunAt: null, nextScheduledRunAt: null, lastRunSummary: null, providerStatus: null, unverifiedOrUnfinalized: 0, cursors: [],
-      policy: { intervalMinutes: 360, pageSize: 200, maxPagesPerRun: 10, overlapMinutes: 10, initialBackfillDays: 7 }, ...watcher },
+      lastScheduledRunAt: null, lastAdminOpenRunAt: null, nextScheduledRunAt: null, adminOpenDueToday: false, lastRunSummary: null, providerStatus: null, unverifiedOrUnfinalized: 0, cursors: [],
+      policy: { timeZone: 'Europe/Kyiv', slots: ['12:00', '16:00', '20:00'], dayStart: '07:00', nightStart: '22:00', dedupeMinutes: 45, pageSize: 200, maxPagesPerRun: 10, overlapMinutes: 10, initialBackfillDays: 7 }, ...watcher },
   };
 }
 let fetchMock: jest.Mock;
@@ -70,6 +70,7 @@ function mockDepositApi(q: any) {
     if (path.endsWith('/admin/deposit-queue')) return ok(q);
     if (path.includes('/admin/deposit-packages/preview')) return ok({ ...q.packages[1], balanceAvailable: '0', balanceAfter: '300' });
     if (path.endsWith('/admin/deposit-packages/confirm')) return ok({ status: 'CREDITED', batchId: 'b', totalAmount: '300', asset: 'USDT', depositIds: [], replayed: false });
+    if (path.endsWith('/admin/deposit-watch/open')) return ok({ ran: false, ok: true, skipped: 'NOT_DUE', notDueReason: 'ALREADY_TODAY', newTransfers: 0, error: null });
     return ok({ error: `unexpected ${path} ${init.method}` }, 404);
   });
   (globalThis as any).fetch = fetchMock;
@@ -102,7 +103,7 @@ test('accumulation cards: 15 + 20 awaits a top-up of 265 with crediting unavaila
   expect(api.creditDepositManually).not.toHaveBeenCalled();
 });
 
-test('opening the page reads the stored queue only: no provider discovery, no history; other networks only on request; hidden tab never polls', async () => {
+test('opening the page reads the stored queue and asks the server for the day\'s first scan once (server-gated); no manual scan, no history; hidden tab never polls', async () => {
   mockDepositApi(queue());
   jest.useFakeTimers({ doNotFake: ['setImmediate'] });
   let visibility = 'visible';
@@ -110,6 +111,9 @@ test('opening the page reads the stored queue only: no provider discovery, no hi
   try {
     await mountDeposits();
     expect(fetched('/admin/deposit-queue')).toHaveLength(1);
+    // One admin-open trigger per page open; the server runs it only once per Kyiv day after 07:00.
+    expect(fetched('/deposit-watch/open')).toHaveLength(1);
+    expect(fetched('/deposit-watch/open')[0][1].method).toBe('POST');
     expect(api.getAdminIncomingDepositFeed).not.toHaveBeenCalled();
     expect(fetched('/deposit-watch/run')).toHaveLength(0);
     expect(api.getAdminDeposits).not.toHaveBeenCalled();
@@ -120,6 +124,7 @@ test('opening the page reads the stored queue only: no provider discovery, no hi
     await act(async () => { jest.advanceTimersByTime(60 * 60_000); await flush(); });
     expect(fetched('/admin/deposit-queue')).toHaveLength(2);
     expect(fetched('/deposit-watch/run')).toHaveLength(0);
+    expect(fetched('/deposit-watch/open')).toHaveLength(1);
     await click('Проверить ленты других сетей');
     expect(api.getAdminIncomingDepositFeed).toHaveBeenCalledTimes(1);
   } finally { jest.useRealTimers(); }
@@ -132,7 +137,8 @@ test('provider trouble is never shown as "no deposits": partial feed and watcher
   await mountDeposits();
   const watcher = host.querySelector('[data-watcher]')!;
   expect(watcher.textContent).toContain('Провайдер недоступен');
-  expect(watcher.textContent).toContain('Автоматически: 4 раза в сутки (раз в 6 ч)');
+  expect(watcher.textContent).toContain('Автоматически: при первом открытии после 07:00, в 12:00, 16:00, 20:00 (Киев)');
+  expect(watcher.textContent).toContain('Ночью 22:00–07:00 автоматическая проверка не выполняется');
   expect(watcher.textContent).toContain('есть очередь');
   expect(watcher.querySelector('[role="alert"]')!.textContent).toContain('HTTP 503');
   expect(watcher.textContent).toContain('Проверить новые поступления');

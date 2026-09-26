@@ -3,10 +3,10 @@ import { createHash, timingSafeEqual } from 'crypto';
 import { DepositWatchService } from '../../services/deposits/DepositWatchService';
 
 /**
- * Optional external trigger for the automatic scan (for when the API slept
- * through its slot), e.g. a free scheduled job 4 times a day. The service
- * itself refuses a run sooner than the configured interval (NOT_DUE), so no
- * caller can make scanning more frequent.
+ * Optional external trigger for a daytime slot (for when the API slept
+ * through it), e.g. a free scheduled job at 12:00/16:00/20:00 Kyiv. The
+ * service itself enforces the schedule (NOT_DUE at night, for a slot already
+ * done, or right after another scan), so no caller can scan more often.
  * Authorized by DEPOSIT_WATCHER_TOKEN (not a user session, not an admin
  * key). It is not accepted anywhere else, and this route can only call
  * DepositWatchService.runOnce('schedule') — which observes and proves
@@ -25,7 +25,7 @@ export function depositWatchInternalRouter(watch: DepositWatchService): Router {
     try {
       const s = await watch.runOnce('schedule');
       res.set('Cache-Control', 'no-store').json({
-        ran: s.ran, skipped: s.skipped ?? null, ok: s.ok, needsFollowUp: s.needsFollowUp,
+        ran: s.ran, skipped: s.skipped ?? null, notDueReason: s.notDueReason ?? null, ok: s.ok, needsFollowUp: s.needsFollowUp,
         newTransfers: s.newTransfers, pagesRead: s.pagesRead, providerCalls: s.providerCalls, durationMs: s.durationMs,
       });
     } catch {
