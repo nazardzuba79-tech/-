@@ -238,7 +238,6 @@ const measure = (page) => page.evaluate(() => {
       groupOptions: [...document.querySelectorAll('.rb-controls select option')].map(o => o.textContent.trim()),
     },
     formBox: box(form), bookBox: box(bookEl),
-    drawingChevron: box(document.querySelector('.tool-group-chevron')),
     clippedForm: clippedIn(form), clippedBook: clippedIn(bookEl),
     overflowX: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
     formOverflowX: form ? Math.max(0, form.scrollWidth - form.clientWidth) : null,
@@ -302,7 +301,15 @@ async function showOnMobile(page, which) {
       if (mobile) await showOnMobile(page, 'book');
       await page.waitForSelector('.rb-stack.rb-bids .rb-row:not(.is-placeholder)', { timeout: 30000 }).catch(() => {});
       await page.waitForTimeout(800);
-      if (mobile) { const chart = page.locator('#mobile-futures-chart'); if (await chart.count()) await chart.click(); await page.waitForTimeout(300); }
+      let drawingChevron = null;
+      if (mobile) {
+        const chart = page.locator('#mobile-futures-chart');
+        if (await chart.count()) await chart.click();
+        const chartPane = page.locator('.futures-mobile-chart-tabs button').first();
+        if (await chartPane.count()) await chartPane.click();
+        await page.waitForTimeout(300);
+        drawingChevron = await page.locator('.tool-group-chevron').first().boundingBox().catch(() => null);
+      }
       const shoot = SHOT_WIDTHS.has(key);
 
       if (shoot) await page.screenshot({ path: path.join(OUT, `${LABEL}-${key}-full.png`) });
@@ -391,7 +398,7 @@ async function showOnMobile(page, which) {
           headingControls: formState.headingControls, field: formState.field, fieldCaption: formState.fieldCaption,
           fieldInput: formState.fieldInput, selects: formState.selects, slider: formState.slider,
           buttons: formState.buttons, formBox: formState.formBox, formOverflowX: formState.formOverflowX },
-        drawingChevron: formState.drawingChevron,
+        drawingChevron,
         clippedForm: formState.clippedForm, overflowX: Math.max(bookState.overflowX, formState.overflowX),
         idleRequests: idle.length, idleRequestKinds: [...new Set(idle.map(u => u.replace(/\?.*$/, '').replace(/\/[A-Z0-9-]+$/, '/:x')))],
         grouping, tabSwitch, pick, calculator, order, pageErrors };
