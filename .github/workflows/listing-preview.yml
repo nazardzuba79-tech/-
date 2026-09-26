@@ -1,0 +1,40 @@
+name: VOLTORA listing preview
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/lib/listingPreview.ts'
+      - 'frontend/src/lib/__tests__/listingPreview.test.ts'
+      - 'frontend/src/lib/useMarketData.ts'
+      - 'frontend/src/components/ListingPreviewTerminal.tsx'
+      - 'frontend/src/components/ListingPreview.css'
+      - 'frontend/src/components/CryptoIcon.tsx'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/pages/markets-bolt/**'
+      - '.github/workflows/listing-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  listing-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Frozen preview, gating and terminal harness
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          frontend/src/lib/__tests__/listingPreview.test.ts
+          frontend/src/lib/__tests__/cfdTerminal.test.ts
+          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+      - name: Production frontend build
+        run: npm run build --prefix frontend

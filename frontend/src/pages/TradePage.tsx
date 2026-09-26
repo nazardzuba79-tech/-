@@ -38,6 +38,8 @@ import './trade-terminal/TerminalPremium.css';
 import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
+import { isListingPreviewEnabled, isListingPreviewPair } from '../lib/listingPreview';
+import { ListingPreviewBook, ListingPreviewCard, ListingPreviewOrderPanel, ListingPreviewTickerBar } from '../components/ListingPreviewTerminal';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -79,6 +81,10 @@ export function TradePage() {
   // Effects run after render: never expose the previous instrument's depth
   // during that first new-pair render or initialize grouping from its prices.
   const visibleBook = book.pair === pair ? book : { bids: [], asks: [] };
+  // The VOLTORA listing preview (lib/listingPreview): a frozen display with no
+  // clock, request or order path. Only while the owner has it switched on.
+  const [listingPreview] = useState(isListingPreviewEnabled);
+  const previewPair = listingPreview && isListingPreviewPair(pair);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
   const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
@@ -151,7 +157,7 @@ export function TradePage() {
   // look — actual order matching always happens on our own internal book
   // (see OrderForm), this is display only.
   const refreshBook = useCallback(() => {
-    if (bookPairRef.current !== pair || marketType !== 'spot' || document.hidden) return;
+    if (bookPairRef.current !== pair || marketType !== 'spot' || previewPair || document.hidden) return;
     const generation = bookGenerationRef.current;
     // A slow fallback must finish instead of being invalidated by every 2s
     // poll. A new pair/generation can still start immediately while its old
@@ -179,7 +185,7 @@ export function TradePage() {
     if (bookShownPairRef.current !== pair) {
       setBook({ pair, bids: [], asks: [], asOf: null });setPickedPrice(null);bookShownPairRef.current=pair;
     }
-    if (marketType !== 'spot') return;
+    if (marketType !== 'spot' || previewPair) return;
     refreshBook();
     const timer=window.setInterval(()=>{if(!document.hidden)refreshBook();},60_000);
     const visible=()=>{if(!document.hidden)refreshBook();};
@@ -239,6 +245,15 @@ export function TradePage() {
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   }, [accountPanel]);
 
+  function openPairSearch() {
+    setMarketPanelCollapsed(false);
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      setMobileTab('chart');
+      setMobilePane('markets');
+    }
+    requestAnimationFrame(() => pairListRef.current?.focusSearch());
+  }
+
   const mobileTabs = (
     <div className="terminal-mobile-tabs" ref={mobileTabsRef} role="tablist" aria-label={t('nav.trade')}>
       {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['account', 'trade.tabOpenOrders']] as const).map(([id, label]) => (
@@ -296,14 +311,9 @@ export function TradePage() {
       <ConnectionBanner />
 
       <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
-        <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={() => {
-          setMarketPanelCollapsed(false);
-          if (window.matchMedia('(max-width: 900px)').matches) {
-            setMobileTab('chart');
-            setMobilePane('markets');
-          }
-          requestAnimationFrame(() => pairListRef.current?.focusSearch());
-        }} />
+        {previewPair
+          ? <ListingPreviewTickerBar key={pair} onSelectPair={openPairSearch} />
+          : <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />}
         {mobileTabs}
         <div className="terminal-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
           <button type="button" aria-pressed={mobilePane === 'chart'} onClick={() => setMobilePane('chart')}>{t('futures.chart')}</button>
@@ -336,10 +346,15 @@ export function TradePage() {
             />
           </div>
 
-          <div className="chart-area">
-            <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />
+          <div className="chart-area" data-listing-preview={previewPair || undefined}>
+            {previewPair ? <ListingPreviewCard /> : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />}
           </div>
 
+          {previewPair ? (
+            <div className="orderbook-area" data-listing-preview="true">
+              <ListingPreviewBook onCollapse={() => setOrderBookCollapsed(true)} />
+            </div>
+          ) : (
           <div className="orderbook-area" data-sampled-book="true">
             <SampledDataNote asOf={book.pair === pair ? book.asOf : null} />
                 <OrderBookPanel
@@ -351,9 +366,12 @@ export function TradePage() {
               onCollapse={() => setOrderBookCollapsed(true)}
             />
           </div>
+          )}
 
           <div className="order-form-area">
-            <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />
+            {previewPair
+              ? <ListingPreviewOrderPanel key={pair} />
+              : <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />}
           </div>
         </div>
 

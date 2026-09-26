@@ -8,6 +8,8 @@ import { Footer } from '../../components/Footer';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { CfdMarketsSection } from '../../components/CfdMarketsSection';
 import { CatalogueTable } from './CatalogueTable';
+import { ListingPreviewStrip } from './ListingPreviewStrip';
+import { isListingPreviewEnabled, withoutListingPreview } from '../../lib/listingPreview';
 import { parseChangePercent } from '../../lib/priceChange';
 import { type CoinCategory } from '../../lib/pairList';
 import { useFavorites } from '../../lib/useFavorites';
@@ -136,6 +138,7 @@ export function MarketsBoltPage() {
   // Shared store — see lib/useFavorites; the terminals and the homepage
   // table read the same set, live.
   const { favorites, toggle: toggleFavorite } = useFavorites();
+  const [listingPreview] = useState(isListingPreviewEnabled);
   // The listed perpetuals, from the backend rather than a copy kept in sync
   // by hand — see CORE_FUTURES_SYMBOLS for why the initial value exists.
   const [futuresSymbols, setFuturesSymbols] = useState<string[]>(CORE_FUTURES_SYMBOLS);
@@ -161,7 +164,9 @@ export function MarketsBoltPage() {
 
   useEffect(() => {
     if (hasTickerData) {
-      setTickers(Array.from(tickerMap.values()));
+      // The listing preview row is not a market yet: it never counts towards
+      // movers, breadth or volume.
+      setTickers(withoutListingPreview(Array.from(tickerMap.values())));
       setError(null);
       return;
     }
@@ -440,6 +445,10 @@ export function MarketsBoltPage() {
                   listed futures contract: a real subset of the tradable
                   set, not an invented category. */}
               <div id="markets-table-anchor" />
+              {listingPreview && activeKind === 'Spot' && (
+                <ListingPreviewStrip search={search} favoritesOnly={activeCategory === 'Favorites'} favorites={favorites}
+                  onToggleFavorite={toggleFavorite} onOpen={goToTrade} />
+              )}
               <CatalogueTable
                 search={search}
                 favorites={favorites}

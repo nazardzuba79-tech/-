@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { marketDataStore, type MarketState } from './marketDataStore';
 import type { MarketTicker } from './api';
+import { isListingPreviewEnabled, withListingPreviewTicker } from './listingPreview';
 
 /**
  * React bindings over the shared market-data store.
@@ -52,7 +53,13 @@ export function useMarketTicker(pair: string, intervalMs?: number): TickerView {
   };
 }
 
-/** Every ticker in the shared snapshot, as a Map for O(1) row lookup. */
+/**
+ * Every ticker in the shared snapshot, as a Map for O(1) row lookup.
+ *
+ * While the VOLTORA listing preview is on (lib/listingPreview), its row —
+ * every figure a dash — rides along so the terminal's pair list, search and
+ * favourites show it. No request, no timer: the row is a constant.
+ */
 export function useMarketTickers(intervalMs?: number): {
   tickers: Map<string, MarketTicker>;
   loading: boolean;
@@ -61,8 +68,10 @@ export function useMarketTickers(intervalMs?: number): {
   refresh: () => void;
 } {
   const state = useMarketData(intervalMs);
+  const [listingPreview] = useState(isListingPreviewEnabled);
+  const tickers = useMemo(() => withListingPreviewTicker(state.tickers, listingPreview), [state.tickers, listingPreview]);
   return {
-    tickers: state.tickers,
+    tickers,
     loading: !state.loaded,
     error: state.status === 'error',
     stale: state.tickersMeta?.stale ?? false,
