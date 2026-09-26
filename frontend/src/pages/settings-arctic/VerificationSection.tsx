@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { BadgeCheck, CheckCircle2, FileText, MapPin, UserRound, type LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../lib/api';
@@ -7,6 +7,10 @@ import { CountrySelect } from '../../components/CountrySelect';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
 import { customerErrorText } from '../../lib/customerError';
+import {
+  KYC_ERROR_KEYS, KycFileError, clearKycReceipt, formatKycBytes, newKycRequestId, prepareKycDocument, readKycReceipt,
+  retryKycReceipt, submitKycToEdge, type PreparedKycDocument,
+} from '../../lib/kycEdge';
 
 const inputClass =
   'h-11 rounded-xl border border-border bg-card px-3.5 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand focus:ring-2 focus:ring-brand/20';
@@ -31,33 +35,92 @@ export function VerificationSection() {
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [documentType, setDocumentType] = useState<'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE'>('PASSPORT');
-  const [document, setDocument] = useState<File | null>(null);
+  const [document, setDocument] = useState<PreparedKycDocument | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Delivered to the admin mailbox, metadata call still owed (see kycEdge.ts).
+  const [awaitingRecord, setAwaitingRecord] = useState(() => !!readKycReceipt());
+  // One id per attempt: a retry of the same attempt can never email twice.
+  const requestIdRef = useRef<string | null>(null);
+  const submittingRef = useRef(false);
 
   function reload() {
-    api.getMyKyc().then(setStatus).catch(() => {});
+    api.getMyKyc().then((next) => {
+      setStatus(next);
+      const receipt = readKycReceipt();
+      if (receipt && (next.latestSubmission?.id === receipt.submissionId || next.kycStatus === 'APPROVED')) {
+        clearKycReceipt();
+        setAwaitingRecord(false);
+      }
+    }).catch(() => {});
   }
   useEffect(reload, []);
+
+  // The document already went out; retry only the tiny record, a few times,
+  // while this page is open. Never re-uploads.
+  useEffect(() => {
+    if (!awaitingRecord) return;
+    let cancelled = false;
+    const delays = [0, 5_000, 15_000, 45_000];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const attempt = (i: number) => {
+      timer = setTimeout(async () => {
+        if (cancelled) return;
+        if (await retryKycReceipt()) { if (!cancelled) { setAwaitingRecord(false); reload(); } return; }
+        if (!readKycReceipt()) { if (!cancelled) setAwaitingRecord(false); return; }
+        if (i + 1 < delays.length) attempt(i + 1);
+      }, delays[i]);
+    };
+    attempt(0);
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [awaitingRecord]);
+
+  function resetAttempt() {
+    requestIdRef.current = null;
+  }
+  // Changed answers are a new attempt (and a new submission id).
+  useEffect(resetAttempt, [country, fullName, dateOfBirth, documentType]);
+
+  async function handleFile(file: File | null) {
+    setError(null);
+    setDocument(null);
+    resetAttempt();
+    if (!file) return;
+    setPreparing(true);
+    try {
+      setDocument(await prepareKycDocument(file));
+    } catch (err) {
+      setError(t(err instanceof KycFileError && err.code === 'kyc_file_too_large' ? 'settings.kycFileTooLarge' : 'settings.kycFileType'));
+    } finally {
+      setPreparing(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (submittingRef.current) return;
     if (!document) {
       setError(t('settings.addDocumentPhoto'));
       return;
     }
+    submittingRef.current = true;
     setSubmitting(true);
+    requestIdRef.current ??= newKycRequestId();
     try {
-      await api.submitKyc({ country, fullName, dateOfBirth, documentType, document });
+      const result = await submitKycToEdge({ requestId: requestIdRef.current, country, fullName, dateOfBirth, documentType, document: document.file });
+      resetAttempt();
       setFullName('');
       setDateOfBirth('');
       setDocument(null);
+      if (!result.confirmed) setAwaitingRecord(true);
       toast.success(t('settings.sendForReview'));
       reload();
     } catch (err) {
-      setError(customerErrorText(err, t, t('settings.submitKycError')));
+      setError(customerErrorText(err, t, t('settings.submitKycError'), { byCode: KYC_ERROR_KEYS }));
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
@@ -76,17 +139,20 @@ export function VerificationSection() {
     APPROVED: { text: t('settings.kyc.APPROVED'), tone: 'success' },
     REJECTED: { text: t('settings.kyc.REJECTED'), tone: 'danger' },
   };
-  const badge = STATUS_LABEL[status.kycStatus] ?? STATUS_LABEL.NOT_STARTED;
-  const approved = status.kycStatus === 'APPROVED';
-  const canSubmit = status.kycStatus === 'NOT_STARTED' || status.kycStatus === 'REJECTED';
-  const progressPct = kycProgressPct(status.kycStatus);
+  // A delivered document whose record is still being written reads as
+  // «На проверке» — the user must not be asked to upload it again.
+  const kycStatus = awaitingRecord && status.kycStatus !== 'APPROVED' ? 'PENDING' : status.kycStatus;
+  const badge = STATUS_LABEL[kycStatus] ?? STATUS_LABEL.NOT_STARTED;
+  const approved = kycStatus === 'APPROVED';
+  const canSubmit = kycStatus === 'NOT_STARTED' || kycStatus === 'REJECTED';
+  const progressPct = kycProgressPct(kycStatus);
   const sub = status.latestSubmission;
   const DOC_LABEL: Record<string, string> = {
     PASSPORT: t('settings.doc.PASSPORT'),
     ID_CARD: t('settings.doc.ID_CARD'),
     DRIVERS_LICENSE: t('settings.doc.DRIVERS_LICENSE'),
   };
-  const subtitle = approved ? t('settings.alreadyVerified') : status.kycStatus === 'PENDING' ? t('settings.pendingReview') : t('settings.verifyStartPrompt');
+  const subtitle = approved ? t('settings.alreadyVerified') : kycStatus === 'PENDING' ? t('settings.pendingReview') : t('settings.verifyStartPrompt');
 
   const STEPS: { icon: LucideIcon; label: string; value: string | null }[] = [
     { icon: UserRound, label: t('settings.verifyStepPersonal'), value: sub?.fullName ?? null },
@@ -169,22 +235,28 @@ export function VerificationSection() {
                 </select>
               </div>
             </div>
-            <div className="grid gap-1.5">
+            {/* grid-cols-1 + min-w-0: a selected file's name must not widen the form past a 320 px screen. */}
+            <div className="grid min-w-0 grid-cols-1 gap-1.5">
               <label className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{t('settings.documentPhoto')}</label>
               <input
                 type="file"
                 required
                 accept="image/jpeg,image/png,application/pdf"
-                onChange={(e) => setDocument(e.target.files?.[0] ?? null)}
-                className="rounded-xl border border-border bg-card px-3.5 py-2.5 text-[12.5px] text-foreground"
+                onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                className="w-full min-w-0 rounded-xl border border-border bg-card px-3.5 py-2.5 text-[12.5px] text-foreground"
               />
+              {(preparing || document) && (
+                <span data-kyc-file-size className="text-[12px] text-muted-foreground">
+                  {preparing ? t('settings.kycPreparingFile') : t('settings.kycFileReady', { size: formatKycBytes(document!.file.size) })}
+                </span>
+              )}
             </div>
 
             {error && <div className="rounded-xl bg-danger-soft px-3.5 py-2.5 text-[12.5px] text-danger">{error}</div>}
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || preparing}
               className="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-foreground px-5 py-2.5 text-[13px] font-medium text-primary-foreground transition-all duration-150 hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting ? t('settings.sending') : t('settings.sendForReview')}

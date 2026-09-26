@@ -1,0 +1,126 @@
+name: KYC edge (Cloudflare document path, Render metadata only)
+
+# Verifies the KYC document path on every PR that touches it:
+#   browser → Cloudflare Worker (workers/kyc-edge) → Email Routing → admin mailbox,
+#   Render/Neon → small signed metadata calls only.
+# Deploying the Worker is a separate workflow (deploy-kyc-edge.yml).
+on:
+  pull_request:
+    paths:
+      - 'workers/kyc-edge/**'
+      - 'src/api/routes/kyc.ts'
+      - 'src/api/routes/admin.ts'
+      - 'src/api/routes/adminUsers.ts'
+      - 'src/api/routes/__tests__/kyc.test.ts'
+      - 'src/api/routes/__tests__/kycEdgePostgres.test.ts'
+      - 'src/services/KycEdgeTrust.ts'
+      - 'src/services/KycEmailService.ts'
+      - 'src/index.ts'
+      - 'prisma/**'
+      - 'frontend/src/lib/kycEdge.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/__tests__/kycEdgeClient.test.ts'
+      - 'frontend/src/pages/settings-arctic/VerificationSection.tsx'
+      - 'frontend/src/pages/admin/KycSubmissionReview.tsx'
+      - 'frontend/src/pages/admin/AdminKycPage.tsx'
+      - 'frontend/src/lib/i18n/locales/**'
+      - 'scripts/qa-kyc-edge.cjs'
+      - '.github/workflows/kyc-edge.yml'
+      - '.github/workflows/deploy-kyc-edge.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kyc-edge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: workers/kyc-edge
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Worker contract tests (validation, magic bytes, email, idempotency, logs)
+        run: node --test test.mjs
+      - name: Wrangler dry-run (bindings and config parse)
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/kyc-edge-dry
+
+  api-and-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kyc_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_kyc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kyc_qa -d voltex_kyc_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      # Disposable loopback database; no Cloudflare or mail secret exists in CI.
+      DATABASE_URL: postgresql://kyc_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_kyc_test?schema=public
+      DIRECT_URL: postgresql://kyc_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_kyc_test?schema=public
+      KYC_TEST_DATABASE_URL: postgresql://kyc_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_kyc_test?schema=public
+      KYC_QA_DATABASE_URL: postgresql://kyc_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_kyc_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Additive migration on an empty database
+        run: npx prisma migrate deploy
+      - name: API routes, PostgreSQL integration, frontend client and pinned contracts
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/api/routes/__tests__/kyc.test.ts
+          src/api/routes/__tests__/kycEdgePostgres.test.ts
+          src/api/routes/__tests__/admin.test.ts
+          src/api/routes/__tests__/adminUsers.test.ts
+          src/services/__tests__/KycEmailService.test.ts
+          src/services/__tests__/NodemailerCompatibility.test.ts
+          frontend/src/lib/__tests__/kycEdgeClient.test.ts
+          frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          frontend/src/lib/__tests__/customerFacingErrors.test.ts
+          frontend/src/lib/__tests__/routeCodeSplitting.test.ts
+      - name: Backend typecheck and build
+        run: npm run build
+      - name: Production frontend build (pointed at the local edge for QA)
+        env:
+          VITE_KYC_EDGE_URL: http://127.0.0.1:18787
+        run: npm run build --prefix frontend
+      - name: Disposable Chromium
+        run: |
+          npm install --prefix /tmp/kyc-qa-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/kyc-qa-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Browser → edge (real Worker code) → email sink → Render routes → PostgreSQL, at 320/360/390/430/1440
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/kyc-qa-browser/node_modules/playwright
+        run: node scripts/qa-kyc-edge.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kyc-edge-${{ github.sha }}
+          path: docs/qa/kyc-edge/
+          if-no-files-found: ignore
+          retention-days: 7
