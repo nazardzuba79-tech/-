@@ -51,6 +51,7 @@
 .drawing-flyout .tool-flyout-item:focus { background: #253246; color: #fff; }
 .drawing-flyout .tool-flyout-item.active { color: #f0c964; background: #302c20; }
 .drawing-flyout svg { flex-shrink: 0; }
+.drawing-flyout .tool-flyout-item > svg { width: 28px; height: 28px; }
 /* Portal, outside the terminal root — scoped explicitly. */
 .chart-draw-dialog-backdrop {
   position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center;
@@ -80,7 +81,7 @@
 /* TradingView-grouped flyouts: section titles and the shortcut column. */
 /* Wide enough for TradingView's longest names on one line («Расширение
    Фибоначчи, основанное на тренде»); a longer translation wraps, never clips. */
-.drawing-flyout.tool-flyout { width: 344px; }
+.drawing-flyout.tool-flyout { width: 356px; }
 .drawing-flyout .tool-flyout-section {
   padding: 8px 10px 4px; color: #787b86; font: 600 10px var(--font-ui);
   letter-spacing: .06em; text-transform: uppercase;

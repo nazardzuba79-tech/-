@@ -1893,7 +1893,7 @@ function DrawToolbar({
   );
 
   const openFlyout = (group: string, wrap: DOMRect, items: number, sections: number) => {
-    const size = { width: 344, height: Math.min(560, 12 + items * 36 + sections * 26) };
+    const size = { width: 356, height: Math.min(560, 12 + items * 36 + sections * 26) };
     setFlyoutPos(drawingTools ? drawingFlyoutPosition(wrap, { width: window.innerWidth, height: window.innerHeight }, window.innerWidth <= 767, size) : { top: wrap.top - 4, left: wrap.right + 6 });
     setOpenGroup((g) => (g === group ? null : group));
   };
@@ -1999,9 +1999,9 @@ function DrawToolbar({
 
       <div className="tool-divider" />
 
-      {btn('ruler', t('draw.measure'), compactTools ? <PrecisionRulerIcon /> : <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
+      {btn('ruler', t('draw.measure'), <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
       {btn('zoom', t('draw.zoomIn'), <ZoomInIcon />, () => onSelect('zoom'), tool === 'zoom')}
-      {btn('fit', t('draw.zoom'), drawingTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
+      {btn('fit', t('draw.zoom'), <FitIcon />, onFit, false)}
 
       <div className="tool-divider" />
 
@@ -2060,230 +2060,6 @@ function DrawToolbar({
       </svg>
     </button>
   </div>;
-}
-
-const ICON_PROPS = {
-  width: 17,
-  height: 17,
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.8,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-};
-
-/**
- * The cursor tool, drawn as a crosshair rather than an arrow.
- *
- * An arrow is the operating system's pointer; on a chart it says "select
- * things", which is not what this mode does. Every charting app the owner
- * put beside ours — TradingView, Bybit — marks this mode with a crosshair,
- * because a crosshair is what the chart actually shows while the mode is
- * on. Four rays with a gap at the centre, so the point the cursor is
- * reading stays visible inside its own marker.
- *
- * Drawn a hair thinner than the rest of the rail: the other icons are
- * shapes with an outline, this one is only lines, and at 1.8 it read as
- * the heaviest thing on the panel. The SIZE and the 24-unit box are the
- * rail's own, so the button, its hit area and the active gold are
- * untouched — this is the glyph and nothing else. It is a `<path>` set,
- * never a text glyph or an emoji.
- */
-function CursorIcon() {
-  return (
-    <svg {...ICON_PROPS} strokeWidth={1.5}>
-      <path d="M12 2.5v6.2" />
-      <path d="M12 15.3v6.2" />
-      <path d="M2.5 12h6.2" />
-      <path d="M15.3 12h6.2" />
-    </svg>
-  );
-}
-function TrendLineIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M5.5 18.5 18.5 5.5" />
-      <circle cx="4" cy="20" r="2" />
-      <circle cx="20" cy="4" r="2" />
-    </svg>
-  );
-}
-function HorizontalIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <line x1="3" y1="8" x2="21" y2="8" />
-      <line x1="3" y1="16" x2="21" y2="16" strokeDasharray="3 3" />
-    </svg>
-  );
-}
-function RayIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none" />
-      <line x1="7" y1="12" x2="20" y2="12" strokeDasharray="3 2" />
-    </svg>
-  );
-}
-function VerticalIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <line x1="12" y1="3" x2="12" y2="21" strokeDasharray="3 2" />
-    </svg>
-  );
-}
-function RectangleIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <rect x="4" y="6" width="16" height="12" rx="1" />
-    </svg>
-  );
-}
-function FibIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M4 4h16M4 10h16M4 14h16M4 20h16" />
-      <path d="M4 20 20 4" strokeDasharray="2 3" opacity=".7" />
-      <circle cx="4" cy="20" r="2" fill="currentColor" stroke="none" />
-      <circle cx="20" cy="4" r="2" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-function BrushIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="m15 4 5 5M3 21l1-6L16 3a2 2 0 0 1 3 0l2 2a2 2 0 0 1 0 3L9 20l-6 1zM4 15l5 5" />
-    </svg>
-  );
-}
-function RulerIcon() {
-  return <svg {...ICON_PROPS}>
-    <rect x="3" y="9" width="18" height="6" rx="1" transform="rotate(-20 12 12)" />
-    <path d="M8 10l1 1.5M11 9l1 1.5M14 8l1 1.5" transform="rotate(-20 12 12)" />
-  </svg>;
-}
-function PrecisionRulerIcon() {
-  return (
-    <svg {...ICON_PROPS} style={{ width: 27, height: 27, strokeWidth: 1.65 }}>
-      <g transform="rotate(-45 12 12)"><rect x="1" y="8.5" width="22" height="7" rx="1" />
-      <path d="M5 8.5v3.5M8.5 8.5v2M12 8.5v3.5M15.5 8.5v2M19 8.5v3.5" /></g>
-    </svg>
-  );
-}
-function TrashObjectIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6" /></svg>;
-}
-function TextIcon() {
-  return (
-    <svg {...ICON_PROPS} style={{ strokeWidth: 2.35 }}>
-      <path d="M5 7V4h14v3M12 4v16M8 20h8" />
-    </svg>
-  );
-}
-function FitIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <circle cx="11" cy="11" r="7" />
-      <line x1="16.5" y1="16.5" x2="21" y2="21" />
-      <line x1="11" y1="8" x2="11" y2="14" />
-      <line x1="8" y1="11" x2="14" y2="11" />
-    </svg>
-  );
-}
-function FitContentIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5M7 12h10M12 7v10" /></svg>;
-}
-/* Same stroke system as every other tool icon in this rail — one coherent
-   set, no mixed icon families. */
-function StayModeIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M14 4l6 6-9.5 9.5H4.5V13L14 4z" />
-      <line x1="12" y1="6" x2="18" y2="12" />
-    </svg>
-  );
-}
-function EyeIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
-      <circle cx="12" cy="12" r="2.6" />
-    </svg>
-  );
-}
-function EyeOffIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M9.6 5.8A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a18 18 0 0 1-3.3 4.2" />
-      <path d="M6.3 7.7A17.6 17.6 0 0 0 2 12s3.6 6.5 10 6.5a10.6 10.6 0 0 0 3.4-.55" />
-      <line x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
-    </svg>
-  );
-}
-/* Original monochrome icons, drawn on the same 24x24 grid and stroke
-   weight as the rest of the rail. No emoji, no third-party asset. */
-
-/** A line through two anchors, continuing past both. */
-function ExtendedIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <line x1="3" y1="19" x2="21" y2="5" />
-      <circle cx="9" cy="14.7" r="1.6" />
-      <circle cx="15" cy="9.3" r="1.6" />
-    </svg>
-  );
-}
-
-/** A horseshoe magnet: two legs and the arch between them. */
-function MagnetIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M6 5v8a6 6 0 0 0 12 0V5" />
-      <line x1="3" y1="5" x2="9" y2="5" />
-      <line x1="15" y1="5" x2="21" y2="5" />
-      <line x1="6" y1="10" x2="9" y2="10" />
-      <line x1="15" y1="10" x2="18" y2="10" />
-    </svg>
-  );
-}
-
-function LockedIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <rect x="5" y="11" width="14" height="9" rx="2" />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-    </svg>
-  );
-}
-
-/** The same body with the shackle swung open. */
-function UnlockedIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <rect x="5" y="11" width="14" height="9" rx="2" />
-      <path d="M8 11V8a4 4 0 0 1 7.5-2" />
-    </svg>
-  );
-}
-
-/** An eraser tip over a single stroke — one drawing, not all of them. */
-function EraseOneIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M7 15l5-5 4.5 4.5-3.5 3.5H10z" />
-      <line x1="14" y1="6" x2="19" y2="11" />
-      <line x1="4" y1="21" x2="12" y2="21" />
-    </svg>
-  );
-}
-
-function EraserIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M4 16l8-8 6 6-6 6H8l-4-4z" />
-      <line x1="9" y1="21" x2="20" y2="21" />
-    </svg>
-  );
 }
 
 /* Terminal chrome. The reference has `.chart-toolbar` and `.chart-view` as
@@ -2507,96 +2283,266 @@ const styles: Record<string, React.CSSProperties> = {
   },
 };
 
-// ── Icons for the TradingView-grouped rail ──────────────────────────
-// Drawn for this rail on its 24-unit grid, stroke only, like the rest.
+// ── Drawing-tool icons ──────────────────────────────────────────────
+//
+// Drawn for VOLTEX in the visual language traders already know from
+// TradingView, so every tool reads at a glance: a 28-unit grid rendered at
+// 28px, 1-unit strokes on half-pixel lines, and anchors as small hollow
+// rings the line stops short of. Our own paths, stroke only, currentColor —
+// never a copied asset, a text glyph or an emoji.
 
+const TV_ICON = {
+  width: 28,
+  height: 28,
+  viewBox: '0 0 28 28',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+  'aria-hidden': 'true' as const,
+};
+
+/** An anchor ring and the radius lines stop at. */
+const RING = 2;
+const Ring = ({ x, y, r = RING }: { x: number; y: number; r?: number }) => <circle cx={x} cy={y} r={r} />;
+
+/** A segment from a to b, trimmed at either end to a ring's edge. */
+function seg(a: [number, number], b: [number, number], trimStart = 0, trimEnd = 0): string {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
+  const f = (n: number) => +n.toFixed(2);
+  return `M${f(a[0] + ux * trimStart)} ${f(a[1] + uy * trimStart)}L${f(b[0] - ux * trimEnd)} ${f(b[1] - uy * trimEnd)}`;
+}
+
+/** A chain of anchors joined by segments, each ring left open. */
+function Chain({ points, r = 1.5, rings = true, closed = false }: { points: [number, number][]; r?: number; rings?: boolean; closed?: boolean }) {
+  const pairs = points.slice(1).map((p, i) => [points[i], p] as const);
+  if (closed) pairs.push([points[points.length - 1], points[0]]);
+  const t = rings ? r : 0;
+  return <>
+    <path d={pairs.map(([a, b]) => seg(a, b, t, t)).join('')} />
+    {rings && points.map(([x, y], i) => <Ring key={i} x={x} y={y} r={r} />)}
+  </>;
+}
+
+// Cursors
+
+/** Cross: the chart's own crosshair. */
+function CursorIcon() {
+  return <svg {...TV_ICON}><path d="M14.5 4.5v20M4.5 14.5h20" /></svg>;
+}
 function DotCursorIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" /></svg>;
+  return <svg {...TV_ICON}><circle cx="14.5" cy="14.5" r="2.5" fill="currentColor" stroke="none" /></svg>;
 }
 function ArrowCursorIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M6 4v15l4-4 3 6 2-1-3-6h6z" /></svg>;
+  return <svg {...TV_ICON}><path d="M10.5 5.5V20l3.5-3.5 2.8 6 2-.9-2.8-5.8 4.5-.3z" /></svg>;
+}
+function EraseOneIcon() {
+  return <svg {...TV_ICON}><path d="M12 24 5 17l9-9 7 7-9 9zM8.5 13.5l7 7M14.5 24.5h9" /></svg>;
+}
+
+// Lines
+
+function TrendLineIcon() {
+  return <svg {...TV_ICON}><Ring x={6.5} y={21.5} /><Ring x={21.5} y={6.5} /><path d={seg([6.5, 21.5], [21.5, 6.5], RING, RING)} /></svg>;
 }
 function RayLineIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><circle cx="5" cy="18" r="1.8" /><path d="M6.4 16.8 21 5" /></svg>;
+  return <svg {...TV_ICON}>
+    <Ring x={6.5} y={21.5} /><Ring x={14.5} y={13.5} />
+    <path d={seg([6.5, 21.5], [14.5, 13.5], RING, RING) + seg([14.5, 13.5], [24.5, 3.5], RING, 0)} />
+  </svg>;
 }
 function InfoLineIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><circle cx="5" cy="18" r="1.8" /><circle cx="15" cy="10" r="1.8" /><path d="m6.5 16.8 7-5.6" /><rect x="14" y="14" width="7" height="6" rx="1" /></svg>;
+  return <svg {...TV_ICON}>
+    <Ring x={5.5} y={19.5} /><Ring x={17.5} y={7.5} />
+    <path d={seg([5.5, 19.5], [17.5, 7.5], RING, RING)} />
+    <path d="M13.5 15.5h11v8h-11zM16 18.5h6M16 21h4" />
+  </svg>;
+}
+function ExtendedIcon() {
+  return <svg {...TV_ICON}>
+    <Ring x={10.5} y={17.5} /><Ring x={17.5} y={10.5} />
+    <path d={seg([3.5, 24.5], [10.5, 17.5], 0, RING) + seg([10.5, 17.5], [17.5, 10.5], RING, RING) + seg([17.5, 10.5], [24.5, 3.5], RING, 0)} />
+  </svg>;
 }
 function TrendAngleIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 19 19 6M4 19h16" /><path d="M11 19a7 7 0 0 0-2-5" /></svg>;
+  return <svg {...TV_ICON}>
+    <Ring x={6.5} y={20.5} /><Ring x={20.5} y={8.5} />
+    <path d={seg([6.5, 20.5], [20.5, 8.5], RING, RING)} />
+    <path d="M8.5 20.5h16M15.5 20.5A9 9 0 0 0 13.3 14.6" />
+  </svg>;
+}
+function HorizontalIcon() {
+  return <svg {...TV_ICON}><Ring x={14.5} y={14.5} /><path d="M3.5 14.5h9M16.5 14.5h9" /></svg>;
+}
+/** Horizontal ray: one anchor, running to the right edge. */
+function RayIcon() {
+  return <svg {...TV_ICON}><Ring x={6.5} y={14.5} /><path d="M8.5 14.5h17" /></svg>;
+}
+function VerticalIcon() {
+  return <svg {...TV_ICON}><Ring x={14.5} y={14.5} /><path d="M14.5 3.5v9M14.5 16.5v9" /></svg>;
 }
 function CrossLineIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M12 3v18M3 12h18" /><circle cx="12" cy="12" r="1.8" /></svg>;
+  return <svg {...TV_ICON}><Ring x={14.5} y={14.5} /><path d="M3.5 14.5h9M16.5 14.5h9M14.5 3.5v9M14.5 16.5v9" /></svg>;
 }
 function ChannelIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M3 15 15 5M9 20 21 10" /><path d="M6 17.5 18 7.5" strokeDasharray="2 2" /></svg>;
+  return <svg {...TV_ICON}>
+    <Ring x={5.5} y={16.5} /><Ring x={16.5} y={5.5} /><Ring x={22.5} y={11.5} />
+    <path d={seg([5.5, 16.5], [16.5, 5.5], RING, RING) + seg([11.5, 22.5], [22.5, 11.5], 0, RING)} />
+  </svg>;
+}
+
+// Fibonacci
+
+function FibIcon() {
+  return <svg {...TV_ICON}>
+    <Ring x={4.5} y={23.5} /><Ring x={23.5} y={5.5} />
+    <path d="M3.5 5.5h18M3.5 11.5h21M3.5 17.5h21M6.5 23.5h18" />
+  </svg>;
 }
 function FibExtIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M3 20 8 9l5 6M12 5h9M12 9h9M12 13h9M12 17h9" /></svg>;
+  return <svg {...TV_ICON}>
+    <path d="M11.5 5.5h13M11.5 9.5h13M11.5 13.5h13" />
+    <Chain points={[[4.5, 23.5], [9.5, 17.5], [14.5, 21.5]]} r={RING} />
+  </svg>;
 }
 function PitchforkIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M3 20 12 11M12 11l9-4M12 11l9 4M7 6l14 1M7 16l14-1" /></svg>;
+  return <svg {...TV_ICON}>
+    <Ring x={5} y={23} /><Ring x={8.5} y={10.5} /><Ring x={17.5} y={19.5} />
+    <path d={seg([5, 23], [13, 15], RING, 0) + seg([8.5, 10.5], [17.5, 19.5], RING, RING)
+      + seg([13, 15], [22.5, 5.5]) + seg([8.5, 10.5], [15, 4], RING, 0) + seg([17.5, 19.5], [24, 13], RING, 0)} />
+  </svg>;
 }
+
+// Patterns
+
 function XabcdIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m2 18 5-12 5 8 5-10 5 14" /><path d="M2 18 12 14" strokeDasharray="2 2" /></svg>;
+  return <svg {...TV_ICON}>
+    <Chain points={[[3.5, 20.5], [8.5, 6.5], [13.5, 16.5], [18.5, 9.5], [24.5, 22.5]]} />
+    <path d={seg([3.5, 20.5], [13.5, 16.5], 1.5, 1.5) + seg([13.5, 16.5], [24.5, 22.5], 1.5, 1.5)} strokeDasharray="1.5 2" />
+  </svg>;
 }
 function AbcdIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m3 18 6-12 6 8 6-10" /><path d="M3 18 15 14" strokeDasharray="2 2" /></svg>;
+  return <svg {...TV_ICON}><Chain points={[[4.5, 20.5], [11, 7.5], [17, 16.5], [24, 5.5]]} /></svg>;
 }
 function TrianglePatternIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m3 5 5 14 5-11 5 8 3-4" /><path d="M3 5 21 12M8 19l13-7" strokeDasharray="2 2" /></svg>;
+  return <svg {...TV_ICON}>
+    <path d="M3.5 5.5 24.5 12M3.5 23.5l21-6.5" />
+    <Chain points={[[4.5, 6], [9.5, 21.5], [14.5, 9], [19.5, 18.5], [24, 14.5]]} rings={false} />
+  </svg>;
 }
 function HeadShouldersIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m2 18 3-7 3 5 4-11 4 11 3-5 3 7" /><path d="M5 16h14" strokeDasharray="2 2" /></svg>;
+  return <svg {...TV_ICON}>
+    <Chain points={[[3.5, 21.5], [7.5, 12.5], [10.5, 17.5], [14.5, 5.5], [18.5, 17.5], [21.5, 12.5], [25, 21.5]]} rings={false} />
+    <path d="M6 17.5h16" strokeDasharray="1.5 2" />
+  </svg>;
 }
 function ElliottIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m2 19 4-8 3 4 5-11 3 6 5-4" /></svg>;
+  return <svg {...TV_ICON}><Chain points={[[3.5, 22.5], [8.5, 13.5], [11.5, 17.5], [18.5, 6.5], [21.5, 11.5], [25, 4.5]]} /></svg>;
 }
+
+// Forecasting and measuring
+
+/** Long position: the reward box above the entry, the risk box below. */
 function LongIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><rect x="4" y="4" width="16" height="8" fill="currentColor" fillOpacity=".18" /><rect x="4" y="12" width="16" height="6" /><path d="M4 12h16" /></svg>;
+  return <svg {...TV_ICON}><path d="M5.5 5.5h17v17h-17zM5.5 16.5h17M14 13.5V8M11.5 10.5 14 8l2.5 2.5" /></svg>;
 }
 function ShortIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><rect x="4" y="6" width="16" height="6" /><rect x="4" y="12" width="16" height="8" fill="currentColor" fillOpacity=".18" /><path d="M4 12h16" /></svg>;
+  return <svg {...TV_ICON}><path d="M5.5 5.5h17v17h-17zM5.5 11.5h17M14 14.5V20M11.5 17.5 14 20l2.5-2.5" /></svg>;
 }
 function PriceRangeIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 4h16M4 20h16M12 7v10M9 9l3-3 3 3M9 15l3 3 3-3" /></svg>;
+  return <svg {...TV_ICON}><path d="M6.5 5.5h15M6.5 22.5h15M14 8v12M11.5 10.5 14 8l2.5 2.5M11.5 17.5 14 20l2.5-2.5" /></svg>;
 }
 function DateRangeIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 4v16M20 4v16M7 12h10M9 9l-3 3 3 3M15 9l3 3-3 3" /></svg>;
+  return <svg {...TV_ICON}><path d="M5.5 6.5v15M22.5 6.5v15M8 14h12M10.5 11.5 8 14l2.5 2.5M17.5 11.5 20 14l-2.5 2.5" /></svg>;
 }
 function DatePriceRangeIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1" /><path d="M12 7v10M7 12h10M10 9l2-2 2 2M15 10l2 2-2 2" /></svg>;
+  return <svg {...TV_ICON}><path d="M5.5 5.5h17v17h-17zM14 8.5v11M12 10.5l2-2 2 2M12 17.5l2 2 2-2M8.5 14h11M10.5 12l-2 2 2 2M17.5 12l2 2-2 2" /></svg>;
+}
+
+// Shapes
+
+function BrushIcon() {
+  return <svg {...TV_ICON}>
+    <path d="m21 4 3 3-8.5 8.5-3-3z" />
+    <path d="M12.5 12.5c-2.6 0-4.5 2-4.5 4.5 0 2-1 3.5-3.5 4.5 4 1.5 9.5.5 10.7-3.3.5-1.6 0-3.6-2.7-5.7z" />
+  </svg>;
 }
 function HighlighterIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m14 4 6 6-8 8H6v-6z" /><path d="M4 21h9" strokeWidth={3} /></svg>;
+  return <svg {...TV_ICON}><path d="m18.5 5.5 4 4-9 9-4-4zM9.5 14.5l-2 6 6-2M4.5 24.5h19" /></svg>;
 }
 function ArrowDrawIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 20 19 5M11 5h8v8" /></svg>;
+  return <svg {...TV_ICON}><path d="M6 22 21.5 6.5M13.5 6.5h8v8" /></svg>;
 }
 function ArrowUpIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m12 3 7 8h-4v9H9v-9H5z" /></svg>;
+  return <svg {...TV_ICON}><path d="m14 4.5 7.5 8.5H17v10.5h-6V13H6.5z" /></svg>;
 }
 function ArrowDownIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m12 21 7-8h-4V4H9v9H5z" /></svg>;
+  return <svg {...TV_ICON}><path d="M14 23.5 6.5 15H11V4.5h6V15h4.5z" /></svg>;
+}
+function RectangleIcon() {
+  return <svg {...TV_ICON}>
+    <Ring x={5.5} y={7.5} /><Ring x={22.5} y={20.5} />
+    <path d="M7.5 7.5h15v11M5.5 9.5v11h15" />
+  </svg>;
 }
 function EllipseIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="6" /></svg>;
+  return <svg {...TV_ICON}><ellipse cx="14" cy="14.5" rx="9.5" ry="7" /></svg>;
 }
 function TriangleShapeIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M12 4 21 19H3z" /></svg>;
+  return <svg {...TV_ICON}><Chain points={[[14, 5.5], [23.5, 21.5], [4.5, 21.5]]} closed /></svg>;
 }
 function PolylineIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="m3 17 5-9 5 6 4-8 4 11" /><circle cx="8" cy="8" r="1.4" /><circle cx="13" cy="14" r="1.4" /><circle cx="17" cy="6" r="1.4" /></svg>;
+  return <svg {...TV_ICON}><Chain points={[[5, 21.5], [8, 8], [18, 6], [23, 19], [13.5, 15]]} /></svg>;
+}
+
+// Text and notes
+
+function TextIcon() {
+  return <svg {...TV_ICON}><path d="M7.5 8.5v-2h13v2M14 6.5v15M11 21.5h6" /></svg>;
 }
 function NoteIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M5 4h14v12l-4 4H5z" /><path d="M15 20v-4h4M8 9h8M8 13h5" /></svg>;
+  return <svg {...TV_ICON}><path d="M6.5 5.5h15V17l-5 5h-10zM21.5 17h-5v5M9.5 10.5h9M9.5 13.5h6" /></svg>;
 }
 function CalloutIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 5h16v10H10l-5 4v-4H4z" /></svg>;
+  return <svg {...TV_ICON}><path d="M5.5 6.5h17v11h-9l-4 4v-4h-4z" /></svg>;
 }
 function PriceLabelIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M3 12 8 6h13v12H8z" /><circle cx="8" cy="12" r="1.2" /></svg>;
+  return <svg {...TV_ICON}><path d="m4.5 14.5 5-5h14v10h-14zM13 14.5h7" /><Ring x={9.5} y={14.5} r={1} /></svg>;
+}
+
+// The rest of the rail
+
+function RulerIcon() {
+  return <svg {...TV_ICON}><path d="M3.4 19.7 19.7 3.4l4.9 4.9L8.3 24.6zM6.7 16.4l2.1 2.1M9.9 13.2l1.4 1.4M13.2 9.9l2.1 2.1M16.4 6.7l1.4 1.4" /></svg>;
 }
 function ZoomInIcon() {
-  return <svg {...ICON_PROPS} aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4M11 8v6M8 11h6" /></svg>;
+  return <svg {...TV_ICON}><circle cx="12.5" cy="12.5" r="7" /><path d="m17.5 17.5 6 6M12.5 9.5v6M9.5 12.5h6" /></svg>;
+}
+function FitIcon() {
+  return <svg {...TV_ICON}><path d="M4.5 9.5v-5h5M18.5 4.5h5v5M23.5 18.5v5h-5M9.5 23.5h-5v-5M9.5 14.5h9M14 10v9" /></svg>;
+}
+function MagnetIcon() {
+  return <svg {...TV_ICON}><path d="M7.5 6.5h4V15a2.5 2.5 0 0 0 5 0V6.5h4V15a6.5 6.5 0 0 1-13 0zM7.5 10.5h4M16.5 10.5h4" /></svg>;
+}
+/** Stay in drawing mode: the pen, held by a lock. */
+function StayModeIcon() {
+  return <svg {...TV_ICON}><path d="m5.5 22.5 1-4.5L17 7.5l3.5 3.5L10 21.5zM15 9.5l3.5 3.5M17.5 19.5h7v5h-7zM18.5 19.5V18a2.5 2.5 0 0 1 5 0v1.5" /></svg>;
+}
+function LockedIcon() {
+  return <svg {...TV_ICON}><path d="M8.5 12.5h11v10h-11zM10.5 12.5v-3a3.5 3.5 0 0 1 7 0v3M14 16.5v2" /></svg>;
+}
+function UnlockedIcon() {
+  return <svg {...TV_ICON}><path d="M8.5 12.5h11v10h-11zM10.5 12.5v-3a3.5 3.5 0 0 1 6.8-1.2M14 16.5v2" /></svg>;
+}
+function EyeIcon() {
+  return <svg {...TV_ICON}><path d="M3.5 14.5S7.5 7.5 14 7.5s10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7z" /><circle cx="14" cy="14.5" r="3" /></svg>;
+}
+function EyeOffIcon() {
+  return <svg {...TV_ICON}><path d="M3.5 14.5S7.5 7.5 14 7.5s10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7z" /><circle cx="14" cy="14.5" r="3" /><path d="m5.5 23.5 17-17" /></svg>;
+}
+/** Remove all drawings: TradingView's bin. */
+function EraserIcon() {
+  return <svg {...TV_ICON}><path d="M5.5 7.5h17M11.5 7.5v-2h5v2M7.5 7.5l1 15h11l1-15M12 11.5v7M16 11.5v7" /></svg>;
 }
