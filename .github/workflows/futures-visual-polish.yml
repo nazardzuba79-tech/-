@@ -28,6 +28,7 @@ on:
       - 'frontend/src/lib/referenceBook.ts'
       - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
       - 'scripts/qa-futures-visual-polish.cjs'
+      - 'scripts/qa-spot-cfd-terminal.cjs'
       - '.github/workflows/futures-visual-polish.yml'
 
 permissions:
