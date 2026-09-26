@@ -91,6 +91,13 @@ jobs:
         run: |
           npm install --prefix /tmp/voltex-shell-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-shell-qa/node_modules/playwright/cli.js install --with-deps chromium
+      # The host in the script is modelled on what Cloudflare Pages actually
+      # answers (measured on voltextech.net): a missing /assets file is 200
+      # text/html with `immutable`, so a chunk fetched in the deploy window is
+      # cached as HTML. Scenarios: stale shell, poisoned entry (the black
+      # page), poisoned route chunk, a recovery reload that never completes,
+      # permanently stale shell, ordinary crash, offline, and fresh cold opens
+      # of /futures /trade /wallet on desktop and mobile.
       - name: Browser QA - new tab, stale deployment, no reload loop
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-shell-qa/node_modules/playwright
