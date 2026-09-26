@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import * as indicators from '../indicators';
 import * as drawings from '../chartDrawings';
+import * as drawingGeometry from '../drawingGeometry';
 import * as chartPriceFormat from '../spotChartPriceFormat';
 import * as chartTrading from '../chartTrading';
 
@@ -11,6 +12,23 @@ const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
 const React = req('react');
 const source = readFileSync(resolve(frontend, 'src/components/PriceChart.tsx'), 'utf8');
+
+// The drawing layer is its own module. It is compiled the same way as the
+// chart, against the same real drawing helpers, so the chart's imports are
+// genuine; the layer component itself is never invoked by this harness.
+const layerSource = readFileSync(resolve(frontend, 'src/components/ChartDrawingLayer.tsx'), 'utf8');
+function drawingLayer() {
+  const compiled = ts.transpileModule(layerSource, { compilerOptions: {
+    jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
+  } }).outputText;
+  const layer: any = {};
+  new Function('require', 'exports', compiled)((name: string) => {
+    if (name === '../lib/chartDrawings') return drawings;
+    if (name === '../lib/drawingGeometry') return drawingGeometry;
+    return req(name);
+  }, layer);
+  return layer;
+}
 
 const trace: string[] = [];
 
@@ -42,7 +60,8 @@ function fakeCharts(chartOptions: any[], harness: any) {
   const timeScale = { fitContent: () => {}, setVisibleLogicalRange: (r: unknown) => { harness.ranges.push(r); }, getVisibleLogicalRange: () => ({ from: 100, to: 200 }),
     options: () => ({ barSpacing: 10 }), subscribeVisibleTimeRangeChange: () => {}, unsubscribeVisibleTimeRangeChange: () => {},
     subscribeVisibleLogicalRangeChange: (c: unknown) => { harness.rangeChange = c; }, unsubscribeVisibleLogicalRangeChange: () => { harness.rangeChange = undefined; },
-    coordinateToTime: () => 0, timeToCoordinate: () => 100, applyOptions: () => {} };
+    coordinateToTime: () => 0, timeToCoordinate: () => 100, applyOptions: () => {},
+    coordinateToLogical: () => 0, logicalToCoordinate: () => 100, width: () => 1000 };
   const chart = { addSeries: () => series(), priceScale: () => ({ applyOptions: () => {} }), timeScale: () => timeScale,
     subscribeClick: () => {}, unsubscribeClick: () => {}, subscribeCrosshairMove: () => {}, unsubscribeCrosshairMove: () => {},
     resize: () => {}, remove: () => {}, applyOptions: () => {}, paneSize: () => ({ width: 1100, height: 600 }) };
@@ -81,6 +100,7 @@ function mount(props: Record<string, unknown>) {
     if (name === '../lib/spotChartPriceFormat') return chartPriceFormat;
     if (name === '../lib/chartTrading') return chartTrading;
     if (name === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+    if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (c: unknown) => c };
     if (name.endsWith('.css')) return {};
     return req(name);

@@ -5,13 +5,13 @@
  * so enabling the rail on Futures needed no second copy of these rules.
  * CFD keeps its own separate chart architecture and is untouched. */
 .trade-terminal .drawing-tools .drawing-rail {
-  width: 44px; min-width: 44px; padding: 8px 4px; gap: 3px;
+  width: 44px; min-width: 44px; padding: 6px 4px; gap: 2px;
   align-self: stretch; min-height: 0; overflow-y: auto; overflow-x: hidden;
   background: #10161f; border-right: 1px solid #26313f;
   scrollbar-width: thin; scrollbar-color: #344354 transparent;
 }
 .trade-terminal .drawing-tools .drawing-rail .tool-btn {
-  width: 34px; height: 32px; min-height: 32px; flex-shrink: 0;
+  width: 34px; height: 30px; min-height: 30px; flex-shrink: 0;
   color: #96a5b7; border: 1px solid transparent; border-radius: 5px;
   background: transparent; display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: color 120ms, background 120ms, border-color 120ms;
@@ -26,7 +26,7 @@
 .trade-terminal .drawing-tools .drawing-rail .tool-group-chevron:focus-visible,
 .drawing-flyout .tool-flyout-item:focus-visible { outline: 2px solid #a6c6eb; outline-offset: -2px; }
 .trade-terminal .drawing-tools .drawing-rail .tool-divider {
-  width: 22px; height: 1px; min-height: 1px; flex-shrink: 0; margin: 5px 0; background: #2c3847;
+  width: 22px; height: 1px; min-height: 1px; flex-shrink: 0; margin: 4px 0; background: #2c3847;
 }
 .trade-terminal .drawing-tools .drawing-rail .tool-group { flex-shrink: 0; width: 34px; }
 .trade-terminal .drawing-tools .drawing-rail .tool-group-chevron {
@@ -51,6 +51,7 @@
 .drawing-flyout .tool-flyout-item:focus { background: #253246; color: #fff; }
 .drawing-flyout .tool-flyout-item.active { color: #f0c964; background: #302c20; }
 .drawing-flyout svg { flex-shrink: 0; }
+.drawing-flyout .tool-flyout-item > svg { width: 28px; height: 28px; }
 /* Portal, outside the terminal root — scoped explicitly. */
 .chart-draw-dialog-backdrop {
   position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center;
@@ -77,6 +78,50 @@
 .chart-draw-dialog button.danger { color: #ffc2cb; background: #39232e; border-color: #80505d; }
 .chart-draw-dialog button:disabled { opacity: .45; cursor: not-allowed; }
 .chart-draw-dialog button:focus-visible, .chart-draw-dialog input:focus-visible { outline: 2px solid #a6c6eb; outline-offset: 2px; }
+/* TradingView-grouped flyouts: section titles and the shortcut column. */
+/* Wide enough for TradingView's longest names on one line («Расширение
+   Фибоначчи, основанное на тренде»); a longer translation wraps, never clips. */
+.drawing-flyout.tool-flyout { width: 356px; }
+.drawing-flyout .tool-flyout-section {
+  padding: 8px 10px 4px; color: #787b86; font: 600 10px var(--font-ui);
+  letter-spacing: .06em; text-transform: uppercase;
+}
+.drawing-flyout .tool-flyout-item span { flex: 1; min-width: 0; white-space: normal; line-height: 1.3; }
+.drawing-flyout .tool-flyout-item kbd {
+  flex-shrink: 0; color: #787b86; font: 11px var(--font-ui); background: none; border: 0; padding: 0;
+}
+/* The floating object toolbar over a selected drawing, as in TradingView. */
+.trade-terminal .drawing-tools .drawing-object-toolbar {
+  position: absolute; z-index: 6; top: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 2px; padding: 3px 4px;
+  background: #1e222d; border: 1px solid #363a45; border-radius: 6px; box-shadow: 0 6px 20px #0008;
+}
+.drawing-object-toolbar > button {
+  min-width: 30px; height: 30px; padding: 0 6px; display: flex; align-items: center; justify-content: center;
+  color: #d1d4dc; background: transparent; border: 0; border-radius: 4px; cursor: pointer; font: 12px var(--font-ui);
+}
+.drawing-object-toolbar > button:hover:not(:disabled) { background: #2a2e39; color: #fff; }
+.drawing-object-toolbar > button[aria-pressed="true"], .drawing-object-toolbar > button[aria-expanded="true"] { background: #2a2e39; color: #fff; }
+.drawing-object-toolbar > button:disabled { opacity: .4; cursor: default; }
+.drawing-object-toolbar > button[data-object-action="delete"]:hover:not(:disabled) { color: #f23645; }
+.drawing-object-toolbar .drawing-object-sep { width: 1px; height: 20px; margin: 0 3px; background: #363a45; }
+.drawing-object-width { display: flex; align-items: center; gap: 6px; }
+.drawing-object-width i, .drawing-object-menu-row i { display: block; width: 16px; background: currentColor; border-radius: 1px; }
+.drawing-object-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; min-width: 160px; padding: 6px;
+  background: #1e222d; border: 1px solid #363a45; border-radius: 6px; box-shadow: 0 10px 28px #0009;
+}
+.drawing-object-palette { display: grid; grid-template-columns: repeat(5, 24px); gap: 6px; }
+.drawing-object-palette button {
+  width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ffffff22; cursor: pointer; padding: 0;
+}
+.drawing-object-palette button[aria-checked="true"] { outline: 2px solid #2962ff; outline-offset: 1px; }
+.drawing-object-menu-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 8px; border: 0; border-radius: 4px;
+  background: transparent; color: #d1d4dc; font: 12px var(--font-ui); cursor: pointer; text-align: left;
+}
+.drawing-object-menu-row:hover, .drawing-object-menu-row[aria-checked="true"] { background: #2a2e39; color: #fff; }
+.drawing-object-toolbar button:focus-visible { outline: 2px solid #a6c6eb; outline-offset: -2px; }
 @media (max-width: 767px) {
   .trade-terminal .drawing-tools > .chart-view { flex-direction: column; }
   .trade-terminal .drawing-tools .drawing-rail {
