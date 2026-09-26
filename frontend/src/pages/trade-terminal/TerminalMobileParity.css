@@ -1,0 +1,281 @@
+/* Mobile workspace parity for Spot and CFD.
+   Futures already uses a tabbed mobile terminal instead of stacking the
+   desktop columns for several screens. This sheet gives Spot/CFD the same
+   presentation model without changing any trading/data path. Desktop is
+   deliberately unreachable: every real rule lives at <=900px. */
+.terminal-mobile-tabs,
+.terminal-mobile-chart-tabs { display:none; }
+
+@media (max-width:900px) {
+  .trade-terminal.vx-terminal {
+    --mobile-nav-space:calc(76px + env(safe-area-inset-bottom, 0px));
+    height:auto;
+    min-height:100dvh;
+    overflow:visible;
+    padding-bottom:var(--mobile-nav-space);
+  }
+
+  .trade-terminal.vx-terminal .global-header {
+    height:52px;
+    min-height:52px;
+    padding-inline:12px;
+  }
+  .trade-terminal.vx-terminal .global-header :is(button,a) { min-height:44px; }
+
+  .trade-terminal.vx-terminal .terminal {
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    min-width:0;
+    height:auto;
+    min-height:0;
+    overflow:visible;
+  }
+
+  /* Same three primary mobile workspaces as Futures: market/chart context,
+     order entry, then the account panel. */
+  .trade-terminal.vx-terminal .terminal-mobile-tabs {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    order:0;
+    position:sticky;
+    top:0;
+    z-index:35;
+    background:var(--panel);
+    border-block:1px solid var(--border);
+    padding:0 8px;
+  }
+  .trade-terminal.vx-terminal .terminal-mobile-tabs button {
+    min-width:0;
+    min-height:48px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:0;
+    border-bottom:2px solid transparent;
+    background:transparent;
+    color:var(--text-secondary);
+    font-size:14px;
+    font-weight:600;
+  }
+  .trade-terminal.vx-terminal .terminal-mobile-tabs button[aria-selected=true] {
+    color:var(--accent);
+    border-bottom-color:var(--accent);
+  }
+
+  .trade-terminal.vx-terminal .terminal-mobile-chart-tabs {
+    display:flex;
+    order:0;
+    gap:6px;
+    padding:6px 12px;
+    background:var(--panel);
+    overflow-x:auto;
+  }
+  .trade-terminal.vx-terminal .terminal-mobile-chart-tabs button {
+    flex:0 0 auto;
+    min-height:44px;
+    padding:0 16px;
+    border:1px solid transparent;
+    border-radius:8px;
+    background:transparent;
+    color:var(--text-secondary);
+    font-size:13px;
+    white-space:nowrap;
+  }
+  .trade-terminal.vx-terminal .terminal-mobile-chart-tabs button[aria-pressed=true] {
+    background:var(--panel-alt);
+    border-color:var(--border);
+    color:var(--text-primary);
+  }
+
+  /* Instrument rows: keep the pair, last price and change immediately
+     readable; secondary 24h statistics remain available on desktop and
+     Markets. This prevents the mobile header from becoming a wrapped wall
+     of six figures. */
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:6px 12px;
+    height:auto;
+    min-height:76px;
+    padding:10px 12px;
+    overflow:visible;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-selector {
+    grid-column:1;
+    min-width:0;
+    min-height:44px;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item {
+    display:none;
+    border:0;
+    padding:0;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(2),
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) {
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-width:0;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(2) {
+    grid-column:2;
+    grid-row:1;
+    text-align:right;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) {
+    grid-column:1 / -1;
+    grid-row:2;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar .value.price {
+    font-size:19px;
+    line-height:24px;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar :is(.label,.value) {
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-bar {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:6px 12px;
+    min-height:76px;
+    height:auto;
+    padding:10px 12px;
+    overflow:visible;
+  }
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-selected-instrument { grid-column:1; min-width:0; }
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric { min-width:0; }
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric:nth-of-type(2) { grid-column:2; text-align:right; }
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric:nth-of-type(3) { grid-column:1 / -1; }
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-market-state { display:none; }
+
+  /* Do not show secondary chart navigation while Trade/Account is active. */
+  .trade-terminal.vx-terminal .terminal:not([data-mobile-tab=chart]) .terminal-mobile-chart-tabs { display:none; }
+
+  /* Spot: only one of Chart / Order book / Markets is mounted visibly in
+     the market workspace. The DOM stays mounted, preserving state. */
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=account] .main-grid,
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=account] .terminal-panel-restores {
+    display:none;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal:not([data-mobile-tab=account]) [data-mobile-account-panel] { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > :not(.order-form-area) { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart] .order-form-area { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=chart] .main-grid > :not(.chart-area) { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=book] .main-grid > :not(.orderbook-area) { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .main-grid > :not(.left-panel) { display:none; }
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=book] .orderbook-area,
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .left-panel {
+    display:block;
+  }
+  .trade-terminal.vx-terminal.spot-terminal .terminal-panel-restores { display:none; }
+
+  /* CFD has no order book; its chart workspace toggles chart vs instruments. */
+  .trade-terminal.vx-terminal.cfd-terminal .terminal[data-mobile-tab=account] .cfd-workspace { display:none; }
+  .trade-terminal.vx-terminal.cfd-terminal .terminal:not([data-mobile-tab=account]) [data-mobile-account-panel] { display:none; }
+  .trade-terminal.vx-terminal.cfd-terminal .terminal[data-mobile-tab=trade] .cfd-workspace > :not(.cfd-form-area) { display:none; }
+  .trade-terminal.vx-terminal.cfd-terminal .terminal[data-mobile-tab=chart] .cfd-form-area { display:none; }
+  .trade-terminal.vx-terminal.cfd-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=chart] .cfd-workspace > :not(.cfd-chart-area) { display:none; }
+  .trade-terminal.vx-terminal.cfd-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .cfd-workspace > :not(.cfd-instruments-area) { display:none; }
+
+  /* Shared mobile geometry/touch density copied from the already-approved
+     Futures mobile system, adapted only to Spot/CFD class names. */
+  .trade-terminal.vx-terminal .main-grid,
+  .trade-terminal.vx-terminal .cfd-workspace {
+    display:flex;
+    flex-direction:column;
+    overflow:visible;
+    min-height:0;
+  }
+  .trade-terminal.vx-terminal :is(.chart-area,.cfd-chart-area) {
+    height:clamp(360px,59dvh,600px);
+    min-height:360px;
+    flex:none;
+    border-right:0;
+  }
+  .trade-terminal.vx-terminal :is(.terminal-chart-shell,.cfd-chart) {
+    height:100%;
+    min-height:0;
+  }
+  .trade-terminal.vx-terminal .orderbook-area {
+    height:clamp(400px,64dvh,650px);
+    min-height:400px;
+    border-right:0;
+  }
+  .trade-terminal.vx-terminal :is(.left-panel,.cfd-instruments-area) {
+    height:clamp(380px,60dvh,620px);
+    min-height:380px;
+    border-right:0;
+  }
+  .trade-terminal.vx-terminal :is(.order-form-area,.cfd-form-area) {
+    width:100%;
+    min-width:0;
+    height:auto;
+    overflow:visible;
+    border-right:0;
+  }
+  .trade-terminal.vx-terminal :is(.bottom-panel,.cfd-bottom-panel) {
+    height:auto;
+    min-height:240px;
+    max-height:none;
+    overflow:visible;
+  }
+
+  .trade-terminal.vx-terminal .chart-toolbar {
+    overflow-x:auto;
+    min-height:48px;
+  }
+  .trade-terminal.vx-terminal .chart-tabs,
+  .trade-terminal.vx-terminal .chart-tools { flex-shrink:0; }
+  .trade-terminal.vx-terminal :is(.chart-tab,.chart-tool-btn) {
+    min-height:44px;
+    min-width:44px;
+    white-space:nowrap;
+  }
+
+  .trade-terminal.vx-terminal :is(button,select) { min-height:44px; }
+  .trade-terminal.vx-terminal :is(input:not([type=checkbox]):not([type=range]),textarea) {
+    min-height:48px;
+    font-size:16px !important;
+    min-width:0;
+  }
+  .trade-terminal.vx-terminal .order-form-content,
+  .trade-terminal.vx-terminal .cfd-form {
+    gap:12px;
+  }
+  .trade-terminal.vx-terminal :is(.submit-btn,.cfd-submit) {
+    min-height:52px;
+    height:auto;
+    border-radius:12px;
+    font-size:15px;
+    padding-block:12px;
+  }
+
+  .trade-terminal.vx-terminal .bottom-tabs,
+  .trade-terminal.vx-terminal .cfd-tabs {
+    overflow-x:auto;
+    min-height:44px;
+    height:auto;
+  }
+  .trade-terminal.vx-terminal .bottom-tab,
+  .trade-terminal.vx-terminal .cfd-tab {
+    min-height:44px;
+    flex:none;
+    white-space:nowrap;
+  }
+  .trade-terminal.vx-terminal .bottom-content { overflow-x:auto; }
+
+  .trade-terminal.vx-terminal .bottom-nav {
+    display:grid !important;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+}
+
+@media (max-width:359px) {
+  .trade-terminal.vx-terminal .header-actions .language-control { display:none; }
+  .trade-terminal.vx-terminal .terminal-mobile-tabs button { font-size:13px; }
+  .trade-terminal.vx-terminal.spot-terminal .ticker-bar,
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-bar { padding-inline:8px; gap:4px 8px; }
+}
