@@ -59,6 +59,10 @@ excluded. No mutations during idle census. Fixture latency is not production
 latency; physical Neon query counts require production telemetry and are NOT
 claimed measured here. Initial baseline ebba6795; rebased and rechecked against
 current main 6ad0c19d9ce32d9ee821751c3f17a35f8c61fd05.
+Before merge, upstream PR #295 advanced main to
+`1a60840509340b8214534a52ffe32628f21c1326`; it was integrated unchanged. Only
+appended AI_HANDOFF entries conflicted. The read-budget diff has no backend/schema
+changes; upstream deposit-ignore logic is preserved, not authored by this PR.
 
 ### Wallet and Admin (one hour)
 
