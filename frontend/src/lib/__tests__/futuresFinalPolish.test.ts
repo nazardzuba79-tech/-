@@ -255,7 +255,8 @@ const level = (price: string, quantity = '1') => ({ price, quantity });
 const savedDocument = (globalThis as any).document;
 beforeEach(() => {
   jest.useFakeTimers();
-  (globalThis as any).document = { addEventListener: () => {}, removeEventListener: () => {} };
+  // This fixture represents an actively viewed tab, including compact Spot assets.
+  (globalThis as any).document = { visibilityState: 'visible', addEventListener: () => {}, removeEventListener: () => {} };
 });
 afterEach(() => {
   jest.useRealTimers();
