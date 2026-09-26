@@ -168,7 +168,22 @@ async function main() {
     const treasury = new TreasuryWalletService(prisma);
     const resolveChain = (c) => treasury.resolve(c);
     const limits = { pageSize: 10, maxPagesPerRun: 3, initialBackfillMs: 2 * 60 * 60_000, maxWindowMs: 24 * 60 * 60_000 };
-    const watch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t, limits);
+    // Synthetic notifications only: no production Worker or Telegram network.
+    const notificationIds = [];
+    const notificationTasks = [];
+    const notificationErrors = [];
+    let notificationOutage = false;
+    const notifyFixture = (transfer) => {
+      if (notificationOutage) return Promise.reject(new Error('synthetic notification failure'));
+      const task = (async () => {
+      const stored = await database.db.query('SELECT id FROM "Deposit" WHERE id=$1', [transfer.id]);
+      assert.equal(stored.rowCount, 1, 'notification only after committed discovery');
+      notificationIds.push(transfer.id);
+      })().catch(error => notificationErrors.push(error));
+      notificationTasks.push(task);
+      return task;
+    };
+    const watch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t, limits, notifyFixture);
     const prices = { getTicker: async () => null };
     const app = express(); app.use(express.json());
     app.use('/api/v1', depositWatchInternalRouter(watch), adminDepositsRouter(prisma, prices, { watch }), depositsRouter(prisma, prices), balancesRouter(prisma));
@@ -592,7 +607,7 @@ async function main() {
       const day0 = localTime(clock.t + 2 * 86_400_000, TZ).day;
       const day1 = localTime(instantOf(day0, 12 * 60, TZ) + 86_400_000, TZ).day;
       const at = (day, h, m = 0) => { clock.t = instantOf(day, h * 60 + m, TZ); };
-      const prodWatch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t);
+      const prodWatch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t, {}, notifyFixture);
       await prodWatch.setEnabled(true, ADMIN);
       const measure = async (fn) => {
         const c = fixture.state.calls.length, q = sqlLog.length, t = Date.now(), batches = await prisma.depositBatch.count();
@@ -685,6 +700,27 @@ async function main() {
         assert.ok(new BigNumber(b.usdValue.toString()).gte(300));
       }
       report.reconciliation = { batches: batches.length, creditedTransfers: credited.length };
+    });
+    await test('Notifications: committed rows only, overlap/recovery never emits duplicate deposit IDs', async () => {
+      await Promise.all(notificationTasks);
+      assert.deepEqual(notificationErrors, []);
+      assert.ok(notificationIds.length > 0);
+      assert.equal(new Set(notificationIds).size, notificationIds.length);
+    });
+    await test('Notifications: real publisher performs zero Prisma queries; delivery outage cannot roll back discovery', async () => {
+      const { notifyDeposit } = require('../dist/services/TelegramNotifications');
+      const before = sqlLog.length; let sends = 0;
+      await notifyDeposit({ id: 'synthetic-only', amount: new BigNumber(15), createdAt: new Date() }, async () => {
+        sends++; return Response.json({ status: 'SENT' });
+      });
+      assert.equal(sends, 1); assert.equal(sqlLog.length, before, 'notification adds zero Neon reads/writes');
+      notificationOutage = true;
+      try {
+        fixture.send(99001, '15');
+        const result = await scan(); assert.equal(result.ok, true); assert.equal(result.newTransfers, 1);
+        const found = await row(99001); assert.equal(found.userId, null); assert.notEqual(found.status, 'CREDITED');
+        const repeated = await scan(); assert.equal(repeated.newTransfers, 0);
+      } finally { notificationOutage = false; }
     });
     report.result = 'PASS';
   } finally {

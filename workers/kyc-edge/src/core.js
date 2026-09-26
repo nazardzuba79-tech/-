@@ -5,6 +5,8 @@
 // Render/Neon see two small signed JSON calls (authorize, confirm) and never a
 // document byte. Nothing is stored here: no KV / R2 / D1, no public URL.
 
+import { queueKycNotification } from './notifications.js';
+
 export const SERVICE = 'voltex-kyc-edge';
 export const VERSION = 'kyc-edge-v1';
 
@@ -518,8 +520,13 @@ async function deliverAndConfirm(request, env, ctx, deps, material, { fields, do
     emailAcceptedAt,
   };
   const first = await confirmWithRender(env, deps, material, confirm);
+  const notification = {
+    eventId: submissionId, eventType: 'KYC_SUBMITTED', timestamp: Date.parse(emailAcceptedAt),
+    email, fullName: fields.fullName, documentType: fields.documentType,
+  };
   if (first.ok) {
     log('confirmed', { submissionId, result: first.result });
+    queueKycNotification(env, ctx, notification, first.result);
     return { status: 'PENDING', submissionId, confirmed: true };
   }
 
@@ -527,20 +534,24 @@ async function deliverAndConfirm(request, env, ctx, deps, material, { fields, do
   // the browser a sealed receipt (unreadable outside this Worker) so it can
   // retry that call — never the upload — and keep retrying here briefly.
   log('confirm_deferred', { submissionId, status: first.status });
-  const receipt = await sealReceipt(material, { v: 1, exp: now + RECEIPT_TTL_MS, confirm });
+  const receipt = await sealReceipt(material, { v: 1, exp: now + RECEIPT_TTL_MS, confirm, notification });
   if (ctx && typeof ctx.waitUntil === 'function') {
     ctx.waitUntil((async () => {
       for (const delay of [2_000, 8_000]) {
         await new Promise((r) => setTimeout(r, delay));
         const retry = await confirmWithRender(env, deps, material, confirm);
-        if (retry.ok) { log('confirmed_late', { submissionId }); return; }
+        if (retry.ok) {
+          log('confirmed_late', { submissionId });
+          queueKycNotification(env, ctx, notification, retry.result);
+          return;
+        }
       }
     })());
   }
   return { status: 'PENDING', submissionId, confirmed: false, receipt };
 }
 
-async function handleConfirm(request, env, deps) {
+async function handleConfirm(request, env, ctx, deps) {
   const now = deps.now();
   const origin = request.headers.get('origin');
   if (origin && !allowedOrigins(env).includes(origin)) return fail(request, env, 403, 'kyc_origin_forbidden');
@@ -558,6 +569,8 @@ async function handleConfirm(request, env, deps) {
   const result = await confirmWithRender(env, deps, material, sealed.confirm);
   if (!result.ok) return fail(request, env, 503, 'kyc_service_unavailable');
   log('confirmed_receipt', { submissionId: sealed.confirm.submissionId });
+  // Old pre-notification receipts remain valid; no extra identity lookup.
+  if (sealed.notification) queueKycNotification(env, ctx, sealed.notification, result.result);
   return json(request, env, 200, { status: 'PENDING', submissionId: sealed.confirm.submissionId, confirmed: true });
 }
 
@@ -580,7 +593,7 @@ export async function handle(request, env, ctx, deps) {
       return json(request, env, 200, { alg: 'Ed25519', key: material.publicJwk });
     }
     if (request.method === 'POST' && url.pathname === '/v1/submit') return await handleSubmit(request, env, ctx, deps);
-    if (request.method === 'POST' && url.pathname === '/v1/confirm') return await handleConfirm(request, env, deps);
+    if (request.method === 'POST' && url.pathname === '/v1/confirm') return await handleConfirm(request, env, ctx, deps);
     return fail(request, env, 404, 'not_found');
   } catch (err) {
     log('unhandled', { path: url.pathname, name: String(err?.name || 'Error').slice(0, 40) });

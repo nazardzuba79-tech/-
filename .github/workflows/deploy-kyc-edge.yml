@@ -1,4 +1,4 @@
-name: Deploy voltex-kyc-edge (Cloudflare Worker)
+name: Deploy KYC and notification Workers (Cloudflare)
 
 # Deploys the KYC document edge when a change to it lands on main (the same
 # moment Pages and Render auto-deploy the frontend and API), or on a manual
@@ -8,6 +8,9 @@ on:
     branches: [main]
     paths:
       - 'workers/kyc-edge/**'
+      - 'workers/notification-edge/**'
+      - 'src/services/TelegramNotifications.ts'
+      - 'scripts/deploy-notification-public-key.mjs'
       - '.github/workflows/deploy-kyc-edge.yml'
   workflow_dispatch:
 
@@ -21,7 +24,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: workers/kyc-edge
@@ -37,6 +40,15 @@ jobs:
           node-version: 22
       - name: Worker contract tests
         run: node --test test.mjs
+      - name: Install locked notification toolchain
+        working-directory: workers/notification-edge
+        run: npm ci --no-audit --no-fund
+      - name: Notification synthetic tests (never real Telegram)
+        working-directory: workers/notification-edge
+        run: npm test
+      - name: Deploy notification Worker before KYC service binding
+        working-directory: workers/notification-edge
+        run: npx wrangler deploy
       - name: Deploy Worker
         run: npx --yes wrangler@4 deploy
       - name: Signing key — created once inside this runner, stored only as a Worker secret
@@ -74,3 +86,10 @@ jobs:
           echo "foreign_origin_cors='${acao}'"; test -z "$acao"
           cache="$(curl -sS -o /dev/null -D - "$base/health" | tr -d '\r' | grep -i '^cache-control:' || true)"
           echo "$cache"; printf '%s' "$cache" | grep -qi 'no-store'
+      - name: Pin only Render public verification key (no secret transfer, no DB)
+        working-directory: .
+        run: node scripts/deploy-notification-public-key.mjs
+      - name: Notification health (no event and no Telegram API call)
+        run: |
+          curl --retry 5 --retry-delay 5 --retry-all-errors --max-time 10 -fsS https://notify.voltextech.net/health \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.service!=='voltex-notification-edge'||j.version!=='notifications-v1'||!['CONFIGURED','NOT_CONFIGURED'].includes(j.status)||j.depositSigningConfigured!==true)process.exit(1);console.log(JSON.stringify(j))})"

@@ -1,0 +1,19 @@
+name = "voltex-notification-edge"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+account_id = "c379227476dedde6dff09c787ffdb510"
+workers_dev = false
+preview_urls = false
+routes = [{ pattern = "notify.voltextech.net", custom_domain = true }]
+
+[[durable_objects.bindings]]
+name = "EVENTS"
+class_name = "NotificationEvent"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["NotificationEvent"]
+
+# Dashboard secrets: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID.
+# Deployment pins DEPOSIT_SIGNING_PUBLIC_KEY (public Ed25519 JWK x only).
+# No cron, queues, DB bindings, or observability payload logging.

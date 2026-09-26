@@ -1,0 +1,33 @@
+name: Telegram notifications (synthetic only, no Neon reads)
+on:
+  pull_request:
+    paths:
+      - 'workers/notification-edge/**'
+      - 'workers/kyc-edge/**'
+      - 'src/services/TelegramNotifications.ts'
+      - 'src/services/__tests__/TelegramNotifications.test.ts'
+      - 'src/services/deposits/DepositWatchService.ts'
+      - 'scripts/deploy-notification-public-key.mjs'
+      - '.github/workflows/telegram-notifications.yml'
+      - '.github/workflows/deploy-kyc-edge.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm ci --prefix workers/notification-edge --no-audit --no-fund
+      - name: Worker contracts and real workerd SQLite restart/concurrency
+        run: node --test workers/notification-edge/test.mjs workers/notification-edge/integration.test.mjs workers/kyc-edge/test.mjs
+      - run: npx jest --runInBand --runTestsByPath src/services/__tests__/TelegramNotifications.test.ts
+      - name: Notification Worker configuration dry run
+        working-directory: workers/notification-edge
+        run: npx wrangler deploy --dry-run
