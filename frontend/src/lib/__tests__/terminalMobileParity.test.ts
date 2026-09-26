@@ -32,7 +32,9 @@ describe('Spot/CFD mobile parity with Futures', () => {
 
   test('CFD keeps its no-order-book architecture while gaining mobile Chart / Trade / Account', () => {
     const page = read('frontend/src/pages/TradePage.tsx');
-    const cfd = page.slice(page.indexOf('// CFD uses the same shell'), page.indexOf('return (', page.indexOf('// CFD uses the same shell')) + 7000);
+    const cfdStart = page.indexOf('// CFD uses the same shell');
+    const spotStart = page.indexOf('<div className="trade-terminal spot-terminal', cfdStart);
+    const cfd = page.slice(cfdStart, spotStart);
     expect(cfd).toContain('data-mobile-market="cfd"');
     expect(cfd).toContain('<CfdInstrumentList');
     expect(cfd).toContain('<CfdChart');
