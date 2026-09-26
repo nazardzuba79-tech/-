@@ -47,7 +47,8 @@
   }
   .trade-terminal.vx-terminal .terminal-mobile-tabs button {
     min-width:0;
-    min-height:48px;
+    min-height:48px !important;
+    height:48px !important;
     display:flex;
     align-items:center;
     justify-content:center;
@@ -95,16 +96,16 @@
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar {
     display:grid;
     grid-template-columns:minmax(0,1fr) auto;
-    gap:6px 12px;
+    gap:2px 10px !important;
     height:auto;
-    min-height:76px;
-    padding:10px 12px;
+    min-height:0 !important;
+    padding:6px 12px !important;
     overflow:visible;
   }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .pair-selector {
     grid-column:1;
     min-width:0;
-    min-height:44px;
+    min-height:44px !important;
   }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item {
     display:none !important;
@@ -117,6 +118,7 @@
     flex-direction:column;
     justify-content:center;
     min-width:0;
+    min-height:0 !important;
   }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(2) {
     grid-column:2;
@@ -139,10 +141,10 @@
   .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-bar {
     display:grid;
     grid-template-columns:minmax(0,1fr) auto;
-    gap:6px 12px;
-    min-height:76px;
+    gap:2px 10px !important;
+    min-height:0 !important;
     height:auto;
-    padding:10px 12px;
+    padding:6px 12px !important;
     overflow:visible;
   }
   .trade-terminal.vx-terminal.cfd-terminal .cfd-selected-instrument { grid-column:1; min-width:0; }
