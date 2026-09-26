@@ -315,7 +315,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
         ))}
       </g>
     </svg>
-    {selected && !blocked && <DrawingObjectToolbar drawing={selected} locked={locked} t={t}
+    {selected && !blocked && <DrawingObjectToolbar key={selected.id} drawing={selected} locked={locked} t={t}
       onStyle={(style) => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, style } : d)))}
       onToggleLock={() => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, locked: !d.locked || undefined } : d)))}
       onClone={() => {
@@ -377,20 +377,41 @@ export function DrawingObjectToolbar({ drawing, locked, t, onStyle, onToggleLock
   onEditText?: () => void; onClose: () => void;
 }) {
   const [menu, setMenu] = useState<null | 'color' | 'fill' | 'width' | 'dash'>(null);
+  // TradingView's toolbar is moved by its grip; the offset lives as long as the selection.
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const style = drawingStyle(drawing);
+  const startDrag = (event: React.PointerEvent) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const origin = { x: event.clientX - offset.x, y: event.clientY - offset.y };
+    const move = (ev: PointerEvent) => setOffset({ x: ev.clientX - origin.x, y: ev.clientY - origin.y });
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
   const frozen = locked || !!drawing.locked;
   const set = (patch: Partial<DrawingStyle>) => { onStyle({ ...style, ...patch }); setMenu(null); };
   const canFill = style.fill !== undefined;
   return <div className="drawing-object-toolbar" role="toolbar" aria-label={t('draw.objectToolbar')} data-drawing-object-toolbar
+    style={offset.x || offset.y ? { transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` } : undefined}
     onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); if (menu) setMenu(null); else onClose(); } }}>
+    <span className="drawing-object-grip" data-object-action="drag" aria-hidden="true" onPointerDown={startDrag}>
+      <svg width="8" height="16" viewBox="0 0 8 16"><g fill="currentColor"><circle cx="2" cy="3" r="1.2" /><circle cx="6" cy="3" r="1.2" /><circle cx="2" cy="8" r="1.2" /><circle cx="6" cy="8" r="1.2" /><circle cx="2" cy="13" r="1.2" /><circle cx="6" cy="13" r="1.2" /></g></svg>
+    </span>
     <button type="button" data-object-action="color" title={t('draw.lineColor')} aria-label={t('draw.lineColor')} disabled={frozen} aria-expanded={menu === 'color'} onClick={() => setMenu(menu === 'color' ? null : 'color')}>
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16" stroke={style.color} strokeWidth="3" /><path d="m14 4 4 4-9 9H5v-4z" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
+      <span className="drawing-object-swatched">
+        <svg width="20" height="20" viewBox="0 0 28 28" aria-hidden="true"><path d="m17.5 5.5 5 5L10 23H5v-5zM15 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
+        <i className="drawing-object-swatch" style={{ background: style.color }} />
+      </span>
     </button>
     {canFill && <button type="button" data-object-action="fill" title={t('draw.fillColor')} aria-label={t('draw.fillColor')} disabled={frozen} aria-expanded={menu === 'fill'} onClick={() => setMenu(menu === 'fill' ? null : 'fill')}>
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="16" width="16" height="4" fill={style.fill} /><path d="m6 11 6-6 6 6-6 6z" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
+      <span className="drawing-object-swatched">
+        <svg width="20" height="20" viewBox="0 0 28 28" aria-hidden="true"><path d="m12.5 4.5 9 9-7 7-9-9zM5.5 11.5h16M23 16s-2 2.6-2 4a2 2 0 0 0 4 0c0-1.4-2-4-2-4z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" /></svg>
+        <i className="drawing-object-swatch" style={{ background: style.fill }} />
+      </span>
     </button>}
     <button type="button" data-object-action="width" title={t('draw.lineWidth')} aria-label={t('draw.lineWidth')} disabled={frozen} aria-expanded={menu === 'width'} onClick={() => setMenu(menu === 'width' ? null : 'width')}>
-      <span className="drawing-object-width"><i style={{ height: Math.min(4, style.width) }} />{style.width}px</span>
+      <span className="drawing-object-width"><i style={{ height: Math.max(1, Math.min(4, style.width)) }} />{style.width}px</span>
     </button>
     <button type="button" data-object-action="dash" title={t('draw.lineStyle')} aria-label={t('draw.lineStyle')} disabled={frozen} aria-expanded={menu === 'dash'} onClick={() => setMenu(menu === 'dash' ? null : 'dash')}>
       <svg width="22" height="18" viewBox="0 0 24 18" aria-hidden="true"><line x1="2" y1="9" x2="22" y2="9" stroke="currentColor" strokeWidth="2" strokeDasharray={style.dash === 'dashed' ? '5 3' : style.dash === 'dotted' ? '1 3' : undefined} strokeLinecap="round" /></svg>
