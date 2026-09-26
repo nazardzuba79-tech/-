@@ -36,6 +36,7 @@ import './trade-terminal/TerminalPremium.css';
 // composition. Imported last so its tokens win over the older market-reference
 // sheets this page has carried, which is exactly the drift it exists to end.
 import './trade-terminal/VoltexTerminalSystem.css';
+import './trade-terminal/TerminalMobileParity.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
@@ -79,6 +80,9 @@ export function TradePage() {
   // during that first new-pair render or initialize grouping from its prices.
   const visibleBook = book.pair === pair ? book : { bids: [], asks: [] };
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
+  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
+  const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
+  const mobileTabsRef = useRef<HTMLDivElement>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   // Reference chrome: the tab badge and the Cancel All action both need the
   // open-order count, which only the panel knows; the panel reports it up.
@@ -111,6 +115,8 @@ export function TradePage() {
   const [marketType, setMarketType] = useState<MarketType>(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
   useEffect(() => {
     setMarketType(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
+    setMobileTab('chart');
+    setMobilePane('chart');
   }, [searchParams]);
   // Landing here is the signal that spot is this user's current trading
   // mode — see lib/tradingMode.
@@ -226,14 +232,44 @@ export function TradePage() {
     window.addEventListener('pointercancel', stop);
   }
 
+  const selectMobileTab = useCallback((next: 'chart' | 'trade' | 'account') => {
+    if (!window.matchMedia('(max-width: 900px)').matches) return;
+    setMobileTab(next);
+    if (next === 'account') accountPanel.reveal();
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  }, [accountPanel]);
+
+  const mobileTabs = (
+    <div className="terminal-mobile-tabs" ref={mobileTabsRef} role="tablist" aria-label={t('nav.trade')}>
+      {([['chart', 'futures.chart'], ['trade', 'nav.trade'], ['account', 'trade.tabOpenOrders']] as const).map(([id, label]) => (
+        <button type="button" role="tab" key={id} id={`mobile-trade-${id}`}
+          aria-selected={mobileTab === id} tabIndex={mobileTab === id ? 0 : -1}
+          onKeyDown={event => {
+            const tabs = ['chart', 'trade', 'account'] as const;
+            const offset = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+            if (!offset && event.key !== 'Home' && event.key !== 'End') return;
+            event.preventDefault();
+            const next = tabs[event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (tabs.indexOf(id) + offset + 3) % 3];
+            selectMobileTab(next);
+            mobileTabsRef.current?.querySelector<HTMLButtonElement>(`#mobile-trade-${next}`)?.focus();
+          }}
+          onClick={() => selectMobileTab(id)}>{t(label)}</button>
+      ))}
+    </div>
+  );
   // CFD uses the same shell, with three columns and deliberately no order book.
   if (marketType === 'cfd') {
     return (
       <div className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal">
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner />
-        <div className="terminal">
+        <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="cfd">
           <CfdTickerBar symbol={selectedCfdSymbol} ticker={cfdTicker} />
+          {mobileTabs}
+          <div className="terminal-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
+            <button type="button" aria-pressed={mobilePane === 'chart'} onClick={() => setMobilePane('chart')}>{t('futures.chart')}</button>
+            <button type="button" aria-pressed={mobilePane === 'markets'} onClick={() => setMobilePane('markets')}>{t('nav.markets')}</button>
+          </div>
           <main className="cfd-workspace">
             <aside className="cfd-instruments-area" aria-label={t('trade.cfdInstrument')}>
               <CfdInstrumentList symbol={selectedCfdSymbol} onChange={selectCfdSymbol}
@@ -246,7 +282,7 @@ export function TradePage() {
               <CfdOrderForm symbol={selectedCfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
             </section>
           </main>
-          <div className="cfd-bottom-panel">
+          <div className="cfd-bottom-panel" data-mobile-account-panel>
             <CfdPositionsPanel refreshKey={ordersRefreshKey} />
           </div>
         </div>
@@ -259,11 +295,21 @@ export function TradePage() {
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
-      <div className="terminal">
+      <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
         <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={() => {
           setMarketPanelCollapsed(false);
+          if (window.matchMedia('(max-width: 900px)').matches) {
+            setMobileTab('chart');
+            setMobilePane('markets');
+          }
           requestAnimationFrame(() => pairListRef.current?.focusSearch());
         }} />
+        {mobileTabs}
+        <div className="terminal-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
+          <button type="button" aria-pressed={mobilePane === 'chart'} onClick={() => setMobilePane('chart')}>{t('futures.chart')}</button>
+          <button type="button" aria-pressed={mobilePane === 'book'} onClick={() => { setOrderBookCollapsed(false); setMobilePane('book'); }}>{t('trade.orderBook')}</button>
+          <button type="button" aria-pressed={mobilePane === 'markets'} onClick={() => { setMarketPanelCollapsed(false); setMobilePane('markets'); }}>{t('nav.markets')}</button>
+        </div>
         {(marketPanelCollapsed || orderBookCollapsed) && <div className="terminal-panel-restores" aria-label="Панели терминала">
           {marketPanelCollapsed && <button onClick={() => setMarketPanelCollapsed(false)} aria-label="Открыть рынки"><PanelLeftOpen size={16} />Рынки</button>}
           {orderBookCollapsed && <button onClick={() => setOrderBookCollapsed(false)} aria-label="Открыть стакан"><PanelRightOpen size={16} />Стакан</button>}
@@ -311,7 +357,7 @@ export function TradePage() {
           </div>
         </div>
 
-        <div className="bottom-panel" data-account-compact={accountPanel.compact} style={{ '--orders-height': `${ordersHeight}px` } as React.CSSProperties}>
+        <div className="bottom-panel" data-mobile-account-panel data-account-compact={accountPanel.compact} style={{ '--orders-height': `${ordersHeight}px` } as React.CSSProperties}>
           <div className="orders-resize-handle" role="separator" tabIndex={0} aria-label="Высота панели ордеров" aria-orientation="horizontal" aria-valuemin={136} aria-valuemax={360} aria-valuenow={ordersHeight} onPointerDown={startOrdersResize} onKeyDown={event => {
             if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizeOrders(event.key === 'ArrowUp' ? 24 : -24); }
           }} />
