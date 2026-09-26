@@ -205,6 +205,15 @@ export const DEFAULT_DRAWING_STYLES: Record<DrawingKind, DrawingStyle> = {
   callout: { color: TV_BLUE, width: 1, dash: 'solid' }, pricelabel: { color: TV_BLUE, width: 1, dash: 'solid' },
 };
 /** The swatches the object toolbar offers — TradingView's palette columns. */
+/** Text colour that stays readable on a label filled with `background` (white, yellow and light grey take dark text). */
+export function readableTextOn(background: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(background.trim());
+  if (!m) return '#ffffff';
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#131722' : '#ffffff';
+}
+
 export const DRAWING_PALETTE = [
   '#ffffff', '#b2b5be', '#787b86', '#434651', '#131722',
   '#f23645', '#ff9800', '#ffeb3b', '#4caf50', '#089981',
@@ -277,13 +286,16 @@ export function drawingRange(a: DrawingPoint, b: DrawingPoint, candles: readonly
   return { priceDiff: measured.priceDiff, pct: measured.pct, ticks, bars: measured.bars, seconds: hi - lo, volume };
 }
 
-/** The label lines, exactly TradingView's: «0.08128 (7.91%) 8,128» / «6 столбцы, 6ч 45мин» / «Объем 435.06M». */
+/**
+ * The label lines: «+7.91%» / «6 столбцы, 6ч 45мин» / «Объем 435.06M».
+ * TradingView also prints the raw price difference and the tick count
+ * («0.08128 (7.91%) 8,128»); the owner took both off (2026-09-26: «ці дані
+ * лишні … значення цих цифр не знає») — the move reads as a percentage.
+ */
 export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { price?: boolean; date?: boolean } = { price: true, date: true }): string[] {
   const lines: string[] = [];
   if (parts.price !== false) {
-    const pct = range.pct === null ? '—' : `${range.pct.toFixed(2)}%`;
-    const ticks = range.ticks === null ? '' : ` ${range.ticks.toLocaleString('en-US')}`;
-    lines.push(`${formatDrawingPrice(range.priceDiff)} (${pct})${ticks}`);
+    lines.push(range.pct === null ? '—' : `${range.pct > 0 ? '+' : ''}${range.pct.toFixed(2)}%`);
   }
   if (parts.date !== false) {
     lines.push(`${range.bars} ${BAR_WORD[lang] ?? BAR_WORD.en}, ${formatDrawingDuration(range.seconds, lang)}`);

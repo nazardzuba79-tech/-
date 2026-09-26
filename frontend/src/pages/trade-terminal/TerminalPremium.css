@@ -120,7 +120,8 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail::-webkit-scrollbar-thumb { background:var(--border); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail .tool-btn { color:var(--text-secondary); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail .tool-btn:hover { background:var(--panel-alt-hover); color:var(--text-primary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail .tool-btn.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+/* Selected tool: the icon turns gold on a faint wash — no frame, no edge bar (owner, 2026-09-26: «як у Bybit, делікатна»). */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail .tool-btn.active { background:rgba(240,201,100,.10); border-color:transparent; box-shadow:none; color:var(--accent); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail [data-drawing-tool="clear"]:hover { background:var(--sell-dim); color:var(--sell); }
 
 /* ── ONE ACTIVE STATE, ONE HOVER, ONE FOCUS ──────────────────────────────

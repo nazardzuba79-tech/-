@@ -8,7 +8,7 @@
  */
 import {
   dashArray, distanceToPolyline, drawingExtensions, drawingRange, drawingRangeLines, drawingRetracements,
-  drawingStyle, formatDrawingPrice, pointInPolygon, positionMetrics,
+  drawingStyle, formatDrawingPrice, pointInPolygon, positionMetrics, readableTextOn,
   type DrawingPoint, type DrawingRange, type ScreenPoint, type StoredDrawing,
 } from './chartDrawings';
 
@@ -311,7 +311,7 @@ export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): Draw
         prims.push({ t: 'poly', points: arrowHead({ x: a.x, y: cy }, { x: b.x, y: cy }, 8), closed: false, stroke: tone, width: 1 });
       }
       const lines = drawingRangeLines(range, view.lang, { price: kind !== 'daterange', date: kind !== 'pricerange' });
-      label({ x: cx, y: down ? y2 : y1, lines, bg: tone, color: '#ffffff', place: down ? 'below' : 'above' });
+      label({ x: cx, y: down ? y2 : y1, lines, bg: tone, color: readableTextOn(tone), place: down ? 'below' : 'above' });
       pointAnchors();
       break;
     }
@@ -375,7 +375,7 @@ export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): Draw
     case 'note': case 'pricelabel': {
       const p = pts[0];
       const text = kind === 'note' ? drawing.text ?? '' : formatDrawingPrice(drawing.points[0].price);
-      label({ x: p.x, y: p.y - 12, lines: [text], bg: color, color: '#ffffff', place: 'above' });
+      label({ x: p.x, y: p.y - 12, lines: [text], bg: color, color: readableTextOn(color), place: 'above' });
       line(p, { x: p.x, y: p.y - 12 }, color, 1);
       prims.push({ t: 'ellipse', cx: p.x, cy: p.y, rx: 3, ry: 3, stroke: color, fill: color, fillOpacity: 1, width: 1 });
       pointAnchors();
@@ -384,7 +384,7 @@ export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): Draw
     case 'callout': {
       const [a, b] = pts;
       line(a, b, color, 1);
-      label({ x: b.x, y: b.y, lines: [drawing.text ?? ''], bg: color, color: '#ffffff', place: 'center' });
+      label({ x: b.x, y: b.y, lines: [drawing.text ?? ''], bg: color, color: readableTextOn(color), place: 'center' });
       pointAnchors();
       break;
     }

@@ -5,13 +5,15 @@
  * so enabling the rail on Futures needed no second copy of these rules.
  * CFD keeps its own separate chart architecture and is untouched. */
 .trade-terminal .drawing-tools .drawing-rail {
-  width: 44px; min-width: 44px; padding: 6px 4px; gap: 2px;
+  width: 44px; min-width: 44px; padding: 6px 4px; gap: 1px;
   align-self: stretch; min-height: 0; overflow-y: auto; overflow-x: hidden;
   background: #10161f; border-right: 1px solid #26313f;
   scrollbar-width: thin; scrollbar-color: #344354 transparent;
 }
+/* 36 × 36: a 28-unit TradingView icon with room around it, so the
+   selected wash reads as a square behind the icon, not a frame on it. */
 .trade-terminal .drawing-tools .drawing-rail .tool-btn {
-  width: 34px; height: 30px; min-height: 30px; flex-shrink: 0;
+  width: 36px; height: 36px; min-height: 36px; flex-shrink: 0;
   color: #96a5b7; border: 1px solid transparent; border-radius: 5px;
   background: transparent; display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: color 120ms, background 120ms, border-color 120ms;
@@ -20,7 +22,7 @@
   color: #edf2f8; background: #1d2938;
 }
 .trade-terminal .drawing-tools .drawing-rail .tool-btn.active {
-  color: #f0c964; background: #302c20; border-color: #665732;
+  color: #f0c964; background: rgba(240, 201, 100, .10); border-color: transparent;
 }
 .trade-terminal .drawing-tools .drawing-rail .tool-btn:focus-visible,
 .trade-terminal .drawing-tools .drawing-rail .tool-group-chevron:focus-visible,
@@ -28,7 +30,7 @@
 .trade-terminal .drawing-tools .drawing-rail .tool-divider {
   width: 22px; height: 1px; min-height: 1px; flex-shrink: 0; margin: 4px 0; background: #2c3847;
 }
-.trade-terminal .drawing-tools .drawing-rail .tool-group { flex-shrink: 0; width: 34px; }
+.trade-terminal .drawing-tools .drawing-rail .tool-group { flex-shrink: 0; width: 36px; }
 .trade-terminal .drawing-tools .drawing-rail .tool-group-chevron {
   width: 12px; height: 14px; bottom: 0; right: -1px; color: #b2bfd0;
 }
@@ -90,16 +92,25 @@
 .drawing-flyout .tool-flyout-item kbd {
   flex-shrink: 0; color: #787b86; font: 11px var(--font-ui); background: none; border: 0; padding: 0;
 }
-/* The floating object toolbar over a selected drawing, as in TradingView. */
+/* The floating object toolbar over a selected drawing, laid out as
+   TradingView's: a grip to move it, pencil and bucket each with a bar in
+   the chosen colour, the width, the line style, then lock, clone, delete. */
 .trade-terminal .drawing-tools .drawing-object-toolbar {
   position: absolute; z-index: 6; top: 8px; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 2px; padding: 3px 4px;
-  background: #1e222d; border: 1px solid #363a45; border-radius: 6px; box-shadow: 0 6px 20px #0008;
+  display: flex; align-items: center; gap: 1px; height: 38px; padding: 0 4px 0 2px;
+  background: #1e222d; border: 1px solid #2a2e39; border-radius: 6px; box-shadow: 0 2px 12px rgba(0, 0, 0, .45);
 }
+.drawing-object-grip {
+  display: flex; align-items: center; justify-content: center; width: 16px; height: 30px;
+  color: #6a6d78; cursor: grab; touch-action: none;
+}
+.drawing-object-grip:active { cursor: grabbing; }
 .drawing-object-toolbar > button {
-  min-width: 30px; height: 30px; padding: 0 6px; display: flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 32px; padding: 0 6px; display: flex; align-items: center; justify-content: center;
   color: #d1d4dc; background: transparent; border: 0; border-radius: 4px; cursor: pointer; font: 12px var(--font-ui);
 }
+.drawing-object-swatched { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.drawing-object-swatch { display: block; width: 18px; height: 3px; border-radius: 1px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .12); }
 .drawing-object-toolbar > button:hover:not(:disabled) { background: #2a2e39; color: #fff; }
 .drawing-object-toolbar > button[aria-pressed="true"], .drawing-object-toolbar > button[aria-expanded="true"] { background: #2a2e39; color: #fff; }
 .drawing-object-toolbar > button:disabled { opacity: .4; cursor: default; }

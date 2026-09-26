@@ -3883,6 +3883,17 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved: Codex's and earlier Claude work on Spot/Futures/CFD terminals, chart drawing, order entry, books, Markets catalogue and all guards.
 - Unresolved: the approved VOLTORA logo (placeholder until the owner sends it; replace `frontend/src/assets/voltora-logo.svg`). The terminal rail formats VTA's change as `+55134.60%` without grouping (pinned file). The simulation keeps closed 5m candles in process memory (~288/day) and a 1d/1w request aggregates from listing; fine for one test asset, worth a cap if it runs for months. Test-market endpoints are served by the Render API, not the edge worker.
 
+### 2026-09-26 — Claude — Drawing rail: one highlight, Bybit-quiet selected state, TradingView object toolbar, readable labels, percent-only ruler
+
+- Base `2460713f` (fresh main, after #279/#283 drawing panel). Branch `claude/ecstatic-brahmagupta-cwkvt5`.
+- **Two highlights at once:** `ruler` has its own rail button AND sits in the forecast group («Диапазон дат и цен»), so the group lit too. `RAIL_OWN_BUTTON` (PriceChart.tsx): such a tool lights only its own button; a group-only tool still lights its group.
+- **Selected state / sizes:** active = gold icon on `rgba(240,201,100,.10)`, no border, no inset edge bar (DrawingTools.css, TerminalPremium.css, TerminalStudio.css); rail buttons 36×36 (28-unit icons were in 34×30). `#archive-terminal-preview .drawing-rail .tool-btn {color}` greyed the selected icon — `.active` now keeps `var(--accent)`.
+- **Object toolbar (ChartDrawingLayer.tsx):** TradingView layout — grip (drag moves the toolbar; offset per selection via `key`), pencil and bucket with a bar in the chosen colour, width, line style, text, lock, clone, delete; 38px band.
+- **White colour:** labels (ruler/price range, note, price label, callout) painted `#ffffff` text on the chosen fill, so white/yellow/light grey were unreadable → `readableTextOn(bg)` (relative luminance) gives `#131722` on light fills.
+- **Ruler label:** «12690.685 (17.44%) 1,269,069» → «+17.44%» (owner: raw difference and ticks not needed); bars/time and volume lines unchanged.
+- **Tests:** `chartDrawings.test.ts` 114/114 (+4: single highlight, quiet active rule + 36px, readable label text incl. white note/callout/pricelabel, TradingView toolbar; 2 updated to the percent label). Full `npx jest`: 27 failing suites identical on main with the change stashed (0 new).
+- **Browser QA** (Futures, fixture market, 1600px): only `ruler` lit after picking it; 36×36; wash, no border/shadow, gold icon; ruler label `+3.35% / 65 столбцы, 2д 17ч / Объем 8.13K`; white note → text `#131722`; toolbar grip drag moves it (112, 45) and keeps the selection; no page errors.
+
 ## Claude — 2026-09-26 — VOLTORA in the ordinary Spot terminal, countdown armed
 
 - Owner feedback on production `/trade?pair=VTA/USDT`: the asset looked like a separate terminal (custom ticker, «TEST · NOT TRADABLE» badges, locked order panel). Asked for the standard terminal, a refusal on Buy/Sell submit («актив ещё не торгуется»), no technical wording, and a real 48 h countdown switched on when done.

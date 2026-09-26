@@ -86,6 +86,9 @@
 #archive-terminal-preview .terminal-chart-shell :is(.chart-tab.active,.chart-tool-btn.active) { color:var(--accent); background:#f0b90b12; }
 #archive-terminal-preview .drawing-rail { background:var(--panel); border-color:var(--border); }
 #archive-terminal-preview .drawing-rail .tool-btn { color:#a6b2c8; }
+/* The id rule above would grey the selected tool too: it stays gold, on the rail's faint wash. */
+#archive-terminal-preview .drawing-rail .tool-btn.active { color:var(--accent); }
+#archive-terminal-preview .drawing-rail .tool-btn:hover:not(.active) { color:#e6ebf2; }
 /* ORDER BOOK, 1:1 WITH THE OWNER'S BYBIT SCREENSHOT (2026-09-24, 2000px wide).
    Read off the image, not eyeballed: a 26px bar in a 28px row, 13px figures
    with the quantity and total in white and only the price in the side colour,
