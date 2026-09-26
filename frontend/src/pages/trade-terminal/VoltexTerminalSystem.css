@@ -234,6 +234,9 @@
    terminals are one surface. */
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal {
   background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important;
+  /* Futures' approved surface finishes with pure white primary text. Mirror
+     that final token here for Spot/CFD without changing Futures itself. */
+  --text-primary:#ffffff !important;
   /* !important because the token block above names the Futures id in its
      :is(), which gives it id weight over any number of classes. */
   --border: rgba(255,255,255,.12) !important;

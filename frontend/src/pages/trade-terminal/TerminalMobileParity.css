@@ -107,13 +107,13 @@
     min-height:44px;
   }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item {
-    display:none;
+    display:none !important;
     border:0;
     padding:0;
   }
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(2),
   .trade-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item:nth-of-type(3) {
-    display:flex;
+    display:flex !important;
     flex-direction:column;
     justify-content:center;
     min-width:0;
@@ -149,7 +149,7 @@
   .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric { min-width:0; }
   .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric:nth-of-type(2) { grid-column:2; text-align:right; }
   .trade-terminal.vx-terminal.cfd-terminal .cfd-ticker-metric:nth-of-type(3) { grid-column:1 / -1; }
-  .trade-terminal.vx-terminal.cfd-terminal .cfd-market-state { display:none; }
+  .trade-terminal.vx-terminal.cfd-terminal .cfd-market-state { display:none !important; }
 
   /* Do not show secondary chart navigation while Trade/Account is active. */
   .trade-terminal.vx-terminal .terminal:not([data-mobile-tab=chart]) .terminal-mobile-chart-tabs { display:none; }
