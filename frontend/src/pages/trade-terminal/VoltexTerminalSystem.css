@@ -143,6 +143,80 @@
   display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0;
 }
 
+/* ── INSTRUMENT IDENTITY PARITY ─────────────────────────────────────────
+   Futures' newest header treats the market identity as one block: market-list
+   affordance + artwork + pair/name stack. Spot and CFD still had the older
+   text-only header, which is why the three terminals looked related but not
+   actually the same. These are presentation-only rules; market selection and
+   every price/data source stay exactly where they were. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-cluster {
+  display:flex; align-items:center; gap:10px; flex:0 0 auto; min-width:0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-markets-btn {
+  flex:0 0 28px; width:28px; height:28px; min-height:28px; margin:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--panel-alt); border:1px solid var(--border); border-radius:6px;
+  color:var(--text-primary); cursor:pointer;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-markets-btn svg { stroke-width:2.25; }
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-markets-btn:hover,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-markets-btn:focus-visible {
+  background:rgba(255,255,255,.13); border-color:#3b4757; color:#fff;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-selector {
+  display:flex; align-items:center; gap:10px; min-width:0; margin:0; padding:2px 4px 2px 0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-identity,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-instrument-identity {
+  display:flex; flex-direction:column; justify-content:center; gap:1px; min-width:0;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-identity .pair-name,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-symbol {
+  font-size:18px; font-weight:650; letter-spacing:-.02em; line-height:1.2; color:var(--text-primary); white-space:nowrap;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-asset,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-instrument-name {
+  min-height:14px; font-size:11px; font-weight:500; line-height:1.25; color:var(--text-tertiary);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-selected-instrument.cfd-pair-cluster {
+  display:flex; align-items:center; gap:10px; min-width:0;
+}
+
+/* ── ORDER-TICKET PARITY ────────────────────────────────────────────────
+   Futures' final pass moved the hierarchy again after the first shared
+   Spot/CFD port: smaller service labels, 16px/600 field values, 7px fields,
+   section-style summary rows and a 50px/15px primary action. Port that visual
+   hierarchy here without importing leverage, funding, reduce-only or any
+   Futures-only business concept. */
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-type-tab,.order-family-tabs button) {
+  font-size:13px; line-height:20px; font-weight:500;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-type-tab.active,.order-family-tabs button.active) {
+  color:var(--accent); font-weight:700;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.form-label,.cfd-label,.order-family-label) {
+  font-size:11px; line-height:14px; font-weight:600; color:#d8dbe1;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-form-area .input-group,.cfd-input,.order-family-input) {
+  border-radius:7px !important;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .order-form-area .input-group input,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-input,
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .order-family-input input {
+  font-size:16px; line-height:20px; font-weight:600;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.order-form-area .order-summary,.cfd-infoBox) {
+  background:transparent !important; border:0 !important; border-top:1px solid var(--border) !important;
+  border-radius:0 !important; padding:16px 0 0 !important; gap:10px;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.submit-btn,.cfd-submit) {
+  min-height:50px; height:50px; border-radius:999px; font-size:15px; font-weight:700;
+}
+.trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .orderbook-spread {
+  background:transparent !important;
+}
+
 /* PANEL SURFACES. Flat, seamed rather than floated — the approved terminal
    has no rounded cards and no shadows between regions; the 1px seam is what
    separates them. */
@@ -213,6 +287,12 @@
     overflow-x:auto; -webkit-overflow-scrolling:touch;
   }
   .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .value.price { font-size:16px; line-height:20px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-cluster { gap:8px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-markets-btn { flex-basis:40px; width:40px; height:40px; min-height:40px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-selector { gap:8px; min-height:40px; }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .pair-identity .pair-name,
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .cfd-symbol { font-size:16px; }
+
   .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal :is(.bottom-tabs,.cfd-tabs) button,
   .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .terminal-tab { padding:12px 14px; min-height:44px; }
   /* A finger is about 44px. Anything smaller is a control the owner will
