@@ -21,6 +21,11 @@
   window.setInterval = (fn, ms = 0, ...args) => schedule(fn, ms, true, args);
   window.clearTimeout = window.clearInterval = key => { timers.delete(key); nativeClear(key); };
   const fetchOriginal = window.fetch.bind(window);
+  const track = promise => {
+    requests.add(promise);
+    void promise.finally(() => requests.delete(promise)).catch(() => {});
+    return promise;
+  };
   window.fetch = (input, options) => {
     const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
     if (url.origin !== location.origin) {
@@ -30,10 +35,13 @@
     if (url.pathname.startsWith('/api/')) {
       const key = `${options?.method || 'GET'} ${url.pathname}`; hits[key] = (hits[key] || 0) + 1;
     }
-    const request = fetchOriginal(input, options);
-    requests.add(request);
-    void request.finally(() => requests.delete(request)).catch(() => {});
-    return request;
+    return track(fetchOriginal(input, options).then(response => {
+      for (const method of ['json', 'text', 'arrayBuffer']) {
+        const read = response[method].bind(response);
+        response[method] = (...args) => track(read(...args));
+      }
+      return response;
+    }));
   };
   // The fixture uses HTTP snapshots; never contact a live exchange stream.
   window.WebSocket = class { static OPEN=1; static CLOSED=3; readyState=3; addEventListener(){} removeEventListener(){} send(){} close(){} };
@@ -46,7 +54,9 @@
     channel.port1.onmessage = () => { channel.port1.close(); channel.port2.close(); resolve(); };
     channel.port2.postMessage(null);
   });
-  const settle = async () => { await Promise.allSettled([...requests]); await turn(); await turn(); };
+  const settle = async () => {
+    do { await Promise.allSettled([...requests]); await turn(); await turn(); } while (requests.size);
+  };
   async function advance(ms) {
     if (advancing) return;
     advancing = true; render();

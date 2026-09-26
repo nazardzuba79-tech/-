@@ -4038,3 +4038,13 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `voltex.crypto@gmail.com` is a verified Email Routing destination (owner, 2026-09-26, per the support-edge entry). The KYC production send is not yet run.
   - Rate limits: `KYC_RATE_LIMIT` binding (namespace 7302, 5/min per IP; support-edge owns 7301) + an isolate window + Render per-user 10/h.
   - At 320 px the name/date inputs' right edge is clipped by the card. The classes are unchanged from main and not touched here.
+
+### Codex — 2026-09-26 — Browser read budgets
+
+- Implementation commit: `fc410555b4c7136ac38a35ab5ac1e9646480c77b`, rebased onto fresh main `6ad0c19d9ce32d9ee821751c3f17a35f8c61fd05`; branch `codex/browser-read-budget`.
+- Material files: `visibleRead`, `useVisibleAccountRead`, `useFuturesMark`, Futures account store/consumers, Wallet read hook/manual refresh, admin activity/alert lifecycle, native display-read visibility, ArchiveTopAssets visibility; real-hook/store tests, loopback request-budget harness and CI. Full budget/evidence/limits in `docs/BROWSER_READ_BUDGET.md`.
+- Preserved: all backend financial code/schema, Support/KYC/deposit watcher/packages, Analytics, server PnL/ROE and mark authority, existing native command path; upstream admin pagination and Support/KYC work retained by clean rebase. Only browser acquisition and refresh controls changed.
+- Resource rule: before merge document idle requests/hour, estimated Neon reads AND writes/hour, timer yes/no, hidden-tab behavior and event-driven alternative. Default NO polling unless realtime is genuinely required.
+- Checked: frontend 650/650 across 38 suites; backend TypeScript; production frontend TypeScript/Vite; actual production-bundle browser counters and 1440/430/390/360/320 layouts; localhost-only place/cancel/close/transfer/TP-SL/history refresh. Hidden polling requests zero. No production credentials, DB or real order used.
+- Known baseline failures: 6 unrelated CFD tests (495 others pass), and 25 legacy Wallet UI assertions, reproduce on untouched baseline. No attempt to repair out-of-scope logic. Existing Vite ~500kB chunk warning retained.
+- Remaining caveat: a remote deposit credit has no browser push event; manual/stale-return refresh discovers it. Mark display updates every 30s; risk/execution remains server-authoritative. Existing chart/public/access overhead is explicitly separated from target savings. Merge only after green PR checks; auto-deploy only, never duplicate manual deploy.
