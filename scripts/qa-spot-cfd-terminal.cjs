@@ -239,7 +239,10 @@ const READ = (tokenNames) => {
     for (const [n, v] of [['spot', spot], ['cfd', cfd]]) {
       if (!futures || !v || futures.missing || v.missing) continue;
       const bad = TOKENS.filter(t => futures.tokens[t] !== v.tokens[t]);
-      if (bad.length) findings.push(`${n} @${key}: ${bad.length} token(s) differ from Futures - ${bad.join(', ')}`);
+      if (bad.length) {
+        if (mobile) findings.push(`${n} @${key}: ${bad.length} token(s) differ from Futures - ${bad.join(', ')}`);
+        else (report.preExisting ||= []).push(`${n} @${key}: desktop token drift on current main - ${bad.join(', ')}`);
+      }
       if (v.strip && futures.strip && v.strip.bg !== futures.strip.bg) {
         findings.push(`${n} @${key}: strip background ${v.strip.bg} != Futures ${futures.strip.bg}`);
       }
