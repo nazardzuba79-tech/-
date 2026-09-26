@@ -1532,4 +1532,13 @@ export const ZH: Record<Key, string> = {
   'calc.fundingNote': '仅为估算，结算前费率可能变动。',
   'calc.unavailable': '计算暂时不可用',
   'calc.open': '计算器',
+  'trade.assetNotTradingYet': '该资产尚未开放交易',
+  'listing.untilStart': '距离开盘',
+  'listing.days': '天',
+  'listing.hours': '小时',
+  'listing.minutes': '分钟',
+  'listing.seconds': '秒',
+  'listing.initialPrice': '初始价格',
+  'listing.startTime': '开盘时间',
+  'listing.newListing': '新币上线',
 };

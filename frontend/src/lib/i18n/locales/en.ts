@@ -1538,4 +1538,13 @@ export const EN: Record<Key, string> = {
   'calc.fundingNote': 'An estimate — the rate can change before settlement.',
   'calc.unavailable': 'Calculation is temporarily unavailable',
   'calc.open': 'Calculator',
+  'trade.assetNotTradingYet': 'This asset is not trading yet',
+  'listing.untilStart': 'Trading starts in',
+  'listing.days': 'Days',
+  'listing.hours': 'Hours',
+  'listing.minutes': 'Minutes',
+  'listing.seconds': 'Seconds',
+  'listing.initialPrice': 'Initial price',
+  'listing.startTime': 'Trading starts',
+  'listing.newListing': 'New listing',
 };

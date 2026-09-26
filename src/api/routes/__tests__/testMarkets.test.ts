@@ -30,7 +30,7 @@ describe('the test-asset list and state', () => {
     expect(res.body.assets).toHaveLength(1);
     expect(res.body.assets[0]).toMatchObject({
       pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', isTestAsset: true, isTradable: false,
-      status: 'TEST · NOT TRADABLE', listingAt: '2026-09-27T16:00:00.000Z', initialPrice: 0.01,
+      status: 'TEST · NOT TRADABLE', listingArmed: true, listingAt: new Date(L).toISOString(), initialPrice: 0.01,
       state: { phase: 'pre-listing', lastPrice: null, change24hPercent: null, volume24h: null },
     });
     const candles = await request(app(L - 1)).get('/api/v1/market/external/candles/VTA-USDT?interval=5m');

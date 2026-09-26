@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { marketDataStore, type MarketState } from './marketDataStore';
 import type { MarketTicker } from './api';
-import { useTestMarkets } from './testMarketStore';
-import { withTestMarketTickers } from './testMarkets';
+import { TEST_MARKET_TERMINAL_INTERVAL_MS, useTestMarkets } from './testMarketStore';
+import { isTestMarketPair, testAssetTicker, withTestMarketTickers } from './testMarkets';
 
 /**
  * React bindings over the shared market-data store.
@@ -46,6 +46,16 @@ export interface TickerView {
  */
 export function useMarketTicker(pair: string, intervalMs?: number): TickerView {
   const state = useMarketData(intervalMs);
+  // An upcoming listing (VOLTORA) is served by the test-market store, not
+  // the venue snapshot. Before its first trade it has no figures at all, so
+  // the row stays null (a dash) rather than a zero price.
+  const testPair = isTestMarketPair(pair);
+  const test = useTestMarkets(TEST_MARKET_TERMINAL_INTERVAL_MS, testPair);
+  if (testPair) {
+    const asset = test.assets.find((row) => row.pair === pair.toUpperCase());
+    const row = asset ? testAssetTicker(asset) : null;
+    return { ticker: row && row.lastPrice !== '' ? row : null, loading: !test.loaded, error: test.error, stale: false };
+  }
   return {
     ticker: state.tickers.get(pair.toUpperCase()) ?? null,
     loading: !state.loaded,

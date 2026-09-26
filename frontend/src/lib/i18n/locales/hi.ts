@@ -1509,4 +1509,13 @@ export const HI: Record<Key, string> = {
   'calc.fundingNote': 'अनुमान — निपटान से पहले दर बदल सकती है।',
   'calc.unavailable': 'गणना अस्थायी रूप से अनुपलब्ध',
   'calc.open': 'कैलकुलेटर',
+  'trade.assetNotTradingYet': 'इस एसेट में अभी ट्रेडिंग शुरू नहीं हुई है',
+  'listing.untilStart': 'ट्रेडिंग शुरू होने में',
+  'listing.days': 'दिन',
+  'listing.hours': 'घंटे',
+  'listing.minutes': 'मिनट',
+  'listing.seconds': 'सेकंड',
+  'listing.initialPrice': 'प्रारंभिक मूल्य',
+  'listing.startTime': 'ट्रेडिंग की शुरुआत',
+  'listing.newListing': 'नई लिस्टिंग',
 };

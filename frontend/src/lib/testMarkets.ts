@@ -200,6 +200,18 @@ export function formatListingTime(listingAt: string | number): string {
   return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()} · ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
 }
 
+/** "28 сентября, 14:00 UTC" in the viewer's language — the zone is always UTC. */
+export function formatListingMoment(listingAt: string | number, locale: string): string {
+  const date = new Date(listingAt);
+  if (!Number.isFinite(date.getTime())) return '—';
+  try {
+    const text = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'UTC' }).format(date);
+    return `${text} UTC`;
+  } catch {
+    return formatListingTime(listingAt);
+  }
+}
+
 export interface CountdownParts { days: number; hours: number; minutes: number; seconds: number; done: boolean }
 
 export function countdownParts(msLeft: number): CountdownParts {

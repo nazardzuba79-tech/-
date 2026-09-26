@@ -9,6 +9,7 @@ import { parseChangePercent } from '../lib/priceChange';
 import { positiveOrderNumber, orderFundingPrice, balancePercentageQuantity } from '../lib/spotOrderEntry';
 import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedback';
 import { customerErrorText } from '../lib/customerError';
+import { isTestMarketPair } from '../lib/testMarkets';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -67,6 +68,10 @@ export function OrderForm({
   const [balanceError, setBalanceError] = useState(false);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceVersion, setBalanceVersion] = useState(0);
+  // An upcoming listing (VOLTORA) shows the whole form, like any pair, but
+  // trading has not opened: a Buy/Sell answers with that and sends nothing.
+  // The server refuses the pair on its own as well (OrderService).
+  const notTradingYet = isTestMarketPair(pair);
 
   const isConditional = family === 'STOP' || family === 'TAKE_PROFIT';
   const type: 'LIMIT' | 'MARKET' | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET' =
@@ -188,6 +193,12 @@ export function OrderForm({
     e.preventDefault();
     if (submittingRef.current) return;
     setError(null);
+    if (notTradingYet) {
+      const message = t('trade.assetNotTradingYet');
+      setError(message);
+      toast.error(message);
+      return;
+    }
     const requiredValues = [quantity, ...(family === 'OCO' ? [ocoTakeProfitPrice, ocoStopTriggerPrice, ocoStopLimitPrice] : [
       ...(family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? [price] : []),
       ...(isConditional ? [triggerPrice] : []),
@@ -313,7 +324,7 @@ export function OrderForm({
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="order-form-content">
+      <form onSubmit={handleSubmit} className="order-form-content" noValidate={notTradingYet}>
         {/* Stop and take-profit orders can execute as either a limit or a
             market order — the reference has no equivalent control because
             it has no conditional orders, so this reuses its order-type tab
@@ -403,7 +414,7 @@ export function OrderForm({
               <div className="form-group">
                 <div className="form-label"><span>{t('trade.price')}</span></div>
                 <div className="input-group">
-                  <input aria-label={t('trade.price')} readOnly value={marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} />
+                  <input aria-label={t('trade.price')} readOnly value={marketPrice !== null ? `≈ ${marketPrice}` : notTradingYet ? '—' : t('trade.loading')} />
                   <span className="input-suffix">{quoteAsset}</span>
                 </div>
               </div>

@@ -34,7 +34,7 @@ describe('actual OrderForm submit handler', () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8');
   const handler = source.slice(source.indexOf('  async function handleSubmit('), source.indexOf('  // Keep every order family reachable.'));
   const code = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
-  function fixture(response: unknown) {
+  function fixture(response: unknown, notTradingYet = false) {
     const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
     const bindings = { api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
       t: (key: string, values?: unknown) => key + (values ? JSON.stringify(values) : ''),
@@ -42,7 +42,7 @@ describe('actual OrderForm submit handler', () => {
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
       quantity: '0.001', family: 'MARKET', type: 'MARKET', price: '', triggerPrice: '',
       isConditional: false, execution: 'MARKET', side: 'SELL', pair: 'BTC/USDT', baseAsset: 'BTC',
-      ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error };
+      ocoTakeProfitPrice: '', ocoStopTriggerPrice: '', ocoStopLimitPrice: '', ApiError: Error, notTradingYet };
     const submit = new Function(...Object.keys(bindings), code + '\nreturn handleSubmit;')(...Object.values(bindings));
     return { ...bindings, submit };
   }
@@ -69,6 +69,14 @@ describe('actual OrderForm submit handler', () => {
   test('unknown response is explicitly unconfirmed, not success', async () => {
     const f = fixture({}); await f.submit({ preventDefault() {} });
     expect(f.toast.success).not.toHaveBeenCalled(); expect(f.toast.info).toHaveBeenCalledWith('trade.orderStatusUnconfirmed');
+  });
+  test('an upcoming listing answers that it is not trading yet and places nothing', async () => {
+    const f = fixture({ order: { status: 'FILLED' }, trades: [] }, true); await f.submit({ preventDefault() {} });
+    expect(f.setError).toHaveBeenLastCalledWith('trade.assetNotTradingYet');
+    expect(f.toast.error).toHaveBeenCalledWith('trade.assetNotTradingYet');
+    expect(f.api.placeOrder).not.toHaveBeenCalled();
+    expect(f.onPlaced).not.toHaveBeenCalled();
+    expect(f.submittingRef.current).toBe(false);
   });
   test('conditional Limit/Market controls expose their actual pressed state', () => {
     expect(source).toContain("aria-pressed={execution === 'LIMIT'}");

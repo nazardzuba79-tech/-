@@ -11,7 +11,23 @@ const fresh = () => new TestMarketSimulation(VOLTORA);
 describe('VOLTORA is a test asset, recognised however the pair is spelled', () => {
   test('config', () => {
     expect(VOLTORA).toMatchObject({ symbol: 'VTA', name: 'VOLTORA', pair: 'VTA/USDT', isTestAsset: true, isTradable: false, initialPrice: 0.01 });
-    expect(new Date(VOLTORA.listingAt).toISOString()).toBe('2026-09-27T16:00:00.000Z');
+    expect(new Date(VOLTORA.listingAt).toISOString()).toBe('2026-09-28T14:00:00.000Z');
+  });
+  test('the listing is armed unless the server holds it with TEST_MARKET_LISTING_ARMED=0', () => {
+    const armedWith = (value: string | undefined) => {
+      const previous = process.env.TEST_MARKET_LISTING_ARMED;
+      if (value === undefined) delete process.env.TEST_MARKET_LISTING_ARMED; else process.env.TEST_MARKET_LISTING_ARMED = value;
+      try {
+        let armed: boolean | undefined;
+        jest.isolateModules(() => { armed = require('../testAssetConfig').VOLTORA.listingArmed; });
+        return armed;
+      } finally {
+        if (previous === undefined) delete process.env.TEST_MARKET_LISTING_ARMED; else process.env.TEST_MARKET_LISTING_ARMED = previous;
+      }
+    };
+    expect(armedWith(undefined)).toBe(true);
+    expect(armedWith('1')).toBe(true);
+    expect(armedWith('0')).toBe(false);
   });
   test.each(['VTA/USDT', 'VTAUSDT', 'vta-usdt', ' vta_usdt '])('%s', (pair) => {
     expect(testAssetForPair(pair)).toBe(VOLTORA);
@@ -212,7 +228,7 @@ describe('every timeframe is the same history', () => {
   });
   test('the daily candle of the listing day starts at 00:00 UTC and opens at the listing price', () => {
     const daily = aggregateCandles(five, SIM_INTERVALS['1d']);
-    expect(new Date(daily[0].openTime).toISOString()).toBe('2026-09-27T00:00:00.000Z');
+    expect(new Date(daily[0].openTime).toISOString()).toBe(new Date(Math.floor(L / DAY_MS) * DAY_MS).toISOString());
     expect(daily[0].open).toBe(0.01);
   });
 });

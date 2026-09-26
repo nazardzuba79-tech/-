@@ -1509,4 +1509,13 @@ export const JA: Record<Key, string> = {
   'calc.fundingNote': '見積りです。決済前にレートが変わることがあります。',
   'calc.unavailable': '計算を一時的に利用できません',
   'calc.open': '計算機',
+  'trade.assetNotTradingYet': 'この銘柄はまだ取引されていません',
+  'listing.untilStart': '取引開始まで',
+  'listing.days': '日',
+  'listing.hours': '時間',
+  'listing.minutes': '分',
+  'listing.seconds': '秒',
+  'listing.initialPrice': '初値',
+  'listing.startTime': '取引開始',
+  'listing.newListing': '新規上場',
 };

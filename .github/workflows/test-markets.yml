@@ -19,11 +19,14 @@ on:
       - 'frontend/src/lib/priceChange.ts'
       - 'frontend/src/lib/__tests__/testMarkets.test.ts'
       - 'frontend/src/components/TestMarketTerminal.tsx'
+      - 'frontend/src/components/OrderForm.tsx'
+      - 'frontend/src/components/TickerBar.tsx'
+      - 'frontend/src/lib/i18n/locales/**'
       - 'frontend/src/components/TerminalChart.tsx'
       - 'frontend/src/components/PriceChart.tsx'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/markets-bolt/**'
-      - 'scripts/qa-voltora-frozen-preview.cjs'
+      - 'scripts/qa-voltora-listing.cjs'
       - '.github/workflows/test-markets.yml'
 
 permissions:
@@ -51,6 +54,7 @@ jobs:
           frontend/src/lib/__tests__/testMarkets.test.ts
           frontend/src/lib/__tests__/spotChartPriceFormat.test.ts
           frontend/src/lib/__tests__/cfdTerminal.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
       - name: Backend typecheck
         run: npx tsc --noEmit
       - name: Production frontend build
@@ -59,14 +63,14 @@ jobs:
         run: |
           npm install --prefix /tmp/voltora-preview-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltora-preview-browser/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Frozen VOLTORA preview browser QA
+      - name: VOLTORA listing browser QA
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltora-preview-browser/node_modules/playwright
-        run: node scripts/qa-voltora-frozen-preview.cjs
+        run: node scripts/qa-voltora-listing.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: voltora-frozen-preview-${{ github.sha }}
-          path: docs/qa/voltora-frozen-preview/
+          name: voltora-listing-${{ github.sha }}
+          path: docs/qa/voltora-listing/
           if-no-files-found: ignore
           retention-days: 7

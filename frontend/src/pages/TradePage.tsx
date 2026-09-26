@@ -40,7 +40,7 @@ import './trade-terminal/TerminalMobileParity.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isTestMarketPair } from '../lib/testMarkets';
 import { useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
-import { TestMarketBook, TestMarketChart, TestMarketOrderPanel, TestMarketTickerBar } from '../components/TestMarketTerminal';
+import { TestMarketChart } from '../components/TestMarketTerminal';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -82,8 +82,10 @@ export function TradePage() {
   // Effects run after render: never expose the previous instrument's depth
   // during that first new-pair render or initialize grouping from its prices.
   const visibleBook = book.pair === pair ? book : { bids: [], asks: [] };
-  // A VOLTEX test asset (VOLTORA): same terminal, simulated read-only data,
-  // no book and no order entry. An ordinary pair subscribes to nothing here.
+  // An upcoming listing (VOLTORA): the ordinary terminal — ticker bar, book,
+  // order form — with the listing card and countdown in the chart area. Its
+  // book has no depth to fetch, and the order form declines to submit until
+  // trading opens. An ordinary pair subscribes to nothing here.
   const testPair = isTestMarketPair(pair);
   const testMarket = useTestMarket(testPair ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
@@ -312,9 +314,7 @@ export function TradePage() {
       <ConnectionBanner />
 
       <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
-        {testPair
-          ? <TestMarketTickerBar key={pair} pair={pair} asset={testMarket.asset} onSelectPair={openPairSearch} />
-          : <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />}
+        <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />
         {mobileTabs}
         <div className="terminal-mobile-chart-tabs" role="group" aria-label={t('futures.chart')}>
           <button type="button" aria-pressed={mobilePane === 'chart'} onClick={() => setMobilePane('chart')}>{t('futures.chart')}</button>
@@ -349,15 +349,10 @@ export function TradePage() {
 
           <div className="chart-area" data-test-market={testPair || undefined}>
             {testPair
-              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} error={testMarket.error} clockOffsetMs={testMarket.clockOffsetMs} />
+              ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} />
               : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />}
           </div>
 
-          {testPair ? (
-            <div className="orderbook-area" data-test-market="true">
-              <TestMarketBook onCollapse={() => setOrderBookCollapsed(true)} />
-            </div>
-          ) : (
           <div className="orderbook-area" data-sampled-book="true">
             <SampledDataNote asOf={book.pair === pair ? book.asOf : null} />
                 <OrderBookPanel
@@ -369,12 +364,9 @@ export function TradePage() {
               onCollapse={() => setOrderBookCollapsed(true)}
             />
           </div>
-          )}
 
           <div className="order-form-area">
-            {testPair
-              ? <TestMarketOrderPanel key={pair} pair={pair} />
-              : <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />}
+            <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />
           </div>
         </div>
 

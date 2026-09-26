@@ -1,17 +1,15 @@
 import { Star } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
+import { localeOf, useLanguage } from '../../lib/i18n';
 import { useTestMarkets } from '../../lib/testMarketStore';
-import {
-  formatListingTime, formatTestCompact, formatTestPercent, formatTestPrice, matchesTestAssetSearch,
-  TEST_ASSET_STATUS_LABEL,
-} from '../../lib/testMarkets';
+import { formatListingMoment, formatTestCompact, formatTestPercent, formatTestPrice, matchesTestAssetSearch } from '../../lib/testMarkets';
 import './TestMarketsStrip.css';
 
 /**
- * Test markets on the Markets page, above the catalogue. They are not in
- * the catalogue on purpose: that table is market-wide reference data, and
- * a simulated asset must never be mistaken for a real coin there. Search
- * and favourites apply to these rows exactly as to the table's.
+ * New listings on the Markets page, above the catalogue. They are not in
+ * the catalogue on purpose: that table is market-wide reference data from
+ * the venues. Search and favourites apply to these rows exactly as to the
+ * table's.
  */
 export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFavorite, onOpen }: {
   search: string;
@@ -20,12 +18,13 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
   onToggleFavorite: (pair: string) => void;
   onOpen: (pair: string) => void;
 }) {
+  const { t, lang } = useLanguage();
   const { assets } = useTestMarkets();
   const rows = assets.filter((asset) => matchesTestAssetSearch(asset, search) && (!favoritesOnly || favorites.has(asset.pair)));
   if (rows.length === 0) return null;
 
   return (
-    <section className="test-markets" aria-label="Тестовый рынок">
+    <section className="test-markets" aria-label={t('listing.newListing')}>
       {rows.map((asset) => {
         const { state } = asset;
         const live = state.phase === 'live';
@@ -45,7 +44,6 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
                   <small>{asset.name}</small>
                 </span>
               </span>
-              <span className="test-market-badge">{asset.status || TEST_ASSET_STATUS_LABEL}</span>
               <span className="test-market-figure">
                 <small>Цена</small>
                 <strong>{live ? formatTestPrice(state.lastPrice) : '—'}</strong>
@@ -59,7 +57,7 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
                 <strong>{live ? `${formatTestCompact(state.quoteVolume24h)} ${asset.quote}` : '—'}</strong>
               </span>
               <span className="test-market-listing">
-                {live ? 'Simulated market · live' : `Listing starts ${formatListingTime(asset.listingAt)}`}
+                {live ? '' : `${t('listing.startTime')}: ${formatListingMoment(asset.listingAt, localeOf(lang))}`}
               </span>
             </button>
           </div>

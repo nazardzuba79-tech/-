@@ -1568,4 +1568,13 @@ export const RU = {
   'calc.fundingNote': 'Оценка: ставка может измениться до расчёта.',
   'calc.unavailable': 'Расчёт временно недоступен',
   'calc.open': 'Калькулятор',
+  'trade.assetNotTradingYet': 'Этот актив пока не торгуется',
+  'listing.untilStart': 'До начала торгов',
+  'listing.days': 'Дни',
+  'listing.hours': 'Часы',
+  'listing.minutes': 'Минуты',
+  'listing.seconds': 'Секунды',
+  'listing.initialPrice': 'Стартовая цена',
+  'listing.startTime': 'Начало торгов',
+  'listing.newListing': 'Новый листинг',
 } as const;

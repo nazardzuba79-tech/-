@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import { LOCALES, readDictionaries } from '../../../test-utils/i18nSource';
 import { customerErrorText } from '../customerError';
+import { isTestMarketPair } from '../testMarkets';
 
 /**
  * Spot action buttons say «Купить» / «Продать». Nothing else.
@@ -48,6 +49,7 @@ const stubs = (lang: (typeof LOCALES)[number]) => ({
   '../lib/priceChange': { parseChangePercent: () => null },
   '../lib/spotOrderEntry': { positiveOrderNumber: () => null, orderFundingPrice: () => null, balancePercentageQuantity: () => '' },
   '../lib/spotOrderFeedback': { spotOrderFeedback: () => null },
+  '../lib/testMarkets': { isTestMarketPair },
 });
 
 function renderSpotForm(pair: string, lang: (typeof LOCALES)[number] = 'ru') {
