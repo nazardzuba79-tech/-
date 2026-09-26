@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { TEST_ASSETS, testAssetForPair, type TestAssetConfig } from '../../services/testMarkets/testAssetConfig';
 import { getCurrentTestMarketState, simulationFor } from '../../services/testMarkets/testMarketSimulation';
 import {
-  publicTestAsset, resolveSimulationNow, testMarketCandles, UnsupportedTestIntervalError,
+  effectiveTestMarketNow, publicTestAsset, resolveSimulationNow, testMarketCandles, UnsupportedTestIntervalError,
 } from '../../services/testMarkets/testMarketService';
 
 /**
@@ -68,7 +68,7 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
   router.get('/market/external/candles/:pair', forTestPair(sendCandles));
 
   const ticker = (asset: TestAssetConfig, req: Request, res: Response) => {
-    const state = getCurrentTestMarketState(simulationFor(asset), nowFor(req));
+    const state = getCurrentTestMarketState(simulationFor(asset), effectiveTestMarketNow(asset, nowFor(req)));
     noStore(res);
     if (state.phase !== 'live' || state.lastPrice === null) return res.status(404).json({ error: `No ticker for ${asset.pair}`, isTestAsset: true, listingAt: new Date(asset.listingAt).toISOString() });
     const last = String(state.lastPrice);
