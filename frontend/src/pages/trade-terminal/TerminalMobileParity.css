@@ -9,6 +9,7 @@
 @media (max-width:900px) {
   .trade-terminal.vx-terminal {
     --mobile-nav-space:calc(76px + env(safe-area-inset-bottom, 0px));
+    --text-primary:#ffffff !important;
     height:auto;
     min-height:100dvh;
     overflow:visible;
