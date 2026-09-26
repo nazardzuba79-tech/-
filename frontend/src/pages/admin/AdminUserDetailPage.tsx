@@ -6,6 +6,7 @@ import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { formatLastLoginAt } from './lastLoginLabel';
 import { Skeleton } from '../../components/Skeleton';
+import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { KycSubmissionReview } from './KycSubmissionReview';
 
 type Detail = Awaited<ReturnType<typeof api.getAdminUserDetail>>;
@@ -40,7 +41,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export function AdminUserDetailPage() {
   const { id = '' } = useParams();
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [notFound, setNotFound] = useState(false);
 
   const [asset, setAsset] = useState('');
   const [amount, setAmount] = useState('');
@@ -49,8 +49,7 @@ export function AdminUserDetailPage() {
   const [adjustSuccess, setAdjustSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const [accountError, setAccountError] = useState<string | null>(null);
-  const [accountBusy, setAccountBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   const [demoAsset, setDemoAsset] = useState('');
@@ -65,53 +64,11 @@ export function AdminUserDetailPage() {
       .getAdminUserDetail(id)
       .then(setDetail)
       .catch((err) => {
-        if (err instanceof ApiError && err.status === 404) setNotFound(true);
+        if (err instanceof ApiError && err.status === 404) navigate('/admin/users', { replace: true });
       });
   }
 
   useEffect(reload, [id]);
-
-  async function handleBlock() {
-    const reason = window.prompt('Причина блокировки (обязательно):');
-    if (!reason || !reason.trim()) return;
-    setAccountError(null);
-    setAccountBusy(true);
-    try {
-      await api.blockUser(id, reason.trim());
-      reload();
-    } catch (err) {
-      setAccountError(err instanceof ApiError ? err.message : 'Не удалось заблокировать пользователя.');
-    } finally {
-      setAccountBusy(false);
-    }
-  }
-
-  async function handleUnblock() {
-    setAccountError(null);
-    setAccountBusy(true);
-    try {
-      await api.unblockUser(id);
-      reload();
-    } catch (err) {
-      setAccountError(err instanceof ApiError ? err.message : 'Не удалось разблокировать пользователя.');
-    } finally {
-      setAccountBusy(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!detail) return;
-    if (!window.confirm(`Удалить аккаунт ${detail.email} без возможности восстановления?`)) return;
-    setAccountError(null);
-    setAccountBusy(true);
-    try {
-      await api.deleteUser(id);
-      navigate('/admin/users');
-    } catch (err) {
-      setAccountError(err instanceof ApiError ? err.message : 'Не удалось удалить пользователя.');
-      setAccountBusy(false);
-    }
-  }
 
   async function handleAdjust(e: React.FormEvent) {
     e.preventDefault();
@@ -151,7 +108,6 @@ export function AdminUserDetailPage() {
     }
   }
 
-  if (notFound) return <p>Пользователь не найден.</p>;
   if (!detail) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -175,7 +131,6 @@ export function AdminUserDetailPage() {
           <Row label="Email" value={detail.email} />
           <Row label="Роль" value={detail.isAdmin ? 'Администратор' : 'Пользователь'} />
           <Row label="Регистрация" value={new Date(detail.createdAt).toLocaleString('ru-RU')} />
-          <Row label="IP при регистрации" value={detail.registrationIp ?? '—'} />
           <Row
             label="Верификация"
             value={
@@ -220,34 +175,13 @@ export function AdminUserDetailPage() {
         </Section>
       </div>
 
-      {!detail.isAdmin && (
-        <>
-          <Section title="Учётная запись">
-            <p style={styles.hint}>
-              Блокировка запрещает вход в аккаунт (существующая сессия истечёт сама, максимум через 12 часов) — используйте для нарушения правил.
-              Удаление доступно только для аккаунтов без истории операций (нет депозитов, выводов, ордеров, покупок) — например, для тех, кто
-              зарегистрировался и давно не заходит, ничего не внёс.
-            </p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              {detail.isBlocked ? (
-                <button onClick={handleUnblock} disabled={accountBusy} style={styles.approveBtn}>
-                  Разблокировать
-                </button>
-              ) : (
-                <button onClick={handleBlock} disabled={accountBusy} style={styles.rejectBtn}>
-                  Заблокировать
-                </button>
-              )}
-              <button onClick={handleDelete} disabled={accountBusy} style={{ ...styles.rejectBtn, borderColor: 'var(--sell)' }}>
-                Удалить аккаунт
-              </button>
-            </div>
-            {accountError && <div style={styles.errorBox}>{accountError}</div>}
-          </Section>
-
-          <div style={{ height: 16 }} />
-        </>
+      {canDeleteUser(detail) && (
+        <Section title="Учётная запись">
+          <button onClick={() => setDeleting(true)} style={{ ...styles.rejectBtn, borderColor: 'var(--sell)' }}>Удалить аккаунт</button>
+        </Section>
       )}
+      {deleting && <DeleteUserDialog user={detail} onClose={() => setDeleting(false)} onDeleted={() => navigate('/admin/users', { replace: true })} />}
+      <div style={{ height: 16 }} />
 
       <Section title="Ручная корректировка баланса">
         <p style={styles.hint}>

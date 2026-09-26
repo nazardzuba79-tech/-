@@ -1,0 +1,257 @@
+{
+  "passed": 961,
+  "failed": 0,
+  "passedSuites": 60,
+  "skippedTests": 22,
+  "skippedSuites": 2,
+  "results": [
+    {
+      "file": "/src/futures/__tests__/futuresBookLock.pg.test.ts",
+      "status": "skipped"
+    },
+    {
+      "file": "/src/api/routes/__tests__/kycEdgePostgres.test.ts",
+      "status": "skipped"
+    },
+    {
+      "file": "/src/api/routes/__tests__/auth.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/bcryptAuthRegression.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/FuturesProtectionService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/frontend/src/lib/__tests__/adminUsersActivity.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/account.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/adminDeposits.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/frontend/src/lib/__tests__/adminConsoleInteractions.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/orderSizing.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/frontend/src/lib/__tests__/depositAllWallets.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/deposits.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/testMarkets.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/kyc.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/privateTrading.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/marketLiveGzip.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/adminUsers.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/FuturesPositionService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/cardApplications.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/sampledDisplayBudget.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/adminWallets.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/futuresProtection.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/copyPerformance.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/market.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/adminOverview.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/admin.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/universeMeasure.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/services/__tests__/DepositService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/analytics.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/nativeDemoAccess.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/demoTrading.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/products.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/adminWithdrawals.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/marketData.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/apiKeys.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/card.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/trades.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/reserves.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/portfolio.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/withdrawals.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/marketUniverse.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/orders.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/middleware/__tests__/apiKeyAuth.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/walletPortfolio.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/analyticsOpenInterestHistoryRoute.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/adminAuditLog.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/services/__tests__/OrderService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/routes/__tests__/sampledDisplayWarmup.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/LiquidationEngine.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/services/__tests__/DemoTradingService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/frontend/src/lib/__tests__/adminDepositRails.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/FundingRateService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/services/__tests__/AccountDeletionGate.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/matching-engine/__tests__/MatchingEngine.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/FuturesMarketRegistry.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/api/middleware/__tests__/auth.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/services/__tests__/TreasuryWalletService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/services/deposits/__tests__/depositWatchSchedule.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/services/__tests__/WithdrawalService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/MarkPriceService.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/frontend/src/lib/__tests__/adminLastLoginKyiv.test.ts",
+      "status": "passed"
+    },
+    {
+      "file": "/src/futures/__tests__/marginMath.test.ts",
+      "status": "passed"
+    }
+  ]
+}

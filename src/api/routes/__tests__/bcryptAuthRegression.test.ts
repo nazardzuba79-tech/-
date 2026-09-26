@@ -155,7 +155,7 @@ describe('bcrypt real-route auth/security regression', () => {
     expect(me.body).toMatchObject({ id: user.id, email, twoFactorEnabled: false });
     expect(me.body).not.toHaveProperty('passwordHash');
     expect(me.body).not.toHaveProperty('twoFactorBackupCodes');
-    expect(store.state.audit.map((entry) => entry.action)).toEqual(['USER_REGISTERED']);
+    expect(store.state.audit.map((entry) => entry.action)).toEqual([]);
   });
 
   it.each(['Uppercase', 'alllowercasepassword'])('preserves rejected registration password rule: %s', async (value) => {
@@ -196,7 +196,7 @@ describe('bcrypt real-route auth/security regression', () => {
     expect(claims(accepted.body.token).sid).not.toBe(claims(registeredToken).sid);
     expect((await request(app).get('/api/v1/me').auth(accepted.body.token, { type: 'bearer' })).status).toBe(200);
     expect([...store.state.users.values()][0].passwordHash).toBe(originalHash);
-    expect(store.state.audit.map((entry) => entry.action)).toEqual(['USER_REGISTERED', 'USER_LOGGED_IN']);
+    expect(store.state.audit.map((entry) => entry.action)).toEqual([]);
   });
 
   it('preserves account blocking after valid credentials without exposing it for a wrong password', async () => {
@@ -213,7 +213,7 @@ describe('bcrypt real-route auth/security regression', () => {
     expect(wrong.status).toBe(401);
     expect(wrong.body).toEqual({ error: 'Invalid email or password' });
     expect(store.state.sessions.size).toBe(1);
-    expect(store.state.audit.map((entry) => entry.action)).toEqual(['USER_REGISTERED']);
+    expect(store.state.audit.map((entry) => entry.action)).toEqual([]);
   });
 
   it('logs in an unchanged real bcrypt-5 fixture and consumes its old backup hash through the real 2FA route', async () => {

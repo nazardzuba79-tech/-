@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { apiKeysRouter } from '../apiKeys';
 
 function authHeader(userId: string) {
-  return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
+  return `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
 }
 
 function makePrismaMock() {
@@ -35,6 +35,8 @@ function makePrismaMock() {
 }
 
 function buildApp(prisma: any) {
+  // Route fixtures model the persisted sessions issued by the current login flow.
+  prisma = { session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.replace('test-session:', ''), revokedAt: null, lastSeenAt: new Date() })) }, ...prisma };
   const app = express();
   app.use(express.json());
   app.use('/api/v1', apiKeysRouter(prisma));

@@ -7,9 +7,10 @@ import { SkeletonRow } from '../../components/Skeleton';
 import { AdminStatCard } from './AdminStatCard';
 import { AdminPagination } from './AdminPagination';
 import { AdminToastContainer, useAdminToasts } from './AdminToast';
-import { UsersIcon, ActivityIcon, ClockIcon, MoreHorizontalIcon, EyeIcon, PauseCircleIcon, BanIcon } from './AdminIcons';
+import { UsersIcon, ActivityIcon, ClockIcon, MoreHorizontalIcon, EyeIcon } from './AdminIcons';
 import { useAdminUserActivity, type AdminDepositPackage } from './adminUserActivity';
 import { CreditDepositDrawer, addDecimalStrings } from './CreditDepositDrawer';
+import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { formatLastLoginAt } from './lastLoginLabel';
 
 type User = Awaited<ReturnType<typeof api.getAdminUsers>>[number];
@@ -81,8 +82,10 @@ function initials(email: string): string {
 }
 
 /** Все зарегистрированные пользователи биржи: KPI-сводка, поиск/фильтры,
- * таблица (карточки на мобильных) со сменой блокировки прямо из списка. */
+ * таблица (карточки на мобильных) с управлением аккаунтами прямо из списка. */
 export function AdminUsersPage() {
+  const [deleting, setDeleting] = useState<User | null>(null);
+  const deletedIds = useRef(new Set<string>());
   const [users, setUsers] = useState<User[] | null>(null);
   const [recentDeposits, setRecentDeposits] = useState<Map<string, { amount: string; asset: string; createdAt: string }>>(new Map());
   const [search, setSearch] = useState('');
@@ -100,7 +103,7 @@ export function AdminUsersPage() {
   const loadUsers = useCallback(() => {
     api
       .getAdminUsers()
-      .then((next) => { setUsers(next); setLoadError(false); })
+      .then((next) => { setUsers(next.filter((user) => !deletedIds.current.has(user.id))); setLoadError(false); })
       .catch(() => setLoadError(true));
     // The server returns only the newest deposit per user from the last 24h.
     // Do not download the full admin deposit history just to paint badges.
@@ -177,20 +180,14 @@ export function AdminUsersPage() {
   const readyCount = activity?.packages.filter((p) => p.state === 'READY').length ?? 0;
   const topUpCount = activity?.packages.filter((p) => p.state !== 'READY').length ?? 0;
 
-  async function handleBlock(u: User) {
-    const reason = window.prompt(`Причина блокировки ${u.email}:`);
-    if (reason === null) return;
-    await api.blockUser(u.id, reason);
+  function deletionDone() {
+    if (!deleting) return;
+    deletedIds.current.add(deleting.id);
+    setUsers((previous) => previous?.filter((user) => user.id !== deleting.id) ?? previous);
+    setRecentDeposits((previous) => { const next = new Map(previous); next.delete(deleting.id); return next; });
+    push(deleting.email + ' — аккаунт удалён');
+    setDeleting(null);
     void refreshActivity();
-    setUsers((prev) => prev?.map((x) => (x.id === u.id ? { ...x, isBlocked: true, blockedReason: reason } : x)) ?? prev);
-    push(`${u.email} заблокирован`, 'warning');
-  }
-
-  async function handleUnblock(u: User) {
-    await api.unblockUser(u.id);
-    void refreshActivity();
-    setUsers((prev) => prev?.map((x) => (x.id === u.id ? { ...x, isBlocked: false } : x)) ?? prev);
-    push(`${u.email} разблокирован`);
   }
 
   function openCredit(u: User) {
@@ -215,14 +212,15 @@ export function AdminUsersPage() {
 
   return (
     <div>
+      {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={deletionDone} />}
       <h1 style={styles.title}>Пользователи</h1>
       <button type="button" className="admin-btn" onClick={() => { loadUsers(); void refreshActivity(); }}>Обновить</button>
       <p style={styles.subtitle}>Управление и мониторинг всех зарегистрированных пользователей биржи.</p>
 
       {(users || activity) && (
         <div style={{ ...styles.statGrid, gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }} className="admin-user-stats admin-user-stats-4">
-          <AdminStatCard label="Всего пользователей" value={(activity?.totalUsers ?? users?.length ?? 0).toLocaleString('ru-RU')} sub="Зарегистрировано" icon={UsersIcon} accent="brand" />
-          <AdminStatCard label="Новые регистрации" value={(activity?.newUsers24h ?? counts.new).toLocaleString('ru-RU')} sub="За последние 24 часа" icon={ActivityIcon} accent="brand" />
+          <AdminStatCard label="Всего пользователей" value={(users?.length ?? activity?.totalUsers ?? 0).toLocaleString('ru-RU')} sub="Зарегистрировано" icon={UsersIcon} accent="brand" />
+          <AdminStatCard label="Новые регистрации" value={(users ? counts.new : activity?.newUsers24h ?? 0).toLocaleString('ru-RU')} sub="За последние 24 часа" icon={ActivityIcon} accent="brand" />
           <AdminStatCard
             label="Готовы к проверке"
             value={readyCount.toLocaleString('ru-RU')}
@@ -231,7 +229,7 @@ export function AdminUsersPage() {
             icon={ClockIcon}
             accent="warning"
           />
-          <AdminStatCard label="Ожидают верификации" value={(activity?.pendingKyc ?? counts.kyc).toLocaleString('ru-RU')} sub="KYC на проверке" icon={ClockIcon} accent="warning" />
+          <AdminStatCard label="Ожидают верификации" value={(users ? counts.kyc : activity?.pendingKyc ?? 0).toLocaleString('ru-RU')} sub="KYC на проверке" icon={ClockIcon} accent="warning" />
         </div>
       )}
 
@@ -284,8 +282,7 @@ export function AdminUsersPage() {
             events={eventsFor(u, isNew(u), pendingByUser.get(u.id), recentDeposits.get(u.id))}
             onOpen={() => navigate(`/admin/users/${u.id}`)}
             onCredit={openCredit}
-            onBlock={handleBlock}
-            onUnblock={handleUnblock}
+            onDelete={setDeleting}
           />
         ))}
         {users && list.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{tab === 'all' && !search && !filter ? 'Пользователей пока нет.' : 'Никого не найдено.'}</p>}
@@ -299,8 +296,7 @@ export function AdminUsersPage() {
             events={eventsFor(u, isNew(u), pendingByUser.get(u.id), recentDeposits.get(u.id))}
             onOpen={() => navigate(`/admin/users/${u.id}`)}
             onCredit={openCredit}
-            onBlock={handleBlock}
-            onUnblock={handleUnblock}
+            onDelete={setDeleting}
           />
         ))}
       </div>
@@ -394,15 +390,13 @@ function UserRow({
   events,
   onOpen,
   onCredit,
-  onBlock,
-  onUnblock,
+  onDelete,
 }: {
   user: User;
   events: UserEvents;
   onOpen: () => void;
   onCredit: (u: User) => void;
-  onBlock: (u: User) => void;
-  onUnblock: (u: User) => void;
+  onDelete: (u: User) => void;
 }) {
   const badge = KYC_LABEL[u.kycStatus] ?? KYC_LABEL.NOT_STARTED;
   return (
@@ -440,7 +434,7 @@ function UserRow({
       </span>
       <span onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
         <CreditButton user={u} events={events} onCredit={onCredit} />
-        <ActionsMenu user={u} onOpen={onOpen} onBlock={onBlock} onUnblock={onUnblock} />
+        <ActionsMenu user={u} onOpen={onOpen} onDelete={onDelete} />
       </span>
     </div>
   );
@@ -451,15 +445,13 @@ function MobileUserCard({
   events,
   onOpen,
   onCredit,
-  onBlock,
-  onUnblock,
+  onDelete,
 }: {
   user: User;
   events: UserEvents;
   onOpen: () => void;
   onCredit: (u: User) => void;
-  onBlock: (u: User) => void;
-  onUnblock: (u: User) => void;
+  onDelete: (u: User) => void;
 }) {
   const badge = KYC_LABEL[u.kycStatus] ?? KYC_LABEL.NOT_STARTED;
   return (
@@ -472,7 +464,7 @@ function MobileUserCard({
         </div>
         <span onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <CreditButton user={u} events={events} onCredit={onCredit} />
-          <ActionsMenu user={u} onOpen={onOpen} onBlock={onBlock} onUnblock={onUnblock} />
+          <ActionsMenu user={u} onOpen={onOpen} onDelete={onDelete} />
         </span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
@@ -491,7 +483,7 @@ function MobileUserCard({
   );
 }
 
-function ActionsMenu({ user, onOpen, onBlock, onUnblock }: { user: User; onOpen: () => void; onBlock: (u: User) => void; onUnblock: (u: User) => void }) {
+function ActionsMenu({ user, onOpen, onDelete }: { user: User; onOpen: () => void; onDelete: (u: User) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -519,25 +511,9 @@ function ActionsMenu({ user, onOpen, onBlock, onUnblock }: { user: User; onOpen:
           >
             <EyeIcon size={15} /> Профиль
           </button>
-          {user.isBlocked ? (
-            <button
-              style={{ ...styles.filterMenuItem, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--buy)' }}
-              onClick={() => {
-                setOpen(false);
-                onUnblock(user);
-              }}
-            >
-              <PauseCircleIcon size={15} /> Разблокировать
-            </button>
-          ) : (
-            <button
-              style={{ ...styles.filterMenuItem, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--sell)' }}
-              onClick={() => {
-                setOpen(false);
-                onBlock(user);
-              }}
-            >
-              <BanIcon size={15} /> Заблокировать
+          {canDeleteUser(user) && (
+            <button style={{ ...styles.filterMenuItem, color: 'var(--sell)' }} onClick={() => { setOpen(false); onDelete(user); }}>
+              Удалить аккаунт
             </button>
           )}
         </div>

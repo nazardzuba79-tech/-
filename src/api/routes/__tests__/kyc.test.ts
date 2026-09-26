@@ -16,11 +16,12 @@ const PUBLIC_X = (publicKey.export({ format: 'jwk' }) as { x: string }).x;
 const other = generateKeyPairSync('ed25519');
 
 function authHeader(userId: string) {
-  return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
+  return `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
 }
 
-/** Same app shape as production: the global JSON parser runs first. */
+/** Same app shape as production, with a persisted login session. */
 function buildApp(prisma: any, trust: KycEdgeTrust = new KycEdgeTrust()) {
+  prisma = { session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.replace('test-session:', ''), revokedAt: null, lastSeenAt: new Date() })) }, ...prisma };
   const app = express();
   app.use(express.json({ limit: '100kb' }));
   app.use('/api/v1', kycRouter(prisma, trust));

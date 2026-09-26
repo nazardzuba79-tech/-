@@ -1,3 +1,4 @@
+import { AdminUserDeletionService, UserDeletionError } from '../../services/AdminUserDeletionService';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -9,34 +10,24 @@ import { DemoTradingService, DemoTradingError } from '../../services/DemoTrading
 /**
  * Admin's view into every registered account — the registration data,
  * verification status, and balances the admin panel's Users section needs,
- * plus (on the detail route) a client's full activity history. The
- * registration IP isn't a column on User; it's read back from the
- * USER_REGISTERED AuditLog entry auth.ts already writes on every sign-up.
+ * plus (on the detail route) a client's full activity history. Login times
+ * come from Session; infrastructure IPs are not presented as client IPs.
  */
-export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingService): Router {
+export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingService, deletion?: AdminUserDeletionService): Router {
   const router = Router();
   const balanceAdjustments = new BalanceAdjustmentService(prisma);
 
   router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
 
-    const [users, registrations, balances, lastLogins] = await Promise.all([
+    const [users, balances, lastLogins] = await Promise.all([
       prisma.user.findMany({
         where: search ? { email: { contains: search, mode: 'insensitive' } } : undefined,
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.auditLog.findMany({ where: { action: 'USER_REGISTERED' }, orderBy: { createdAt: 'asc' } }),
       prisma.balance.findMany(),
-      prisma.auditLog.groupBy({ by: ['userId'], where: { action: 'USER_LOGGED_IN' }, _max: { createdAt: true } }),
+      prisma.session.groupBy({ by: ['userId'], _max: { createdAt: true } }),
     ]);
-
-    const registrationIpByUser = new Map<string, string | null>();
-    for (const r of registrations) {
-      if (!registrationIpByUser.has(r.userId!)) {
-        const meta = r.metadata as { ip?: string | null } | null;
-        registrationIpByUser.set(r.userId!, meta?.ip ?? null);
-      }
-    }
 
     const balancesByUser = new Map<string, typeof balances>();
     for (const b of balances) {
@@ -58,7 +49,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         isAdmin: u.role === 'ADMIN',
         kycStatus: u.kycStatus,
         createdAt: u.createdAt,
-        registrationIp: registrationIpByUser.get(u.id) ?? null,
+        registrationIp: null,
         lastLoginAt: lastLoginByUser.get(u.id) ?? null,
         isBlocked: !!u.blockedAt,
         blockedAt: u.blockedAt,
@@ -76,9 +67,8 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const [registration, lastLogin, balances, demoBalances, deposits, withdrawals, orders, purchases, kycSubmissions] = await Promise.all([
-      prisma.auditLog.findFirst({ where: { userId: id, action: 'USER_REGISTERED' }, orderBy: { createdAt: 'asc' } }),
-      prisma.auditLog.findFirst({ where: { userId: id, action: 'USER_LOGGED_IN' }, orderBy: { createdAt: 'desc' } }),
+    const [lastLogin, balances, demoBalances, deposits, withdrawals, orders, purchases, kycSubmissions] = await Promise.all([
+      prisma.session.findFirst({ where: { userId: id }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } }),
       prisma.balance.findMany({ where: { userId: id } }),
       prisma.demoBalance.findMany({ where: { userId: id }, orderBy: { asset: 'asc' } }),
       prisma.deposit.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 100 }),
@@ -88,8 +78,6 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       prisma.kycSubmission.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' } }),
     ]);
 
-    const registrationMeta = registration?.metadata as { ip?: string | null } | null;
-
     res.json({
       id: user.id,
       email: user.email,
@@ -97,7 +85,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       isAdmin: user.role === 'ADMIN',
       kycStatus: user.kycStatus,
       createdAt: user.createdAt,
-      registrationIp: registrationMeta?.ip ?? null,
+      registrationIp: null,
       lastLoginAt: lastLogin?.createdAt ?? null,
       isBlocked: !!user.blockedAt,
       blockedAt: user.blockedAt,
@@ -261,52 +249,17 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
     res.json({ ok: true });
   });
 
-  // Permanently removes an account, but only once it has zero financial
-  // history to lose — no deposits, withdrawals, spot/futures orders, or
-  // purchases. That's deliberately what makes this safe to offer as a
-  // one-click "delete" rather than block: an account with real money
-  // movement keeps its trail (compliance, disputes) and must be blocked
-  // instead. AuditLog rows are left in place either way — they carry no DB
-  // relation to User, so nothing here can orphan-break them.
   router.delete('/admin/users/:id', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
-    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
-    if (!target) return res.status(404).json({ error: 'User not found' });
-    if (target.role === 'ADMIN') return res.status(400).json({ error: 'Cannot delete an admin account' });
-
-    const [deposits, withdrawals, orders, futuresOrders, futuresPositions, purchases] = await Promise.all([
-      prisma.deposit.count({ where: { userId: target.id } }),
-      prisma.withdrawal.count({ where: { userId: target.id } }),
-      prisma.order.count({ where: { userId: target.id } }),
-      prisma.futuresOrder.count({ where: { userId: target.id } }),
-      prisma.futuresPosition.count({ where: { userId: target.id } }),
-      prisma.purchase.count({ where: { userId: target.id } }),
-    ]);
-    if (deposits + withdrawals + orders + futuresOrders + futuresPositions + purchases > 0) {
-      return res.status(400).json({
-        error: 'У пользователя есть история операций (депозиты/выводы/ордера/покупки) — такой аккаунт можно только заблокировать, не удалить.',
-      });
+    if (!deletion) return res.status(503).json({ error: 'Account deletion is not configured' });
+    try {
+      return res.json(await deletion.delete(req.userId!, req.params.id));
+    } catch (error: any) {
+      if (error instanceof UserDeletionError) return res.status(error.status).json({ error: error.message });
+      if (error?.code === 'P2034' || error?.code === 'P2025') return res.status(409).json({ error: 'Аккаунт изменился. Обновите список и повторите попытку.' });
+      // Avoid logging user metadata or query parameters on destructive-operation errors.
+      console.error('Admin account deletion failed', { code: error?.code ?? 'UNKNOWN' });
+      return res.status(500).json({ error: 'Не удалось завершить удаление. Обновите список и повторите попытку.' });
     }
-
-    await prisma.$transaction([
-      prisma.balance.deleteMany({ where: { userId: target.id } }),
-      prisma.wallet.deleteMany({ where: { userId: target.id } }),
-      prisma.kycSubmission.deleteMany({ where: { userId: target.id } }),
-      prisma.apiKey.deleteMany({ where: { userId: target.id } }),
-      prisma.futuresBalance.deleteMany({ where: { userId: target.id } }),
-      // Support history is kept (guestName/guestEmail already carry it) —
-      // just detached from the account being deleted.
-      prisma.supportConversation.updateMany({ where: { userId: target.id }, data: { userId: null } }),
-      prisma.auditLog.create({
-        data: {
-          userId: null,
-          action: 'USER_DELETED',
-          metadata: { deletedUserId: target.id, deletedEmail: target.email, performedByAdminId: req.userId },
-        },
-      }),
-      prisma.user.delete({ where: { id: target.id } }),
-    ]);
-
-    res.json({ ok: true });
   });
 
   return router;

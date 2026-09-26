@@ -28,7 +28,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
       withdrawals.map((w) => ({
         id: w.id,
         userId: w.userId,
-        userEmail: w.user.email,
+        userEmail: w.user?.email ?? 'Удалённый аккаунт',
         asset: w.asset,
         network: w.network,
         toAddress: w.toAddress,

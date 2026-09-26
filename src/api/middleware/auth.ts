@@ -28,9 +28,8 @@ const SESSION_TOUCH_INTERVAL_MS = 5 * 60_000;
  * checks that session hasn't been revoked, so "sign out this device" in
  * Settings → Security actually invalidates that device's token instead of
  * just hiding a row in a list. A token from before this model existed has
- * no `sid` claim and skips the DB check entirely — old sessions keep
- * working until they expire on their own (JWT_EXPIRES_IN), nothing is
- * force-logged-out by this deploy. */
+ * no `sid` claim and must still belong to an existing user. Deleted accounts
+ * cannot keep access through legacy tokens. */
 export function requireAuth(prisma: PrismaClient) {
   return async function (req: AuthedRequest, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
@@ -45,28 +44,36 @@ export function requireAuth(prisma: PrismaClient) {
     }
     // A pending-2FA token (issued mid-login, before the code is verified) is
     // only ever valid against /auth/login/2fa — never as a real session.
-    if (payload.purpose) {
+    if (payload.purpose || typeof payload.sub !== 'string' || !payload.sub.trim()) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    if (payload.sid) {
-      // Re-check the database on EVERY request, but do not transfer device/IP
-      // metadata that authorization never reads. No auth cache or TTL.
-      const session = await prisma.session.findUnique({
-        where: { id: payload.sid },
-        select: { id: true, userId: true, revokedAt: true, lastSeenAt: true },
-      });
-      if (!session || session.userId !== payload.sub || session.revokedAt) {
-        return res.status(401).json({ error: 'Session has been signed out' });
+    try {
+      if (payload.sid) {
+        // Re-check the database on EVERY request, but do not transfer device/IP
+        // metadata that authorization never reads. No auth cache or TTL.
+        const session = await prisma.session.findUnique({
+          where: { id: payload.sid },
+          select: { id: true, userId: true, revokedAt: true, lastSeenAt: true },
+        });
+        if (!session || session.userId !== payload.sub || session.revokedAt) {
+          return res.status(401).json({ error: 'Session has been signed out' });
+        }
+        req.sessionId = session.id;
+        if (Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {
+          // Fire-and-forget — a missed "last seen" tick isn't worth failing
+          // or delaying the actual request over.
+          prisma.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() }, select: { id: true } }).catch(() => {});
+        }
       }
-      req.sessionId = session.id;
-      if (Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {
-        // Fire-and-forget — a missed "last seen" tick isn't worth failing
-        // or delaying the actual request over.
-        prisma.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() }, select: { id: true } }).catch(() => {});
-      }
-    }
 
+      if (!payload.sid) {
+        const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true } });
+        if (!user) return res.status(401).json({ error: 'Account no longer exists' });
+      }
+    } catch {
+      return res.status(503).json({ error: 'Authentication temporarily unavailable' });
+    }
     req.userId = payload.sub;
     next();
   };

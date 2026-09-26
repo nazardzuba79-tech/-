@@ -200,10 +200,6 @@ export function authRouter(
       }
     }
 
-    await prisma.auditLog.create({
-      data: { userId: user.id, action: 'USER_REGISTERED', metadata: { email, ...loginMetadata(req) } },
-    });
-
     // A successful registration is a signed-in session, on exactly the same
     // Session row + JWT machinery every login uses — no second auth path and
     // no intermediate step. `emailVerifiedAt` stays null: nobody has proven
@@ -245,10 +241,6 @@ export function authRouter(
     if (user.twoFactorEnabled) {
       return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
     }
-
-    await prisma.auditLog.create({
-      data: { userId: user.id, action: 'USER_LOGGED_IN', metadata: loginMetadata(req) },
-    });
 
     const session = await createSession(prisma, user.id, req);
     res.json({ token: issueToken(user.id, session.id) });
@@ -296,10 +288,6 @@ export function authRouter(
         data: { userId: user.id, action: 'TWO_FACTOR_BACKUP_CODE_USED', metadata: {} },
       });
     }
-
-    await prisma.auditLog.create({
-      data: { userId: user.id, action: 'USER_LOGGED_IN', metadata: loginMetadata(req) },
-    });
 
     const session = await createSession(prisma, user.id, req);
     res.json({ token: issueToken(user.id, session.id) });

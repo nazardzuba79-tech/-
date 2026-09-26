@@ -1,0 +1,25 @@
+{
+  "checks": [
+    "additive migration preserves existing user, credited deposit and sent withdrawal",
+    "ordinary empty USER deletion + one USER_DELETED without IP/UA",
+    "non-admin caller, ADMIN/self and protected email refused with 403",
+    "native and banking immutable triggers still reject direct deletes",
+    "rollback preserves every table, audit and order books",
+    "deferred COMMIT failure preserves the account and all three books",
+    "all owned records removed including balances/orders/positions/security/KYC/private/native/banking/card",
+    "uncredited real deposit retained and permanently ignored; credited hash/history retained",
+    "deleted deposits never enter queue or package accumulation",
+    "real withdrawal retained; internal withdrawal removed",
+    "other users and historical referral rewards preserved",
+    "old session JWT and legacy JWT denied after deletion",
+    "previously working API key denied after delete",
+    "concurrent double delete: one 200, one 404/409; one audit",
+    "all database foreign keys validate after cleanup",
+    "deletion gate drains in-flight operations, blocks newcomers, resumes on rollback",
+    "unverifiable COMMIT outcome fails closed instead of resuming stale matching",
+    "browser 1440px: confirmation/cancel/conflict/retry/double-click/list/detail/redirect/protected/journal hidden",
+    "browser 390px: confirmation/cancel/conflict/retry/double-click/list/detail/redirect/protected/journal hidden",
+    "desktop/mobile browser acceptance"
+  ],
+  "failures": []
+}

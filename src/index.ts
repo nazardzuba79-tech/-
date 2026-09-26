@@ -1,3 +1,5 @@
+import { AccountDeletionGate } from './services/AccountDeletionGate';
+import { AdminUserDeletionService } from './services/AdminUserDeletionService';
 import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
@@ -114,9 +116,10 @@ const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
 // verifies the edge's signed metadata calls (public key, no new secret).
 const kycEdgeTrust = new KycEdgeTrust();
 
+const accountDeletionGate = new AccountDeletionGate();
 const futuresEngine = new MatchingEngine();
 const markPriceService = new MarkPriceService(marketDataService);
-const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService, () => liquidationEngine.wake());
+const futuresPositionService = accountDeletionGate.guard(new FuturesPositionService(prisma, futuresEngine, markPriceService, () => liquidationEngine.wake()), ['placeOrder', 'cancelOrder', 'withFuturesBook']);
 
 const liveReferenceCollector = collectorFromEnv();
 const venueUniverseSource = liveReferenceCollector
@@ -130,11 +133,12 @@ const fundingRateService = new FundingRateService(prisma, markPriceService, () =
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 const futuresProtectionService = new FuturesProtectionService(prisma, futuresPositionService, markPriceService);
 
-const spotOrderService = new OrderService(prisma, engine, marketDataService, () => priceWatcherService.wake());
+const spotOrderService = accountDeletionGate.guard(new OrderService(prisma, engine, marketDataService, () => priceWatcherService.wake()), ['placeOrder', 'placeOcoOrder', 'triggerOrder', 'updateConditionalOrder', 'cancelOrder']);
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
 
 const demoEngine = new MatchingEngine();
-const demoTradingService = new DemoTradingService(prisma, demoEngine);
+const demoTradingService = accountDeletionGate.guard(new DemoTradingService(prisma, demoEngine), ['placeOrder', 'cancelOrder', 'topUp']);
+const adminUserDeletion = new AdminUserDeletionService(prisma, accountDeletionGate, { spot: engine, futures: futuresEngine, demo: demoEngine });
 const privateTradingService = new PrivateTradingService(new PrivateTradingStore(prisma),
   process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
     ? new PrivateTradingMarketData({ collector: { url: process.env.MARKET_DATA_COLLECTOR_URL, token: process.env.MARKET_DATA_COLLECTOR_TOKEN } })
@@ -250,7 +254,7 @@ app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEdgeTrust));
 app.use('/api/v1', adminRouter(prisma));
-app.use('/api/v1', adminUsersRouter(prisma, demoTradingService));
+app.use('/api/v1', adminUsersRouter(prisma, demoTradingService, adminUserDeletion));
 app.use('/api/v1', adminAuditLogRouter(prisma));
 app.use('/api/v1', cardRouter(prisma, walletPortfolioService));
 app.use('/api/v1', apiKeysRouter(prisma));
