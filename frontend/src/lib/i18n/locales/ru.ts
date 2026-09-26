@@ -938,6 +938,11 @@ export const RU = {
   'support.loadError': 'Не удалось загрузить историю переписки.',
   'support.loading': 'Загрузка...',
   'support.close': 'Закрыть',
+  'support.formSent': 'Сообщение отправлено',
+  'support.formSentHint': 'Мы ответим вам на указанную электронную почту.',
+  'support.formFailed': 'Не удалось отправить сообщение. Попробуйте ещё раз позже.',
+  'support.formEmailHint': 'Ответ придёт на этот адрес',
+  'support.formCheck': 'Проверьте имя, email и текст сообщения.',
 
   'footer.about': 'О нас',
   'footer.terms': 'Условия использования',

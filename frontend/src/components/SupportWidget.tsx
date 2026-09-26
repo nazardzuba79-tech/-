@@ -1,21 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { api, getToken, type SupportConversation, type SupportMessage, type SupportSubject } from '../lib/api';
+import { api, getToken } from '../lib/api';
 import { useLanguage, type Key } from '../lib/i18n';
 import { onOpenSupportWidget } from '../lib/supportWidget';
-import { customerErrorText } from '../lib/customerError';
+import { SUPPORT_ENDPOINT } from '../lib/supportEndpoint';
+import {
+  SUPPORT_LIMITS, SUPPORT_SUBJECTS, invalidSupportFields, sendSupportRequest, type SupportSubject,
+} from '../lib/supportForm';
 import './SupportWidget.css';
 
-// Guest identity is just this id, kept in localStorage — same anonymous-
-// visitor-id trust model Intercom/Zendesk widgets themselves use (see the
-// SupportConversation schema comment on the backend). A logged-in user
-// instead resumes their account-tied conversation via /support/conversations/mine,
-// so it follows them across devices.
-const GUEST_CONVERSATION_KEY = 'exchange_support_guest_conversation_id';
-
-const STATUS_POLL_MS = 20_000; // badge check while the panel is closed
-const THREAD_POLL_MS = 5_000; // live-ish reply check while the panel is open
-
-const SUBJECT_OPTIONS: SupportSubject[] = ['TECHNICAL', 'KYC', 'CARD', 'OTHER'];
 const SUBJECT_LABEL_KEY: Record<SupportSubject, Key> = {
   TECHNICAL: 'support.subject.TECHNICAL',
   KYC: 'support.subject.KYC',
@@ -23,11 +15,21 @@ const SUBJECT_LABEL_KEY: Record<SupportSubject, Key> = {
   OTHER: 'support.subject.OTHER',
 };
 
-/** Floating live-chat support widget, mounted once globally (see main.tsx)
- * so it's available on every page including the login screen. The
- * "usually reply within a few hours" status line is deliberately not a
- * fake "agent online now" claim — there's no real presence system behind
- * it, just a set expectation, same as any exchange's actual support page. */
+type Phase = 'idle' | 'sending' | 'sent' | 'failed' | 'check';
+
+/**
+ * The floating Support button and its form, mounted once globally (see
+ * main.tsx) so it is available on every page, the sign-in screen included.
+ *
+ * A FORM, NOT A CHAT. Send is one POST to the support Worker, which emails
+ * the owner; the owner replies from their mailbox to the address typed here.
+ * So this component keeps no conversation, reads nothing on mount, runs no
+ * timers and polls nothing — idle, it costs nothing anywhere.
+ *
+ * The only other request it can make is one profile read, and only when a
+ * signed-in user opens the form for the first time, to prefill their name and
+ * email (which they still see and can change).
+ */
 export function SupportWidget() {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -35,260 +37,163 @@ export function SupportWidget() {
   // (see lib/supportWidget). This widget lives outside the router, so an
   // event is the only way in.
   useEffect(() => onOpenSupportWidget(() => setOpen(true)), []);
-  const [loadingInitial, setLoadingInitial] = useState(true);
-  const [conversation, setConversation] = useState<SupportConversation | null>(null);
-  const [messages, setMessages] = useState<SupportMessage[]>([]);
-  const [unread, setUnread] = useState(false);
-  const [loadError, setLoadError] = useState(false);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState<SupportSubject>('TECHNICAL');
-  const [firstMessage, setFirstMessage] = useState('');
-  const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState<string | null>(null);
-
-  const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
-  // A double click lands before `starting`/`sending` re-render the button
-  // disabled; these refs make the second submit a no-op, so one click is
-  // one message is one email.
-  const startingRef = useRef(false);
+  const [message, setMessage] = useState('');
+  const [website, setWebsite] = useState('');
+  const [phase, setPhase] = useState<Phase>('idle');
+  // A double click lands before `phase` re-renders the button disabled; the
+  // ref makes the second submit a no-op, so one click is one email.
   const sendingRef = useRef(false);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prefilledRef = useRef(false);
 
   useEffect(() => {
+    if (!open || prefilledRef.current || !getToken()) return;
+    prefilledRef.current = true;
     let cancelled = false;
-    async function init() {
-      try {
-        if (getToken()) {
-          const { conversation: conv } = await api.getMySupportConversation();
-          if (!cancelled && conv) {
-            setConversation(conv);
-            setMessages(conv.messages);
-            setUnread(conv.unreadByUser);
-          }
-        } else {
-          const id = localStorage.getItem(GUEST_CONVERSATION_KEY);
-          if (id) {
-            const { conversation: conv, messages: msgs } = await api.getSupportConversation(id);
-            if (!cancelled) {
-              setConversation(conv);
-              setMessages(msgs);
-              setUnread(conv.unreadByUser);
-            }
-          }
-        }
-      } catch {
-        localStorage.removeItem(GUEST_CONVERSATION_KEY);
-      } finally {
-        if (!cancelled) setLoadingInitial(false);
-      }
-    }
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    api.getMe()
+      .then((me) => {
+        if (cancelled) return;
+        setEmail((current) => current || me.email || '');
+        setName((current) => current || me.displayName || '');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open]);
 
-  // Badge poll — only while the panel is closed, so the unread dot can
-  // still appear if an admin replies while the user is elsewhere on site.
-  useEffect(() => {
-    if (!conversation || open) return;
-    const interval = setInterval(() => {
-      api
-        .getSupportConversationStatus(conversation.id)
-        .then(({ unreadByUser }) => setUnread(unreadByUser))
-        .catch(() => {});
-    }, STATUS_POLL_MS);
-    return () => clearInterval(interval);
-  }, [conversation, open]);
-
-  // Thread poll — only while open, to pick up an admin's reply without the
-  // user needing to close/reopen the panel.
-  useEffect(() => {
-    if (!conversation || !open) return;
-    const interval = setInterval(() => {
-      api
-        .getSupportConversation(conversation.id)
-        .then(({ conversation: conv, messages: msgs }) => {
-          setMessages(msgs);
-          if (conv.unreadByUser) {
-            api.markSupportConversationRead(conv.id).catch(() => {});
-          }
-        })
-        .catch(() => {});
-    }, THREAD_POLL_MS);
-    return () => clearInterval(interval);
-  }, [conversation, open]);
-
-  useEffect(() => {
-    if (open) messagesEndRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages, open]);
-
-  function handleToggle() {
-    const next = !open;
-    setOpen(next);
-    if (next && conversation) {
-      setLoadError(false);
-      api
-        .getSupportConversation(conversation.id)
-        .then(({ messages: msgs }) => setMessages(msgs))
-        .catch(() => setLoadError(true));
-      if (unread) {
-        setUnread(false);
-        api.markSupportConversationRead(conversation.id).catch(() => {});
-      }
-    }
+  function edited() {
+    if (phase === 'sent' || phase === 'failed' || phase === 'check') setPhase('idle');
   }
 
-  async function handleStart(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (startingRef.current) return;
-    startingRef.current = true;
-    setStartError(null);
-    setStarting(true);
-    try {
-      const created = await api.startSupportConversation(name.trim(), email.trim(), subject, firstMessage.trim());
-      setConversation(created);
-      setMessages(created.messages);
-      if (!getToken()) localStorage.setItem(GUEST_CONVERSATION_KEY, created.id);
-      setFirstMessage('');
-    } catch (err) {
-      setStartError(customerErrorText(err, t, t('support.startError')));
-    } finally {
-      startingRef.current = false;
-      setStarting(false);
+    if (sendingRef.current) return;
+    const input = { name, email, subject, message, website };
+    // Only what the browser's own checks let through (e.g. a name of spaces).
+    if (invalidSupportFields(input).length) {
+      setPhase('check');
+      return;
     }
-  }
-
-  async function handleSend(e: FormEvent) {
-    e.preventDefault();
-    const body = draft.trim();
-    if (!conversation || !body || sendingRef.current) return;
     sendingRef.current = true;
-    setSending(true);
-    setSendError(null);
-    try {
-      const message = await api.sendSupportMessage(conversation.id, body);
-      setMessages((prev) => [...prev, message]);
-      setDraft('');
-    } catch (err) {
-      // Say so, and leave the draft in place so the user can just send again.
-      setSendError(customerErrorText(err, t, t('support.startError')));
-    } finally {
-      sendingRef.current = false;
-      setSending(false);
+    setPhase('sending');
+    const outcome = await sendSupportRequest(input, { endpoint: SUPPORT_ENDPOINT });
+    sendingRef.current = false;
+    if (outcome.status === 'sent') {
+      setMessage('');
+      setPhase('sent');
+    } else {
+      // The draft stays, so trying again later is one click.
+      setPhase('failed');
     }
   }
+
+  const sending = phase === 'sending';
 
   return (
     <>
       <button
         type="button"
-        onClick={handleToggle}
+        onClick={() => setOpen((v) => !v)}
         className="support-launcher"
         style={styles.launcher}
         aria-label={open ? t('support.close') : t('support.title')}
+        aria-expanded={open}
       >
         {open ? (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" stroke="var(--on-accent)" strokeWidth="2.2" strokeLinecap="round" />
           </svg>
         ) : (
           <ChatIcon />
         )}
-        {!open && unread && <span style={styles.badge}>1</span>}
       </button>
 
       {open && (
-        <div className="support-panel" style={styles.panel}>
-          <div style={styles.header}>
+        <div className="support-panel" role="dialog" aria-label={t('support.title')}>
+          <div className="support-panel-header">
             <div>
-              <div style={styles.headerTitle}>{t('support.title')}</div>
-              <div style={styles.headerStatus}>
-                <span style={styles.statusDot} />
-                {t('support.responseTime')}
-              </div>
+              <div className="support-panel-title">{t('support.title')}</div>
+              <div className="support-panel-sub">{t('support.responseTime')}</div>
             </div>
-            <button type="button" onClick={handleToggle} style={styles.closeBtn} aria-label={t('support.close')}>
+            <button type="button" className="support-panel-close" onClick={() => setOpen(false)} aria-label={t('support.close')}>
               ✕
             </button>
           </div>
 
-          {loadingInitial ? (
-            <div style={styles.centered}>{t('support.loading')}</div>
-          ) : !conversation ? (
-            <form onSubmit={handleStart} style={styles.form}>
-              <input
-                required
-                maxLength={100}
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('support.formName')}
-                style={styles.input}
-              />
-              <input
-                required
-                type="email"
-                maxLength={254}
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('support.formEmail')}
-                style={styles.input}
-              />
-              <select value={subject} onChange={(e) => setSubject(e.target.value as SupportSubject)} style={styles.input}>
-                {SUBJECT_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {t(SUBJECT_LABEL_KEY[s])}
-                  </option>
-                ))}
-              </select>
-              <textarea
-                required
-                maxLength={2000}
-                value={firstMessage}
-                onChange={(e) => setFirstMessage(e.target.value)}
-                placeholder={t('support.formMessagePlaceholder')}
-                rows={3}
-                style={{ ...styles.input, resize: 'none' as const }}
-              />
-              {startError && <div style={styles.error}>{startError}</div>}
-              <button type="submit" disabled={starting} style={styles.submit}>
-                {starting ? t('support.sending') : t('support.startChat')}
-              </button>
-            </form>
-          ) : (
-            <>
-              <div style={styles.messages}>
-                {loadError && <div style={styles.error}>{t('support.loadError')}</div>}
-                {messages.map((m) => (
-                  <div key={m.id} style={m.sender === 'USER' ? styles.bubbleRowUser : styles.bubbleRowAdmin}>
-                    <div style={m.sender === 'USER' ? styles.bubbleUser : styles.bubbleAdmin}>{m.body}</div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-              {sendError && <div role="alert" style={{ ...styles.error, margin: '0 12px' }}>{sendError}</div>}
-              <form onSubmit={handleSend} style={styles.inputRow}>
+          <form className="support-form" onSubmit={handleSubmit}>
+            <div className="support-form-body">
+              <label className="support-field">
+                <span>{t('support.formName')}</span>
                 <input
-                  value={draft}
-                  maxLength={2000}
-                  aria-label={t('support.inputPlaceholder')}
-                  onChange={(e) => { setDraft(e.target.value); if (sendError) setSendError(null); }}
-                  placeholder={t('support.inputPlaceholder')}
-                  style={styles.messageInput}
+                  required
+                  maxLength={SUPPORT_LIMITS.name}
+                  autoComplete="name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); edited(); }}
                 />
-                <button type="submit" disabled={sending || !draft.trim()} style={styles.sendBtn} aria-label={t('support.send')}>
-                  <SendIcon />
-                </button>
-              </form>
-            </>
-          )}
+              </label>
+              <label className="support-field">
+                <span>{t('support.formEmail')}</span>
+                <input
+                  required
+                  type="email"
+                  inputMode="email"
+                  maxLength={SUPPORT_LIMITS.email}
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); edited(); }}
+                  aria-describedby="support-email-hint"
+                />
+                <small id="support-email-hint">{t('support.formEmailHint')}</small>
+              </label>
+              <label className="support-field">
+                <span>{t('support.formSubject')}</span>
+                <select value={subject} onChange={(e) => { setSubject(e.target.value as SupportSubject); edited(); }}>
+                  {SUPPORT_SUBJECTS.map((s) => (
+                    <option key={s} value={s}>{t(SUBJECT_LABEL_KEY[s])}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="support-field">
+                <span>{t('support.formMessage')}</span>
+                <textarea
+                  required
+                  maxLength={SUPPORT_LIMITS.message}
+                  rows={5}
+                  value={message}
+                  onChange={(e) => { setMessage(e.target.value); edited(); }}
+                  placeholder={t('support.formMessagePlaceholder')}
+                />
+              </label>
+              {/* Honeypot: invisible to people and to screen readers, skipped by Tab. */}
+              <div className="support-hp" aria-hidden="true">
+                <label>
+                  Website
+                  <input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} name="website" />
+                </label>
+              </div>
+            </div>
+
+            <div className="support-form-footer">
+              {phase === 'sent' && (
+                <div className="support-result support-result-ok" role="status">
+                  <strong>{t('support.formSent')}</strong>
+                  <span>{t('support.formSentHint')}</span>
+                </div>
+              )}
+              {phase === 'failed' && (
+                <div className="support-result support-result-error" role="alert">{t('support.formFailed')}</div>
+              )}
+              {phase === 'check' && (
+                <div className="support-result support-result-error" role="alert">{t('support.formCheck')}</div>
+              )}
+              <button type="submit" className="support-submit" disabled={sending}>
+                {sending ? t('support.sending') : t('support.send')}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </>
@@ -297,21 +202,13 @@ export function SupportWidget() {
 
 function ChatIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M4 12a8 8 0 1 1 3.2 6.4L4 20l1.1-3.5A7.96 7.96 0 0 1 4 12Z"
         stroke="var(--on-accent)"
         strokeWidth="2"
         strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function SendIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M4 12h15M13 5l7 7-7 7" stroke="var(--on-accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -332,124 +229,5 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: 'var(--shadow-lg)',
     cursor: 'pointer',
     zIndex: 998,
-  },
-  badge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    background: 'var(--sell)',
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 800,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0 4px',
-    border: '2px solid var(--bg)',
-  },
-  panel: {
-    position: 'fixed',
-    bottom: 92,
-    right: 24,
-    width: 340,
-    maxWidth: 'calc(100vw - 32px)',
-    height: 480,
-    // max-height lives in SupportWidget.css: it needs a dvh fallback pair
-    // and a phone value that clears the bottom tab bar.
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 14,
-    boxShadow: 'var(--shadow-lg)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    zIndex: 999,
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: '14px 16px',
-    borderBottom: '1px solid var(--border)',
-    background: 'var(--panel-alt)',
-  },
-  headerTitle: { fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' },
-  headerStatus: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 },
-  statusDot: { width: 7, height: 7, borderRadius: '50%', background: 'var(--buy)', flexShrink: 0 },
-  closeBtn: { background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 14, cursor: 'pointer' },
-  centered: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: 12 },
-  form: { display: 'flex', flexDirection: 'column', gap: 10, padding: 16, overflowY: 'auto' },
-  input: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    color: 'var(--text-primary)',
-    fontSize: 13,
-    fontFamily: 'inherit',
-  },
-  error: { background: 'var(--sell-dim)', color: 'var(--sell)', padding: '6px 10px', borderRadius: 6, fontSize: 11 },
-  submit: {
-    border: 'none',
-    borderRadius: 24,
-    padding: '11px 0',
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
-    fontWeight: 800,
-    fontSize: 13,
-    cursor: 'pointer',
-  },
-  messages: { flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 8 },
-  bubbleRowUser: { display: 'flex', justifyContent: 'flex-end' },
-  bubbleRowAdmin: { display: 'flex', justifyContent: 'flex-start' },
-  bubbleUser: {
-    maxWidth: '78%',
-    background: 'var(--accent-dim)',
-    color: 'var(--text-primary)',
-    padding: '8px 12px',
-    borderRadius: '12px 12px 2px 12px',
-    fontSize: 13,
-    lineHeight: 1.4,
-    wordBreak: 'break-word',
-  },
-  bubbleAdmin: {
-    maxWidth: '78%',
-    background: 'var(--panel-alt)',
-    color: 'var(--text-primary)',
-    padding: '8px 12px',
-    borderRadius: '12px 12px 12px 2px',
-    fontSize: 13,
-    lineHeight: 1.4,
-    wordBreak: 'break-word',
-  },
-  inputRow: {
-    display: 'flex',
-    gap: 8,
-    padding: 12,
-    borderTop: '1px solid var(--border)',
-  },
-  messageInput: {
-    flex: 1,
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 20,
-    padding: '10px 14px',
-    color: 'var(--text-primary)',
-    fontSize: 13,
-  },
-  sendBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: '50%',
-    border: 'none',
-    background: 'var(--accent)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    flexShrink: 0,
   },
 };

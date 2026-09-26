@@ -1,0 +1,37 @@
+# VOLTEX support form edge (Cloudflare Workers Free).
+# One form submission = one request here = one email to the owner's
+# verified Email Routing destination. No Render, no Neon, no storage,
+# no timers, no cron. Isolated from Pages (frontend/) and market-edge.
+name = "voltex-support-edge"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+account_id = "c379227476dedde6dff09c787ffdb510"
+workers_dev = false
+preview_urls = false
+
+routes = [
+  { pattern = "support.voltextech.net", custom_domain = true }
+]
+
+[vars]
+# Server-side only. The browser never sees or chooses the recipient.
+SUPPORT_ADMIN_EMAIL = "voltex.crypto@gmail.com"
+# Sender on voltextech.net, the zone with Cloudflare Email Routing.
+SUPPORT_FROM_EMAIL = "support-form@voltextech.net"
+ALLOWED_ORIGINS = "https://voltextech.net,https://www.voltextech.net,https://voltex-exchange.pages.dev,https://localhost,capacitor://localhost"
+
+# Email Routing send binding, locked to the one verified destination:
+# even a bug in the Worker cannot send anywhere else.
+[[send_email]]
+name = "SUPPORT_EMAIL"
+destination_address = "voltex.crypto@gmail.com"
+
+# Per-IP limit at the Cloudflare location (the Worker also keeps a
+# 10-minute per-isolate window as a second, stricter floor).
+[[ratelimits]]
+name = "SUPPORT_RATE_LIMIT"
+namespace_id = "7301"
+
+  [ratelimits.simple]
+  limit = 3
+  period = 60

@@ -932,6 +932,11 @@ export const EN: Record<Key, string> = {
   'support.loadError': 'Could not load the conversation history.',
   'support.loading': 'Loading...',
   'support.close': 'Close',
+  'support.formSent': 'Message sent',
+  'support.formSentHint': 'We will reply to the email address you provided.',
+  'support.formFailed': 'Could not send the message. Please try again later.',
+  'support.formEmailHint': 'We will reply to this address',
+  'support.formCheck': 'Please check your name, email and message.',
 
   'footer.about': 'About us',
   'footer.terms': 'Terms of Service',

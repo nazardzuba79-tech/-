@@ -931,6 +931,11 @@ export const ZH: Record<Key, string> = {
   'support.loadError': '无法加载聊天记录。',
   'support.loading': '加载中...',
   'support.close': '关闭',
+  'support.formSent': '消息已发送',
+  'support.formSentHint': '我们将回复到您填写的邮箱。',
+  'support.formFailed': '消息发送失败，请稍后再试。',
+  'support.formEmailHint': '我们将回复到此邮箱',
+  'support.formCheck': '请检查姓名、邮箱和消息内容。',
 
   'footer.about': '关于我们',
   'footer.terms': '服务条款',
