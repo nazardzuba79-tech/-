@@ -20,6 +20,7 @@ import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { createVisibleRead } from '../lib/visibleRead';
 import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
 import { FuturesAccountSourceContext } from '../lib/futuresAccountSource';
 import { useNativeFuturesExecution } from '../lib/useNativeFuturesExecution';
@@ -167,7 +168,7 @@ export function FuturesPage() {
   // 'unknown', which is deliberately fail-closed. An ordinary user's binding
   // resolves to 'ordinary', the seam goes null, and the unchanged intervals
   // resume.
-  const account = useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 });
+  const account = useFuturesAccount(nativeExecution?{}:{ orders: 15_000, positions: 10_000 });
   /**
    * The tab strip sits in this component, one level ABOVE the replacement
    * account provider rendered below. Hooks in this component therefore see
@@ -344,20 +345,14 @@ export function FuturesPage() {
     // Listings change on the scale of minutes/days, not ticks. Keep the
     // cached catalogue warm without downloading ~10 KB from Render every
     // minute in a terminal tab left open all day.
-    const refresh = () => {
-      if (document.hidden) return;
-      void api.getFuturesUniverse().then(result => {
+    const reader = createVisibleRead(async () => {
+      await api.getFuturesUniverse().then(result => {
         if (!cancelled && result.available) setUniverse(result);
-      }).catch(() => {});
-    };
-    refresh();
-    const timer = window.setInterval(refresh, 5 * 60_000);
-    const visible = () => { if (!document.hidden) refresh(); };
-    document.addEventListener('visibilitychange', visible);
+      });
+    }, 5 * 60_000, true);
     return () => {
       cancelled = true;
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', visible);
+      reader.stop();
     };
   }, []);
 

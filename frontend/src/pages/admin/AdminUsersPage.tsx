@@ -94,7 +94,7 @@ export function AdminUsersPage() {
   const { toasts, push, dismiss } = useAdminToasts();
   const navigate = useNavigate();
   // The only recurring read on this page: counts + deposit packages, every
-  // ~25 s while visible, nothing while hidden (see adminUserActivity.ts).
+  // one hour while visible, nothing while hidden (see adminUserActivity.ts).
   const { activity, refresh: refreshActivity } = useAdminUserActivity();
 
   const loadUsers = useCallback(() => {
@@ -181,12 +181,14 @@ export function AdminUsersPage() {
     const reason = window.prompt(`Причина блокировки ${u.email}:`);
     if (reason === null) return;
     await api.blockUser(u.id, reason);
+    void refreshActivity();
     setUsers((prev) => prev?.map((x) => (x.id === u.id ? { ...x, isBlocked: true, blockedReason: reason } : x)) ?? prev);
     push(`${u.email} заблокирован`, 'warning');
   }
 
   async function handleUnblock(u: User) {
     await api.unblockUser(u.id);
+    void refreshActivity();
     setUsers((prev) => prev?.map((x) => (x.id === u.id ? { ...x, isBlocked: false } : x)) ?? prev);
     push(`${u.email} разблокирован`);
   }
@@ -214,6 +216,7 @@ export function AdminUsersPage() {
   return (
     <div>
       <h1 style={styles.title}>Пользователи</h1>
+      <button type="button" className="admin-btn" onClick={() => { loadUsers(); void refreshActivity(); }}>Обновить</button>
       <p style={styles.subtitle}>Управление и мониторинг всех зарегистрированных пользователей биржи.</p>
 
       {(users || activity) && (

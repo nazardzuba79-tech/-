@@ -113,7 +113,7 @@ export function FuturesPositionsPanel({
   // to the store: no timer is ever created for it. It changes only when a
   // position closes, so it is loaded when its tab becomes active and
   // refreshed explicitly on the events that can change it.
-  const account = useFuturesAccount(tab === 'open' ? { positions: 4000 } : {});
+  const account = useFuturesAccount(tab === 'open' ? { positions: 10_000 } : { positionHistory: 0 });
   const execution = useFuturesExecution();
 
   /** `null` = not known yet, or the request failed. It is deliberately NOT
@@ -190,7 +190,7 @@ export function FuturesPositionsPanel({
 
   // The one history load, on tab activation.
   useEffect(() => {
-    if (tab === 'history') execution.refresh(['positionHistory']);
+    if (tab === 'history' && execution.engine !== 'REAL') execution.refresh(['positionHistory']);
   }, [tab]);
 
   useEffect(() => {
@@ -200,8 +200,10 @@ export function FuturesPositionsPanel({
 
   // `refreshKey` still means "the page says the account changed" — it now
   // asks the shared store rather than issuing this panel's own request.
+  const previousRefreshKey = useRef(refreshKey);
   useEffect(() => {
-    if (refreshKey > 0) execution.refresh(tab === 'open' ? ['positions'] : ['positionHistory']);
+    if (previousRefreshKey.current !== refreshKey) execution.refresh(tab === 'open' ? ['positions'] : ['positionHistory']);
+    previousRefreshKey.current = refreshKey;
   }, [refreshKey, tab]);
 
   useEffect(() => {
@@ -320,6 +322,8 @@ export function FuturesPositionsPanel({
         </button>
       </div>}
 
+      {tab === 'history' && <button type="button" className="terminal-account-retry" disabled={activeResource.loading || activeResource.refreshing}
+        onClick={() => execution.refresh(['positionHistory'])}>{t('wallet.refreshAccount')}</button>}
       {error && <div style={styles.error}>{error}</div>}
       {activeResource.failed && !!activeResource.data?.length && <div className="terminal-account-state" role="alert" aria-busy={activeResource.refreshing}>
         <span>{t('futures.loadPositionsError')}</span>

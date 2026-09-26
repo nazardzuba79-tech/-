@@ -74,10 +74,12 @@ describe('the header no longer sources market stats from the wrong market', () =
 
 describe('VOLTEX financial values in the header are untouched', () => {
   it('still reads mark price, index and the settled funding rate from the futures services', () => {
-    expect(barCode).toContain('.getFuturesMarkPrice(symbol)');
+    expect(barCode).toContain('useFuturesMark(symbol)');
+    const markCode = read('src/lib/useFuturesMark.ts');
+    expect(markCode).toContain('api.getFuturesMarkPrice(symbol)');
     expect(barCode).toContain('.getFuturesFundingRate(symbol, 1)');
-    expect(barCode).toContain('setMarkPrice(parseFloat(res.markPrice))');
-    expect(barCode).toContain('setIndexPrice(parseFloat(res.indexPrice))');
+    expect(markCode).toContain('markPrice: number(result.markPrice)');
+    expect(markCode).toContain('indexPrice: number(result.indexPrice)');
   });
 
   it('never substitutes an external venue figure for a VOLTEX one', () => {

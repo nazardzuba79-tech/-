@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import { browserReadModules } from './browserReadModules';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
@@ -118,11 +119,14 @@ export function mountComponent(file: string, options: MountOptions = {}): Mounte
   }).outputText;
 
   const output: any = {};
+  const readModules = browserReadModules(react, api);
   new Function('require', 'exports', 'window', 'document', compiled)(
     (name: string) => {
       if (options.modules && name in options.modules) return options.modules[name];
       if (name === 'react') return react;
       if (name === '../lib/api') return { api, ApiError: Error };
+      if (name === '../lib/useFuturesMark') return readModules.mark;
+      if (name === '../lib/visibleRead') return readModules.visible;
       if (name === '../lib/useFuturesAccount') {
         return {
           useFuturesAccount: () => options.account,

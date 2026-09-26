@@ -2,6 +2,7 @@
 // Financial behavior is independently covered by nativeHistoricalCurrent, nativeLiveProjection,
 // calculatorMath, nativeQuoteReadOnly and mounted Futures Pro/order/close-all tests.
 import { readFileSync } from 'fs';
+import { browserReadModules } from '../../../test-utils/browserReadModules';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import { createHash } from 'crypto';
@@ -36,15 +37,15 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
     source.indexOf('  }, [symbol]);')
   );
   // The VOLTEX financial reads are still here, still per symbol.
-  expect(voltexLoop).toContain('api\n        .getFuturesMarkPrice(symbol)');
+  expect(source).toContain('useFuturesMark(symbol)');
+  expect(read('frontend/src/lib/useFuturesMark.ts')).toContain('api.getFuturesMarkPrice(symbol)');
   expect(voltexLoop).toContain('.getFuturesFundingRate(symbol, 1)');
   // Financial display freshness is bounded by what can actually change:
   // mark/index keep 4s, settled funding is one visible-minute read, and
   // hidden tabs make neither request until visibility returns.
-  expect(voltexLoop).toContain('setInterval(loadMark, 4000)');
-  expect(voltexLoop).toContain('setInterval(loadFunding, 60_000)');
-  expect(voltexLoop).toContain("typeof document !== 'undefined' && document.hidden");
-  expect(voltexLoop).toContain("document.addEventListener('visibilitychange', visible)");
+  expect(read('frontend/src/lib/useFuturesMark.ts')).toContain('30_000, true');
+  expect(voltexLoop).toContain('60_000, true');
+  expect(voltexLoop).toContain('fundingReader.stop()');
   // And no external venue's data may enter this loop or substitute for
   // one of its figures.
   expect(voltexLoop).not.toMatch(/binance|bybit|okx|deribit|bitget|MarketStats/i);
@@ -78,9 +79,9 @@ test('external derivatives reference polling sleeps hidden tabs and is one-minut
   const first = source.indexOf('  }, [symbol]);');
   const effect = source.slice(source.indexOf('  useEffect(() => {', first + 1), source.indexOf('  }, [baseAsset]);'));
   expect(effect).toContain('getFuturesMarketStats(baseAsset)');
-  expect(effect).toContain('setInterval(refresh, 60_000)');
-  expect(effect).toContain("typeof document !== 'undefined' && document.hidden");
-  expect(effect).toContain("document.addEventListener('visibilitychange', visible)");
+  expect(effect).toContain('60_000, true');
+  expect(effect).toContain('createVisibleRead');
+  expect(effect).toContain('reader.stop()');
 });
 
 test('market-data reads use perpetual references and preserve financial inputs', () => {
@@ -94,11 +95,12 @@ test('market-data reads use perpetual references and preserve financial inputs',
   // And it must stay display-only: no price, size or money enters here.
   expect(reads).not.toMatch(/assetMetadata[^;]*(price|balance|position|margin)/i);
   // What it is not allowed to have changed.
-  for (const read of ['getFuturesMarkPrice', 'getFuturesFundingRate']) {
+  for (const read of ['useFuturesMark', 'getFuturesFundingRate']) {
     expect(reads).toContain(read);
   }
   // Previous digest, before the caption's read: 27318636…a152e.
-  expect(hash(reads)).toBe('08a8063687ca6c50d4ffbd5d0a98e6486091efc15eb71d83930c82e18d6aa133');
+  // Retaken only for shared mark reads and visibility-aware read scheduling.
+  expect(hash(reads)).toBe('45ca07c99985789e9f7c301b41ad1cd8bee6721a2897e5d3d5c282452e9eee3c');
 });
 test('funding countdown implementation is unchanged', () => {
   expect(hash(source.slice(source.indexOf('const NextFundingCountdown'))))
@@ -300,6 +302,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     },
   };
   const output: any = {};
+  const readModules = browserReadModules(react, api);
   const compiled = ts.transpileModule(source + '\nexport { NextFundingCountdown };', {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
@@ -323,6 +326,8 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     if (name === './CryptoIcon') return { CryptoIcon: ({ symbol }: { symbol: string }) => react.createElement('img', { alt: symbol }) };
     if (name === 'react') return react;
     if (name === '../lib/api') return { api };
+    if (name === '../lib/useFuturesMark') return readModules.mark;
+    if (name === '../lib/visibleRead') return readModules.visible;
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/futuresReference') return futuresReference;
     if (name === '../lib/useFuturesReference') return { useFuturesReference: () => new Map(overrides.__noTicker ? [] : [

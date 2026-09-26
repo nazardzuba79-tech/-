@@ -224,7 +224,8 @@ test.each([
     // Existing expansion, retention, validation and submission remain unchanged.
     // Owner removed archive fee-estimate and position-limit display rows.
     // Audited change gates presentation only; fee reserve and sizing are intact.
-    "adc8d06cfa870c312f39a4d800403e9fcd7e57c6b1a4c06fc113722d25096803"
+    // Browser budget: shared mark hook + slower account subscription only.
+    "0bbe468df66f0894ac55a3a961df310bb15d3ec8acd69a751a707f213cfe7f91"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -246,7 +247,8 @@ test.each([
     // Re-taken for `groupAmount`'s separator: a comma between thousands
     // instead of a space, the one rule the rest of the terminal follows.
     // Digits, decimals, masking and every sum are untouched.
-    "31ae908d97cfdc9e3f21a3bff3e81307783956d9dfb175185b7fd822d4228a05"
+    // Browser budget: subscription cadence only; financial expressions unchanged.
+    "294f72ef4d57e2b571aa87d14375197d1e67c15f739d3e7a9fb15680f64080de"
   ],
   [
     "components/LeverageSlider.tsx",
@@ -331,7 +333,8 @@ test.each([
     // freshness paths are separate and unchanged; marketUniverseScale pins
     // the new cadence and visibility contract explicitly.
     // Owner-approved removal of the Maker/Taker display component and import.
-    "0a9a45b74cf02e34404a6f4e6061e073ebbd7b4e4fc0a1d05414d89e9226f328"
+    // Browser budget: account cadence and visibility-aware universe read only.
+    "c60c3e3b5f306f6d1a500b9ecb8a4653e74bcc9d5d6158034f040ef246af9e8c"
   ],
   [
     "components/FuturesPairList.tsx",

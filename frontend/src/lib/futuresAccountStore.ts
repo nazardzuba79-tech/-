@@ -31,9 +31,9 @@ import { api, getToken, onSessionChange } from './api';
  *   - Reference counted: the timer starts with the first subscriber and
  *     stops with the last, so a tab away from futures polls nothing.
  *   - A HIDDEN browser tab also keeps ZERO polling timers. Returning to the
- *     tab immediately refreshes each resource that still has a subscriber.
- *   - Each resource polls at the FASTEST cadence any live subscriber asked
- *     for, so nobody is served staler data than they asked for.
+ *     tab refreshes subscribed resources only when stale, failed or dirty.
+ *   - Account state sets the minimum cadence: empty 60s, active positions
+ *     10s, active orders 15s, active balances 30s. Histories never poll.
  *
  * What it deliberately does NOT do
  * --------------------------------
@@ -104,8 +104,7 @@ function emptyState(): FuturesAccountState {
 
 /** Floor on any resource's cadence — a guard against a caller asking for a
  *  request storm, not a change to anyone's current rate. */
-const MIN_INTERVAL_MS = 2_000;
-const DEFAULT_INTERVAL_MS = 5_000;
+const DEFAULT_INTERVAL_MS = 60_000;
 
 const FETCHERS: { [K in ResourceKey]: () => Promise<FuturesAccountState[K]['data']> } = {
   balances: () => api.getFuturesBalances(),
@@ -137,6 +136,7 @@ interface ResourceRuntime {
 const RESOURCE_KEYS: ResourceKey[] = ['balances', 'positions', 'orders', 'positionHistory', 'orderHistory'];
 
 class FuturesAccountStore {
+  private dirty = new Set<ResourceKey>();
   private state: FuturesAccountState = emptyState();
   private subscribers = new Map<symbol, Subscriber>();
   private runtime: Record<ResourceKey, ResourceRuntime> = {
@@ -168,7 +168,7 @@ class FuturesAccountStore {
     for (const resource of RESOURCE_KEYS) this.retime(resource);
     if (this.isHidden()) return;
     for (const resource of RESOURCE_KEYS) {
-      if (this.wantedIntervalFor(resource) !== null) void this.refresh(resource);
+      if (this.isWanted(resource) && this.needsRefresh(resource)) void this.refresh(resource);
     }
   };
 
@@ -198,7 +198,7 @@ class FuturesAccountStore {
 
     for (const resource of Object.keys(wants) as ResourceKey[]) {
       this.retime(resource);
-      if (!this.isHidden() && this.needsRefresh(resource)) void this.refresh(resource);
+      if (!this.isHidden() && (this.isHistory(resource) || this.needsRefresh(resource))) void this.refresh(resource);
     }
 
     return () => {
@@ -217,11 +217,14 @@ class FuturesAccountStore {
    * only by whichever poll happened to fire next, so a completed transfer
    * could sit invisible for up to five seconds.
    *
-   * In-flight deduplication still applies, so an invalidate landing on top
-   * of a poll costs nothing.
+   * An invalidate during a GET queues one follow-up: that old GET may have
+   * observed state before the mutation. Inactive/hidden resources stay dirty.
    */
   invalidate(resources: ResourceKey[] = RESOURCE_KEYS): void {
-    for (const resource of resources) void this.refresh(resource);
+    for (const resource of resources) {
+      this.dirty.add(resource);
+      if (this.isWanted(resource) && !this.isHidden()) void this.refresh(resource);
+    }
   }
 
   /**
@@ -236,7 +239,8 @@ class FuturesAccountStore {
     // No session, no account request. Without this, a logged-out tab left
     // on the page would poll for 401s.
     const token = getToken();
-    if (!token) return Promise.resolve();
+    if (!token || this.isHidden()) return Promise.resolve();
+    this.dirty.delete(resource);
 
     const generation = this.generation;
     runtime.inFlightGeneration = generation;
@@ -251,6 +255,12 @@ class FuturesAccountStore {
         // comparison catches a session change by any path that did not go
         // through the notifier at all.
         if (generation !== this.generation || getToken() !== token) return;
+        if (this.dirty.has(resource)) return; // superseded by a known mutation
+        // A fallback can discover a server-side fill/close without a local
+        // button click. Refresh dependent views once, not for mark/PnL ticks.
+        const signature = (rows: unknown) => JSON.stringify((rows as Array<Record<string, unknown>> | null)?.map(row =>
+          [row.id, row.size, row.status, row.remainingQuantity]));
+        const exposureChanged = current.data !== null && signature(current.data) !== signature(data);
         this.patch(resource, {
           data,
           loading: false,
@@ -259,6 +269,8 @@ class FuturesAccountStore {
           loaded: true,
           fetchedAt: Date.now(),
         });
+        if (exposureChanged && resource === 'orders') this.invalidate(['positions', 'balances', 'orderHistory']);
+        if (exposureChanged && resource === 'positions') this.invalidate(['balances', 'positionHistory']);
       })
       .catch(() => {
         if (generation !== this.generation || getToken() !== token) return;
@@ -269,7 +281,9 @@ class FuturesAccountStore {
         this.patch(resource, { loading: false, refreshing: false, failed: true, loaded: true });
       })
       .finally(() => {
-        if (runtime.inFlightGeneration === generation) runtime.inFlight = null;
+        if (generation !== this.generation) return;
+        runtime.inFlight = null;
+        if (this.dirty.has(resource) && this.isWanted(resource) && !this.isHidden()) void this.refresh(resource);
       });
 
     return runtime.inFlight;
@@ -283,6 +297,7 @@ class FuturesAccountStore {
    */
   reset(): void {
     this.generation += 1;
+    this.dirty.clear();
     for (const resource of RESOURCE_KEYS) {
       const runtime = this.runtime[resource];
       if (runtime.timer !== null) {
@@ -298,7 +313,7 @@ class FuturesAccountStore {
     // the new session.
     for (const resource of RESOURCE_KEYS) {
       this.retime(resource);
-      if (!this.isHidden() && this.wantedIntervalFor(resource) !== null) void this.refresh(resource);
+      if (!this.isHidden() && this.isWanted(resource)) void this.refresh(resource);
     }
   }
 
@@ -334,18 +349,33 @@ class FuturesAccountStore {
 
   private needsRefresh(resource: ResourceKey): boolean {
     const current = this.state[resource];
-    if (!current.loaded) return true;
+    if (this.dirty.has(resource) || !current.loaded || current.failed) return true;
+    if (this.isHistory(resource)) return false;
     return Date.now() - current.fetchedAt >= this.runtime[resource].intervalMs;
   }
 
-  /** The fastest cadence any live subscriber asked for, or null when
-   *  nobody wants this resource polled. */
+  private isHistory(resource: ResourceKey): boolean {
+    return resource === 'orderHistory' || resource === 'positionHistory';
+  }
+
+  private isWanted(resource: ResourceKey): boolean {
+    return [...this.subscribers.values()].some(({ wants }) => wants[resource] !== undefined);
+  }
+
+  /** Central budget floors cannot be bypassed by another fast subscriber.
+   * History subscribes for activation/invalidation only, never for polling. */
   private wantedIntervalFor(resource: ResourceKey): number | null {
+    if (this.isHistory(resource) || !this.isWanted(resource)) return null;
+    const positions = !!this.state.positions.data?.length;
+    const orders = !!this.state.orders.data?.length;
+    const floor = resource === 'positions' ? (positions ? 10_000 : 60_000)
+      : resource === 'orders' ? (orders ? 15_000 : 60_000)
+      : (positions || orders ? 30_000 : 60_000);
     let wanted: number | null = null;
     for (const { wants } of this.subscribers.values()) {
       const ms = wants[resource];
       if (ms === undefined) continue;
-      const clamped = Math.max(MIN_INTERVAL_MS, ms);
+      const clamped = Math.max(floor, ms);
       wanted = wanted === null ? clamped : Math.min(wanted, clamped);
     }
     return wanted;
@@ -355,7 +385,7 @@ class FuturesAccountStore {
     const runtime = this.runtime[resource];
     const wanted = this.wantedIntervalFor(resource);
 
-    if (wanted === null || this.isHidden()) {
+    if (wanted === null || this.isHidden() || !getToken()) {
       if (runtime.timer !== null) {
         clearInterval(runtime.timer);
         runtime.timer = null;
@@ -375,6 +405,9 @@ class FuturesAccountStore {
 
   private patch<K extends ResourceKey>(resource: K, changes: Partial<FuturesAccountState[K]>): void {
     this.state = { ...this.state, [resource]: { ...this.state[resource], ...changes } };
+    if ('data' in changes) {
+      for (const key of ['positions', 'orders', 'balances'] as ResourceKey[]) this.retime(key);
+    }
     this.emit();
   }
 
@@ -384,6 +417,7 @@ class FuturesAccountStore {
 
   // ── Test seams ────────────────────────────────────────────────────
   _resetForTests(): void {
+    this.dirty.clear();
     for (const resource of RESOURCE_KEYS) {
       const runtime = this.runtime[resource];
       if (runtime.timer !== null) clearInterval(runtime.timer);

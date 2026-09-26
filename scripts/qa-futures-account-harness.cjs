@@ -32,6 +32,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const argv = process.argv.slice(2);
+const BUDGET_QA = argv.includes('--budget');
 const PORT = Number(argv[argv.indexOf('--port') + 1]) || 4231;
 const DIST = argv.includes('--dist')
   ? path.resolve(argv[argv.indexOf('--dist') + 1])
@@ -145,6 +146,14 @@ const num = (s) => Number(s);
 const fixed = (n) => n.toFixed(8);
 
 function marketRoutes(pathname) {
+  if (BUDGET_QA) {
+    if (pathname === '/api/v1/market/display/spot-snapshot') return marketRoutes('/api/v1/market/snapshot');
+    if (pathname === '/api/v1/market/display') return { type: 'snapshot', rows: [] };
+    if (pathname === '/api/v1/market/universe') return { available: false, instruments: [] };
+    if (pathname.startsWith('/api/v1/market/futures/candles/')) return marketRoutes('/api/v1/market/external/candles/BTC-USDT');
+    if (pathname.startsWith('/api/v1/market/derivatives/')) return { available: false, reason: 'fixture' };
+    if (pathname === '/api/v1/market/assets/icons') return { assets: [] };
+  }
   if (pathname === '/api/v1/futures/config') {
     return {
       symbols: FUTURES_SYMBOLS, fundingIntervalHours: 8, minLeverage: 1, maxLeverage: 50,
@@ -319,6 +328,17 @@ function validateProtection(position, takeProfit, stopLoss) {
 const PROTECTION_PATH = /^\/api\/v1\/futures\/positions\/([^/]+)\/protection$/;
 
 function authedRoutes(pathname, acct, query) {
+  if (BUDGET_QA) {
+    if (pathname === '/api/v1/support/conversations/mine') return { conversation: null, messages: [] };
+    if (pathname === '/api/v1/native/wallet') return null;
+    if (pathname === '/api/v1/wallet/overview') return { real: { spot: acct.spot, futures: acct.futures, spotValueUsd: Number(acct.spot[0]?.available ?? 0), futuresValueUsd: Number(acct.futures[0]?.available ?? 0), totalValueUsd: Number(acct.spot[0]?.available ?? 0) + Number(acct.futures[0]?.available ?? 0) }, valuationComplete: true, unpricedAssets: [], btcPriceUsd: MARK['BTC/USDT'] };
+    if (pathname === '/api/v1/wallet/performance') return { periods: Object.fromEntries(['7d','30d','90d','1y','all'].map(p => [p, { period: p, available: false, points: [] }])), ageDays: 0, startedOn: null };
+    if (pathname === '/api/v1/admin/users') return Object.values(accounts).map(a => ({ ...a.me, balances: a.spot }));
+    if (pathname === '/api/v1/admin/deposits/recent-by-user') return [];
+    if (pathname === '/api/v1/admin/user-activity') return { asOf: new Date().toISOString(), totalUsers: 3, newUsers24h: 0, pendingKyc: 0, minDepositUsd: 300, packages: [], counts: { UNATTRIBUTED: 0, AWAITING_CONFIRMATIONS: 0, AWAITING_TOPUP: 0, READY: 0, NEEDS_REVIEW: 0 }, awaitingConfirmationsByUser: {} };
+    if (pathname === '/api/v1/admin/alerts-summary') return { depositId: null, withdrawalId: null, kycId: null };
+    if (/\/(deposits\/me|withdrawals\/me|wallet\/portfolio-history)$/.test(pathname)) return [];
+  }
   if (pathname === '/api/v1/me') return acct.me;
   if (pathname === '/api/v1/orders/me') {
     const status = query?.get('status') ?? '';
@@ -354,6 +374,18 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(body));
   };
 
+  if (BUDGET_QA && pathname === '/__qa/budget.js') {
+    res.writeHead(200, { 'content-type': 'application/javascript' });
+    return res.end(fs.readFileSync(path.join(__dirname, 'qa-browser-read-budget-fixture.js')));
+  }
+  if (BUDGET_QA && pathname === '/__qa/scenario') {
+    const mode = url.searchParams.get('mode');
+    accounts = freshAccounts(); hits.clear();
+    if (mode === 'A') { accounts['qa-user-a'].positions = []; accounts['qa-user-a'].orders = []; }
+    if (mode === 'B') accounts['qa-user-a'].orders = [];
+    return json(200, { mode });
+  }
+
   if (pathname === '/__qa/hits') return json(200, Object.fromEntries(hits));
   if (pathname === '/__qa/reset') {
     hits.clear(); accounts = freshAccounts(); failing = new Set();
@@ -380,6 +412,8 @@ const server = http.createServer(async (req, res) => {
     record(req.method, pathname);
     if ([...failing].some((f) => pathname.includes(f))) return json(503, { error: 'Injected failure' });
     const token = tokenOf(req);
+    if (BUDGET_QA && pathname === '/api/v1/wallet/portfolio-snapshot') return json(200, { recorded: false });
+    if (BUDGET_QA && pathname === '/api/v1/futures/universe') return json(200, { available: false, instruments: [] });
 
     // The owner-engine probe. These fixture identities are ORDINARY
     // accounts, so the answer is a definite "no": that is the verdict that
@@ -518,10 +552,11 @@ const server = http.createServer(async (req, res) => {
   const filePath = path.join(DIST, pathname === '/' ? 'index.html' : decodeURIComponent(pathname));
   if (filePath.startsWith(DIST) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     res.writeHead(200, { 'content-type': MIME[path.extname(filePath)] || 'application/octet-stream' });
-    return res.end(fs.readFileSync(filePath));
+    return res.end(BUDGET_QA && filePath.endsWith('.html') ? fs.readFileSync(filePath, 'utf8').replace('<head>', '<head><script src="/__qa/budget.js"></script>') : fs.readFileSync(filePath));
   }
   res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-  res.end(fs.readFileSync(path.join(DIST, 'index.html')));
+  const html = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+  res.end(BUDGET_QA ? html.replace('<head>', '<head><script src="/__qa/budget.js"></script>') : html);
 });
 
 server.listen(PORT, '127.0.0.1', () => {

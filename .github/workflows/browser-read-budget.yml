@@ -1,0 +1,44 @@
+name: Browser read budget
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/lib/futuresAccountStore.ts'
+      - 'frontend/src/lib/useFuturesAccount.ts'
+      - 'frontend/src/lib/visibleRead.ts'
+      - 'frontend/src/lib/useVisibleAccountRead.ts'
+      - 'frontend/src/lib/useFuturesMark.ts'
+      - 'frontend/src/lib/useAdminAlerts.ts'
+      - 'frontend/src/components/Futures*.tsx'
+      - 'frontend/src/components/ArchiveTopAssets.tsx'
+      - 'frontend/src/pages/FuturesPage.tsx'
+      - 'frontend/src/pages/WalletPage.tsx'
+      - 'frontend/src/pages/wallet-v3/**'
+      - 'frontend/src/pages/admin/**'
+      - 'frontend/src/pages/private-trading/useNativeDemo.tsx'
+      - 'frontend/src/lib/__tests__/**'
+      - 'frontend/test-utils/**'
+      - 'scripts/qa-browser-read-budget-fixture.js'
+      - 'scripts/qa-futures-account-harness.cjs'
+      - '.github/workflows/browser-read-budget.yml'
+permissions:
+  contents: read
+jobs:
+  read-budget:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm run build --prefix frontend
+      - name: Real stores, mounted hooks, Futures and wallet preservation
+        run: >-
+          npm test -- --runInBand --silent
+          "--testPathPattern=frontend/src/lib/__tests__/(futures|accountReadLifecycle|adminConsoleInteractions|adminDepositRails|adminUsersActivity|renderBandwidthBudget|nativeLive|nativeTerminal|walletUnifiedAccount|browserReadBudget)"
