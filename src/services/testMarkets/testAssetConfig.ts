@@ -19,7 +19,9 @@ export interface TestAssetConfig {
   pair: string;
   isTestAsset: true;
   isTradable: false;
-  /** First simulated tick, epoch ms. Before it there is no price and no candle. */
+  /** Operational gate. False keeps the asset visible in preview forever: no countdown, candles or automatic listing. */
+  listingArmed: boolean;
+  /** First simulated tick, epoch ms. Used only after listingArmed is true. */
   listingAt: number;
   /** The simulated listing price, in quote units. */
   initialPrice: number;
@@ -34,6 +36,9 @@ export const VOLTORA: TestAssetConfig = {
   pair: 'VTA/USDT',
   isTestAsset: true,
   isTradable: false,
+  // Production stays frozen until the owner explicitly asks to start the listing.
+  // Jest uses NODE_ENV=test so the existing deterministic simulation suites keep exercising live phases.
+  listingArmed: process.env.NODE_ENV === 'test' || process.env.TEST_MARKET_LISTING_ARMED === '1',
   listingAt: Date.parse('2026-09-27T16:00:00Z'),
   initialPrice: 0.01,
   seed: 'voltora-2026-09-27',
