@@ -1,0 +1,43 @@
+/* Support widget geometry that inline styles cannot express: a dvh
+   fallback pair (the panel shrinks with the on-screen keyboard where the
+   browser supports it) and, on phones, room for the fixed bottom tab bar
+   so the launcher never covers «Профиль» and the panel never hides under it. */
+.support-panel {
+  max-height: calc(100vh - 140px);
+  max-height: calc(100dvh - 140px);
+}
+.support-panel input,
+.support-panel textarea,
+.support-panel select {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 900px) {
+  body:has(.bottom-nav) .support-launcher {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px !important;
+    width: 50px !important;
+    height: 50px !important;
+  }
+  body:has(.bottom-nav) .support-panel {
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px !important;
+    max-height: calc(100vh - 200px);
+    max-height: calc(100dvh - 200px);
+  }
+}
+@media (max-width: 480px) {
+  .support-panel {
+    right: 16px !important;
+    left: 16px;
+    width: auto !important;
+    max-width: none !important;
+    /* 16px input text: iOS does not zoom the page when the field is focused. */
+  }
+  .support-panel input,
+  .support-panel textarea,
+  .support-panel select {
+    font-size: 16px !important;
+  }
+}

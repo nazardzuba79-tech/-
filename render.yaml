@@ -44,6 +44,8 @@ services:
         value: "USDT:0xdAC17F958D2ee523a2206206994597C13D831ec7:6"
       - key: ETHEREUM_API_KEY
         sync: false # optional — free key from https://etherscan.io/apis, powers the admin's incoming-transfers feed
+      - key: SUPPORT_ADMIN_EMAIL
+        value: voltex.crypto@gmail.com # recipient of support-chat notifications (Admin → Поддержка shows it); SMTP_HOST/PORT/SECURE/USER/PASS stay dashboard-only secrets
 
 # The frontend ("voltex-exchange" in the Render dashboard, live at
 # exchange-frontend-3qd1.onrender.com) is intentionally NOT declared here.

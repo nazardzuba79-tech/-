@@ -820,6 +820,12 @@ enum SupportSender {
   ADMIN
 }
 
+enum SupportNotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 /// One support chat thread. `id` itself doubles as the ticket number
 /// referenced in outbound admin-notification emails (`[Ticket #<id>]`) —
 /// no separate token needed since it's already a random, unguessable
@@ -840,9 +846,13 @@ model SupportConversation {
   /// Flips true when an admin reply lands via the inbound-email webhook;
   /// drives the floating widget's unread badge. Cleared by POST .../read.
   unreadByUser Boolean        @default(false)
+  /// Flips true on every new USER message; cleared when an admin opens the
+  /// conversation in Admin → Поддержка.
+  unreadByAdmin Boolean       @default(false)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   messages     SupportMessage[]
+  notifications SupportNotification[]
 
   @@index([userId])
 }
@@ -853,9 +863,43 @@ model SupportMessage {
   conversation   SupportConversation @relation(fields: [conversationId], references: [id])
   sender         SupportSender
   body           String
+  /// Inbound replies only: a hash of the mail provider's Message-ID, so a
+  /// webhook delivered twice does not post the same reply twice.
+  externalId     String?             @unique
   createdAt      DateTime            @default(now())
+  notification   SupportNotification?
 
   @@index([conversationId, createdAt])
+}
+
+/// The admin email for one USER support message — a durable outbox row,
+/// written in the same transaction as the message, so a message never
+/// exists without its notification and a crash after the HTTP response
+/// loses nothing. SupportNotificationOutbox sends PENDING rows and records
+/// the outcome. `failureCategory`/`failureCode` are sanitized (a category
+/// and the SMTP reply code): the relay's own text is never stored.
+model SupportNotification {
+  id              String                    @id @default(uuid())
+  conversationId  String
+  conversation    SupportConversation       @relation(fields: [conversationId], references: [id])
+  messageId       String                    @unique
+  message         SupportMessage            @relation(fields: [messageId], references: [id])
+  /// SUPPORT_ADMIN_EMAIL at the last send attempt; null until one is made.
+  recipient       String?
+  status          SupportNotificationStatus @default(PENDING)
+  attempts        Int                       @default(0)
+  nextAttemptAt   DateTime                  @default(now())
+  lastAttemptAt   DateTime?
+  sentAt          DateTime?
+  failureCategory String?
+  failureCode     Int?
+  /// Lease while one process sends, so two instances never send one row at once.
+  claimedUntil    DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([status, nextAttemptAt])
+  @@index([conversationId])
 }
 
 /// Sandbox for testing trading/order-book behavior with fake funds, kept
