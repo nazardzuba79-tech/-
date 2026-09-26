@@ -71,6 +71,26 @@ it('the shared rules carry enough weight to actually apply', () => {
   }
 });
 
+it('Spot and CFD carry the final Futures instrument identity hierarchy', () => {
+  const spot = read('src/components/TickerBar.tsx');
+  expect(spot).toContain('className="pair-cluster"');
+  expect(spot).toContain('className="pair-markets-btn"');
+  expect(spot).toContain('<CryptoIcon symbol={baseAsset} size={24} />');
+  expect(spot).toContain('className="pair-identity"');
+  expect(spot).toContain('className="pair-asset"');
+
+  const cfd = read('src/components/CfdTickerBar.tsx');
+  expect(cfd).toContain('<CfdInstrumentIcon symbol={symbol} compact />');
+  expect(cfd).toContain('cfd-pair-cluster');
+  expect(cfd).toContain('cfd-instrument-identity');
+
+  const css = read(SYSTEM);
+  expect(css).toContain('INSTRUMENT IDENTITY PARITY');
+  expect(css).toContain('ORDER-TICKET PARITY');
+  expect(css).toContain('font-size:16px; line-height:20px; font-weight:600');
+  expect(css).toContain('min-height:50px; height:50px; border-radius:999px');
+});
+
 it('no Futures-only trading concept leaks into the Spot or CFD shells', () => {
   // Design consistency was the ask; business-logic mixing explicitly was not.
   // Spot has no leverage, no liquidation price and no funding, so the shell

@@ -206,7 +206,55 @@ test.each([
   // to this file, including anything that touches a read or a handler,
   // still trips it.
   const normalized = path === 'frontend/src/components/TickerBar.tsx'
-    ? read(path).replace('<span className="pair-arrow" aria-hidden="true" />', '<span className="pair-arrow">\u25bc</span>')
+    ? read(path)
+      // 2026-09-26 terminal design parity: Spot intentionally received only
+      // the final Futures HEADER PRESENTATION (market-list affordance, icon,
+      // pair/name stack). Normalize those display-only additions back to the
+      // old markup before hashing so this guard still byte-pins every Spot
+      // market-data read, calculation and order/navigation handler.
+      .replace("import { List as ListIcon } from 'lucide-react';\nimport { CryptoIcon } from './CryptoIcon';\nimport { useAssetMetadata } from '../lib/assetMetadataStore';\n", '')
+      .replace("  const assetName = useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null;\n", '')
+      .replace(`      <div className="pair-cluster">
+        {onSelectPair && (
+          <button type="button" className="pair-markets-btn" aria-label={t('nav.markets')} title={t('nav.markets')} onClick={onSelectPair}>
+            <ListIcon size={16} />
+          </button>
+        )}
+        <div
+          className="pair-selector"
+          role={onSelectPair ? 'button' : undefined}
+          tabIndex={onSelectPair ? 0 : undefined}
+          onClick={onSelectPair}
+          onKeyDown={(e) => {
+            if (onSelectPair && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              onSelectPair();
+            }
+          }}
+        >
+          <CryptoIcon symbol={baseAsset} size={24} />
+          <span className="pair-identity">
+            <span className="pair-name">{pair}</span>
+            <span className="pair-asset">{assetName}</span>
+          </span>
+          <span className="pair-arrow" aria-hidden="true" />
+        </div>
+      </div>`, `      <div
+        className="pair-selector"
+        role={onSelectPair ? 'button' : undefined}
+        tabIndex={onSelectPair ? 0 : undefined}
+        onClick={onSelectPair}
+        onKeyDown={(e) => {
+          if (onSelectPair && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onSelectPair();
+          }
+        }}
+      >
+        <span className="pair-name">{pair}</span>
+        <span className="pair-arrow" aria-hidden="true" />
+      </div>`)
+      .replace('<span className="pair-arrow" aria-hidden="true" />', '<span className="pair-arrow">\u25bc</span>')
     : read(path);
   // Only the CFD read-response TYPE changes: nullable price + quote metadata.
   // Restore that exact line for this fingerprint of all existing API behavior.

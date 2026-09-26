@@ -69,7 +69,7 @@ app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
 
 
 const DESKTOP = [[1920,1080],[1440,900],[1366,768]];
-const MOBILE = [[390,844],[430,932]];
+const MOBILE = [[320,740],[360,800],[390,844],[430,932]];
 const TERMINALS = [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']];
 const TOKENS = ['--bg-primary','--bg-secondary','--bg-tertiary','--border-color','--text-primary',
   '--text-secondary','--accent-yellow','--color-buy','--color-sell','--panel','--font-family'];
@@ -106,6 +106,17 @@ const READ = (tokenNames) => {
     overlaps,
     hasNaN: /\bNaN\b/.test(text),
     hasUndefined: /\bundefined\b/.test(text),
+    smallTargetDetails: [...document.querySelectorAll('button')]
+      .filter(b => { const r = b.getBoundingClientRect(); return r.height > 0 && r.height < 28 && r.width > 8; })
+      .map(b => {
+        const r = b.getBoundingClientRect();
+        return {
+          text: (b.getAttribute('aria-label') || b.textContent || '').trim().slice(0, 60),
+          cls: String(b.className || '').slice(0, 80),
+          width: Math.round(r.width),
+          height: Math.round(r.height),
+        };
+      }),
     smallTargets: [...document.querySelectorAll('button')]
       .filter(b => { const r = b.getBoundingClientRect(); return r.height > 0 && r.height < 28 && r.width > 8; })
       .length,
@@ -149,16 +160,11 @@ const READ = (tokenNames) => {
       if (m.hasUndefined) findings.push(`${name} @${key}: "undefined" is rendered`);
       if (m.stripClipped) findings.push(`${name} @${key}: the top strip is clipped above the viewport`);
       if (errs.length) findings.push(`${name} @${key}: ${errs.length} uncaught page error(s): ${errs[0]}`);
-      /* Tap targets are asserted for the two terminals this change is about.
-         Futures has ONE control under 28px and had it before any of this
-         existed — measured on unmodified main, where Spot had 22 and CFD 7.
-         It is recorded below so it is not lost, but it is not this task's to
-         fix, and failing on it would mean failing on someone else's bug. */
-      if (mobile && name !== 'futures' && m.smallTargets > 0) {
-        findings.push(`${name} @${key}: ${m.smallTargets} tap target(s) under 28px tall`);
-      }
-      if (mobile && name === 'futures' && m.smallTargets > 0) {
-        (report.preExisting ||= []).push(`futures @${key}: ${m.smallTargets} tap target(s) under 28px tall (pre-existing on main, out of scope)`);
+      /* Final mobile QA: every actual button must be usable by touch.
+         Keep the exact labels/classes in the finding so a failure is directly
+         actionable instead of being filed away as a historical exception. */
+      if (mobile && m.smallTargets > 0) {
+        findings.push(`${name} @${key}: ${m.smallTargets} tap target(s) under 28px tall — ${JSON.stringify(m.smallTargetDetails)}`);
       }
     }
 
