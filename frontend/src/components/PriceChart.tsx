@@ -1893,7 +1893,7 @@ function DrawToolbar({
   );
 
   const openFlyout = (group: string, wrap: DOMRect, items: number, sections: number) => {
-    const size = { width: 280, height: Math.min(560, 12 + items * 36 + sections * 26) };
+    const size = { width: 344, height: Math.min(560, 12 + items * 36 + sections * 26) };
     setFlyoutPos(drawingTools ? drawingFlyoutPosition(wrap, { width: window.innerWidth, height: window.innerHeight }, window.innerWidth <= 767, size) : { top: wrap.top - 4, left: wrap.right + 6 });
     setOpenGroup((g) => (g === group ? null : group));
   };
