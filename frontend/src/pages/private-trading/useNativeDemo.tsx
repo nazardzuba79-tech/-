@@ -9,6 +9,7 @@ import { chartExits } from '../../lib/nativeChartExits';
 import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCandleLoader } from '../../lib/chartTrading';
 import { compactNativeUiState,shouldPollNativeLive,NATIVE_LIVE_POLL_MS } from '../../lib/nativeLivePolicy';
 import { useNativeHistory } from './useNativeHistory';
+import { createVisibleRead } from '../../lib/visibleRead';
 
 const NATIVE_WARM_PREFIX='voltex:native-state:v2:';
 const NATIVE_WARM_MAX_AGE_MS=2*60_000;
@@ -125,12 +126,13 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
         if(!cancelled)suspend();
       }finally{if(!cancelled)setChecked(true);}
     }
-    void check();
-    const timer=window.setInterval(()=>{void check();},NATIVE_ACCESS_POLL_MS);
-    const visible=()=>{if(!document.hidden)void check();};
+    const reader=createVisibleRead(check,NATIVE_ACCESS_POLL_MS,true);
+    // Authorization is a gate, not a display cache: preserve its immediate
+    // visible-return recheck (including transient outage/recovery) at any age.
+    const visible=()=>{if(!document.hidden)void reader.refresh();};
     document.addEventListener('visibilitychange',visible);
-    const off=onSessionChange(()=>{resetSession();setBinding('unknown');setChecked(false);void check();});
-    return()=>{cancelled=true;alive.current=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);off();};
+    const off=onSessionChange(()=>{resetSession();setBinding('unknown');setChecked(false);void reader.refresh();});
+    return()=>{cancelled=true;alive.current=false;controller.abort();reader.stop();document.removeEventListener('visibilitychange',visible);off();};
   },[resetSession,suspend]);
   useEffect(()=>{if(!requested||!allowed)return;let cancelled=false;const controller=new AbortController();
     nativeDemoApi.activate(controller.signal).then(()=>nativeDemoApi.live(controller.signal)).then(s=>{if(!cancelled)commitState(s);}).catch(e=>{if(!cancelled)fail(e);});
@@ -169,10 +171,13 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   const run=useCallback(async(draft:NativeDraft)=>{try{await execute(draft);return true;}catch{return false;}},[execute]);
   useEffect(()=>{if(!requested||!allowed)return;
     // A command in flight answers with fresh state anyway; the timer only fills quiet time.
-    const timer=window.setInterval(()=>{if(shouldPollNativeLive(stateRef.current,document.hidden,lane.current.pending))void run({kind:'REFRESH'});},NATIVE_LIVE_POLL_MS);
-    const visible=()=>{if(!document.hidden)void nativeDemoApi.activate().then(()=>run({kind:'REFRESH'})).catch(fail);};
+    let timer:ReturnType<typeof setInterval>|null=null;
+    const stop=()=>{if(timer!==null)clearInterval(timer);timer=null;};
+    const schedule=()=>{stop();if(!document.hidden)timer=setInterval(()=>{if(shouldPollNativeLive(stateRef.current,document.hidden,lane.current.pending))void run({kind:'REFRESH'});},NATIVE_LIVE_POLL_MS);};
+    const visible=()=>{schedule();if(!document.hidden)void nativeDemoApi.activate().then(()=>run({kind:'REFRESH'})).catch(fail);};
+    schedule();
     document.addEventListener('visibilitychange',visible);
-    return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
+    return()=>{stop();document.removeEventListener('visibilitychange',visible);};
   },[requested,allowed,run,fail]);
   useEffect(()=>{const id=params.get('nativeCard');if(requested&&allowed&&id)nativeDemoApi.getCard(id).then(setCard).catch(fail);},[params,requested,allowed,fail]);
   const initialize=useCallback(async()=>{

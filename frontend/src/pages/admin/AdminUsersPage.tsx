@@ -97,7 +97,7 @@ export function AdminUsersPage() {
   const { toasts, push, dismiss } = useAdminToasts();
   const navigate = useNavigate();
   // The only recurring read on this page: counts + deposit packages, every
-  // ~25 s while visible, nothing while hidden (see adminUserActivity.ts).
+  // one hour while visible, nothing while hidden (see adminUserActivity.ts).
   const { activity, refresh: refreshActivity } = useAdminUserActivity();
 
   const loadUsers = useCallback(() => {
@@ -214,6 +214,7 @@ export function AdminUsersPage() {
     <div>
       {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={deletionDone} />}
       <h1 style={styles.title}>Пользователи</h1>
+      <button type="button" className="admin-btn" onClick={() => { loadUsers(); void refreshActivity(); }}>Обновить</button>
       <p style={styles.subtitle}>Управление и мониторинг всех зарегистрированных пользователей биржи.</p>
 
       {(users || activity) && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { useFuturesExecution } from '../lib/futuresExecution';
@@ -7,14 +7,17 @@ import { formatOrderDecimal, formatOrderDifference, spotOrderStatus } from './sp
 /** Account-wide orders. History is the endpoint's latest 100 orders, not fills. */
 export function FuturesOrdersPanel({ history = false, refreshKey }: { history?: boolean; refreshKey: number }) {
   const { t } = useLanguage();
-  const account = useFuturesAccount(history ? {} : { orders: 5000 });
+  const account = useFuturesAccount(history ? { orderHistory: 0 } : { orders: 15_000 });
   const execution = useFuturesExecution();
   const key = history ? 'orderHistory' : 'orders';
   const resource = account[key];
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [cancelFailed, setCancelFailed] = useState(false);
+  const previousRefreshKey = useRef(refreshKey);
   useEffect(() => {
-    if (history || refreshKey > 0) execution.refresh([key]);
+    const changed = previousRefreshKey.current !== refreshKey;
+    previousRefreshKey.current = refreshKey;
+    if ((history && execution.engine !== 'REAL') || changed) execution.refresh([key]);
   }, [history, refreshKey, key]);
 
   async function cancel(id: string) {
@@ -31,7 +34,7 @@ export function FuturesOrdersPanel({ history = false, refreshKey }: { history?: 
   const headers = ['trade.time', 'markets.pair', 'trade.orderTypeCol', 'trade.side', 'trade.price', 'trade.quantity', 'trade.filled', 'trade.status', 'futures.reduceOnly'];
   if (!history) headers.push('trade.action');
   return <div className="futures-orders-panel" aria-busy={resource.loading || resource.refreshing}>
-    <div className="futures-orders-caption">{t('futures.latestOrders')}</div>
+    <div className="futures-orders-caption">{t('futures.latestOrders')} <button type="button" className="terminal-account-retry" disabled={resource.loading || resource.refreshing} onClick={() => execution.refresh([key])}>{t('wallet.refreshAccount')}</button></div>
     {((resource.failed && !!resource.data?.length) || cancelFailed) && <div role="alert" className="futures-orders-error terminal-account-state">
       {t(cancelFailed ? 'trade.cancelOrderError' : 'trade.loadOrdersError')}
       <button type="button" className="terminal-account-retry" disabled={resource.loading || resource.refreshing} onClick={() => { setCancelFailed(false); execution.refresh([key]); }}>{t('trade.retry')}</button>

@@ -1,5 +1,6 @@
 import * as positionActions from '../futuresPositionActions';
 import { readFileSync } from 'fs';
+import { browserReadModules } from '../../../test-utils/browserReadModules';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
@@ -109,15 +110,20 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   // explicit, event-driven loads.
   const wantsSeen: Record<string, number>[] = [];
   const refreshes: string[][] = [];
+  const subscribedHistory = new Set<string>();
   const futuresAccountModule = {
     useFuturesAccount(wants: Record<string, number>) {
       wantsSeen.push(wants ?? {});
+      for (const key of ['positionHistory', 'orderHistory']) {
+        if (key in wants && !subscribedHistory.has(key)) { subscribedHistory.add(key); refreshes.push([key]); }
+      }
       return overrides.account ?? accountState();
     },
     refreshFuturesAccount: (keys?: string[]) => { refreshes.push(keys ?? ['*']); },
   };
 
   const output: any = {};
+  const readModules = browserReadModules(react, api);
   const compiled = ts.transpileModule(source(file), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
@@ -126,6 +132,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === 'react') return react;
     if (name === 'react-router-dom') return { useNavigate: () => jest.fn() };
     if (name === '../lib/api') return { api, ApiError: Error };
+    if (name === '../lib/useFuturesMark') return readModules.mark;
+    if (name === '../lib/visibleRead') return readModules.visible;
     if (name === '../lib/futuresExecution') {
       // The engine seam. Outside a provider the real components use
       // REAL_FUTURES_EXECUTION, which is the `api` call each one used to
@@ -204,11 +212,9 @@ describe('position history is loaded, never polled', () => {
   test('the history tab asks the store for NO history cadence', () => {
     const panel = mount('components/FuturesPositionsPanel.tsx');
     panel.render({ refreshKey: 0, tab: 'history' });
-    // An absent key is what tells the store never to create a timer. A
-    // cadence of any value — 60_000 included — would create one.
+    // History demand subscribes for activation/events; the store never polls it.
     for (const wants of panel.wantsSeen) {
-      expect(wants).not.toHaveProperty('positionHistory');
-      expect(Object.keys(wants)).toEqual([]);
+      expect(wants).toEqual({ positionHistory: 0 });
     }
   });
 
@@ -232,10 +238,10 @@ describe('position history is loaded, never polled', () => {
     expect(panel.refreshes).toHaveLength(1);
   });
 
-  test('the open-positions tab keeps its 4s shared cadence and wants no history', () => {
+  test('the open-positions tab requests the 10s active budget and wants no history', () => {
     const panel = mount('components/FuturesPositionsPanel.tsx');
     panel.render({ refreshKey: 0, tab: 'open' });
-    expect(panel.wantsSeen[0]).toEqual({ positions: 4000 });
+    expect(panel.wantsSeen[0]).toEqual({ positions: 10_000 });
     expect(panel.refreshes).toEqual([]);
   });
 
@@ -561,7 +567,7 @@ describe('Futures orders presentation', () => {
     const view = panel.render({ history: true, refreshKey: 0 });
     panel.render({ history: true, refreshKey: 0 });
     expect(panel.refreshes).toEqual([['orderHistory']]);
-    expect(panel.wantsSeen).toEqual([{}, {}]);
+    expect(panel.wantsSeen).toEqual([{ orderHistory: 0 }, { orderHistory: 0 }]);
     expect(text(view)).toContain('0.00000001');
     expect(text(view)).toContain('0.07');
     expect(nodes(view).filter(n => n.props?.className === 'cancel-btn')).toHaveLength(0);

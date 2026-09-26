@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAdminGate } from '../../lib/useAdminGate';
+import { useAdminAlertSound } from '../../lib/useAdminAlerts';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
 import './adminConsole.css';
@@ -34,6 +35,7 @@ export function AdminLayout() {
   const { status, me } = useAdminGate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  useAdminAlertSound(status !== 'loading' && status !== 'denied');
 
   if (status === 'loading') return <div style={styles.loadingScreen} />;
   if (status === 'denied') return <Navigate to="/" replace />;

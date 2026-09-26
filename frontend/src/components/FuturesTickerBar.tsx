@@ -1,6 +1,8 @@
 import { FuturesTurnover } from './FuturesTurnover';
 import { memo, useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { useFuturesMark } from '../lib/useFuturesMark';
+import { createVisibleRead } from '../lib/visibleRead';
 import type { FuturesMarketStats, GatewaySection } from '../lib/api';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { referenceNumber } from '../lib/futuresReference';
@@ -79,8 +81,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
    * way (see `.pair-asset`), so nothing shifts when the name arrives.
    */
   const assetName = useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null;
-  const [markPrice, setMarkPrice] = useState<number | null>(null);
-  const [indexPrice, setIndexPrice] = useState<number | null>(null);
+  const { markPrice, indexPrice } = useFuturesMark(symbol);
   const [fundingRate, setFundingRate] = useState<number | null>(null);
   /** From the one shared read of /futures/config — see
    *  lib/futuresConfigStore. `null` while unknown or after a failed read,
@@ -102,8 +103,6 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
     // Every figure below is re-read for the symbol currently selected, so
     // the whole row always describes one instrument — there is no path
     // where a stat is left over from the previously selected contract.
-    setMarkPrice(null);
-    setIndexPrice(null);
     setFundingRate(null);
     // Cleared on every symbol change, so BTC's turnover and open interest
     // can never sit under an ETH header while the new read is in flight.
@@ -119,77 +118,40 @@ export function FuturesTickerBar({ symbol, onSelectSymbol, marketsOpen = false, 
     // was never an answer to that question. `/futures/open-interest` and
     // its client method are untouched — internal risk and the Analytics
     // VOLTEX section still read them.
-    function loadMark() {
-      if (typeof document !== 'undefined' && document.hidden) return;
-      api
-        .getFuturesMarkPrice(symbol)
-        .then((res) => {
-          if (cancelled) return;
-          setMarkPrice(parseFloat(res.markPrice));
-          setIndexPrice(parseFloat(res.indexPrice));
-        })
-        .catch(() => {});
-    }
-    function loadFunding() {
-      if (typeof document !== 'undefined' && document.hidden) return;
-      api
+    const fundingReader = createVisibleRead(async () => {
+      await api
         .getFuturesFundingRate(symbol, 1)
         .then((res) => {
           if (cancelled) return;
           const latest = res.history[0];
           setFundingRate(latest ? parseFloat(latest.rate) : null);
-        })
-        .catch(() => {});
-    }
-    loadMark();
-    loadFunding();
-    // Mark/index drive the account display and keep their existing 4s cadence.
+        });
+    }, 60_000, true);
+    // Mark/index are shared with the order form at 30s.
     // The latest SETTLED funding record changes on the settlement boundary, not
     // every four seconds, so one visible-minute refresh is ample and avoids
     // repeatedly downloading the same DB-backed history row.
-    const markInterval = setInterval(loadMark, 4000);
-    const fundingInterval = setInterval(loadFunding, 60_000);
-    const visible = () => {
-      if (typeof document !== 'undefined' && document.hidden) return;
-      loadMark();
-      loadFunding();
-    };
-    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visible);
     return () => {
       cancelled = true;
-      clearInterval(markInterval);
-      clearInterval(fundingInterval);
-      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visible);
+      fundingReader.stop();
     };
   }, [symbol]);
 
   useEffect(() => {
     let cancelled = false;
     setDerivatives(null);
-    function load() {
-      api
+    const reader = createVisibleRead(async () => {
+      await api
         .getFuturesMarketStats(baseAsset)
         .then((res) => {
           if (!cancelled) setDerivatives(res);
-        })
-        // A failed read leaves the previous value alone; the section's own
-        // `available` flag is what decides whether a figure renders.
-        .catch(() => {});
-    }
-    const refresh = () => {
-      if (typeof document !== 'undefined' && document.hidden) return;
-      load();
-    };
-    refresh();
+        });
+    }, 60_000, true);
     // Rolling turnover/open-interest is reference display data; one visible
     // minute matches its source/cache scale and hidden tabs do no work.
-    const interval = setInterval(refresh, 60_000);
-    const visible = () => { if (!document.hidden) refresh(); };
-    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', visible);
     return () => {
       cancelled = true;
-      clearInterval(interval);
-      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visible);
+      reader.stop();
     };
   }, [baseAsset]);
 

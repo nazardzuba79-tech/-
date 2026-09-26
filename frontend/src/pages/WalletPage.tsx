@@ -133,6 +133,9 @@ export function WalletPage() {
           <WalletSideNav section={section} onSection={setSection} theme={theme} onToggleTheme={toggleTheme} />
 
           <div className="wallet-content min-w-0">
+            <div className="flex justify-end mb-2">
+              <button type="button" className="wallet-btn wallet-btn-secondary" onClick={refresh}>{t('wallet.refreshAccount')}</button>
+            </div>
             {section === 'overview' && (
               <WalletOverview
                 account={account}

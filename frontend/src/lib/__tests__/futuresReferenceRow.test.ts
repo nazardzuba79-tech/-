@@ -232,7 +232,7 @@ describe('3. the account summary under the order buttons', () => {
     // One `useFuturesAccount`, which the terminal's execution adapter can
     // replace wholesale — so form, slider, tables and summary cannot be
     // reading two different accounts.
-    expect(SUMMARY).toContain('useFuturesAccount({ balances: 5000, positions: 5000 })');
+    expect(SUMMARY).toContain('useFuturesAccount({ balances: 30_000, positions: 10_000 })');
     expect(source('lib/useFuturesAccount.ts')).toContain('FuturesAccountSourceContext');
   });
 

@@ -62,7 +62,7 @@ describe('the terminal is the terminal, for every account', () => {
   });
 
   test('the real account store is not polled for the adapter-backed account', () => {
-    expect(page).toContain('useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 })');
+    expect(page).toContain('useFuturesAccount(nativeExecution?{}:{ orders: 15_000, positions: 10_000 })');
   });
 
   test('"Торговля с графика" switches chart TOOLS, and drops only an unsent pick', () => {

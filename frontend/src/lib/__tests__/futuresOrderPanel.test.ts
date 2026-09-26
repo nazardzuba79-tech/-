@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs';
+import { browserReadModules } from '../../../test-utils/browserReadModules';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
@@ -150,9 +151,12 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
   const output: any = {};
+  const readModules = browserReadModules(react, api, overrides.document);
   new Function('require', 'exports', 'window', 'document', compiled)((name: string) => {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api, ApiError: Error };
+    if (name === '../lib/useFuturesMark') return readModules.mark;
+    if (name === '../lib/visibleRead') return readModules.visible;
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, p?: any) => (p ? `${key}:${JSON.stringify(p)}` : key) }) };
@@ -262,11 +266,11 @@ describe('order form mark polling budget', () => {
     return { form, getMark, document, visibility: () => events.dispatchEvent(new Event('visibilitychange')) };
   }
 
-  test('visible cadence remains 5s; one hidden hour makes zero requests; resume and cleanup work', async () => {
+  test('shared mark cadence is 30s; one hidden hour makes zero requests; resume and cleanup work', async () => {
     const h = pollingForm();
     await tick();
     expect(h.getMark).toHaveBeenCalledTimes(1);
-    await jest.advanceTimersByTimeAsync(5000);
+    await jest.advanceTimersByTimeAsync(30_000);
     expect(h.getMark).toHaveBeenCalledTimes(2);
     h.document.hidden = true; h.visibility();
     await jest.advanceTimersByTimeAsync(60 * 60_000);
@@ -288,7 +292,7 @@ describe('order form mark polling budget', () => {
     h.visibility();
     expect(h.getMark).toHaveBeenCalledTimes(1);
     reject(new Error('offline')); await tick();
-    await jest.advanceTimersByTimeAsync(5000);
+    await jest.advanceTimersByTimeAsync(30_000);
     expect(h.getMark).toHaveBeenCalledTimes(2);
     expect(h.getMark).toHaveBeenLastCalledWith('BTC/USDT');
     h.form.unmount();
@@ -297,7 +301,7 @@ describe('order form mark polling budget', () => {
   test('changing pair starts the new read even while the old pair request is pending', async () => {
     const h = pollingForm(); await tick();
     h.getMark.mockImplementationOnce(pending);
-    await jest.advanceTimersByTimeAsync(5000);
+    await jest.advanceTimersByTimeAsync(30_000);
     h.form.render({ ...props, symbol: 'ETH/USDT' }); await tick();
     expect(h.getMark.mock.calls.map(call => call[0])).toEqual(['BTC/USDT', 'BTC/USDT', 'ETH/USDT']);
     h.form.unmount();
@@ -876,7 +880,7 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
     // re-reads the same function and SAYS why instead of returning silently.
     expect(code).toContain("disabled={!canSubmit || protectionBreachFor('BUY') || !reducible('BUY')}");
     expect(code).toContain("disabled={!canSubmit || protectionBreachFor('SELL') || !reducible('SELL')}");
-    expect(code).toContain("const blocked = reduceBlockedReason(orderSide);\n    if (blocked) { setError(blocked); return; }");
+    expect(code.replace(/\r\n/g, '\n')).toContain("const blocked = reduceBlockedReason(orderSide);\n    if (blocked) { setError(blocked); return; }");
     expect(code).toContain('if (!canSubmit) return;');
     // The old visual-only condition is gone.
     expect(code).not.toContain('disabled={submitting}');

@@ -6,11 +6,10 @@ import { FuturesAccountSourceContext } from './futuresAccountSource';
  * Read authenticated Futures account state from the one shared store.
  *
  * `wants` declares which resources this component needs kept fresh and how
- * fast — the store polls each at the fastest cadence any live subscriber
- * asked for, so passing the cadence the component used to use in its own
- * `setInterval` preserves exactly the freshness it had.
+ * fast, subject to the store's state-dependent read budget. Histories use
+ * zero: fetch on activation/invalidation, never a recurring timer.
  *
- *   const { positions, balances } = useFuturesAccount({ positions: 4000 });
+ *   const { positions } = useFuturesAccount({ positions: 10_000 });
  *
  * A resource left out of `wants` is still readable; this component just
  * does not keep a timer alive for it.

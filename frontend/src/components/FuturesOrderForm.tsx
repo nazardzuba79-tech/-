@@ -6,6 +6,7 @@ import { FuturesMarginLeverage } from './FuturesMarginLeverage';
 import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesMark } from '../lib/useFuturesMark';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import type { FuturesCloseTicket } from '../lib/nativeReduceTarget';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
@@ -200,7 +201,7 @@ export function FuturesOrderForm({
    */
   const [entryTakeProfit, setEntryTakeProfit] = useState('');
   const [entryStopLoss, setEntryStopLoss] = useState('');
-  const [markPrice, setMarkPrice] = useState<number | null>(null);
+  const { markPrice } = useFuturesMark(symbol);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -208,7 +209,7 @@ export function FuturesOrderForm({
   // account store now, at the same 5s cadence this form always used. The
   // three `setInterval`s that used to live in this file are gone; so is the
   // second copy of /futures/balances and the third of /futures/positions.
-  const account = useFuturesAccount({ balances: 5000, positions: 5000, orders: 5000 });
+  const account = useFuturesAccount({ balances: 30_000, positions: 10_000, orders: 15_000 });
   /**
    * Which engine takes this order, and where the account state came from.
    *
@@ -272,30 +273,6 @@ export function FuturesOrderForm({
     if (!positions.some(p => p.id === closeTarget.id)) { setCloseTarget(null); setReduceOnly(false); }
   }, [closeTarget, positions]);
   const activeOrders = account.orders.data;
-
-  useEffect(() => {
-    let cancelled = false;
-    let inFlight = false;
-    setMarkPrice(null);
-    function load() {
-      if (cancelled || inFlight || (typeof document !== 'undefined' && document.hidden)) return;
-      inFlight = true;
-      api
-        .getFuturesMarkPrice(symbol)
-        .then((res) => !cancelled && setMarkPrice(parseFloat(res.markPrice)))
-        .catch(() => {})
-        .finally(() => { inFlight = false; });
-    }
-    load();
-    // Keep the visible sizing estimate's cadence; sleeping tabs need no paint.
-    const interval = setInterval(load, 5000);
-    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', load);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', load);
-    };
-  }, [symbol]);
 
   /**
    * THE CALCULATOR ANSWERS ON THE KEYSTROKE, NOT ON THE NEXT POLL.
