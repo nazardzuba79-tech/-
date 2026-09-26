@@ -17,9 +17,6 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pairs-col-headers { grid-template-columns:minmax(0,1fr) 72px 62px; column-gap:4px; padding-inline:10px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pairs-col-headers button:first-of-type { justify-content:flex-end; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .drawing-rail .tool-divider:has(+ .tool-divider) { display:none; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .drawing-rail [data-drawing-tool=ruler] svg,
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .drawing-rail [data-drawing-tool=erase] svg { width:21px; height:21px; stroke-width:1.5; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .drawing-rail [data-drawing-tool=erase] { margin-top:4px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .drawing-rail [data-drawing-tool=erase]:hover { color:#f17a83; background:#f17a8310; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar { display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:20px; padding:10px 16px; min-height:70px; overflow-x:auto; scrollbar-width:thin; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar > * { flex:0 0 auto; grid-column:auto; grid-row:auto; }

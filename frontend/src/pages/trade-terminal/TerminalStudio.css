@@ -63,7 +63,9 @@
 
 /* Familiar silhouette, consistent contrast and a clear selected state.
    Tool names remain in accessible labels/native hover hints, not permanent text. */
-.trade-terminal.terminal-studio .drawing-rail .tool-btn svg { width:23px; height:23px; stroke-width:1.65; }
+/* Drawing icons are drawn on TradingView's 28-unit grid with 1-unit lines;
+   rendered 1:1 so every line lands on a whole pixel. */
+.trade-terminal.terminal-studio .drawing-rail .tool-btn svg { width:28px; height:28px; stroke-width:1; }
 .trade-terminal.terminal-studio .drawing-rail .tool-btn { color:#b5c2d0; border-radius:4px; }
 .trade-terminal.terminal-studio .drawing-rail .tool-btn:hover { background:#243340; color:#f0f4f8; }
 .trade-terminal.terminal-studio .drawing-rail .tool-btn.active { background:#f5a5241c; color:#f0c964; box-shadow:inset 2px 0 #f0c964; }

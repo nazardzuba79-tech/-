@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import * as indicators from '../indicators';
 import * as drawings from '../chartDrawings';
+import * as drawingGeometry from '../drawingGeometry';
 import * as chartPriceFormat from '../spotChartPriceFormat';
 import * as chartTrading from '../chartTrading';
 
@@ -27,6 +28,23 @@ const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
 const React = req('react');
 const source = readFileSync(resolve(frontend, 'src/components/PriceChart.tsx'), 'utf8');
+
+// The drawing layer is its own module. It is compiled the same way as the
+// chart, against the same real drawing helpers, so the chart's imports are
+// genuine; the layer component itself is never invoked by this harness.
+const layerSource = readFileSync(resolve(frontend, 'src/components/ChartDrawingLayer.tsx'), 'utf8');
+function drawingLayer() {
+  const compiled = ts.transpileModule(layerSource, { compilerOptions: {
+    jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
+  } }).outputText;
+  const layer: any = {};
+  new Function('require', 'exports', compiled)((name: string) => {
+    if (name === '../lib/chartDrawings') return drawings;
+    if (name === '../lib/drawingGeometry') return drawingGeometry;
+    return req(name);
+  }, layer);
+  return layer;
+}
 
 const ORDER = [{
   id: 'o1', pair: 'BTC/USDT', side: 'SELL', type: 'STOP_LIMIT',
@@ -91,6 +109,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === '../lib/spotChartPriceFormat') return chartPriceFormat;
     if (name === '../lib/chartTrading') return chartTrading;
     if (name === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+    if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
     return req(name);
@@ -143,6 +162,10 @@ function fakeCharts(chartOptions: any[] = [], harness: any) {
     unsubscribeVisibleLogicalRangeChange: () => { harness.rangeChange = undefined; },
     coordinateToTime: () => 0,
     timeToCoordinate: () => 100,
+    // The drawing layer's projection: logical bar ↔ x, and the plot width.
+    coordinateToLogical: () => 0,
+    logicalToCoordinate: () => 100,
+    width: () => 1000,
     applyOptions: () => {},
   };
   const chart = {
