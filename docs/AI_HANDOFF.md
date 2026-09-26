@@ -4114,3 +4114,26 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Local verification before current-main integration: 37 Worker contract/runtime tests, 62 targeted backend tests, 23 isolated PostgreSQL acceptance checks, backend TypeScript, frontend production build, both Wrangler dry-runs PASS. Real workerd tests cover concurrent delivery, persisted restart and retention cleanup. No production event was generated.
 - Operational limits: owner must add bot token/chat ID at notification Worker; discovery has no known owner/aggregate so those optional fields are omitted without extra reads. Render verification public key pinned by deploy job; rotating JWT secret requires repinning. No delivery retry/backfill: at-most-once prioritizes no duplicate over guaranteed delivery.
 - Admin deletion PR #299 follow-up: synchronized main f631e3d6fe91021cb9386d45fd4b430844469804 (#298). Preserved bounded/visibility-aware admin reads and immediate refresh after deletion; production frontend build, all 20 disposable-PG/browser checks and 43 admin/read-budget tests pass. Spot CI exposed terminalAccountPanel's stale pre-#298 5s/4s cadence assertion; updated only its expected approved 15s/10s values, with no Futures runtime changes.
+
+## Claude — 2026-09-26 — npm dependency security audit
+
+- Base: fresh `origin/main` `480d98f2`. Branch `claude/ecstatic-brahmagupta-cwkvt5`, restarted from main after #295 merged. The full findings table is in `docs/SECURITY_DEPENDENCY_AUDIT.md`.
+- **Changes** (`package.json` + `package-lock.json` only; 5 version bumps, 7 packages removed):
+  - `express` 4.22.2 → 4.22.3, which brings `qs` 6.16.0 and `body-parser` 1.20.8;
+  - `nodemailer` 9.0.1 → 9.1.1;
+  - unused `multer` and `@types/multer` removed (nothing imports it since KYC moved to the Cloudflare edge);
+  - dev `js-yaml` 3.15.1 → 3.15.2.
+- **Audit counts:**
+  - Backend: before 0 critical / 3 high / 4 moderate; after 0 / 0 / 1 (`uuid`, not reachable: every call is `uuidv4()` without a buffer; the fix is a major version).
+  - Frontend: unchanged at 1 high / 4 moderate, all dev-only (vite/esbuild dev server, capacitor CLI); 0 in production.
+- **Checks run locally:**
+  - Backend `tsc`, collector `tsc`, frontend build: OK.
+  - Full jest: 309/343 suites, 5255/5453 tests, the same 123 failing tests as unchanged main (0 new, 0 fixed).
+  - `kycEdgePostgres` + `kyc` + `KycEmailService` + `NodemailerCompatibility`: 46/46.
+  - `qa-deposit-packages.cjs --browser`: 30 PASS, 0 FAIL.
+  - Lockfile re-resolve: no drift.
+  - Local browser smoke (production bundle, real backend, disposable Postgres, synthetic users): register and login forms at 1440/390, wrong password refused, JWT accepted and a bad JWT refused. `/ /login /register /wallet /futures /trade /admin/users` at 320/390/430/1440 open with no page errors, no chunk errors, no overflow and no recovery screen: 40/40 PASS, identical on unchanged main. `/futures` shows «Не удалось загрузить график» both before and after, because the sandbox gets 403 from Bybit.
+- **Preserved:** Codex's Telegram notification work (#300), Support/KYC edge, and the deposit rules are untouched.
+- **Unresolved:**
+  - `uuid` 9 → 11 (major; recommended as its own PR);
+  - vite 5 → 6.4.3+ (major, dev-only).
