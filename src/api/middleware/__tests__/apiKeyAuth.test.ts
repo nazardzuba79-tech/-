@@ -13,6 +13,7 @@ const API_SECRET = 'plaintext-secret-for-signing';
 
 function makePrismaMock(overrides: Partial<any> = {}) {
   return {
+    user: { findUnique: jest.fn().mockResolvedValue({ id: 'jwt-user' }) },
     apiKey: {
       findUnique: jest.fn().mockResolvedValue({
         id: 'apikey-1',

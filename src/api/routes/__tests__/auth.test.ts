@@ -426,7 +426,7 @@ describe('auth routes', () => {
     );
   });
 
-  it('records the registration IP and user agent on the audit log', async () => {
+  it('registration creates a Session without general audit or IP/UA audit writes', async () => {
     const prisma = makePrismaMock();
     const app = buildApp(prisma);
 
@@ -435,14 +435,8 @@ describe('auth routes', () => {
       .set('User-Agent', 'test-agent/1.0')
       .send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
 
-    expect(prisma.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          action: 'USER_REGISTERED',
-          metadata: expect.objectContaining({ userAgent: 'test-agent/1.0' }),
-        }),
-      })
-    );
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    expect(prisma.session.create).toHaveBeenCalledTimes(1);
   });
 
   it('rejects registration with a weak password', async () => {
@@ -496,9 +490,7 @@ describe('auth routes', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.token).toEqual(expect.any(String));
-    expect(prisma.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1', action: 'USER_LOGGED_IN' }) })
-    );
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it('logs in an account whose emailVerifiedAt is null', async () => {
@@ -527,9 +519,7 @@ describe('auth routes', () => {
     expect(typeof res.body.token).toBe('string');
     expect(res.body.code).toBeUndefined();
     expect(prisma.session.create).toHaveBeenCalledTimes(1);
-    expect(prisma.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ action: 'USER_LOGGED_IN' }) })
-    );
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it('still refuses a blocked account whose emailVerifiedAt is null', async () => {
@@ -694,9 +684,7 @@ describe('auth routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.token).toEqual(expect.any(String));
-      expect(prisma.auditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1', action: 'USER_LOGGED_IN' }) })
-      );
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
     });
 
     it('rejects a wrong 2FA code', async () => {

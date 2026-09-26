@@ -8,10 +8,12 @@ import path from 'path';
 import { kycRouter } from '../kyc';
 
 function authHeader(userId: string) {
-  return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
+  return `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
 }
 
 function buildApp(prisma: any, emailService: any = { notifySubmission: jest.fn().mockResolvedValue(undefined) }) {
+  // Route fixtures model the persisted sessions issued by the current login flow.
+  prisma = { session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.replace('test-session:', ''), revokedAt: null, lastSeenAt: new Date() })) }, ...prisma };
   const app = express();
   app.use(express.json());
   app.use('/api/v1', kycRouter(prisma, emailService));

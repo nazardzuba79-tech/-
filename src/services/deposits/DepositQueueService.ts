@@ -133,10 +133,10 @@ export class DepositQueueService {
   async load(options: { creditedLimit?: number } = {}): Promise<DepositQueue> {
     const [uncredited, uncreditedTotal, creditedCount, credited] = await Promise.all([
       this.prisma.deposit.findMany({
-        where: { status: { not: 'CREDITED' } }, orderBy: { createdAt: 'asc' }, take: QUEUE_ROW_CAP,
+        where: { status: { not: 'CREDITED' }, deletedUserId: null }, orderBy: { createdAt: 'asc' }, take: QUEUE_ROW_CAP,
         include: { user: { select: { email: true } } },
       }),
-      this.prisma.deposit.count({ where: { status: { not: 'CREDITED' } } }),
+      this.prisma.deposit.count({ where: { status: { not: 'CREDITED' }, deletedUserId: null } }),
       this.prisma.deposit.count({ where: { status: 'CREDITED' } }),
       this.prisma.deposit.findMany({
         where: { status: 'CREDITED' }, orderBy: [{ creditedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],

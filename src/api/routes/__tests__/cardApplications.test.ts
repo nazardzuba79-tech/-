@@ -255,7 +255,7 @@ describe('card API authorization and validation', () => {
   it('does not treat a blocked/missing account as eligible', async () => {
     const { app, prisma } = fixture({ deposits: [deposit('5000')] });
     prisma.user.findUnique.mockResolvedValueOnce(null);
-    expect((await request(app).get('/api/v1/card/application/me').set('Authorization', authHeader())).status).toBe(404);
+    expect((await request(app).get('/api/v1/card/application/me').set('Authorization', authHeader())).status).toBe(401);
     prisma.user.findUnique.mockResolvedValue({ id: userId, kycStatus: 'APPROVED', blockedAt: new Date() });
     expect((await request(app).post('/api/v1/card/application').set('Authorization', authHeader()).send({ product: 'TITANIUM' })).status).toBe(403);
     expect(prisma.cardApplication.create).not.toHaveBeenCalled();

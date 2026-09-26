@@ -10,7 +10,6 @@ import {
   ShieldCheckIcon,
   ArrowUpCircleIcon,
   ArrowDownCircleIcon,
-  ScrollTextIcon,
   MenuIcon,
   XIcon,
   ChevronRightIcon,
@@ -23,7 +22,6 @@ const SECTIONS = [
   { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon, group: 'Средства' },
   { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon, group: 'Средства' },
   { to: '/admin/kyc', label: 'Верификация · KYC', icon: ShieldCheckIcon, group: 'Комплаенс' },
-  { to: '/admin/audit-log', label: 'Журнал действий', icon: ScrollTextIcon, group: 'Система' },
 ];
 
 /**
