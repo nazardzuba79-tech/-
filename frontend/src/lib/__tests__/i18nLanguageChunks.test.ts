@@ -171,9 +171,13 @@ describe('translation integrity', () => {
         // `futures.hint*` are the six title hints on the positions table's
         // abbreviated headings (2026-09-24: the owner asked what «Стоим.»
         // is; the heading itself stays one line, the hint is a title).
+        // `trade.assetNotTradingYet` and `listing.*` are the order form's
+        // answer and the listing card for an upcoming listing (VOLTORA).
         const addedSinceDigest = ['futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
-          'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized'];
+          'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
+          'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
+          'listing.initialPrice', 'listing.startTime', 'listing.newListing'];
         return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);

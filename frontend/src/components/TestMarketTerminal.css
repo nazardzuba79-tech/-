@@ -1,21 +1,8 @@
-/* VOLTEX test asset panels inside the Spot terminal (see TestMarketTerminal).
-   They read the terminal's own tokens (VoltexTerminalSystem.css); the only
-   colour of their own is the "test" violet from the VOLTORA mark, so a test
-   market never borrows the gold accent or the buy/sell colours. Nothing
-   here animates: the countdown changes text once a second, that is all. */
-.vx-terminal { --vta-violet: #9d8bff; --vta-violet-soft: rgba(124, 92, 255, .14); --vta-violet-line: rgba(124, 92, 255, .38); --vta-teal: #5ff3e4; }
-
-.vta-badge {
-  display: inline-flex; align-items: center; flex: 0 0 auto; height: 20px; padding: 0 7px; border-radius: 4px;
-  font-size: 10px; font-weight: 700; letter-spacing: .07em; line-height: 1; white-space: nowrap;
-  color: var(--vta-violet); background: var(--vta-violet-soft); border: 1px solid var(--vta-violet-line);
-}
-
-/* Ticker bar: the icon and badge sit beside the pair, the six figures keep
-   the ordinary bar's order and sizes. */
-.vta-ticker-bar .pair-selector { display: inline-flex; align-items: center; gap: 8px; }
-.vta-ticker-bar .pair-selector .vta-badge { margin-left: 6px; }
-.vta-ticker-listing .value { color: var(--text-secondary); }
+/* The listing card in the Spot terminal's chart area (see TestMarketTerminal).
+   It reads the terminal's own tokens (VoltexTerminalSystem.css); the only
+   colour of its own is the violet glow from the VOLTORA mark. Nothing here
+   animates: the countdown changes text once a second, that is all. */
+.vx-terminal { --vta-violet-line: rgba(124, 92, 255, .38); }
 
 /* ── Pre-listing state, in place of the chart ─────────────────────────── */
 .vta-prelisting {
@@ -32,39 +19,17 @@
 .vta-prelisting-card { position: relative; display: grid; justify-items: center; gap: 10px; width: min(560px, 100%); text-align: center; }
 .vta-prelisting-mark { width: 84px; height: 84px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .03); box-shadow: 0 0 0 1px var(--border), 0 18px 48px rgba(0, 0, 0, .35); }
 .vta-prelisting-name { margin: 6px 0 0; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: .16em; color: var(--text-primary); }
-.vta-prelisting-pair { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.vta-prelisting-pair { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
 .vta-prelisting-when { margin: 8px 0 2px; font-size: 14px; color: var(--text-primary); }
 .vta-countdown { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; width: min(440px, 100%); margin-top: 4px; }
 .vta-countdown-cell { display: grid; gap: 4px; padding: 14px 6px 11px; border-radius: 8px; background: var(--panel-alt, #1e2329); border: 1px solid var(--border); }
 .vta-countdown-cell strong { font-size: 32px; line-height: 1; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
 .vta-countdown-cell span { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-tertiary); }
-.vta-prelisting-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; width: min(440px, 100%); margin: 8px 0 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.vta-prelisting-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; width: min(440px, 100%); margin: 8px 0 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .vta-prelisting-facts div { padding: 10px 6px; display: grid; gap: 3px; }
 .vta-prelisting-facts div + div { border-left: 1px solid var(--border); }
 .vta-prelisting-facts dt { font-size: 11px; color: var(--text-tertiary); }
 .vta-prelisting-facts dd { margin: 0; font-size: 13px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.vta-prelisting-note { margin: 6px 0 0; font-size: 12px; color: var(--text-tertiary); }
-
-/* Frozen preview controls: owner-only visual staging while production remains unarmed. */
-.vta-stage-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--text-primary); background: var(--panel-alt, #1e2329); border: 1px solid var(--border); }
-.vta-stage-switch { display: inline-flex; gap: 4px; padding: 3px; border-radius: 8px; background: var(--panel-alt, #1e2329); border: 1px solid var(--border); }
-.vta-stage-switch button { font: inherit; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); background: none; border: 0; border-radius: 6px; padding: 5px 10px; cursor: pointer; min-height: 28px; }
-.vta-stage-switch button[aria-pressed='true'] { color: var(--text-primary); background: var(--vta-violet-soft); box-shadow: inset 0 0 0 1px var(--vta-violet-line); }
-
-/* ── Order book: none, and it says why ─────────────────────────────────── */
-.vta-book-empty { flex: 1 1 auto; min-height: 180px; display: grid; align-content: center; justify-items: center; gap: 8px; padding: 24px 18px; text-align: center; }
-.vta-book-empty strong { font-size: 13px; color: var(--text-primary); }
-.vta-book-empty span:not(.vta-badge) { font-size: 12px; line-height: 1.45; color: var(--text-tertiary); max-width: 220px; }
-
-/* ── Order entry: present, visibly off ─────────────────────────────────── */
-.vta-order-panel { display: flex; flex-direction: column; min-height: 0; }
-.vta-order-content input[aria-disabled='true'] { cursor: not-allowed; opacity: .6; }
-.vta-order-status { display: grid; justify-items: start; gap: 6px; padding: 10px 12px; border-radius: 6px; background: var(--vta-violet-soft); border: 1px solid var(--vta-violet-line); }
-.vta-order-status span:not(.vta-badge) { font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
-.vta-order-status.is-refused { background: rgba(246, 70, 93, .08); border-color: rgba(246, 70, 93, .55); }
-.vta-order-status.is-refused span:not(.vta-badge) { color: var(--text-primary); }
-.vta-order-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.vta-order-actions .submit-btn.vta-disabled { opacity: .42; cursor: not-allowed; filter: saturate(.55); }
 
 @media (max-width: 900px) {
   .vta-prelisting { min-height: 380px; padding: 22px 14px; }
@@ -74,11 +39,4 @@
   .vta-countdown-cell { padding: 11px 4px 9px; }
   .vta-countdown-cell strong { font-size: 24px; }
   .vta-countdown-cell span { font-size: 9.5px; letter-spacing: .05em; }
-}
-
-/* Phone: the badge moves under the pair instead of pushing into the last
-   price beside it. */
-@media (max-width: 900px) {
-  .trade-terminal.trade-terminal.trade-terminal .vta-ticker-bar .pair-selector { flex-wrap: wrap; row-gap: 6px; align-content: center; }
-  .trade-terminal.trade-terminal.trade-terminal .vta-ticker-bar .pair-selector .vta-badge { margin-left: 30px; }
 }

@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import express from 'express';
 import request from 'supertest';
 import {
-  countdownParts, formatListingTime, formatTestCompact, formatTestPercent, formatTestPrice, formatTestPriceChange, isTestMarketPair, sinceListingPercent,
+  countdownParts, formatListingMoment, formatListingTime, formatTestCompact, formatTestPercent, formatTestPrice, formatTestPriceChange, isTestMarketPair, sinceListingPercent,
   matchesTestAssetSearch, parseTestMarkets, testAssetTicker, TEST_ASSET_NOT_TRADABLE_MESSAGE, TEST_ASSET_STATUS_LABEL,
   withoutTestMarkets, withSimulationPreview, withTestMarketTickers, type TestAsset,
 } from '../testMarkets';
@@ -38,7 +38,7 @@ describe('the frontend reads exactly what the server serves', () => {
     expect(vta.state.phase).toBe('pre-listing');
     const ticker = testAssetTicker(vta);
     expect([ticker.lastPrice, ticker.changePercent24h, ticker.quoteVolume24h, ticker.high24h]).toEqual(['', '', '', '']);
-    expect(formatListingTime(vta.listingAt)).toBe('27 Sep 2026 · 16:00 UTC');
+    expect(formatListingTime(vta.listingAt)).toBe('28 Sep 2026 · 14:00 UTC');
   });
 
   test('+48h: the ticker row carries the served figures', async () => {
@@ -116,6 +116,11 @@ describe('formatting', () => {
     expect(countdownParts(((2 * 24 + 3) * 3600 + 4 * 60 + 5) * 1000 + 999)).toEqual({ days: 2, hours: 3, minutes: 4, seconds: 5, done: false });
     expect(countdownParts(-1)).toEqual({ days: 0, hours: 0, minutes: 0, seconds: 0, done: true });
   });
+  test('the listing moment reads in the viewer language, always in UTC', () => {
+    expect(formatListingMoment('2026-09-28T15:00:00Z', 'en-US')).toBe('September 28 at 15:00 UTC');
+    expect(formatListingMoment('2026-09-28T15:00:00Z', 'ru-RU')).toBe('28 сентября в 15:00 UTC');
+    expect(formatListingMoment('not a date', 'ru-RU')).toBe('—');
+  });
   test('the 24h anomaly warning does not fire on a test market by design', () => {
     const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     expect(parseChangePercentOrNull('55134.6', 'VTA/USDT')).toBe(55134.6);
@@ -147,26 +152,34 @@ describe('search, identity and the preview clock', () => {
   });
 });
 
-describe('the terminal never offers a way to trade a test asset', () => {
+describe('the listing opens in the ordinary Spot terminal and cannot trade', () => {
   const page = src('pages/TradePage.tsx');
   const panels = src('components/TestMarketTerminal.tsx');
-  test('no order form, no book fetch, no TradingView embed for a test pair', () => {
-    expect(page).toContain('<TestMarketOrderPanel key={pair} pair={pair} />');
+  const form = src('components/OrderForm.tsx');
+  test('the standard ticker bar, book and order form; only the chart area is the listing card', () => {
+    expect(page).toContain('<TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />');
+    expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />');
+    expect(page).not.toMatch(/TestMarketTickerBar|TestMarketBook|TestMarketOrderPanel/);
     expect(page).toContain("marketType !== 'spot' || isTestMarketPair(pair) || document.hidden) return;");
     expect(panels).toContain('tradingView={false}');
     expect(panels).not.toMatch(/api\.|placeOrder|fetch\(/);
   });
-  test('production preview is visibly frozen until the owner arms it', () => {
-    const store = src('lib/testMarketStore.ts');
-    expect(panels).toContain("before: { label: 'Before listing', badge: 'Listing soon', countdown: ['01', '06', '12', '00'] }");
-    expect(panels).toContain("soon: { label: 'Listing in 20 s', badge: 'Listing in 20 s', countdown: ['00', '00', '00', '20'] }");
-    expect(panels).toContain('vta-stage-switch');
-    expect(panels).toContain('Preview · the countdown is not running and the listing is not started.');
-    expect(panels).toContain("if (!active) { setNow(0); return; }");
-    expect(store).toContain('if (armed.length === 0) return;');
+  test('Buy and Sell answer that the asset is not trading yet and send nothing', () => {
+    const submit = form.slice(form.indexOf('async function handleSubmit'), form.indexOf('api.placeOcoOrder'));
+    expect(submit).toContain("if (notTradingYet) {\n      const message = t('trade.assetNotTradingYet');\n      setError(message);\n      toast.error(message);\n      return;\n    }");
+    expect(form).toContain('const notTradingYet = isTestMarketPair(pair);');
+    expect(form).toContain('noValidate={notTradingYet}');
   });
-  test('every trading control answers with the message', () => {
-    expect(panels.match(/onClick=\{refuse\}/g)).toHaveLength(2);
-    expect(panels).toContain('aria-disabled="true"');
+  test('no technical wording on the listing card or the Markets row', () => {
+    const strip = src('pages/markets-bolt/TestMarketsStrip.tsx');
+    for (const file of [panels, strip]) {
+      expect(file).not.toMatch(/TEST_ASSET_STATUS_LABEL|TEST_ASSET_NOT_TRADABLE_MESSAGE|Simulated|Preview|vta-badge|test-market-badge/);
+    }
+    expect(panels).toContain('role="timer"');
+  });
+  test('the countdown ticks only while an armed listing is still ahead', () => {
+    expect(panels).toContain("const counting = preListing && asset?.listingArmed === true && Number.isFinite(listingAt);");
+    expect(panels).toContain('const now = useServerNow(clockOffsetMs, counting);');
+    expect(src('lib/testMarketStore.ts')).toContain('if (armed.length === 0) return;');
   });
 });

@@ -1509,4 +1509,13 @@ export const ES: Record<Key, string> = {
   'calc.fundingNote': 'Una estimación: la tasa puede cambiar antes de la liquidación.',
   'calc.unavailable': 'El cálculo no está disponible temporalmente',
   'calc.open': 'Calculadora',
+  'trade.assetNotTradingYet': 'Este activo todavía no se negocia',
+  'listing.untilStart': 'Faltan para el inicio',
+  'listing.days': 'Días',
+  'listing.hours': 'Horas',
+  'listing.minutes': 'Minutos',
+  'listing.seconds': 'Segundos',
+  'listing.initialPrice': 'Precio inicial',
+  'listing.startTime': 'Inicio de la negociación',
+  'listing.newListing': 'Nuevo listado',
 };

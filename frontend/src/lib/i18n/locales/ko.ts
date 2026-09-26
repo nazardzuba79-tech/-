@@ -1509,4 +1509,13 @@ export const KO: Record<Key, string> = {
   'calc.fundingNote': '추정치입니다. 정산 전에 요율이 바뀔 수 있습니다.',
   'calc.unavailable': '계산을 일시적으로 사용할 수 없습니다',
   'calc.open': '계산기',
+  'trade.assetNotTradingYet': '이 자산은 아직 거래되지 않습니다',
+  'listing.untilStart': '거래 시작까지',
+  'listing.days': '일',
+  'listing.hours': '시간',
+  'listing.minutes': '분',
+  'listing.seconds': '초',
+  'listing.initialPrice': '시작 가격',
+  'listing.startTime': '거래 시작',
+  'listing.newListing': '신규 상장',
 };
