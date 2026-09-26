@@ -21,12 +21,38 @@ import './TestMarketTerminal.css';
  * simulation; nothing here invents a price.
  */
 
-/** Server "now", ticking once a second — only while a countdown is shown. */
+type FrozenPreviewStage = 'before' | 'soon';
+
+const FROZEN_PREVIEW_STAGES: Record<FrozenPreviewStage, {
+  label: string;
+  badge: string;
+  countdown: readonly [string, string, string, string];
+}> = {
+  before: { label: 'Before listing', badge: 'Listing soon', countdown: ['01', '06', '12', '00'] },
+  soon: { label: 'Listing in 20 s', badge: 'Listing in 20 s', countdown: ['00', '00', '00', '20'] },
+};
+
+const FROZEN_PREVIEW_STAGE_KEY = 'voltex_listing_preview_stage';
+
+function readFrozenPreviewStage(): FrozenPreviewStage {
+  try {
+    return typeof window !== 'undefined' && window.localStorage.getItem(FROZEN_PREVIEW_STAGE_KEY) === 'soon' ? 'soon' : 'before';
+  } catch {
+    return 'before';
+  }
+}
+
+function saveFrozenPreviewStage(stage: FrozenPreviewStage): void {
+  try { window.localStorage.setItem(FROZEN_PREVIEW_STAGE_KEY, stage); } catch { /* preview still switches */ }
+}
+
+/** Server "now", ticking once a second — only when the listing is armed.
+ * The production preview path does not even read the clock. */
 function useServerNow(clockOffsetMs: number, active: boolean): number {
-  const [now, setNow] = useState(() => Date.now() + clockOffsetMs);
+  const [now, setNow] = useState(() => active ? Date.now() + clockOffsetMs : 0);
   useEffect(() => {
+    if (!active) { setNow(0); return; }
     setNow(Date.now() + clockOffsetMs);
-    if (!active) return;
     const timer = window.setInterval(() => setNow(Date.now() + clockOffsetMs), 1000);
     return () => window.clearInterval(timer);
   }, [clockOffsetMs, active]);
@@ -106,8 +132,14 @@ export function TestMarketChart({ pair, asset, loaded, error, clockOffsetMs }: {
   const preListing = !asset || asset.state.phase === 'pre-listing';
   const listingArmed = asset?.listingArmed === true;
   const now = useServerNow(clockOffsetMs, preListing && listingArmed && Number.isFinite(listingAt));
+  const [previewStage, setPreviewStage] = useState<FrozenPreviewStage>(readFrozenPreviewStage);
+  const previewView = FROZEN_PREVIEW_STAGES[previewStage];
+  const pickPreviewStage = (next: FrozenPreviewStage) => {
+    setPreviewStage(next);
+    saveFrozenPreviewStage(next);
+  };
   const reachedRef = useRef(false);
-  const left = Number.isFinite(listingAt) ? listingAt - now : NaN;
+  const left = listingArmed && Number.isFinite(listingAt) ? listingAt - now : NaN;
 
   // The listing moment: ask the server once; the chart appears when it
   // says the market is live, never on the browser's say-so alone.
@@ -126,9 +158,14 @@ export function TestMarketChart({ pair, asset, loaded, error, clockOffsetMs }: {
 
   const parts = countdownParts(Number.isFinite(left) ? left : 0);
   const pad = (value: number) => String(value).padStart(2, '0');
-  const cells: [string, string][] = [
+  const armedCells: [string, string][] = [
     [pad(parts.days), 'Days'], [pad(parts.hours), 'Hours'], [pad(parts.minutes), 'Minutes'], [pad(parts.seconds), 'Seconds'],
   ];
+  const frozenCells: [string, string][] = [
+    [previewView.countdown[0], 'Days'], [previewView.countdown[1], 'Hours'],
+    [previewView.countdown[2], 'Minutes'], [previewView.countdown[3], 'Seconds'],
+  ];
+  const cells = listingArmed ? armedCells : frozenCells;
 
   return (
     <section className="vta-prelisting" aria-label={`${asset?.name ?? 'VOLTORA'} listing`} data-state={asset ? 'pre-listing' : loaded && error ? 'error' : 'loading'}>
@@ -138,23 +175,32 @@ export function TestMarketChart({ pair, asset, loaded, error, clockOffsetMs }: {
         <div className="vta-prelisting-pair"><span>{pair}</span><TestMarketBadge /></div>
         {asset ? (
           <>
-            <p className="vta-prelisting-when">
-              {listingArmed ? `Listing starts ${formatListingTime(asset.listingAt)}` : 'Preview mode · countdown not started'}
-            </p>
+            <p className="vta-prelisting-when">Listing starts {formatListingTime(asset.listingAt)}</p>
+            {!listingArmed && <span className="vta-stage-badge">{previewView.badge}</span>}
             <div className="vta-countdown" role={listingArmed ? 'timer' : 'status'}
-              aria-label={listingArmed ? `Listing in ${parts.days} days ${parts.hours} hours ${parts.minutes} minutes` : 'Listing preview. Countdown not started.'}>
+              aria-label={listingArmed ? `Listing in ${parts.days} days ${parts.hours} hours ${parts.minutes} minutes` : `${previewView.badge} (frozen preview)`}>
               {cells.map(([value, label]) => (
                 <div className="vta-countdown-cell" key={label}>
-                  <strong>{listingArmed ? (parts.done ? '00' : value) : '—'}</strong>
+                  <strong>{listingArmed && parts.done ? '00' : value}</strong>
                   <span>{label}</span>
                 </div>
               ))}
             </div>
+            {!listingArmed && (
+              <div className="vta-stage-switch" role="group" aria-label="Preview stage">
+                {(Object.keys(FROZEN_PREVIEW_STAGES) as FrozenPreviewStage[]).map((key) => (
+                  <button type="button" key={key} aria-pressed={previewStage === key} onClick={() => pickPreviewStage(key)}>
+                    {FROZEN_PREVIEW_STAGES[key].label}
+                  </button>
+                ))}
+              </div>
+            )}
             <dl className="vta-prelisting-facts">
               <div><dt>Initial price</dt><dd>{formatTestPrice(asset.initialPrice)} {asset.quote}</dd></div>
-              <div><dt>Market</dt><dd>Simulated</dd></div>
+              <div><dt>Market</dt><dd>{listingArmed ? 'Simulated' : 'Preview'}</dd></div>
               <div><dt>Trading</dt><dd>Not available</dd></div>
             </dl>
+            {!listingArmed && <p className="vta-prelisting-note">Preview · the countdown is not running and the listing is not started.</p>}
           </>
         ) : (
           <p className="vta-prelisting-when">{loaded && error ? 'Test market data is unavailable right now.' : 'Loading…'}</p>

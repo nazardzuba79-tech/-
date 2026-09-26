@@ -158,8 +158,11 @@ describe('the terminal never offers a way to trade a test asset', () => {
   });
   test('production preview is visibly frozen until the owner arms it', () => {
     const store = src('lib/testMarketStore.ts');
-    expect(panels).toContain('Preview mode · countdown not started');
-    expect(panels).toContain("listingArmed ? (parts.done ? '00' : value) : '—'");
+    expect(panels).toContain("before: { label: 'Before listing', badge: 'Listing soon', countdown: ['01', '06', '12', '00'] }");
+    expect(panels).toContain("soon: { label: 'Listing in 20 s', badge: 'Listing in 20 s', countdown: ['00', '00', '00', '20'] }");
+    expect(panels).toContain('vta-stage-switch');
+    expect(panels).toContain('Preview · the countdown is not running and the listing is not started.');
+    expect(panels).toContain("if (!active) { setNow(0); return; }");
     expect(store).toContain('if (armed.length === 0) return;');
   });
   test('every trading control answers with the message', () => {

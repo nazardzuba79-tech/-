@@ -23,6 +23,7 @@ on:
       - 'frontend/src/components/PriceChart.tsx'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/markets-bolt/**'
+      - 'scripts/qa-voltora-frozen-preview.cjs'
       - '.github/workflows/test-markets.yml'
 
 permissions:
@@ -54,3 +55,18 @@ jobs:
         run: npx tsc --noEmit
       - name: Production frontend build
         run: npm run build --prefix frontend
+      - name: Disposable Chromium
+        run: |
+          npm install --prefix /tmp/voltora-preview-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltora-preview-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Frozen VOLTORA preview browser QA
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltora-preview-browser/node_modules/playwright
+        run: node scripts/qa-voltora-frozen-preview.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: voltora-frozen-preview-${{ github.sha }}
+          path: docs/qa/voltora-frozen-preview/
+          if-no-files-found: ignore
+          retention-days: 7
