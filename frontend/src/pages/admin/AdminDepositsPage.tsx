@@ -48,14 +48,23 @@ export function AdminDepositsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [crediting, setCrediting] = useState<DepositPackage | null>(null);
-  const loading = useRef(false);
+  const loading = useRef<Promise<void> | null>(null);
 
-  const reload = useCallback(async () => {
-    if (loading.current) return;
-    loading.current = true;
-    try { setQueue(await adminDepositApi.queue()); setLoadError(false); }
-    catch { setLoadError(true); }
-    finally { loading.current = false; }
+  // One read at a time. A reload requested while one is in flight is not
+  // dropped: it runs once more after it, so an action's confirmation never
+  // shows over a list read before that action.
+  const again = useRef(false);
+  const reload = useCallback((): Promise<void> => {
+    if (loading.current) { again.current = true; return loading.current; }
+    const run = (async () => {
+      do {
+        again.current = false;
+        try { setQueue(await adminDepositApi.queue()); setLoadError(false); }
+        catch { setLoadError(true); }
+      } while (again.current);
+    })().finally(() => { loading.current = null; });
+    loading.current = run;
+    return run;
   }, []);
 
   useEffect(() => {
@@ -114,7 +123,7 @@ export function AdminDepositsPage() {
   async function restore(row: DepositQueueRow) {
     if (!window.confirm('Вернуть перевод в очередь «Непривязанные»? Баланс не изменится.')) return;
     setMessage(null); setError(null);
-    try { await adminDepositApi.restore(row.id); setMessage('Перевод возвращён в очередь. Баланс не изменён.'); await reload(); }
+    try { await adminDepositApi.restore(row.id); await reload(); setMessage('Перевод возвращён в очередь. Баланс не изменён.'); }
     catch (err) { setError(err instanceof AdminDepositApiError ? err.message : 'Не удалось вернуть перевод.'); }
   }
 
@@ -122,8 +131,9 @@ export function AdminDepositsPage() {
     setMessage(null); setError(null);
     try {
       await adminDepositApi.attribute(row.id, userId, reassign);
-      setMessage(userId ? 'Перевод привязан. Баланс не изменён.' : 'Привязка снята. Баланс не изменён.');
+      // Refresh first, then confirm: the message never describes a stale list.
       await reload();
+      setMessage(userId ? 'Перевод привязан. Баланс не изменён.' : 'Привязка снята. Баланс не изменён.');
     } catch (err) {
       setError(err instanceof AdminDepositApiError ? err.message : 'Не удалось привязать перевод.');
     }
@@ -200,7 +210,7 @@ export function AdminDepositsPage() {
       )}
       {ignoring && (
         <IgnoreModal row={ignoring} onClose={() => setIgnoring(null)} onDone={async () => {
-          setIgnoring(null); setMessage('Перевод перенесён в «Игнорированные». Запись сохранена, баланс не изменён.'); await reload();
+          setIgnoring(null); await reload(); setMessage('Перевод перенесён в «Игнорированные». Запись сохранена, баланс не изменён.');
         }} />
       )}
 

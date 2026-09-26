@@ -798,6 +798,7 @@ async function browserQa(ctx) {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1), false, `modal overflow at ${width}`);
       await modal.locator('[data-confirm-ignore]').click();
       await page.getByRole('status').filter({ hasText: 'Игнорированные' }).waitFor();
+      // The confirmation appears only after the queue was re-read: the row is already gone.
       assert.equal(await item.count(), 0);
       assert.ok((await prisma.deposit.findUniqueOrThrow({ where: { chain_txHash: { chain: 'tron', txHash: hash(n) } } })).ignoredAt);
       for (const tab of ['unattributed', 'topup', 'network', 'ready', 'review', 'credited', 'ignored']) {
