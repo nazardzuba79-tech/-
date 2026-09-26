@@ -36,7 +36,9 @@ async function waitFor(check, message) {
         window.__qaSetVisibility=value=>{window.__qaVisibility=value;document.dispatchEvent(new Event('visibilitychange'));};
       });
       const page=await context.newPage();
-      const counts={open:0,history:0,cancels:0,otherWrites:0},errors=[];
+      const counts={open:0,history:0,chartTriggers:0,cancels:0,otherWrites:0},errors=[],orderQueries=[];
+      const progress={width,counts,orderQueries,pageErrors:errors};
+      report.widths.push(progress);
       let hasOrder=true;
       const row={id:'fixture-order',pair:'BTC/USDT',side:'BUY',type:'LIMIT',price:'84000',triggerPrice:null,ocoGroupId:null,originalQuantity:'0.1',remainingQuantity:'0.1',status:'OPEN',createdAt:new Date().toISOString()};
       page.on('pageerror',e=>errors.push(e.message));
@@ -49,7 +51,14 @@ async function waitFor(check, message) {
           counts.otherWrites++;return route.fulfill({status:403,body:'fixture rejects unexpected mutation'});
         }
         if(p==='/api/v1/orders/me'){
-          if(url.search.includes('CANCELLED')){counts.history++;return reply([{...row,id:'fixture-history',status:'FILLED',remainingQuantity:'0'}]);}
+          const status=url.searchParams.get('status');
+          orderQueries.push(status);
+          // PriceChart has a separate PENDING_TRIGGER-only display read. Do
+          // not attribute it to the account panel's different three-status
+          // request; report it explicitly instead of claiming all traffic stops.
+          if(status==='PENDING_TRIGGER'){counts.chartTriggers++;return reply([]);}
+          if(status==='FILLED,CANCELLED'){counts.history++;return reply([{...row,id:'fixture-history',status:'FILLED',remainingQuantity:'0'}]);}
+          assert.equal(status,'PENDING_TRIGGER,OPEN,PARTIALLY_FILLED','unclassified orders request');
           counts.open++;return reply(hasOrder?[row]:[]);
         }
         if(p==='/api/v1/me')return reply({id:'qa',email:'qa@example.invalid',displayName:'QA',kycStatus:'NOT_STARTED',role:'USER',isAdmin:false});
@@ -78,10 +87,11 @@ async function waitFor(check, message) {
       await page.locator('[data-order-id="fixture-history"]').waitFor();
       await page.evaluate(()=>window.__qaSetVisibility('hidden'));
       await page.waitForTimeout(200);
-      const beforeHidden={open:counts.open,history:counts.history};
+      const beforeHidden={open:counts.open,history:counts.history,chartTriggers:counts.chartTriggers};
       await page.waitForTimeout(12500);
       assert.equal(counts.open,beforeHidden.open,'hidden open-order reads must stop');
       assert.equal(counts.history,beforeHidden.history,'hidden history reads must stop');
+      Object.assign(progress,{hiddenWindowMs:12500,hiddenOpenReads:counts.open-beforeHidden.open,hiddenHistoryReads:counts.history-beforeHidden.history,unchangedChartTriggerReads:counts.chartTriggers-beforeHidden.chartTriggers});
       await page.evaluate(()=>window.__qaSetVisibility('visible'));
       await waitFor(()=>counts.open>beforeHidden.open&&counts.history>beforeHidden.history,'return must immediately refresh both readers');
       assert.equal(counts.open,beforeHidden.open+1);assert.equal(counts.history,beforeHidden.history+1);
@@ -98,7 +108,7 @@ async function waitFor(check, message) {
       assert.equal(counts.otherWrites,0,'only explicit isolated cancel allowed');
       assert.deepEqual(errors,[],'no uncaught browser errors');
       await page.screenshot({path:path.join(out,`spot-${width}.png`)});
-      report.widths.push({width,hiddenWindowMs:12500,hiddenOpenReads:0,hiddenHistoryReads:0,immediateReturn:true,cancels:counts.cancels,pageErrors:errors});
+      Object.assign(progress,{immediateReturn:true,cancels:counts.cancels,status:'PASS'});
       await context.close();
     }
     report.status='PASS';console.log(JSON.stringify(report,null,2));
