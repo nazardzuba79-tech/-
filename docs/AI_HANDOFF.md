@@ -3949,6 +3949,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
     - `registerWalletTailwindOwnership` (fails identically on main once `frontend/dist` is built);
     - `nativeReviewHarness` failed on main only.
 - **Preserved:** Codex's deposit-chain config, the treasury override service, the other-network verifiers and incoming feed (now stores only; runs on click), the Users-page activity polling pattern, the referral policy and the 300 USD client warning.
+- **CI:** `package.json` and `package-lock.json` added to the PR path filters of `deposit-minimum.yml` and `kyc-edge.yml`. Before this, a dependency-only PR ran no Actions workflow at all.
 - **Unresolved:**
   - No production proof of a real TRC20 deposit: fixture only.
   - The watcher runs in-process on Render free, so a sleeping API scans on its next start.
@@ -4143,6 +4144,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Lockfile re-resolve: no drift.
   - Local browser smoke (production bundle, real backend, disposable Postgres, synthetic users): register and login forms at 1440/390, wrong password refused, JWT accepted and a bad JWT refused. `/ /login /register /wallet /futures /trade /admin/users` at 320/390/430/1440 open with no page errors, no chunk errors, no overflow and no recovery screen: 40/40 PASS, identical on unchanged main. `/futures` shows «Не удалось загрузить график» both before and after, because the sandbox gets 403 from Bybit.
 - **Preserved:** Codex's Telegram notification work (#300), Support/KYC edge, and the deposit rules are untouched.
+- **CI:** `package.json` and `package-lock.json` added to the PR path filters of `deposit-minimum.yml` and `kyc-edge.yml`. Before this, a dependency-only PR ran no Actions workflow at all.
 - **Unresolved:**
   - `uuid` 9 → 11 (major; recommended as its own PR);
   - vite 5 → 6.4.3+ (major, dev-only).

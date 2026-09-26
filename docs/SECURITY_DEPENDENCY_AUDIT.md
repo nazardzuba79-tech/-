@@ -48,3 +48,12 @@ The audit ran on a fresh `origin/main` at `480d98f2` with npm 10.9.7 and Node 22
 ## Not touched
 
 Trading math, liquidation, funding, deposit rules, Cloudflare Support/KYC, Telegram notifications, Prisma (still 5.x) and the schema.
+
+## CI coverage for dependency changes
+
+Before this change, no GitHub Actions workflow ran on a PR that only touched `package.json` or `package-lock.json`, so only the Cloudflare Pages build ran. Both files are now in the `pull_request` path filters of two workflows, so a backend dependency change gets a real CI run:
+
+- `deposit-minimum.yml`: backend and frontend build, deposit/auth/admin jest, embedded Postgres and browser acceptance;
+- `kyc-edge.yml`: migrations on an empty Postgres, KYC Postgres integration, Nodemailer compatibility, browser QA.
+
+Neither workflow deploys anything.

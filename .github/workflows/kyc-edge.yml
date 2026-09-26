@@ -8,6 +8,8 @@ on:
   pull_request:
     paths:
       - 'workers/kyc-edge/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'src/api/routes/kyc.ts'
       - 'src/api/routes/admin.ts'
       - 'src/api/routes/adminUsers.ts'
