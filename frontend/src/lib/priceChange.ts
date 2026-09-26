@@ -1,3 +1,5 @@
+import { isTestMarketPair } from './testMarkets';
+
 // The backend (KrakenMarketDataService) already computes changePercent24h
 // as a percentage value, e.g. "2.10" meaning +2.10% — NOT a fraction like
 // 0.021. Every call site must parse it directly; re-multiplying by 100
@@ -10,7 +12,9 @@ const ANOMALY_THRESHOLD_PCT = 50;
 export function parseChangePercent(raw: string, context: string): number {
   const value = parseFloat(raw);
   if (!Number.isFinite(value)) return 0;
-  if (Math.abs(value) > ANOMALY_THRESHOLD_PCT) {
+  // A VOLTEX test market (lib/testMarkets) is simulated to move by
+  // thousands of percent; that is its design, not a feed glitch.
+  if (Math.abs(value) > ANOMALY_THRESHOLD_PCT && !isTestMarketPair(context)) {
     // A single asset moving more than 50% in 24h is rare enough that it's
     // more likely a data glitch (stale/zero reference price, a bad tick
     // from the upstream feed) than a real move — flag it rather than

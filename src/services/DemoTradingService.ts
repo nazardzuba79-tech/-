@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType, OrderBookSnapshot } from '../matching-engine/types';
+import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 
 type TxClient = Prisma.TransactionClient;
 
@@ -62,6 +63,7 @@ export class DemoTradingService {
     price?: BigNumber; // required for LIMIT
     quantity: BigNumber;
   }) {
+    if (isTestAssetPairOrSymbol(params.pair)) throw new DemoTradingError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const [base, quote] = params.pair.split('/');
     if (!base || !quote) throw new DemoTradingError(`Invalid pair: ${params.pair}`);
     if (params.type === 'LIMIT' && (!params.price || !params.price.isFinite() || params.price.lte(0))) {
@@ -243,6 +245,7 @@ export class DemoTradingService {
   /** Manual credit/debit — the demo equivalent of BalanceAdjustmentService,
    * used only by the admin "demo top-up" route. Always logs to AuditLog. */
   async topUp(params: { userId: string; asset: string; amount: string; performedByAdminId: string; note?: string }) {
+    if (isTestAssetPairOrSymbol(params.asset)) throw new DemoTradingError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const delta = new BigNumber(params.amount);
     if (!delta.isFinite() || delta.isZero()) throw new DemoTradingError('Amount must be a non-zero number');
     exactDemoDelta(delta);

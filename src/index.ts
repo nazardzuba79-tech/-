@@ -77,6 +77,7 @@ import { HistoricalOpenInterestService } from './services/analytics/HistoricalOp
 import { CoinGlassAnalyticsService } from './services/analytics/CoinGlassAnalyticsService';
 import { marketDataRouter } from './api/routes/marketData';
 import { displaySnapshotsRouter } from './api/routes/displaySnapshots';
+import { testMarketsRouter } from './api/routes/testMarkets';
 import { marketOptionsRouter } from './api/routes/marketOptions';
 import { resolveBuildCommit } from './buildCommit';
 
@@ -216,6 +217,9 @@ app.get('/health', (_req, res) => res.json({
   branch: process.env.RENDER_GIT_BRANCH ?? null,
   startedAt: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
 }));
+// Test markets first: they answer the shared Spot endpoints for test pairs
+// only (simulated, never tradable) and pass every other pair through.
+app.use('/api/v1', testMarketsRouter());
 app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));

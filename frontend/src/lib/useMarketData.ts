@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { marketDataStore, type MarketState } from './marketDataStore';
 import type { MarketTicker } from './api';
+import { useTestMarkets } from './testMarketStore';
+import { withTestMarketTickers } from './testMarkets';
 
 /**
  * React bindings over the shared market-data store.
@@ -52,8 +54,16 @@ export function useMarketTicker(pair: string, intervalMs?: number): TickerView {
   };
 }
 
-/** Every ticker in the shared snapshot, as a Map for O(1) row lookup. */
-export function useMarketTickers(intervalMs?: number): {
+/**
+ * Every ticker in the shared snapshot, as a Map for O(1) row lookup.
+ *
+ * Test markets (lib/testMarkets — simulated, never tradable) ride along as
+ * extra rows flagged `isTestAsset`, so the terminal's pair list, search and
+ * favourites list them without a change of their own. A surface that
+ * summarises the real market (movers, breadth, the header strip) passes
+ * `{ testMarkets: false }` or filters them out.
+ */
+export function useMarketTickers(intervalMs?: number, options: { testMarkets?: boolean } = {}): {
   tickers: Map<string, MarketTicker>;
   loading: boolean;
   error: boolean;
@@ -61,8 +71,14 @@ export function useMarketTickers(intervalMs?: number): {
   refresh: () => void;
 } {
   const state = useMarketData(intervalMs);
+  const includeTest = options.testMarkets !== false;
+  const { assets: testAssets } = useTestMarkets(undefined, includeTest);
+  const tickers = useMemo(
+    () => (includeTest ? withTestMarketTickers(state.tickers, testAssets) : state.tickers),
+    [includeTest, state.tickers, testAssets],
+  );
   return {
-    tickers: state.tickers,
+    tickers,
     loading: !state.loaded,
     error: state.status === 'error',
     stale: state.tickersMeta?.stale ?? false,

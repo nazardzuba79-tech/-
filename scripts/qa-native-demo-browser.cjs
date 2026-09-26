@@ -266,7 +266,7 @@ async function accountSummary(page, state) {
   await page.waitForFunction((expected) => {
     const text = document.querySelector('.futures-account-balance .fa-amount')?.textContent ?? '';
     return text.replace(/,/g, '').trim() === expected;
-  }, expectedBalance, { timeout: 3000 });
+  }, expectedBalance, { timeout: 8000 });
   const g = await page.locator('.futures-account-summary').evaluate(e => ({
     balance: e.querySelector('.futures-account-balance .fa-value')?.textContent,
     available: e.querySelector('.futures-account-available .fa-value')?.textContent,

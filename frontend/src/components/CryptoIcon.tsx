@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react';
 import { assetMetadataStore } from '../lib/assetMetadataStore';
+// A local file, never a registry lookup by ticker: another coin may own
+// the same ticker there. PLACEHOLDER until the owner supplies the approved
+// VOLTORA logo — replacing this one file swaps it everywhere.
+import voltoraLogo from '../assets/voltora-logo.svg';
+
+const TEST_ASSET_ICONS: Readonly<Record<string, string>> = { VTA: voltoraLogo };
 
 /**
  * Icon resolution, in order:
  *
+ *   0. A VOLTEX test asset's own local logo (see TEST_ASSET_ICONS). Not
+ *      applied to `metadataOnly` rows, which are real catalogue coins.
  *   1. Canonical asset metadata from the Market Data Gateway's asset
  *      registry — CoinGecko's own logo for that coin, looked up by
  *      canonical id rather than by ticker. Batched: a 500-row table costs
@@ -141,10 +149,11 @@ export function CryptoIcon({
   /** Canonical reference rows must not guess identity by symbol. */
   metadataOnly?: boolean;
 }) {
+  const testIcon = metadataOnly ? null : TEST_ASSET_ICONS[symbol.toUpperCase()] ?? null;
   // Only consult the registry when the caller has not already supplied a
   // logo — no point spending a lookup on a question already answered.
-  const registryLogo = useRegistryLogo(symbol, !imageUrl && !metadataOnly);
-  const preferredUrl = imageUrl ?? registryLogo;
+  const registryLogo = useRegistryLogo(symbol, !testIcon && !imageUrl && !metadataOnly);
+  const preferredUrl = testIcon ?? imageUrl ?? registryLogo;
 
   const [preferredFailed, setPreferredFailed] = useState(false);
   const [fallbackFailed, setFallbackFailed] = useState(false);

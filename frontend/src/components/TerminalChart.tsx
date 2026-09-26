@@ -9,13 +9,19 @@ import type { ChartCandleLoader, ChartPositionLine, ChartTradingInteraction } fr
 import './TerminalChart.css';
 
 /** Switch only the chart subtree: tickets, order families and books keep their state. */
-export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, positionLines, candleLoader }: {
+export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, positionLines, candleLoader, tradingView=true, priceScaleMode, priceFormatter }: {
   pair:string; market?:'spot'|'futures'; chrome?:'default'|'terminal'; drawingTools?:boolean;
   compactTools?:boolean;
   privateTrading?:ChartTradingInteraction;
   /** Open positions to draw on the price scale. See PriceChart. */
   positionLines?:ChartPositionLine[];
   candleLoader?:ChartCandleLoader;
+  /** False for a market TradingView does not carry (a VOLTEX test asset):
+   *  its embed would show some other venue's symbol under this name. */
+  tradingView?:boolean;
+  /** See PriceChart. */
+  priceScaleMode?:'normal'|'logarithmic';
+  priceFormatter?:(price:number)=>string;
 }) {
   const [mode,setMode]=useState<'voltex'|'tradingview'>('voltex');
   const { t }=useLanguage();
@@ -38,13 +44,13 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
             chart forward while a bar is being chosen, and the TradingView
             switch still cancels an unfinished choice. */}
         <button type="button" aria-pressed={mode==='voltex'} onClick={()=>setMode('voltex')}>VOLTEX</button>
-        <button type="button" aria-pressed={mode==='tradingview'} onClick={()=>{ if (choosing) privateTrading?.onCancelSelection(); setMode('tradingview'); }}>TradingView</button>
+        {tradingView && <button type="button" aria-pressed={mode==='tradingview'} onClick={()=>{ if (choosing) privateTrading?.onCancelSelection(); setMode('tradingview'); }}>TradingView</button>}
       </div>
     </div>
-    {mode==='voltex'
+    {mode==='voltex' || !tradingView
       ? <TradingViewRulerLayer>
           <PriceChart key={`${market}:${pair}`} pair={pair} chrome="terminal" drawingTools market={market} compactTools={compactTools}
-            privateTrading={privateTrading} positionLines={positionLines}
+            privateTrading={privateTrading} positionLines={positionLines} priceScaleMode={priceScaleMode} priceFormatter={priceFormatter}
             candleLoader={candleLoader ?? (market==='futures'?getFuturesCandles:getSpotPublicCandles)} />
         </TradingViewRulerLayer>
       : <TradingViewAdvancedChart key={`${market}:${pair}`} pair={pair} market={market} />}

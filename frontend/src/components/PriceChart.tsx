@@ -14,6 +14,7 @@ import {
   Time,
   LineStyle,
   CrosshairMode,
+  PriceScaleMode,
   createSeriesMarkers,
   type ISeriesMarkersPluginApi,
   type SeriesMarker,
@@ -119,6 +120,8 @@ export function PriceChart({
   compactTools = false,
   privateTrading,
   positionLines,
+  priceScaleMode = 'normal',
+  priceFormatter,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
@@ -149,6 +152,13 @@ export function PriceChart({
    * simulation transcript, so a position never gets two entry lines.
    */
   positionLines?: ChartPositionLine[];
+  /** 'logarithmic' for a market whose history spans orders of magnitude (a
+   *  VOLTEX test asset): a linear axis there spends most of its height on
+   *  one bar and labels prices below zero. Every other chart stays linear. */
+  priceScaleMode?: 'normal' | 'logarithmic';
+  /** Axis/crosshair labels for such a market, where one fixed precision is
+   *  either too coarse at the start or too long at the end. Must be stable. */
+  priceFormatter?: (price: number) => string;
 }) {
   const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
@@ -851,6 +861,13 @@ export function PriceChart({
     chartRef.current?.timeScale().fitContent();
   }, []);
 
+  // Only a chart that asks for it is touched; every other chart keeps the
+  // library's default linear axis exactly as before.
+  useEffect(() => {
+    if (!chartReady || priceScaleMode !== 'logarithmic') return;
+    chartRef.current?.priceScale('right').applyOptions({ mode: PriceScaleMode.Logarithmic });
+  }, [chartReady, priceScaleMode]);
+
   // Load candles whenever pair/interval changes, and poll for updates.
   useEffect(() => {
     let cancelled = false;
@@ -898,7 +915,11 @@ export function PriceChart({
     function display(res: { candles: Candle[] }) {
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
-        if (spotChartRefinements || candleLoader) {
+        if (priceFormatter) {
+          for (const ref of [seriesRef, lineSeriesRef, areaSeriesRef, maSeriesRef, bollUpperRef, bollMiddleRef, bollLowerRef]) {
+            if (ref.current?.options().priceFormat.type !== 'custom') ref.current?.applyOptions({ priceFormat: { type: 'custom', formatter: priceFormatter, minMove: 1e-8 } });
+          }
+        } else if (spotChartRefinements || candleLoader) {
           const priceFormat = spotChartPriceFormat(res.candles);
           // All series sharing the price axis need the same formatter, even
           // when candles are hidden by Line/Area or an indicator toggle.

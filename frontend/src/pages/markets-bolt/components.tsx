@@ -8,6 +8,8 @@ import { Footer } from '../../components/Footer';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { CfdMarketsSection } from '../../components/CfdMarketsSection';
 import { CatalogueTable } from './CatalogueTable';
+import { TestMarketsStrip } from './TestMarketsStrip';
+import { withoutTestMarkets } from '../../lib/testMarkets';
 import { parseChangePercent } from '../../lib/priceChange';
 import { type CoinCategory } from '../../lib/pairList';
 import { useFavorites } from '../../lib/useFavorites';
@@ -161,7 +163,9 @@ export function MarketsBoltPage() {
 
   useEffect(() => {
     if (hasTickerData) {
-      setTickers(Array.from(tickerMap.values()));
+      // Test markets are simulated: they get their own row below and never
+      // count towards movers, breadth or volume of the real market.
+      setTickers(withoutTestMarkets(Array.from(tickerMap.values())));
       setError(null);
       return;
     }
@@ -440,6 +444,10 @@ export function MarketsBoltPage() {
                   listed futures contract: a real subset of the tradable
                   set, not an invented category. */}
               <div id="markets-table-anchor" />
+              {activeKind === 'Spot' && (
+                <TestMarketsStrip search={search} favoritesOnly={activeCategory === 'Favorites'} favorites={favorites}
+                  onToggleFavorite={toggleFavorite} onOpen={goToTrade} />
+              )}
               <CatalogueTable
                 search={search}
                 favorites={favorites}

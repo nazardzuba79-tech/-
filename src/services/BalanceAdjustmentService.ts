@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 
 export class BalanceAdjustmentError extends Error {}
 
@@ -30,6 +31,8 @@ export class BalanceAdjustmentService {
     reason: string;
     performedByAdminId: string;
   }): Promise<BalanceAdjustmentResult> {
+    // A test asset never has a balance, not even one an admin writes in.
+    if (isTestAssetPairOrSymbol(params.asset)) throw new BalanceAdjustmentError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const delta = new BigNumber(params.amount);
     if (!delta.isFinite() || delta.isZero()) {
       throw new BalanceAdjustmentError('Amount must be a non-zero number');
