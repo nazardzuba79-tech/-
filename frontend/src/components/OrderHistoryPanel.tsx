@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 
 import { SpotOrdersView } from './SpotOrdersView';
-import { createSpotReadController, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
+import { createSpotReadController, startVisibleReadPolling, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
 import './SpotOrders.css';
 
 /**
@@ -11,7 +11,7 @@ import './SpotOrders.css';
  * Open Orders tab uses, since the reference gives every bottom-panel tab
  * one table style.
  *
- * Data and polling are unchanged from before.
+ * The visible 4s cadence is unchanged; hidden tabs schedule no polls.
  */
 export function OrderHistoryPanel({ pair, refreshKey }: { pair: string; refreshKey: number }) {
   const { t, lang } = useLanguage();
@@ -28,9 +28,8 @@ export function OrderHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
 
   useEffect(() => {
     reader.current!.resume();
-    void load(true);
-    const interval = setInterval(load, 4000);
-    return () => { clearInterval(interval); reader.current!.pause(); };
+    const stopPolling = startVisibleReadPolling(load, 4000);
+    return () => { stopPolling(); reader.current!.pause(); };
   }, [load, refreshKey]);
 
   const pairOrders = orders.filter((o) => o.pair === pair);

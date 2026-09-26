@@ -1,0 +1,54 @@
+name: Spot idle reads and session payload
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/components/OpenOrdersPanel.tsx'
+      - 'frontend/src/components/OrderHistoryPanel.tsx'
+      - 'frontend/src/components/AssetsPanel.tsx'
+      - 'frontend/src/components/spotOrderPresentation.ts'
+      - 'src/api/middleware/auth.ts'
+      - 'scripts/test-idle-read-budget.cjs'
+      - 'scripts/qa-spot-idle-reads.cjs'
+      - '.github/workflows/spot-idle-read-budget.yml'
+permissions:
+  contents: read
+concurrency:
+  group: spot-idle-reads-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend and frontend builds
+        run: npm run build && npm run build --prefix frontend
+      - name: Deterministic one-hour idle budget and fresh authorization
+        run: node --test scripts/test-idle-read-budget.cjs
+      - name: Existing real JWT, admin role and Spot presentation regressions
+        run: npx jest --runInBand src/api/middleware/__tests__/auth.test.ts src/api/routes/__tests__/admin.test.ts frontend/src/lib/__tests__/spotOrdersPresentation.test.ts frontend/src/lib/__tests__/terminalAccountPanel.test.ts
+      - name: Isolated browser tooling
+        run: |
+          npm install --prefix /tmp/spot-idle-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/spot-idle-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Production-bundle Spot hidden/return/cancel browser regression
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/spot-idle-browser/node_modules/playwright
+        run: node scripts/qa-spot-idle-reads.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spot-idle-read-budget-${{ github.sha }}
+          path: docs/qa/spot-idle-reads/
+          if-no-files-found: ignore
+          retention-days: 7

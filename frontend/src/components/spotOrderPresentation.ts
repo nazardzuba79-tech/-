@@ -121,3 +121,41 @@ export async function cancelSpotOrders(ids: string[], cancel: (id: string) => Pr
   for (const id of ids) { try { await cancel(id); succeeded++; } catch { failed++; } }
   return { succeeded, failed };
 }
+
+/** The visible cadence is unchanged. A hidden tab owns no scheduled timer.
+ * Force a fresh read on return so the existing controller invalidates an old
+ * in-flight result. Explicit mutation/retry reads stay outside this scheduler.
+ * Completing an already-started request is allowed; it is not a hidden poll. */
+export function startVisibleReadPolling(
+  read: (fresh?: boolean) => unknown,
+  intervalMs: number,
+  visibility: Pick<Document, 'visibilityState' | 'addEventListener' | 'removeEventListener'> = document,
+): () => void {
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let disposed = false;
+  let wasVisible = false;
+  const visible = () => visibility.visibilityState === 'visible';
+  const stop = () => {
+    if (timer !== undefined) { clearInterval(timer); timer = undefined; }
+  };
+  const update = () => {
+    const nextVisible = visible();
+    if (disposed || nextVisible === wasVisible) return;
+    wasVisible = nextVisible;
+    stop();
+    if (!nextVisible) return;
+    void read(true);
+    if (!disposed && visible()) {
+      timer = setInterval(() => {
+        if (!disposed && visible()) void read(false);
+      }, intervalMs);
+    }
+  };
+  visibility.addEventListener('visibilitychange', update);
+  update();
+  return () => {
+    disposed = true;
+    stop();
+    visibility.removeEventListener('visibilitychange', update);
+  };
+}

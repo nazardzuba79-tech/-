@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { useToast } from '../lib/toast';
 import { SpotOrdersView } from './SpotOrdersView';
-import { cancelSpotOrders, spotOrderCancelIds, createSpotReadController, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
+import { cancelSpotOrders, spotOrderCancelIds, createSpotReadController, startVisibleReadPolling, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
 import './SpotOrders.css';
 import { customerErrorText } from '../lib/customerError';
 
@@ -15,7 +15,7 @@ export interface OpenOrdersHandle {
  * The reference's Open Orders table: Time, Pair, Type, Side, Price, Amount,
  * Filled, Total, Trigger, Action — rendered as its `.orders-table`.
  *
- * Behaviour is unchanged (4s poll, per-row cancel through the same
+ * Behaviour is unchanged (visible 4s poll, per-row cancel through the same
  * endpoint); it now also reports its row count so the tab can show the
  * reference's badge, and exposes cancelAll for the reference's "Cancel All"
  * action, which loops the same per-order endpoint rather than needing a new
@@ -45,9 +45,8 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, {
 
     useEffect(() => {
       reader.current!.resume();
-      void load(true);
-      const interval = setInterval(load, 4000);
-      return () => { clearInterval(interval); reader.current!.pause(); };
+      const stopPolling = startVisibleReadPolling(load, 4000);
+      return () => { stopPolling(); reader.current!.pause(); };
     }, [load, refreshKey]);
 
     const pairOrders = orders.filter((o) => o.pair === pair);
