@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../config/chains';
 import { createVerifier, DepositVerificationError } from './deposit-verifiers';
 import { MIN_DEPOSIT_USD, REFERRAL_REWARD_PERCENT, DEPOSIT_USD_PEGGED_ASSETS } from '../config/limits';
+import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 
 export { DepositVerificationError } from './deposit-verifiers';
 export interface PriceSource { getTicker(pair: string): Promise<{ lastPrice: string } | null>; }
@@ -51,6 +52,7 @@ export class DepositService {
    * No balance mutation here. Repeated scans cannot overwrite credited or assigned rows.
    */
   async recordIncoming(params: { txHash: string; asset: string }): Promise<void> {
+    if (isTestAssetPairOrSymbol(params.asset)) throw new DepositVerificationError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const txHash = this.hash(params.txHash), asset = params.asset.toUpperCase();
     const where = { chain_txHash: { chain: this.chainConfig.chain, txHash } };
     const existing = await this.prisma.deposit.findUnique({ where });
@@ -79,6 +81,7 @@ export class DepositService {
 
   async claimDeposit(params: { userId: string; txHash: string; asset: string; performedByAdminId?: string }): Promise<DepositResult> {
     const { userId, performedByAdminId } = params;
+    if (isTestAssetPairOrSymbol(params.asset)) throw new DepositVerificationError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const asset = params.asset.toUpperCase(), txHash = this.hash(params.txHash);
     const where = { chain_txHash: { chain: this.chainConfig.chain, txHash } };
     const existing = await this.prisma.deposit.findUnique({ where });

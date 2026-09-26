@@ -15,7 +15,8 @@ function evaluate(file: string, overrides: Record<string, unknown> = {}) {
   new Function('require', 'exports', compiled)((name: string) => overrides[name] ?? req(name), output);
   return output;
 }
-const priceChange = evaluate('lib/priceChange.ts');
+// priceChange asks lib/testMarkets whether a pair is a VOLTEX test market.
+const priceChange = evaluate('lib/priceChange.ts', { './testMarkets': evaluate('lib/testMarkets.ts') });
 const marketModule = evaluate('pages/home/useHomeMarket.ts', {
   '../../lib/api': { api: {} }, '../../lib/priceChange': priceChange,
   '../../lib/futuresConfigStore': { futuresConfigStore: {} },

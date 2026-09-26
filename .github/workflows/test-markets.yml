@@ -1,0 +1,56 @@
+name: Test markets (VOLTORA)
+
+on:
+  pull_request:
+    paths:
+      - 'src/services/testMarkets/**'
+      - 'src/api/routes/testMarkets.ts'
+      - 'src/api/routes/__tests__/testMarkets.test.ts'
+      - 'src/index.ts'
+      - 'src/services/OrderService.ts'
+      - 'src/services/DemoTradingService.ts'
+      - 'src/services/WithdrawalService.ts'
+      - 'src/services/DepositService.ts'
+      - 'src/services/BalanceAdjustmentService.ts'
+      - 'frontend/src/lib/testMarkets.ts'
+      - 'frontend/src/lib/testMarketStore.ts'
+      - 'frontend/src/lib/testMarketCandles.ts'
+      - 'frontend/src/lib/useMarketData.ts'
+      - 'frontend/src/lib/priceChange.ts'
+      - 'frontend/src/lib/__tests__/testMarkets.test.ts'
+      - 'frontend/src/components/TestMarketTerminal.tsx'
+      - 'frontend/src/components/TerminalChart.tsx'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/pages/markets-bolt/**'
+      - '.github/workflows/test-markets.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-markets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Simulation, API and never-tradable guards
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/testMarkets/__tests__/testMarketSimulation.test.ts
+          src/api/routes/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/spotChartPriceFormat.test.ts
+          frontend/src/lib/__tests__/cfdTerminal.test.ts
+      - name: Backend typecheck
+        run: npx tsc --noEmit
+      - name: Production frontend build
+        run: npm run build --prefix frontend

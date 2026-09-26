@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
 
 export class WithdrawalRequestError extends Error {}
 
@@ -37,6 +38,7 @@ export class WithdrawalService {
     toAddress: string;
     amount: string;
   }): Promise<WithdrawalResult> {
+    if (isTestAssetPairOrSymbol(params.asset)) throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const amount = new BigNumber(params.amount);
     if (!amount.isFinite() || amount.isLessThanOrEqualTo(0)) {
       throw new WithdrawalRequestError('Amount must be greater than zero');

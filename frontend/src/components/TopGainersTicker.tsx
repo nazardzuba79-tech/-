@@ -77,7 +77,8 @@ export function TopGainersTicker({
   // cost the tab a request loop of its own. It is served whatever the
   // fastest live subscriber's cadence produces, so it is never staler than
   // it was before.
-  const { tickers: tickerMap } = useMarketTickers(15000);
+  // A simulated test market is never a "top gainer" of the real market.
+  const { tickers: tickerMap } = useMarketTickers(15000, { testMarkets: false });
 
   useEffect(() => {
     if (futuresReference) {

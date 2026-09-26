@@ -7,6 +7,8 @@ import * as columnSort from '../marketColumnSort';
 // The real freshness rules, not a stub: the page's refresh cadence is read
 // from them, and a stub would let the two drift apart.
 import * as bookFreshness from '../bookFreshness';
+// Real too: TradePage asks it whether the pair is a VOLTEX test market.
+import * as testMarkets from '../testMarkets';
 
 const root=resolve(__dirname,'../../..');
 const req=createRequire(resolve(root,'package.json'));
@@ -34,6 +36,8 @@ function mount(file:string,options:any={}){
     if(name.startsWith('./')||name.startsWith('../components/')){const label=name.split('/').pop()!;components[label]??=()=>null;return{[label]:components[label]};}
     if(name.endsWith('/sampledDepth'))return{readSpotDisplayBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     if(name.endsWith('/spotPublicMarket'))return{readSpotPublicBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
+    if(name.endsWith('/testMarkets'))return testMarkets;
+    if(name.endsWith('/testMarketStore'))return{useTestMarket:()=>({asset:null,loaded:false,error:false,clockOffsetMs:0}),TEST_MARKET_TERMINAL_INTERVAL_MS:5000};
     return req(name);
   },output,{setInterval,clearInterval,setTimeout,clearTimeout,location:options.location},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
   return{components,render(props={}){index=0;const fn:any=Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};

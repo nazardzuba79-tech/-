@@ -33,7 +33,9 @@ describe('Spot chart axis precision uses real candle magnitudes', () => {
   });
   test('actual integration supports Spot and explicit contract loaders without touching other axes', () => {
     const source = fs.readFileSync(path.resolve(__dirname, '../../components/PriceChart.tsx'), 'utf8').replace(/\r\n/g, '\n');
-    const start = source.indexOf('        if (spotChartRefinements || candleLoader) {\n          const priceFormat = spotChartPriceFormat(res.candles);');
+    // `} else if`: a chart given its own `priceFormatter` (a VOLTEX test
+    // asset) is formatted by that instead; every other chart takes this block.
+    const start = source.indexOf('        } else if (spotChartRefinements || candleLoader) {\n          const priceFormat = spotChartPriceFormat(res.candles);');
     expect(start).toBeGreaterThan(-1);
     const block = source.slice(start, source.indexOf('        seriesRef.current.setData(', start));
     for (const ref of ['seriesRef', 'lineSeriesRef', 'areaSeriesRef', 'maSeriesRef', 'bollUpperRef', 'bollMiddleRef', 'bollLowerRef']) expect(block).toContain(ref);
