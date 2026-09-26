@@ -10,7 +10,7 @@ import { anchorAt, drawingGeometry, geometryDistance, labelBox, moveAnchor, HIT_
 export type ChartDrawing = StoredDrawing & { id: number };
 
 /** Every tool the rail can select. Cursors and the eraser make nothing. */
-export type DrawingTool = 'cursor' | 'dot' | 'arrowcursor' | 'erase' | 'zoom' | DrawingKind;
+export type DrawingTool = 'cursor' | 'dot' | 'arrowcursor' | 'erase' | DrawingKind;
 export const CURSOR_TOOLS: readonly DrawingTool[] = ['cursor', 'dot', 'arrowcursor'];
 
 let nextId = 1;
@@ -25,19 +25,17 @@ export interface ChartDrawingLayerProps {
   /** A drawing was completed. The chart decides what the rail does next. */
   onCommitted: (drawing: ChartDrawing) => void;
   view: DrawingView | null;
-  /** Container-local pixels → a chart point; `magnet` asks for OHLC snapping. */
-  pointAt: (x: number, y: number, magnet: boolean) => DrawingPoint | null;
+  /** Container-local pixels → a chart point. */
+  pointAt: (x: number, y: number) => DrawingPoint | null;
   /** A click placed a long or short position tool: its three default anchors. */
   positionPoints: (entry: DrawingPoint, kind: 'long' | 'short') => DrawingPoint[];
   overlayStyle: CSSProperties;
-  hidden: boolean;
   locked: boolean;
   /** Another interaction owns the pointer (chart trading's candle pick). */
   blocked: boolean;
   selectedId: number | null;
   onSelect: (id: number | null) => void;
   onRequestText: (request: TextRequest) => void;
-  onZoom: (x1: number, x2: number) => void;
   /** The chart's hook to abandon a half-placed shape or a drag (Clear, Lock, a pair change). */
   cancelRef?: MutableRefObject<(() => void) | null>;
   t: (key: any) => string;
@@ -59,11 +57,10 @@ const DASHES: DrawingDash[] = ['solid', 'dashed', 'dotted'];
  * locks, clones or deletes the object. Delete removes the selection.
  */
 export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
-  const { drawings, setDrawings, tool, view, pointAt, hidden, locked, blocked, selectedId, onSelect, t } = props;
+  const { drawings, setDrawings, tool, view, pointAt, locked, blocked, selectedId, onSelect, t } = props;
   const svgRef = useRef<SVGSVGElement>(null);
   const [pending, setPending] = useState<{ kind: DrawingKind; points: DrawingPoint[] } | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
-  const [zoomBand, setZoomBand] = useState<{ x1: number; x2: number } | null>(null);
   const cancelRef = useRef<(() => void) | null>(null);
   const pendingRef = useRef(pending);
   pendingRef.current = pending;
@@ -71,26 +68,23 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
   drawingsRef.current = drawings;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
-  const hiddenRef = useRef(hidden);
-  hiddenRef.current = hidden;
 
   const drawingTool = !CURSOR_TOOLS.includes(tool);
-  const capture = drawingTool && !hidden && !blocked;
+  const capture = drawingTool && !blocked;
 
-  // A tool change, a hide, a lock or another interaction abandons whatever
-  // was half-placed.
+  // A tool change, a lock or another interaction abandons whatever was
+  // half-placed.
   useEffect(() => {
     setPending(null);
-    setZoomBand(null);
     return () => { cancelRef.current?.(); cancelRef.current = null; };
-  }, [tool, hidden, locked, blocked]);
+  }, [tool, locked, blocked]);
 
   // The chart abandons it too, through the same path: Clear, Lock, collapse,
   // a pair or timeframe change can never leave a gesture to commit later.
   const outerCancel = props.cancelRef;
   useEffect(() => {
     if (!outerCancel) return;
-    const abandon = () => { cancelRef.current?.(); cancelRef.current = null; setPending(null); setZoomBand(null); };
+    const abandon = () => { cancelRef.current?.(); cancelRef.current = null; setPending(null); };
     outerCancel.current = abandon;
     return () => { if (outerCancel.current === abandon) outerCancel.current = null; };
   }, [outerCancel]);
@@ -144,7 +138,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
   /** Pointer down on the capture surface: the active drawing tool acts. */
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
     if (event.button !== 0 || !capture) return;
-    if (lockedRef.current || hiddenRef.current) return;
+    if (lockedRef.current) return;
     event.preventDefault();
     const at = local(event.clientX, event.clientY);
     if (!at) return;
@@ -153,24 +147,15 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
       if (hit && !hit.locked) { setDrawings((previous) => previous.filter((d) => d.id !== hit.id)); if (selectedId === hit.id) onSelect(null); }
       return;
     }
-    if (tool === 'zoom') {
-      setZoomBand({ x1: at.x, x2: at.x });
-      cancelRef.current = trackDrawingGesture(window, {
-        move: (ev) => { const p = local(ev.clientX, ev.clientY); if (p) setZoomBand({ x1: at.x, x2: p.x }); },
-        finish: (ev) => { const p = local(ev.clientX, ev.clientY); setZoomBand(null); if (p && Math.abs(p.x - at.x) > 4) props.onZoom(at.x, p.x); },
-        cancel: () => setZoomBand(null),
-      }, true);
-      return;
-    }
     const kind = tool as DrawingKind;
-    const start = pointAt(at.x, at.y, true);
+    const start = pointAt(at.x, at.y);
     if (!start) return;
 
     if (FREEHAND_KINDS.includes(kind)) {
       let points = [start];
       setPending({ kind, points });
       cancelRef.current = trackDrawingGesture(window, {
-        move: (ev) => { const l = local(ev.clientX, ev.clientY); const p = l && pointAt(l.x, l.y, false); if (p) { points = [...points, p]; setPending({ kind, points }); } },
+        move: (ev) => { const l = local(ev.clientX, ev.clientY); const p = l && pointAt(l.x, l.y); if (p) { points = [...points, p]; setPending({ kind, points }); } },
         finish: () => { setPending(null); if (points.length > 1) commit(kind, points.slice(0, DRAWING_POINTS[kind].max)); },
         cancel: () => setPending(null),
       }, true);
@@ -200,7 +185,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
       finish: (ev) => {
         if (Math.abs(ev.clientX - origin.x) < 3 && Math.abs(ev.clientY - origin.y) < 3) return;
         const l = local(ev.clientX, ev.clientY);
-        const end = l && pointAt(l.x, l.y, true);
+        const end = l && pointAt(l.x, l.y);
         if (!end) return;
         const points = [start, end];
         if (!open && points.length >= required) { setPending(null); commit(kind, points); }
@@ -255,7 +240,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
         const dx = now.x - origin.x, dy = now.y - origin.y;
         const points: DrawingPoint[] = [];
         for (let i = 0; i < screen.length; i++) {
-          const moved = pointAt((screen[i].x as number) + dx, (screen[i].y as number) + dy, false);
+          const moved = pointAt((screen[i].x as number) + dx, (screen[i].y as number) + dy);
           if (!moved) return;
           points.push(drawing.kind === 'horizontal' ? { time: 0, price: moved.price } : drawing.kind === 'vertical' ? { time: moved.time, price: 0 } : moved);
         }
@@ -275,7 +260,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
     cancelRef.current = trackDrawingGesture(window, {
       move: (ev) => {
         const now = local(ev.clientX, ev.clientY);
-        const to = now && pointAt(now.x, now.y, true);
+        const to = now && pointAt(now.x, now.y);
         if (!to) return;
         setDrawings((previous) => previous.map((d) => (d.id === drawing.id ? { ...moveAnchor(d, anchor.id, to), id: d.id } : d)));
       },
@@ -291,7 +276,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
   const preview = (() => {
     if (!pending || !view || !hover) return null;
     if (FREEHAND_KINDS.includes(pending.kind)) return drawingGeometry({ kind: pending.kind, points: pending.points }, view);
-    const next = pointAt(hover.x, hover.y, true);
+    const next = pointAt(hover.x, hover.y);
     const points = next ? [...pending.points, next] : pending.points;
     const required = pending.kind === 'polyline' ? points.length : DRAWING_POINTS[pending.kind].min;
     // Kinds that need more anchors than placed so far preview as the path so far.
@@ -301,14 +286,14 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
     return drawingGeometry({ kind: pending.kind, points: points.slice(0, required), text: DRAWING_TEXT_KINDS.includes(pending.kind) ? '…' : undefined }, view);
   })();
 
-  const cursor = tool === 'erase' ? 'cell' : tool === 'zoom' ? 'zoom-in' : capture ? 'crosshair' : undefined;
+  const cursor = tool === 'erase' ? 'cell' : capture ? 'crosshair' : undefined;
 
   return <>
     <svg ref={svgRef} className="drawing-overlay drawing-layer" data-drawing-layer
       style={{ ...props.overlayStyle, pointerEvents: capture ? 'auto' : 'none', cursor, touchAction: capture ? 'none' : undefined }}
       onPointerDown={onPointerDown} onDoubleClick={finishPolyline}>
       {capture && <rect x={0} y={0} width="100%" height="100%" fill="transparent" />}
-      <g data-chart-drawings="shapes" display={hidden ? 'none' : undefined}>
+      <g data-chart-drawings="shapes">
         {drawings.map((d) => {
           const g = geometries.get(d.id);
           if (!g) return null;
@@ -323,7 +308,6 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
           <line x1={0} y1={hover.y} x2="100%" y2={hover.y} stroke="#9598a1" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
         </g>}
         {tool === 'dot' && hover && !capture && <circle cx={hover.x} cy={hover.y} r={3} fill="#d1d4dc" pointerEvents="none" />}
-        {zoomBand && <rect x={Math.min(zoomBand.x1, zoomBand.x2)} y={0} width={Math.abs(zoomBand.x2 - zoomBand.x1)} height="100%" fill="rgba(41,98,255,0.15)" stroke="#2962ff" strokeDasharray="4 3" />}
         {selected && selectedGeometry && !capture && selectedGeometry.anchors.map((a) => (
           <circle key={String(a.id)} data-drawing-anchor={String(a.id)} cx={a.x} cy={a.y} r={5} fill="#131722" stroke={drawingStyle(selected).color} strokeWidth={2}
             style={{ pointerEvents: blocked ? 'none' : 'all', cursor: a.id === 'width' ? 'ew-resize' : a.id === 'target' || a.id === 'stop' ? 'ns-resize' : 'grab' }}
@@ -331,7 +315,7 @@ export function ChartDrawingLayer(props: ChartDrawingLayerProps) {
         ))}
       </g>
     </svg>
-    {selected && !hidden && !blocked && <DrawingObjectToolbar drawing={selected} locked={locked} t={t}
+    {selected && !blocked && <DrawingObjectToolbar drawing={selected} locked={locked} t={t}
       onStyle={(style) => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, style } : d)))}
       onToggleLock={() => setDrawings((previous) => previous.map((d) => (d.id === selected.id ? { ...d, locked: !d.locked || undefined } : d)))}
       onClone={() => {

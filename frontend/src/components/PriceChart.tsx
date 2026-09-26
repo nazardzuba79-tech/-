@@ -27,7 +27,6 @@ import {
   drawingStorageKey,
   drawingStyle,
   formatDrawingPrice,
-  magnetSnap,
   parseStoredDrawings,
   serializeDrawings,
   type DrawingKind,
@@ -81,12 +80,9 @@ const INTERVAL_SECONDS: Record<Interval, number> = {
   '1w': 604800,
 };
 
-/** Every tool the rail can select — the cursors, the eraser, zoom and each drawing kind. */
+/** Every tool the rail can select — the cursors, the eraser and each drawing kind. */
 type Tool = DrawingTool;
 type Point = DrawingPoint;
-type MagnetMode = 'weak' | 'strong';
-/** A weak magnet snaps only when the pointer is this close to an OHLC level, as TradingView's does. */
-const WEAK_MAGNET_PX = 24;
 
 /**
  * Self-rendered chart using lightweight-charts — the actual open-source
@@ -256,15 +252,6 @@ export function PriceChart({
   /** The drawing the object toolbar is editing, if any. */
   const [selectedDrawing, setSelectedDrawing] = useState<number | null>(null);
   /**
-   * Magnet: snap each new anchor to the nearest OHLC level of the nearest
-   * loaded candle. Real snapping against the candle array this chart
-   * already holds — see `magnetSnap`.
-   */
-  const [savedMagnet, setMagnet] = useState(false);
-  const magnet = savedMagnet;
-  /** Weak snaps only near a level; strong always snaps — TradingView's two magnets. */
-  const [magnetMode, setMagnetMode] = useState<MagnetMode>('strong');
-  /**
    * Lock: drawings stay visible and the chart stays fully navigable, but
    * nothing can add, erase or clear them. It guards exactly the mutating
    * actions this overlay has.
@@ -274,10 +261,6 @@ export function PriceChart({
   /** Flipped once the chart and series exist, so effects that create chart
    *  objects from state do not race the chart's own construction. */
   const [chartReady, setChartReady] = useState(false);
-  // Drawings stay in state while hidden — this only controls whether the
-  // overlay renders them, so toggling back shows exactly what was there.
-  const [savedHidden, setDrawingsHidden] = useState(false);
-  const drawingsHidden = savedHidden;
   // A drawing tool currently stays selected until the trader picks another,
   // which is TradingView's "stay in drawing mode" behaviour. Turning this
   // off returns to the cursor after each completed shape. Both are real
@@ -304,16 +287,10 @@ export function PriceChart({
   const toolRef = useRef(tool);
   toolRef.current = tool;
   const cancelGestureRef = useRef<(() => void) | null>(null);
-  const hiddenRef = useRef(drawingsHidden);
-  hiddenRef.current = drawingsHidden;
   // Read from inside native window listeners, which close over the value
   // at bind time — a ref keeps them seeing the current setting.
   const stayInDrawModeRef = useRef(stayInDrawMode);
   stayInDrawModeRef.current = stayInDrawMode;
-  const magnetRef = useRef(magnet);
-  magnetRef.current = magnet;
-  const magnetModeRef = useRef(magnetMode);
-  magnetModeRef.current = magnetMode;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
   const confirmClearRef = useRef('');
@@ -658,7 +635,6 @@ export function PriceChart({
       const next = event.shiftKey ? (event.code === 'KeyR' ? 'rectangle' : null) : keys[event.code];
       if (!next || lockedRef.current) return;
       event.preventDefault();
-      setDrawingsHidden(false);
       setTool(next);
     }
     window.addEventListener('keydown', onKey);
@@ -672,13 +648,6 @@ export function PriceChart({
     setDrawDialog(null);
     return () => cancelGestureRef.current?.();
   }, [drawingToolsOn, tool, pair, interval]);
-
-  useEffect(() => {
-    if (!drawingToolsOn) return;
-    for (const line of priceLinesRef.current) {
-      line.applyOptions({ lineVisible: !drawingsHidden, axisLabelVisible: !drawingsHidden });
-    }
-  }, [drawingToolsOn, drawingsHidden]);
 
   // Esc abandons whatever is in progress and drops back to the cursor —
   // the same escape hatch every charting package gives you, and the reason
@@ -805,7 +774,6 @@ export function PriceChart({
     if (!series) return;
     for (const line of priceLinesRef.current) series.removePriceLine(line);
     priceLinesRef.current = [];
-    if (drawingsHidden) return;
     for (const level of horizontals) {
       const style = drawingStyle(level);
       const price = level.points[0].price;
@@ -821,7 +789,7 @@ export function PriceChart({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [horizontalsKey, drawingsHidden, drawingToolsOn, chartReady]);
+  }, [horizontalsKey, drawingToolsOn, chartReady]);
 
   // ── Persistence ────────────────────────────────────────────────────
   //
@@ -862,7 +830,8 @@ export function PriceChart({
     }
     setDrawings(stored.drawings.map((d) => ({ ...d, id: newDrawingId() })));
     setSelectedDrawing(null);
-    setDrawingsHidden(stored.hidden);
+    // A «hidden» flag saved by the earlier rail is ignored: there is no
+    // longer a control to show them again, so drawings always show.
     setLocked(stored.locked);
     setLoadedKey(storageKey);
   }, [storageKey]);
@@ -871,12 +840,12 @@ export function PriceChart({
   useEffect(() => {
     if (!storageKey || loadedKey !== storageKey) return;
     try {
-      window.localStorage.setItem(storageKey, serializeDrawings({ drawings: collectDrawings(), hidden: savedHidden, locked: savedLocked }));
+      window.localStorage.setItem(storageKey, serializeDrawings({ drawings: collectDrawings(), hidden: false, locked: savedLocked }));
     } catch {
       // Quota or a privacy mode that refuses writes. The chart keeps
       // working; only persistence is lost, and silently is correct here.
     }
-  }, [storageKey, loadedKey, collectDrawings, savedHidden, savedLocked]);
+  }, [storageKey, loadedKey, collectDrawings, savedLocked]);
 
   const fitContent = useCallback(() => {
     chartRef.current?.timeScale().fitContent();
@@ -1315,13 +1284,8 @@ export function PriceChart({
     };
   })();
 
-  /**
-   * Container pixels → a chart point, on a bar. With the magnet on, the
-   * point snaps to the nearest real OHLC level — always for the strong
-   * magnet, only within reach for the weak one. The magnet never invents
-   * a level: with no candles loaded the point passes through untouched.
-   */
-  function drawingPointAt(x: number, y: number, snap: boolean): Point | null {
+  /** Container pixels → a chart point, on a bar. */
+  function drawingPointAt(x: number, y: number): Point | null {
     const chart = chartRef.current;
     const series = seriesRef.current;
     if (!chart || !series) return null;
@@ -1329,14 +1293,7 @@ export function PriceChart({
     const price = series.coordinateToPrice(y);
     const time = logical === null ? null : logicalToTime(logical as unknown as number);
     if (time === null || price === null) return null;
-    const raw = { time, price };
-    if (!snap || !drawingToolsOn || !magnetRef.current) return raw;
-    const snapped = magnetSnap(raw, candlesRef.current);
-    if (magnetModeRef.current === 'weak') {
-      const levelY = series.priceToCoordinate(snapped.price);
-      if (levelY === null || Math.abs(levelY - y) > WEAK_MAGNET_PX) return raw;
-    }
-    return { time: snapped.time, price: snapped.price };
+    return { time, price };
   }
 
   /** A click with the long/short tool: entry at the click, TradingView's
@@ -1352,15 +1309,6 @@ export function PriceChart({
     const sign = kind === 'long' ? 1 : -1;
     const end = entry.time + 20 * INTERVAL_SECONDS[interval];
     return [entry, { time: end, price: entry.price + sign * risk * 2 }, { time: end, price: entry.price - sign * risk }];
-  }
-
-  /** The zoom tool: the dragged time span fills the chart. */
-  function zoomTo(x1: number, x2: number) {
-    const scale = chartRef.current?.timeScale();
-    const from = scale?.coordinateToLogical(Math.min(x1, x2));
-    const to = scale?.coordinateToLogical(Math.max(x1, x2));
-    if (scale && from != null && to != null && to > from) scale.setVisibleLogicalRange({ from, to });
-    setTool('cursor');
   }
 
   const intervalButtons = INTERVALS.map((i) => (
@@ -1470,16 +1418,11 @@ export function PriceChart({
           compactTools={compactTools}
           onCollapse={() => { cancelGestureRef.current?.(); setTool('cursor'); }}
           tool={tool}
-          onSelect={(next) => { if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection(); if (drawingToolsOn) setDrawingsHidden(false); setTool(next); }}
+          onSelect={(next) => { if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection(); setTool(next); }}
           onClear={clearAll}
           onFit={fitContent}
           terminal={terminal}
           drawingTools={drawingToolsOn}
-          drawingsHidden={drawingsHidden}
-          magnet={magnet}
-          onToggleMagnet={() => setMagnet((v) => !v)}
-          magnetMode={magnetMode}
-          onMagnetMode={(mode) => { setMagnetMode(mode); setMagnet(true); }}
           drawingCount={drawings.length}
           locked={locked}
           onToggleLock={() => {
@@ -1487,10 +1430,6 @@ export function PriceChart({
             // the trader can neither finish nor remove.
             cancelGestureRef.current?.();
             setLocked((v) => !v);
-          }}
-          onToggleHidden={() => {
-            if (drawingToolsOn) { cancelGestureRef.current?.(); setTool('cursor'); }
-            setDrawingsHidden((v) => !v);
           }}
           stayInDrawMode={stayInDrawMode}
           onToggleStay={() => setStayInDrawMode((v) => !v)}
@@ -1519,13 +1458,11 @@ export function PriceChart({
             pointAt={drawingPointAt}
             positionPoints={positionPoints}
             overlayStyle={styles.overlay}
-            hidden={drawingsHidden}
             locked={locked}
             blocked={tradingSelection}
             selectedId={selectedDrawing}
             onSelect={setSelectedDrawing}
             onRequestText={(request) => { cancelGestureRef.current?.(); setDrawDialog({ kind: 'text', request }); }}
-            onZoom={zoomTo}
             cancelRef={cancelGestureRef}
             t={t}
           />}
@@ -1675,9 +1612,10 @@ function LegendItem({ color, label }: { color: string; label: string }) {
  * cursors, line tools, Fibonacci and pitchforks, patterns, forecasting and
  * measurement, shapes, text and notes — each a group whose main button
  * re-picks the tool last used in it and whose corner chevron opens the
- * rest, sectioned as TradingView sections them — then the ruler and zoom,
- * the magnet with its weak/strong modes, stay-in-drawing mode, lock all,
- * hide all and remove all.
+ * rest, sectioned as TradingView sections them — then the ruler,
+ * stay-in-drawing mode, lock all and remove all. Zoom, fit, magnet and
+ * hide were taken off the rail at the owner's word (2026-09-26: «цими
+ * інструментами ніхто не користується»).
  *
  * Every entry is a tool this chart implements; nothing here is an icon for
  * a feature that does nothing.
@@ -1746,14 +1684,8 @@ function DrawToolbar({
   onFit,
   terminal,
   drawingTools = false,
-  drawingsHidden,
-  onToggleHidden,
   stayInDrawMode,
   onToggleStay,
-  magnet = false,
-  onToggleMagnet,
-  magnetMode = 'strong',
-  onMagnetMode,
   locked = false,
   onToggleLock,
   onCollapse,
@@ -1766,14 +1698,8 @@ function DrawToolbar({
   onFit: () => void;
   terminal?: boolean;
   drawingTools?: boolean;
-  drawingsHidden: boolean;
-  onToggleHidden: () => void;
   stayInDrawMode: boolean;
   onToggleStay: () => void;
-  magnet?: boolean;
-  onToggleMagnet?: () => void;
-  magnetMode?: MagnetMode;
-  onMagnetMode?: (mode: MagnetMode) => void;
   locked?: boolean;
   onToggleLock?: () => void;
   onCollapse?: () => void;
@@ -1984,7 +1910,6 @@ function DrawToolbar({
     </div>;
   };
 
-  const magnetOpen = openGroup === 'magnet';
   const rail = (
     <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} id={drawingTools ? railId : undefined} hidden={drawingTools && collapsed} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined}
       onMouseOver={event => showToolHint(event.target)} onFocusCapture={event => showToolHint(event.target)}
@@ -2000,41 +1925,13 @@ function DrawToolbar({
       <div className="tool-divider" />
 
       {btn('ruler', t('draw.measure'), <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
-      {btn('zoom', t('draw.zoomIn'), <ZoomInIcon />, () => onSelect('zoom'), tool === 'zoom')}
-      {btn('fit', t('draw.zoom'), <FitIcon />, onFit, false)}
 
       <div className="tool-divider" />
 
-      {/* Magnet and lock only exist where the overlay implements them. */}
-      {drawingTools && onToggleMagnet
-        ? <div className={`tool-group ${magnetOpen ? 'open' : ''}`} data-tool-group="magnet" ref={magnetOpen ? (node) => { groupRef.current = node; } : undefined}>
-            {btn('magnet', `${t('draw.magnet')}: ${t(magnetMode === 'weak' ? 'draw.magnetWeak' : 'draw.magnetStrong')}`, <MagnetIcon />, onToggleMagnet, magnet)}
-            {onMagnetMode && chevron(t('draw.magnet'), magnetOpen, (wrap) => openFlyout('magnet', wrap, 2, 0))}
-            {magnetOpen && flyoutPos && onMagnetMode && createPortal(
-              <div className="tool-flyout drawing-flyout" id={menuId} role="menu" aria-label={t('draw.magnet')} ref={flyoutRef} style={{ top: flyoutPos.top, left: flyoutPos.left }} onKeyDown={flyoutKeys}>
-                {(['weak', 'strong'] as const).map((mode) => (
-                  <button key={mode} type="button" role="menuitemradio" aria-checked={magnet && magnetMode === mode} data-magnet-mode={mode}
-                    className={`tool-flyout-item ${magnet && magnetMode === mode ? 'active' : ''}`}
-                    onClick={() => { onMagnetMode(mode); setOpenGroup(null); }}>
-                    <MagnetIcon /><span>{t(mode === 'weak' ? 'draw.magnetWeak' : 'draw.magnetStrong')}</span>
-                  </button>
-                ))}
-              </div>,
-              document.body
-            )}
-          </div>
-        : null}
       {btn('stay', t('draw.stayMode'), <StayModeIcon />, onToggleStay, stayInDrawMode)}
       {drawingTools && onToggleLock
         ? btn('lock', locked ? t('draw.unlock') : t('draw.lock'), locked ? <LockedIcon /> : <UnlockedIcon />, onToggleLock, locked)
         : null}
-      {btn(
-        'hide',
-        drawingsHidden ? t('draw.show') : t('draw.hide'),
-        drawingsHidden ? <EyeOffIcon /> : <EyeIcon />,
-        onToggleHidden,
-        drawingsHidden
-      )}
 
       <div className="tool-divider" />
 
@@ -2328,9 +2225,9 @@ function Chain({ points, r = 1.5, rings = true, closed = false }: { points: [num
 
 // Cursors
 
-/** Cross: the chart's own crosshair. */
+/** Cross: the chart's own crosshair, open at the centre. */
 function CursorIcon() {
-  return <svg {...TV_ICON}><path d="M14.5 4.5v20M4.5 14.5h20" /></svg>;
+  return <svg {...TV_ICON}><path d="M14.5 4.5v7M14.5 17.5v7M4.5 14.5h7M17.5 14.5h7" /></svg>;
 }
 function DotCursorIcon() {
   return <svg {...TV_ICON}><circle cx="14.5" cy="14.5" r="2.5" fill="currentColor" stroke="none" /></svg>;
@@ -2397,8 +2294,8 @@ function ChannelIcon() {
 
 function FibIcon() {
   return <svg {...TV_ICON}>
-    <Ring x={4.5} y={23.5} /><Ring x={23.5} y={5.5} />
-    <path d="M3.5 5.5h18M3.5 11.5h21M3.5 17.5h21M6.5 23.5h18" />
+    <Ring x={23} y={11.5} /><Ring x={5} y={22.5} />
+    <path d="M4.5 5.5h19M4.5 11.5H21M4.5 16.5h19M7 22.5h16.5" />
   </svg>;
 }
 function FibExtIcon() {
@@ -2418,9 +2315,11 @@ function PitchforkIcon() {
 // Patterns
 
 function XabcdIcon() {
+  const tl: [number, number] = [8.5, 6], tr: [number, number] = [19.5, 7], c: [number, number] = [12.5, 13];
+  const bl: [number, number] = [5.5, 22], br: [number, number] = [22.5, 19.5], r = 1.75;
   return <svg {...TV_ICON}>
-    <Chain points={[[3.5, 20.5], [8.5, 6.5], [13.5, 16.5], [18.5, 9.5], [24.5, 22.5]]} />
-    <path d={seg([3.5, 20.5], [13.5, 16.5], 1.5, 1.5) + seg([13.5, 16.5], [24.5, 22.5], 1.5, 1.5)} strokeDasharray="1.5 2" />
+    <path d={[[bl, tl], [tl, c], [c, tr], [tr, br], [br, c], [c, bl]].map(([a, b]) => seg(a as [number, number], b as [number, number], r, r)).join('')} />
+    {[tl, tr, c, bl, br].map(([x, y], i) => <Ring key={i} x={x} y={y} r={r} />)}
   </svg>;
 }
 function AbcdIcon() {
@@ -2444,12 +2343,24 @@ function ElliottIcon() {
 
 // Forecasting and measuring
 
-/** Long position: the reward box above the entry, the risk box below. */
+/** Long position: target far above, entry, stop close below, and the
+ *  dotted path price is expected to take up to the target. */
 function LongIcon() {
-  return <svg {...TV_ICON}><path d="M5.5 5.5h17v17h-17zM5.5 16.5h17M14 13.5V8M11.5 10.5 14 8l2.5 2.5" /></svg>;
+  const r = 1.75;
+  return <svg {...TV_ICON}>
+    <Ring x={6} y={6.5} r={r} /><Ring x={6} y={15.5} r={r} /><Ring x={22} y={15.5} r={r} /><Ring x={6} y={21.5} r={r} />
+    <path d="M7.75 6.5H24M7.75 15.5h12.5M7.75 21.5H24" />
+    <path d="M10 13.5 22 8.5" strokeDasharray="0 2.6" />
+  </svg>;
 }
+/** Short position: the long position's mirror — stop close above, target far below. */
 function ShortIcon() {
-  return <svg {...TV_ICON}><path d="M5.5 5.5h17v17h-17zM5.5 11.5h17M14 14.5V20M11.5 17.5 14 20l2.5-2.5" /></svg>;
+  const r = 1.75;
+  return <svg {...TV_ICON}>
+    <Ring x={6} y={6.5} r={r} /><Ring x={6} y={12.5} r={r} /><Ring x={22} y={12.5} r={r} /><Ring x={6} y={21.5} r={r} />
+    <path d="M7.75 6.5H24M7.75 12.5h12.5M7.75 21.5H24" />
+    <path d="M10 14.5 22 19.5" strokeDasharray="0 2.6" />
+  </svg>;
 }
 function PriceRangeIcon() {
   return <svg {...TV_ICON}><path d="M6.5 5.5h15M6.5 22.5h15M14 8v12M11.5 10.5 14 8l2.5 2.5M11.5 17.5 14 20l2.5-2.5" /></svg>;
@@ -2465,8 +2376,8 @@ function DatePriceRangeIcon() {
 
 function BrushIcon() {
   return <svg {...TV_ICON}>
-    <path d="m21 4 3 3-8.5 8.5-3-3z" />
-    <path d="M12.5 12.5c-2.6 0-4.5 2-4.5 4.5 0 2-1 3.5-3.5 4.5 4 1.5 9.5.5 10.7-3.3.5-1.6 0-3.6-2.7-5.7z" />
+    <path d="M3 21.5C5.5 21 6.5 19.3 7.3 17c1-3 3.2-5 5.7-5.1 2.3 0 4 1.7 3.8 3.9-.3 3.6-4.6 5.7-13.8 5.7z" />
+    <path d="M15.8 7.3c-1.2 2.3.6 5.1 3.7 4.9L25 7" />
   </svg>;
 }
 function HighlighterIcon() {
@@ -2500,7 +2411,7 @@ function PolylineIcon() {
 // Text and notes
 
 function TextIcon() {
-  return <svg {...TV_ICON}><path d="M7.5 8.5v-2h13v2M14 6.5v15M11 21.5h6" /></svg>;
+  return <svg {...TV_ICON}><path d="M7.5 9.5v-3h13v3M14 6.5V22M11.5 22h5" /></svg>;
 }
 function NoteIcon() {
   return <svg {...TV_ICON}><path d="M6.5 5.5h15V17l-5 5h-10zM21.5 17h-5v5M9.5 10.5h9M9.5 13.5h6" /></svg>;
@@ -2517,14 +2428,8 @@ function PriceLabelIcon() {
 function RulerIcon() {
   return <svg {...TV_ICON}><path d="M3.4 19.7 19.7 3.4l4.9 4.9L8.3 24.6zM6.7 16.4l2.1 2.1M9.9 13.2l1.4 1.4M13.2 9.9l2.1 2.1M16.4 6.7l1.4 1.4" /></svg>;
 }
-function ZoomInIcon() {
-  return <svg {...TV_ICON}><circle cx="12.5" cy="12.5" r="7" /><path d="m17.5 17.5 6 6M12.5 9.5v6M9.5 12.5h6" /></svg>;
-}
 function FitIcon() {
   return <svg {...TV_ICON}><path d="M4.5 9.5v-5h5M18.5 4.5h5v5M23.5 18.5v5h-5M9.5 23.5h-5v-5M9.5 14.5h9M14 10v9" /></svg>;
-}
-function MagnetIcon() {
-  return <svg {...TV_ICON}><path d="M7.5 6.5h4V15a2.5 2.5 0 0 0 5 0V6.5h4V15a6.5 6.5 0 0 1-13 0zM7.5 10.5h4M16.5 10.5h4" /></svg>;
 }
 /** Stay in drawing mode: the pen, held by a lock. */
 function StayModeIcon() {
@@ -2535,12 +2440,6 @@ function LockedIcon() {
 }
 function UnlockedIcon() {
   return <svg {...TV_ICON}><path d="M8.5 12.5h11v10h-11zM10.5 12.5v-3a3.5 3.5 0 0 1 6.8-1.2M14 16.5v2" /></svg>;
-}
-function EyeIcon() {
-  return <svg {...TV_ICON}><path d="M3.5 14.5S7.5 7.5 14 7.5s10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7z" /><circle cx="14" cy="14.5" r="3" /></svg>;
-}
-function EyeOffIcon() {
-  return <svg {...TV_ICON}><path d="M3.5 14.5S7.5 7.5 14 7.5s10.5 7 10.5 7-4 7-10.5 7-10.5-7-10.5-7z" /><circle cx="14" cy="14.5" r="3" /><path d="m5.5 23.5 17-17" /></svg>;
 }
 /** Remove all drawings: TradingView's bin. */
 function EraserIcon() {

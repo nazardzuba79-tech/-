@@ -116,19 +116,21 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     return localRequire(id);
   }, exports);
   const props = { tool: 'cursor', onSelect: () => {}, onClear: () => {}, onFit: () => {}, terminal: true,
-    drawingsHidden: false, onToggleHidden: () => {}, stayInDrawMode: true, onToggleStay: () => {},
-    magnet: false, onToggleMagnet: () => {}, locked: false, onToggleLock: () => {} };
+    stayInDrawMode: true, onToggleStay: () => {}, locked: false, onToggleLock: () => {} };
 
   test('the rail carries TradingView\'s tool groups and toggles, each a real button', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools: true, compactTools: true }));
     expect(html).toContain('drawing-rail');
     expect(html).toContain('role="toolbar"');
-    for (const group of ['cursors', 'lines', 'fibs', 'patterns', 'forecast', 'shapes', 'annotations', 'magnet']) {
+    for (const group of ['cursors', 'lines', 'fibs', 'patterns', 'forecast', 'shapes', 'annotations']) {
       expect(html).toContain(`data-tool-group="${group}"`);
     }
     // Until another is picked, each group's button offers its first tool.
     for (const id of ['cursor', 'trendline', 'fib', 'xabcd', 'long', 'brush', 'text']) expect(html).toContain(`data-drawing-tool="${id}"`);
-    for (const id of ['ruler', 'zoom', 'fit', 'magnet', 'stay', 'lock', 'hide', 'clear']) expect(html).toContain(`data-drawing-tool="${id}"`);
+    for (const id of ['ruler', 'stay', 'lock', 'clear']) expect(html).toContain(`data-drawing-tool="${id}"`);
+    // Taken off at the owner's word — nobody uses them (2026-09-26).
+    for (const id of ['zoom', 'fit', 'magnet', 'hide']) expect(html).not.toContain(`data-drawing-tool="${id}"`);
+    expect(html).not.toContain('data-tool-group="magnet"');
     expect(html).toContain('aria-haspopup="menu"');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('title="draw.measure"');
@@ -161,7 +163,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   });
   test('the compact rail is icon-only with accessible labels, and Clear names how many it removes', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools: true, compactTools: true, drawingCount: 3 }));
-    for (const id of ['cursor', 'trendline', 'fib', 'brush', 'text', 'ruler', 'magnet', 'lock', 'stay', 'hide', 'clear']) {
+    for (const id of ['cursor', 'trendline', 'fib', 'brush', 'text', 'ruler', 'lock', 'stay', 'clear']) {
       expect(html).toContain(`data-drawing-tool="${id}"`);
     }
     expect(html).toContain('aria-label="draw.measure"');
@@ -191,7 +193,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, output);
-    const callbacks = { onCollapse: jest.fn(), onClear: jest.fn(), onToggleHidden: jest.fn(), onSelect: jest.fn() };
+    const callbacks = { onCollapse: jest.fn(), onClear: jest.fn(), onToggleLock: jest.fn(), onSelect: jest.fn() };
     const render = () => {
       index = 0;
       const tree = output.DrawToolbar({ ...props, ...callbacks, drawingTools: true, compactTools: true });
@@ -222,7 +224,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(view.tools).toEqual(tools);
     expect(callbacks.onCollapse).toHaveBeenCalledTimes(1);
     expect(callbacks.onClear).not.toHaveBeenCalled();
-    expect(callbacks.onToggleHidden).not.toHaveBeenCalled();
+    expect(callbacks.onToggleLock).not.toHaveBeenCalled();
     expect(callbacks.onSelect).not.toHaveBeenCalled();
   });
   test('the measure label reads as TradingView\'s and keeps a tiny negative difference', () => {
@@ -356,21 +358,22 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       else Reflect.deleteProperty(globalThis, 'document');
     }
   });
-  test('Hide applies to all user drawings but not real conditional order lines', () => {
-    expect(source).toContain('line.applyOptions({ lineVisible: !drawingsHidden, axisLabelVisible: !drawingsHidden })');
-    expect(source).toContain('hidden={drawingsHidden}');
-    expect(layerSource).toContain('<g data-chart-drawings="shapes" display={hidden ? \'none\' : undefined}>');
+  test('drawings always show, and real conditional order lines stay outside them', () => {
+    // Hide was taken off the rail, so a «hidden» flag an earlier rail saved
+    // must not hide anyone's drawings with no way to show them again.
+    expect(source).not.toMatch(/drawingsHidden|setDrawingsHidden|stored\.hidden/);
+    expect(source).toContain('serializeDrawings({ drawings: collectDrawings(), hidden: false, locked: savedLocked })');
+    expect(layerSource).toContain('<g data-chart-drawings="shapes">');
     // Conditional orders are a SPOT-ONLY feature (see
     // priceChartMarketOrders.test.ts) and live in their own overlay, after
-    // the drawing layer and outside it, so Hide, Lock and Clear never reach
-    // them.
+    // the drawing layer and outside it, so Lock and Clear never reach them.
     const flat = source.replace(/\s+/g, ' ');
     expect(flat).toContain("<svg className=\"order-overlay\" style={{ ...styles.overlay, pointerEvents: 'none' }}> {spotConditionalOrders && conditionalOrders.map");
     expect(flat.indexOf('<ChartDrawingLayer')).toBeLessThan(flat.indexOf('className="order-overlay"'));
     const orders = flat.split('className="order-overlay"')[1].split('</svg>')[0];
-    expect(orders).not.toMatch(/drawingsHidden|locked|clearDrawings/);
-    // Nothing is placed while drawings are hidden or locked.
-    expect(layerSource).toContain('if (lockedRef.current || hiddenRef.current) return;');
+    expect(orders).not.toMatch(/locked|clearDrawings/);
+    // Nothing is placed while drawings are locked.
+    expect(layerSource).toContain('if (lockedRef.current) return;');
     expect(source).toContain('return () => cancelGestureRef.current?.()');
     // The chart's cancel hook reaches the layer's gestures.
     expect(source).toContain('cancelRef={cancelGestureRef}');
@@ -590,10 +593,10 @@ describe('the rail is shared, and every button does something', () => {
     expect(code).toContain('type Tool = DrawingTool;');
     const union = layerCode.slice(layerCode.indexOf('export type DrawingTool ='), layerCode.indexOf(';', layerCode.indexOf('export type DrawingTool =')));
     const tools = [...union.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
-    expect(new Set(tools)).toEqual(new Set(['cursor', 'dot', 'arrowcursor', 'erase', 'zoom']));
+    expect(new Set(tools)).toEqual(new Set(['cursor', 'dot', 'arrowcursor', 'erase']));
     expect(union).toContain('| DrawingKind');
     expect(layerCode).toContain("tool === 'erase'");
-    expect(layerCode).toContain("tool === 'zoom'");
+    expect(layerCode).not.toMatch(/'zoom'|zoomBand|onZoom/);
     // Each drawing kind has its own geometry case — painted and hit-tested by the same code.
     for (const kind of drawings.DRAWING_KINDS) expect(geometryCode).toMatch(new RegExp(`case '${kind}'`));
   });
@@ -602,12 +605,12 @@ describe('the rail is shared, and every button does something', () => {
     expect(code).toContain('if (drawingToolsOn && lockedRef.current) return;');
     expect(code).toContain('if (drawingToolsOn && locked) return;');
     // Adding a shape, moving one, moving an anchor, and Delete.
-    expect(layerCode).toContain('if (lockedRef.current || hiddenRef.current) return;');
+    expect(layerCode).toContain('if (lockedRef.current) return;');
     expect(layerCode).toContain('if (lockedRef.current || drawing.locked || !view) return;');
     expect(layerCode).toContain('if (lockedRef.current || drawing.locked) return;');
     expect(layerCode).toContain("selectedId !== null && !lockedRef.current");
     // A lock abandons whatever was half-placed.
-    expect(layerCode).toContain('}, [tool, hidden, locked, blocked]);');
+    expect(layerCode).toContain('}, [tool, locked, blocked]);');
     // Lock must NOT touch visibility or the chart's own navigation.
     const lockToggle = code.split('onToggleLock={() => {')[1].split('}}')[0];
     expect(lockToggle).not.toMatch(/setDrawingsHidden|fitContent|timeScale|setTool\(/);

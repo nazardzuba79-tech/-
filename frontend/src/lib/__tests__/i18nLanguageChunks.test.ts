@@ -138,7 +138,7 @@ describe('translation integrity', () => {
 };
     // 2026-09-26, the TradingView-style drawing panel: its tool, group,
     // section and object-toolbar names. `git diff --numstat` over the
-    // locales directory reports `68 0` for every language — additions
+    // locales directory reports `65 0` for every language — additions
     // only; the older `draw.*` strings are untouched and the TradingView
     // wording for five of them lives under new keys (`draw.cross`,
     // `draw.hray`, `draw.fibRetracement`, `draw.extendedLine`,
@@ -149,7 +149,7 @@ describe('translation integrity', () => {
           'draw.patterns', 'draw.xabcd', 'draw.abcd', 'draw.trianglepattern', 'draw.headshoulders', 'draw.elliott', 'draw.forecast', 'draw.long',
           'draw.short', 'draw.pricerange', 'draw.daterange', 'draw.datepricerange', 'draw.shapesGroup', 'draw.highlighter', 'draw.arrow',
           'draw.arrowup', 'draw.arrowdown', 'draw.ellipse', 'draw.triangleshape', 'draw.polyline', 'draw.annotations', 'draw.note', 'draw.callout',
-          'draw.pricelabel', 'draw.zoomIn', 'draw.magnetWeak', 'draw.magnetStrong', 'draw.section.lines', 'draw.section.channels',
+          'draw.pricelabel', 'draw.section.lines', 'draw.section.channels',
           'draw.section.fib', 'draw.section.pitchforks', 'draw.section.chartPatterns', 'draw.section.elliott', 'draw.section.projection',
           'draw.section.measurers', 'draw.section.brushes', 'draw.section.arrows', 'draw.section.shapes', 'draw.section.text', 'draw.objectToolbar',
           'draw.lineColor', 'draw.fillColor', 'draw.lineWidth', 'draw.lineStyle', 'draw.editText', 'draw.lockObject', 'draw.unlockObject',
