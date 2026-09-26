@@ -238,6 +238,7 @@ const measure = (page) => page.evaluate(() => {
       groupOptions: [...document.querySelectorAll('.rb-controls select option')].map(o => o.textContent.trim()),
     },
     formBox: box(form), bookBox: box(bookEl),
+    drawingChevron: box(document.querySelector('.tool-group-chevron')),
     clippedForm: clippedIn(form), clippedBook: clippedIn(bookEl),
     overflowX: Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth),
     formOverflowX: form ? Math.max(0, form.scrollWidth - form.clientWidth) : null,
@@ -390,6 +391,7 @@ async function showOnMobile(page, which) {
           headingControls: formState.headingControls, field: formState.field, fieldCaption: formState.fieldCaption,
           fieldInput: formState.fieldInput, selects: formState.selects, slider: formState.slider,
           buttons: formState.buttons, formBox: formState.formBox, formOverflowX: formState.formOverflowX },
+        drawingChevron: formState.drawingChevron,
         clippedForm: formState.clippedForm, overflowX: Math.max(bookState.overflowX, formState.overflowX),
         idleRequests: idle.length, idleRequestKinds: [...new Set(idle.map(u => u.replace(/\?.*$/, '').replace(/\/[A-Z0-9-]+$/, '/:x')))],
         grouping, tabSwitch, pick, calculator, order, pageErrors };
@@ -406,6 +408,10 @@ async function showOnMobile(page, which) {
         assert.deepEqual(r.clippedForm, [], `${key}: clipped text in the trading panel: ${JSON.stringify(r.clippedForm)}`);
         assert.equal(r.overflowX, 0, `${key}: the page scrolls sideways by ${r.overflowX}px`);
         assert.equal(r.form.formOverflowX, 0, `${key}: the trading panel scrolls sideways by ${r.form.formOverflowX}px`);
+        if (mobile) {
+          assert.ok(r.drawingChevron && r.drawingChevron.width >= 28 && r.drawingChevron.height >= 28,
+            `${key}: drawing trend split target is too small: ${JSON.stringify(r.drawingChevron)}`);
+        }
         assert.equal(r.form.buttons.length, 2, `${key}: expected Long and Short, found ${r.form.buttons.length}`);
         assert.ok(r.order, `${key}: the ticket did not POST an order`);
         // ORDER BOOK
