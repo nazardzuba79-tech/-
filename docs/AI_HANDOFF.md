@@ -3949,6 +3949,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
     - `registerWalletTailwindOwnership` (fails identically on main once `frontend/dist` is built);
     - `nativeReviewHarness` failed on main only.
 - **Preserved:** Codex's deposit-chain config, the treasury override service, the other-network verifiers and incoming feed (now stores only; runs on click), the Users-page activity polling pattern, the referral policy and the 300 USD client warning.
+- **CI:** `package.json` and `package-lock.json` added to the PR path filters of `deposit-minimum.yml` and `kyc-edge.yml`. Before this, a dependency-only PR ran no Actions workflow at all.
 - **Unresolved:**
   - No production proof of a real TRC20 deposit: fixture only.
   - The watcher runs in-process on Render free, so a sleeping API scans on its next start.
@@ -4123,3 +4124,27 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved existing registration/session/referral/country behavior, deposit/KYC authority and payloads, Ed25519 key derivation, four-field DO claims and bounded retention, failure isolation, all frontend/business logic and schema. No new Worker or registration test account created by implementation.
 - Local: 64 backend route/publisher/auth tests and 45 Worker/KYC tests PASS, including real workerd/SQLite concurrent dedupe + persisted restart; final 27 changed-assertion tests rerun PASS. Backend/frontend TypeScript, production frontend build and notification Wrangler dry-run PASS. Existing frontend chunk warning remains.
 - CI, auto-deploy and production synthetic registration delivery are still pending at this handoff; local synthetic tests use mocked Telegram and no production DB. No production registration or user changes were made.
+
+## Claude — 2026-09-26 — npm dependency security audit
+
+- Base: fresh `origin/main` `480d98f2`. Branch `claude/ecstatic-brahmagupta-cwkvt5`, restarted from main after #295 merged. The full findings table is in `docs/SECURITY_DEPENDENCY_AUDIT.md`.
+- **Changes** (`package.json` + `package-lock.json` only; 5 version bumps, 7 packages removed):
+  - `express` 4.22.2 → 4.22.3, which brings `qs` 6.16.0 and `body-parser` 1.20.8;
+  - `nodemailer` 9.0.1 → 9.1.1;
+  - unused `multer` and `@types/multer` removed (nothing imports it since KYC moved to the Cloudflare edge);
+  - dev `js-yaml` 3.15.1 → 3.15.2.
+- **Audit counts:**
+  - Backend: before 0 critical / 3 high / 4 moderate; after 0 / 0 / 1 (`uuid`, not reachable: every call is `uuidv4()` without a buffer; the fix is a major version).
+  - Frontend: unchanged at 1 high / 4 moderate, all dev-only (vite/esbuild dev server, capacitor CLI); 0 in production.
+- **Checks run locally:**
+  - Backend `tsc`, collector `tsc`, frontend build: OK.
+  - Full jest: 309/343 suites, 5255/5453 tests, the same 123 failing tests as unchanged main (0 new, 0 fixed).
+  - `kycEdgePostgres` + `kyc` + `KycEmailService` + `NodemailerCompatibility`: 46/46.
+  - `qa-deposit-packages.cjs --browser`: 30 PASS, 0 FAIL.
+  - Lockfile re-resolve: no drift.
+  - Local browser smoke (production bundle, real backend, disposable Postgres, synthetic users): register and login forms at 1440/390, wrong password refused, JWT accepted and a bad JWT refused. `/ /login /register /wallet /futures /trade /admin/users` at 320/390/430/1440 open with no page errors, no chunk errors, no overflow and no recovery screen: 40/40 PASS, identical on unchanged main. `/futures` shows «Не удалось загрузить график» both before and after, because the sandbox gets 403 from Bybit.
+- **Preserved:** Codex's Telegram notification work (#300), Support/KYC edge, and the deposit rules are untouched.
+- **CI:** `package.json` and `package-lock.json` added to the PR path filters of `deposit-minimum.yml` and `kyc-edge.yml`. Before this, a dependency-only PR ran no Actions workflow at all.
+- **Unresolved:**
+  - `uuid` 9 → 11 (major; recommended as its own PR);
+  - vite 5 → 6.4.3+ (major, dev-only).
