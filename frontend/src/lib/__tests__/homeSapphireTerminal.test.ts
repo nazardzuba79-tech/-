@@ -53,6 +53,9 @@ test('dense screen renders real summary, 12 market logos, 20 depth levels and si
   expect(html).toContain('width:50%'); expect(html).toContain('width:100%');
   expect(html).toContain('24h High'); expect(html).toContain('24h Volume (USDT)');
   expect(html).toContain('12:00:00'); expect(html).toContain('0.12345');
+  expect(html.toLowerCase()).not.toContain('kraken');
+  expect(html).not.toContain('Updated every 6h');
+  expect(html).not.toContain('UTC');
   expect(html).not.toMatch(/<form|<input|NaN|Infinity|undefined/);
 });
 test('received updates change chart, depth, public trades and receipt timestamp',()=>{
@@ -61,7 +64,7 @@ test('received updates change chart, depth, public trades and receipt timestamp'
   market.hero.book.bids[0].quantity='4';market.hero.trades[0].price='102.50';
   const after=render(market);
   expect(after).not.toBe(before);expect(after).toContain('data-price="102"');
-  expect(after).toContain('12:00:02');expect(after).toContain('102.50');
+  expect(after).toContain('102.50');
   expect(after).toContain('Buy 68.8%');expect(after).toContain('width:25%');
 });
 test('missing and invalid data remains unavailable with no synthetic prices or activity',()=>{
@@ -69,7 +72,8 @@ test('missing and invalid data remains unavailable with no synthetic prices or a
   market.hero={...market.hero,streaming:false,livePrice:null,candles:[],updatedAt:null,book:{bids:[{price:'NaN',quantity:'Infinity'}],asks:[{price:'',quantity:''}]},trades:[{time:now,price:'0',quantity:'1',side:'BUY'}]};
   const html=render(market);
   expect(html).toContain('data-stale="true"'); expect(html).toContain('Data unavailable');
-  expect(html).toContain('Buy —');expect(html).toContain('Updated — UTC');
+  expect(html).toContain('Buy —');expect(html).toContain('Market data is delayed');
+  expect(html).not.toContain('Updated —');expect(html).not.toContain('UTC');
   expect(html).not.toMatch(/class="book-row|class="hs-trade-row|data-chart-count|NaN|Infinity|undefined|>0\.00</);
 });
 test('trade links retain selected pair and have no execution or account controls',()=>{

@@ -75,7 +75,7 @@ test('received zero prices, sizes and candle volume remain zero without non-fini
   expect(orderArea(html)).toContain('<span>— USDT</span>');
 });
 
-test('chart volumes and UTC labels derive from received candles, and executions retain the public pair and exact size', () => {
+test('chart times derive from received candles without exposing timezone metadata, and executions retain the public pair and exact size', () => {
   const { html } = render(market({ tickers: [quote(120)], hero: feed({
     pair: 'BTC/USDT',
     candles: [
@@ -88,13 +88,24 @@ test('chart volumes and UTC labels derive from received candles, and executions 
   expect(bars.map(match => Number(match[1]))).toEqual([14.5, 29]);
   expect(html).toContain('>09:00</text>');
   expect(html).toContain('>09:15</text>');
-  expect(html).toContain('>UTC</text>');
+  expect(html).not.toContain('>UTC</text>');
   expect(html).toContain('2026-01-01T09:15:07.000Z');
   const executions = html.slice(html.indexOf('vx-terminal-public-trades'));
   expect(executions).toContain('<span>BTC/USDT</span>');
   expect(executions).toContain('>Sell</span>');
   expect(executions).toContain('>119.50</span>');
   expect(executions).toContain('>0.01842</span>');
+});
+
+test('customer terminal hides provider and refresh implementation metadata', () => {
+  const { html } = render(market({
+    tickers: [quote(120)], tickerSource: 'kraken', tickerUpdatedAt: Date.UTC(2026,0,1,9,15),
+    hero: feed({ updatedAt: Date.UTC(2026,0,1,9,15), streaming: false })
+  }));
+  expect(html.toLowerCase()).not.toContain('kraken');
+  expect(html).not.toContain('Market feed');
+  expect(html).not.toContain('Refreshes every 6 hours');
+  expect(html).not.toContain('>UTC</text>');
 });
 
 test('a missing volume or blank depth quantity does not silently become real zero', () => {

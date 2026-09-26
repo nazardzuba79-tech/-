@@ -135,7 +135,7 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  report.reload.marketRequests=marketRequests.reload.slice();
  report.reload.metadataRequests=metadataRequests.reload.slice();
  if(report.reload.marketRequests.length)report.findings.push('Reload with a fresh snapshot issued market requests: '+report.reload.marketRequests.join(', '));
- if(report.reload.painted.badge!=='Updated every 6h')report.findings.push(`Reload badge is "${report.reload.painted.badge}", expected "Updated every 6h"`);
+ if(report.reload.painted.badge!=='Market data')report.findings.push(`Reload badge is "${report.reload.painted.badge}", expected neutral "Market data"`);
  const after=await page.evaluate(PAINTED);
  if(!ready(after))report.findings.push('Confirmed values did not survive the failed background API: '+JSON.stringify(after));
 
