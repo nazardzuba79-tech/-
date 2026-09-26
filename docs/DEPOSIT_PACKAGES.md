@@ -52,6 +52,48 @@ admin credit, including below the minimum) and `DEPOSIT_MINIMUM_ACCEPTANCE.md`.
 - `/deposits/me` returns `CREDITED` transfers only.
 - Pending amounts never reach balances, equity, trading, withdrawal or referral.
 
+## «Игнорировать» (old wallet history, own transfers)
+
+- **Where:** available on each transfer in «Непривязанные».
+- **Reason is required:**
+  - Историческая операция кошелька;
+  - Мой собственный перевод;
+  - Не является депозитом клиента;
+  - Другое (with a note).
+- **What it records:**
+  - The row is **never deleted**. Hash, asset, chain, amount and timestamps are unchanged.
+  - Written: `ignoredAt`, `ignoredReason`, `ignoredNote`, `ignoredByAdminId`, a revision bump and a `DEPOSIT_IGNORED` audit entry.
+- **What an ignored transfer can do:** it leaves «Непривязанные» and its counter, and appears under «Игнорированные». It can never be attributed, join a package, become ready or be credited, and the watcher does not re-prove it.
+- **Refused:**
+  - CREDITED or batched transfers;
+  - an attributed transfer that is part of its owner's active package (detach it first);
+  - any other attributed transfer without an explicit `confirmAssigned`.
+- **«Вернуть в очередь»:** ADMIN only. Clears the ignore fields and writes a `DEPOSIT_IGNORE_RESTORED` audit entry. No balance change, no credit.
+- **Migration `20260926200000_deposit_ignore`:**
+  - Additive only.
+  - It marks as `LEGACY_IGNORE` the unattributed, uncredited transfers that were already hidden with the old feed's «Игнорировать» (`IgnoredIncomingTransfer`), so they do not reappear in «Непривязанные».
+
+## Accumulation card (one user + one network + one asset, until credited)
+
+Every component transfer is listed: amount, txHash, confirmations, block time and status. A later top-up is added to the card; it never replaces the first transfer.
+
+| Transfers | Total | Remaining | Status |
+| --- | --- | --- | --- |
+| 15 | 15 | 285 | Ожидает доплаты |
+| 15 + 100 | 115 | 185 | Ожидает доплаты |
+| 15 + 100 + 185 | 300 | 0 | Готов к проверке — «Проверить и зачислить 300 USDT» |
+
+After the manual credit, every component is CREDITED. The package moves to «Зачисленные» as one card with its transfers, the balance is increased exactly once, and a repeat confirm credits nothing.
+
+## Counters
+
+| Tab | Counts |
+| --- | --- |
+| Непривязанные | active, not ignored, unattributed transfers |
+| Ожидают доплаты | **packages** below 300 |
+| Готовы к проверке | **packages** at 300 or above, not yet approved |
+| Игнорированные | ignored transfers |
+
 ## States in Admin → Пополнения (derived, not stored)
 
 | Tab | Meaning |
@@ -61,7 +103,8 @@ admin credit, including below the minimum) and `DEPOSIT_MINIMUM_ACCEPTANCE.md`.
 | Ожидают доплаты | package below 300 |
 | Готовы к проверке | package at or above 300; «Проверить и зачислить» |
 | Требуют уточнения | failed/foreign transfer, amount mismatch, or no valid price |
-| Зачисленные | credited (latest 50; counts are exact) |
+| Зачисленные | credited packages (latest 30 batches) and pre-package credits |
+| Игнорированные | not client deposits; kept, restorable |
 
 ## Deposit watcher (USDT / TRC20 only)
 

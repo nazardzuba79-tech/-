@@ -46,7 +46,8 @@ async function mountDeposits() {
 
 const row = (id: string, amount: string, state: string, extra: any = {}) => ({ id, userId: 'u1', userEmail: 'user@example.invalid', chain: 'tron', asset: 'USDT',
   txHash: id.padEnd(64, 'f'), amount, confirmations: 25, minConfirmations: 19, finalized: true, verified: true, networkConfirmed: true, verifyError: null,
-  recipientAddress: 'T', blockTimestamp: null, firstDetectedAt: new Date().toISOString(), creditedAt: null, batchId: null, revision: 1, source: 'watcher', state, claims: [], ...extra });
+  recipientAddress: 'T', blockTimestamp: null, firstDetectedAt: new Date().toISOString(), creditedAt: null, batchId: null, revision: 1, source: 'watcher', state, claims: [],
+  ignoredAt: null, ignoredReason: null, ignoredNote: null, ignoredByAdminId: null, ...extra });
 const pkgView = (userId: string, parts: string[], total: string, state: string, remaining: string | null) => ({
   key: `${userId}|tron|USDT`, userId, userEmail: `${userId}@example.invalid`, chain: 'tron', asset: 'USDT', transfers: parts.map((a, i) => row(`${userId}-${i}`, a, state, { userId })),
   total, unconfirmedTotal: '0', unconfirmedCount: 0, minDepositUsd: 300, usdValue: total, usdPolicy: 'USD_PEGGED_POLICY', priceUsd: '1', pricedAt: null,
@@ -54,22 +55,31 @@ const pkgView = (userId: string, parts: string[], total: string, state: string, 
 function queue(watcher: any = {}) {
   return {
     asOf: new Date().toISOString(), minDepositUsd: 300,
-    counts: { UNATTRIBUTED: 1, AWAITING_CONFIRMATIONS: 0, AWAITING_TOPUP: 2, READY: 2, NEEDS_REVIEW: 0, CREDITED: 0, uncreditedTotal: 5, truncated: false },
+    counts: { UNATTRIBUTED: 1, AWAITING_CONFIRMATIONS: 0, AWAITING_TOPUP: 2, READY: 2, NEEDS_REVIEW: 0, CREDITED: 0, IGNORED: 1, uncreditedTotal: 6, truncated: false },
+    packageCounts: { AWAITING_TOPUP: 1, READY: 1, NEEDS_REVIEW: 0 },
     packages: [pkgView('topup', ['15', '20'], '35', 'AWAITING_TOPUP', '265'), pkgView('ready', ['15', '285'], '300', 'READY', '0')],
-    rows: [row('free', '400', 'UNATTRIBUTED', { userId: null, userEmail: null, claims: [{ userId: 'c1', email: 'claimer@example.invalid', at: new Date().toISOString() }] })],
+    rows: [
+      row('free', '400', 'UNATTRIBUTED', { userId: null, userEmail: null, claims: [{ userId: 'c1', email: 'claimer@example.invalid', at: new Date().toISOString() }] }),
+      row('oldwallet', '777', 'IGNORED', { userId: null, userEmail: null, ignoredAt: new Date().toISOString(), ignoredReason: 'HISTORICAL_WALLET_OPERATION' }),
+    ],
+    creditedBatches: [],
     watcher: { chain: 'tron', enabled: false, running: false, lastRunStartedAt: null, lastRunFinishedAt: null, lastSuccessAt: null, lastRunOk: null, lastRunTrigger: null,
       lastScheduledRunAt: null, lastAdminOpenRunAt: null, nextScheduledRunAt: null, adminOpenDueToday: false, lastRunSummary: null, providerStatus: null, unverifiedOrUnfinalized: 0, cursors: [],
       policy: { timeZone: 'Europe/Kyiv', slots: ['12:00', '16:00', '20:00'], dayStart: '07:00', nightStart: '22:00', dedupeMinutes: 45, pageSize: 200, maxPagesPerRun: 10, overlapMinutes: 10, initialBackfillDays: 7 }, ...watcher },
   };
 }
 let fetchMock: jest.Mock;
+let ignoreBodies: any[] = [], restoreCalls: string[] = [];
 function mockDepositApi(q: any) {
+  ignoreBodies = []; restoreCalls = [];
   fetchMock = jest.fn(async (url: string, init: any = {}) => {
     const path = String(url);
     const ok = (body: any, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) });
     if (path.endsWith('/admin/deposit-queue')) return ok(q);
     if (path.includes('/admin/deposit-packages/preview')) return ok({ ...q.packages[1], balanceAvailable: '0', balanceAfter: '300' });
     if (path.endsWith('/admin/deposit-packages/confirm')) return ok({ status: 'CREDITED', batchId: 'b', totalAmount: '300', asset: 'USDT', depositIds: [], replayed: false });
+    if (path.includes('/ignore')) { ignoreBodies.push(JSON.parse(init.body)); return ok({ depositId: 'free', ignoredAt: new Date().toISOString(), reason: 'X' }); }
+    if (path.includes('/restore')) { restoreCalls.push(path); return ok({ depositId: 'oldwallet', restored: true }); }
     if (path.endsWith('/admin/deposit-watch/open')) return ok({ ran: false, ok: true, skipped: 'NOT_DUE', notDueReason: 'ALREADY_TODAY', newTransfers: 0, error: null });
     return ok({ error: `unexpected ${path} ${init.method}` }, 404);
   });
@@ -86,14 +96,17 @@ const fetched = (suffix: string) => fetchMock.mock.calls.filter((c: any[]) => St
 test('accumulation cards: 15 + 20 awaits a top-up of 265 with crediting unavailable; a 300 package offers «Проверить и зачислить»', async () => {
   mockDepositApi(queue());
   await mountDeposits();
-  await click('Ожидают доплаты1');
+  await click('Ожидают доплаты1'); // counts packages, not transfers
   const card = host.querySelector('[data-package="topup|tron|USDT"]')!;
-  for (const text of ['topup@example.invalid', 'USDT / TRC20', '15 + 20 USDT', '35 USDT', '300 USD', '265 USDT', 'Ожидает доплаты', 'недоступно']) expect(card.textContent).toContain(text);
+  for (const text of ['topup@example.invalid', 'USDT / TRC20', '15 + 20 USDT', 'Всего накоплено', '35 USDT', '300 USD', '265 USDT', 'Ожидает доплаты', 'недоступно']) expect(card.textContent).toContain(text);
+  // Every component transfer is listed, the first one never replaced by a later top-up.
+  expect(card.querySelectorAll('[data-package-transfer]')).toHaveLength(2);
   expect(card.querySelector('button')).toBeNull();
   await click('Готовы к проверке1');
   const ready = host.querySelector('[data-package="ready|tron|USDT"]')!;
   expect(ready.textContent).toContain('300 USDT');
   expect(ready.textContent).toContain('Готов к проверке');
+  expect(ready.querySelector('[data-open-package]')!.textContent).toBe('Проверить и зачислить 300 USDT');
   await act(async () => { (ready.querySelector('[data-open-package]') as HTMLElement).click(); await flush(); await flush(); });
   expect(host.querySelector('[data-credit-drawer]')).not.toBeNull();
   expect(fetched('/confirm')).toHaveLength(0);
@@ -218,3 +231,32 @@ test.each([false, true])('real AdminLayout gate allows only administrator=%s', a
    went with it — the data it showed (newest users, incoming deposits,
    pending KYC) is covered on the pages that own it. */
 
+
+test('«Игнорировать» needs a reason (note for «Другое»); «Игнорированные» has its own counter and «Вернуть в очередь»', async () => {
+  mockDepositApi(queue());
+  const confirmSpy = jest.fn(() => true);
+  (dom.window as any).confirm = confirmSpy;
+  await mountDeposits();
+  const tab = (k: string) => host.querySelector(`[data-deposit-tab="${k}"]`)!.textContent;
+  expect(tab('unattributed')).toBe('Непривязанные1');
+  expect(tab('ignored')).toBe('Игнорированные1');
+  await click('Непривязанные1');
+  await act(async () => { (host.querySelector('[data-ignore="free"]') as HTMLElement).click(); await flush(); });
+  const modal = host.querySelector('[data-ignore-modal="free"]')!;
+  const submit = modal.querySelector('[data-confirm-ignore]') as HTMLButtonElement;
+  expect(submit.disabled).toBe(true);
+  for (const label of ['Историческая операция кошелька', 'Мой собственный перевод', 'Не является депозитом клиента', 'Другое']) expect(modal.textContent).toContain(label);
+  const radio = (v: string) => modal.querySelector(`input[value="${v}"]`) as HTMLInputElement;
+  await act(async () => { radio('OTHER').click(); await flush(); });
+  expect(submit.disabled).toBe(true); // «Другое» needs a note
+  await act(async () => { radio('OWN_TRANSFER').click(); await flush(); });
+  expect(submit.disabled).toBe(false);
+  await act(async () => { submit.click(); await flush(); await flush(); });
+  expect(ignoreBodies).toEqual([{ reason: 'OWN_TRANSFER', note: null, confirmAssigned: false }]);
+  await click('Игнорированные1');
+  const ignored = host.querySelector('[data-ignored-row="oldwallet"]')!;
+  expect(ignored.textContent).toContain('Историческая операция кошелька');
+  await act(async () => { (ignored.querySelector('[data-restore]') as HTMLElement).click(); await flush(); await flush(); });
+  expect(confirmSpy).toHaveBeenCalled();
+  expect(restoreCalls).toEqual(['undefined/admin/deposits/oldwallet/restore']);
+});

@@ -3991,6 +3991,37 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - **Checks run:** backend and frontend `tsc` clean. Deposit CI list 235/235, including the new `depositWatchSchedule.test.ts` (Kyiv DST, night, slots, admin-open once a day). `scripts/qa-deposit-packages.cjs --browser` PASS on local PostgreSQL 16 with a simulated Kyiv day (night 06:30, 07:05 open, 12:00, 12:10, 15:40 manual, 16:00 dedupe, 23:00 wake with no catch-up, next morning finds the 21:00 transfer, 13:30 missed-slot run, concurrent manual + slot, paused) plus the browser at 1440/390.
 - **Unresolved:** no production proof of a real TRC20 deposit (fixture only). Slots only fire while Render is awake (in-process timer); the optional internal tick needs `DEPOSIT_WATCHER_TOKEN` from the owner.
 
+## Claude — 2026-09-26 — Deposits: «Игнорировать», «Игнорированные», full accumulation cards
+
+- Base: fresh main `d55dbb18` (#293 daytime schedule merged first). Branch `claude/ecstatic-brahmagupta-cwkvt5`. Code commit `a9619cf7`.
+- **Owner problem:** old Trust Wallet history filled «Непривязанные». The old feed's «Игнорировать» only wrote `IgnoredIncomingTransfer`, which the new queue does not read. The owner also asked for a clear 15 → 115 → 300 card.
+- **Implemented:**
+  - `DepositIgnoreService`: ignore (required reason) and restore. It locks the row, bumps the revision and writes an audit entry.
+    - It refuses CREDITED/batched transfers and attributed transfers in an active package. Other attributed transfers need `confirmAssigned`.
+  - Deposit gains `ignoredAt`, `ignoredReason`, `ignoredNote`, `ignoredByAdminId` (additive migration `20260926180000_deposit_ignore`, which backfills the legacy ignores for unattributed, uncredited rows).
+  - The IGNORED state is excluded from packages, the batch confirm (query and lock checks), the watcher proofs and attribution.
+  - The queue returns `packageCounts` and `creditedBatches`.
+  - UI:
+    - «Игнорировать» modal;
+    - «Игнорированные» tab with «Вернуть в очередь»;
+    - package card lists every transfer;
+    - «Проверить и зачислить {total}»;
+    - «Зачисленные» shows batch cards.
+  - The legacy `/admin/deposits/ignore` endpoint also marks the registry row.
+- **Checks run:**
+  - backend and frontend `tsc`;
+  - deposit CI list 236/236, including new UI tests for the ignore modal and restore, and policy tests for IGNORED;
+  - `scripts/qa-deposit-packages.cjs --browser` PASS on local PostgreSQL 16. The new group covers owner tests 1–12:
+    - ignore/restore;
+    - no package, balance or attribution for an ignored transfer;
+    - 15 → 115 → 300 in one card with all component transfers;
+    - READY at 300; balance 0 until confirm; +300 exactly once; double confirm returns the same batch, another key gets 409;
+    - a CREDITED transfer cannot be ignored;
+    - counters;
+    - legacy backfill;
+    - browser ignore → «Игнорированные» → restore at 320/360/390/430/1440 with no overflow on any tab.
+- **Not done:** no real transfer was ignored or credited. The owner's real 15 USDT is untouched.
+
 ## Claude — 2026-09-26 — Black /futures after a Cloudflare deploy: poisoned asset cache, boot guard, visible recovery
 
 - Owner report: right after a Pages deploy, a cold `https://voltextech.net/futures` could open completely black. Base fresh main `9e30d1a6`, then brought up to `d55dbb18`. Branch `claude/stale-shell-recovery`. No trading, backend or DB changes.
@@ -4014,3 +4045,42 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - ONE synthetic production request (2026-09-26 16:13:38 UTC; name «VOLTEX Support QA», qa-support@example.invalid, TECHNICAL, «Production support form test. No action required.»): **502 `delivery_failed`, provider code `E_RECIPIENT_NOT_ALLOWED`** — Cloudflare refused the recipient, i.e. `voltex.crypto@gmail.com` is not (yet) a verified Email Routing destination address. No email was sent. Nothing was written anywhere.
 - The owner then verified `voltex.crypto@gmail.com` as an Email Routing destination. One more production request (2026-09-26 16:20:45 UTC, same synthetic data): **200 `{ ok: true }`** — the email provider accepted delivery to voltex.crypto@gmail.com. Gmail inbox and the Reply-To behaviour are for the owner to confirm (not visible from here).
 - Full `npx jest` on the branch vs main `ebba6795`: branch-only failures were (1) `futuresTickerHeader` api.ts fingerprint — the approved removal of the chat methods is now restored by name in the normalisation, 35/35; (2) `registerWalletTailwindOwnership` build-output case (`isSelected`) — fails identically on main when `frontend/dist` exists (skipped without a build), pre-existing; (3) `futuresColdOpenRecovery` — passes when re-run (the full run overlapped the main merge).
+## Claude — 2026-09-26 — KYC documents: browser → Cloudflare edge → admin email (Render/Neon metadata only)
+
+- **Base / branch:** fresh origin/main, rebased onto `482c7293` (#296, support form via `workers/support-edge`); branch `claude/kyc-edge-email`; PR #297. Design, before/after and failure table: `docs/KYC_EDGE.md`.
+- **Before:** `POST /kyc/submit` (multer, ≤ 8 MB) wrote `uploads/kyc/<uuid>` on Render's disk, `KycEmailService` re-read it for an SMTP attachment, and admin preview streamed it again via `GET /kyc/:id/document`.
+- **After:**
+  - The form uploads to the new Worker `workers/kyc-edge` (Workers Free, `kyc.voltextech.net`). It validates auth header, origin, size, declared MIME and magic bytes, then calls signed `/internal/kyc/authorize` (with the user's bearer; writes nothing; submissionId = HMAC(user, requestId)).
+  - It emails via the Email Routing `send_email` binding, locked to `voltex.crypto@gmail.com`, and **only then** calls signed `/internal/kyc/submission-confirmed`: one transaction, user row `FOR UPDATE`, id = submissionId, `documentImagePath` NULL.
+  - `/kyc/submit` → 410. No multer, no disk writes. Legacy rows keep their preview.
+  - Render trusts the edge via its Ed25519 public key, fetched over HTTPS on demand or pinned with `KYC_EDGE_PUBLIC_KEY`. **No new Render secret.** The private key is created once inside the deploy runner.
+- **Frontend:** same fields and button. Images are re-encoded (≤ 2400 px, JPEG 0.85, EXIF dropped) and the size line shows the real size. PDF ≤ 4 MB.
+  - Delivered-but-unrecorded submissions show «На рассмотрении» and retry only a sealed receipt.
+  - Admin: «Документ отправлен на email администратора» + Message-ID, no document request; «Проверено» / «Отклонить».
+  - 320 px: a selected file's name widened the form by 13 px. Fixed with `grid-cols-1 min-w-0` on the file field only.
+- **Found in real workerd (`wrangler dev --local`):** the platform replaces the Message-ID. The edge now records the id that `send()` returns.
+- **Checks run:**
+  - Worker `node --test` 26/26; `wrangler deploy --dry-run` OK; local workerd probe: 201, both signatures verified, send_email called, idempotency cache honoured.
+  - Backend + frontend `tsc` clean. KYC/admin/pinned suites: 164/164 after the rebase. `kycEdgePostgres.test.ts` is skipped locally (no PostgreSQL here); it runs in CI.
+  - `scripts/qa-kyc-edge.cjs` PASS locally (production bundle + real core.js + real routers + in-memory DB). JPEG / PNG / PDF, email reject, callback failure, fake magic bytes, 401 / 409 probes, 320–1440, admin approve/reject. Render meter: 0 multipart bodies, 0 document reads, 0 `uploads/kyc` files, largest body 432 B.
+  - Full `npx jest`: branch 27 failing suites vs main 28, with the same 27 on both. The 28th (`kyc.test.ts` on main) is an artifact: the main run used the branch's regenerated Prisma client.
+- **Preserved:** Codex's and Claude's admin console styles, `KycEmailService` and its Nodemailer compatibility suite (no longer wired), support email, and all trading/deposit/withdrawal code (untouched).
+- **Unresolved / owner:**
+  - `voltex.crypto@gmail.com` is a verified Email Routing destination (owner, 2026-09-26, per the support-edge entry). The KYC production send is not yet run.
+  - Rate limits: `KYC_RATE_LIMIT` binding (namespace 7302, 5/min per IP; support-edge owns 7301) + an isolate window + Render per-user 10/h.
+  - At 320 px the name/date inputs' right edge is clipped by the card. The classes are unchanged from main and not touched here.
+
+## Claude — 2026-09-26 — PR #295 brought up to main (#291, #294, #296, #297)
+
+- Merged `origin/main` `6ad0c19d` into `claude/ecstatic-brahmagupta-cwkvt5` (merge commit, no rebase). The only conflict was this file; both sides' entries are kept. Support Worker (#296), KYC edge (#297), black-screen recovery (#294), Admin Users pagination (#291) and the daytime watcher schedule come from main unchanged: the merged tree differs from main only in this PR's 16 deposit-ignore files.
+- Migration renamed `20260926180000_deposit_ignore` → `20260926200000_deposit_ignore`, so it sorts after main's already-deployed `20260926190000_kyc_edge_email_delivery`. It was never applied anywhere, and its SQL is unchanged. `scripts/qa-deposit-packages.cjs` and `docs/DEPOSIT_PACKAGES.md` point to the new name.
+- Checks run locally on the merged tree:
+  - backend `tsc` and frontend build: OK;
+  - deposit CI jest list: 19 suites / 224 tests;
+  - KYC + support + recovery jest (kyc, admin, adminUsers, KycEmailService, kycEdgeClient, supportForm, i18n, routeCodeSplitting, Nodemailer, customerFacingErrors, futuresColdOpenRecovery): 12 suites / 249 tests;
+  - KYC Worker tests: 26/26; support Worker tests: 19/19;
+  - `prisma migrate deploy` on an empty Postgres 16: 37 migrations, the last two in order 190000 → 200000;
+  - `kycEdgePostgres`: 5/5;
+  - `qa-deposit-packages.cjs --browser`: 28 PASS, 0 FAIL;
+  - `qa-support-form.cjs` and `qa-kyc-edge.cjs` in the browser: PASS.
+- Not done: no real transfer was ignored, credited or re-attributed. The owner's real 15 USDT is untouched.

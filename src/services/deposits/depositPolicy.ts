@@ -16,7 +16,8 @@ export type DepositRowState =
   | 'UNATTRIBUTED'            // Не привязан
   | 'AWAITING_CONFIRMATIONS'  // Ожидает подтверждений сети
   | 'AWAITING_TOPUP'          // Ожидает доплаты
-  | 'READY';                  // Готов к проверке
+  | 'READY'                   // Готов к проверке
+  | 'IGNORED';                // Игнорированные (not a client deposit; kept, restorable)
 
 export interface DepositFacts {
   id: string;
@@ -31,6 +32,8 @@ export interface DepositFacts {
   verifyError: string | null;
   batchId: string | null;
   revision: number;
+  /** Set when an admin ignored the transfer; absent on legacy callers = not ignored. */
+  ignoredAt?: Date | null;
 }
 
 /** Network confirmation only: proven, not flagged, deep enough, and (where the
@@ -41,12 +44,13 @@ export function isNetworkConfirmed(row: DepositFacts, minConfirmations: number):
 
 /** May this transfer be part of its owner's package? Never decides a credit. */
 export function isPackageEligible(row: DepositFacts, minConfirmations: number): boolean {
-  return row.status !== 'CREDITED' && row.batchId === null && row.userId !== null && isNetworkConfirmed(row, minConfirmations);
+  return row.status !== 'CREDITED' && row.batchId === null && row.userId !== null && !row.ignoredAt && isNetworkConfirmed(row, minConfirmations);
 }
 
 /** Row state before the package minimum is applied. */
 export function baseRowState(row: DepositFacts, minConfirmations: number): DepositRowState | 'PACKAGE' {
   if (row.status === 'CREDITED') return 'CREDITED';
+  if (row.ignoredAt) return 'IGNORED';
   if (row.verifyError) return 'NEEDS_REVIEW';
   if (!row.userId) return 'UNATTRIBUTED';
   if (!isNetworkConfirmed(row, minConfirmations)) return 'AWAITING_CONFIRMATIONS';

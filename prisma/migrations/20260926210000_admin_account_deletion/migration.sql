@@ -1,7 +1,5 @@
 -- Keep external financial history and other users' earned referral rewards.
-ALTER TABLE "Deposit" ADD COLUMN "deletedUserId" TEXT,
-  ADD COLUMN "ignoredAt" TIMESTAMP(3), ADD COLUMN "ignoredReason" TEXT,
-  ADD COLUMN "ignoredByAdminId" TEXT;
+ALTER TABLE "Deposit" ADD COLUMN "deletedUserId" TEXT;
 ALTER TABLE "Withdrawal" ALTER COLUMN "userId" DROP NOT NULL,
   ADD COLUMN "deletedUserId" TEXT;
 ALTER TABLE "Withdrawal" DROP CONSTRAINT "Withdrawal_userId_fkey",

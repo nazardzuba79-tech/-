@@ -1,0 +1,76 @@
+name: Deploy voltex-kyc-edge (Cloudflare Worker)
+
+# Deploys the KYC document edge when a change to it lands on main (the same
+# moment Pages and Render auto-deploy the frontend and API), or on a manual
+# run. PRs are verified by kyc-edge.yml; nothing here runs for a PR.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/kyc-edge/**'
+      - '.github/workflows/deploy-kyc-edge.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-kyc-edge
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: workers/kyc-edge
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Worker contract tests
+        run: node --test test.mjs
+      - name: Deploy Worker
+        run: npx --yes wrangler@4 deploy
+      - name: Signing key — created once inside this runner, stored only as a Worker secret
+        run: |
+          set -euo pipefail
+          listing="$(npx --yes wrangler@4 secret list --format json)"
+          present="$(printf '%s' "$listing" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const i=s.indexOf('[');const a=JSON.parse(s.slice(i,s.lastIndexOf(']')+1));process.stdout.write(a.some(x=>x.name==='KYC_EDGE_SIGNING_JWK')?'yes':'no')})")"
+          if [ "$present" = "yes" ]; then
+            echo "signing_key=present (not rotated)"
+          else
+            # The private key goes straight from this process into Cloudflare; it is never printed or written to disk.
+            node -e "(async()=>{const k=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']);const j=await crypto.subtle.exportKey('jwk',k.privateKey);process.stdout.write(JSON.stringify({kty:j.kty,crv:j.crv,d:j.d,x:j.x}))})()" \
+              | npx --yes wrangler@4 secret put KYC_EDGE_SIGNING_JWK
+            echo "signing_key=created"
+          fi
+      - name: Production smoke (no document, no email)
+        run: |
+          set -euo pipefail
+          base=https://kyc.voltextech.net
+          ok=0
+          for attempt in $(seq 1 12); do
+            if health="$(curl --connect-timeout 5 --max-time 10 -fsS "$base/health")" \
+              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health='+JSON.stringify(j));if(j.ok!==true||j.service!=='voltex-kyc-edge'||j.version!=='kyc-edge-v1'||j.configured!==true)process.exit(1)})"; then
+              ok=1; break
+            fi
+            echo "waiting_for_edge attempt=$attempt"; sleep 5
+          done
+          test "$ok" = "1"
+          curl -fsS "$base/v1/public-key" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(j.alg!=='Ed25519'||!j.key||!j.key.x||j.key.d)process.exit(1);console.log('public_key=ok')})"
+          unauth="$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'content-type: multipart/form-data; boundary=x' --data-binary $'--x--\r\n' "$base/v1/submit")"
+          echo "submit_without_session=$unauth"; test "$unauth" = "401"
+          missing="$(curl -sS -o /dev/null -w '%{http_code}' "$base/uploads/anything")"
+          echo "unknown_route=$missing"; test "$missing" = "404"
+          acao="$(curl -sS -o /dev/null -D - -X OPTIONS -H 'origin: https://evil.example' "$base/v1/submit" | tr -d '\r' | grep -i '^access-control-allow-origin:' || true)"
+          echo "foreign_origin_cors='${acao}'"; test -z "$acao"
+          cache="$(curl -sS -o /dev/null -D - "$base/health" | tr -d '\r' | grep -i '^cache-control:' || true)"
+          echo "$cache"; printf '%s' "$cache" | grep -qi 'no-store'

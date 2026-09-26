@@ -309,9 +309,6 @@ model Deposit {
   userId        String?
   user          User?    @relation(fields: [userId], references: [id])
   deletedUserId String?
-  ignoredAt DateTime?
-  ignoredReason String?
-  ignoredByAdminId String?
   asset         String
   chain         String
   txHash        String
@@ -343,6 +340,14 @@ model Deposit {
   /// a package preview is valid only while every revision it saw is unchanged.
   revision      Int      @default(0)
   creditedAt    DateTime?
+  /// «Игнорировать»: an admin marked this transfer as not a client deposit
+  /// (e.g. old wallet history, own transfer). The row is kept intact; it only
+  /// leaves the working queue and can never join a package. Restorable.
+  ignoredAt     DateTime?
+  /// HISTORICAL_WALLET_OPERATION | OWN_TRANSFER | NOT_CLIENT_DEPOSIT | OTHER | LEGACY_IGNORE
+  ignoredReason String?
+  ignoredNote   String?
+  ignoredByAdminId String?
   batchId       String?
   batch         DepositBatch? @relation(fields: [batchId], references: [id], onDelete: Restrict)
 
@@ -352,6 +357,7 @@ model Deposit {
   @@index([userId])
   @@index([status, userId, chain, asset])
   @@index([batchId])
+  @@index([ignoredAt])
 }
 
 /// One admin-approved credit of a user's accumulated package: the real
@@ -652,7 +658,17 @@ model KycSubmission {
   fullName          String
   dateOfBirth       DateTime
   documentType      String    // PASSPORT | ID_CARD | DRIVERS_LICENSE
-  documentImagePath String
+  /// LEGACY: local-disk path of a document uploaded through Render before the
+  /// KYC edge existed. NULL for every new submission — the document goes
+  /// browser → Cloudflare KYC edge → admin email and never touches Render/Neon.
+  documentImagePath String?
+  /// EMAIL (new: delivered by the KYC edge) | null (legacy file on disk).
+  documentDelivery  String?
+  /// RFC 5322 Message-ID the edge used; the admin finds the letter by it.
+  emailMessageId    String?
+  emailAcceptedAt   DateTime?
+  documentMimeType  String?
+  documentSizeBytes Int?
   status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
   rejectionReason   String?
   reviewedBy        String?

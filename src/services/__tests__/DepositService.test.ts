@@ -175,6 +175,10 @@ describe('deposit policy', () => {
     expect(isPackageEligible({ ...row, batchId: 'b' }, 19)).toBe(false);
     expect(baseRowState({ ...row, verifyError: 'x' }, 19)).toBe('NEEDS_REVIEW');
     expect(baseRowState({ ...row, userId: null }, 19)).toBe('UNATTRIBUTED');
+    // «Игнорировать»: never part of a package, its own state, even if attributed and final.
+    expect(isPackageEligible({ ...row, ignoredAt: new Date() }, 19)).toBe(false);
+    expect(baseRowState({ ...row, userId: null, ignoredAt: new Date() }, 19)).toBe('IGNORED');
+    expect(baseRowState({ ...row, status: 'CREDITED', ignoredAt: new Date() }, 19)).toBe('CREDITED');
   });
 
   it('the package fingerprint changes with composition, amount, owner or revision', () => {

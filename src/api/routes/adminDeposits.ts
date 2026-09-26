@@ -9,6 +9,7 @@ import { DepositQueueService } from '../../services/deposits/DepositQueueService
 import { DepositBatchError, DepositBatchService } from '../../services/deposits/DepositBatchService';
 import { DepositAttributionError, DepositAttributionService } from '../../services/deposits/DepositAttributionService';
 import { DepositWatchService } from '../../services/deposits/DepositWatchService';
+import { DepositIgnoreError, DepositIgnoreService, IGNORE_REASONS } from '../../services/deposits/DepositIgnoreService';
 import { TreasuryWalletService } from '../../services/TreasuryWalletService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
@@ -35,6 +36,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   const queue = new DepositQueueService(prisma, priceSource);
   const batches = new DepositBatchService(prisma, priceSource, resolveChain);
   const attribution = new DepositAttributionService(prisma);
+  const ignores = new DepositIgnoreService(prisma);
   const watch = options.watch ?? new DepositWatchService(prisma, resolveChain);
 
   // Every unresolved deposit, plus recent credited history. A burst of credited
@@ -160,6 +162,27 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
       }
       console.error(err);
       res.status(500).json({ error: 'Failed to attribute deposit' });
+    }
+  });
+
+  // «Игнорировать» / «Вернуть в очередь»: never deletes the transfer, never
+  // touches amount/hash/owner or any balance; audited.
+  const ignoreStatus = (err: DepositIgnoreError) => (err.code === 'NOT_FOUND' ? 404 : err.code === 'NOT_ADMIN' ? 403 : err.code === 'NOTE_REQUIRED' ? 400 : 409);
+  const ignoreSchema2 = z.object({ reason: z.enum(IGNORE_REASONS), note: z.string().max(300).nullable().optional(), confirmAssigned: z.boolean().optional() });
+  router.post('/admin/deposits/:id/ignore', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = ignoreSchema2.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    try { res.json(await ignores.ignore({ adminId: req.userId!, depositId: req.params.id, ...parsed.data })); }
+    catch (err) {
+      if (err instanceof DepositIgnoreError) return res.status(ignoreStatus(err)).json({ error: err.message, code: err.code });
+      console.error(err); res.status(500).json({ error: 'Failed to ignore transfer' });
+    }
+  });
+  router.post('/admin/deposits/:id/restore', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    try { res.json(await ignores.restore({ adminId: req.userId!, depositId: req.params.id })); }
+    catch (err) {
+      if (err instanceof DepositIgnoreError) return res.status(ignoreStatus(err)).json({ error: err.message, code: err.code });
+      console.error(err); res.status(500).json({ error: 'Failed to restore transfer' });
     }
   });
 
@@ -321,6 +344,13 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
       create: { chain, txHash },
       update: {},
     });
+    // The registry row (if recorded, unattributed, uncredited) leaves the
+    // working queue too, with who/why/when kept.
+    const row = await prisma.deposit.findUnique({ where: { chain_txHash: { chain, txHash } } });
+    if (row && !row.userId && row.status !== 'CREDITED' && !row.batchId && !row.ignoredAt) {
+      try { await ignores.ignore({ adminId: (req as AuthedRequest).userId!, depositId: row.id, reason: 'NOT_CLIENT_DEPOSIT' }); }
+      catch (err) { if (!(err instanceof DepositIgnoreError)) throw err; }
+    }
 
     res.json({ status: 'ignored' });
   });

@@ -43,6 +43,23 @@ export interface QueueRow {
   source: string | null;
   state: DepositRowState;
   claims: { userId: string; email: string | null; at: string }[];
+  ignoredAt: string | null;
+  ignoredReason: string | null;
+  ignoredNote: string | null;
+  ignoredByAdminId: string | null;
+}
+
+/** One approved credit and the exact transfers it booked («Зачисленные»). */
+export interface CreditedBatchView {
+  id: string;
+  userId: string;
+  userEmail: string | null;
+  chain: string;
+  asset: string;
+  totalAmount: string;
+  createdAt: string;
+  approvedByAdminId: string;
+  transfers: { id: string; txHash: string; amount: string; confirmations: number; blockTimestamp: string | null }[];
 }
 
 export interface DepositPackageView {
@@ -76,8 +93,10 @@ export interface DepositQueue {
   asOf: string;
   minDepositUsd: number;
   counts: Record<DepositRowState, number> & { uncreditedTotal: number; truncated: boolean };
+  packageCounts: { AWAITING_TOPUP: number; READY: number; NEEDS_REVIEW: number };
   packages: DepositPackageView[];
   rows: QueueRow[];
+  creditedBatches: CreditedBatchView[];
 }
 
 type RowWithUser = Deposit & { user: { email: string } | null };
@@ -90,6 +109,7 @@ function toRow(d: RowWithUser, minConfirmations: number, claims: QueueRow['claim
     verifyError: d.verifyError, recipientAddress: d.recipientAddress,
     blockTimestamp: d.blockTimestamp?.toISOString() ?? null, firstDetectedAt: d.createdAt.toISOString(),
     creditedAt: d.creditedAt?.toISOString() ?? null, batchId: d.batchId, revision: d.revision, source: d.source,
+    ignoredAt: d.ignoredAt?.toISOString() ?? null, ignoredReason: d.ignoredReason, ignoredNote: d.ignoredNote, ignoredByAdminId: d.ignoredByAdminId,
     state: baseRowState(d, minConfirmations) === 'PACKAGE' ? 'AWAITING_TOPUP' : baseRowState(d, minConfirmations) as DepositRowState,
     claims,
   };
@@ -102,7 +122,7 @@ export async function buildPackage(
 ): Promise<DepositPackageView> {
   const min = minConfirmationsFor(chain);
   const mine = rows.filter((r) => r.userId === userId && r.chain === chain && r.asset === asset.toUpperCase()
-    && r.status !== 'CREDITED' && r.batchId === null);
+    && r.status !== 'CREDITED' && r.batchId === null && !r.ignoredAt);
   const eligible = mine.filter((r) => isPackageEligible(r, min));
   const unconfirmed = mine.filter((r) => !r.verifyError && !isNetworkConfirmed(r, min));
   const total = sumAmounts(eligible);
@@ -131,7 +151,7 @@ export class DepositQueueService {
   constructor(private prisma: PrismaClient, private prices: PriceSourceWithMeta) {}
 
   async load(options: { creditedLimit?: number } = {}): Promise<DepositQueue> {
-    const [uncredited, uncreditedTotal, creditedCount, credited] = await Promise.all([
+    const [uncredited, uncreditedTotal, creditedCount, credited, batches] = await Promise.all([
       this.prisma.deposit.findMany({
         where: { status: { not: 'CREDITED' }, deletedUserId: null }, orderBy: { createdAt: 'asc' }, take: QUEUE_ROW_CAP,
         include: { user: { select: { email: true } } },
@@ -142,7 +162,14 @@ export class DepositQueueService {
         where: { status: 'CREDITED' }, orderBy: [{ creditedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
         take: options.creditedLimit ?? 50, include: { user: { select: { email: true } } },
       }),
+      options.creditedLimit === 0 ? Promise.resolve([]) : this.prisma.depositBatch.findMany({
+        orderBy: { createdAt: 'desc' }, take: 30,
+        include: { deposits: { orderBy: { createdAt: 'asc' }, select: { id: true, txHash: true, amount: true, confirmations: true, blockTimestamp: true } } },
+      }),
     ]);
+    const batchEmails = batches.length === 0 ? [] : await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(batches.map((b) => b.userId))] } }, select: { id: true, email: true },
+    });
     const claimRows = uncredited.length === 0 ? [] : await this.prisma.depositClaim.findMany({
       where: { txHash: { in: uncredited.map((d) => d.txHash) } }, orderBy: { createdAt: 'asc' },
     });
@@ -155,7 +182,7 @@ export class DepositQueueService {
 
     const groups = new Map<string, RowWithUser[]>();
     for (const d of uncredited) {
-      if (!d.userId || d.batchId) continue;
+      if (!d.userId || d.batchId || d.ignoredAt) continue;
       const key = packageKey(d.userId, d.chain, d.asset);
       groups.set(key, [...(groups.get(key) ?? []), d]);
     }
@@ -170,10 +197,23 @@ export class DepositQueueService {
       const row = toRow(d, minConfirmationsFor(d.chain), d.status === 'CREDITED' ? [] : claimsFor(d));
       return { ...row, state: stateById.get(d.id) ?? (row.state === 'AWAITING_TOPUP' ? 'AWAITING_CONFIRMATIONS' : row.state) };
     });
-    const counts = { CREDITED: creditedCount, NEEDS_REVIEW: 0, UNATTRIBUTED: 0, AWAITING_CONFIRMATIONS: 0, AWAITING_TOPUP: 0, READY: 0,
+    const counts = { CREDITED: creditedCount, NEEDS_REVIEW: 0, UNATTRIBUTED: 0, AWAITING_CONFIRMATIONS: 0, AWAITING_TOPUP: 0, READY: 0, IGNORED: 0,
       uncreditedTotal, truncated: uncreditedTotal > uncredited.length };
     // Rows of a package that cannot be valued already carry NEEDS_REVIEW.
     for (const r of rows) if (r.state !== 'CREDITED') counts[r.state]++;
-    return { asOf: new Date().toISOString(), minDepositUsd: MIN_DEPOSIT_USD, counts, packages, rows };
+    // Package counters count PACKAGES (one per user + asset + network), not transfers.
+    const packageCounts = {
+      AWAITING_TOPUP: packages.filter((p) => p.state === 'AWAITING_TOPUP').length,
+      READY: packages.filter((p) => p.state === 'READY').length,
+      NEEDS_REVIEW: packages.filter((p) => p.state === 'NEEDS_REVIEW').length,
+    };
+    const emailOfBatchUser = new Map(batchEmails.map((u) => [u.id, u.email]));
+    const creditedBatches: CreditedBatchView[] = batches.map((b) => ({
+      id: b.id, userId: b.userId, userEmail: emailOfBatchUser.get(b.userId) ?? null, chain: b.chain, asset: b.asset,
+      totalAmount: new BigNumber(b.totalAmount.toString()).toFixed(), createdAt: b.createdAt.toISOString(), approvedByAdminId: b.approvedByAdminId,
+      transfers: b.deposits.map((d) => ({ id: d.id, txHash: d.txHash, amount: new BigNumber(d.amount.toString()).toFixed(),
+        confirmations: d.confirmations, blockTimestamp: d.blockTimestamp?.toISOString() ?? null })),
+    }));
+    return { asOf: new Date().toISOString(), minDepositUsd: MIN_DEPOSIT_USD, counts, packageCounts, packages, rows, creditedBatches };
   }
 }

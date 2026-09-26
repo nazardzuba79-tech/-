@@ -143,6 +143,10 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         reviewedBy: k.reviewedBy,
         reviewedAt: k.reviewedAt,
         createdAt: k.createdAt,
+        documentDelivery: k.documentDelivery === 'EMAIL' ? 'EMAIL' : k.documentImagePath ? 'LEGACY_FILE' : 'NONE',
+        emailMessageId: k.emailMessageId,
+        documentMimeType: k.documentMimeType,
+        documentSizeBytes: k.documentSizeBytes,
       })),
     });
   });
