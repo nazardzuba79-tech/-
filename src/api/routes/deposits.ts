@@ -130,22 +130,24 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
         // verify or even show up in the admin's incoming feed. Every other
         // chain type here actually supports its native asset.
         supportedAssets: config.type === 'tron' ? Object.keys(config.tokens) : [config.nativeAsset, ...Object.keys(config.tokens)],
-        note: 'Send only the listed assets on this exact network. After sending, submit the tx hash to /deposits/claim.',
+        note: 'Send only the listed assets on this exact network. Deposits are credited only after administrator review.',
       });
     } catch {
       res.status(404).json({ error: `Unknown or unconfigured chain: ${req.params.chain}` });
     }
   });
 
-  // The account's own deposit history — real Deposit rows written by
-  // DepositService on every claim attempt (PENDING/CONFIRMED/CREDITED),
-  // scoped to req.userId so no one can read another account's deposits.
+  // The account's own CREDITED deposits only. Uncredited transfers (awaiting
+  // top-up, review or confirmations) and their amounts live in the admin
+  // registry until an admin credits them; filtering here, not in CSS, is what
+  // keeps them out of the client's history, exports and notifications.
   router.get('/deposits/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const deposits = await prisma.deposit.findMany({
-      where: { userId: req.userId },
-      orderBy: { createdAt: 'desc' },
+      where: { userId: req.userId, status: 'CREDITED' },
+      orderBy: [{ creditedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
       take: 100,
     });
+    res.setHeader('Cache-Control', 'private, no-store');
     res.json(
       deposits.map((d) => ({
         id: d.id,
@@ -155,7 +157,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
         amount: d.amount.toString(),
         confirmations: d.confirmations,
         status: d.status,
-        createdAt: d.createdAt,
+        createdAt: d.creditedAt ?? d.createdAt,
       }))
     );
   });
@@ -174,21 +176,29 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
     });
     const parsed = claimSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const supported = config.type === 'tron' ? Object.keys(config.tokens) : [config.nativeAsset, ...Object.keys(config.tokens)];
+    if (!supported.includes(parsed.data.asset.toUpperCase())) return res.status(400).json({ error: `Unsupported asset on ${config.chain}` });
+    const recentClaims = await prisma.depositClaim.count({ where: { userId: req.userId!, createdAt: { gte: new Date(Date.now() - 86_400_000) } } });
+    if (recentClaims >= 50) return res.status(429).json({ error: 'Too many deposit claims today' });
 
     try {
-      const service = new DepositService(prisma, config, priceSource);
-      const result = await service.claimDeposit({
+      // A request for review, nothing more: no chain call, no attribution,
+      // no amount or registry state in the answer, never "credited".
+      await new DepositService(prisma, config, priceSource).submitClaim({
         userId: req.userId!,
         txHash: parsed.data.txHash,
         asset: parsed.data.asset,
       });
-      res.json(result);
+      res.status(202).json({
+        status: 'SUBMITTED',
+        message: 'Заявка принята. Администратор проверит перевод; баланс изменится только после зачисления.',
+      });
     } catch (err) {
       if (err instanceof DepositVerificationError) {
         return res.status(400).json({ error: err.message });
       }
       console.error(err);
-      res.status(500).json({ error: 'Failed to verify deposit' });
+      res.status(500).json({ error: 'Failed to submit deposit claim' });
     }
   });
 

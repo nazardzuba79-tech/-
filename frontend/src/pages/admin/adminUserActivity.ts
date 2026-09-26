@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_BASE, getToken } from '../../lib/api';
 
-/** A deposit that still needs an admin: already attributed to a user, not CREDITED. Server record, never edited here. */
-export interface AdminPendingDeposit {
-  id: string;
+/** One user's deposit package summary (one asset, one network): the sum of
+ * their network-confirmed, uncredited transfers. Server record, never edited here. */
+export interface AdminDepositPackage {
+  key: string;
   userId: string;
-  asset: string;
   chain: string;
-  txHash: string;
-  amount: string;
-  confirmations: number;
-  status: string;
-  createdAt: string;
+  asset: string;
+  /** AWAITING_TOPUP: below the minimum; READY: reviewable; NEEDS_REVIEW: cannot be valued. */
+  state: 'AWAITING_TOPUP' | 'READY' | 'NEEDS_REVIEW';
+  total: string;
+  transferCount: number;
+  unconfirmedTotal: string;
+  unconfirmedCount: number;
+  remaining: string | null;
+  remainingUsd: string | null;
+  minimumReached: boolean;
+  latestAt: string;
 }
 
 export interface AdminUserActivity {
@@ -19,10 +25,14 @@ export interface AdminUserActivity {
   totalUsers: number;
   newUsers24h: number;
   pendingKyc: number;
-  pendingDeposits: AdminPendingDeposit[];
+  minDepositUsd: number;
+  packages: AdminDepositPackage[];
+  /** Exact registry counts by state (not a list length). */
+  counts: { UNATTRIBUTED: number; AWAITING_CONFIRMATIONS: number; AWAITING_TOPUP: number; READY: number; NEEDS_REVIEW: number };
+  awaitingConfirmationsByUser: Record<string, number>;
 }
 
-/** One small read: counts + the pending-deposit work queue (GET /admin/user-activity). No history. */
+/** One small read: counts + deposit packages (GET /admin/user-activity). No history. */
 export async function getAdminUserActivity(signal?: AbortSignal): Promise<AdminUserActivity> {
   const token = getToken();
   if (!token) throw new Error('Admin session unavailable');
@@ -33,12 +43,22 @@ export async function getAdminUserActivity(signal?: AbortSignal): Promise<AdminU
   });
   if (!response.ok) throw new Error(`Admin activity failed (${response.status})`);
   const body = (await response.json()) as Partial<AdminUserActivity>;
+  const counts = body.counts ?? ({} as Partial<AdminUserActivity['counts']>);
   return {
     asOf: typeof body.asOf === 'string' ? body.asOf : new Date().toISOString(),
     totalUsers: Number(body.totalUsers) || 0,
     newUsers24h: Number(body.newUsers24h) || 0,
     pendingKyc: Number(body.pendingKyc) || 0,
-    pendingDeposits: Array.isArray(body.pendingDeposits) ? body.pendingDeposits : [],
+    minDepositUsd: Number(body.minDepositUsd) || 300,
+    packages: Array.isArray(body.packages) ? body.packages : [],
+    counts: {
+      UNATTRIBUTED: Number(counts.UNATTRIBUTED) || 0,
+      AWAITING_CONFIRMATIONS: Number(counts.AWAITING_CONFIRMATIONS) || 0,
+      AWAITING_TOPUP: Number(counts.AWAITING_TOPUP) || 0,
+      READY: Number(counts.READY) || 0,
+      NEEDS_REVIEW: Number(counts.NEEDS_REVIEW) || 0,
+    },
+    awaitingConfirmationsByUser: body.awaitingConfirmationsByUser && typeof body.awaitingConfirmationsByUser === 'object' ? body.awaitingConfirmationsByUser : {},
   };
 }
 

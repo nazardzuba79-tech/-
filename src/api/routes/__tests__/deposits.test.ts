@@ -295,13 +295,22 @@ describe('deposits routes', () => {
       process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
       process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
 
-      const app = buildApp({ deposit: { findUnique: jest.fn().mockResolvedValue({ userId: 'user-1', asset: 'ETH', status: 'CREDITED', amount: '1', confirmations: 3 }) } });
+      const prisma = { depositClaim: { count: jest.fn().mockResolvedValue(0), upsert: jest.fn().mockResolvedValue({}) }, deposit: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() } };
+      const app = buildApp(prisma);
       const res = await request(app)
         .post('/api/v1/deposits/claim/ethereum')
         .set('Authorization', authHeader('user-1'))
-        .send({ txHash: '0x' + '1'.repeat(64), asset: 'ETH' });
+        .send({ txHash: '0x' + '1'.repeat(64), asset: 'ETH', performedByAdminId: 'admin', status: 'CREDITED', amount: '999' });
 
-      expect(res.status).toBe(200);
+      // A claim is a request for review only: stored as a hint, no chain call,
+      // no attribution, no amount or registry state in the answer.
+      expect(res.status).toBe(202);
+      expect(res.body.status).toBe('SUBMITTED');
+      expect(JSON.stringify(res.body)).not.toMatch(/999|CREDITED|amount/);
+      expect(prisma.depositClaim.upsert).toHaveBeenCalledWith(expect.objectContaining({
+        create: { userId: 'user-1', chain: 'ethereum', txHash: '0x' + '1'.repeat(64), asset: 'ETH' } }));
+      expect(prisma.deposit.upsert).not.toHaveBeenCalled();
+      expect(prisma.deposit.update).not.toHaveBeenCalled();
     });
 
     it('rejects a 0x-prefixed hash for a Bitcoin claim', async () => {
@@ -321,13 +330,24 @@ describe('deposits routes', () => {
       process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
 
-      const app = buildApp({ deposit: { findUnique: jest.fn().mockResolvedValue({ userId: 'user-1', asset: 'BTC', status: 'CREDITED', amount: '1', confirmations: 3 }) } });
+      const app = buildApp({ depositClaim: { count: jest.fn().mockResolvedValue(0), upsert: jest.fn().mockResolvedValue({}) }, deposit: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() } });
       const res = await request(app)
         .post('/api/v1/deposits/claim/bitcoin')
         .set('Authorization', authHeader('user-1'))
         .send({ txHash: '1'.repeat(64), asset: 'BTC' });
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
+    });
+
+    it('rejects an asset the chain does not accept and caps claims per day', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+      const app = buildApp({ depositClaim: { count: jest.fn().mockResolvedValue(0), upsert: jest.fn().mockResolvedValue({}) }, deposit: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() } });
+      const bad = await request(app).post('/api/v1/deposits/claim/bitcoin').set('Authorization', authHeader('user-1')).send({ txHash: '1'.repeat(64), asset: 'DOGE' });
+      expect(bad.status).toBe(400);
+      const busy = buildApp({ depositClaim: { count: jest.fn().mockResolvedValue(50), upsert: jest.fn() } });
+      const capped = await request(busy).post('/api/v1/deposits/claim/bitcoin').set('Authorization', authHeader('user-1')).send({ txHash: '1'.repeat(64), asset: 'BTC' });
+      expect(capped.status).toBe(429);
     });
 
     it('returns 404 for an unconfigured chain', async () => {
@@ -343,7 +363,7 @@ describe('deposits routes', () => {
   });
 
   describe('GET /deposits/me', () => {
-    it("returns only this account's own deposits, newest first", async () => {
+    it("returns only this account's own CREDITED deposits — nothing awaiting review", async () => {
       const rows = [
         {
           id: 'dep-1',
@@ -366,9 +386,7 @@ describe('deposits routes', () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
       expect(res.body[0]).toMatchObject({ asset: 'BTC', amount: '0.05', status: 'CREDITED' });
-      expect(findManyMock).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { userId: 'user-1' }, orderBy: { createdAt: 'desc' } })
-      );
+      expect(findManyMock).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'user-1', status: 'CREDITED' } }));
     });
 
     it('requires authentication', async () => {

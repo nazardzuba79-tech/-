@@ -8,7 +8,8 @@ export interface IncomingTransfer {
   txHash: string;
   asset: string;
   amount: string;
-  confirmations: number;
+  /** Null when the listing does not measure it (never a placeholder). */
+  confirmations: number | null;
   /** ISO-8601 timestamp of the transaction, when the underlying explorer API
    * reports one. Null for an unconfirmed (mempool) Bitcoin transfer, which
    * has no block yet to take a time from. */

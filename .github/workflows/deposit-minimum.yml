@@ -1,4 +1,4 @@
-name: Deposits require admin approval
+name: Deposit packages — manual approval only
 on:
   pull_request:
     paths:
@@ -6,6 +6,9 @@ on:
       - 'src/services/deposit-verifiers/**'
       - 'src/services/__tests__/DepositService.test.ts'
       - 'src/services/TreasuryWalletService.ts'
+      - 'src/services/deposits/**'
+      - 'src/api/routes/depositWatchInternal.ts'
+      - 'src/index.ts'
       - 'src/services/__tests__/TreasuryWalletService.test.ts'
       - 'src/api/routes/*Deposits*'
       - 'src/api/routes/deposits.ts'
@@ -18,10 +21,16 @@ on:
       - 'frontend/src/lib/__tests__/depositAllWallets.test.ts'
       - 'frontend/src/lib/i18n/locales/ru.ts'
       - 'frontend/src/pages/admin/AdminDepositsPage.tsx'
+      - 'frontend/src/pages/admin/AdminUsersPage.tsx'
+      - 'frontend/src/pages/admin/CreditDepositDrawer.tsx'
+      - 'frontend/src/pages/admin/adminDepositApi.ts'
+      - 'frontend/src/pages/admin/adminUserActivity.ts'
+      - 'frontend/src/lib/__tests__/adminUsersActivity.test.ts'
+      - 'frontend/src/lib/__tests__/renderBandwidthBudget.test.ts'
       - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
       - 'frontend/src/lib/__tests__/adminDepositRails.test.ts'
       - 'frontend/src/pages/wallet-v3/**'
-      - 'scripts/qa-deposit-minimum.cjs'
+      - 'scripts/qa-deposit-packages.cjs'
       - '.github/workflows/deposit-minimum.yml'
 permissions:
   contents: read
@@ -60,16 +69,18 @@ jobs:
           frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
           frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
+          frontend/src/lib/__tests__/adminUsersActivity.test.ts
+          frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
       - name: Install isolated PostgreSQL and browser tools
         run: npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
-      - name: Real PostgreSQL concurrency and production-bundle browser acceptance
+      - name: Real PostgreSQL packages, watcher recovery and production-bundle browser acceptance
         run: |
           $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
-          node scripts/qa-deposit-minimum.cjs --browser
+          node scripts/qa-deposit-packages.cjs --browser
           exit $LASTEXITCODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: deposit-minimum-acceptance
-          path: output/deposit-admin-only
+          name: deposit-packages-acceptance
+          path: output/deposit-packages
           retention-days: 7

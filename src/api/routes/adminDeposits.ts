@@ -4,24 +4,39 @@ import { PrismaClient } from '@prisma/client';
 import { ChainConfig } from '../../config/chains';
 import { createVerifier } from '../../services/deposit-verifiers';
 import { DepositService, DepositVerificationError, PriceSource } from '../../services/DepositService';
+import { ProviderUnavailableError, TransferNotFoundError } from '../../services/deposit-verifiers';
+import { DepositQueueService } from '../../services/deposits/DepositQueueService';
+import { DepositBatchError, DepositBatchService } from '../../services/deposits/DepositBatchService';
+import { DepositAttributionError, DepositAttributionService } from '../../services/deposits/DepositAttributionService';
+import { DepositWatchService } from '../../services/deposits/DepositWatchService';
 import { TreasuryWalletService } from '../../services/TreasuryWalletService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { KNOWN_CHAINS, TX_HASH_PATTERN, resolveChainConfig } from './deposits';
 
 /**
- * Manual, admin-driven deposit crediting — the replacement for asking the
- * CLIENT to find and paste a transaction hash. Instead: the admin sees a
- * live feed of transfers that actually arrived at the treasury address
- * (still-uncredited only), picks which user each one belongs to, and
- * credits it with one click. Crediting itself reuses DepositService's
- * existing on-chain re-verification — the feed is just a display
- * convenience; a bad or stale entry there can never cause a wrong credit,
- * because verify() checks the chain again at the moment of crediting.
+ * Admin deposit registry. Detection, attribution, the minimum and the credit
+ * are separate actions:
+ *   - discovery (watcher / «Проверить TXID» / other-network feed) stores
+ *     proven transfers, unattributed;
+ *   - «Привязать к пользователю» sets the owner (audited, no balance change);
+ *   - a user's package (one asset, one network, confirmed uncredited
+ *     transfers) becomes reviewable at 300 USD;
+ *   - only «Подтвердить зачисление» on a package credits, via
+ *     DepositBatchService, which re-proves every transfer on chain.
+ * The legacy one-transfer manual-credit endpoint is closed.
  */
-export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSource): Router {
+export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSource, options: {
+  watch?: DepositWatchService;
+  onWatcherToggle?: (enabled: boolean, lastScheduledRunAt: number | null) => void;
+} = {}): Router {
   const router = Router();
   const treasuryWallets = new TreasuryWalletService(prisma);
+  const resolveChain = (chain: string) => resolveChainConfig(treasuryWallets, chain);
+  const queue = new DepositQueueService(prisma, priceSource);
+  const batches = new DepositBatchService(prisma, priceSource, resolveChain);
+  const attribution = new DepositAttributionService(prisma);
+  const watch = options.watch ?? new DepositWatchService(prisma, resolveChain);
 
   // Every unresolved deposit, plus recent credited history. A burst of credited
   // transfers must never push an older BELOW_MINIMUM out of the work queue.
@@ -84,38 +99,151 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   });
 
   // THE USERS PAGE'S WORK QUEUE, in one small read: counts for the summary
-  // cards and only the deposits that still need an admin (status is not
-  // CREDITED) and already belong to a user. No history, no credited rows,
-  // no live provider calls. The page re-reads this every ~25 s while it is
-  // visible; crediting itself stays on POST /admin/deposits/manual-credit.
+  // cards and each user's deposit package (sum of confirmed uncredited
+  // transfers per asset/network) with its state. No history, no provider
+  // calls. The page re-reads this every ~25 s while visible; crediting is
+  // the package confirmation below.
   router.get('/admin/user-activity', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     try {
-      const [totalUsers, newUsers24h, pendingKyc, pending] = await Promise.all([
+      const [totalUsers, newUsers24h, pendingKyc, q] = await Promise.all([
         prisma.user.count(),
         prisma.user.count({ where: { createdAt: { gte: since } } }),
         prisma.user.count({ where: { kycStatus: 'PENDING' } }),
-        prisma.deposit.findMany({
-          where: { userId: { not: null }, status: { not: 'CREDITED' } },
-          orderBy: { createdAt: 'desc' },
-          take: 200,
-          select: { id: true, userId: true, asset: true, chain: true, txHash: true, amount: true, confirmations: true, status: true, createdAt: true },
-        }),
+        queue.load({ creditedLimit: 0 }),
       ]);
+      const unconfirmedByUser = new Map<string, number>();
+      for (const r of q.rows) if (r.userId && r.state === 'AWAITING_CONFIRMATIONS') unconfirmedByUser.set(r.userId, (unconfirmedByUser.get(r.userId) ?? 0) + 1);
       res.set('Cache-Control', 'private, no-store');
       res.json({
-        asOf: new Date().toISOString(),
+        asOf: q.asOf,
         totalUsers,
         newUsers24h,
         pendingKyc,
-        pendingDeposits: pending.map((d) => ({
-          id: d.id, userId: d.userId, asset: d.asset, chain: d.chain, txHash: d.txHash,
-          amount: d.amount.toString(), confirmations: d.confirmations, status: d.status, createdAt: d.createdAt,
+        minDepositUsd: q.minDepositUsd,
+        counts: q.counts,
+        packages: q.packages.map((p) => ({
+          key: p.key, userId: p.userId, chain: p.chain, asset: p.asset, state: p.state, total: p.total,
+          transferCount: p.transfers.length, unconfirmedTotal: p.unconfirmedTotal, unconfirmedCount: p.unconfirmedCount,
+          remaining: p.remaining, remainingUsd: p.remainingUsd, minimumReached: p.minimumReached,
+          latestAt: p.transfers.reduce((m, t) => (t.firstDetectedAt > m ? t.firstDetectedAt : m), ''),
         })),
+        awaitingConfirmationsByUser: Object.fromEntries(unconfirmedByUser),
       });
     } catch {
       res.status(503).json({ error: 'Failed to load admin activity' });
     }
+  });
+
+  // The whole registry for Admin → Пополнения: every uncredited transfer with
+  // its derived state, every package, recent credits, exact counts and the
+  // watcher's stored status. Database only — never a provider call.
+  router.get('/admin/deposit-queue', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    try {
+      const [q, watcher] = await Promise.all([queue.load(), watch.status()]);
+      res.set('Cache-Control', 'private, no-store');
+      res.json({ ...q, watcher });
+    } catch {
+      res.status(503).json({ error: 'Failed to load deposit queue' });
+    }
+  });
+
+  const attributeSchema = z.object({ userId: z.string().uuid().nullable(), reassign: z.boolean().optional() });
+  router.post('/admin/deposits/:id/attribute', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = attributeSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    try {
+      res.json(await attribution.attribute({ adminId: req.userId!, depositId: req.params.id, userId: parsed.data.userId, reassign: parsed.data.reassign }));
+    } catch (err) {
+      if (err instanceof DepositAttributionError) {
+        const status = err.code === 'NOT_FOUND' || err.code === 'USER_NOT_FOUND' ? 404 : err.code === 'NOT_ADMIN' ? 403 : 409;
+        return res.status(status).json({ error: err.message, code: err.code });
+      }
+      console.error(err);
+      res.status(500).json({ error: 'Failed to attribute deposit' });
+    }
+  });
+
+  // «Проверить TXID»: prove one transaction on chain, show the result and
+  // store it in the registry. Never attributes, never credits.
+  const checkSchema = z.object({ chain: z.string().min(1), txHash: z.string().min(1), asset: z.string().min(1) });
+  router.post('/admin/deposits/check-tx', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+    const parsed = checkSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    let config: ChainConfig;
+    try { config = await resolveChainConfig(treasuryWallets, parsed.data.chain); }
+    catch { return res.status(404).json({ error: `Unknown or unconfigured chain: ${parsed.data.chain}` }); }
+    if (!TX_HASH_PATTERN[config.type].test(parsed.data.txHash)) return res.status(400).json({ error: 'invalid transaction hash for this network' });
+    try {
+      const result = await new DepositService(prisma, config, priceSource).recordObservation({ txHash: parsed.data.txHash, asset: parsed.data.asset, source: 'admin_check' });
+      res.json({ ok: true, ...result });
+    } catch (err) {
+      if (err instanceof ProviderUnavailableError) return res.status(503).json({ ok: false, reason: 'PROVIDER_UNAVAILABLE', error: 'Проверка сети сейчас недоступна. Это не значит, что перевода нет.' });
+      if (err instanceof TransferNotFoundError) return res.status(200).json({ ok: false, reason: 'NOT_FOUND', error: err.message });
+      if (err instanceof DepositVerificationError) return res.status(200).json({ ok: false, reason: 'REJECTED', error: err.message });
+      console.error(err);
+      res.status(500).json({ error: 'Failed to check transaction' });
+    }
+  });
+
+  const packageQuery = z.object({ userId: z.string().uuid(), chain: z.string().min(1), asset: z.string().min(1) });
+  router.get('/admin/deposit-packages/preview', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+    const parsed = packageQuery.safeParse(req.query);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      res.json(await batches.preview(parsed.data));
+    } catch (err) {
+      console.error(err);
+      res.status(503).json({ error: 'Failed to load deposit package' });
+    }
+  });
+
+  // The ONLY credit endpoint. Amounts, statuses and the admin identity come
+  // from the server; the body only names the reviewed package.
+  const confirmSchema = packageQuery.extend({
+    depositIds: z.array(z.string().uuid()).min(1).max(500),
+    token: z.string().regex(/^[0-9a-f]{64}$/),
+    idempotencyKey: z.string().uuid(),
+  });
+  router.post('/admin/deposit-packages/confirm', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = confirmSchema.strict().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    try {
+      res.json(await batches.confirm({ ...parsed.data, adminId: req.userId! }));
+    } catch (err) {
+      if (err instanceof DepositBatchError) {
+        const status = err.code === 'PROVIDER_UNAVAILABLE' || err.code === 'CHAIN_UNAVAILABLE' ? 503 : err.code === 'NOT_ADMIN' ? 403 : 409;
+        return res.status(status).json({ error: err.message, code: err.code, details: err.details ?? null });
+      }
+      console.error(err);
+      res.status(500).json({ error: 'Failed to credit deposit package' });
+    }
+  });
+
+  router.get('/admin/deposit-watch', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    try { res.set('Cache-Control', 'private, no-store').json(await watch.status()); }
+    catch { res.status(503).json({ error: 'Failed to load watcher status' }); }
+  });
+
+  // «Проверить новые поступления»: one bounded scan now, on an admin's
+  // request, even while automatic scans are paused. Same cursor and lease as
+  // the schedule (never two at once, never a skipped or doubled page); it does
+  // not move the automatic schedule. Never credits.
+  router.post('/admin/deposit-watch/run', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    try { res.json(await watch.runOnce('admin')); }
+    catch (err) { console.error(err); res.status(503).json({ error: 'Watcher run failed' }); }
+  });
+
+  router.post('/admin/deposit-watch/enabled', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = z.object({ enabled: z.boolean() }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    try {
+      await watch.setEnabled(parsed.data.enabled, req.userId!);
+      const status = await watch.status();
+      options.onWatcherToggle?.(parsed.data.enabled, status.lastScheduledRunAt ? Date.parse(status.lastScheduledRunAt) : null);
+      res.json(status);
+    } catch { res.status(503).json({ error: 'Failed to update watcher' }); }
   });
 
   // Recent transfers to the treasury address that aren't recorded as a
@@ -143,8 +271,8 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
           const key = `${transfer.txHash}:${transfer.asset}`;
           if (seen.has(key)) continue;
           seen.add(key);
-          try { await service.recordIncoming(transfer); }
-          catch { failedChains.add(chain); }
+          try { await service.recordObservation({ txHash: transfer.txHash, asset: transfer.asset, source: 'incoming_feed' }); }
+          catch (error) { if (!(error instanceof DepositVerificationError) || error instanceof ProviderUnavailableError) failedChains.add(chain); }
         }
       } catch { failedChains.add(chain); }
     }
@@ -189,44 +317,11 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     res.json({ status: 'ignored' });
   });
 
-  const manualCreditSchema = z.object({
-    userId: z.string().uuid(),
-    chain: z.string().min(1),
-    txHash: z.string().min(1),
-    asset: z.string().min(1),
-  });
-
-  // Admin picks a user + the tx hash they found (from the feed above, or
-  // their own wallet) — re-verified on-chain via the same DepositService
-  // path self-service claims use, just crediting an arbitrary target user.
-  router.post('/admin/deposits/manual-credit', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
-    const parsed = manualCreditSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    const { userId, chain, asset, txHash } = parsed.data;
-
-    let config: ChainConfig;
-    try {
-      config = await resolveChainConfig(treasuryWallets, chain);
-    } catch {
-      return res.status(404).json({ error: `Unknown or unconfigured chain: ${chain}` });
-    }
-
-    if (!TX_HASH_PATTERN[config.type].test(txHash)) {
-      return res.status(400).json({ error: 'invalid transaction hash for this network' });
-    }
-
-    const targetUser = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
-    if (!targetUser) return res.status(404).json({ error: 'User not found' });
-
-    try {
-      const service = new DepositService(prisma, config, priceSource);
-      const result = await service.claimDeposit({ userId, txHash, asset, performedByAdminId: req.userId! });
-      res.json(result);
-    } catch (err) {
-      if (err instanceof DepositVerificationError) return res.status(400).json({ error: err.message });
-      console.error(err);
-      res.status(500).json({ error: 'Failed to verify deposit' });
-    }
+  // CLOSED. The old one-transfer credit bypassed the package minimum. Every
+  // credit now goes through /admin/deposit-packages/confirm. Kept as an
+  // explicit refusal so an old browser tab cannot credit anything.
+  router.post('/admin/deposits/manual-credit', requireAuth(prisma), requireAdmin(prisma), (_req, res) => {
+    res.status(410).json({ error: 'Зачисление отдельного перевода отключено. Используйте «Проверить и зачислить» для пакета пользователя.', code: 'USE_PACKAGE_CONFIRM' });
   });
 
   return router;

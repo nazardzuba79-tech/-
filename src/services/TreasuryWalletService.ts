@@ -40,6 +40,16 @@ export class TreasuryWalletService {
   }
 
   async upsert(chain: string, address: string, adminId: string): Promise<TreasuryWalletRow> {
+    // Keep both the address being replaced and the new one in the address
+    // history: transfers still arriving at the old address stay provable and
+    // keep their own watcher checkpoint. History is never deleted.
+    try {
+      const previous = await this.applyOverride(loadChainConfig(chain)).catch(() => null);
+      const remember = [previous?.treasuryAddress, address].filter((a): a is string => !!a);
+      for (const a of remember) {
+        await this.prisma.treasuryAddressHistory.upsert({ where: { chain_address: { chain, address: a } }, create: { chain, address: a }, update: {} });
+      }
+    } catch { /* chain not configured by env: the override below still applies */ }
     const row = await this.prisma.treasuryWallet.upsert({
       where: { chain },
       create: { chain, address, updatedByAdminId: adminId },
