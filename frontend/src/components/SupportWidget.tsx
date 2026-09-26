@@ -3,6 +3,7 @@ import { api, getToken, type SupportConversation, type SupportMessage, type Supp
 import { useLanguage, type Key } from '../lib/i18n';
 import { onOpenSupportWidget } from '../lib/supportWidget';
 import { customerErrorText } from '../lib/customerError';
+import './SupportWidget.css';
 
 // Guest identity is just this id, kept in localStorage — same anonymous-
 // visitor-id trust model Intercom/Zendesk widgets themselves use (see the
@@ -49,6 +50,12 @@ export function SupportWidget() {
 
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  // A double click lands before `starting`/`sending` re-render the button
+  // disabled; these refs make the second submit a no-op, so one click is
+  // one message is one email.
+  const startingRef = useRef(false);
+  const sendingRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +146,8 @@ export function SupportWidget() {
 
   async function handleStart(e: FormEvent) {
     e.preventDefault();
+    if (startingRef.current) return;
+    startingRef.current = true;
     setStartError(null);
     setStarting(true);
     try {
@@ -150,6 +159,7 @@ export function SupportWidget() {
     } catch (err) {
       setStartError(customerErrorText(err, t, t('support.startError')));
     } finally {
+      startingRef.current = false;
       setStarting(false);
     }
   }
@@ -157,15 +167,19 @@ export function SupportWidget() {
   async function handleSend(e: FormEvent) {
     e.preventDefault();
     const body = draft.trim();
-    if (!conversation || !body) return;
+    if (!conversation || !body || sendingRef.current) return;
+    sendingRef.current = true;
     setSending(true);
+    setSendError(null);
     try {
       const message = await api.sendSupportMessage(conversation.id, body);
       setMessages((prev) => [...prev, message]);
       setDraft('');
-    } catch {
-      // Leave the draft in place so the user can just hit send again.
+    } catch (err) {
+      // Say so, and leave the draft in place so the user can just send again.
+      setSendError(customerErrorText(err, t, t('support.startError')));
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   }
@@ -210,6 +224,8 @@ export function SupportWidget() {
             <form onSubmit={handleStart} style={styles.form}>
               <input
                 required
+                maxLength={100}
+                autoComplete="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={t('support.formName')}
@@ -218,6 +234,8 @@ export function SupportWidget() {
               <input
                 required
                 type="email"
+                maxLength={254}
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('support.formEmail')}
@@ -232,6 +250,7 @@ export function SupportWidget() {
               </select>
               <textarea
                 required
+                maxLength={2000}
                 value={firstMessage}
                 onChange={(e) => setFirstMessage(e.target.value)}
                 placeholder={t('support.formMessagePlaceholder')}
@@ -254,10 +273,13 @@ export function SupportWidget() {
                 ))}
                 <div ref={messagesEndRef} />
               </div>
+              {sendError && <div role="alert" style={{ ...styles.error, margin: '0 12px' }}>{sendError}</div>}
               <form onSubmit={handleSend} style={styles.inputRow}>
                 <input
                   value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
+                  maxLength={2000}
+                  aria-label={t('support.inputPlaceholder')}
+                  onChange={(e) => { setDraft(e.target.value); if (sendError) setSendError(null); }}
                   placeholder={t('support.inputPlaceholder')}
                   style={styles.messageInput}
                 />
@@ -335,7 +357,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: 340,
     maxWidth: 'calc(100vw - 32px)',
     height: 480,
-    maxHeight: 'calc(100vh - 140px)',
+    // max-height lives in SupportWidget.css: it needs a dvh fallback pair
+    // and a phone value that clears the bottom tab bar.
     background: 'var(--panel)',
     border: '1px solid var(--border)',
     borderRadius: 14,

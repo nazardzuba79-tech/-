@@ -34,6 +34,8 @@ import { reservesRouter } from './api/routes/reserves';
 import { futuresRouter } from './api/routes/futures';
 import { supportRouter } from './api/routes/support';
 import { SupportEmailService } from './services/SupportEmailService';
+import { SupportNotificationOutbox } from './services/SupportNotificationOutbox';
+import { adminSupportRouter } from './api/routes/adminSupport';
 import { KycEmailService } from './services/KycEmailService';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
@@ -109,6 +111,8 @@ const cfdPositionService = new CfdPositionService(prisma, cfdDataService, () => 
 const walletPortfolioService = new WalletPortfolioService(prisma, marketDataService, cfdDataService);
 const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
 const supportEmailService = new SupportEmailService();
+// Durable delivery of support emails (Postgres outbox, no extra service).
+const supportNotificationOutbox = new SupportNotificationOutbox(prisma, supportEmailService);
 const kycEmailService = new KycEmailService();
 
 const futuresEngine = new MatchingEngine();
@@ -245,7 +249,8 @@ app.use('/api/v1', cardRouter(prisma, walletPortfolioService));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
-app.use('/api/v1', supportRouter(prisma, supportEmailService));
+app.use('/api/v1', supportRouter(prisma, supportNotificationOutbox));
+app.use('/api/v1', adminSupportRouter(prisma, supportEmailService, supportNotificationOutbox));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
 app.use('/api/v1', privateTradingRouter(prisma, privateTradingService));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
@@ -283,6 +288,9 @@ async function start() {
   liquidationStreamService.start();
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
+  // Catch up on support emails a previous process left pending (e.g. one
+  // stopped right after answering). Reads nothing when mail is unconfigured.
+  supportNotificationOutbox.start();
   liveReferenceCollector?.start();
 }
 
