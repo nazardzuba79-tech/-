@@ -130,6 +130,13 @@
     overflow-x: auto; overflow-y: hidden; border-right: 0; border-bottom: 1px solid #26313f;
   }
   .trade-terminal .drawing-tools .drawing-rail .tool-btn { width: 36px; height: 34px; }
-  .trade-terminal .drawing-tools .drawing-rail .tool-group { width: 36px; }
+  /* On phones the trend selector is a real split control instead of a tiny
+     12x14 overlay. The triangle stays visually small, but its button gets a
+     non-overlapping 28x34 hit target beside the main trend tool. */
+  .trade-terminal .drawing-tools .drawing-rail .tool-group { width: 64px; height: 34px; }
+  .trade-terminal .drawing-tools .drawing-rail .tool-group-chevron {
+    position: static; flex: 0 0 28px; width: 28px; height: 34px;
+    align-items: center; justify-content: center;
+  }
   .trade-terminal .drawing-tools .drawing-rail .tool-divider { width: 1px; min-width: 1px; height: 22px; margin: 0 4px; }
 }
