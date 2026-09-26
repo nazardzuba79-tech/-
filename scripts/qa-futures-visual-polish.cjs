@@ -48,11 +48,11 @@ const PORT = Number(arg('--port', '4371'));
 const OUT = path.resolve(arg('--out', path.join(ROOT, 'docs', 'qa', 'futures-visual-polish')));
 const LABEL = arg('--label', 'after');
 const MEASURE_ONLY = process.env.QA_MEASURE_ONLY === '1';
-const WIDTHS = (arg('--widths', '1920x1080,1664x900,1440x900,1366x768,360x800,390x844,430x932')).split(',')
+const WIDTHS = (arg('--widths', '1920x1080,1664x900,1440x900,1366x768,320x740,360x800,390x844,430x932')).split(',')
   .map(spec => { const [w, h] = spec.split('x').map(Number); return { width: w, height: h }; });
 // The brief asks for screenshots at these three; the other two are measured
 // for clipping and overflow only.
-const SHOT_WIDTHS = new Set(['1440x900', '1664x900', '360x800', '390x844', '430x932']);
+const SHOT_WIDTHS = new Set(['1440x900', '1664x900', '320x740', '360x800', '390x844', '430x932']);
 const MARKET_EDGE = 'https://market.voltextech.net';
 
 const express = require('express');
