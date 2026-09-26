@@ -122,7 +122,7 @@ export class DepositWatchService {
     const [state, cursors, unverified] = await Promise.all([
       this.prisma.depositWatchState.findUnique({ where: { id: WATCH.chain } }),
       this.prisma.depositWatchCursor.findMany({ where: { chain: WATCH.chain }, orderBy: { createdAt: 'asc' } }),
-      this.prisma.deposit.count({ where: { chain: WATCH.chain, status: { not: 'CREDITED' }, verifyError: null, OR: [{ verifiedAt: null }, { finalized: false }] } }),
+      this.prisma.deposit.count({ where: { chain: WATCH.chain, status: { not: 'CREDITED' }, ignoredAt: null, verifyError: null, OR: [{ verifiedAt: null }, { finalized: false }] } }),
     ]);
     const now = this.now();
     return {
@@ -243,7 +243,7 @@ export class DepositWatchService {
         lagMs: Math.max(0, now - Number(c.scannedThroughMs)), windowInProgress: c.windowEndMs !== null, lastError: c.lastError }));
       summary.backlog = summary.backlog || cursors.some((c) => c.windowEndMs !== null
         || now - Number(c.scannedThroughMs) > this.cfg.maxWindowMs + this.cfg.safetyLagMs);
-      summary.unfinalized = await this.prisma.deposit.count({ where: { chain: WATCH.chain, status: { not: 'CREDITED' }, verifyError: null,
+      summary.unfinalized = await this.prisma.deposit.count({ where: { chain: WATCH.chain, status: { not: 'CREDITED' }, ignoredAt: null, verifyError: null,
         OR: [{ verifiedAt: null }, { finalized: false }] } });
       summary.needsFollowUp = !summary.ok || summary.backlog || summary.unfinalized > 0;
       return summary;
@@ -366,7 +366,7 @@ export class DepositWatchService {
    * per run. Finalized, proven rows are never re-checked. */
   private async verifyPending(config: ChainConfig, verifier: TronDepositVerifier, summary: WatchRunSummary, startedAt: number) {
     const candidates = await this.prisma.deposit.findMany({
-      where: { chain: WATCH.chain, status: { not: 'CREDITED' }, batchId: null, verifyError: null,
+      where: { chain: WATCH.chain, status: { not: 'CREDITED' }, batchId: null, ignoredAt: null, verifyError: null,
         OR: [{ verifiedAt: null }, { finalized: false }, { confirmations: { lt: config.minConfirmations } }] },
       orderBy: { createdAt: 'asc' }, take: this.cfg.maxVerificationsPerRun * 3,
     });
