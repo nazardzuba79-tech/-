@@ -3983,3 +3983,34 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `DEPOSIT_WATCHER_INTERVAL_MINUTES` is gone; the new env vars are `DEPOSIT_WATCHER_SLOTS` and `DEPOSIT_WATCHER_DEDUPE_MINUTES`.
 - **Checks run:** backend and frontend `tsc` clean. Deposit CI list 235/235, including the new `depositWatchSchedule.test.ts` (Kyiv DST, night, slots, admin-open once a day). `scripts/qa-deposit-packages.cjs --browser` PASS on local PostgreSQL 16 with a simulated Kyiv day (night 06:30, 07:05 open, 12:00, 12:10, 15:40 manual, 16:00 dedupe, 23:00 wake with no catch-up, next morning finds the 21:00 transfer, 13:30 missed-slot run, concurrent manual + slot, paused) plus the browser at 1440/390.
 - **Unresolved:** no production proof of a real TRC20 deposit (fixture only). Slots only fire while Render is awake (in-process timer); the optional internal tick needs `DEPOSIT_WATCHER_TOKEN` from the owner.
+
+## Claude — 2026-09-26 — Deposits: «Игнорировать», «Игнорированные», full accumulation cards
+
+- Base: fresh main `d55dbb18` (#293 daytime schedule merged first). Branch `claude/ecstatic-brahmagupta-cwkvt5`. Code commit `a9619cf7`.
+- **Owner problem:** old Trust Wallet history filled «Непривязанные». The old feed's «Игнорировать» only wrote `IgnoredIncomingTransfer`, which the new queue does not read. The owner also asked for a clear 15 → 115 → 300 card.
+- **Implemented:**
+  - `DepositIgnoreService`: ignore (required reason) and restore. It locks the row, bumps the revision and writes an audit entry.
+    - It refuses CREDITED/batched transfers and attributed transfers in an active package. Other attributed transfers need `confirmAssigned`.
+  - Deposit gains `ignoredAt`, `ignoredReason`, `ignoredNote`, `ignoredByAdminId` (additive migration `20260926180000_deposit_ignore`, which backfills the legacy ignores for unattributed, uncredited rows).
+  - The IGNORED state is excluded from packages, the batch confirm (query and lock checks), the watcher proofs and attribution.
+  - The queue returns `packageCounts` and `creditedBatches`.
+  - UI:
+    - «Игнорировать» modal;
+    - «Игнорированные» tab with «Вернуть в очередь»;
+    - package card lists every transfer;
+    - «Проверить и зачислить {total}»;
+    - «Зачисленные» shows batch cards.
+  - The legacy `/admin/deposits/ignore` endpoint also marks the registry row.
+- **Checks run:**
+  - backend and frontend `tsc`;
+  - deposit CI list 236/236, including new UI tests for the ignore modal and restore, and policy tests for IGNORED;
+  - `scripts/qa-deposit-packages.cjs --browser` PASS on local PostgreSQL 16. The new group covers owner tests 1–12:
+    - ignore/restore;
+    - no package, balance or attribution for an ignored transfer;
+    - 15 → 115 → 300 in one card with all component transfers;
+    - READY at 300; balance 0 until confirm; +300 exactly once; double confirm returns the same batch, another key gets 409;
+    - a CREDITED transfer cannot be ignored;
+    - counters;
+    - legacy backfill;
+    - browser ignore → «Игнорированные» → restore at 320/360/390/430/1440 with no overflow on any tab.
+- **Not done:** no real transfer was ignored or credited. The owner's real 15 USDT is untouched.
