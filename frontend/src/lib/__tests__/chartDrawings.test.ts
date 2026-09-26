@@ -3,6 +3,7 @@ import path from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as drawings from '../chartDrawings';
+import * as geometry from '../drawingGeometry';
 import * as chartPriceFormat from '../spotChartPriceFormat';
 import * as chartTrading from '../chartTrading';
 
@@ -87,13 +88,22 @@ describe('Spot gesture lifecycle (brush and anchored shapes)', () => {
 
 describe('shared drawing toolbar presentation and chart integration', () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../../components/PriceChart.tsx'), 'utf8');
+  const layerSource = fs.readFileSync(path.resolve(__dirname, '../../components/ChartDrawingLayer.tsx'), 'utf8');
   const css = fs.readFileSync(path.resolve(__dirname, '../../components/DrawingTools.css'), 'utf8');
   const localRequire = createRequire(path.resolve(__dirname, '../../../package.json'));
   const React = localRequire('react');
   const { renderToStaticMarkup } = localRequire('react-dom/server');
-  const compiled = ts.transpileModule(`${source}\nexport { DrawToolbar, RulerLabel, DrawingDialog };`, {
+  const tsx = (code: string) => ts.transpileModule(code, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
+  // The drawing layer is its own module, compiled against the same real helpers.
+  const layer: Record<string, any> = {};
+  new Function('require', 'exports', tsx(layerSource))((id: string) => {
+    if (id === '../lib/chartDrawings') return drawings;
+    if (id === '../lib/drawingGeometry') return geometry;
+    return localRequire(id);
+  }, layer);
+  const compiled = tsx(`${source}\nexport { DrawToolbar, DrawingDialog, drawingToolGroups };`);
   const exports: Record<string, any> = {};
   new Function('require', 'exports', compiled)((id: string) => {
     if (id.endsWith('.css') || id === 'lightweight-charts' || id === '../lib/api' || id === '../lib/indicators') return {};
@@ -101,27 +111,43 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === '../lib/spotChartPriceFormat') return chartPriceFormat;
     if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+    if (id === './ChartDrawingLayer') return layer;
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     return localRequire(id);
   }, exports);
   const props = { tool: 'cursor', onSelect: () => {}, onClear: () => {}, onFit: () => {}, terminal: true,
-    drawingsHidden: false, onToggleHidden: () => {}, stayInDrawMode: true, onToggleStay: () => {},
-    magnet: false, onToggleMagnet: () => {}, locked: false, onToggleLock: () => {} };
+    stayInDrawMode: true, onToggleStay: () => {}, locked: false, onToggleLock: () => {} };
 
-  test('actual compact rail has working callback buttons, grouped lines, titles, active state and real tools only', () => {
-    const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools: true }));
+  test('the rail carries TradingView\'s tool groups and toggles, each a real button', () => {
+    const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools: true, compactTools: true }));
     expect(html).toContain('drawing-rail');
     expect(html).toContain('role="toolbar"');
-    for (const id of ['cursor', 'trendline', 'fib', 'rectangle', 'brush', 'text', 'ruler', 'fit', 'stay', 'hide', 'clear']) {
-      expect(html).toContain(`data-drawing-tool="${id}"`);
+    for (const group of ['cursors', 'lines', 'fibs', 'patterns', 'forecast', 'shapes', 'annotations']) {
+      expect(html).toContain(`data-tool-group="${group}"`);
     }
+    // Until another is picked, each group's button offers its first tool.
+    for (const id of ['cursor', 'trendline', 'fib', 'xabcd', 'long', 'brush', 'text']) expect(html).toContain(`data-drawing-tool="${id}"`);
+    for (const id of ['ruler', 'stay', 'lock', 'clear']) expect(html).toContain(`data-drawing-tool="${id}"`);
+    // Taken off at the owner's word — nobody uses them (2026-09-26).
+    for (const id of ['zoom', 'fit', 'magnet', 'hide']) expect(html).not.toContain(`data-drawing-tool="${id}"`);
+    expect(html).not.toContain('data-tool-group="magnet"');
     expect(html).toContain('aria-haspopup="menu"');
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('title="draw.measure"');
-    // Magnet, lock and the single-drawing eraser are REAL now, so they
-    // are here — each backed by an implementation, not an icon.
-    for (const id of ['magnet', 'lock', 'erase']) expect(html).toContain(`data-drawing-tool="${id}"`);
-    for (const id of ['ray', 'horizontal', 'vertical', 'extended']) expect(source).toContain(`{ id: '${id}', icon:`);
+  });
+  test('every tool the flyouts offer is one the chart implements, listed once', () => {
+    const groups = exports.drawingToolGroups((key: string) => key);
+    const ids: string[] = groups.flatMap((g: any) => g.sections.flatMap((section: any) => section.tools.map((tool: any) => tool.id)));
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.slice(0, 4)).toEqual(['cursor', 'dot', 'arrowcursor', 'erase']);
+    expect(new Set(ids.slice(4))).toEqual(new Set(drawings.DRAWING_KINDS));
+    // TradingView's shortcuts are real bindings, not decoration.
+    const shortcuts = groups.flatMap((g: any) => g.sections.flatMap((section: any) => section.tools)).filter((tool: any) => tool.shortcut);
+    expect(shortcuts.map((tool: any) => `${tool.id}=${tool.shortcut}`)).toEqual([
+      'trendline=Alt + T', 'horizontal=Alt + H', 'ray=Alt + J', 'vertical=Alt + V', 'crossline=Alt + C', 'fib=Alt + F', 'rectangle=Alt + Shift + R',
+    ]);
+    expect(source).toContain("const keys: Record<string, Tool> = { KeyT: 'trendline', KeyH: 'horizontal', KeyJ: 'ray', KeyV: 'vertical', KeyC: 'crossline', KeyF: 'fib' };");
+    expect(source).toContain("event.code === 'KeyR' ? 'rectangle'");
   });
   test('a chart keeps the original rail unless it opts in', () => {
     const old = renderToStaticMarkup(React.createElement(exports.DrawToolbar, props));
@@ -135,13 +161,18 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(css).toContain('overflow-x: auto; overflow-y: hidden');
     expect(css).toContain('@media (max-width: 767px)');
   });
-  test('review rail keeps drawing tools, ruler and single-object deletion with accessible icon labels', () => {
-    const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools:true, compactTools:true }));
-    for (const id of ['cursor','trendline','fib','rectangle','brush','text','ruler','erase']) expect(html).toContain(`data-drawing-tool="${id}"`);
-    for (const id of ['fit','magnet','lock','stay','hide','clear']) expect(html).not.toContain(`data-drawing-tool="${id}"`);
+  test('the compact rail is icon-only with accessible labels, and Clear names how many it removes', () => {
+    const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools: true, compactTools: true, drawingCount: 3 }));
+    for (const id of ['cursor', 'trendline', 'fib', 'brush', 'text', 'ruler', 'lock', 'stay', 'clear']) {
+      expect(html).toContain(`data-drawing-tool="${id}"`);
+    }
     expect(html).toContain('aria-label="draw.measure"');
-    expect(html).toContain('aria-label="draw.erase"');
+    // The single-object eraser sits in the cursors group, as in TradingView; every chevron is labelled.
+    for (const group of ['draw.cursors', 'draw.trendTools', 'draw.fibGroup', 'draw.patterns', 'draw.forecast', 'draw.shapesGroup', 'draw.annotations']) {
+      expect(html).toContain(`aria-label="${group}" aria-haspopup="menu"`);
+    }
     expect(html).not.toContain('>draw.measure<');
+    expect(html).toContain('title="draw.deleteAll (3)"');
   });
   test('drawing rail opens by default and its accessible toggle preserves tools across collapse and reopen', () => {
     const state: any[] = [];
@@ -159,9 +190,10 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
       if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+      if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, output);
-    const callbacks = { onCollapse: jest.fn(), onClear: jest.fn(), onToggleHidden: jest.fn(), onSelect: jest.fn() };
+    const callbacks = { onCollapse: jest.fn(), onClear: jest.fn(), onToggleLock: jest.fn(), onSelect: jest.fn() };
     const render = () => {
       index = 0;
       const tree = output.DrawToolbar({ ...props, ...callbacks, drawingTools: true, compactTools: true });
@@ -192,16 +224,22 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(view.tools).toEqual(tools);
     expect(callbacks.onCollapse).toHaveBeenCalledTimes(1);
     expect(callbacks.onClear).not.toHaveBeenCalled();
-    expect(callbacks.onToggleHidden).not.toHaveBeenCalled();
+    expect(callbacks.onToggleLock).not.toHaveBeenCalled();
     expect(callbacks.onSelect).not.toHaveBeenCalled();
   });
-  test('actual ruler label preserves a tiny negative price difference', () => {
-    const html = renderToStaticMarkup(React.createElement('svg', {}, React.createElement(exports.RulerLabel,
-      { x: 100, y: 100, pct: -20, priceDiff: -0.0000002, bars: 3, drawingTools: true, locale: 'en' })));
-    expect(html).toContain('-20.00%');
-    expect(html).toContain('-0.0000002');
-    expect(html).toContain('3 bars');
-    expect(html).not.toContain('Infinity');
+  test('the measure label reads as TradingView\'s and keeps a tiny negative difference', () => {
+    const candles = [{ time: 0, volume: 1500 }, { time: 300, volume: 2500 }, { time: 600, volume: 1000 }, { time: 900, volume: 5 }];
+    const range = drawings.drawingRange({ time: 0, price: 0.000001 }, { time: 900, price: 0.0000008 }, candles, 300, 0.0000001);
+    const lines = drawings.drawingRangeLines(range, 'en');
+    expect(lines[0]).toContain('-0.0000002');
+    expect(lines[0]).toContain('(-20.00%)');
+    expect(lines[0]).toMatch(/ -2$/);
+    expect(lines[1]).toBe('3 bars, 15m');
+    // Volume of the bars inside the span only; the closing bar is not in it.
+    expect(lines[2]).toBe('Vol 5.00K');
+    expect(lines.join(' ')).not.toContain('Infinity');
+    expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('3 столбцы, 15мин');
+    expect(drawings.drawingRangeLines(range, 'en', { price: true, date: false })).toHaveLength(1);
   });
   test('Spot text dialog has an accessible label, safe plain input, real actions and no native modal', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawingDialog,
@@ -213,9 +251,11 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(html).toContain('type="submit" class="primary" disabled=""');
     expect(html).toContain('draw.addText');
     expect(html).toContain('trade.cancel');
-    expect(source).toContain("setDrawDialog({ kind: 'text', at: p });\n          return;");
-    expect(source).toContain('at: drawDialog.at, text: value');
-    expect(source).not.toContain('dangerouslySetInnerHTML');
+    // A text kind never becomes a drawing without the trader's own words.
+    expect(layerSource).toContain('if (DRAWING_TEXT_KINDS.includes(kind)) { props.onRequestText({ kind, points }); return; }');
+    expect(source).toContain("setDrawDialog({ kind: 'text', request })");
+    expect(source).toContain('const drawing: ChartDrawing = { id: newDrawingId(), kind: request.kind, points: request.points, text: value };');
+    for (const code of [source, layerSource]) expect(code).not.toContain('dangerouslySetInnerHTML');
   });
   test('Spot Clear requires an explicit in-app confirmation and leaves native Futures behavior intact', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawingDialog,
@@ -225,15 +265,15 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(html).not.toContain('<input');
     expect(source).toContain("setDrawDialog({ kind: 'clear' });\n      return;");
     expect(source).toContain('if (window.confirm(confirmClearRef.current)) clearDrawings()');
-    expect(source).toContain('const text = window.prompt(textPromptRef.current)');
+    for (const code of [source, layerSource]) expect(code).not.toContain('window.prompt');
     const clearBody = source.split('const clearDrawings = useCallback(() => {')[1].split('const clearAll =')[0];
     expect(clearBody).not.toMatch(/api\.|conditionalOrders|cancelOrder|updateOrderTrigger/);
-    // Horizontal levels are React state now, and ONE effect owns the
-    // native price lines derived from it — so Clear empties the state and
-    // that effect removes the lines. Asserted on both halves, which is
-    // strictly more than the old direct-removal check: it also proves the
+    // Horizontal levels are drawings like any other, and ONE effect owns
+    // the native price lines derived from them — so Clear empties the
+    // state and that effect removes the lines. Asserted on both halves: the
     // serializable data and the chart objects cannot drift apart.
-    expect(clearBody).toContain('setHorizontals([])');
+    expect(clearBody).toContain('setDrawings([])');
+    expect(source).toContain("const horizontals = drawings.filter((d) => d.kind === 'horizontal');");
     const lineSync = source.split('for (const line of priceLinesRef.current) series.removePriceLine(line);')[0];
     expect(lineSync).toContain('const series = seriesRef.current;');
     expect(source).toContain('for (const line of priceLinesRef.current) series.removePriceLine(line);');
@@ -253,6 +293,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
       if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+      if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, bindings);
     const render = () => {
@@ -317,21 +358,26 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       else Reflect.deleteProperty(globalThis, 'document');
     }
   });
-  test('Hide applies to all user drawings but not real conditional order lines', () => {
-    expect(source).toContain('line.applyOptions({ lineVisible: !drawingsHidden, axisLabelVisible: !drawingsHidden })');
-    expect(source).toContain("display: drawingsHidden && !drawingToolsOn ? 'none' : undefined");
-    expect(source).toContain("data-chart-drawings={drawingToolsOn ? 'shapes' : undefined} display={drawingToolsOn && drawingsHidden ? 'none' : undefined}");
-    expect(source).toContain('(!drawingToolsOn || !drawingsHidden) && labels.map');
-    // Normalize only whitespace: the conditional lines remain outside the hidden drawing group.
-    // The literal now carries the spot gate, because conditional orders are
-    // a SPOT-ONLY feature and the futures chart must not draw them (see
-    // priceChartMarketOrders.test.ts). The property under test is unchanged
-    // and in fact strengthened: the block still sits immediately after
-    // `</g>`, outside the hidden drawing group, AND is pinned to spot.
-    expect(source.replace(/\s+/g, ' ')).toContain('</g> {spotConditionalOrders && conditionalOrders.map');
-    expect(source).toContain('if (drawingToolsOn && hiddenRef.current) return');
+  test('drawings always show, and real conditional order lines stay outside them', () => {
+    // Hide was taken off the rail, so a «hidden» flag an earlier rail saved
+    // must not hide anyone's drawings with no way to show them again.
+    expect(source).not.toMatch(/drawingsHidden|setDrawingsHidden|stored\.hidden/);
+    expect(source).toContain('serializeDrawings({ drawings: collectDrawings(), hidden: false, locked: savedLocked })');
+    expect(layerSource).toContain('<g data-chart-drawings="shapes">');
+    // Conditional orders are a SPOT-ONLY feature (see
+    // priceChartMarketOrders.test.ts) and live in their own overlay, after
+    // the drawing layer and outside it, so Lock and Clear never reach them.
+    const flat = source.replace(/\s+/g, ' ');
+    expect(flat).toContain("<svg className=\"order-overlay\" style={{ ...styles.overlay, pointerEvents: 'none' }}> {spotConditionalOrders && conditionalOrders.map");
+    expect(flat.indexOf('<ChartDrawingLayer')).toBeLessThan(flat.indexOf('className="order-overlay"'));
+    const orders = flat.split('className="order-overlay"')[1].split('</svg>')[0];
+    expect(orders).not.toMatch(/locked|clearDrawings/);
+    // Nothing is placed while drawings are locked.
+    expect(layerSource).toContain('if (lockedRef.current) return;');
     expect(source).toContain('return () => cancelGestureRef.current?.()');
-    expect(source).toContain("...(drawingToolsOn ? { zIndex: 4 } : {})");
+    // The chart's cancel hook reaches the layer's gestures.
+    expect(source).toContain('cancelRef={cancelGestureRef}');
+    expect(layerSource).toContain('outerCancel.current = abandon;');
   });
   test.each([[1920, 700, false], [390, 600, true], [375, 400, true]])('portal stays in %ipx viewport and outside rail clipping', (width, height, horizontal) => {
     const point = drawingFlyoutPosition({ left: width - 40, right: width - 6, top: height - 60, bottom: height - 28 }, { width, height }, horizontal);
@@ -539,31 +585,32 @@ describe('the rail is shared, and every button does something', () => {
     expect(cfd).not.toMatch(/drawingTools|DrawToolbar|drawing-rail|chartDrawings/);
   });
 
-  test('every tool in the union has an implementation, and every button maps to one', () => {
-    const union = code.slice(code.indexOf('type Tool ='), code.indexOf(';', code.indexOf('type Tool =')));
-    const tools = [...union.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
-    expect(new Set(tools)).toEqual(
-      new Set(['cursor', 'trendline', 'extended', 'ray', 'horizontal', 'vertical', 'rectangle', 'fib', 'brush', 'ruler', 'text', 'erase'])
-    );
-    // Each drawing tool is actually handled somewhere in the component.
-    for (const tool of tools) {
-      if (tool === 'cursor') continue;
-      expect(code).toMatch(new RegExp(`'${tool}'`));
-    }
-  });
+  const layerCode = fs.readFileSync(path.resolve(__dirname, '../../components/ChartDrawingLayer.tsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const geometryCode = fs.readFileSync(path.resolve(__dirname, '../drawingGeometry.ts'), 'utf8');
 
-  test('advertises no tool it has not built', () => {
-    // Parallel channel and a separate price-range tool were considered and
-    // deliberately left out; no icon, no label, no dead branch.
-    expect(code).not.toMatch(/'channel'|ChannelIcon|priceRange|PriceRangeIcon/);
+  test('every tool in the union has an implementation, and every button maps to one', () => {
+    expect(code).toContain('type Tool = DrawingTool;');
+    const union = layerCode.slice(layerCode.indexOf('export type DrawingTool ='), layerCode.indexOf(';', layerCode.indexOf('export type DrawingTool =')));
+    const tools = [...union.matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
+    expect(new Set(tools)).toEqual(new Set(['cursor', 'dot', 'arrowcursor', 'erase']));
+    expect(union).toContain('| DrawingKind');
+    expect(layerCode).toContain("tool === 'erase'");
+    expect(layerCode).not.toMatch(/'zoom'|zoomBand|onZoom/);
+    // Each drawing kind has its own geometry case — painted and hit-tested by the same code.
+    for (const kind of drawings.DRAWING_KINDS) expect(geometryCode).toMatch(new RegExp(`case '${kind}'`));
   });
 
   test('lock refuses every mutating action and nothing else', () => {
     expect(code).toContain('if (drawingToolsOn && lockedRef.current) return;');
-    // Adding a shape, starting a gesture, erasing one and clearing all.
-    expect(code).toContain('if (lockedRef.current || hiddenRef.current) return;');
-    expect(code).toContain('if (drawingToolsOn && lockedRef.current) return;');
     expect(code).toContain('if (drawingToolsOn && locked) return;');
+    // Adding a shape, moving one, moving an anchor, and Delete.
+    expect(layerCode).toContain('if (lockedRef.current) return;');
+    expect(layerCode).toContain('if (lockedRef.current || drawing.locked || !view) return;');
+    expect(layerCode).toContain('if (lockedRef.current || drawing.locked) return;');
+    expect(layerCode).toContain("selectedId !== null && !lockedRef.current");
+    // A lock abandons whatever was half-placed.
+    expect(layerCode).toContain('}, [tool, locked, blocked]);');
     // Lock must NOT touch visibility or the chart's own navigation.
     const lockToggle = code.split('onToggleLock={() => {')[1].split('}}')[0];
     expect(lockToggle).not.toMatch(/setDrawingsHidden|fitContent|timeScale|setTool\(/);
@@ -585,5 +632,159 @@ describe('the rail is shared, and every button does something', () => {
     expect(code).toContain('const [loadedKey, setLoadedKey] = useState<string | null>(null);');
     expect(code).toContain('if (!storageKey || loadedKey !== storageKey) return;');
     expect(code).not.toContain('loadedKeyRef');
+  });
+});
+
+// ── The TradingView set: model, geometry, editing ────────────────────
+
+/** A linear projection: one bar of 300s is 10px, one price unit is 2px. */
+function linearView(lang = 'en'): geometry.DrawingView {
+  return {
+    x: (time) => time / 30,
+    y: (price) => 500 - price * 2,
+    width: 1000,
+    height: 600,
+    lang,
+    range: (a, b) => drawings.drawingRange(a, b, [], 300, 0.01),
+  };
+}
+
+/** A valid drawing of each kind: its minimum anchors, spread out, with words where needed. */
+function sample(kind: drawings.DrawingKind): drawings.StoredDrawing {
+  const count = drawings.DRAWING_POINTS[kind].min;
+  const points = Array.from({ length: count }, (_, i) => ({ time: 3000 + i * 1500, price: 100 + (i % 2 ? 40 : 0) + i * 5 }));
+  return drawings.DRAWING_TEXT_KINDS.includes(kind) ? { kind, points, text: 'level' } : { kind, points };
+}
+
+describe('every drawing kind paints and can be picked', () => {
+  test.each([...drawings.DRAWING_KINDS])('%s has a geometry with a hit target', (kind) => {
+    const g = geometry.drawingGeometry(sample(kind), linearView());
+    expect(g).not.toBeNull();
+    // Horizontal levels are painted by the chart's native price line; the
+    // layer only makes them selectable.
+    if (kind !== 'horizontal') expect(g!.prims.length).toBeGreaterThan(0);
+    expect(g!.strokes.length + g!.areas.length + g!.boxes.length).toBeGreaterThan(0);
+  });
+
+  test('a drawing whose anchor cannot be placed on screen is not painted at all', () => {
+    const view = { ...linearView(), y: () => null };
+    expect(geometry.drawingGeometry(sample('trendline'), view)).toBeNull();
+  });
+
+  test('what is visible is what a click selects: a trend line is hit on its stroke only', () => {
+    const g = geometry.drawingGeometry({ kind: 'trendline', points: [{ time: 3000, price: 100 }, { time: 6000, price: 100 }] }, linearView())!;
+    // x 100 → 200 at y 300.
+    expect(geometry.geometryDistance(g, { x: 150, y: 303 })).toBeLessThanOrEqual(geometry.HIT_RADIUS);
+    expect(geometry.geometryDistance(g, { x: 150, y: 320 })).toBeGreaterThan(geometry.HIT_RADIUS);
+    // A trend line stops at its anchors; an extended line does not.
+    expect(geometry.geometryDistance(g, { x: 400, y: 300 })).toBeGreaterThan(geometry.HIT_RADIUS);
+    const extended = geometry.drawingGeometry({ kind: 'extended', points: [{ time: 3000, price: 100 }, { time: 6000, price: 100 }] }, linearView())!;
+    expect(geometry.geometryDistance(extended, { x: 400, y: 300 })).toBeLessThanOrEqual(geometry.HIT_RADIUS);
+    expect(geometry.anchorAt(g, { x: 101, y: 301 })?.id).toBe(0);
+    expect(geometry.anchorAt(g, { x: 199, y: 299 })?.id).toBe(1);
+  });
+
+  test('the Fibonacci retracement prints every level with its real price', () => {
+    const g = geometry.drawingGeometry({ kind: 'fib', points: [{ time: 3000, price: 100 }, { time: 6000, price: 200 }] }, linearView())!;
+    const text = JSON.stringify(g.prims);
+    for (const level of drawings.RETRACEMENT_LEVELS) expect(text).toContain(String(level));
+    expect(text).toContain('150');
+    expect(text).toContain('161.8');
+  });
+
+  test('the price range label is the TradingView three-part reading', () => {
+    const g = geometry.drawingGeometry({ kind: 'ruler', points: [{ time: 0, price: 100 }, { time: 900, price: 110 }] }, linearView())!;
+    const label = g.prims.find((p) => p.t === 'label') as Extract<geometry.Primitive, { t: 'label' }>;
+    expect(label.lines[0]).toBe('10 (10.00%) 1,000');
+    expect(label.lines[1]).toBe('3 bars, 15m');
+  });
+});
+
+describe('long and short position tools', () => {
+  test('risk/reward is reward over risk, in both directions', () => {
+    expect(drawings.positionMetrics('long', 100, 120, 90).ratio).toBeCloseTo(2, 12);
+    expect(drawings.positionMetrics('short', 100, 80, 110).ratio).toBeCloseTo(2, 12);
+    expect(drawings.positionMetrics('long', 100, 110, 95).targetPct).toBeCloseTo(10, 12);
+    expect(drawings.positionMetrics('long', 100, 110, 95).stopPct).toBeCloseTo(-5, 12);
+    // A stop on the wrong side has no meaningful ratio.
+    expect(drawings.positionMetrics('long', 100, 120, 105).ratio).toBeNull();
+    expect(drawings.positionMetrics('long', 0, 120, 90).targetPct).toBeNull();
+  });
+
+  test('the box is labelled with target, stop and ratio, in the reader\'s language', () => {
+    const drawing: drawings.StoredDrawing = { kind: 'long', points: [{ time: 3000, price: 100 }, { time: 9000, price: 120 }, { time: 9000, price: 90 }] };
+    const text = (lang: string) => JSON.stringify(geometry.drawingGeometry(drawing, linearView(lang))!.prims);
+    expect(text('en')).toContain('Target: 120 (20.00%)');
+    expect(text('en')).toContain('Stop: 90 (-10.00%)');
+    expect(text('en')).toContain('Risk/Reward Ratio: 2.00');
+    expect(text('ru')).toContain('Соотношение риск/прибыль: 2.00');
+  });
+
+  test('each handle moves only the level it owns', () => {
+    const drawing: drawings.StoredDrawing = { kind: 'long', points: [{ time: 3000, price: 100 }, { time: 9000, price: 120 }, { time: 9000, price: 90 }] };
+    expect(geometry.moveAnchor(drawing, 'target', { time: 1, price: 130 }).points).toEqual([{ time: 3000, price: 100 }, { time: 9000, price: 130 }, { time: 9000, price: 90 }]);
+    expect(geometry.moveAnchor(drawing, 'stop', { time: 1, price: 95 }).points).toEqual([{ time: 3000, price: 100 }, { time: 9000, price: 120 }, { time: 9000, price: 95 }]);
+    expect(geometry.moveAnchor(drawing, 'width', { time: 12000, price: 1 }).points).toEqual([{ time: 3000, price: 100 }, { time: 12000, price: 120 }, { time: 12000, price: 90 }]);
+    // The original is never mutated.
+    expect(drawing.points[1].price).toBe(120);
+  });
+
+  test('a horizontal level keeps no time and a vertical line keeps no price', () => {
+    expect(geometry.moveAnchor({ kind: 'horizontal', points: [{ time: 0, price: 5 }] }, 0, { time: 777, price: 9 }).points).toEqual([{ time: 0, price: 9 }]);
+    expect(geometry.moveAnchor({ kind: 'vertical', points: [{ time: 5, price: 0 }] }, 0, { time: 777, price: 9 }).points).toEqual([{ time: 777, price: 0 }]);
+    expect(geometry.moveAnchor({ kind: 'trendline', points: [{ time: 1, price: 1 }, { time: 2, price: 2 }] }, 1, { time: 3, price: 3 }).points)
+      .toEqual([{ time: 1, price: 1 }, { time: 3, price: 3 }]);
+  });
+});
+
+describe('style, lock and the new kinds survive storage', () => {
+  test('round-trips a styled, locked drawing of each new family', () => {
+    const all: drawings.StoredDrawing[] = [
+      { kind: 'channel', points: [{ time: 1, price: 2 }, { time: 3, price: 4 }, { time: 5, price: 1 }], style: { color: '#f23645', width: 3, dash: 'dashed', fill: '#f23645' } },
+      { kind: 'xabcd', points: [1, 2, 3, 4, 5].map((i) => ({ time: i, price: i * 2 })), locked: true },
+      { kind: 'short', points: [{ time: 1, price: 100 }, { time: 9, price: 80 }, { time: 9, price: 110 }] },
+      { kind: 'polyline', points: [{ time: 1, price: 1 }, { time: 2, price: 3 }, { time: 3, price: 2 }] },
+      { kind: 'callout', points: [{ time: 1, price: 1 }, { time: 2, price: 3 }], text: 'breakout' },
+    ];
+    const parsed = drawings.parseStoredDrawings(drawings.serializeDrawings({ drawings: all, hidden: false, locked: false }));
+    expect(parsed.drawings).toEqual(all);
+  });
+
+  test('an unusable style is dropped, not trusted; the drawing keeps its default', () => {
+    const raw = JSON.stringify({ version: 1, hidden: false, locked: false, drawings: [
+      { kind: 'trendline', points: [{ time: 1, price: 1 }, { time: 2, price: 2 }], style: { color: 'red; background:url(x)', width: 2 } },
+      { kind: 'trendline', points: [{ time: 1, price: 1 }, { time: 2, price: 2 }], style: { color: '#2962ff', width: 900, dash: 'wavy' }, locked: 'yes' },
+    ] });
+    const [first, second] = drawings.parseStoredDrawings(raw).drawings;
+    expect(first.style).toBeUndefined();
+    expect(drawings.drawingStyle(first)).toEqual(drawings.DEFAULT_DRAWING_STYLES.trendline);
+    expect(second.style).toEqual({ color: '#2962ff', width: 24, dash: 'solid' });
+    expect(second.locked).toBeUndefined();
+  });
+
+  test('caps anchors and words per drawing, and a text kind needs its words', () => {
+    const raw = JSON.stringify({ version: 1, hidden: false, locked: false, drawings: [
+      { kind: 'polyline', points: Array.from({ length: 100 }, (_, i) => ({ time: i, price: i })) },
+      { kind: 'note', points: [{ time: 1, price: 1 }], text: 'x'.repeat(1000) },
+      { kind: 'callout', points: [{ time: 1, price: 1 }, { time: 2, price: 2 }], text: '' },
+    ] });
+    const parsed = drawings.parseStoredDrawings(raw).drawings;
+    expect(parsed.map((d) => d.kind)).toEqual(['polyline', 'note']);
+    expect(parsed[0].points).toHaveLength(drawings.DRAWING_POINTS.polyline.max);
+    expect(parsed[1].text).toHaveLength(280);
+  });
+
+  test.each(['toString', 'constructor', '__proto__', 'hasOwnProperty'])('an inherited name (%s) is not a drawing kind', (kind) => {
+    const raw = `{"version":1,"hidden":false,"locked":false,"drawings":[{"kind":"${kind}","points":[{"time":1,"price":2},{"time":3,"price":4}]}]}`;
+    expect(drawings.parseStoredDrawings(raw).drawings).toEqual([]);
+  });
+
+  test('TradingView-style duration and volume wording', () => {
+    expect(drawings.formatDrawingDuration(405 * 60, 'ru')).toBe('6ч 45мин');
+    expect(drawings.formatDrawingDuration(2 * 86400 + 3 * 3600 + 60, 'ru')).toBe('2д 3ч');
+    expect(drawings.formatDrawingDuration(0, 'en')).toBe('0m');
+    expect(drawings.formatDrawingVolume(435_060_000)).toBe('435.06M');
+    expect(drawings.formatDrawingVolume(1200)).toBe('1.20K');
+    expect(drawings.formatDrawingVolume(NaN)).toBe('—');
   });
 });
