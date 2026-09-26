@@ -1,3 +1,5 @@
+> **Superseded 2026-09-26 by [DEPOSIT_PACKAGES.md](DEPOSIT_PACKAGES.md)**: credits are per accumulated package, refused below 300 USD, only via package confirmation.
+
 # Deposits: administrator approval only
 
 Owner policy, 2026-09-21. Supersedes the automatic >=$300 credit policy in PR #163.

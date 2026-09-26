@@ -26,6 +26,8 @@ function adminPrisma(overrides: any = {}) {
     },
     ignoredIncomingTransfer: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn().mockResolvedValue({}) },
     treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) },
+    treasuryAddressHistory: { upsert: jest.fn().mockResolvedValue({}), findMany: jest.fn().mockResolvedValue([]) },
+    depositClaim: { findMany: jest.fn().mockResolvedValue([]) },
     $queryRaw: jest.fn().mockResolvedValue([]),
     ...overrides,
   };
@@ -83,37 +85,34 @@ describe('admin deposits routes', () => {
   });
 
   describe('GET /admin/user-activity (Users page work queue)', () => {
-    it('returns counts and only unresolved, user-owned deposits — no history, no live providers', async () => {
+    it('returns counts and per-user packages (confirmed uncredited sum) — no history, no live providers', async () => {
       const fetchSpy = jest.spyOn(global, 'fetch' as any);
-      const findMany = jest.fn().mockResolvedValue([
-        { id: 'd1', userId: 'u1', asset: 'USDT', chain: 'tron', txHash: 'a'.repeat(64), amount: { toString: () => '2500' }, confirmations: 30, status: 'PENDING', createdAt: new Date('2026-09-26T08:00:00.000Z') },
-      ]);
-      const count = jest.fn()
-        .mockResolvedValueOnce(42)   // total users
-        .mockResolvedValueOnce(3)    // registered in the last 24h
-        .mockResolvedValueOnce(2);   // KYC pending
+      const proven = { verifiedAt: new Date('2026-09-26T08:01:00.000Z'), finalized: true, verifyError: null, batchId: null, revision: 1,
+        recipientAddress: 'T', blockTimestamp: null, creditedAt: null, source: 'watcher', user: { email: 'u1@x.invalid' } };
+      const findMany = jest.fn(async ({ where }: any) => where.status?.not === 'CREDITED' ? [
+        { id: 'd1', userId: 'u1', asset: 'USDT', chain: 'tron', txHash: 'a'.repeat(64), amount: { toString: () => '15' }, confirmations: 30, status: 'PENDING', createdAt: new Date('2026-09-26T08:00:00.000Z'), ...proven },
+        { id: 'd2', userId: 'u1', asset: 'USDT', chain: 'tron', txHash: 'b'.repeat(64), amount: { toString: () => '20' }, confirmations: 30, status: 'BELOW_MINIMUM', createdAt: new Date('2026-09-26T09:00:00.000Z'), ...proven },
+        { id: 'd3', userId: null, asset: 'USDT', chain: 'tron', txHash: 'c'.repeat(64), amount: { toString: () => '400' }, confirmations: 30, status: 'PENDING', createdAt: new Date('2026-09-26T09:00:00.000Z'), ...proven, user: null },
+      ] : []);
+      const count = jest.fn(async (args: any) => {
+        if (args?.where?.kycStatus) return 2;
+        if (args?.where?.createdAt) return 3;
+        if (args?.where?.status) return args.where.status === 'CREDITED' ? 0 : 3;
+        return 42;
+      });
       const prisma = adminPrisma({
-        user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), count },
-        deposit: { findMany, findUnique: jest.fn(), upsert: jest.fn() },
+        user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), count, findMany: jest.fn().mockResolvedValue([]) },
+        deposit: { findMany, count, findUnique: jest.fn(), upsert: jest.fn() },
       });
       const res = await request(buildApp(prisma)).get('/api/v1/admin/user-activity').set('Authorization', authHeader('admin-1'));
 
       expect(res.status).toBe(200);
       expect(res.headers['cache-control']).toBe('private, no-store');
-      expect(res.body).toMatchObject({ totalUsers: 42, newUsers24h: 3, pendingKyc: 2 });
-      expect(res.body.pendingDeposits).toEqual([
-        { id: 'd1', userId: 'u1', asset: 'USDT', chain: 'tron', txHash: 'a'.repeat(64), amount: '2500', confirmations: 30, status: 'PENDING', createdAt: '2026-09-26T08:00:00.000Z' },
-      ]);
-      // One bounded read of the work queue: user-owned, not credited, newest first, capped.
-      expect(findMany).toHaveBeenCalledTimes(1);
-      expect(findMany.mock.calls[0][0]).toMatchObject({
-        where: { userId: { not: null }, status: { not: 'CREDITED' } }, orderBy: { createdAt: 'desc' }, take: 200,
-      });
-      expect(findMany.mock.calls[0][0].include).toBeUndefined();
-      // Registrations in the last 24 hours and pending KYC are counts, not lists.
-      expect(count.mock.calls[1][0].where.createdAt.gte).toBeInstanceOf(Date);
-      expect(Date.now() - count.mock.calls[1][0].where.createdAt.gte.getTime()).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000 - 1000);
-      expect(count.mock.calls[2][0]).toEqual({ where: { kycStatus: 'PENDING' } });
+      expect(res.body).toMatchObject({ totalUsers: 42, newUsers24h: 3, pendingKyc: 2, minDepositUsd: 300 });
+      expect(res.body.packages).toEqual([expect.objectContaining({
+        userId: 'u1', chain: 'tron', asset: 'USDT', state: 'AWAITING_TOPUP', total: '35', remaining: '265', transferCount: 2, minimumReached: false,
+      })]);
+      expect(res.body.counts).toMatchObject({ UNATTRIBUTED: 1, AWAITING_TOPUP: 2, READY: 0, uncreditedTotal: 3 });
       expect(prisma.$queryRaw).not.toHaveBeenCalled();
       expect(fetchSpy).not.toHaveBeenCalled();
       fetchSpy.mockRestore();
@@ -306,75 +305,18 @@ describe('admin deposits routes', () => {
       expect(res.status).toBe(403);
     });
 
-    it('400s an invalid tx hash for the chain', async () => {
+    it('is closed: 410 for an admin, and nothing is read or credited', async () => {
       process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qtreasury';
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
-      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) } });
-      const app = buildApp(prisma);
-
-      const res = await request(app)
+      const prisma = adminPrisma({ deposit: { findUnique: jest.fn(), upsert: jest.fn(), findMany: jest.fn() }, $transaction: jest.fn() });
+      const res = await request(buildApp(prisma))
         .post('/api/v1/admin/deposits/manual-credit')
         .set('Authorization', authHeader('admin-1'))
-        .send({ userId: '11111111-1111-1111-1111-111111111111', chain: 'bitcoin', txHash: '0xnotbitcoin', asset: 'BTC' });
-
-      expect(res.status).toBe(400);
-    });
-
-    it('404s an unconfigured chain', async () => {
-      const prisma = adminPrisma();
-      const app = buildApp(prisma);
-      const res = await request(app)
-        .post('/api/v1/admin/deposits/manual-credit')
-        .set('Authorization', authHeader('admin-1'))
-        .send({ userId: '11111111-1111-1111-1111-111111111111', chain: 'bitcoin', txHash: 'a'.repeat(64), asset: 'BTC' });
-      expect(res.status).toBe(404);
-    });
-
-    it('404s when the target user does not exist', async () => {
-      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qtreasury';
-      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
-      const prisma = adminPrisma({
-        user: {
-          findUnique: jest
-            .fn()
-            .mockResolvedValueOnce({ role: 'ADMIN' }) // requireAdmin check
-            .mockResolvedValueOnce(null), // target user lookup
-        },
-      });
-      const app = buildApp(prisma);
-
-      const res = await request(app)
-        .post('/api/v1/admin/deposits/manual-credit')
-        .set('Authorization', authHeader('admin-1'))
-        .send({ userId: '11111111-1111-1111-1111-111111111111', chain: 'bitcoin', txHash: 'a'.repeat(64), asset: 'BTC' });
-
-      expect(res.status).toBe(404);
-    });
-
-    it('credits the target user by reusing the idempotent claim path', async () => {
-      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qtreasury';
-      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
-      const prisma = adminPrisma({
-        user: {
-          findUnique: jest
-            .fn()
-            .mockResolvedValueOnce({ role: 'ADMIN' })
-            .mockResolvedValueOnce({ id: '11111111-1111-1111-1111-111111111111' }),
-        },
-        // Pre-existing Deposit row makes DepositService.claimDeposit take its
-        // idempotent short-circuit — no real network call needed to prove
-        // this route wires through to it correctly.
-        deposit: { findUnique: jest.fn().mockResolvedValue({ userId:'11111111-1111-1111-1111-111111111111', asset:'BTC', status: 'CREDITED', amount: '0.05', confirmations: 3 }) },
-      });
-      const app = buildApp(prisma);
-
-      const res = await request(app)
-        .post('/api/v1/admin/deposits/manual-credit')
-        .set('Authorization', authHeader('admin-1'))
-        .send({ userId: '11111111-1111-1111-1111-111111111111', chain: 'bitcoin', txHash: 'a'.repeat(64), asset: 'BTC' });
-
-      expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ status: 'CREDITED', amount: '0.05' });
+        .send({ userId: '11111111-1111-1111-1111-111111111111', chain: 'bitcoin', txHash: 'a'.repeat(64), asset: 'BTC', amount: '1' });
+      expect(res.status).toBe(410);
+      expect(res.body.code).toBe('USE_PACKAGE_CONFIRM');
+      expect(prisma.deposit.findUnique).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
       expect(global.fetch).not.toHaveBeenCalled();
     });
   });

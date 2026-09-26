@@ -9,6 +9,10 @@ import { ordersRouter } from './api/routes/orders';
 import { tradesRouter } from './api/routes/trades';
 import { depositsRouter } from './api/routes/deposits';
 import { adminDepositsRouter } from './api/routes/adminDeposits';
+import { depositWatchInternalRouter } from './api/routes/depositWatchInternal';
+import { DepositWatchService } from './services/deposits/DepositWatchService';
+import { DepositWatchScheduler } from './services/deposits/DepositWatchScheduler';
+import { TreasuryWalletService } from './services/TreasuryWalletService';
 import { adminWalletsRouter } from './api/routes/adminWallets';
 import { withdrawalsRouter } from './api/routes/withdrawals';
 import { adminWithdrawalsRouter } from './api/routes/adminWithdrawals';
@@ -228,7 +232,15 @@ app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, 
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma, marketDataService));
-app.use('/api/v1', adminDepositsRouter(prisma, marketDataService));
+// USDT/TRC20 deposit watcher: observes and proves transfers only (never
+// credits, never notifies). Daytime schedule (Europe/Kyiv): first admin open
+// after 07:00, then 12:00/16:00/20:00; nothing at night. Off until an admin
+// enables it in Admin → Пополнения.
+const depositWatchTreasury = new TreasuryWalletService(prisma);
+const depositWatch = new DepositWatchService(prisma, (chain) => depositWatchTreasury.resolve(chain));
+const depositWatchScheduler = new DepositWatchScheduler(depositWatch);
+app.use('/api/v1', depositWatchInternalRouter(depositWatch));
+app.use('/api/v1', adminDepositsRouter(prisma, marketDataService, { watch: depositWatch }));
 app.use('/api/v1', adminWalletsRouter(prisma));
 app.use('/api/v1', withdrawalsRouter(prisma));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));
@@ -288,6 +300,7 @@ async function start() {
   liquidationStreamService.start();
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
+  depositWatchScheduler.start();
   // Catch up on support emails a previous process left pending (e.g. one
   // stopped right after answering). Reads nothing when mail is unconfigured.
   supportNotificationOutbox.start();

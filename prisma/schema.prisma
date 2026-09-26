@@ -313,13 +313,142 @@ model Deposit {
   txHash        String
   amount        Decimal  @db.Decimal(36, 18)
   confirmations Int      @default(0)
-  status        String   // PENDING | CONFIRMED | BELOW_MINIMUM | CREDITED
+  /// PENDING | CREDITED. Legacy rows may still read BELOW_MINIMUM/CONFIRMED;
+  /// both mean "not credited". The minimum is a property of a user's package
+  /// (see DepositBatchService), never of one transfer, and admin approval is
+  /// the only transition to CREDITED.
+  status        String
+  /// First time this exchange recorded the transfer. NOT the send time.
   createdAt     DateTime @default(now())
+  /// Treasury address the transfer paid, as observed. Null on legacy rows.
+  recipientAddress String?
+  blockNumber   BigInt?
+  /// On-chain block time when the provider reported it; never invented.
+  blockTimestamp DateTime?
+  /// Last successful on-chain proof. Null = observed but not yet proven.
+  verifiedAt    DateTime?
+  /// Tron: the transaction is in a solidified (irreversible) block.
+  finalized     Boolean  @default(false)
+  /// Definitive verification problem the admin must resolve («Требует уточнения»).
+  verifyError   String?
+  verifyAttempts Int     @default(0)
+  lastVerifyAttemptAt DateTime?
+  /// watcher | admin_check | incoming_feed | legacy
+  source        String?
+  /// Bumped on every material change (amount, attribution, proof, status):
+  /// a package preview is valid only while every revision it saw is unchanged.
+  revision      Int      @default(0)
+  creditedAt    DateTime?
+  batchId       String?
+  batch         DepositBatch? @relation(fields: [batchId], references: [id], onDelete: Restrict)
 
   referralReward ReferralReward?
 
   @@unique([chain, txHash])
   @@index([userId])
+  @@index([status, userId, chain, asset])
+  @@index([batchId])
+}
+
+/// One admin-approved credit of a user's accumulated package: the real
+/// transfers it links (Deposit.batchId) are the provenance, this row is the
+/// approval. idempotencyKey makes a retried or double-submitted confirm a
+/// read of the first result instead of a second credit.
+model DepositBatch {
+  id                String    @id @default(uuid())
+  userId            String
+  chain             String
+  asset             String
+  totalAmount       Decimal   @db.Decimal(36, 18)
+  depositCount      Int
+  /// USD value used for the minimum check at approval time.
+  usdValue          Decimal   @db.Decimal(36, 18)
+  /// USD_PEGGED_POLICY | MARKET_PRICE
+  usdPolicy         String
+  priceUsd          Decimal?  @db.Decimal(36, 18)
+  pricedAt          DateTime?
+  approvedByAdminId String
+  idempotencyKey    String    @unique
+  createdAt         DateTime  @default(now())
+  deposits          Deposit[]
+
+  @@index([userId])
+}
+
+/// A client's "this transfer is mine" request. Only a hint for the admin:
+/// it never attributes, locks or credits a transfer, and several users may
+/// claim the same hash without blocking each other.
+model DepositClaim {
+  id        String   @id @default(uuid())
+  userId    String
+  chain     String
+  txHash    String
+  asset     String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, chain, txHash])
+  @@index([chain, txHash])
+}
+
+/// Every treasury address a chain has used, so a transfer to a retired
+/// address stays verifiable and its checkpoint is kept.
+model TreasuryAddressHistory {
+  id          String   @id @default(uuid())
+  chain       String
+  address     String
+  firstSeenAt DateTime @default(now())
+
+  @@unique([chain, address])
+}
+
+/// Durable scan position per network + recipient address + token contract.
+/// scannedThroughMs: every transfer with block time <= it is recorded.
+/// A window in progress (windowStartMs..windowEndMs, pageCursor) is resumed
+/// from exactly where it stopped; the cursor advances only after the
+/// window's last page is stored in the same transaction.
+model DepositWatchCursor {
+  id               String    @id @default(uuid())
+  chain            String
+  address          String
+  contract         String
+  asset            String
+  scannedThroughMs BigInt
+  windowStartMs    BigInt?
+  windowEndMs      BigInt?
+  pageCursor       String?
+  pagesInWindow    Int       @default(0)
+  lastPageAt       DateTime?
+  lastError        String?
+  lastErrorAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([chain, address, contract])
+}
+
+/// Watcher switch, lease and last-run report, one row per network.
+/// enabled defaults to false: automatic scans (daytime schedule, Europe/Kyiv)
+/// do nothing until an admin turns them on. Pausing keeps every cursor and
+/// queued transfer.
+model DepositWatchState {
+  id              String    @id
+  enabled         Boolean   @default(false)
+  leaseOwner      String?
+  leaseUntil      DateTime?
+  lastRunStartedAt  DateTime?
+  lastRunFinishedAt DateTime?
+  lastSuccessAt   DateTime?
+  lastRunOk       Boolean?
+  lastRunTrigger  String?
+  /// Start of the last AUTOMATIC run; the cadence is measured from it, so an
+  /// admin's manual scan neither delays nor advances the schedule.
+  lastScheduledRunAt DateTime?
+  /// Start of the day's admin-open scan (first opening of Admin → Пополнения
+  /// after 07:00 Europe/Kyiv); at most one per Kyiv day.
+  lastAdminOpenRunAt DateTime?
+  lastRunSummary  Json?
+  providerStatus  String?
+  updatedAt       DateTime  @updatedAt
 }
 
 /// A 5%-of-deposit reward credited to a referrer when a user they referred

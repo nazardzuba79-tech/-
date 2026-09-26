@@ -29,16 +29,19 @@ describe('Render free-tier bandwidth guardrails', () => {
     expect(users).toContain('getAdminRecentDepositsByUser()');
     expect(users).not.toContain('getAdminDeposits()');
 
-    // The deposit page has exactly two code paths that read history:
-    // one shared incoming->history refresh, and one awaited post-credit read.
-    // Mount no longer fires a second parallel history request.
-    expect((deposits.match(/api\.getAdminDeposits\(\)/g) ?? []).length).toBe(2);
+    // The deposit page reads the stored registry (one DB-only request) and
+    // never the full history. Provider discovery happens only on an explicit
+    // click; the queue re-read is visible-only.
+    expect(deposits).not.toContain('api.getAdminDeposits(');
     const mountStart = deposits.indexOf('useEffect(() =>');
-    const mountEnd = deposits.indexOf('}, []);', mountStart);
+    const mountEnd = deposits.indexOf('}, [reload]);', mountStart);
     expect(mountStart).toBeGreaterThanOrEqual(0);
     expect(mountEnd).toBeGreaterThan(mountStart);
-    expect(deposits.slice(mountStart, mountEnd)).not.toContain('getAdminDeposits()');
-    expect(deposits).toContain('reloadIncoming(false)');
+    const mount = deposits.slice(mountStart, mountEnd);
+    expect(mount).not.toContain('getAdminIncomingDepositFeed');
+    expect(mount).not.toContain('runWatcher');
+    expect(mount).toContain("document.visibilityState === 'visible'");
+    expect(deposits).not.toContain('setInterval');
   });
 
   test('production CFD display stays on Cloudflare and never falls back to Render', () => {

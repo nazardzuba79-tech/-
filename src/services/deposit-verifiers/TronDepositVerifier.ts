@@ -1,21 +1,23 @@
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../../config/chains';
 import { DepositVerifier, IncomingTransfer } from './types';
-import { DepositVerificationError } from './errors';
+import { DepositVerificationError, ProviderUnavailableError, TransferNotFoundError } from './errors';
+import { ALLOWLISTED_TOKENS, TransferProof } from './proof';
 import { tronAddressHex } from './tronAddress';
 
 const INCOMING_FEED_LIMIT = 20;
 
-interface TronGridEvent {
-  block_number: number;
-  contract_address: string;
-  event_name: string;
-  result: { from: string; to: string; value: string };
-}
+/** keccak256("Transfer(address,address,uint256)") */
+const TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+const REQUEST_TIMEOUT_MS = 10_000;
 
-interface TronGridEventsResponse {
-  data: TronGridEvent[];
-  success: boolean;
+interface TronTxInfo {
+  id?: string;
+  blockNumber?: number;
+  blockTimeStamp?: number;
+  result?: string; // "FAILED" on failure; absent on success
+  receipt?: { result?: string };
+  log?: { address?: string; topics?: string[]; data?: string }[];
 }
 
 interface TronGridNowBlockResponse {
@@ -34,64 +36,90 @@ interface TronGridTrc20Response {
 }
 
 /**
- * Tron only — for USDT and other TRC-20 tokens (native TRX deposits aren't
- * implemented; add a native-transfer check the same way EvmDepositVerifier
- * does for ETH if you need it). Verifies via TronGrid's decoded-events API,
- * whose decoded event recipient is hex while configured addresses normally
- * use Base58Check. Normalize both before comparing the recipient/contract.
+ * Tron only — TRC-20 tokens on the allowlist (USDT). Native TRX deposits are
+ * not implemented.
  *
- * Also powers the admin manual-credit feed (listIncoming) via TronGrid's
- * account-scoped TRC-20 transfer list — same API, no separate integration.
- *
- * Public TronGrid Transfer-event compatibility has been checked. This does
- * not prove an exchange production deposit end-to-end; see the deposit
- * minimum/TRC20 audit for the verification scope and remaining live check.
+ * The proof comes from the node itself, not an indexer feed:
+ *   1. /walletsolidity/gettransactioninfobyid — present only once the block
+ *      is solidified (irreversible). Falls back to /wallet/ (full node) for a
+ *      transaction that is mined but not yet solidified: finalized=false.
+ *   2. The receipt must be SUCCESS; a reverted/failed transaction proves nothing.
+ *   3. Transfer logs are decoded here: emitting contract == allowlisted
+ *      contract, topic[2] recipient == the treasury address being checked.
+ *      Several matching logs in one transaction are summed into one amount.
+ *   4. Confirmations = chain head - block + 1, head read once per call
+ *      (or supplied by a caller that already read it this run).
+ * Addresses are compared in 41-prefixed hex (Base58Check decoded).
  * A TronGrid API key (TRON_API_KEY) raises the request rate limit.
  */
 export class TronDepositVerifier implements DepositVerifier {
   constructor(private chainConfig: ChainConfig, private fetchFn: typeof fetch = fetch) {}
 
   async verify(txHash: string, asset: string): Promise<{ amount: BigNumber; confirmations: number }> {
-    const tokenConfig = this.chainConfig.tokens[asset.toUpperCase()];
+    const proof = await this.prove(txHash, asset);
+    return { amount: proof.amount, confirmations: proof.confirmations };
+  }
+
+  /** Full on-chain proof of `txHash` paying `recipient` (default: the
+   * configured treasury) in `asset`. Throws DepositVerificationError when the
+   * chain says no, TransferNotFoundError when it does not know the
+   * transaction, ProviderUnavailableError when it could not be asked. */
+  async prove(txHash: string, asset: string, options: { recipient?: string; headBlock?: number } = {}): Promise<TransferProof> {
+    const symbol = asset.toUpperCase();
+    const tokenConfig = this.chainConfig.tokens[symbol];
     if (!tokenConfig) {
       throw new DepositVerificationError(`Unsupported asset on Tron: ${asset}`);
     }
-
-    const events = await this.request<TronGridEventsResponse>(`/v1/transactions/${txHash}/events`);
-    const treasury = tronAddressHex(this.chainConfig.treasuryAddress);
+    const allowed = ALLOWLISTED_TOKENS.tron[symbol];
     const contract = tronAddressHex(tokenConfig.contractAddress);
-    if (!treasury || !contract || !Number.isInteger(tokenConfig.decimals) || tokenConfig.decimals < 0 || tokenConfig.decimals > 36) {
-      throw new DepositVerificationError('Invalid Tron token or treasury configuration');
+    if (!allowed || contract !== tronAddressHex(allowed.contract) || tokenConfig.decimals !== allowed.decimals) {
+      throw new DepositVerificationError(`Token contract for ${symbol} is not on the TRON mainnet allowlist`);
     }
-    if (events.success !== true || !Array.isArray(events.data)) throw new DepositVerificationError('Invalid TronGrid event response');
+    const recipient = options.recipient ?? this.chainConfig.treasuryAddress;
+    const recipientHex = tronAddressHex(recipient);
+    if (!recipientHex || !contract) throw new DepositVerificationError('Invalid Tron token or treasury configuration');
+    if (!/^[0-9a-f]{64}$/i.test(txHash)) throw new DepositVerificationError('Invalid Tron transaction hash');
 
-    const transfers = events.data.filter(
-      (e) =>
-        e?.event_name === 'Transfer' &&
-        tronAddressHex(e.contract_address) === contract &&
-        tronAddressHex(e.result?.to) === treasury
-    );
-    if (transfers.length === 0) {
-      // Deliberately one error for "doesn't exist", "not yet mined", "wrong
-      // contract", and "wrong recipient" — TronGrid's events endpoint
-      // doesn't cleanly distinguish these, and none of them are creditable.
-      throw new DepositVerificationError(
-        'Transaction not found, not yet mined, or has no matching token transfer to the treasury address'
-      );
+    let info = await this.txInfo('/walletsolidity/gettransactioninfobyid', txHash);
+    const finalized = !!info;
+    if (!info) info = await this.txInfo('/wallet/gettransactioninfobyid', txHash);
+    if (!info) throw new TransferNotFoundError('Transaction not found on chain (not mined yet or unknown)');
+
+    if (info.result === 'FAILED' || info.receipt?.result !== 'SUCCESS') {
+      throw new DepositVerificationError('Transaction failed on chain');
     }
+    if (!Number.isSafeInteger(info.blockNumber) || info.blockNumber! < 0) throw new ProviderUnavailableError('Invalid TronGrid transaction info');
 
-    if (transfers.some(e => !/^\d+$/.test(e.result.value) || !Number.isSafeInteger(e.block_number) || e.block_number < 0))
-      throw new DepositVerificationError('Invalid TronGrid transfer data');
-    const rawAmount = transfers.reduce((sum, e) => sum + BigInt(e.result.value), BigInt(0));
-    if (rawAmount <= BigInt(0)) throw new DepositVerificationError('Token transfer amount must be positive');
-    const amount = new BigNumber(rawAmount.toString()).dividedBy(new BigNumber(10).pow(tokenConfig.decimals));
+    let raw = BigInt(0);
+    let matched = 0;
+    for (const log of Array.isArray(info.log) ? info.log : []) {
+      const topics = Array.isArray(log?.topics) ? log.topics.map((t) => String(t).toLowerCase().replace(/^0x/, '')) : [];
+      if (topics[0] !== TRANSFER_TOPIC || topics.length < 3) continue;
+      if (tronAddressHex(log.address) !== contract) continue; // 20-byte hex, 41-prefixed or not
+      if (!/^[0-9a-f]{64}$/.test(topics[2]) || `41${topics[2].slice(24)}` !== recipientHex) continue;
+      const data = String(log.data ?? '').replace(/^0x/, '');
+      if (!/^[0-9a-f]{1,64}$/i.test(data)) throw new ProviderUnavailableError('Invalid TronGrid transfer log');
+      raw += BigInt(`0x${data}`);
+      matched++;
+    }
+    if (matched === 0) {
+      throw new DepositVerificationError('Transaction has no allowlisted token transfer to this treasury address');
+    }
+    if (raw <= BigInt(0)) throw new DepositVerificationError('Token transfer amount must be positive');
+    const amount = new BigNumber(raw.toString()).dividedBy(new BigNumber(10).pow(tokenConfig.decimals));
 
+    const head = options.headBlock ?? await this.headBlock();
+    const confirmations = Math.max(0, head - info.blockNumber! + 1);
+    const blockTimestamp = Number.isSafeInteger(info.blockTimeStamp) && info.blockTimeStamp! > 0 ? new Date(info.blockTimeStamp!) : null;
+    return { amount, confirmations, blockNumber: info.blockNumber!, blockTimestamp, finalized, recipient };
+  }
+
+  /** Current chain head. One call; a watcher run reads it once and passes it on. */
+  async headBlock(): Promise<number> {
     const nowBlock = await this.request<TronGridNowBlockResponse>('/wallet/getnowblock');
-    const block = nowBlock.block_header?.raw_data?.number;
-    if (!Number.isSafeInteger(block) || block < 0) throw new DepositVerificationError('Invalid TronGrid block response');
-    const confirmations = Math.max(0, block - Math.max(...transfers.map(e => e.block_number)) + 1);
-
-    return { amount, confirmations };
+    const block = nowBlock?.block_header?.raw_data?.number;
+    if (!Number.isSafeInteger(block) || block < 0) throw new ProviderUnavailableError('Invalid TronGrid block response');
+    return block;
   }
 
   async listIncoming(): Promise<IncomingTransfer[]> {
@@ -99,23 +127,21 @@ export class TronDepositVerifier implements DepositVerifier {
     const results: IncomingTransfer[] = [];
 
     // One call per configured TRC-20 token (just USDT normally) — TronGrid's
-    // account-scoped endpoint already filters to this address, so no
-    // client-side matching needed like the Bitcoin verifier does.
+    // account-scoped endpoint already filters to this address. Display feed
+    // only: every listed transfer is proven by prove() before it is stored.
     for (const [asset, tokenConfig] of Object.entries(this.chainConfig.tokens)) {
       const res = await this.request<TronGridTrc20Response>(
         `/v1/accounts/${treasury}/transactions/trc20?limit=${INCOMING_FEED_LIMIT}&only_to=true&contract_address=${tokenConfig.contractAddress}`
       );
+      if (!Array.isArray(res?.data)) throw new ProviderUnavailableError('Invalid TronGrid transfer list');
       for (const t of res.data.slice(0, INCOMING_FEED_LIMIT)) {
         if (!tronAddressHex(treasury) || tronAddressHex(t.to) !== tronAddressHex(treasury)) continue;
         results.push({
           txHash: t.transaction_id,
           asset,
           amount: new BigNumber(t.value).dividedBy(new BigNumber(10).pow(tokenConfig.decimals)).toString(),
-          // This endpoint only returns already-indexed transfers (no mempool
-          // entries), so treating them as at-minimum-confirmed is accurate
-          // enough for the feed — verify() re-checks the real count at
-          // credit time regardless.
-          confirmations: this.chainConfig.minConfirmations,
+          // Not measured by this list; prove() measures it.
+          confirmations: null,
           timestamp: new Date(t.block_timestamp).toISOString(),
         });
       }
@@ -128,18 +154,36 @@ export class TronDepositVerifier implements DepositVerifier {
     return this.chainConfig.apiUrl ?? 'https://api.trongrid.io';
   }
 
-  private async request<T>(path: string): Promise<T> {
+  /** Transaction info, or null when the node does not know it (`{}`). */
+  private async txInfo(path: string, txHash: string): Promise<TronTxInfo | null> {
+    const info = await this.request<TronTxInfo>(path, { value: txHash.toLowerCase() });
+    if (!info || typeof info !== 'object') throw new ProviderUnavailableError('Invalid TronGrid transaction info');
+    return info.id || info.blockNumber !== undefined ? info : null;
+  }
+
+  private async request<T>(path: string, body?: unknown): Promise<T> {
     let res: Response;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
     try {
+      const headers: Record<string, string> = this.chainConfig.apiKey ? { 'TRON-PRO-API-KEY': this.chainConfig.apiKey } : {};
+      if (body !== undefined) headers['Content-Type'] = 'application/json';
       res = await this.fetchFn(`${this.baseUrl()}${path}`, {
-        headers: this.chainConfig.apiKey ? { 'TRON-PRO-API-KEY': this.chainConfig.apiKey } : {},
+        headers,
+        ...(body !== undefined ? { method: 'POST', body: JSON.stringify(body) } : {}),
+        ...(controller ? { signal: controller.signal } : {}),
       });
     } catch (err: any) {
-      throw new DepositVerificationError(`Failed to reach TronGrid API: ${err.message}`);
+      throw new ProviderUnavailableError(`Failed to reach TronGrid API: ${err?.message ?? 'network error'}`);
+    } finally {
+      if (timer) clearTimeout(timer);
     }
     if (!res.ok) {
-      throw new DepositVerificationError(`TronGrid API responded with HTTP ${res.status}`);
+      const retryAfter = Number(res.headers?.get?.('retry-after'));
+      throw new ProviderUnavailableError(`TronGrid API responded with HTTP ${res.status}`,
+        Number.isFinite(retryAfter) && retryAfter >= 0 ? retryAfter * 1000 : null);
     }
-    return (await res.json()) as T;
+    try { return (await res.json()) as T; }
+    catch { throw new ProviderUnavailableError('TronGrid API returned an unreadable body'); }
   }
 }

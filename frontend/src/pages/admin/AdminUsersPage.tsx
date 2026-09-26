@@ -8,7 +8,7 @@ import { AdminStatCard } from './AdminStatCard';
 import { AdminPagination } from './AdminPagination';
 import { AdminToastContainer, useAdminToasts } from './AdminToast';
 import { UsersIcon, ActivityIcon, ClockIcon, MoreHorizontalIcon, EyeIcon, PauseCircleIcon, BanIcon } from './AdminIcons';
-import { useAdminUserActivity, type AdminPendingDeposit } from './adminUserActivity';
+import { useAdminUserActivity, type AdminDepositPackage } from './adminUserActivity';
 import { CreditDepositDrawer, addDecimalStrings } from './CreditDepositDrawer';
 import { formatLastLoginAt } from './lastLoginLabel';
 
@@ -27,7 +27,7 @@ const PAGE_SIZE = 20;
 const GRID = 'minmax(0,1.7fr) minmax(0,1.25fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.2fr) 150px';
 const TABLE_MIN_WIDTH = 1000;
 type Tab = 'all' | 'new' | 'deposits' | 'kyc';
-/** Pending deposit rows: a faint gold wash. New registrations: a faint violet one. */
+/** Rows with a deposit package: a faint gold wash. New registrations: a faint violet one. */
 const ROW_TINT = { deposit: 'rgba(240, 201, 100, 0.08)', fresh: 'rgba(99, 102, 241, 0.06)' } as const;
 const AVATAR_COLORS = ['#4f46e5', '#039855', '#0284c7', '#dc6803', '#e11d48', '#7c3aed', '#0e7490', '#475467'];
 // A deposit credited within this window still counts as "new" for the
@@ -90,10 +90,10 @@ export function AdminUsersPage() {
   const [tab, setTab] = useState<Tab>('all');
   const [loadError, setLoadError] = useState(false);
   const [page, setPage] = useState(1);
-  const [crediting, setCrediting] = useState<{ deposit: AdminPendingDeposit; user: User } | null>(null);
+  const [crediting, setCrediting] = useState<{ pkg: AdminDepositPackage; user: User } | null>(null);
   const { toasts, push, dismiss } = useAdminToasts();
   const navigate = useNavigate();
-  // The only recurring read on this page: counts + pending deposits, every
+  // The only recurring read on this page: counts + deposit packages, every
   // ~25 s while visible, nothing while hidden (see adminUserActivity.ts).
   const { activity, refresh: refreshActivity } = useAdminUserActivity();
 
@@ -117,9 +117,9 @@ export function AdminUsersPage() {
   useEffect(loadUsers, [loadUsers]);
 
   // The user list is re-read only when the activity read says something the
-  // loaded list cannot know: a new registration (total changed) or a pending
-  // deposit that appeared or was resolved (balances). Never on a timer.
-  const signature = activity ? `${activity.totalUsers}|${activity.pendingDeposits.map((d) => d.id).join(',')}` : null;
+  // loaded list cannot know: a new registration (total changed) or a package
+  // that appeared, changed or was credited (balances). Never on a timer.
+  const signature = activity ? `${activity.totalUsers}|${activity.packages.map((p) => `${p.key}:${p.total}:${p.state}`).join(',')}` : null;
   const lastSignature = useRef<string | null>(null);
   useEffect(() => {
     if (signature === null) return;
@@ -127,9 +127,11 @@ export function AdminUsersPage() {
     lastSignature.current = signature;
   }, [signature, loadUsers]);
 
+  // Ready packages first inside a user: those are the ones an admin can act on.
   const pendingByUser = useMemo(() => {
-    const map = new Map<string, AdminPendingDeposit[]>();
-    for (const d of activity?.pendingDeposits ?? []) map.set(d.userId, [...(map.get(d.userId) ?? []), d]);
+    const map = new Map<string, AdminDepositPackage[]>();
+    const order = { READY: 0, NEEDS_REVIEW: 1, AWAITING_TOPUP: 2 } as const;
+    for (const p of activity?.packages ?? []) map.set(p.userId, [...(map.get(p.userId) ?? []), p].sort((a, b) => order[a.state] - order[b.state]));
     return map;
   }, [activity]);
 
@@ -137,13 +139,16 @@ export function AdminUsersPage() {
   const isNew = (u: User) => now - new Date(u.createdAt).getTime() <= ONE_DAY_MS;
   const hasPending = (u: User) => pendingByUser.has(u.id);
 
-  // Work first: deposits waiting for an admin, then new registrations, then
-  // everyone else — newest first inside each group.
+  // Work first: packages ready for review, then packages awaiting a top-up,
+  // then new registrations, then everyone else — newest first inside each group.
   const ordered = useMemo(() => {
-    const rank = (u: User) => (pendingByUser.has(u.id) ? 0 : isNew(u) ? 1 : 2);
+    const rank = (u: User) => {
+      const pkgs = pendingByUser.get(u.id);
+      return pkgs ? (pkgs.some((p) => p.state === 'READY') ? 0 : 1) : isNew(u) ? 2 : 3;
+    };
     const at = (u: User) => {
       const pending = pendingByUser.get(u.id);
-      return pending ? Math.max(...pending.map((d) => new Date(d.createdAt).getTime())) : new Date(u.createdAt).getTime();
+      return pending ? Math.max(...pending.map((p) => new Date(p.latestAt).getTime() || 0)) : new Date(u.createdAt).getTime();
     };
     return [...(users ?? [])].sort((a, b) => rank(a) - rank(b) || at(b) - at(a));
   }, [users, pendingByUser]);
@@ -163,12 +168,14 @@ export function AdminUsersPage() {
     };
   }, [users, pendingByUser]);
 
-  // Amounts are summed per asset only — different assets are never added together.
-  const pendingByAsset = useMemo(() => {
+  // Ready totals, summed per asset only — different assets are never added together.
+  const readyByAsset = useMemo(() => {
     const sums = new Map<string, string>();
-    for (const d of activity?.pendingDeposits ?? []) sums.set(d.asset, addDecimalStrings(sums.get(d.asset) ?? '0', d.amount) ?? d.amount);
+    for (const p of activity?.packages ?? []) if (p.state === 'READY') sums.set(p.asset, addDecimalStrings(sums.get(p.asset) ?? '0', p.total) ?? p.total);
     return [...sums].map(([asset, amount]) => `${amount} ${asset}`).join(' · ');
   }, [activity]);
+  const readyCount = activity?.packages.filter((p) => p.state === 'READY').length ?? 0;
+  const topUpCount = activity?.packages.filter((p) => p.state !== 'READY').length ?? 0;
 
   async function handleBlock(u: User) {
     const reason = window.prompt(`Причина блокировки ${u.email}:`);
@@ -186,16 +193,14 @@ export function AdminUsersPage() {
 
   function openCredit(u: User) {
     const pending = pendingByUser.get(u.id);
-    if (pending?.length) setCrediting({ deposit: pending[0], user: u });
+    if (pending?.length) setCrediting({ pkg: pending[0], user: u });
   }
 
-  function creditDone(status: string) {
+  function creditDone(result: { status: 'CREDITED'; totalAmount: string; asset: string }) {
     if (!crediting) return;
-    if (status === 'CREDITED') {
-      push(`Зачислено +${crediting.deposit.amount} ${crediting.deposit.asset} — ${crediting.user.email}`);
-      setCrediting(null);
-    }
-    // The activity read drops the credited deposit; its signature change re-reads the users (balances).
+    push(`Зачислено +${result.totalAmount} ${result.asset} — ${crediting.user.email}`);
+    setCrediting(null);
+    // The activity read drops the credited package; its signature change re-reads the users (balances).
     void refreshActivity();
   }
 
@@ -216,9 +221,10 @@ export function AdminUsersPage() {
           <AdminStatCard label="Всего пользователей" value={(activity?.totalUsers ?? users?.length ?? 0).toLocaleString('ru-RU')} sub="Зарегистрировано" icon={UsersIcon} accent="brand" />
           <AdminStatCard label="Новые регистрации" value={(activity?.newUsers24h ?? counts.new).toLocaleString('ru-RU')} sub="За последние 24 часа" icon={ActivityIcon} accent="brand" />
           <AdminStatCard
-            label="Ожидают зачисления"
-            value={(activity?.pendingDeposits.length ?? 0).toLocaleString('ru-RU')}
-            sub={activity === null ? 'Загрузка…' : pendingByAsset || 'Нет пополнений в очереди'}
+            label="Готовы к проверке"
+            value={readyCount.toLocaleString('ru-RU')}
+            sub={activity === null ? 'Загрузка…' : [readyByAsset, topUpCount ? `ожидают доплаты: ${topUpCount}` : '',
+              activity.counts.UNATTRIBUTED ? `непривязанных: ${activity.counts.UNATTRIBUTED}` : ''].filter(Boolean).join(' · ') || 'Нет пополнений в очереди'}
             icon={ClockIcon}
             accent="warning"
           />
@@ -296,11 +302,19 @@ export function AdminUsersPage() {
         ))}
       </div>
 
+      {activity && activity.counts.UNATTRIBUTED > 0 && (
+        <p data-unattributed-link style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 12 }}>
+          Непривязанных входящих переводов: <b>{activity.counts.UNATTRIBUTED}</b> —{' '}
+          <a href="/admin/deposits#unattributed" onClick={(e) => { e.preventDefault(); navigate('/admin/deposits#unattributed'); }}>открыть в «Пополнения»</a>
+        </p>
+      )}
+
       {crediting && (
         <CreditDepositDrawer
-          deposit={crediting.deposit}
+          userId={crediting.user.id}
+          chain={crediting.pkg.chain}
+          asset={crediting.pkg.asset}
           email={crediting.user.email}
-          available={crediting.user.balances.find((b) => b.asset === crediting.deposit.asset)?.available ?? '0'}
           onClose={() => setCrediting(null)}
           onDone={creditDone}
         />
@@ -321,16 +335,16 @@ type RecentDeposit = { amount: string; asset: string; createdAt: string } | unde
 /** What happened to this user, as the СОБЫТИЕ column shows it. */
 interface UserEvents {
   fresh: boolean;
-  pending: AdminPendingDeposit[];
+  pending: AdminDepositPackage[];
   /** The newest deposit of the last 24h, when it is no longer waiting — i.e. credited. */
   credited: RecentDeposit;
 }
 
-function eventsFor(u: User, fresh: boolean, pending: AdminPendingDeposit[] | undefined, recent: RecentDeposit): UserEvents {
+function eventsFor(u: User, fresh: boolean, pending: AdminDepositPackage[] | undefined, recent: RecentDeposit): UserEvents {
   const waiting = pending ?? [];
-  // Deposit statuses are PENDING, BELOW_MINIMUM or CREDITED: the newest recent
-  // deposit that is not in the waiting list has been credited.
-  const credited = recent && !waiting.some((d) => d.createdAt === recent.createdAt && d.amount === recent.amount) ? recent : undefined;
+  // `recent` is the newest deposit of the last 24h in any state; it reads as
+  // credited only when the user has no package still waiting.
+  const credited = recent && waiting.length === 0 ? recent : undefined;
   return { fresh, pending: waiting, credited };
 }
 
@@ -344,8 +358,10 @@ function EventBadges({ user, events }: { user: User; events: UserEvents }) {
     <span className="admin-user-events" data-user-events={user.id}>
       {events.fresh && <span className="admin-event admin-event-new" data-event="new">НОВЫЙ</span>}
       {first && (
-        <span className="admin-event admin-event-deposit" data-event="deposit" title={`${first.status} · ${relativeTime(first.createdAt)}`}>
-          ПОПОЛНЕНИЕ <b className="mono">+{first.amount} {first.asset}</b>
+        <span className="admin-event admin-event-deposit" data-event="deposit" data-package-state={first.state}
+          title={`${first.transferCount} перевод(а) · ${first.latestAt ? relativeTime(first.latestAt) : ''}`}>
+          {first.state === 'READY' ? 'ГОТОВ К ПРОВЕРКЕ' : first.state === 'NEEDS_REVIEW' ? 'ТРЕБУЕТ УТОЧНЕНИЯ' : 'ОЖИДАЕТ ДОПЛАТЫ'}{' '}
+          <b className="mono">{first.total}{first.state === 'AWAITING_TOPUP' && first.remaining !== null ? ` / ${addDecimalStrings(first.total, first.remaining) ?? '300'}` : ''} {first.asset}</b>
           {events.pending.length > 1 && <span> · ещё {events.pending.length - 1}</span>}
         </span>
       )}
@@ -359,11 +375,13 @@ function EventBadges({ user, events }: { user: User; events: UserEvents }) {
   );
 }
 
+/** Only a package that reached the minimum offers the action; the drawer
+ * and the server both refuse anything below it. */
 function CreditButton({ user, events, onCredit }: { user: User; events: UserEvents; onCredit: (u: User) => void }) {
-  if (!events.pending.length) return null;
+  if (events.pending[0]?.state !== 'READY') return null;
   return (
     <button type="button" data-credit-user={user.id} className="admin-credit-btn" onClick={(e) => { e.stopPropagation(); onCredit(user); }}>
-      Зачислить
+      Проверить и зачислить
     </button>
   );
 }

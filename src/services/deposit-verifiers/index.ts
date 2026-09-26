@@ -23,3 +23,5 @@ export function createVerifier(chainConfig: ChainConfig): DepositVerifier {
 
 export { DepositVerifier } from './types';
 export { DepositVerificationError } from './errors';
+export { ProviderUnavailableError, TransferNotFoundError } from './errors';
+export { TransferProof, ALLOWLISTED_TOKENS } from './proof';
