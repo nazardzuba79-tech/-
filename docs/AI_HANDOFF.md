@@ -4115,6 +4115,15 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Operational limits: owner must add bot token/chat ID at notification Worker; discovery has no known owner/aggregate so those optional fields are omitted without extra reads. Render verification public key pinned by deploy job; rotating JWT secret requires repinning. No delivery retry/backfill: at-most-once prioritizes no duplicate over guaranteed delivery.
 - Admin deletion PR #299 follow-up: synchronized main f631e3d6fe91021cb9386d45fd4b430844469804 (#298). Preserved bounded/visibility-aware admin reads and immediate refresh after deletion; production frontend build, all 20 disposable-PG/browser checks and 43 admin/read-budget tests pass. Spot CI exposed terminalAccountPanel's stale pre-#298 5s/4s cadence assertion; updated only its expected approved 15s/10s values, with no Futures runtime changes.
 
+## Codex — 2026-09-26 — Event-only USER registration Telegram
+
+- Implementation commit `6c57f8bcbcb159c4259e9d327fa8fad528697c21`, branch `codex/registration-telegram-notification`, based on twice-fetched main `480d98f251507eacc96f42f81496736403e94462`. Owner requests PR, green CI, merge and automatic deploy.
+- Material files: auth route after-response hook; TelegramNotifications allowlisted signed publisher; notification-edge core/schema/text and unit/real-workerd tests; dedicated registration route tests; notification CI and operational documentation.
+- `NEW_USER_REGISTERED` is emitted only for successful self-registration USER after account/session creation and 201. Includes email, ID and actual createdAt in explicitly UTC date/time. ADMIN/service roles and failed/duplicate registration are silent. No extra DB reads/writes, audit polling, cron, outbox or password/token serialization.
+- Preserved existing registration/session/referral/country behavior, deposit/KYC authority and payloads, Ed25519 key derivation, four-field DO claims and bounded retention, failure isolation, all frontend/business logic and schema. No new Worker or registration test account created by implementation.
+- Local: 64 backend route/publisher/auth tests and 45 Worker/KYC tests PASS, including real workerd/SQLite concurrent dedupe + persisted restart; final 27 changed-assertion tests rerun PASS. Backend/frontend TypeScript, production frontend build and notification Wrangler dry-run PASS. Existing frontend chunk warning remains.
+- CI, auto-deploy and production synthetic registration delivery are still pending at this handoff; local synthetic tests use mocked Telegram and no production DB. No production registration or user changes were made.
+
 ## Claude — 2026-09-26 — npm dependency security audit
 
 - Base: fresh `origin/main` `480d98f2`. Branch `claude/ecstatic-brahmagupta-cwkvt5`, restarted from main after #295 merged. The full findings table is in `docs/SECURITY_DEPENDENCY_AUDIT.md`.

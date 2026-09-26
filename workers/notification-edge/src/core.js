@@ -1,6 +1,6 @@
 export const RETENTION_MS = 7 * 24 * 60 * 60_000;
 export const VERSION = 'notifications-v1';
-const TYPES = ['KYC_SUBMITTED', 'DEPOSIT_DISCOVERED'];
+const TYPES = ['KYC_SUBMITTED', 'DEPOSIT_DISCOVERED', 'NEW_USER_REGISTERED'];
 export const reply = (status, code, extra = {}) => Response.json({ status: code, ...extra }, {
   status, headers: { 'cache-control': 'no-store' },
 });
@@ -13,6 +13,10 @@ export function validEvent(e, type, now = Date.now()) {
   if (!e || e.eventType !== type || !TYPES.includes(type)) return false;
   if (!text(e.eventId, 160) || !/^[A-Za-z0-9:_-]+$/.test(e.eventId)) return false;
   if (!Number.isSafeInteger(e.timestamp) || e.timestamp > now + 60_000 || e.timestamp <= now - RETENTION_MS) return false;
+  if (type === 'NEW_USER_REGISTERED') {
+    return e.role === 'USER' && e.userId === e.eventId
+      && text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email);
+  }
   if (type === 'KYC_SUBMITTED') {
     return (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
       && (!e.fullName || text(e.fullName, 200)) && (!e.documentType || text(e.documentType, 40));
@@ -24,6 +28,10 @@ export function validEvent(e, type, now = Date.now()) {
 }
 
 export function message(e) {
+  if (e.eventType === 'NEW_USER_REGISTERED') return [
+    'Нова реєстрація VOLTEX', '', `Email: ${e.email}`, `User ID: ${e.userId}`,
+    `Час реєстрації (UTC): ${new Date(e.timestamp).toISOString()}`,
+  ].join('\n');
   if (e.eventType === 'KYC_SUBMITTED') return [
     '🔔 Новая KYC заявка', '', e.email && `Email: ${e.email}`,
     'Статус: ожидает проверки', e.fullName && `Full Name: ${e.fullName}`,
@@ -43,7 +51,9 @@ export async function acceptEvent(event, type, env) {
   if (!validEvent(event, type)) return reply(400, 'INVALID_EVENT');
   if (!configured(env)) return reply(503, 'NOT_CONFIGURED');
   // Reject unknown fields: no documents, document text or arbitrary message bodies.
-  const allowed = type === 'KYC_SUBMITTED'
+  const allowed = type === 'NEW_USER_REGISTERED'
+    ? ['eventId', 'eventType', 'timestamp', 'userId', 'email', 'role']
+    : type === 'KYC_SUBMITTED'
     ? ['eventId', 'eventType', 'timestamp', 'email', 'fullName', 'documentType']
     : ['eventId', 'eventType', 'timestamp', 'amount', 'asset', 'network', 'email', 'accumulated', 'remaining'];
   if (Object.keys(event).some(key => !allowed.includes(key))) return reply(400, 'INVALID_EVENT');
@@ -73,7 +83,9 @@ export async function handle(request, env) {
     service: 'voltex-notification-edge', version: VERSION,
     depositSigningConfigured: Boolean(env.DEPOSIT_SIGNING_PUBLIC_KEY),
   });
-  if (request.method !== 'POST' || path !== '/v1/deposit') return reply(404, 'NOT_FOUND');
+  const type = path === '/v1/deposit' ? 'DEPOSIT_DISCOVERED'
+    : path === '/v1/registration' ? 'NEW_USER_REGISTERED' : null;
+  if (request.method !== 'POST' || !type) return reply(404, 'NOT_FOUND');
   // No browser entry point; even a non-browser caller must sign the exact body.
   if (request.headers.has('origin') || request.headers.has('sec-fetch-site')) return reply(403, 'FORBIDDEN');
   const ts = request.headers.get('x-voltex-timestamp') || '';
@@ -85,7 +97,7 @@ export async function handle(request, env) {
     const key = await crypto.subtle.importKey('jwk', { kty: 'OKP', crv: 'Ed25519', x: env.DEPOSIT_SIGNING_PUBLIC_KEY }, { name: 'Ed25519' }, false, ['verify']);
     const sig = Uint8Array.from(atob(signature.replace(/-/g, '+').replace(/_/g, '/') + '=='), c => c.charCodeAt(0));
     if (!await crypto.subtle.verify('Ed25519', key, sig, new TextEncoder().encode(`voltex-notifications-v1\n${ts}\n${path}\n${body}`))) return reply(401, 'UNAUTHORIZED');
-    return await acceptEvent(JSON.parse(body), 'DEPOSIT_DISCOVERED', env);
+    return await acceptEvent(JSON.parse(body), type, env);
   } catch {
     // Never log request bodies, Telegram URLs, credentials or exception messages.
     logFailure('EVENT_REJECTED_OR_UNAVAILABLE');

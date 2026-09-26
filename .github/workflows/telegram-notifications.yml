@@ -6,6 +6,8 @@ on:
       - 'workers/kyc-edge/**'
       - 'src/services/TelegramNotifications.ts'
       - 'src/services/__tests__/TelegramNotifications.test.ts'
+      - 'src/api/routes/auth.ts'
+      - 'src/api/routes/__tests__/registrationNotifications.test.ts'
       - 'src/services/deposits/DepositWatchService.ts'
       - 'scripts/deploy-notification-public-key.mjs'
       - '.github/workflows/telegram-notifications.yml'
@@ -27,7 +29,7 @@ jobs:
       - run: npm ci --prefix workers/notification-edge --no-audit --no-fund
       - name: Worker contracts and real workerd SQLite restart/concurrency
         run: node --test workers/notification-edge/test.mjs workers/notification-edge/integration.test.mjs workers/kyc-edge/test.mjs
-      - run: npx jest --runInBand --runTestsByPath src/services/__tests__/TelegramNotifications.test.ts
+      - run: npx jest --runInBand --runTestsByPath src/services/__tests__/TelegramNotifications.test.ts src/api/routes/__tests__/registrationNotifications.test.ts src/api/routes/__tests__/auth.test.ts
       - name: Notification Worker configuration dry run
         working-directory: workers/notification-edge
         run: npx wrangler deploy --dry-run
