@@ -12,10 +12,12 @@ const originalEnv = process.env;
 const documentPath = path.join(__dirname, 'fixtures', 'mail-document.txt');
 const supportInput: SupportNotificationInput = {
   conversationId: 'fixture-conversation',
+  messageId: 'fixture-message',
   subjectLabel: 'Technical support',
   name: 'Olena',
   email: 'olena@example.com',
   body: 'Please help with this local test request.',
+  userId: null,
 };
 const kycInput: KycNotificationInput = {
   submissionId: 'fixture-submission',
@@ -72,10 +74,14 @@ describe('Nodemailer upgrade compatibility and mail option boundaries', () => {
     }
   });
 
+  // Support adds connect/greeting/socket timeouts so a silent relay cannot
+  // hold an outbox lease open; the SMTP options themselves are unchanged.
+  const supportTimeouts = { connectionTimeout: 15_000, greetingTimeout: 15_000, socketTimeout: 30_000 };
+
   it.each([
-    { name: 'Support', create: () => new SupportEmailService() },
-    { name: 'KYC', create: () => new KycEmailService() },
-  ])('$name keeps explicit SMTP host/port/TLS and username/password options', ({ create }) => {
+    { name: 'Support', create: () => new SupportEmailService(), extra: supportTimeouts },
+    { name: 'KYC', create: () => new KycEmailService(), extra: {} },
+  ])('$name keeps explicit SMTP host/port/TLS and username/password options', ({ create, extra }) => {
     Object.assign(process.env, {
       SMTP_HOST: 'smtp.example.invalid', SMTP_PORT: '465', SMTP_SECURE: 'true',
       SMTP_USER: 'local-test-user', SMTP_PASS: 'local-test-password',
@@ -85,29 +91,35 @@ describe('Nodemailer upgrade compatibility and mail option boundaries', () => {
     create();
     expect(createTransport).toHaveBeenCalledWith({
       host: 'smtp.example.invalid', port: 465, secure: true,
-      auth: { user: 'local-test-user', pass: 'local-test-password' },
+      auth: { user: 'local-test-user', pass: 'local-test-password' }, ...extra,
     });
   });
 
   it.each([
-    { name: 'Support', create: () => new SupportEmailService() },
-    { name: 'KYC', create: () => new KycEmailService() },
-  ])('$name retains port 587, secure false and no auth when optional SMTP settings are absent', ({ create }) => {
+    { name: 'Support', create: () => new SupportEmailService(), extra: supportTimeouts },
+    { name: 'KYC', create: () => new KycEmailService(), extra: {} },
+  ])('$name retains port 587, secure false and no auth when optional SMTP settings are absent', ({ create, extra }) => {
     process.env.SMTP_HOST = 'smtp.example.invalid';
     const createTransport = jest.spyOn(nodemailer, 'createTransport');
     create();
     expect(createTransport).toHaveBeenCalledWith({
-      host: 'smtp.example.invalid', port: 587, secure: false, auth: undefined,
+      host: 'smtp.example.invalid', port: 587, secure: false, auth: undefined, ...extra,
     });
   });
 
-  it('compiles the unchanged support message with a safe user reply address using real Nodemailer', async () => {
+  it('compiles the support message as text/plain with a safe user reply address using real Nodemailer', async () => {
     const mail = streamTransport();
-    await new SupportEmailService(mail.transport).notifyNewMessage(supportInput);
+    await expect(new SupportEmailService(mail.transport).send(supportInput)).resolves.toEqual({ ok: true, recipient: 'support-admin@example.com' });
     expect(mail.send).toHaveBeenCalledWith({
       from: 'support@example.com', to: 'support-admin@example.com', replyTo: 'olena@example.com',
       subject: '[Ticket #fixture-conversation] Technical support — Olena',
-      text: 'Від: Olena <olena@example.com>\nТема звернення: Technical support\nID бесіди: fixture-conversation\n\nPlease help with this local test request.',
+      text: [
+        'Нове повідомлення в підтримку VOLTEX', '',
+        "Ім'я: Olena", 'Email: olena@example.com', 'Тема: Technical support', 'Ticket ID: fixture-conversation',
+        'ID повідомлення: fixture-message', 'Акаунт: гість (без входу в акаунт)', '',
+        'Повідомлення:', 'Please help with this local test request.', '', '—',
+        'Відповідь на цей лист піде користувачу на olena@example.com; у чат VOLTEX вона автоматично не потрапить.',
+      ].join('\n'),
     });
     const result = await mail.result();
     expect(result.envelope).toEqual({ from: 'support@example.com', to: ['support-admin@example.com'] });
@@ -115,13 +127,17 @@ describe('Nodemailer upgrade compatibility and mail option boundaries', () => {
     expect(result.message).toContain('To: support-admin@example.com');
     expect(result.message).toContain('Reply-To: olena@example.com');
     expect(result.message).toContain('Content-Type: text/plain; charset=utf-8');
-    expect(result.message).toContain('Please help with this local test request.');
+    // Mostly Cyrillic, so Nodemailer picks base64; the decoded body is the letter.
+    expect(result.message).toContain('Content-Transfer-Encoding: base64');
+    const body = Buffer.from(result.message.split('\n\n').slice(1).join(''), 'base64').toString('utf8');
+    expect(body).toContain('Please help with this local test request.');
+    expect(body).toContain('Ticket ID: fixture-conversation');
   });
 
   it('compiles configured support replyTo without changing the actual SMTP recipient', async () => {
     process.env.SUPPORT_INBOUND_EMAIL = 'inbound@example.com';
     const mail = streamTransport();
-    await new SupportEmailService(mail.transport).notifyNewMessage(supportInput);
+    await new SupportEmailService(mail.transport).send(supportInput);
     const result = await mail.result();
     expect(result.message).toContain('Reply-To: inbound@example.com');
     expect(result.message).not.toContain('Reply-To: olena@example.com');
@@ -150,7 +166,7 @@ describe('Nodemailer upgrade compatibility and mail option boundaries', () => {
 
   it('never passes arbitrary support raw, href, path, recipient, envelope or attachment options into Nodemailer', async () => {
     const mail = streamTransport();
-    await new SupportEmailService(mail.transport).notifyNewMessage({
+    await new SupportEmailService(mail.transport).send({
       ...supportInput, raw: { href: 'https://blocked.example.invalid/message' },
       href: 'https://blocked.example.invalid/', path: '/not-an-allowed-file',
       to: 'untrusted@example.com', envelope: { size: 'untrusted' },
