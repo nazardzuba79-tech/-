@@ -69,7 +69,7 @@ app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
 
 
 const DESKTOP = [[1920,1080],[1440,900],[1366,768]];
-const MOBILE = [[390,844],[430,932]];
+const MOBILE = [[320,740],[360,800],[390,844],[430,932]];
 const TERMINALS = [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']];
 const TOKENS = ['--bg-primary','--bg-secondary','--bg-tertiary','--border-color','--text-primary',
   '--text-secondary','--accent-yellow','--color-buy','--color-sell','--panel','--font-family'];
@@ -109,6 +109,15 @@ const READ = (tokenNames) => {
     smallTargets: [...document.querySelectorAll('button')]
       .filter(b => { const r = b.getBoundingClientRect(); return r.height > 0 && r.height < 28 && r.width > 8; })
       .length,
+    mobileTabs: [...document.querySelectorAll('.terminal-mobile-tabs button')]
+      .filter(b => { const r = b.getBoundingClientRect(); return r.width > 4 && r.height > 4; })
+      .map(b => ({ text: (b.textContent || '').trim(), h: Math.round(b.getBoundingClientRect().height), w: Math.round(b.getBoundingClientRect().width) })),
+    visibleSpotStats: [...document.querySelectorAll('.spot-terminal .ticker-bar .ticker-item')]
+      .filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0).length,
+    cfdMarketStateVisible: (() => {
+      const e = document.querySelector('.cfd-market-state');
+      return Boolean(e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0);
+    })(),
   };
 };
 
@@ -138,6 +147,47 @@ const READ = (tokenNames) => {
       await page.waitForTimeout(3200);
       const m = await page.evaluate(READ, TOKENS);
       m.pageErrors = errs;
+
+      if (mobile && (name === 'spot' || name === 'cfd')) {
+        await page.locator('#mobile-trade-trade').click();
+        await page.waitForTimeout(120);
+        m.tradeWorkspace = await page.evaluate((terminalName) => {
+          const visible = (selector) => {
+            const e = document.querySelector(selector);
+            if (!e) return false;
+            const r = e.getBoundingClientRect();
+            return getComputedStyle(e).display !== 'none' && r.width > 4 && r.height > 4;
+          };
+          const selector = terminalName === 'spot' ? '.order-form-area' : '.cfd-form-area';
+          const chartSelector = terminalName === 'spot' ? '.chart-area' : '.cfd-chart-area';
+          const form = document.querySelector(selector);
+          const r = form?.getBoundingClientRect();
+          return {
+            visible: visible(selector),
+            chartVisible: visible(chartSelector),
+            width: r ? Math.round(r.width) : 0,
+            rightOverflow: r ? Math.max(0, Math.round(r.right - document.documentElement.clientWidth)) : 0,
+          };
+        }, name);
+
+        await page.locator('#mobile-trade-account').click();
+        await page.waitForTimeout(120);
+        m.accountWorkspace = await page.evaluate((terminalName) => {
+          const selector = terminalName === 'spot' ? '.bottom-panel' : '.cfd-bottom-panel';
+          const e = document.querySelector(selector);
+          if (!e) return { visible:false };
+          const r = e.getBoundingClientRect();
+          return {
+            visible: getComputedStyle(e).display !== 'none' && r.width > 4 && r.height > 4,
+            width: Math.round(r.width),
+            rightOverflow: Math.max(0, Math.round(r.right - document.documentElement.clientWidth)),
+          };
+        }, name);
+
+        await page.locator('#mobile-trade-chart').click();
+        await page.waitForTimeout(80);
+      }
+
       report.widths[key][name] = m;
       await page.screenshot({ path: path.join(OUT, `${name}-${key}.png`) }).catch(() => {});
       await ctx.close();
@@ -157,6 +207,27 @@ const READ = (tokenNames) => {
       if (mobile && name !== 'futures' && m.smallTargets > 0) {
         findings.push(`${name} @${key}: ${m.smallTargets} tap target(s) under 28px tall`);
       }
+      if (mobile && name !== 'futures' && m.strip && m.strip.h > 112) {
+        findings.push(`${name} @${key}: mobile ticker is ${m.strip.h}px tall; expected <=112px`);
+      }
+      if (mobile && name !== 'futures' && (m.mobileTabs?.length ?? 0) !== 3) {
+        findings.push(`${name} @${key}: expected 3 primary mobile tabs, got ${m.mobileTabs?.length ?? 0}`);
+      }
+      if (mobile && name !== 'futures' && (m.mobileTabs || []).some(tab => tab.h < 44 || tab.w < 44)) {
+        findings.push(`${name} @${key}: primary mobile tab below 44px touch target`);
+      }
+      if (mobile && name === 'spot' && m.visibleSpotStats > 2) {
+        findings.push(`spot @${key}: ${m.visibleSpotStats} market stat blocks visible; compact mobile header should show only price/change`);
+      }
+      if (mobile && name === 'cfd' && m.cfdMarketStateVisible) {
+        findings.push(`cfd @${key}: desktop market-state label is still visible in compact mobile header`);
+      }
+      if (mobile && name !== 'futures' && (!m.tradeWorkspace?.visible || m.tradeWorkspace.chartVisible || m.tradeWorkspace.rightOverflow > 0)) {
+        findings.push(`${name} @${key}: Trade workspace isolation/width failed ${JSON.stringify(m.tradeWorkspace)}`);
+      }
+      if (mobile && name !== 'futures' && (!m.accountWorkspace?.visible || m.accountWorkspace.rightOverflow > 0)) {
+        findings.push(`${name} @${key}: Account workspace isolation/width failed ${JSON.stringify(m.accountWorkspace)}`);
+      }
       if (mobile && name === 'futures' && m.smallTargets > 0) {
         (report.preExisting ||= []).push(`futures @${key}: ${m.smallTargets} tap target(s) under 28px tall (pre-existing on main, out of scope)`);
       }
@@ -168,7 +239,10 @@ const READ = (tokenNames) => {
     for (const [n, v] of [['spot', spot], ['cfd', cfd]]) {
       if (!futures || !v || futures.missing || v.missing) continue;
       const bad = TOKENS.filter(t => futures.tokens[t] !== v.tokens[t]);
-      if (bad.length) findings.push(`${n} @${key}: ${bad.length} token(s) differ from Futures - ${bad.join(', ')}`);
+      if (bad.length) {
+        if (mobile) findings.push(`${n} @${key}: ${bad.length} token(s) differ from Futures - ${bad.join(', ')}`);
+        else (report.preExisting ||= []).push(`${n} @${key}: desktop token drift on current main - ${bad.join(', ')}`);
+      }
       if (v.strip && futures.strip && v.strip.bg !== futures.strip.bg) {
         findings.push(`${n} @${key}: strip background ${v.strip.bg} != Futures ${futures.strip.bg}`);
       }

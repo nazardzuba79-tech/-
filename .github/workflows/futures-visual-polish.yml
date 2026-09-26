@@ -15,6 +15,9 @@ on:
       - 'frontend/src/pages/trade-terminal/FuturesOrderPanelRefinement.css'
       - 'frontend/src/pages/FuturesPage.tsx'
       - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
+      - 'frontend/src/pages/trade-terminal/TerminalMobileParity.css'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/lib/__tests__/terminalMobileParity.test.ts'
       - 'frontend/src/components/CfdChart.tsx'
       - 'frontend/src/lib/__tests__/terminalDesignSystem.test.ts'
       - 'frontend/src/components/FuturesOrderForm.tsx'
@@ -28,6 +31,7 @@ on:
       - 'frontend/src/lib/referenceBook.ts'
       - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
       - 'scripts/qa-futures-visual-polish.cjs'
+      - 'scripts/qa-spot-cfd-terminal.cjs'
       - '.github/workflows/futures-visual-polish.yml'
 
 permissions:
@@ -53,7 +57,7 @@ jobs:
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Brief guards
-        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts
+        run: npx jest frontend/src/lib/__tests__/futuresVisualPolish.test.ts frontend/src/lib/__tests__/terminalDesignSystem.test.ts frontend/src/lib/__tests__/terminalMobileParity.test.ts frontend/src/lib/__tests__/referenceBook.test.ts frontend/src/lib/__tests__/futuresOrderCalculatorRegression.test.ts frontend/src/lib/__tests__/futuresProTerminal.test.ts
       - name: Frontend TypeScript and production bundle
         run: npm run build --prefix frontend
       - name: Disposable browser tooling
@@ -64,8 +68,10 @@ jobs:
           # Supply it only in the disposable runner; production is untouched.
           sudo mkdir -p /opt/node22/lib/node_modules
           sudo ln -s /tmp/visual-polish-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
-      - name: Trading panel and order book at 1920, 1664, 1440, 1366 and 390
+      - name: Futures browser QA at desktop and 320, 360, 390, 430 mobile widths
         run: node scripts/qa-futures-visual-polish.cjs --label ci
+      - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
+        run: node scripts/qa-spot-cfd-terminal.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
