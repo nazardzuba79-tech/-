@@ -3969,3 +3969,17 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Tests/checks run: backend + frontend `tsc`; backend `tsc` build; frontend production build; 8 suites 117/117 incl. real PostgreSQL 16 (`supportNotificationPostgres.test.ts`: atomic rollback via trigger, one notification per message, retry transitions, two racing workers send once, inbound dedupe); full `npx jest` vs clean main `0f738418`: the same 26 suites / identical failing test names on both, none new. Browser QA `scripts/qa-support-email.cjs` (production bundle + real routers + local Postgres + local SMTP sink): guest first/second message (1 POST on double click), SMTP accepted → SENT, send-error UI, relay down → 201 + message stored + PENDING/CONNECTION, signed-in user, 430/390/360/320 launcher above tab bar + panel in viewport, admin diagnostics/test letter/thread/reply reaching the widget, admin at 390 without overflow. New CI workflow `support-email.yml` runs all of it.
 - Preserved: KYC mail service and its tests, registration mail, all trading/wallet/deposit code, Codex's admin pages and styles.
 - Unresolved / owner: confirm on Render that `SUPPORT_ADMIN_EMAIL=voltex.crypto@gmail.com` and `SMTP_HOST/PORT/SECURE/USER/PASS` are set (Gmail needs an app password), then Admin → Поддержка → «Отправить тестовое письмо» and check Inbox/Spam. Inbound replies are not configured (no provider webhook); Gmail replies go to the user's email, not into the chat.
+
+## Claude — 2026-09-26 — Deposit watcher: daytime Kyiv schedule (replaces every 6 h)
+
+- Base: fresh main `db450c28` (#292 merged). Branch `claude/ecstatic-brahmagupta-cwkvt5` (restarted from main). Code commit `72ce2b4a`.
+- **Owner request:** the first scan when an admin first opens Пополнения after 07:00 Europe/Kyiv (once a day), then 12:00/16:00/20:00. Nothing 22:00–07:00 and no night catch-up. 30–60 min dedupe. Manual scans always allowed. No notifications. Never credits.
+- **Implementation:**
+  - `depositWatchSchedule.ts` (Intl-based, DST-safe).
+  - `DepositWatchService.runOnce('schedule' | 'admin_open' | 'admin')` gates automatic triggers: `NOT_DUE` with reason `NIGHT`, `BEFORE_FIRST_SLOT`, `SLOT_DONE`, `ALREADY_TODAY` or `RECENT_SCAN`. A deduped trigger marks its slot/day as used.
+  - The scheduler is one timer aimed at the next slot.
+  - `POST /admin/deposit-watch/open` is called by AdminDepositsPage on mount; the server decides.
+  - Additive migration `20260926170000_deposit_watch_daytime_schedule` (`lastAdminOpenRunAt`).
+  - `DEPOSIT_WATCHER_INTERVAL_MINUTES` is gone; the new env vars are `DEPOSIT_WATCHER_SLOTS` and `DEPOSIT_WATCHER_DEDUPE_MINUTES`.
+- **Checks run:** backend and frontend `tsc` clean. Deposit CI list 235/235, including the new `depositWatchSchedule.test.ts` (Kyiv DST, night, slots, admin-open once a day). `scripts/qa-deposit-packages.cjs --browser` PASS on local PostgreSQL 16 with a simulated Kyiv day (night 06:30, 07:05 open, 12:00, 12:10, 15:40 manual, 16:00 dedupe, 23:00 wake with no catch-up, next morning finds the 21:00 transfer, 13:30 missed-slot run, concurrent manual + slot, paused) plus the browser at 1440/390.
+- **Unresolved:** no production proof of a real TRC20 deposit (fixture only). Slots only fire while Render is awake (in-process timer); the optional internal tick needs `DEPOSIT_WATCHER_TOKEN` from the owner.

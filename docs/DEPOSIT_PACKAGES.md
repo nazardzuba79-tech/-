@@ -65,24 +65,26 @@ admin credit, including below the minimum) and `DEPOSIT_MINIMUM_ACCEPTANCE.md`.
 
 ## Deposit watcher (USDT / TRC20 only)
 
-- **Automatic scan every 6 hours = 4 a day.**
-  - The interval is set by `DEPOSIT_WATCHER_INTERVAL_MINUTES` (default 360; values under 60 are ignored).
-  - **Off by default:** an admin turns it on with «Включить автопроверку».
-- **No push, email or other notification.** The owner's wallet app is the real-time source.
-- **Manual controls:**
-  - «Проверить новые поступления»: one bounded scan now, even while automatic scans are off.
+- **Daytime schedule, Europe/Kyiv** (owner, 2026-09-26; replaces the fixed 6-hour cadence). Off by default: an admin turns it on with «Включить автопроверку».
+  - The day's first scan runs when an admin first opens Admin → Пополнения at or after 07:00 (`POST /admin/deposit-watch/open`), once per Kyiv day.
+  - Automatic slots at **12:00, 16:00 and 20:00**, configurable with `DEPOSIT_WATCHER_SLOTS`. Only slots between 07:00 and 22:00 are accepted.
+  - **No automatic scan 22:00–07:00, and no night catch-up.**
+    - A slot missed while the API slept runs later the same day, before 22:00 and before the next slot.
+    - Otherwise the next daytime admin-open or slot continues from the checkpoint.
+  - **Dedupe:** an automatic or admin-open trigger within 45 minutes (`DEPOSIT_WATCHER_DEDUPE_MINUTES`, clamped 30–60) of any successful scan does nothing (`NOT_DUE`), and counts that slot as done.
+- **No push, email or other notification.** The owner's wallet app (Trust Wallet) is the real-time source.
+- **Manual controls, always available:**
+  - «Проверить новые поступления»: one bounded scan now, even at night or while automatic scans are off.
   - «Проверить TXID»: prove one transaction and store it.
-  - Neither of these credits or attributes anything.
+  - They share the cursor and the lease, so there is never a duplicate concurrent scan. Neither credits or attributes anything.
 - **What it can do:** read the chain, store observations, prove them and refresh finality.
-- **What it cannot do:** it has no credit, attribution, balance, referral, withdrawal or signing path.
-  It never receives an admin identity.
-- **Cadence is enforced by the service.** A scheduled run sooner than the interval returns `NOT_DUE`
-  (one state read, no provider call).
-- **In-process timer.** There is one timer, set to the next slot, and it is unref'd. It does no work between runs.
-  After the API sleeps past a slot, the missed scan runs about a minute after the next start.
+- **What it cannot do:** it has no credit, attribution, balance, referral, withdrawal or signing path. It never receives an admin identity.
+- **The schedule is enforced by the service**, whoever triggers it. The answer is `NOT_DUE` with a reason: `NIGHT`, `BEFORE_FIRST_SLOT`, `SLOT_DONE`, `ALREADY_TODAY` or `RECENT_SCAN`. This costs one state read and no provider call.
+- **In-process timer:** one timer aimed at the next slot, and it is unref'd. It does no work between slots.
 - **Optional external trigger:** `POST /api/v1/internal/deposit-watch/tick` with `Bearer DEPOSIT_WATCHER_TOKEN`.
+  - It covers slots the API slept through.
   - The route is 404 while the token is unset.
-  - The token is accepted nowhere else and can only request a scheduled run, so `NOT_DUE` still applies.
+  - The token is accepted nowhere else, and the same schedule rules apply.
 - **Checkpoint:** `DepositWatchCursor` per network + treasury address + token contract, stored in Postgres.
   - Scan windows are fixed: `[scannedThrough − 10 min, min(+24 h, now − 2 min)]`.
   - Pages are read oldest first: 200 per page, 10 pages per run.
@@ -112,14 +114,15 @@ admin credit, including below the minimum) and `DEPOSIT_MINIMUM_ACCEPTANCE.md`.
 
 ### Measured, local fixture (`scripts/qa-deposit-packages.cjs`, not production)
 
-| Cycle | Provider calls | SQL statements | Financial writes |
+| Trigger | Provider calls | SQL statements | Financial writes |
 | --- | --- | --- | --- |
-| Automatic, nothing new (2 treasury addresses) | 2 | 26 | 0 |
-| Trigger before the interval (`NOT_DUE`) | 0 | 6 | 0 |
-| Automatic scans off (`PAUSED`) | 0 | 6 | 0 |
-| Automatic scan with 5 new transfers | 8 | 54 | 0 |
+| Slot 12:00, nothing new (2 treasury addresses) | 2 | 29 | 0 |
+| Slot already done / night / paused | 0 | 6 | 0 |
+| Slot within 45 min of another scan (dedupe) | 0 | 7 | 0 |
+| Admin open 07:05 with 1 new transfer | 4 | 34 | 0 |
+| Manual scan with 5 new transfers | 8 | 54 | 0 |
 
-With 4 automatic scans a day, an idle day costs about 8 provider calls and about 100 statements.
+A normal day is at most 4 automatic scans: the admin open plus 3 slots, all in daytime.
 
 ## Other networks
 

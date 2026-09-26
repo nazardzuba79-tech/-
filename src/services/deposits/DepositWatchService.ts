@@ -8,6 +8,9 @@ import { ALLOWLISTED_TOKENS } from '../deposit-verifiers/proof';
 import { tronAddressHex } from '../deposit-verifiers/tronAddress';
 import { applyProof, recordProofFailure } from '../DepositService';
 import { recipientFor, rememberTreasuryAddress, treasuryAddresses } from './transferProof';
+import { adminOpenAllowed, dueSlot, isDaytime, localTime, nextSlotAt, slotKeyAt, watchScheduleFromEnv } from './depositWatchSchedule';
+
+const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
 /**
  * PRODUCTION DEPOSIT WATCHER — USDT/TRC20 only.
@@ -32,13 +35,6 @@ import { recipientFor, rememberTreasuryAddress, treasuryAddresses } from './tran
  * A provider error or malformed page stops the run with the cursor where it
  * was: never an empty success. Concurrent runs are excluded by a DB lease.
  */
-/** DEPOSIT_WATCHER_INTERVAL_MINUTES, default 360 (4 automatic scans a day).
- * Values under 60 minutes are ignored: frequent polling is not the design. */
-export function watcherIntervalMs(env: Record<string, string | undefined> = process.env): number {
-  const minutes = Number(env.DEPOSIT_WATCHER_INTERVAL_MINUTES ?? 360);
-  return (Number.isFinite(minutes) && minutes >= 60 ? minutes : 360) * 60_000;
-}
-
 export const WATCH = {
   chain: 'tron',
   pageSize: 200,
@@ -52,14 +48,21 @@ export const WATCH = {
   maxVerificationsPerRun: 20,
   maxRunMs: 60_000,
   leaseMs: 120_000,
-  /** Automatic cadence (default 6 h = 4 scans a day). The server refuses a
-   * scheduled run sooner than this, whoever triggers it. */
-  scheduleIntervalMs: watcherIntervalMs(),
+  /** Daytime schedule (Europe/Kyiv): first admin open after 07:00, then
+   * 12:00 / 16:00 / 20:00, nothing 22:00–07:00. See depositWatchSchedule.ts. */
+  schedule: watchScheduleFromEnv(),
 } as const;
+
+/** schedule — a daytime slot (in-process timer or the internal tick);
+ * admin_open — the first opening of Admin → Пополнения after 07:00;
+ * admin — «Проверить новые поступления», always allowed. */
+export type WatchTrigger = 'schedule' | 'admin_open' | 'admin';
 
 export interface WatchRunSummary {
   ran: boolean;
   skipped?: 'LEASE_HELD' | 'PAUSED' | 'NOT_CONFIGURED' | 'RATE_LIMITED' | 'NOT_DUE';
+  /** Why an automatic trigger did nothing: NIGHT, BEFORE_FIRST_SLOT, SLOT_DONE, ALREADY_TODAY, RECENT_SCAN. */
+  notDueReason?: string;
   ok: boolean;
   trigger: string;
   startedAt: string;
@@ -144,15 +147,20 @@ export class DepositWatchService {
         lastError: c.lastError, lastErrorAt: c.lastErrorAt?.toISOString() ?? null,
       })),
       lastScheduledRunAt: state?.lastScheduledRunAt?.toISOString() ?? null,
-      nextScheduledRunAt: state?.enabled ? new Date((state.lastScheduledRunAt?.getTime() ?? now) + (state.lastScheduledRunAt ? this.cfg.scheduleIntervalMs : 0)).toISOString() : null,
-      policy: { intervalMinutes: Math.round(this.cfg.scheduleIntervalMs / 60_000), pageSize: this.cfg.pageSize, maxPagesPerRun: this.cfg.maxPagesPerRun, overlapMinutes: this.cfg.overlapMs / 60_000,
+      lastAdminOpenRunAt: state?.lastAdminOpenRunAt?.toISOString() ?? null,
+      nextScheduledRunAt: state?.enabled ? new Date(nextSlotAt(now, this.cfg.schedule)).toISOString() : null,
+      adminOpenDueToday: !!state?.enabled && adminOpenAllowed(now, state?.lastAdminOpenRunAt?.getTime() ?? null, this.cfg.schedule),
+      policy: { timeZone: this.cfg.schedule.timeZone, slots: this.cfg.schedule.slotMinutes.map(clock),
+        dayStart: clock(this.cfg.schedule.dayStartMinutes), nightStart: clock(this.cfg.schedule.nightStartMinutes),
+        dedupeMinutes: this.cfg.schedule.dedupeMs / 60_000, pageSize: this.cfg.pageSize, maxPagesPerRun: this.cfg.maxPagesPerRun, overlapMinutes: this.cfg.overlapMs / 60_000,
         initialBackfillDays: this.cfg.initialBackfillMs / 86_400_000 },
     };
   }
 
-  /** One bounded scan. `schedule` runs only when enabled; `admin` (an admin's
-   * explicit «Проверить сейчас») runs even while paused. */
-  async runOnce(trigger: 'schedule' | 'admin'): Promise<WatchRunSummary> {
+  /** One bounded scan. Automatic triggers (`schedule`, `admin_open`) obey
+   * the enabled switch and the daytime schedule; `admin` («Проверить новые
+   * поступления») always runs. All share one lease and one cursor. */
+  async runOnce(trigger: WatchTrigger): Promise<WatchRunSummary> {
     const startedAt = this.now();
     const owner = randomUUID();
     const summary: WatchRunSummary = {
@@ -161,20 +169,36 @@ export class DepositWatchService {
       needsFollowUp: false, addresses: [],
     };
     const state = await this.ensureState();
-    if (trigger === 'schedule' && !state.enabled) return { ...summary, skipped: 'PAUSED', ok: true };
-    // Cadence is enforced here, not by the caller: an early or repeated
-    // scheduled trigger costs one state read and nothing else.
-    const tolerance = Math.min(5 * 60_000, this.cfg.scheduleIntervalMs / 10);
-    if (trigger === 'schedule' && state.lastScheduledRunAt && startedAt - state.lastScheduledRunAt.getTime() < this.cfg.scheduleIntervalMs - tolerance) {
-      return { ...summary, skipped: 'NOT_DUE', ok: true };
-    }
+    const automatic = trigger !== 'admin';
+    if (automatic && !state.enabled) return { ...summary, skipped: 'PAUSED', ok: true };
+    // Provider asked us to back off (429 Retry-After): automatic triggers wait.
     const retryUntil = Number((state.providerStatus ?? '').match(/^RATE_LIMITED:(\d+)$/)?.[1] ?? 0);
-    if (trigger === 'schedule' && retryUntil > startedAt) return { ...summary, skipped: 'RATE_LIMITED', ok: true, needsFollowUp: true };
+    if (automatic && retryUntil > startedAt) return { ...summary, skipped: 'RATE_LIMITED', ok: true, needsFollowUp: true };
+    // The schedule is enforced here, not by the caller: an early, repeated or
+    // night-time automatic trigger costs one state read and nothing else.
+    if (automatic) {
+      const s = this.cfg.schedule;
+      const notDue = (notDueReason: string) => ({ ...summary, skipped: 'NOT_DUE' as const, notDueReason, ok: true });
+      if (!isDaytime(localTime(startedAt, s.timeZone), s)) return notDue('NIGHT');
+      if (trigger === 'schedule') {
+        const slot = dueSlot(startedAt, s);
+        if (!slot) return notDue('BEFORE_FIRST_SLOT');
+        if (slotKeyAt(state.lastScheduledRunAt?.getTime() ?? null, s) === slot.key) return notDue('SLOT_DONE');
+      } else if (!adminOpenAllowed(startedAt, state.lastAdminOpenRunAt?.getTime() ?? null, s)) return notDue('ALREADY_TODAY');
+      // Another scan finished moments ago: this trigger is satisfied by it.
+      // Mark the slot / today's admin-open as used so it is not retried later.
+      if (state.lastSuccessAt && startedAt - state.lastSuccessAt.getTime() < s.dedupeMs) {
+        await this.prisma.depositWatchState.update({ where: { id: WATCH.chain },
+          data: trigger === 'schedule' ? { lastScheduledRunAt: new Date(startedAt) } : { lastAdminOpenRunAt: new Date(startedAt) } });
+        return notDue('RECENT_SCAN');
+      }
+    }
 
     const leased = await this.prisma.$executeRaw`
       UPDATE "DepositWatchState" SET "leaseOwner" = ${owner}, "leaseUntil" = ${new Date(startedAt + this.cfg.leaseMs)},
         "lastRunStartedAt" = ${new Date(startedAt)}, "lastRunTrigger" = ${trigger},
-        "lastScheduledRunAt" = CASE WHEN ${trigger}::text = 'schedule' THEN ${new Date(startedAt)} ELSE "lastScheduledRunAt" END
+        "lastScheduledRunAt" = CASE WHEN ${trigger}::text = 'schedule' THEN ${new Date(startedAt)} ELSE "lastScheduledRunAt" END,
+        "lastAdminOpenRunAt" = CASE WHEN ${trigger}::text = 'admin_open' THEN ${new Date(startedAt)} ELSE "lastAdminOpenRunAt" END
       WHERE id = ${WATCH.chain} AND ("leaseUntil" IS NULL OR "leaseUntil" < ${new Date(startedAt)})`;
     if (leased !== 1) return { ...summary, skipped: 'LEASE_HELD', ok: true };
     summary.ran = true;

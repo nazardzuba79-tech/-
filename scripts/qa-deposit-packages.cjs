@@ -479,60 +479,88 @@ async function main() {
       assert.ok(!/deposit\.(update|updateMany|upsert|create|createMany)\([^;]*userId/.test(src), 'watcher must not write Deposit.userId');
     });
 
-    await test('Cadence + load: automatic scan every 6 h only; empty cycle, NOT_DUE and paused cost ~nothing; manual scan keeps checkpoint and schedule', async () => {
-      const { watcherIntervalMs } = require('../dist/services/deposits/DepositWatchService');
-      assert.equal(watcherIntervalMs({}), 6 * 60 * 60_000);
-      assert.equal(watcherIntervalMs({ DEPOSIT_WATCHER_INTERVAL_MINUTES: '5' }), 6 * 60 * 60_000); // frequent polling refused
-      assert.equal(watcherIntervalMs({ DEPOSIT_WATCHER_INTERVAL_MINUTES: '720' }), 12 * 60 * 60_000);
-      // Production limits (200 per page, 10 pages per run, 6 h cadence).
+    await test('Daytime schedule (Kyiv): first admin open after 07:00, 12/16/20 slots, no night scans, no night catch-up, dedupe; manual always; load', async () => {
+      const { instantOf, localTime } = require('../dist/services/deposits/depositWatchSchedule');
+      const TZ = 'Europe/Kyiv';
+      const day0 = localTime(clock.t + 2 * 86_400_000, TZ).day;
+      const day1 = localTime(instantOf(day0, 12 * 60, TZ) + 86_400_000, TZ).day;
+      const at = (day, h, m = 0) => { clock.t = instantOf(day, h * 60 + m, TZ); };
       const prodWatch = new DepositWatchService(prisma, resolveChain, fetch, () => clock.t);
-      const SIX_H = 6 * 60 * 60_000;
       await prodWatch.setEnabled(true, ADMIN);
       const measure = async (fn) => {
-        const c = fixture.state.calls.length, q = sqlLog.length, t = Date.now(), creditBefore = await prisma.depositBatch.count();
+        const c = fixture.state.calls.length, q = sqlLog.length, t = Date.now(), batches = await prisma.depositBatch.count();
         const result = await fn();
         const financialWrites = sqlLog.slice(q).filter((x) => /(INSERT INTO|UPDATE) "public"\."(Balance|DepositBatch|ReferralReward|FuturesBalance|Withdrawal)"/.test(x)).length;
-        assert.equal(await prisma.depositBatch.count(), creditBefore);
-        return { result: result.skipped ?? (result.ok ? 'ran' : 'failed'), providerCalls: fixture.state.calls.length - c, sqlStatements: sqlLog.length - q,
-          financialWrites, providerBytes: result.providerBytes ?? 0, newTransfers: result.newTransfers ?? 0, durationMs: Date.now() - t };
+        assert.equal(await prisma.depositBatch.count(), batches);
+        return { result: result.skipped ? `${result.skipped}${result.notDueReason ? ':' + result.notDueReason : ''}` : (result.ok ? 'ran' : 'failed'),
+          providerCalls: fixture.state.calls.length - c, sqlStatements: sqlLog.length - q, financialWrites, newTransfers: result.newTransfers ?? 0, durationMs: Date.now() - t };
       };
-      // Drain anything outstanding, then a scheduled run with nothing new.
-      for (let i = 0; i < 6; i++) { clock.t += SIX_H; const r = await prodWatch.runOnce('schedule'); if (r.ok && !r.backlog && r.unfinalized === 0 && r.verified === 0 && r.newTransfers === 0) break; }
-      clock.t += SIX_H;
+      // Catch the cursor up to "now" with manual scans (always allowed, any hour).
+      at(day0, 5, 0);
+      for (let i = 0; i < 8; i++) { const r = await prodWatch.runOnce('admin'); if (r.ok && !r.backlog) break; }
+      // Night: nothing automatic, zero provider calls.
+      at(day0, 6, 30);
+      const night = await measure(() => prodWatch.runOnce('schedule'));
+      assert.equal(night.result, 'NOT_DUE:NIGHT'); assert.equal(night.providerCalls, 0);
+      assert.equal((await measure(() => prodWatch.runOnce('admin_open'))).result, 'NOT_DUE:NIGHT');
+      // 07:05 the admin opens Пополнения: the day's first scan runs once.
+      at(day0, 7, 5);
+      fixture.send(3000, '15');
+      const open = await measure(() => prodWatch.runOnce('admin_open'));
+      assert.equal(open.result, 'ran'); assert.equal(open.newTransfers, 1); assert.equal(open.financialWrites, 0);
+      at(day0, 9, 0);
+      assert.equal((await measure(() => prodWatch.runOnce('admin_open'))).result, 'NOT_DUE:ALREADY_TODAY');
+      at(day0, 11, 59);
+      assert.equal((await measure(() => prodWatch.runOnce('schedule'))).result, 'NOT_DUE:BEFORE_FIRST_SLOT');
+      // 12:00 slot with nothing new: the measured empty cycle.
+      at(day0, 12, 0);
       const empty = await measure(() => prodWatch.runOnce('schedule'));
-      assert.equal(empty.result, 'ran'); assert.equal(empty.financialWrites, 0); assert.equal(empty.newTransfers, 0);
-      const notDue = await measure(() => prodWatch.runOnce('schedule'));
-      assert.equal(notDue.result, 'NOT_DUE'); assert.equal(notDue.providerCalls, 0);
-      // A manual scan between automatic slots: finds new transfers, keeps the checkpoint, does not move the schedule.
-      const lastScheduled = (await prisma.depositWatchState.findUniqueOrThrow({ where: { id: 'tron' } })).lastScheduledRunAt;
-      clock.t += 60 * 60_000;
-      for (let i = 0; i < 5; i++) fixture.send(2000 + i, '10', { ts: clock.t - 3 * 60_000 - i * 1000 });
+      assert.equal(empty.result, 'ran'); assert.equal(empty.newTransfers, 0); assert.equal(empty.financialWrites, 0);
+      at(day0, 12, 10);
+      const slotDone = await measure(() => prodWatch.runOnce('schedule'));
+      assert.equal(slotDone.result, 'NOT_DUE:SLOT_DONE'); assert.equal(slotDone.providerCalls, 0);
+      // 15:40 manual scan finds 5 transfers; 16:00 slot is satisfied by it (dedupe) and not retried later.
+      at(day0, 15, 40);
+      for (let i = 0; i < 5; i++) fixture.send(3100 + i, '10');
       const manual = await measure(() => prodWatch.runOnce('admin'));
       assert.equal(manual.result, 'ran'); assert.equal(manual.newTransfers, 5); assert.equal(manual.financialWrites, 0);
-      assert.deepEqual((await prisma.depositWatchState.findUniqueOrThrow({ where: { id: 'tron' } })).lastScheduledRunAt, lastScheduled);
-      assert.equal((await prodWatch.runOnce('schedule')).skipped, 'NOT_DUE');
-      clock.t += 5 * 60 * 60_000;
-      for (let i = 0; i < 5; i++) fixture.send(2100 + i, '10', { ts: clock.t - 3 * 60_000 - i * 1000 });
-      const withDeposits = await measure(() => prodWatch.runOnce('schedule'));
-      assert.equal(withDeposits.result, 'ran'); assert.equal(withDeposits.newTransfers, 5); assert.equal(withDeposits.financialWrites, 0);
-      const stored = await prisma.deposit.findMany({ where: { txHash: { in: [...Array.from({ length: 5 }, (_, i) => hash(2000 + i)), ...Array.from({ length: 5 }, (_, i) => hash(2100 + i))] } } });
-      assert.equal(stored.length, 10); assert.ok(stored.every((d) => d.userId === null && d.status === 'PENDING'));
-      // Finalized, proven transfers are not re-proven by later runs.
-      clock.t += SIX_H;
-      const again = await measure(() => prodWatch.runOnce('schedule'));
-      assert.equal(again.providerCalls, empty.providerCalls);
-      // Scheduler: one timer at the next slot, nothing while paused.
-      const scheduler = new DepositWatchScheduler(prodWatch, SIX_H, () => clock.t);
-      scheduler.setEnabled(true, clock.t - 60 * 60_000);
-      assert.equal(scheduler.nextDelayMs(clock.t - 60 * 60_000), 5 * 60 * 60_000);
-      assert.equal(scheduler.nextDelayMs(clock.t - 7 * 60 * 60_000), 60_000); // overdue after a sleep: shortly after start
-      scheduler.setEnabled(false); assert.equal(scheduler.nextDelayMs(0), null); scheduler.stop();
+      at(day0, 16, 0);
+      const dedupe = await measure(() => prodWatch.runOnce('schedule'));
+      assert.equal(dedupe.result, 'NOT_DUE:RECENT_SCAN'); assert.equal(dedupe.providerCalls, 0);
+      at(day0, 16, 50);
+      assert.equal((await measure(() => prodWatch.runOnce('schedule'))).result, 'NOT_DUE:SLOT_DONE');
+      // Render asleep through 20:00; a transfer at 21:00; waking at 23:00 does NOT catch up at night.
+      at(day0, 21, 0); fixture.send(3200, '285');
+      at(day0, 23, 0);
+      const lateWake = await measure(() => prodWatch.runOnce('schedule'));
+      assert.equal(lateWake.result, 'NOT_DUE:NIGHT'); assert.equal(lateWake.providerCalls, 0);
+      assert.equal(await prisma.deposit.count({ where: { txHash: hash(3200) } }), 0);
+      // Next morning's admin open continues from the checkpoint and finds it.
+      at(day1, 7, 10);
+      const morning = await measure(() => prodWatch.runOnce('admin_open'));
+      assert.equal(morning.result, 'ran'); assert.equal(morning.newTransfers, 1);
+      const d3200 = await prisma.deposit.findUniqueOrThrow({ where: { chain_txHash: { chain: 'tron', txHash: hash(3200) } } });
+      assert.equal(d3200.userId, null); assert.equal(d3200.status, 'PENDING');
+      // A daytime slot missed while asleep runs later the same day (before the next slot).
+      at(day1, 13, 30);
+      assert.equal((await measure(() => prodWatch.runOnce('schedule'))).result, 'ran');
+      // Manual scan and an automatic trigger at the same moment: one lease, no duplicate scan.
+      at(day1, 20, 0);
+      const both = await Promise.all([prodWatch.runOnce('admin'), prodWatch.runOnce('schedule')]);
+      assert.ok(both.some((r) => r.skipped === 'LEASE_HELD' || r.notDueReason === 'RECENT_SCAN'), JSON.stringify(both.map((r) => [r.skipped, r.notDueReason])));
+      assert.equal(both.filter((r) => r.ran).length, 1);
+      // Paused: automatic triggers cost no provider call; manual still works.
       await prodWatch.setEnabled(false, ADMIN);
-      clock.t += SIX_H;
+      at(day1, 21, 0);
       const paused = await measure(() => prodWatch.runOnce('schedule'));
       assert.equal(paused.result, 'PAUSED'); assert.equal(paused.providerCalls, 0);
-      report.measurements = { ...report.measurements, cadence: { intervalHours: 6, automaticScansPerDay: 4 },
-        emptyScheduledCycle: empty, notDueTrigger: notDue, pausedTrigger: paused, manualScanWith5: manual, scheduledCycleWith5: withDeposits, laterEmptyCycle: again };
+      assert.equal((await prodWatch.runOnce('admin')).ran, true);
+      // Scheduler: one timer, aimed at the next slot, skipping the night.
+      const scheduler = new DepositWatchScheduler(prodWatch, undefined, () => clock.t);
+      at(day1, 21, 30); // never move the simulated clock backwards
+      assert.equal(scheduler.nextDelayMs(), instantOf(localTime(instantOf(day1, 12 * 60, TZ) + 86_400_000, TZ).day, 12 * 60, TZ) - clock.t);
+      report.measurements = { ...report.measurements, schedule: { timeZone: TZ, adminOpenAfter: '07:00', slots: ['12:00', '16:00', '20:00'], night: '22:00–07:00', dedupeMinutes: 45 },
+        emptyScheduledCycle: empty, slotAlreadyDone: slotDone, nightTrigger: night, dedupedSlot: dedupe, pausedTrigger: paused, manualScanWith5: manual, adminOpenWith1: open };
     });
 
     if (process.argv.includes('--browser')) await browserQa({ app, admin, fixture, scan, attribute, balance, makeUser, auth, output, report, users, prisma });

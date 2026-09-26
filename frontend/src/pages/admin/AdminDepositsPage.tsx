@@ -59,6 +59,10 @@ export function AdminDepositsPage() {
 
   useEffect(() => {
     void reload();
+    // The day's first automatic scan runs when an admin opens this page after
+    // 07:00 (Kyiv). The server allows it once a day, never at night, never
+    // right after another scan; otherwise it does nothing.
+    adminDepositApi.openTrigger().then((r) => { if (r.ran) void reload(); }).catch(() => {});
     api.getAllClients().then(setClients).catch(() => {});
     let timer: ReturnType<typeof setTimeout> | undefined;
     const visible = () => document.visibilityState === 'visible';
@@ -300,14 +304,13 @@ function WatcherPanel({ status, onChanged, onError }: { status: WatcherStatus | 
     : status.providerStatus === 'ERROR' ? 'Ошибка' : status.providerStatus === 'NOT_CONFIGURED' ? 'Сеть не настроена' : status.providerStatus === 'OK' ? 'В норме' : '—';
   const lag = status.cursors.length ? Math.max(...status.cursors.map((c) => c.lagMs)) : null;
   const backlog = status.cursors.some((c) => c.windowInProgress) || !!status.lastRunSummary?.backlog;
-  const perDay = Math.round((24 * 60) / status.policy.intervalMinutes);
-  const hours = status.policy.intervalMinutes / 60;
+  const schedule = `при первом открытии после ${status.policy.dayStart}, в ${status.policy.slots.join(', ')} (Киев)`;
   return (
     <section data-watcher style={{ ...styles.card, marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <strong style={{ fontSize: 14 }}>Наблюдение USDT / TRC20</strong>
         <span data-watcher-enabled={status.enabled ? 'on' : 'off'} style={{ fontSize: 12, fontWeight: 700, color: status.enabled ? 'var(--buy)' : 'var(--text-tertiary)' }}>
-          {status.enabled ? `Автоматически: ${perDay} раза в сутки (раз в ${hours} ч)` : 'Автоматическая проверка выключена'}
+          {status.enabled ? `Автоматически: ${schedule}` : 'Автоматическая проверка выключена'}
         </span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', columnGap: 24, rowGap: 2, marginTop: 8 }}>
@@ -318,6 +321,9 @@ function WatcherPanel({ status, onChanged, onError }: { status: WatcherStatus | 
         <Line label="Отставание">{lag === null ? '—' : lagLabel(lag)}{backlog ? ' · есть очередь' : ''}</Line>
         <Line label="Не проверено / не окончательно">{status.unverifiedOrUnfinalized}</Line>
       </div>
+      <p data-watcher-schedule style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '6px 0 0' }}>
+        Ночью {status.policy.nightStart}–{status.policy.dayStart} автоматическая проверка не выполняется. Уведомлений нет — ручная проверка доступна всегда.
+      </p>
       {status.lastRunSummary?.error && <p role="alert" style={{ ...styles.errorBox, marginTop: 8 }}>Последняя проверка не завершена: {status.lastRunSummary.error}. Сохранённые переводы доступны.</p>}
       {result && <p role="status" style={{ fontSize: 12, marginTop: 8 }}>{result}</p>}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
@@ -330,7 +336,7 @@ function WatcherPanel({ status, onChanged, onError }: { status: WatcherStatus | 
           finally { setBusy(null); await onChanged(); }
         }}>{busy === 'run' ? 'Проверка…' : 'Проверить новые поступления'}</button>
         <button type="button" data-watcher-toggle disabled={busy !== null} style={styles.neutralBtn} onClick={async () => {
-          if (!window.confirm(status.enabled ? 'Выключить автоматическую проверку? Очередь и прогресс сохранятся.' : `Включить автоматическую проверку (${perDay} раза в сутки)? Она только находит переводы: без уведомлений и без зачисления.`)) return;
+          if (!window.confirm(status.enabled ? 'Выключить автоматическую проверку? Очередь и прогресс сохранятся.' : `Включить автоматическую проверку (${schedule}; ночью ${status.policy.nightStart}–${status.policy.dayStart} — нет)? Она только находит переводы: без уведомлений и без зачисления.`)) return;
           setBusy('toggle'); onError(null);
           try { await adminDepositApi.setWatcherEnabled(!status.enabled); }
           catch (err) { onError(err instanceof AdminDepositApiError ? err.message : 'Не удалось изменить режим.'); }
