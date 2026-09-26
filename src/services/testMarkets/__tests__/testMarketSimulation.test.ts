@@ -1,4 +1,5 @@
 import { VOLTORA, testAssetForPair, testAssetForSymbol, isTestAssetPairOrSymbol } from '../testAssetConfig';
+import { publicTestAsset, testMarketCandles } from '../testMarketService';
 import {
   TestMarketSimulation, aggregateCandles, blockCounts, blockSchedule, getCurrentTestMarketState,
   impulseRate, CANDLE_MS, DAY_MS, HOUR_MS, SIM_INTERVALS, TICK_MS, type SimCandle,
@@ -19,6 +20,12 @@ describe('VOLTORA is a test asset, recognised however the pair is spelled', () =
   test('real pairs and symbols are not test assets', () => {
     for (const value of ['BTC/USDT', 'ETH/USDT', 'BTCUSDT', 'USDT', 'BTC', '', null, undefined]) expect(isTestAssetPairOrSymbol(value)).toBe(false);
     expect(testAssetForSymbol('vta')).toBe(VOLTORA);
+  });
+  test('an unarmed production-style asset stays pre-listing even after its nominal time', () => {
+    const frozen = { ...VOLTORA, listingArmed: false };
+    const after = L + 48 * HOUR_MS;
+    expect(publicTestAsset(frozen, after)).toMatchObject({ listingArmed: false, state: { phase: 'pre-listing', lastPrice: null } });
+    expect(testMarketCandles(frozen, '5m', after)).toEqual([]);
   });
 });
 
