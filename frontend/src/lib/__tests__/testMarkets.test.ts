@@ -60,11 +60,19 @@ describe('parsing', () => {
     expect(parseTestMarkets({ serverTime: 1, assets: [{ pair: 'BTC/USDT', isTestAsset: true, isTradable: false, listingAt: '2026-09-27T16:00:00Z', state: { phase: 'live' } }] })!.assets).toEqual([]);
     expect(parseTestMarkets({ serverTime: 1, assets: [{ pair: 'VTA/USDT', isTestAsset: true, isTradable: true, listingAt: '2026-09-27T16:00:00Z', state: { phase: 'live' } }] })!.assets).toEqual([]);
   });
+  test('an explicit unarmed listing survives parsing as preview-only', () => {
+    const parsed = parseTestMarkets({ serverTime: 1, assets: [{
+      pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT', isTestAsset: true, isTradable: false,
+      status: TEST_ASSET_STATUS_LABEL, listingArmed: false, listingAt: '2026-09-27T16:00:00Z', initialPrice: 0.01,
+      state: { phase: 'pre-listing', serverTime: 1 },
+    }] })!;
+    expect(parsed.assets[0].listingArmed).toBe(false);
+  });
 });
 
 describe('the shared ticker map', () => {
   const vta = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT', isTestAsset: true, isTradable: false, status: TEST_ASSET_STATUS_LABEL,
-    listingAt: '2026-09-27T16:00:00.000Z', initialPrice: 0.01,
+    listingArmed: true, listingAt: '2026-09-27T16:00:00.000Z', initialPrice: 0.01,
     state: { phase: 'live', lastPrice: 5.5, openPrice24h: 0.3, change24hPercent: 1733.33, high24h: 5.7, low24h: 0.3, volume24h: 1, quoteVolume24h: 2, serverTime: 0 } } as TestAsset;
   const btc = { pair: 'BTC/USDT', lastPrice: '1', bidPrice: '1', askPrice: '1', high24h: '1', low24h: '1', volume24h: '1', quoteVolume24h: '1', changePercent24h: '0' };
 
@@ -147,6 +155,12 @@ describe('the terminal never offers a way to trade a test asset', () => {
     expect(page).toContain("marketType !== 'spot' || isTestMarketPair(pair) || document.hidden) return;");
     expect(panels).toContain('tradingView={false}');
     expect(panels).not.toMatch(/api\.|placeOrder|fetch\(/);
+  });
+  test('production preview is visibly frozen until the owner arms it', () => {
+    const store = src('lib/testMarketStore.ts');
+    expect(panels).toContain('Preview mode · countdown not started');
+    expect(panels).toContain("listingArmed ? (parts.done ? '00' : value) : '—'");
+    expect(store).toContain('if (armed.length === 0) return;');
   });
   test('every trading control answers with the message', () => {
     expect(panels.match(/onClick=\{refuse\}/g)).toHaveLength(2);
