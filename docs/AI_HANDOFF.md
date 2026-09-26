@@ -4016,7 +4016,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Full `npx jest` on the branch vs main `ebba6795`: branch-only failures were (1) `futuresTickerHeader` api.ts fingerprint — the approved removal of the chat methods is now restored by name in the normalisation, 35/35; (2) `registerWalletTailwindOwnership` build-output case (`isSelected`) — fails identically on main when `frontend/dist` exists (skipped without a build), pre-existing; (3) `futuresColdOpenRecovery` — passes when re-run (the full run overlapped the main merge).
 ## Claude — 2026-09-26 — KYC documents: browser → Cloudflare edge → admin email (Render/Neon metadata only)
 
-- **Base / branch:** fresh origin/main `ebba6795` (#294); branch `claude/kyc-edge-email`; code commit `c9c6efb8`. Design, before/after and failure table: `docs/KYC_EDGE.md`.
+- **Base / branch:** fresh origin/main, rebased onto `482c7293` (#296, support form via `workers/support-edge`); branch `claude/kyc-edge-email`; PR #297. Design, before/after and failure table: `docs/KYC_EDGE.md`.
 - **Before:** `POST /kyc/submit` (multer, ≤ 8 MB) wrote `uploads/kyc/<uuid>` on Render's disk, `KycEmailService` re-read it for an SMTP attachment, and admin preview streamed it again via `GET /kyc/:id/document`.
 - **After:**
   - The form uploads to the new Worker `workers/kyc-edge` (Workers Free, `kyc.voltextech.net`). It validates auth header, origin, size, declared MIME and magic bytes, then calls signed `/internal/kyc/authorize` (with the user's bearer; writes nothing; submissionId = HMAC(user, requestId)).
@@ -4035,6 +4035,6 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Full `npx jest`: branch 27 failing suites vs main 28, with the same 27 on both. The 28th (`kyc.test.ts` on main) is an artifact: the main run used the branch's regenerated Prisma client.
 - **Preserved:** Codex's and Claude's admin console styles, `KycEmailService` and its Nodemailer compatibility suite (no longer wired), support email, and all trading/deposit/withdrawal code (untouched).
 - **Unresolved / owner:**
-  - `voltex.crypto@gmail.com` must be a *verified destination address* in Email Routing. Not verifiable from here; the production send proves it.
-  - Rate-limit binding not declared (Free-plan availability undocumented); an isolate IP window + Render per-user limit apply.
+  - `voltex.crypto@gmail.com` is a verified Email Routing destination (owner, 2026-09-26, per the support-edge entry). The KYC production send is not yet run.
+  - Rate limits: `KYC_RATE_LIMIT` binding (namespace 7302, 5/min per IP; support-edge owns 7301) + an isolate window + Render per-user 10/h.
   - At 320 px the name/date inputs' right edge is clipped by the card. The classes are unchanged from main and not touched here.

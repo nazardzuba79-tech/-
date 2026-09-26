@@ -25,10 +25,16 @@ ALLOWED_ORIGINS = "https://voltextech.net,https://www.voltextech.net,https://loc
 name = "KYC_MAIL"
 destination_address = "voltex.crypto@gmail.com"
 
-# Rate limits: a per-isolate IP window in core.js (8 / 10 min) and a per-user
-# limit on Render's authorize step (10 / hour) — both before any email is sent.
-# core.js also honours an optional KYC_RATE_LIMIT Workers Rate Limiting binding;
-# it is not declared here because the docs do not state it is on Workers Free.
+# Per-IP limit at the Cloudflare location, before any Render call or email.
+# Also: a per-isolate IP window in core.js (8 / 10 min) and a per-user limit on
+# Render's authorize step (10 / hour). Own namespace: support-edge uses 7301.
+[[ratelimits]]
+name = "KYC_RATE_LIMIT"
+namespace_id = "7302"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60
 
 # Secret (never in git): KYC_EDGE_SIGNING_JWK — Ed25519 private JWK, created
 # once by .github/workflows/deploy-kyc-edge.yml inside the runner and put

@@ -27,7 +27,8 @@ Browser (Settings → Verification, same form)
   │ PDF sent as is; 4 MB cap for both
   ▼
 Cloudflare Worker  kyc.voltextech.net  (workers/kyc-edge, Workers Free)
-  1. Bearer token present, origin allow-listed, per-IP window, Content-Length ≤ 4 MB + form
+  1. Bearer token present, origin allow-listed, per-IP limits (Rate Limiting binding 5/min +
+     isolate window 8/10 min), Content-Length ≤ 4 MB + form
   2. fields + size + declared MIME + magic bytes (JPEG FF D8 FF / PNG 89 50 4E 47… / PDF %PDF-)
   3. POST api/v1/internal/kyc/authorize  ── signed, carries the user's bearer ──▶ Render
         Render: session valid? APPROVED → 409; another PENDING → 409; per-user limit;
@@ -132,9 +133,10 @@ there is still at most one row.
   and PostgreSQL suites, both builds, and `scripts/qa-kyc-edge.cjs` in
   Chromium at 320/360/390/430/1440.
 - Requirement outside git: `voltex.crypto@gmail.com` must be a **verified
-  destination address** in Cloudflare Email Routing for `voltextech.net`
-  (Email Routing is already active on the zone). If it is not, sends fail with
-  a provider error, and users see «Документ не отправлен» with no row created.
+  destination address** in Cloudflare Email Routing for `voltextech.net`.
+  The owner verified it on 2026-09-26 (see the support-edge entry in
+  `docs/AI_HANDOFF.md`). If it is ever removed, sends fail with a provider error
+  (`E_RECIPIENT_NOT_ALLOWED`), users see «Документ не отправлен», and no row is created.
 - To rotate the signing key: delete the `KYC_EDGE_SIGNING_JWK` secret and
   re-run the deploy workflow. Render re-fetches the public key at most once
   a minute after a signature mismatch. If `KYC_EDGE_PUBLIC_KEY` is pinned,
