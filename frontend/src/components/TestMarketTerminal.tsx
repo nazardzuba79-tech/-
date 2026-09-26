@@ -91,7 +91,7 @@ export function TestMarketTickerBar({ pair, asset, onSelectPair }: { pair: strin
       {!live && asset && (
         <div className="ticker-item vta-ticker-listing">
           <span className="label">Listing</span>
-          <span className="value">{formatListingTime(asset.listingAt)}</span>
+          <span className="value">{asset.listingArmed ? formatListingTime(asset.listingAt) : 'Preview · countdown not started'}</span>
         </div>
       )}
     </div>
@@ -104,19 +104,20 @@ export function TestMarketChart({ pair, asset, loaded, error, clockOffsetMs }: {
 }) {
   const listingAt = asset ? Date.parse(asset.listingAt) : NaN;
   const preListing = !asset || asset.state.phase === 'pre-listing';
-  const now = useServerNow(clockOffsetMs, preListing && Number.isFinite(listingAt));
+  const listingArmed = asset?.listingArmed === true;
+  const now = useServerNow(clockOffsetMs, preListing && listingArmed && Number.isFinite(listingAt));
   const reachedRef = useRef(false);
   const left = Number.isFinite(listingAt) ? listingAt - now : NaN;
 
   // The listing moment: ask the server once; the chart appears when it
   // says the market is live, never on the browser's say-so alone.
   useEffect(() => {
-    if (!preListing || !Number.isFinite(left)) { reachedRef.current = false; return; }
+    if (!preListing || !listingArmed || !Number.isFinite(left)) { reachedRef.current = false; return; }
     if (left <= 0 && !reachedRef.current) {
       reachedRef.current = true;
       void testMarketStore.refresh();
     }
-  }, [preListing, left]);
+  }, [preListing, listingArmed, left]);
 
   if (asset && !preListing) {
     return <TerminalChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
@@ -137,11 +138,14 @@ export function TestMarketChart({ pair, asset, loaded, error, clockOffsetMs }: {
         <div className="vta-prelisting-pair"><span>{pair}</span><TestMarketBadge /></div>
         {asset ? (
           <>
-            <p className="vta-prelisting-when">Listing starts {formatListingTime(asset.listingAt)}</p>
-            <div className="vta-countdown" role="timer" aria-label={`Listing in ${parts.days} days ${parts.hours} hours ${parts.minutes} minutes`}>
+            <p className="vta-prelisting-when">
+              {listingArmed ? `Listing starts ${formatListingTime(asset.listingAt)}` : 'Preview mode · countdown not started'}
+            </p>
+            <div className="vta-countdown" role={listingArmed ? 'timer' : 'status'}
+              aria-label={listingArmed ? `Listing in ${parts.days} days ${parts.hours} hours ${parts.minutes} minutes` : 'Listing preview. Countdown not started.'}>
               {cells.map(([value, label]) => (
                 <div className="vta-countdown-cell" key={label}>
-                  <strong>{parts.done ? '00' : value}</strong>
+                  <strong>{listingArmed ? (parts.done ? '00' : value) : '—'}</strong>
                   <span>{label}</span>
                 </div>
               ))}
