@@ -35,7 +35,7 @@ describe('route code splitting', () => {
       'OtcPage', 'WalletPage', 'CopyTradingPage', 'ArbitragePage', 'LegalPage',
       'ReferralRedirectPage', 'AdminLayout', 'AdminWalletsPage', 'AdminUsersPage',
       'AdminUserDetailPage', 'AdminKycPage', 'AdminWithdrawalsPage', 'AdminDepositsPage',
-      'AdminAuditLogPage',
+      'AdminAuditLogPage', 'AdminSupportPage',
     ];
     const notLazy = pages.filter((page) => !new RegExp(`const ${page} = lazy\\(`).test(app));
     expect(notLazy).toEqual([]);
