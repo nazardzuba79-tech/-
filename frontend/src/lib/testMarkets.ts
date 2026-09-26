@@ -38,6 +38,7 @@ export interface TestAsset {
   isTestAsset: true;
   isTradable: false;
   status: string;
+  listingArmed: boolean;
   listingAt: string;
   initialPrice: number;
   state: TestMarketState;
@@ -72,6 +73,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
       isTestAsset: true,
       isTradable: false,
       status: typeof raw.status === 'string' ? raw.status : TEST_ASSET_STATUS_LABEL,
+      listingArmed: typeof raw.listingArmed === 'boolean' ? raw.listingArmed : true,
       listingAt: raw.listingAt,
       initialPrice: finiteOrNull(raw.initialPrice) ?? 0,
       state: {
