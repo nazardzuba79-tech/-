@@ -1,151 +1,140 @@
-import { PrismaClient, Prisma, Deposit } from '@prisma/client';
+import { PrismaClient, Deposit } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../config/chains';
-import { createVerifier, DepositVerificationError } from './deposit-verifiers';
-import { MIN_DEPOSIT_USD, REFERRAL_REWARD_PERCENT, DEPOSIT_USD_PEGGED_ASSETS } from '../config/limits';
+import { DepositVerificationError, ProviderUnavailableError, TransferNotFoundError } from './deposit-verifiers';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
+import { assertSaneProof, proveTransfer, rememberTreasuryAddress } from './deposits/transferProof';
+import { TransferProof } from './deposit-verifiers/proof';
+import { PriceSourceWithMeta } from './deposits/depositPolicy';
 
 export { DepositVerificationError } from './deposit-verifiers';
-export interface PriceSource { getTicker(pair: string): Promise<{ lastPrice: string } | null>; }
-export type DepositStatus = 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM';
-export interface DepositResult {
-  status: DepositStatus; amount: string; confirmations: number; minDepositUsd?: number; message?: string;
+export type PriceSource = PriceSourceWithMeta;
+
+/** What an admin's "check this TXID" shows: the measured proof, and whether
+ * the transfer is now in the admin registry. Never a credit or attribution. */
+export interface ObservationResult {
+  recorded: boolean;
+  depositId: string | null;
+  status: string | null;
+  amount: string;
+  confirmations: number;
+  finalized: boolean;
+  blockTimestamp: string | null;
+  recipient: string;
 }
 
-/** Detection has no dollar threshold. Every credit requires admin approval.
- * A shared treasury cannot identify the owner of an unsolicited transfer:
- * discovered transfers are persisted unassigned until claimed or assigned by admin.
- * All credits re-verify the chain and atomically transition the same unique row.
+/**
+ * Detection and client claims. NOTHING in this class changes a balance:
+ *   - recordObservation(): proves a transfer on chain and stores/refreshes it
+ *     in the admin registry (unattributed unless an admin attributed it).
+ *   - submitClaim(): stores a client's "this TXID is mine" as a hint only.
+ * Crediting is DepositBatchService.confirm(), behind an admin's explicit
+ * confirmation of a whole package that meets the minimum.
  */
 export class DepositService {
-  private verifier = createVerifier(this.chainConfig);
-  constructor(private prisma: PrismaClient, private chainConfig: ChainConfig, private priceSource: PriceSource) {}
+  constructor(private prisma: PrismaClient, private chainConfig: ChainConfig, private priceSource?: PriceSource) {}
 
-  private hash(value: string): string {
+  canonicalHash(value: string): string {
     if (this.chainConfig.type === 'solana') return value;
     return this.chainConfig.type === 'ton' ? value.toLowerCase().replace(/^0x/, '') : value.toLowerCase();
   }
 
-  private result(row: Pick<Deposit, 'status' | 'amount' | 'confirmations'>): DepositResult {
-    return { status: row.status as DepositStatus, amount: row.amount.toString(), confirmations: row.confirmations,
-      ...(row.status === 'BELOW_MINIMUM' ? { minDepositUsd: MIN_DEPOSIT_USD,
-        message: 'Депозит ниже минимальной суммы и требует ручной обработки администратором.' } : {}) };
-  }
-
-  private async verified(txHash: string, asset: string) {
-    const verified = await this.verifier.verify(txHash, asset);
-    if (!verified.amount.isFinite() || !verified.amount.isGreaterThan(0) || verified.amount.decimalPlaces()! > 18
-      || !Number.isSafeInteger(verified.confirmations) || verified.confirmations < 0) {
-      throw new DepositVerificationError('Invalid verified transfer');
-    }
-    return verified;
-  }
-
-  private async awaitingStatus(asset: string, amount: BigNumber): Promise<Exclude<DepositStatus, 'CREDITED'>> {
-    const usd = await this.usdValueOf(asset, amount);
-    if (usd !== null && usd.isLessThan(MIN_DEPOSIT_USD)) return 'BELOW_MINIMUM';
-    // The minimum is a warning/classification only, never permission to credit.
-    return 'PENDING';
-  }
-
-  /** Persist an independently verified incoming transfer even without a known user.
-   * No balance mutation here. Repeated scans cannot overwrite credited or assigned rows.
-   */
-  async recordIncoming(params: { txHash: string; asset: string }): Promise<void> {
+  /** Prove `txHash` on chain and store the result. A CREDITED row is never
+   * touched. A proven row whose amount changes is flagged for review, never
+   * silently rewritten. Attribution is never set or changed here. */
+  async recordObservation(params: { txHash: string; asset: string; source: 'admin_check' | 'incoming_feed' }): Promise<ObservationResult> {
     if (isTestAssetPairOrSymbol(params.asset)) throw new DepositVerificationError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-    const txHash = this.hash(params.txHash), asset = params.asset.toUpperCase();
+    const txHash = this.canonicalHash(params.txHash), asset = params.asset.toUpperCase();
     const where = { chain_txHash: { chain: this.chainConfig.chain, txHash } };
     const existing = await this.prisma.deposit.findUnique({ where });
-    if (existing?.status === 'CREDITED') return;
     if (existing && existing.asset !== asset) throw new DepositVerificationError('Transaction already recorded for another asset');
-    if (existing?.userId) {
-      // Refresh attribution/confirmations only, even when fully confirmed.
-      // Discovery must never supply admin approval or mutate balances.
-      await this.claimDeposit({ userId: existing.userId, txHash, asset });
-      return;
-    }
-    const { amount, confirmations } = await this.verified(txHash, asset);
-    if (existing && !amount.eq(existing.amount.toString())) throw new DepositVerificationError('Verified amount differs from recorded transfer');
-    const status = await this.awaitingStatus(asset, amount);
-    if (existing) {
-      // Do not overwrite a simultaneous admin assignment/credit.
-      await this.prisma.deposit.updateMany({ where: { id: existing.id, userId: null, status: { not: 'CREDITED' } },
-        data: { confirmations, status } });
-      return;
-    }
-    await this.prisma.deposit.upsert({ where, update: { txHash }, create: {
-      chain: this.chainConfig.chain, txHash, asset, amount: amount.toString(), confirmations,
-      status,
-    } });
-  }
+    if (existing?.status === 'CREDITED') return this.result(existing, null);
 
-  async claimDeposit(params: { userId: string; txHash: string; asset: string; performedByAdminId?: string }): Promise<DepositResult> {
-    const { userId, performedByAdminId } = params;
-    if (isTestAssetPairOrSymbol(params.asset)) throw new DepositVerificationError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-    const asset = params.asset.toUpperCase(), txHash = this.hash(params.txHash);
-    const where = { chain_txHash: { chain: this.chainConfig.chain, txHash } };
-    const existing = await this.prisma.deposit.findUnique({ where });
-    const checkOwner = (row: Deposit) => {
-      if ((row.userId !== null && row.userId !== userId) || row.asset !== asset) {
-        throw new DepositVerificationError('Transaction already assigned to another user or asset');
-      }
-    };
-    if (existing) {
-      checkOwner(existing);
-      if (existing.status === 'CREDITED') return this.result(existing);
-    }
-    const { amount, confirmations } = await this.verified(txHash, asset);
-    const pendingStatus = await this.awaitingStatus(asset, amount);
-
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      if (performedByAdminId) {
-        const admin = await tx.user.findUnique({ where: { id: performedByAdminId }, select: { role: true } });
-        if (admin?.role !== 'ADMIN') throw new DepositVerificationError('Admin access required');
-      }
-      // The no-op UPDATE locks an existing row; the unique key arbitrates first
-      // insertion. Concurrent approves/claims then observe CREDITED and return.
-      const deposit = await tx.deposit.upsert({ where, update: { txHash }, create: {
-        userId, asset, chain: this.chainConfig.chain, txHash, amount: amount.toString(), confirmations, status: 'PENDING',
+    const proof = await proveTransfer(this.chainConfig, txHash, asset, { recipient: existing?.recipientAddress ?? undefined });
+    assertSaneProof(proof);
+    await rememberTreasuryAddress(this.prisma, this.chainConfig.chain, proof.recipient);
+    const now = new Date();
+    if (!existing) {
+      const row = await this.prisma.deposit.upsert({ where, update: {}, create: {
+        chain: this.chainConfig.chain, txHash, asset, amount: proof.amount.toFixed(), status: 'PENDING',
+        confirmations: proof.confirmations, finalized: proof.finalized, verifiedAt: now, lastVerifyAttemptAt: now,
+        recipientAddress: proof.recipient, blockNumber: proof.blockNumber === null ? null : BigInt(proof.blockNumber),
+        blockTimestamp: proof.blockTimestamp, source: params.source,
       } });
-      checkOwner(deposit);
-      if (deposit.status === 'CREDITED') return this.result(deposit);
-      if (!amount.eq(deposit.amount.toString())) throw new DepositVerificationError('Verified amount differs from recorded transfer');
-      const status: DepositStatus = performedByAdminId && confirmations >= this.chainConfig.minConfirmations
-        ? 'CREDITED' : pendingStatus;
-      const updated = await tx.deposit.update({ where: { id: deposit.id }, data: { userId, status, confirmations } });
-      if (status === 'CREDITED') {
-        // Atomic increments also preserve two distinct deposits credited concurrently.
-        await tx.balance.upsert({ where: { userId_asset: { userId, asset } },
-          create: { userId, asset, available: amount.toString(), locked: '0' },
-          update: { available: { increment: amount.toString() } } });
-        await tx.auditLog.create({ data: { userId, action: 'DEPOSIT_CREDITED', metadata: {
-          depositId: deposit.id, txHash, asset, amount: amount.toString(),
-          ...(performedByAdminId ? { performedByAdminId, manual: true } : {}),
-        } } });
-        const depositor = await tx.user.findUnique({ where: { id: userId }, select: { referredById: true } });
-        if (depositor?.referredById) {
-          const reward = amount.times(REFERRAL_REWARD_PERCENT).dividedBy(100).toString();
-          await tx.balance.upsert({ where: { userId_asset: { userId: depositor.referredById, asset } },
-            create: { userId: depositor.referredById, asset, available: reward, locked: '0' },
-            update: { available: { increment: reward } } });
-          await tx.referralReward.create({ data: { referrerId: depositor.referredById, referredUserId: userId,
-            depositId: deposit.id, asset, amount: reward } });
-          await tx.auditLog.create({ data: { userId: depositor.referredById, action: 'REFERRAL_REWARD_CREDITED',
-            metadata: { referredUserId: userId, depositId: deposit.id, asset, amount: reward } } });
-        }
-      } else if (status === 'BELOW_MINIMUM' && deposit.status !== status) {
-        await tx.auditLog.create({ data: { userId, action: 'DEPOSIT_BELOW_MINIMUM', metadata: { txHash, asset, amount: amount.toString() } } });
-      }
-      return this.result(updated);
-    });
+      return this.result(row, proof);
+    }
+    const row = await applyProof(this.prisma, existing, proof, now);
+    return this.result(row, proof);
   }
 
-  private async usdValueOf(asset: string, amount: BigNumber): Promise<BigNumber | null> {
-    if ((DEPOSIT_USD_PEGGED_ASSETS as readonly string[]).includes(asset)) return amount;
-    try {
-      const ticker = await this.priceSource.getTicker(`${asset}/USDT`);
-      const price = new BigNumber(ticker?.lastPrice ?? 'NaN');
-      return price.isFinite() && price.isGreaterThan(0) ? amount.times(price) : null;
-    } catch { return null; }
+  /** A client says "this transaction is mine". Stored as a hint for the admin:
+   * no chain call, no attribution, no lock on the transfer, no amount echoed.
+   * Several clients may claim the same hash; none blocks another. */
+  async submitClaim(params: { userId: string; txHash: string; asset: string }): Promise<{ status: 'SUBMITTED' }> {
+    if (isTestAssetPairOrSymbol(params.asset)) throw new DepositVerificationError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    const txHash = this.canonicalHash(params.txHash), asset = params.asset.toUpperCase();
+    await this.prisma.depositClaim.upsert({
+      where: { userId_chain_txHash: { userId: params.userId, chain: this.chainConfig.chain, txHash } },
+      create: { userId: params.userId, chain: this.chainConfig.chain, txHash, asset },
+      update: {},
+    });
+    return { status: 'SUBMITTED' };
   }
+
+  private result(row: Deposit, proof: TransferProof | null): ObservationResult {
+    return {
+      recorded: true, depositId: row.id, status: row.status, amount: new BigNumber(row.amount.toString()).toFixed(),
+      confirmations: proof?.confirmations ?? row.confirmations, finalized: proof?.finalized ?? row.finalized,
+      blockTimestamp: (proof?.blockTimestamp ?? row.blockTimestamp)?.toISOString() ?? null,
+      recipient: proof?.recipient ?? row.recipientAddress ?? this.chainConfig.treasuryAddress,
+    };
+  }
+}
+
+/**
+ * Store a fresh proof on an existing uncredited row, guarded by its revision
+ * so a concurrent attribution/credit is never overwritten.
+ *   - Unproven row (observed from a feed): the proven amount replaces the
+ *     listed one — it was never creditable before being proven.
+ *   - Proven row whose proven amount now differs: flagged NEEDS_REVIEW.
+ * revision is bumped only when something material changed.
+ */
+export async function applyProof(db: PrismaClient, row: Deposit, proof: TransferProof, now = new Date()): Promise<Deposit> {
+  const proven = proof.amount.toFixed();
+  const mismatch = row.verifiedAt !== null && !new BigNumber(row.amount.toString()).isEqualTo(proof.amount);
+  const data = mismatch
+    ? { verifyError: `Verified amount ${proven} differs from recorded ${new BigNumber(row.amount.toString()).toFixed()}`, lastVerifyAttemptAt: now }
+    : {
+      amount: proven, confirmations: proof.confirmations, finalized: proof.finalized, verifiedAt: now,
+      lastVerifyAttemptAt: now, verifyError: null, recipientAddress: proof.recipient,
+      blockNumber: proof.blockNumber === null ? row.blockNumber : BigInt(proof.blockNumber),
+      blockTimestamp: proof.blockTimestamp ?? row.blockTimestamp,
+    };
+  // Once a row is proven final, a deeper confirmation count is not material:
+  // it must not invalidate a package an admin is reviewing.
+  const material = mismatch || row.verifiedAt === null || row.verifyError !== null
+    || !new BigNumber(row.amount.toString()).isEqualTo(proof.amount)
+    || row.finalized !== proof.finalized || (!row.finalized && row.confirmations !== proof.confirmations);
+  const updated = await db.deposit.updateMany({
+    where: { id: row.id, revision: row.revision, status: { not: 'CREDITED' }, batchId: null },
+    data: { ...data, ...(material ? { revision: { increment: 1 } } : {}) },
+  });
+  if (updated.count === 0) return (await db.deposit.findUnique({ where: { id: row.id } })) ?? row;
+  return (await db.deposit.findUnique({ where: { id: row.id } }))!;
+}
+
+/** Record that a proof attempt failed. Provider trouble changes nothing.
+ * "Not found" becomes a review flag only after repeated misses over time;
+ * a definitive answer (wrong recipient/contract, failed tx) flags at once. */
+export async function recordProofFailure(db: PrismaClient, row: Deposit, error: unknown, now = new Date()): Promise<'provider' | 'retry' | 'flagged'> {
+  if (error instanceof ProviderUnavailableError || !(error instanceof DepositVerificationError)) return 'provider';
+  const attempts = row.verifyAttempts + 1;
+  const firstSeenAgeMs = now.getTime() - row.createdAt.getTime();
+  const flag = !(error instanceof TransferNotFoundError) || (attempts >= 5 && firstSeenAgeMs > 30 * 60_000);
+  await db.deposit.updateMany({
+    where: { id: row.id, revision: row.revision, status: { not: 'CREDITED' }, batchId: null },
+    data: { verifyAttempts: attempts, lastVerifyAttemptAt: now,
+      ...(flag ? { verifyError: error.message.slice(0, 300), revision: { increment: 1 } } : {}) },
+  });
+  return flag ? 'flagged' : 'retry';
 }

@@ -126,8 +126,8 @@ describe('a test asset can never trade, hold a balance, deposit or withdraw', ()
   });
   test('withdrawals, deposit claims and admin balance adjustments', async () => {
     await expect(new WithdrawalService(untouchable).requestWithdrawal({ userId: 'u', asset: 'VTA', network: 'x', toAddress: 'x', amount: '1' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-    await expect(new DepositService(untouchable, { chain: 'ethereum' } as never, untouchable).claimDeposit({ userId: 'u', txHash: '0x1', asset: 'vta' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
-    await expect(new DepositService(untouchable, { chain: 'ethereum' } as never, untouchable).recordIncoming({ txHash: '0x1', asset: 'VTA' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    await expect(new DepositService(untouchable, { chain: 'ethereum' } as never, untouchable).submitClaim({ userId: 'u', txHash: '0x1', asset: 'vta' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    await expect(new DepositService(untouchable, { chain: 'ethereum' } as never, untouchable).recordObservation({ txHash: '0x1', asset: 'VTA', source: 'admin_check' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     await expect(new BalanceAdjustmentService(untouchable).adjust({ userId: 'u', asset: 'VTA', amount: '100', reason: 'x', performedByAdminId: 'a' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
   });
 });

@@ -1,7 +1,18 @@
-// Business minimum/warning, not permission to credit. Every deposit requires
-// admin approval; deposit-chains?includeConfig=true supplies this to both UIs.
+// Minimum for one credited package (one user, one asset, one network, the
+// sum of its confirmed uncredited transfers). Reaching it only makes the
+// package reviewable; every credit still requires an admin's confirmation,
+// and below it confirmation is refused by the server. deposit-chains?
+// includeConfig=true supplies this to both UIs.
 export const MIN_DEPOSIT_USD = 300;
+// Minimum-evaluation POLICY, not a market-rate claim: these assets count
+// 1 unit = 1 USD when checking the minimum. Other assets need a fresh price.
 export const DEPOSIT_USD_PEGGED_ASSETS = ['USDT', 'USDC', 'USD', 'DAI'] as const;
+// A non-pegged asset's price may be at most this old (and not stale-served)
+// to evaluate the minimum; otherwise the package needs review.
+export const DEPOSIT_PRICE_MAX_AGE_MS = 2 * 60_000;
+// On-chain proofs used for a credit must be at most this old when the
+// credit transaction commits. Confirm re-proves every transfer first.
+export const DEPOSIT_PROOF_MAX_AGE_MS = 5 * 60_000;
 
 // How often PriceWatcherService re-checks every PENDING_TRIGGER order's
 // condition against the real market price. Same order of magnitude as

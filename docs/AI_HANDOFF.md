@@ -3909,6 +3909,53 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Checks run: backend and frontend `tsc` clean; `vite build` OK; 8 VTA/i18n/harness suites 172/172; full `npx jest` on the branch: 29 failing suites before the harness fix — the 2 branch-only ones (`spotOrderFeedback`, `spotButtonLabels`) fixed and passing, the other 27 fail on unmodified main `2460713f` with identical test names. `scripts/qa-voltora-listing.cjs` PASS locally on the production bundle at all five widths (countdown 01:23:59:59 → 01:23:59:57, writes 0, no page errors, no overflow).
 - Unresolved: after 2026-09-28 14:00 UTC the chart and prices start from the simulation, and Buy/Sell still answer «Этот актив пока не торгуется» (the asset stays non-tradable by design) — owner to confirm that is wanted. At 320 px the Markets page's sector table overflows by 12 px with an empty fixture (pre-existing, outside the VTA row).
 
+## Claude — 2026-09-26 — Deposits: accumulated packages, manual batch approval, 6-hour USDT/TRC20 watcher
+
+- **Base and branch:** fresh `refs/heads/main` `0f738418`; branch `claude/ecstatic-brahmagupta-cwkvt5` (restarted from main after #287 merged); code commit `8861e219`. Full design: `docs/DEPOSIT_PACKAGES.md`.
+- **Gaps found on main:**
+  - admin manual-credit credited ONE transfer at any amount (299 was credited by design);
+  - the public claim attributed a transfer to the first claimant;
+  - `/deposits/me` returned uncredited rows with amounts;
+  - TRON listing reported `minConfirmations` as the measured count;
+  - discovery was only the latest 20 transfers, read on admin page load;
+  - verification used the indexer events API only, with no receipt/solidity check.
+- **Implemented:**
+  - Packages: one user + asset + network, the sum of proven, final, uncredited transfers. Minimum 300 exact (BigNumber), checked on the server.
+  - `DepositBatchService` preview/confirm: fingerprint, re-proof outside the transaction, one transaction with ordered `FOR UPDATE`, revision checks, `DepositBatch` with a unique idempotency key, per-transfer audit and referral.
+  - `/admin/deposits/manual-credit` → 410.
+  - `DepositAttributionService`: audited, no balance change, explicit reassign, credited transfers immutable.
+  - `DepositClaim` hints: no chain call, neutral 202.
+  - `/deposits/me` returns CREDITED only.
+  - TRON node proof (`walletsolidity` / `wallet gettransactioninfobyid`, SUCCESS receipt, decoded logs, allowlisted mainnet USDT).
+  - `DepositWatchService`:
+    - durable cursor per address+contract, fixed windows with a 10-minute overlap, pages oldest-first;
+    - rows and cursor written in one transaction;
+    - lease, 60 s minimum window advance, bounded 7-day backfill;
+    - `TreasuryAddressHistory`.
+  - **Owner change mid-task:** the automatic scan was changed from every 5 minutes to every 6 hours (4 a day, `DEPOSIT_WATCHER_INTERVAL_MINUTES`, minimum 60).
+    - The interval is enforced by the service (`NOT_DUE`); `lastScheduledRunAt` is not moved by manual scans.
+    - Off by default; no notifications.
+    - The 5-minute loop was never deployed.
+  - Manual controls: «Проверить новые поступления» and «Проверить TXID».
+  - Internal tick `/internal/deposit-watch/tick` with `DEPOSIT_WATCHER_TOKEN` (404 when the token is unset).
+  - Admin UI: Пополнения has six tabs, accumulation cards and a watcher panel. Пользователи shows package state and «Проверить и зачислить» for READY only; the drawer is the package confirmation.
+  - Migration `20260926150000_deposit_packages_and_watcher`: additive only.
+- **Checks run:**
+  - backend and frontend `tsc` clean; `vite build` OK.
+  - Deposit/admin jest suites green (the CI list in `deposit-minimum.yml`).
+  - `scripts/qa-deposit-packages.cjs` on a disposable local PostgreSQL 16 with a local TronGrid fixture: 19 check groups covering required tests 1–23, plus a production-bundle browser run at 1440 and 390 — PASS.
+  - Full `npx jest`: branch 27 failing suites vs main 26. The difference:
+    - `testMarkets` (fixed after the run: it called the removed methods);
+    - `registerWalletTailwindOwnership` (fails identically on main once `frontend/dist` is built);
+    - `nativeReviewHarness` failed on main only.
+- **Preserved:** Codex's deposit-chain config, the treasury override service, the other-network verifiers and incoming feed (now stores only; runs on click), the Users-page activity polling pattern, the referral policy and the 300 USD client warning.
+- **Unresolved:**
+  - No production proof of a real TRC20 deposit: fixture only.
+  - The watcher runs in-process on Render free, so a sleeping API scans on its next start.
+  - The optional external trigger needs `DEPOSIT_WATCHER_TOKEN` set by the owner.
+  - The global support-chat bubble overlaps the drawer's confirm button at 390 px (pre-existing widget).
+  - Other networks are not watcher-covered.
+
 ## Claude — 2026-09-26 — Support chat: durable email outbox, delivery status, Admin → Поддержка
 
 - Base fresh main `0f738418` (#289). Branch `claude/support-email-outbox`, code commit `b505e370`.

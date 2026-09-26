@@ -1,3 +1,5 @@
+> **Superseded 2026-09-26 by [DEPOSIT_PACKAGES.md](DEPOSIT_PACKAGES.md)**: credits are per accumulated package, refused below 300 USD, only via package confirmation.
+
 # Deposit minimum: detection, automatic credit, manual credit
 
 > Historical PR #163 policy, now superseded. Every deposit now requires ADMIN
