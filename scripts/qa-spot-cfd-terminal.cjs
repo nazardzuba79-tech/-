@@ -69,7 +69,7 @@ app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
 
 
 const DESKTOP = [[1920,1080],[1440,900],[1366,768]];
-const MOBILE = [[390,844],[430,932]];
+const MOBILE = [[320,740],[360,800],[390,844],[430,932]];
 const TERMINALS = [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']];
 const TOKENS = ['--bg-primary','--bg-secondary','--bg-tertiary','--border-color','--text-primary',
   '--text-secondary','--accent-yellow','--color-buy','--color-sell','--panel','--font-family'];
