@@ -127,8 +127,12 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
       }finally{if(!cancelled)setChecked(true);}
     }
     const reader=createVisibleRead(check,NATIVE_ACCESS_POLL_MS,true);
+    // Authorization is a gate, not a display cache: preserve its immediate
+    // visible-return recheck (including transient outage/recovery) at any age.
+    const visible=()=>{if(!document.hidden)void reader.refresh();};
+    document.addEventListener('visibilitychange',visible);
     const off=onSessionChange(()=>{resetSession();setBinding('unknown');setChecked(false);void reader.refresh();});
-    return()=>{cancelled=true;alive.current=false;controller.abort();reader.stop();off();};
+    return()=>{cancelled=true;alive.current=false;controller.abort();reader.stop();document.removeEventListener('visibilitychange',visible);off();};
   },[resetSession,suspend]);
   useEffect(()=>{if(!requested||!allowed)return;let cancelled=false;const controller=new AbortController();
     nativeDemoApi.activate(controller.signal).then(()=>nativeDemoApi.live(controller.signal)).then(s=>{if(!cancelled)commitState(s);}).catch(e=>{if(!cancelled)fail(e);});

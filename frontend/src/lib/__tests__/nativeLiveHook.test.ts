@@ -56,6 +56,19 @@ describe('actual React native hook live lifecycle',()=>{
     await React.act(async()=>{await current.run({kind:'REFRESH'});});expect(api.live).toHaveBeenCalledTimes(reads+1);
     expect(api.command).toHaveBeenCalledTimes(1);expect(current.state.positions).toEqual([]);
   });
+  test('fresh visible return still rechecks authorization and recovers without an execution command',async()=>{
+    expect(api.access).toHaveBeenCalledTimes(1);
+    api.access.mockRejectedValueOnce(new TestError('QA access outage',503));
+    await React.act(async()=>document.dispatchEvent(new dom.window.Event('visibilitychange')));
+    expect(api.access).toHaveBeenCalledTimes(2);expect(current.allowed).toBe(false);
+    await React.act(async()=>document.dispatchEvent(new dom.window.Event('visibilitychange')));
+    expect(api.access).toHaveBeenCalledTimes(3);expect(current.allowed).toBe(true);
+    expect(current.state.positions[0].id).toBe('p');expect(api.command).not.toHaveBeenCalled();
+    Object.defineProperty(document,'hidden',{configurable:true,value:true});
+    await React.act(async()=>document.dispatchEvent(new dom.window.Event('visibilitychange')));
+    await tick(120_000);expect(api.access).toHaveBeenCalledTimes(3);
+    expect(jest.getTimerCount()).toBe(0);
+  });
   test('history lazy until tab demand, stable across same-revision mark refresh',async()=>{
     await React.act(async()=>{current.setHistoryDemand({positions:true,orders:false,chart:false});});
     expect(api.history).toHaveBeenCalledTimes(1);expect(api.history.mock.calls[0].slice(0,2)).toEqual(['positions',7]);

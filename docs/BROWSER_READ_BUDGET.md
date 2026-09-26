@@ -129,11 +129,15 @@ account authorization branches can change the physical SQL count.
 
 ## Verification
 
-681 frontend tests / 39 suites pass on the rebased branch, including real shared
+682 frontend tests / 39 suites pass on the rebased branch, including real shared
 stores, mounted React hooks, mutation-during-GET, hidden timers, failed reads,
 logout/login isolation, exact A/B/C counts and shared mark/index preservation.
 The native-account isolation source guard now expects the new 15s/10s real-account
 cadences while still requiring an empty subscription for the native adapter.
+Native access is an authorization gate, not a display cache: its existing
+immediate visible-return check remains, even for fresh data. A real-hook test
+exercises fresh return -> access outage -> recovery, unchanged position state,
+no execution command, and zero hidden timers. Browser CI exposed this distinction.
 Backend TypeScript and production frontend TypeScript/Vite build pass. Vite's
 existing ~500kB main-chunk warning remains, unrelated to this change.
 
