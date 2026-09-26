@@ -1,0 +1,104 @@
+{
+  "environment": "production frontend bundle + real Worker code (local adapter, recorded mail binding) + read-only API fixture",
+  "steps": [
+    {
+      "name": "bundle: Worker endpoint present; no SMTP settings, recipient address or tokens; no chat API"
+    },
+    {
+      "name": "guest: one POST on a double click, one email to the fixed recipient, Reply-To = typed address, success text, message cleared",
+      "subject": "VOLTEX Support — Техническая проблема — VOLTEX Support QA"
+    },
+    {
+      "name": "provider refusal: failure text, draft kept, no success shown"
+    },
+    {
+      "name": "idle 25 s with the form open: 0 Worker requests, 0 support API requests"
+    },
+    {
+      "name": "signed-in user: name and email prefilled, visible and editable; sent with Reply-To = profile email"
+    },
+    {
+      "name": "layout: panel and «Отправить» inside the viewport and above the tab bar at 320/360/390/430/1440, also with a keyboard-sized viewport; textarea scrolls; no page overflow"
+    }
+  ],
+  "widths": [
+    {
+      "width": 320,
+      "panel": {
+        "x": 16,
+        "w": 300,
+        "bottom": 744
+      },
+      "tabBarTop": 821,
+      "sendBottom": 729,
+      "keyboard": {
+        "panelBottom": 315,
+        "sendBottom": 300
+      },
+      "errors": []
+    },
+    {
+      "width": 360,
+      "panel": {
+        "x": 16,
+        "w": 328,
+        "bottom": 712
+      },
+      "tabBarTop": 789,
+      "sendBottom": 697,
+      "keyboard": {
+        "panelBottom": 298,
+        "sendBottom": 283
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "panel": {
+        "x": 16,
+        "w": 358,
+        "bottom": 712
+      },
+      "tabBarTop": 789,
+      "sendBottom": 697,
+      "keyboard": {
+        "panelBottom": 298,
+        "sendBottom": 283
+      },
+      "errors": []
+    },
+    {
+      "width": 430,
+      "panel": {
+        "x": 16,
+        "w": 398,
+        "bottom": 712
+      },
+      "tabBarTop": 789,
+      "sendBottom": 697,
+      "keyboard": {
+        "panelBottom": 298,
+        "sendBottom": 283
+      },
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "panel": {
+        "x": 1056,
+        "w": 360,
+        "bottom": 808
+      },
+      "tabBarTop": null,
+      "sendBottom": 793,
+      "keyboard": null,
+      "errors": []
+    }
+  ],
+  "totals": {
+    "workerPosts": 3,
+    "emails": 2,
+    "supportApiRequests": 0
+  },
+  "status": "PASS"
+}

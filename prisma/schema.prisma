@@ -937,6 +937,11 @@ model InsuranceFundLedger {
   @@index([asset, createdAt])
 }
 
+// DORMANT since 2026-09-26: support is a form handled by the Cloudflare
+// Worker in workers/support-edge (email only, nothing stored). The support
+// enums and models below are kept so existing rows and migrations stay
+// intact; no code reads or writes them. Do not drop them in a migration
+// without the owner's decision.
 enum SupportSubject {
   TECHNICAL
   KYC
