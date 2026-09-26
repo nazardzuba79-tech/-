@@ -47,7 +47,6 @@ function testAsset() {
       await context.addInitScript(() => {
         localStorage.setItem('exchange_token', 'qa-token');
         localStorage.setItem('exchange_lang', 'ru');
-        localStorage.removeItem('voltex_listing_preview_stage');
       });
       const page = await context.newPage();
       const pageErrors = [];
