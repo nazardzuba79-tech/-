@@ -147,6 +147,47 @@ const READ = (tokenNames) => {
       await page.waitForTimeout(3200);
       const m = await page.evaluate(READ, TOKENS);
       m.pageErrors = errs;
+
+      if (mobile && (name === 'spot' || name === 'cfd')) {
+        await page.locator('#mobile-trade-trade').click();
+        await page.waitForTimeout(120);
+        m.tradeWorkspace = await page.evaluate((terminalName) => {
+          const visible = (selector) => {
+            const e = document.querySelector(selector);
+            if (!e) return false;
+            const r = e.getBoundingClientRect();
+            return getComputedStyle(e).display !== 'none' && r.width > 4 && r.height > 4;
+          };
+          const selector = terminalName === 'spot' ? '.order-form-area' : '.cfd-form-area';
+          const chartSelector = terminalName === 'spot' ? '.chart-area' : '.cfd-chart-area';
+          const form = document.querySelector(selector);
+          const r = form?.getBoundingClientRect();
+          return {
+            visible: visible(selector),
+            chartVisible: visible(chartSelector),
+            width: r ? Math.round(r.width) : 0,
+            rightOverflow: r ? Math.max(0, Math.round(r.right - document.documentElement.clientWidth)) : 0,
+          };
+        }, name);
+
+        await page.locator('#mobile-trade-account').click();
+        await page.waitForTimeout(120);
+        m.accountWorkspace = await page.evaluate((terminalName) => {
+          const selector = terminalName === 'spot' ? '.bottom-panel' : '.cfd-bottom-panel';
+          const e = document.querySelector(selector);
+          if (!e) return { visible:false };
+          const r = e.getBoundingClientRect();
+          return {
+            visible: getComputedStyle(e).display !== 'none' && r.width > 4 && r.height > 4,
+            width: Math.round(r.width),
+            rightOverflow: Math.max(0, Math.round(r.right - document.documentElement.clientWidth)),
+          };
+        }, name);
+
+        await page.locator('#mobile-trade-chart').click();
+        await page.waitForTimeout(80);
+      }
+
       report.widths[key][name] = m;
       await page.screenshot({ path: path.join(OUT, `${name}-${key}.png`) }).catch(() => {});
       await ctx.close();
