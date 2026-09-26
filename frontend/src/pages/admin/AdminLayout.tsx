@@ -14,13 +14,11 @@ import {
   MenuIcon,
   XIcon,
   ChevronRightIcon,
-  MessageSquareIcon,
 } from './AdminIcons';
 
 const SECTIONS = [
   // No Обзор section: /admin opens Пользователи directly (see App.tsx).
   { to: '/admin/users', label: 'Пользователи', icon: UsersIcon, group: 'Управление' },
-  { to: '/admin/support', label: 'Поддержка', icon: MessageSquareIcon, group: 'Управление' },
   { to: '/admin/wallets', label: 'Адреса пополнения', icon: WalletIcon, group: 'Средства' },
   { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon, group: 'Средства' },
   { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon, group: 'Средства' },

@@ -1,103 +1,337 @@
 {
-  "startedAt": "2026-09-21T15:17:44.532Z",
+  "startedAt": "2026-09-26T15:38:02.835Z",
   "scenarios": {
-    "D_paste_new_tab": {
-      "boundary": false,
-      "futures": true,
-      "rootChildren": 3,
-      "path": "/futures",
-      "guards": []
-    },
-    "A_same_tab": {
-      "boundary": false,
-      "futures": true,
-      "rootChildren": 3,
-      "path": "/futures",
-      "guards": []
-    },
-    "B_new_tab": {
-      "boundary": false,
-      "futures": true,
-      "rootChildren": 3,
-      "path": "/futures",
-      "guards": []
-    },
-    "C_duplicate_tab": {
-      "boundary": false,
-      "futures": true,
-      "rootChildren": 3,
-      "path": "/futures",
-      "guards": []
-    },
-    "spa_routing": {
-      "/futures": {
+    "host_model": {
+      "missingAsset": {
         "status": 200,
-        "isAppShell": true
+        "type": "text/html; charset=utf-8",
+        "cache": "public, max-age=31536000, immutable"
       },
-      "/wallet": {
+      "spaEntry": {
         "status": 200,
-        "isAppShell": true
-      },
-      "/copy-trading": {
-        "status": 200,
-        "isAppShell": true
-      },
-      "/markets": {
-        "status": 200,
-        "isAppShell": true
+        "cache": "no-cache"
       }
     },
-    "auth": {
-      "authenticatedPath": "/futures",
-      "anonymousPath": "/login"
-    },
-    "fresh_js_404s": [],
-    "E_stale_shell": {
-      "boundary": false,
-      "futures": true,
-      "rootChildren": 3,
+    "1_stale_shell_desktop": {
       "path": "/futures",
+      "entry": "/assets/index-Dw1zisqX.js",
+      "blank": false,
+      "text": "VOLTEX\nРынки\nТорговля\nФьючерсы\nBanking & Earn\nКопитрейдинг\nАрбитраж\nТорговые боты\nКошелёк\nДепозит\nUSDT\nПрофиль\nB\nBTC/USD",
+      "futures": true,
+      "boundary": false,
+      "bootScreen": false,
+      "recovering": false,
+      "reactStarted": true,
       "guards": [
-        "voltex.chunk-recovery.index-Bt9DzFvA.js./futures"
+        "voltex.chunk-recovery.index-rAatmNon.js./futures"
       ],
-      "htmlRequests": 2,
-      "navigations": 3,
-      "staleChunk404s": 20,
-      "recoveryLines": [
-        "voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-OrwXzKrE.js"
+      "navigations": 2,
+      "html": [
+        "A",
+        "A",
+        "B"
+      ],
+      "fallbacks": [
+        "FuturesPage-DbffdJdE.js",
+        "nativeDemoApi-XMlq-0ZK.js",
+        "privateTradingError-BIoYAL3A.js",
+        "FuturesStudio-D9NUJfnH.js",
+        "TerminalPremium-lcR8j5Sn.js",
+        "Nav-C5YuY6w3.js",
+        "catalogueStore-CLAaMXjd.js",
+        "search-Cy9a7Wj7.js",
+        "star-BsAdU6i7.js",
+        "useLiveMarket-DRCcZi85.js",
+        "VoltexTerminalSystem-BchB6iyh.js",
+        "useFuturesAccount-Citi4tsO.js",
+        "TradePage-CiFBDZ4w.js",
+        "Skeleton-DMIj6vAh.js",
+        "useCfdTickers-DiZDMR0w.js",
+        "WalletPage-DBYLlOG7.js",
+        "chevron-right-XbEPChPo.js",
+        "check-CvGDNUIP.js",
+        "arrow-up-CGTKXRMB.js",
+        "crown-CbOBkZrx.js",
+        "FuturesPage-DbffdJdE.js",
+        "nativeDemoApi-XMlq-0ZK.js",
+        "FuturesStudio-D9NUJfnH.js",
+        "TerminalPremium-lcR8j5Sn.js",
+        "Nav-C5YuY6w3.js",
+        "privateTradingError-BIoYAL3A.js",
+        "catalogueStore-CLAaMXjd.js",
+        "search-Cy9a7Wj7.js",
+        "star-BsAdU6i7.js",
+        "useLiveMarket-DRCcZi85.js",
+        "VoltexTerminalSystem-BchB6iyh.js",
+        "useFuturesAccount-Citi4tsO.js",
+        "TradePage-CiFBDZ4w.js",
+        "Skeleton-DMIj6vAh.js",
+        "useCfdTickers-DiZDMR0w.js",
+        "WalletPage-DBYLlOG7.js",
+        "chevron-right-XbEPChPo.js",
+        "check-CvGDNUIP.js",
+        "arrow-up-CGTKXRMB.js",
+        "crown-CbOBkZrx.js"
+      ],
+      "lines": [
+        "voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-DbffdJdE.js"
       ]
     },
-    "E2_permanently_stale": {
-      "boundary": true,
-      "futures": false,
-      "rootChildren": 1,
+    "1_stale_shell_mobile": {
       "path": "/futures",
+      "entry": "/assets/index-Dw1zisqX.js",
+      "blank": false,
+      "text": "VOLTEX\nДепозит\nКошелёк\nРынки\nТорговля\nПрофиль\nB\nBTC/USDT\n—\n—\n24h\n+\nГрафик\nТорговля\nПозиции\n—\nГрафик\nСтакан\nГрафик\nVOLTEX",
+      "futures": true,
+      "boundary": false,
+      "bootScreen": false,
+      "recovering": false,
+      "reactStarted": true,
       "guards": [
-        "voltex.chunk-recovery.index-Bt9DzFvA.js./futures"
+        "voltex.chunk-recovery.index-rAatmNon.js./futures"
       ],
-      "navigations": 3,
-      "htmlRequests": 4
+      "navigations": 2,
+      "html": [
+        "A",
+        "A",
+        "B"
+      ],
+      "fallbacks": [
+        "FuturesPage-DbffdJdE.js",
+        "nativeDemoApi-XMlq-0ZK.js",
+        "privateTradingError-BIoYAL3A.js",
+        "FuturesStudio-D9NUJfnH.js",
+        "TerminalPremium-lcR8j5Sn.js",
+        "Nav-C5YuY6w3.js",
+        "catalogueStore-CLAaMXjd.js",
+        "search-Cy9a7Wj7.js",
+        "star-BsAdU6i7.js",
+        "useLiveMarket-DRCcZi85.js",
+        "VoltexTerminalSystem-BchB6iyh.js",
+        "useFuturesAccount-Citi4tsO.js",
+        "TradePage-CiFBDZ4w.js",
+        "Skeleton-DMIj6vAh.js",
+        "useCfdTickers-DiZDMR0w.js",
+        "WalletPage-DBYLlOG7.js",
+        "chevron-right-XbEPChPo.js",
+        "check-CvGDNUIP.js",
+        "arrow-up-CGTKXRMB.js",
+        "crown-CbOBkZrx.js",
+        "FuturesPage-DbffdJdE.js",
+        "nativeDemoApi-XMlq-0ZK.js",
+        "privateTradingError-BIoYAL3A.js",
+        "FuturesStudio-D9NUJfnH.js",
+        "TerminalPremium-lcR8j5Sn.js",
+        "Nav-C5YuY6w3.js",
+        "useLiveMarket-DRCcZi85.js",
+        "catalogueStore-CLAaMXjd.js",
+        "search-Cy9a7Wj7.js",
+        "star-BsAdU6i7.js",
+        "VoltexTerminalSystem-BchB6iyh.js",
+        "TradePage-CiFBDZ4w.js",
+        "useFuturesAccount-Citi4tsO.js",
+        "Skeleton-DMIj6vAh.js",
+        "useCfdTickers-DiZDMR0w.js",
+        "WalletPage-DBYLlOG7.js",
+        "chevron-right-XbEPChPo.js",
+        "check-CvGDNUIP.js",
+        "arrow-up-CGTKXRMB.js",
+        "crown-CbOBkZrx.js"
+      ],
+      "lines": [
+        "voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-DbffdJdE.js"
+      ]
     },
-    "F_ordinary_crash": {
-      "boundary": true,
-      "futures": false,
-      "rootChildren": 1,
+    "2_entry_poisoned": {
+      "first": {
+        "path": "/futures",
+        "entry": "/assets/index-Dw1zisqX.js",
+        "blank": false,
+        "text": "VOLTEX\nРынки\nТорговля\nФьючерсы\nBanking & Earn\nКопитрейдинг\nАрбитраж\nТорговые боты\nКошелёк\nДепозит\nUSDT\nПрофиль\nB\nBTC/USD",
+        "futures": true,
+        "boundary": false,
+        "bootScreen": false,
+        "recovering": false,
+        "reactStarted": true,
+        "guards": [
+          "voltex.boot-heal.index-Dw1zisqX.js"
+        ]
+      },
+      "afterManualReload": {
+        "path": "/futures",
+        "entry": "/assets/index-Dw1zisqX.js",
+        "blank": false,
+        "text": "VOLTEX\nРынки\nТорговля\nФьючерсы\nBanking & Earn\nКопитрейдинг\nАрбитраж\nТорговые боты\nКошелёк\nДепозит\nUSDT\nПрофиль\nB\nBTC/USD",
+        "futures": true,
+        "boundary": false,
+        "bootScreen": false,
+        "recovering": false,
+        "reactStarted": true,
+        "guards": [
+          "voltex.boot-heal.index-Dw1zisqX.js"
+        ]
+      },
+      "navigations": 3,
+      "fallbacks": [
+        "index-Dw1zisqX.js (not propagated yet)"
+      ],
+      "lines": [
+        "voltex.bootstrap.boot_guard.reloading shell=index-Dw1zisqX.js"
+      ]
+    },
+    "3_route_chunk_poisoned": {
       "path": "/futures",
+      "entry": "/assets/index-Dw1zisqX.js",
+      "blank": false,
+      "text": "VOLTEX\nРынки\nТорговля\nФьючерсы\nBanking & Earn\nКопитрейдинг\nАрбитраж\nТорговые боты\nКошелёк\nДепозит\nUSDT\nПрофиль\nB\nBTC/USD",
+      "futures": true,
+      "boundary": false,
+      "bootScreen": false,
+      "recovering": false,
+      "reactStarted": true,
+      "guards": [
+        "voltex.chunk-recovery.index-Dw1zisqX.js./futures"
+      ],
+      "navigations": 2,
+      "fallbacks": [
+        "FuturesPage-D0f92Dst.js (not propagated yet)"
+      ],
+      "lines": [
+        "voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-D0f92Dst.js"
+      ]
+    },
+    "4_reload_does_not_complete": {
+      "early": {
+        "path": "/futures",
+        "entry": "/assets/index-rAatmNon.js",
+        "blank": false,
+        "text": "Обновляем страницу…",
+        "futures": false,
+        "boundary": false,
+        "bootScreen": false,
+        "recovering": true,
+        "reactStarted": true,
+        "guards": [
+          "voltex.chunk-recovery.index-rAatmNon.js./futures"
+        ]
+      },
+      "late": {
+        "path": "/futures",
+        "entry": "/assets/index-rAatmNon.js",
+        "blank": false,
+        "text": "⚠\nЧто-то пошло не так\n\nПроизошла непредвиденная ошибка. Попробуй перезагрузить страницу — если это повторится, дай нам з",
+        "futures": false,
+        "boundary": true,
+        "bootScreen": false,
+        "recovering": false,
+        "reactStarted": true,
+        "guards": [
+          "voltex.chunk-recovery.index-rAatmNon.js./futures"
+        ]
+      },
+      "navigations": 2,
+      "cancelled": 1,
+      "lines": [
+        "voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-DbffdJdE.js"
+      ]
+    },
+    "5_permanently_stale": {
+      "path": "/futures",
+      "entry": "/assets/index-rAatmNon.js",
+      "blank": false,
+      "text": "⚠\nЧто-то пошло не так\n\nПроизошла непредвиденная ошибка. Попробуй перезагрузить страницу — если это повторится, дай нам з",
+      "futures": false,
+      "boundary": true,
+      "bootScreen": false,
+      "recovering": false,
+      "reactStarted": true,
+      "guards": [
+        "voltex.chunk-recovery.index-rAatmNon.js./futures"
+      ],
+      "navigations": 2,
+      "html": 3,
+      "lines": [
+        "voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-DbffdJdE.js",
+        "voltex.bootstrap.chunk_recovery.exhausted module=FuturesPage-DbffdJdE.js"
+      ]
+    },
+    "6_ordinary_crash": {
+      "path": "/futures",
+      "entry": "/assets/index-Dw1zisqX.js",
+      "blank": false,
+      "text": "⚠\nЧто-то пошло не так\n\nПроизошла непредвиденная ошибка. Попробуй перезагрузить страницу — если это повторится, дай нам з",
+      "futures": false,
+      "boundary": true,
+      "bootScreen": false,
+      "recovering": false,
+      "reactStarted": true,
       "guards": [],
       "navigations": 1
     },
-    "G_offline": {
-      "boundary": true,
-      "futures": false,
-      "rootChildren": 1,
+    "7_offline": {
       "path": "/futures",
+      "entry": "/assets/index-Dw1zisqX.js",
+      "blank": false,
+      "text": "⚠\nЧто-то пошло не так\n\nПроизошла непредвиденная ошибка. Попробуй перезагрузить страницу — если это повторится, дай нам з",
+      "futures": false,
+      "boundary": true,
+      "bootScreen": false,
+      "recovering": false,
+      "reactStarted": true,
       "guards": [
-        "voltex.chunk-recovery.index-BFSI9gAI.js./futures"
+        "voltex.chunk-recovery.index-Dw1zisqX.js./futures"
       ],
-      "navigations": 3
+      "navigations": 2
+    },
+    "8_fresh_routes": {
+      "routes": {
+        "desktop /futures": {
+          "path": "/futures",
+          "blank": false,
+          "boundary": false,
+          "bootScreen": false,
+          "navigations": 1
+        },
+        "desktop /trade": {
+          "path": "/trade",
+          "blank": false,
+          "boundary": false,
+          "bootScreen": false,
+          "navigations": 1
+        },
+        "desktop /wallet": {
+          "path": "/wallet",
+          "blank": false,
+          "boundary": false,
+          "bootScreen": false,
+          "navigations": 1
+        },
+        "mobile /futures": {
+          "path": "/futures",
+          "blank": false,
+          "boundary": false,
+          "bootScreen": false,
+          "navigations": 1
+        },
+        "mobile /trade": {
+          "path": "/trade",
+          "blank": false,
+          "boundary": false,
+          "bootScreen": false,
+          "navigations": 1
+        },
+        "mobile /wallet": {
+          "path": "/wallet",
+          "blank": false,
+          "boundary": false,
+          "bootScreen": false,
+          "navigations": 1
+        }
+      },
+      "fallbacks": []
     }
   },
   "findings": [],
-  "environment": "LOCAL QA ONLY — two real production builds, static host model, no backend writes",
+  "environment": "LOCAL QA ONLY — two real production builds, Cloudflare Pages cache model, no backend",
   "status": "PASS"
 }

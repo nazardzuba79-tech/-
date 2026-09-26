@@ -1,18 +1,106 @@
-/* Support widget geometry that inline styles cannot express: a dvh
-   fallback pair (the panel shrinks with the on-screen keyboard where the
-   browser supports it) and, on phones, room for the fixed bottom tab bar
-   so the launcher never covers «Профиль» and the panel never hides under it. */
+/* Support form panel. The launcher's base geometry is inline in
+   SupportWidget.tsx; everything that needs media queries, dvh or pseudo
+   states lives here. */
 .support-panel {
+  position: fixed;
+  bottom: 92px;
+  right: 24px;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  /* dvh where supported: the panel shrinks with the on-screen keyboard, and
+     the footer with «Отправить» stays inside what is visible. */
   max-height: calc(100vh - 140px);
   max-height: calc(100dvh - 140px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 999;
 }
-.support-panel input,
-.support-panel textarea,
-.support-panel select {
+.support-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel-alt);
+  flex-shrink: 0;
+}
+.support-panel-title { font-size: 14px; font-weight: 800; color: var(--text-primary); }
+.support-panel-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.support-panel-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+}
+.support-form { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.support-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+.support-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.support-field > span { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.support-field > small { font-size: 11px; color: var(--text-tertiary, var(--text-secondary)); }
+.support-field input,
+.support-field select,
+.support-field textarea {
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
 }
+.support-field textarea { resize: vertical; min-height: 96px; max-height: 40vh; line-height: 1.45; }
+.support-field input:focus,
+.support-field select:focus,
+.support-field textarea:focus { outline: none; border-color: var(--accent); }
+.support-form-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--panel);
+}
+.support-result { border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.45; }
+.support-result-ok { display: flex; flex-direction: column; gap: 2px; background: var(--buy-dim, rgba(14, 203, 129, 0.12)); color: var(--text-primary); }
+.support-result-ok strong { color: var(--buy); font-size: 13px; }
+.support-result-error { background: var(--sell-dim); color: var(--sell); }
+.support-submit {
+  border: none;
+  border-radius: 24px;
+  padding: 11px 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+.support-submit:disabled { opacity: 0.7; cursor: default; }
+/* Honeypot: out of sight and out of the accessibility tree. */
+.support-hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+/* Phones with the bottom tab bar: the launcher sits above «Профиль», the
+   panel above the launcher. */
 @media (max-width: 900px) {
   body:has(.bottom-nav) .support-launcher {
     bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
@@ -21,23 +109,21 @@
     height: 50px !important;
   }
   body:has(.bottom-nav) .support-panel {
-    bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
-    right: 16px !important;
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
     max-height: calc(100vh - 200px);
     max-height: calc(100dvh - 200px);
   }
 }
 @media (max-width: 480px) {
   .support-panel {
-    right: 16px !important;
+    right: 16px;
     left: 16px;
-    width: auto !important;
-    max-width: none !important;
-    /* 16px input text: iOS does not zoom the page when the field is focused. */
+    width: auto;
+    max-width: none;
   }
-  .support-panel input,
-  .support-panel textarea,
-  .support-panel select {
-    font-size: 16px !important;
-  }
+  /* 16px text: iOS does not zoom the page when a field is focused. */
+  .support-field input,
+  .support-field select,
+  .support-field textarea { font-size: 16px; }
 }

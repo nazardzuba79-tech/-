@@ -34,7 +34,6 @@ const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) =>
 const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
 const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
-const AdminSupportPage = lazy(() => import('./pages/admin/AdminSupportPage').then((m) => ({ default: m.AdminSupportPage })));
 
 /** Query-string routing stays here so the ordinary Futures path has exactly
  * one lazy chunk: App -> FuturesPage. The exceptional private card surface is
@@ -119,7 +118,6 @@ export function App() {
           <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
           <Route path="deposits" element={<AdminDepositsPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
-          <Route path="support" element={<AdminSupportPage />} />
         </Route>
       </Routes>
       </Suspense>

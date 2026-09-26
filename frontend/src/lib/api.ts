@@ -1459,32 +1459,6 @@ export const api = {
       timestamp: number;
     }>(`/futures/orderbook/${pairToSlug(symbol)}`),
 
-  // Live-chat support widget
-  startSupportConversation: (name: string, email: string, subject: SupportSubject, message: string) =>
-    request<SupportConversation & { messages: SupportMessage[] }>('/support/conversations', {
-      method: 'POST',
-      body: JSON.stringify({ name, email, subject, message }),
-    }),
-
-  getMySupportConversation: () =>
-    request<{ conversation: (SupportConversation & { messages: SupportMessage[] }) | null }>(
-      '/support/conversations/mine'
-    ),
-
-  getSupportConversation: (id: string) =>
-    request<{ conversation: SupportConversation; messages: SupportMessage[] }>(`/support/conversations/${id}`),
-
-  getSupportConversationStatus: (id: string) =>
-    request<{ unreadByUser: boolean }>(`/support/conversations/${id}/status`),
-
-  sendSupportMessage: (id: string, body: string) =>
-    request<SupportMessage>(`/support/conversations/${id}/messages`, {
-      method: 'POST',
-      body: JSON.stringify({ body }),
-    }),
-
-  markSupportConversationRead: (id: string) => request<void>(`/support/conversations/${id}/read`, { method: 'POST' }),
-
   // --- Admin panel (/admin) — every call below is re-checked for role on
   // the server on every request (see requireAdmin middleware); nothing
   // here is trusted client-side. ---
@@ -1633,26 +1607,6 @@ export const api = {
   },
 
 };
-
-export type SupportSubject = 'TECHNICAL' | 'KYC' | 'CARD' | 'OTHER';
-
-export interface SupportMessage {
-  id: string;
-  sender: 'USER' | 'ADMIN';
-  body: string;
-  createdAt: string;
-}
-
-export interface SupportConversation {
-  id: string;
-  userId: string | null;
-  guestName: string;
-  guestEmail: string;
-  subject: SupportSubject;
-  unreadByUser: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
 function pairToSlug(pair: string): string {
   return pair.replace('/', '-');

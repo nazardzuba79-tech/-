@@ -10,8 +10,7 @@ import nodemailer, { Transporter } from 'nodemailer';
  * The DB row itself can also be lost the same way if the database isn't on
  * durable storage either — this email is the one copy that survives either.
  *
- * Same SMTP-via-nodemailer approach as SupportEmailService, and the same
- * "gracefully absent, not fake" pattern: unset KYC_ADMIN_EMAIL/SMTP_HOST
+ * SMTP via nodemailer, with a "gracefully absent, not fake" pattern: unset KYC_ADMIN_EMAIL/SMTP_HOST
  * and this just logs instead of sending, never blocks the submission.
  */
 
