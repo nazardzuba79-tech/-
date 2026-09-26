@@ -48,11 +48,11 @@ const PORT = Number(arg('--port', '4371'));
 const OUT = path.resolve(arg('--out', path.join(ROOT, 'docs', 'qa', 'futures-visual-polish')));
 const LABEL = arg('--label', 'after');
 const MEASURE_ONLY = process.env.QA_MEASURE_ONLY === '1';
-const WIDTHS = (arg('--widths', '1920x1080,1664x900,1440x900,1366x768,390x844')).split(',')
+const WIDTHS = (arg('--widths', '1920x1080,1664x900,1440x900,1366x768,320x740,360x800,390x844,430x932')).split(',')
   .map(spec => { const [w, h] = spec.split('x').map(Number); return { width: w, height: h }; });
 // The brief asks for screenshots at these three; the other two are measured
 // for clipping and overflow only.
-const SHOT_WIDTHS = new Set(['1440x900', '1664x900', '390x844']);
+const SHOT_WIDTHS = new Set(['1440x900', '1664x900', '320x740', '360x800', '390x844', '430x932']);
 const MARKET_EDGE = 'https://market.voltextech.net';
 
 const express = require('express');
@@ -301,7 +301,15 @@ async function showOnMobile(page, which) {
       if (mobile) await showOnMobile(page, 'book');
       await page.waitForSelector('.rb-stack.rb-bids .rb-row:not(.is-placeholder)', { timeout: 30000 }).catch(() => {});
       await page.waitForTimeout(800);
-      if (mobile) { const chart = page.locator('#mobile-futures-chart'); if (await chart.count()) await chart.click(); await page.waitForTimeout(300); }
+      let drawingChevron = null;
+      if (mobile) {
+        const chart = page.locator('#mobile-futures-chart');
+        if (await chart.count()) await chart.click();
+        const chartPane = page.locator('.futures-mobile-chart-tabs button').first();
+        if (await chartPane.count()) await chartPane.click();
+        await page.waitForTimeout(300);
+        drawingChevron = await page.locator('.tool-group-chevron').first().boundingBox().catch(() => null);
+      }
       const shoot = SHOT_WIDTHS.has(key);
 
       if (shoot) await page.screenshot({ path: path.join(OUT, `${LABEL}-${key}-full.png`) });
@@ -390,6 +398,7 @@ async function showOnMobile(page, which) {
           headingControls: formState.headingControls, field: formState.field, fieldCaption: formState.fieldCaption,
           fieldInput: formState.fieldInput, selects: formState.selects, slider: formState.slider,
           buttons: formState.buttons, formBox: formState.formBox, formOverflowX: formState.formOverflowX },
+        drawingChevron,
         clippedForm: formState.clippedForm, overflowX: Math.max(bookState.overflowX, formState.overflowX),
         idleRequests: idle.length, idleRequestKinds: [...new Set(idle.map(u => u.replace(/\?.*$/, '').replace(/\/[A-Z0-9-]+$/, '/:x')))],
         grouping, tabSwitch, pick, calculator, order, pageErrors };
@@ -406,6 +415,10 @@ async function showOnMobile(page, which) {
         assert.deepEqual(r.clippedForm, [], `${key}: clipped text in the trading panel: ${JSON.stringify(r.clippedForm)}`);
         assert.equal(r.overflowX, 0, `${key}: the page scrolls sideways by ${r.overflowX}px`);
         assert.equal(r.form.formOverflowX, 0, `${key}: the trading panel scrolls sideways by ${r.form.formOverflowX}px`);
+        if (mobile) {
+          assert.ok(r.drawingChevron && r.drawingChevron.width >= 28 && r.drawingChevron.height >= 28,
+            `${key}: drawing trend split target is too small: ${JSON.stringify(r.drawingChevron)}`);
+        }
         assert.equal(r.form.buttons.length, 2, `${key}: expected Long and Short, found ${r.form.buttons.length}`);
         assert.ok(r.order, `${key}: the ticket did not POST an order`);
         // ORDER BOOK
