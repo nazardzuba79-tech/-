@@ -121,19 +121,19 @@ describe('one timer and one request per resource', () => {
     a(); b(); c();
   });
 
-  test('the shared cadence is the FASTEST any live subscriber asked for', async () => {
-    const slow = futuresAccountStore.subscribe(() => {}, { positions: 5000 });
+  test('the shared cadence honors the active-position budget floor', async () => {
+    const slow = futuresAccountStore.subscribe(() => {}, { positions: 20_000 });
     await flush();
-    expect(futuresAccountStore._intervalOf('positions')).toBe(5000);
+    expect(futuresAccountStore._intervalOf('positions')).toBe(20_000);
 
     const fast = futuresAccountStore.subscribe(() => {}, { positions: 4000 });
     await flush();
-    // Nobody is served staler data than they asked for.
-    expect(futuresAccountStore._intervalOf('positions')).toBe(4000);
+    // An old caller cannot bypass the central request budget.
+    expect(futuresAccountStore._intervalOf('positions')).toBe(10_000);
 
     fast();
     // Back to the slower survivor's cadence, not stuck at the fast one.
-    expect(futuresAccountStore._intervalOf('positions')).toBe(5000);
+    expect(futuresAccountStore._intervalOf('positions')).toBe(20_000);
     slow();
   });
 
@@ -243,14 +243,13 @@ describe('one timer and one request per resource', () => {
       await flush();
     }
 
-    // 60s at 5s = 12, at 4s = 15. Before this store the same three
-    // components cost 24 + 39 + 12 = 75.
-    expect(getFuturesBalances).toHaveBeenCalledTimes(12);
-    expect(getFuturesPositions).toHaveBeenCalledTimes(15);
-    expect(getMyFuturesOrders).toHaveBeenCalledTimes(12);
+    // Active position: 10s; balances: 30s; empty orders: 60s.
+    expect(getFuturesBalances).toHaveBeenCalledTimes(2);
+    expect(getFuturesPositions).toHaveBeenCalledTimes(6);
+    expect(getMyFuturesOrders).toHaveBeenCalledTimes(1);
     expect(
       getFuturesBalances.mock.calls.length + getFuturesPositions.mock.calls.length + getMyFuturesOrders.mock.calls.length
-    ).toBe(39);
+    ).toBe(9);
 
     a(); b(); c();
   });
@@ -276,9 +275,7 @@ describe('one timer and one request per resource', () => {
   });
 
   test('a subscription with NO wants creates no timer and fetches nothing', async () => {
-    // This is how the history tab subscribes. An absent key means "never
-    // poll this"; a cadence of any value — 60_000 included — would create
-    // a timer, which is exactly the bug this asserts against.
+    // No active resource: no fetch, including on invalidation.
     const off = futuresAccountStore.subscribe(() => {}, {});
     await flush();
 
@@ -295,10 +292,7 @@ describe('one timer and one request per resource', () => {
 
   test('history still loads on demand for a subscriber that polls nothing', async () => {
     const seen: FuturesAccountState[] = [];
-    const off = futuresAccountStore.subscribe((state) => seen.push(state), {});
-    await flush();
-
-    futuresAccountStore.invalidate(['positionHistory']);
+    const off = futuresAccountStore.subscribe((state) => seen.push(state), { positionHistory: 0 });
     await flush();
 
     // One fetch, delivered to a subscriber that never asked for a cadence,
@@ -333,7 +327,7 @@ describe('event-driven refresh', () => {
     off();
   });
 
-  test('an invalidate landing on top of an in-flight poll costs no extra request', async () => {
+  test('mutations during an in-flight poll queue exactly one fresh GET', async () => {
     const gate = deferred<typeof BALANCES_A>();
     getFuturesBalances.mockReturnValueOnce(gate.promise);
     const off = futuresAccountStore.subscribe(() => {}, { balances: 5000 });
@@ -347,6 +341,7 @@ describe('event-driven refresh', () => {
 
     gate.resolve(BALANCES_A);
     await flush();
+    expect(getFuturesBalances).toHaveBeenCalledTimes(2);
     off();
   });
 });
@@ -503,7 +498,7 @@ describe('no fake zero, and failure behaviour', () => {
     expect(futuresAccountStore.getState().balances.data).toEqual(BALANCES_A);
 
     getFuturesBalances.mockRejectedValue(new Error('503'));
-    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
     const balances = futuresAccountStore.getState().balances;
@@ -536,12 +531,12 @@ describe('no fake zero, and failure behaviour', () => {
     const off = futuresAccountStore.subscribe(() => {}, { balances: 5000 });
     await flush();
     getFuturesBalances.mockRejectedValue(new Error('503'));
-    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(60_000);
     await flush();
     expect(futuresAccountStore.getState().balances.failed).toBe(true);
 
     getFuturesBalances.mockResolvedValue(BALANCES_B);
-    jest.advanceTimersByTime(5000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
     expect(futuresAccountStore.getState().balances.failed).toBe(false);
@@ -568,22 +563,95 @@ describe('order history isolation', () => {
   test('history uses unfiltered endpoint without changing active order filtering or polling', async () => {
     const off = futuresAccountStore.subscribe(() => {}, { orders: 5000 });
     await flush();
-    futuresAccountStore.invalidate(['orderHistory']);
+    const historyOff = futuresAccountStore.subscribe(() => {}, { orderHistory: 0 });
     await flush();
     expect(getMyFuturesOrders.mock.calls).toEqual([['OPEN,PARTIALLY_FILLED'], []]);
     expect(futuresAccountStore._intervalOf('orderHistory')).toBeNull();
+    historyOff();
     off();
   });
   test('a history response from a logged-out account is discarded', async () => {
     const pending = deferred<any[]>();
     getMyFuturesOrders.mockReturnValue(pending.promise);
-    const off = futuresAccountStore.subscribe(() => {}, {});
-    futuresAccountStore.invalidate(['orderHistory']);
+    const off = futuresAccountStore.subscribe(() => {}, { orderHistory: 0 });
     await flush();
     clearToken();
     pending.resolve([{ id: 'old-account-order' }]);
     await flush();
     expect(futuresAccountStore.getState().orderHistory.data).toBeNull();
     off();
+  });
+});
+
+describe('browser read budget and mutation freshness', () => {
+  test.each([
+    ['empty', [], [], [10, 10, 10]],
+    ['position', POSITIONS_A, [], [60, 20, 10]],
+    ['position + order', POSITIONS_A, [{ id: 'o1', status: 'OPEN', remainingQuantity: '1' }], [60, 20, 40]],
+  ])('%s: exact request census over [0, 600s), including initial load', async (_name, positions, orders, expected) => {
+    getFuturesPositions.mockResolvedValue(positions);
+    getMyFuturesOrders.mockResolvedValue(orders);
+    const off = futuresAccountStore.subscribe(() => {}, { positions: 10_000, balances: 30_000, orders: 15_000 });
+    await flush();
+    for (let second = 1; second < 600; second++) { jest.advanceTimersByTime(1000); await flush(); }
+    expect([getFuturesPositions.mock.calls.length, getFuturesBalances.mock.calls.length, getMyFuturesOrders.mock.calls.length]).toEqual(expected);
+    off();
+  });
+
+  test('empty -> active -> empty retimes from actual server rows', async () => {
+    getFuturesPositions.mockResolvedValue([]);
+    const off = futuresAccountStore.subscribe(() => {}, { positions: 1, orders: 1, balances: 1 });
+    await flush();
+    expect(futuresAccountStore._intervalOf('positions')).toBe(60_000);
+    getFuturesPositions.mockResolvedValue(POSITIONS_A);
+    futuresAccountStore.invalidate(['positions']); await flush();
+    expect(futuresAccountStore._intervalOf('positions')).toBe(10_000);
+    expect(futuresAccountStore._intervalOf('balances')).toBe(30_000);
+    getFuturesPositions.mockResolvedValue([]);
+    futuresAccountStore.invalidate(['positions']); await flush();
+    expect(futuresAccountStore._intervalOf('positions')).toBe(60_000);
+    expect(futuresAccountStore._intervalOf('balances')).toBe(60_000);
+    off();
+  });
+
+  test('a fallback discovering an order fill immediately refreshes positions and balance', async () => {
+    getMyFuturesOrders.mockResolvedValue([{ id: 'pending', remainingQuantity: '1' }]);
+    const off = futuresAccountStore.subscribe(() => {}, { positions: 10_000, balances: 30_000, orders: 15_000 });
+    await flush(); getFuturesPositions.mockClear(); getFuturesBalances.mockClear();
+    getMyFuturesOrders.mockResolvedValue([]);
+    await futuresAccountStore.refresh('orders'); await flush();
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1);
+    expect(getFuturesBalances).toHaveBeenCalledTimes(1);
+    expect(getFuturesPositionHistory).not.toHaveBeenCalled();
+    off();
+  });
+
+  test.each(['place', 'cancel', 'close', 'partial close', 'TP/SL', 'transfer'])('%s invalidation updates active resources even during an older request', async () => {
+    const gate = deferred<any[]>();
+    getFuturesPositions.mockReturnValueOnce(gate.promise).mockResolvedValue([]);
+    const off = futuresAccountStore.subscribe(() => {}, { positions: 10_000, balances: 30_000 });
+    futuresAccountStore.invalidate(['positions', 'balances', 'positionHistory']);
+    gate.resolve(POSITIONS_A); await flush(); await flush();
+    expect(getFuturesPositions).toHaveBeenCalledTimes(2);
+    expect(futuresAccountStore.getState().positions.data).toEqual([]);
+    expect(getFuturesPositionHistory).not.toHaveBeenCalled();
+    const historyOff = futuresAccountStore.subscribe(() => {}, { positionHistory: 0 });
+    await flush(); expect(getFuturesPositionHistory).toHaveBeenCalledTimes(1);
+    historyOff(); futuresAccountStore.invalidate(['positionHistory']); await flush();
+    expect(getFuturesPositionHistory).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  test('fresh visibility does not read, hidden mutation reads on return, no timer while logged out', async () => {
+    const off = futuresAccountStore.subscribe(() => {}, { positions: 10_000 }); await flush();
+    visibilityDocument.hidden = true; visibilityDocument.dispatchEvent(new Event('visibilitychange'));
+    visibilityDocument.hidden = false; visibilityDocument.dispatchEvent(new Event('visibilitychange')); await flush();
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1);
+    visibilityDocument.hidden = true; visibilityDocument.dispatchEvent(new Event('visibilitychange'));
+    futuresAccountStore.invalidate(['positions']); await flush();
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1); expect(futuresAccountStore._timerCount).toBe(0);
+    visibilityDocument.hidden = false; visibilityDocument.dispatchEvent(new Event('visibilitychange')); await flush();
+    expect(getFuturesPositions).toHaveBeenCalledTimes(2);
+    clearToken(); expect(futuresAccountStore._timerCount).toBe(0); off();
   });
 });

@@ -30,7 +30,7 @@ function load(file: string): any {
   const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
-    if (name.endsWith('/lib/api')) return { api, getToken: () => 'test-only', ApiError, API_BASE: '/api/v1' };
+    if (name.endsWith('/lib/api') || name === './api') return { api, getToken: () => 'test-only', onSessionChange: () => () => {}, ApiError, API_BASE: '/api/v1' };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
   });
   return exports;
@@ -57,6 +57,7 @@ beforeEach(() => {
   visibility = 'visible';
   confirmGate = null;
   Object.defineProperty(dom.window.document, 'visibilityState', { configurable: true, get: () => visibility });
+  Object.defineProperty(dom.window.document, 'hidden', { configurable: true, get: () => visibility === 'hidden' });
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
   host = document.getElementById('root')!;
   root = req('react-dom/client').createRoot(host);
@@ -146,11 +147,11 @@ test('4. only a READY package offers the action; tabs keep counts; cards show re
   expect(host.querySelector('[data-unattributed-link]')!.textContent).toContain('3');
 });
 
-test('5–6. the only timer is the activity read: none while hidden, an immediate read on return, 25 s cadence while visible', async () => {
+test('5–6. hourly activity: no hidden timers or fresh-return reads', async () => {
   jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick'] });
   await mount();
   expect(activityCalls()).toBe(1);
-  await act(async () => { jest.advanceTimersByTime(25_000); await flush(); await flush(); });
+  await act(async () => { jest.advanceTimersByTime(HOUR); await flush(); await flush(); });
   expect(activityCalls()).toBe(2);
   visibility = 'hidden';
   await act(async () => { document.dispatchEvent(new dom.window.Event('visibilitychange')); await flush(); });
@@ -159,7 +160,7 @@ test('5–6. the only timer is the activity read: none while hidden, an immediat
   expect(jest.getTimerCount()).toBe(0);
   visibility = 'visible';
   await act(async () => { document.dispatchEvent(new dom.window.Event('visibilitychange')); await flush(); await flush(); });
-  expect(activityCalls()).toBe(3);
+  expect(activityCalls()).toBe(2);
   expect(api.getAdminUsers).toHaveBeenCalledTimes(1);
   expect(api.getAdminDeposits).not.toHaveBeenCalled();
 });

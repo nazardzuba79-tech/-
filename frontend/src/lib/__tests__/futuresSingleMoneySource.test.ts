@@ -51,7 +51,7 @@ describe('the account has a single authoritative source', () => {
     // The old second derivation survives ONLY as the real account's `:`
     // branch — the tier table is never consulted when the engine has
     // published its own maintenance margin.
-    expect(summary).toContain([
+    expect(summary.replace(/\r\n/g, '\n')).toContain([
       'const maintenanceMargin = aggregate',
       '    ? Number(aggregate.maintenanceMargin)',
       '    : positions && config',

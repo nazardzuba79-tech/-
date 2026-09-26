@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { getAdminAlertSummary, type AdminAlertSummary } from './adminAlertApi';
+import { createVisibleRead } from './visibleRead';
+import { getToken, onSessionChange } from './api';
 
 // A notification chime is not trading-state freshness. One tiny cursor request
-// per visible minute is enough; detailed admin lists load only on admin pages.
-const POLL_MS = 60_000;
+// per visible hour is enough; detailed admin lists load only on admin pages.
+export const POLL_MS = 60 * 60_000;
 const SOUND_PREF_KEY = 'exchange_admin_alert_sound';
 
 export function isAdminAlertSoundEnabled(): boolean {
@@ -59,7 +61,7 @@ function changed(previous: AdminAlertSummary | null, next: AdminAlertSummary): b
 /**
  * Global admin chime. The first successful read establishes a baseline and
  * never replays old items. Hidden tabs make zero polling requests and refresh
- * once when visible again.
+ * only when the successful cursor is an hour old on returning.
  */
 export function useAdminAlertSound(enabled: boolean) {
   const cursor = useRef<AdminAlertSummary | null>(null);
@@ -67,32 +69,32 @@ export function useAdminAlertSound(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    let running = false;
+    let epoch = 0;
+    cursor.current = null;
 
     async function poll() {
-      if (cancelled || running || document.hidden) return;
-      running = true;
+      const token = getToken(), started = epoch;
+      if (cancelled || !token || document.hidden) return;
       try {
         const next = await getAdminAlertSummary();
-        if (cancelled) return;
+        if (cancelled || started !== epoch || token !== getToken()) return;
         const hasNew = changed(cursor.current, next);
         cursor.current = next;
         if (hasNew && isAdminAlertSoundEnabled()) playChime();
-      } catch {
+      } catch (error) {
         // Transient — preserve the last successful cursor and retry later.
-      } finally {
-        running = false;
+        throw error;
       }
     }
 
-    void poll();
-    const interval = setInterval(() => { void poll(); }, POLL_MS);
-    const onVisibility = () => { if (!document.hidden) void poll(); };
-    document.addEventListener('visibilitychange', onVisibility);
+    let reader = getToken() ? createVisibleRead(poll, POLL_MS, true) : null;
+    const off = onSessionChange(() => {
+      epoch++; cursor.current = null; reader?.stop();
+      reader = getToken() ? createVisibleRead(poll, POLL_MS, true) : null;
+    });
     return () => {
       cancelled = true;
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisibility);
+      reader?.stop(); off();
     };
   }, [enabled]);
 }

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '../../lib/api';
+import { api, getToken } from '../../lib/api';
+import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
+import { createVisibleRead } from '../../lib/visibleRead';
 import { CoinRanking } from '../../lib/pairList';
 import { nativeDemoApi, type NativeWallet } from '../../lib/nativeDemoApi';
 
@@ -89,8 +91,19 @@ export interface UnifiedAccount {
 
 export type LoadState = 'loading' | 'ok' | 'error';
 
-const BALANCE_POLL_MS = 8_000;
-const RANKINGS_POLL_MS = 15_000;
+export const WALLET_STALE_MS = 120_000;
+const RANKINGS_TTL_MS = 30 * 60_000;
+// Public metadata only. Shared across Wallet mounts; never stores account data.
+let rankingCache: { at: number; data: CoinRanking[] } | null = null;
+let rankingRequest: Promise<CoinRanking[]> | null = null;
+function readRankings(): Promise<CoinRanking[]> {
+  if (rankingCache && Date.now() - rankingCache.at < RANKINGS_TTL_MS) return Promise.resolve(rankingCache.data);
+  if (!rankingRequest) rankingRequest = api.getExternalRankings().then(res => {
+    const data = res.rankings as CoinRanking[];
+    rankingCache = { at: Date.now(), data }; return data;
+  }).finally(() => { rankingRequest = null; });
+  return rankingRequest;
+}
 
 const finite = (value: string | null | undefined): number | null => {
   if (value === null || value === undefined) return null;
@@ -131,73 +144,32 @@ export function useWalletData() {
   const [unified, setUnified] = useState<NativeWallet | null | undefined>(undefined);
   const snapshotRecorded = useRef(false);
 
-  const loadOverview = useCallback(() => {
-    api
-      .getWalletOverview()
-      .then((res) => {
-        setOverview(res);
-        setOverviewState('ok');
-      })
-      // Keep the last good figures rather than blanking a populated page on
-      // one failed poll; only a cold start shows the error state.
-      .catch(() => setOverviewState((prev) => (prev === 'ok' ? 'ok' : 'error')));
-  }, []);
+  const loadOverview = useVisibleAccountRead({
+    load: () => api.getWalletOverview(), staleMs: WALLET_STALE_MS,
+    accept: res => { setOverview(res); setOverviewState('ok'); },
+    fail: () => setOverviewState(prev => prev === 'ok' ? 'ok' : 'error'),
+    reset: () => { setOverview(null); setOverviewState('loading'); snapshotRecorded.current = false; },
+  });
+  const loadUnified = useVisibleAccountRead({
+    load: () => nativeDemoApi.wallet(), staleMs: WALLET_STALE_MS,
+    accept: setUnified,
+    fail: () => setUnified(prev => prev ? prev : null),
+    reset: () => setUnified(undefined),
+  });
+  const loadPerformance = useVisibleAccountRead({
+    load: () => api.getWalletPerformance(), staleMs: WALLET_STALE_MS,
+    accept: res => { setPerformance(res); setPerformanceState('ok'); },
+    fail: () => setPerformanceState(prev => prev === 'ok' ? 'ok' : 'error'),
+    reset: () => { setPerformance(null); setPerformanceState('loading'); },
+  });
 
   useEffect(() => {
-    loadOverview();
-    const id = setInterval(loadOverview, BALANCE_POLL_MS);
-    return () => clearInterval(id);
-  }, [loadOverview]);
-
-  const loadUnified = useCallback(() => {
-    nativeDemoApi
-      .wallet()
-      // 401/403 (not the owner) and 409 (no margin account yet) all mean the
-      // same thing here: this account is an ordinary ledger, render it as one.
-      .then((res) => setUnified(res))
-      .catch(() => setUnified((prev) => (prev ? prev : null)));
-  }, []);
-
-  useEffect(() => {
-    loadUnified();
-  }, [loadUnified]);
-
-  // Coming back to the tab is the one moment a stale account figure is most
-  // likely and cheapest to fix: it costs one request, only after the page
-  // was actually left, and never fires while the user is looking at it.
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') loadUnified();
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [loadUnified]);
-
-  const loadPerformance = useCallback(() => {
-    api
-      .getWalletPerformance()
-      .then((res) => {
-        setPerformance(res);
-        setPerformanceState('ok');
-      })
-      .catch(() => setPerformanceState((prev) => (prev === 'ok' ? 'ok' : 'error')));
-  }, []);
-
-  useEffect(() => {
-    loadPerformance();
-  }, [loadPerformance]);
-
-  useEffect(() => {
-    function load() {
-      api
-        .getExternalRankings()
-        .then((res) => setRankings(res.rankings as CoinRanking[]))
-        .catch(() => {})
-        .finally(() => setRankingsLoaded(true));
-    }
-    load();
-    const id = setInterval(load, RANKINGS_POLL_MS);
-    return () => clearInterval(id);
+    let alive = true;
+    const reader = createVisibleRead(async () => {
+      try { const data = await readRankings(); if (alive) setRankings(data); }
+      finally { if (alive) setRankingsLoaded(true); }
+    }, RANKINGS_TTL_MS);
+    return () => { alive = false; reader.stop(); };
   }, []);
 
   /**
@@ -365,18 +337,20 @@ export function useWalletData() {
   }, [account, unified, overview]);
 
   const setCollateral = useCallback(async (asset: string, enabled: boolean) => {
+    const token = getToken();
     const next = await nativeDemoApi.setCollateral(asset, enabled, crypto.randomUUID());
     // The mutation returns the same authoritative Wallet object the page
     // normally loads. Paint that confirmed result immediately; no optimistic
     // margin number and no second valuation race.
-    setUnified(next);
+    if (token === getToken()) { setUnified(next); void loadUnified(); }
     return next;
-  }, []);
+  }, [loadUnified]);
 
   const refresh = useCallback(() => {
     loadOverview();
     loadUnified();
-  }, [loadOverview, loadUnified]);
+    loadPerformance();
+  }, [loadOverview, loadUnified, loadPerformance]);
 
   return {
     overview,

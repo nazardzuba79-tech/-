@@ -103,7 +103,13 @@ function runHook(options: {
   try {
     const { useWalletData } = evaluate('frontend/src/pages/wallet-v3/useWalletData.ts', {
       react: hooks,
-      '../../lib/api': { api },
+      '../../lib/api': { api, getToken: () => 'fixture-session' },
+      '../../lib/useVisibleAccountRead': evaluate('frontend/src/lib/useVisibleAccountRead.ts', {
+        react: hooks,
+        './api': { getToken: () => 'fixture-session', onSessionChange: () => () => {} },
+        './visibleRead': evaluate('frontend/src/lib/visibleRead.ts'),
+      }),
+      '../../lib/visibleRead': evaluate('frontend/src/lib/visibleRead.ts'),
       '../../lib/pairList': {},
       '../../lib/nativeDemoApi': { nativeDemoApi },
     });
@@ -346,14 +352,13 @@ describe('4. no account balance is written into the source', () => {
 });
 
 describe('5. the page does not poll per asset', () => {
-  it('reads the authoritative account once per load, never on an interval', () => {
+  it('reads the authoritative account once per load, never on an interval', async () => {
     const hook = runHook({ wallet: () => Promise.resolve(OWNER_WALLET) });
+    await Promise.resolve(); await Promise.resolve();
     // One native request for the whole account AND all its rows.
     expect(hook.calls.filter((c) => c === 'native-wallet')).toHaveLength(1);
-    // The two intervals are the pre-existing balance and rankings polls.
-    // The account valuation — which costs one upstream quote per held asset
-    // — is deliberately not among them.
-    expect(hook.intervals.sort((a, b) => a - b)).toEqual([8000, 15000]);
+    // Wallet and metadata are event/visibility driven, with no idle timers.
+    expect(hook.intervals).toEqual([]);
   });
 
   it('makes a fixed number of requests regardless of how many assets are held', async () => {

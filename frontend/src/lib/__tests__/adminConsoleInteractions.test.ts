@@ -19,7 +19,7 @@ function load(file: string): any {
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
     if (name.endsWith('/api')) return { api, getToken: () => token, ApiError: class extends Error {} };
-    if (name.endsWith('/useAdminAlerts')) return { isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
+    if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
   });
   return exports;

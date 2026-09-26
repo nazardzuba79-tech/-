@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
 import { API_BASE, getToken } from '../../lib/api';
 
 /** One user's deposit package summary (one asset, one network): the sum of
@@ -63,53 +64,23 @@ export async function getAdminUserActivity(signal?: AbortSignal): Promise<AdminU
 }
 
 /** Re-read cadence while the Users page is on screen. */
-export const ADMIN_ACTIVITY_POLL_MS = 25_000;
-
-const visible = () => document.visibilityState === 'visible';
+export const ADMIN_ACTIVITY_POLL_MS = 60 * 60_000;
 
 /**
  * The Users page's only timer: the compact activity read, every
  * ADMIN_ACTIVITY_POLL_MS while the tab is visible. A hidden tab schedules
- * nothing; coming back reads immediately and resumes the cadence. Overlapping
- * reads collapse into one. Nothing global — it lives and dies with the page.
+ * nothing; coming back reads only stale data. A mutation during a read queues
+ * one follow-up. Nothing global — it lives and dies with the page.
  */
 export function useAdminUserActivity(load: (signal?: AbortSignal) => Promise<AdminUserActivity> = getAdminUserActivity) {
   const [activity, setActivity] = useState<AdminUserActivity | null>(null);
   const [failed, setFailed] = useState(false);
-  const running = useRef<Promise<void> | null>(null);
-  const alive = useRef(true);
-
-  const refresh = useCallback((): Promise<void> => {
-    if (running.current) return running.current;
-    const work = load()
-      .then((next) => { if (alive.current) { setActivity(next); setFailed(false); } })
-      .catch(() => { if (alive.current) setFailed(true); })
-      .finally(() => { running.current = null; });
-    running.current = work;
-    return work;
-  }, [load]);
-
-  useEffect(() => {
-    alive.current = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const stop = () => { if (timer !== undefined) { clearTimeout(timer); timer = undefined; } };
-    const schedule = () => {
-      stop();
-      if (!alive.current || !visible()) return;
-      timer = setTimeout(() => { void refresh().then(schedule); }, ADMIN_ACTIVITY_POLL_MS);
-    };
-    const onVisibility = () => {
-      if (visible()) void refresh().then(schedule);
-      else stop();
-    };
-    void refresh().then(schedule);
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => {
-      alive.current = false;
-      stop();
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [refresh]);
+  const refresh = useVisibleAccountRead({
+    load, staleMs: ADMIN_ACTIVITY_POLL_MS, poll: true,
+    accept: next => { setActivity(next); setFailed(false); },
+    fail: () => setFailed(true),
+    reset: () => { setActivity(null); setFailed(false); },
+  });
 
   return { activity, failed, refresh };
 }

@@ -1,6 +1,7 @@
 import * as positionActions from '../futuresPositionActions';
 import * as terminalPresentation from '../terminalPresentation';
 import { readFileSync } from 'fs';
+import { browserReadModules } from '../../../test-utils/browserReadModules';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
@@ -123,6 +124,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   };
 
   const output: any = {};
+  const readModules = browserReadModules(react, api);
   const compiled = ts.transpileModule(source(file), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
   } }).outputText;
@@ -140,6 +142,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return module;
     }
     if (name === '../lib/api') return { api, ApiError: Error };
+    if (name === '../lib/useFuturesMark') return readModules.mark;
+    if (name === '../lib/visibleRead') return readModules.visible;
     if (name === '../lib/futuresExecution') {
       // The engine seam. Outside a provider the real components use
       // REAL_FUTURES_EXECUTION, which is the `api` call each one used to

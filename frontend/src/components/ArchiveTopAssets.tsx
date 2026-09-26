@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { topCapitalizationAssets } from '../lib/topCapitalization';
+import { createVisibleRead } from '../lib/visibleRead';
 
 type Ranking = Awaited<ReturnType<typeof api.getExternalRankings>>['rankings'][number];
 
@@ -17,11 +18,10 @@ export function ArchiveTopAssets({ symbols, onSelect }: { symbols: string[]; onS
       try {
         const result = await api.getExternalRankings();
         if (!cancelled) { setAssets(topCapitalizationAssets(result.rankings)); setFailed(false); }
-      } catch { if (!cancelled) setFailed(true); }
+      } catch (error) { if (!cancelled) setFailed(true); throw error; }
     };
-    void load();
-    const timer = window.setInterval(load, 60_000);
-    return () => { cancelled = true; window.clearInterval(timer); };
+    const reader = createVisibleRead(load, 60_000, true);
+    return () => { cancelled = true; reader.stop(); };
   }, []);
   const label = lang === 'ru' ? 'Топ-8 по капитализации · без стейблкоинов' : 'Top 8 by market cap · excluding stablecoins';
   return <div className="archive-top-assets" aria-label={label} title={label}>

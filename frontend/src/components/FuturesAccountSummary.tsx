@@ -30,7 +30,7 @@ export function FuturesAccountSummary({
   // the positions table now read the SAME snapshot instead of three
   // independently timed copies of it. The 5s cadence is the one this card
   // always used.
-  const account = useFuturesAccount({ balances: 5000, positions: 5000 });
+  const account = useFuturesAccount({ balances: 30_000, positions: 10_000 });
   /**
    * ONE SOURCE FOR EVERY FIGURE ON THIS CARD.
    *
