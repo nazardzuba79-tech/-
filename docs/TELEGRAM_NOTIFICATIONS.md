@@ -14,6 +14,20 @@ claimed on the basis of synthetic tests.
 
 ## Paths and authority
 
+- Self-registration emits `NEW_USER_REGISTERED` only after the existing USER
+  account/session creation and successful 201 response. ADMIN and service/seed
+  provisioning do not emit. The hook passes only the returned row's id, email,
+  role and createdAt; no additional DB read/write, AuditLog scan or outbox.
+  `/v1/registration` accepts only this type with role USER, required email and
+  userId equal to eventId. It uses the same pinned Render Ed25519 public key
+  (historically named `DEPOSIT_SIGNING_PUBLIC_KEY`) and exact body/path signature
+  as deposits, without rotating keys. Browsers and unsigned callers are denied;
+  the private KYC entrypoint still accepts only KYC. Telegram includes the title
+  `Нова реєстрація VOLTEX`, email, User ID and registration date/time explicitly
+  in UTC, derived from createdAt, not the notification dispatch time.
+  Passwords, JWTs, sessions and API keys are never serialized. Failure is logged
+  with fixed status codes only and cannot block or undo registration.
+
 - KYC's existing authorize/email/confirm flow is unchanged. Only AFTER email
   acceptance AND confirmed metadata (`created` or `exists`) does the KYC
   Worker call the private `KycNotifications` service binding. Deferred
@@ -31,10 +45,11 @@ claimed on the basis of synthetic tests.
   pins only its PUBLIC verification half in `DEPOSIT_SIGNING_PUBLIC_KEY`.
   If JWT_SECRET is rotated, rerun the key-pinning deployment step. Missing
   or mismatched keys fail closed for notification, never for discovery.
-- Public HTTP accepts ONLY signed `DEPOSIT_DISCOVERED`, ±5-minute signature
+- Public HTTP accepts ONLY signed `DEPOSIT_DISCOVERED` / `NEW_USER_REGISTERED`, ±5-minute signature
   freshness, <=4 KiB body, fixed schema, no Origin/Sec-Fetch browser request.
-  Public KYC/registration/message endpoints do not exist. KYC binding rejects
-  deposit events. Neither endpoint grants trading or administrative authority.
+  Public KYC/arbitrary-message endpoints do not exist. Registration uses its
+  own signed server-only path described above. KYC binding rejects
+  deposit and registration events. No notification endpoint grants trading or administrative authority.
 - No balance credit, attribution, KYC update, user write, migration, funding,
   matching or trading change is performed by notifications.
 

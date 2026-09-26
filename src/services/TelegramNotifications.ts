@@ -28,17 +28,14 @@ export interface DiscoveredTransfer {
   createdAt: Date;
 }
 
-export async function notifyDeposit(transfer: DiscoveredTransfer, fetchImpl: typeof fetch = fetch): Promise<void> {
+// Both server event types use the existing pinned key. Keep the derivation's
+// historical deposit-event-signing label so deployments need no key rotation.
+async function sendSignedEvent(path: string, event: () => object, fetchImpl: typeof fetch): Promise<void> {
   try {
     const key = signingKey();
     if (!key) { console.warn('[notifications]', 'NOT_CONFIGURED'); return; }
-    const path = '/v1/deposit';
     const timestamp = String(Date.now());
-    const body = JSON.stringify({
-      eventId: transfer.id, eventType: 'DEPOSIT_DISCOVERED', timestamp: transfer.createdAt.getTime(),
-      amount: transfer.amount.toString(), asset: 'USDT', network: 'TRC20',
-      // Discovery has no owner or accumulation aggregate. Do not query or invent them.
-    });
+    const body = JSON.stringify(event());
     const signature = sign(null, Buffer.from(`${DOMAIN}\n${timestamp}\n${path}\n${body}`), key).toString('base64url');
     const response = await fetchImpl(`${ORIGIN}${path}`, {
       method: 'POST', headers: { 'content-type': 'application/json', 'x-voltex-timestamp': timestamp, 'x-voltex-signature': signature },
@@ -48,4 +45,30 @@ export async function notifyDeposit(transfer: DiscoveredTransfer, fetchImpl: typ
     if (!response.ok) console.warn('[notifications]', 'DELIVERY_UNAVAILABLE');
     await response.body?.cancel();
   } catch { console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'); }
+}
+
+export function notifyDeposit(transfer: DiscoveredTransfer, fetchImpl: typeof fetch = fetch): Promise<void> {
+  return sendSignedEvent('/v1/deposit', () => ({
+    eventId: transfer.id, eventType: 'DEPOSIT_DISCOVERED', timestamp: transfer.createdAt.getTime(),
+    amount: transfer.amount.toString(), asset: 'USDT', network: 'TRC20',
+    // Discovery has no owner or accumulation aggregate. Do not query or invent them.
+  }), fetchImpl);
+}
+
+export interface RegisteredUser {
+  id: string;
+  email: string;
+  role: string;
+  createdAt: Date;
+}
+
+/** Called only by successful self-registration, never by seeds/admin provisioning.
+ * Explicit allowlist: never serialize the full User, request, session or JWT.
+ */
+export async function notifyUserRegistered(user: RegisteredUser, fetchImpl: typeof fetch = fetch): Promise<void> {
+  if (user.role !== 'USER') return;
+  await sendSignedEvent('/v1/registration', () => ({
+    eventId: user.id, eventType: 'NEW_USER_REGISTERED', timestamp: user.createdAt.getTime(),
+    userId: user.id, email: user.email, role: 'USER',
+  }), fetchImpl);
 }
