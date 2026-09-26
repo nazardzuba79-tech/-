@@ -83,6 +83,41 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     }
   });
 
+  // THE USERS PAGE'S WORK QUEUE, in one small read: counts for the summary
+  // cards and only the deposits that still need an admin (status is not
+  // CREDITED) and already belong to a user. No history, no credited rows,
+  // no live provider calls. The page re-reads this every ~25 s while it is
+  // visible; crediting itself stays on POST /admin/deposits/manual-credit.
+  router.get('/admin/user-activity', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    try {
+      const [totalUsers, newUsers24h, pendingKyc, pending] = await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({ where: { createdAt: { gte: since } } }),
+        prisma.user.count({ where: { kycStatus: 'PENDING' } }),
+        prisma.deposit.findMany({
+          where: { userId: { not: null }, status: { not: 'CREDITED' } },
+          orderBy: { createdAt: 'desc' },
+          take: 200,
+          select: { id: true, userId: true, asset: true, chain: true, txHash: true, amount: true, confirmations: true, status: true, createdAt: true },
+        }),
+      ]);
+      res.set('Cache-Control', 'private, no-store');
+      res.json({
+        asOf: new Date().toISOString(),
+        totalUsers,
+        newUsers24h,
+        pendingKyc,
+        pendingDeposits: pending.map((d) => ({
+          id: d.id, userId: d.userId, asset: d.asset, chain: d.chain, txHash: d.txHash,
+          amount: d.amount.toString(), confirmations: d.confirmations, status: d.status, createdAt: d.createdAt,
+        })),
+      });
+    } catch {
+      res.status(503).json({ error: 'Failed to load admin activity' });
+    }
+  });
+
   // Recent transfers to the treasury address that aren't recorded as a
   // Deposit yet — real on-chain data (see each verifier's listIncoming),
   // not anything the client submitted.

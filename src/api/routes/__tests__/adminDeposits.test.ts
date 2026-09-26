@@ -82,6 +82,61 @@ describe('admin deposits routes', () => {
     });
   });
 
+  describe('GET /admin/user-activity (Users page work queue)', () => {
+    it('returns counts and only unresolved, user-owned deposits — no history, no live providers', async () => {
+      const fetchSpy = jest.spyOn(global, 'fetch' as any);
+      const findMany = jest.fn().mockResolvedValue([
+        { id: 'd1', userId: 'u1', asset: 'USDT', chain: 'tron', txHash: 'a'.repeat(64), amount: { toString: () => '2500' }, confirmations: 30, status: 'PENDING', createdAt: new Date('2026-09-26T08:00:00.000Z') },
+      ]);
+      const count = jest.fn()
+        .mockResolvedValueOnce(42)   // total users
+        .mockResolvedValueOnce(3)    // registered in the last 24h
+        .mockResolvedValueOnce(2);   // KYC pending
+      const prisma = adminPrisma({
+        user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), count },
+        deposit: { findMany, findUnique: jest.fn(), upsert: jest.fn() },
+      });
+      const res = await request(buildApp(prisma)).get('/api/v1/admin/user-activity').set('Authorization', authHeader('admin-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe('private, no-store');
+      expect(res.body).toMatchObject({ totalUsers: 42, newUsers24h: 3, pendingKyc: 2 });
+      expect(res.body.pendingDeposits).toEqual([
+        { id: 'd1', userId: 'u1', asset: 'USDT', chain: 'tron', txHash: 'a'.repeat(64), amount: '2500', confirmations: 30, status: 'PENDING', createdAt: '2026-09-26T08:00:00.000Z' },
+      ]);
+      // One bounded read of the work queue: user-owned, not credited, newest first, capped.
+      expect(findMany).toHaveBeenCalledTimes(1);
+      expect(findMany.mock.calls[0][0]).toMatchObject({
+        where: { userId: { not: null }, status: { not: 'CREDITED' } }, orderBy: { createdAt: 'desc' }, take: 200,
+      });
+      expect(findMany.mock.calls[0][0].include).toBeUndefined();
+      // Registrations in the last 24 hours and pending KYC are counts, not lists.
+      expect(count.mock.calls[1][0].where.createdAt.gte).toBeInstanceOf(Date);
+      expect(Date.now() - count.mock.calls[1][0].where.createdAt.gte.getTime()).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000 - 1000);
+      expect(count.mock.calls[2][0]).toEqual({ where: { kycStatus: 'PENDING' } });
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
+      expect(fetchSpy).not.toHaveBeenCalled();
+      fetchSpy.mockRestore();
+    });
+
+    it('is admin-only and reads nothing for anyone else', async () => {
+      const count = jest.fn();
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }), count } });
+      const res = await request(buildApp(prisma)).get('/api/v1/admin/user-activity').set('Authorization', authHeader('u1'));
+      expect(res.status).toBe(403);
+      expect(count).not.toHaveBeenCalled();
+      expect(prisma.deposit.findMany).not.toHaveBeenCalled();
+    });
+
+    it('answers 503 instead of a partial queue when the database fails', async () => {
+      const prisma = adminPrisma({
+        user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), count: jest.fn().mockRejectedValue(new Error('db down')) },
+      });
+      const res = await request(buildApp(prisma)).get('/api/v1/admin/user-activity').set('Authorization', authHeader('admin-1'));
+      expect(res.status).toBe(503);
+    });
+  });
+
   describe('GET /admin/deposits/recent-by-user', () => {
     it('returns one compact recent row per user without loading full deposit history', async () => {
       const queryRaw = jest.fn().mockResolvedValue([
