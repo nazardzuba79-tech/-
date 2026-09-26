@@ -15,7 +15,7 @@ export function validEvent(e, type, now = Date.now()) {
   if (!Number.isSafeInteger(e.timestamp) || e.timestamp > now + 60_000 || e.timestamp <= now - RETENTION_MS) return false;
   if (type === 'KYC_SUBMITTED') {
     return (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))
-      && (!e.fullName || text(e.fullName, 160)) && (!e.documentType || text(e.documentType, 40));
+      && (!e.fullName || text(e.fullName, 200)) && (!e.documentType || text(e.documentType, 40));
   }
   return amount(e.amount) && e.asset === 'USDT' && e.network === 'TRC20'
     && (!e.email || (text(e.email, 254) && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.email)))

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { Delivery, handle, message, RETENTION_MS, validEvent } from './src/core.js';
 
 const now = Date.now();
@@ -56,6 +57,18 @@ test('old/future events and unsupported types rejected; replay after retention c
   assert.equal(validEvent(event({ timestamp: now - RETENTION_MS }), 'DEPOSIT_DISCOVERED', now), false);
   assert.equal(validEvent(event({ timestamp: now + 120_000 }), 'DEPOSIT_DISCOVERED', now), false);
   assert.equal(validEvent(event({ eventType: 'USER_REGISTERED' }), 'USER_REGISTERED'), false);
+});
+test('notification accepts the existing KYC 200-character name limit', () => {
+  const e = { eventId: 'kyc-name', eventType: 'KYC_SUBMITTED', timestamp: now, fullName: 'N'.repeat(200) };
+  assert.equal(validEvent(e, 'KYC_SUBMITTED', now), true);
+  assert.equal(validEvent({ ...e, fullName: 'N'.repeat(201) }, 'KYC_SUBMITTED', now), false);
+});
+test('notification sources have no DB clients, scheduled polling or cron trigger', () => {
+  for (const file of ['src/core.js', 'src/index.js', '../../src/services/TelegramNotifications.ts', '../kyc-edge/src/notifications.js']) {
+    const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /setInterval\s*\(|scheduled\s*\(|PrismaClient|DATABASE_URL|from ['"]pg['"]/);
+  }
+  assert.doesNotMatch(readFileSync(new URL('wrangler.toml', import.meta.url), 'utf8'), /\[triggers\]|crons\s*=/);
 });
 test('public deposit endpoint verifies exact signed body; browser, tampering, stale signature and KYC blocked', async () => {
   const { privateKey, publicKey } = generateKeyPairSync('ed25519'); let calls = 0;
