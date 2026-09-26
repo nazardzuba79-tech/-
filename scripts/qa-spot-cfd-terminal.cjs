@@ -157,6 +157,9 @@ const READ = (tokenNames) => {
       if (mobile && name !== 'futures' && m.smallTargets > 0) {
         findings.push(`${name} @${key}: ${m.smallTargets} tap target(s) under 28px tall`);
       }
+      if (mobile && name !== 'futures' && m.strip && m.strip.h > 112) {
+        findings.push(`${name} @${key}: mobile ticker is ${m.strip.h}px tall; expected a compact header <=112px`);
+      }
       if (mobile && name === 'futures' && m.smallTargets > 0) {
         (report.preExisting ||= []).push(`futures @${key}: ${m.smallTargets} tap target(s) under 28px tall (pre-existing on main, out of scope)`);
       }
