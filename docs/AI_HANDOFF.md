@@ -3908,3 +3908,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved from Codex: the `listingArmed` gate and `effectiveTestMarketNow` freeze (now an off switch), the store's one-request/sleep-until-listing schedule, the fixture-based browser QA structure and its workflow step.
 - Checks run: backend and frontend `tsc` clean; `vite build` OK; 8 VTA/i18n/harness suites 172/172; full `npx jest` on the branch: 29 failing suites before the harness fix — the 2 branch-only ones (`spotOrderFeedback`, `spotButtonLabels`) fixed and passing, the other 27 fail on unmodified main `2460713f` with identical test names. `scripts/qa-voltora-listing.cjs` PASS locally on the production bundle at all five widths (countdown 01:23:59:59 → 01:23:59:57, writes 0, no page errors, no overflow).
 - Unresolved: after 2026-09-28 14:00 UTC the chart and prices start from the simulation, and Buy/Sell still answer «Этот актив пока не торгуется» (the asset stays non-tradable by design) — owner to confirm that is wanted. At 320 px the Markets page's sector table overflows by 12 px with an empty fixture (pre-existing, outside the VTA row).
+
+## Claude — 2026-09-26 — Admin → Пользователи: page switcher moved to the top
+
+- Base fresh main `0f738418`. Branch `claude/admin-users-pager-top`. Frontend only.
+- Owner (screenshot of /admin/users, 27 users): the page switcher at the bottom right sat under the support chat button, so page 2 could not be reached; asked to move it up, to the right end of the filter row.
+- `AdminPagination.tsx`: optional `placement="top"` (no top margin, right-aligned; default unchanged). `AdminUsersPage.tsx`: the filter tabs and the switcher share one row (`.admin-user-tabs-row`), the bottom switcher is removed. `adminConsole.css`: the row wraps on phones.
+- Checks run: frontend `tsc`; production build; `futuresRouteLoadAndAdminPagination`, `adminUsersActivity`, `routeCodeSplitting` pass. Browser (production bundle, 27 fixture users): at 2000/1440 the switcher sits on the tab row (y≈256), clear of the chat button; page 2 opens (21–27 из 27); at 390 it wraps under the tabs; no horizontal overflow, no page errors.
+- Preserved: Codex's admin layout, the user table, filters, activity polling; single-page lists still hide the switcher.

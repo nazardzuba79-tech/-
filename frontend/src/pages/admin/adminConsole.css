@@ -90,6 +90,8 @@
 
 /* Users page: quick filters, СОБЫТИЕ badges and the «Зачислить» entry point. */
 .admin-user-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 2px; }
+.admin-user-tabs-row { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
+.admin-user-tabs-row .admin-pagination-top { margin-left: auto; }
 .admin-user-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text-secondary); font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .admin-user-tabs button.active { border-color: var(--admin-brand); color: var(--admin-brand); background: var(--admin-brand-dim); }
 .admin-user-tab-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--neutral-dim, rgba(128,128,128,.14)); color: inherit; font-size: 11px; line-height: 18px; text-align: center; }

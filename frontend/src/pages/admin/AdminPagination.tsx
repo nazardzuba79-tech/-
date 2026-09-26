@@ -8,6 +8,7 @@ export function AdminPagination({
   pageSize,
   itemLabel,
   onPageChange,
+  placement = 'bottom',
 }: {
   page: number;
   totalPages: number;
@@ -15,6 +16,8 @@ export function AdminPagination({
   pageSize: number;
   itemLabel: string;
   onPageChange: (page: number) => void;
+  /** 'top' sits at the right end of a filter row (no top margin, count beside the buttons). */
+  placement?: 'top' | 'bottom';
 }) {
   // A single-page list has nowhere to paginate. Hiding the entire row also
   // removes redundant copy such as “1–14 из 14”, while 2+ pages keep the
@@ -26,7 +29,10 @@ export function AdminPagination({
   const pages = buildPageList(page, totalPages);
 
   return (
-    <div style={styles.paginationRow}>
+    <div
+      className={placement === 'top' ? 'admin-pagination-top' : undefined}
+      style={placement === 'top' ? { ...styles.paginationRow, marginTop: 0, justifyContent: 'flex-end' } : styles.paginationRow}
+    >
       <div style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
         {from}–{to} {itemLabel} {total.toLocaleString()}
       </div>

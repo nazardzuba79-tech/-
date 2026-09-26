@@ -226,6 +226,9 @@ export function AdminUsersPage() {
         </div>
       )}
 
+      {/* Page switcher at the right end of the filter row, where the owner
+          asked for it: at the bottom it sat under the support chat button. */}
+      <div className="admin-user-tabs-row">
       <div className="admin-user-tabs" role="tablist" aria-label="Быстрые фильтры">
         {tabs.map((t) => (
           <button
@@ -240,6 +243,10 @@ export function AdminUsersPage() {
             {t.label}{t.count !== undefined && <span className="admin-user-tab-count">{t.count}</span>}
           </button>
         ))}
+      </div>
+      {users && list.length > 0 && (
+        <AdminPagination page={safePage} totalPages={totalPages} total={list.length} pageSize={PAGE_SIZE} itemLabel="из" onPageChange={setPage} placement="top" />
+      )}
       </div>
 
       <div className="admin-toolbar"><input aria-label="Поиск пользователей" style={styles.input} placeholder="Email пользователя" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /><select aria-label="Фильтр пользователей" style={styles.input} value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}><option value="">Все пользователи</option><option value="PENDING">KYC на проверке</option><option value="blocked">Заблокированные</option></select></div>
@@ -288,10 +295,6 @@ export function AdminUsersPage() {
           />
         ))}
       </div>
-
-      {users && list.length > 0 && (
-        <AdminPagination page={safePage} totalPages={totalPages} total={list.length} pageSize={PAGE_SIZE} itemLabel="из" onPageChange={setPage} />
-      )}
 
       {crediting && (
         <CreditDepositDrawer
