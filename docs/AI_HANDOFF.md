@@ -4084,3 +4084,12 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `qa-deposit-packages.cjs --browser`: 28 PASS, 0 FAIL;
   - `qa-support-form.cjs` and `qa-kyc-edge.cjs` in the browser: PASS.
 - Not done: no real transfer was ignored, credited or re-attributed. The owner's real 15 USDT is untouched.
+
+## Codex — 2026-09-26 — Admin USER deletion with retained blockchain history
+
+- Code commit: 5b083fe8e0b26b93cb70d59302f34a5f939ec78c, branch codex/admin-user-deletion; fresh main synchronized through 1a60840509340b8214534a52ffe32628f21c1326.
+- Replaced block/unblock actions in Admin Users list/detail with a shared confirmation dialog. Protected ADMIN/self/email remain backend-enforced. Removed Audit Log navigation, registration-IP display and login/registration audit writes; login timestamps now use Session. Critical audit and old audit history remain.
+- AdminUserDeletionService + AccountDeletionGate atomically clean owned models and drain/cancel in-memory orders after verified commit. Owner explicitly approved these minimal cache hooks and target-specific native/banking DELETE trigger exceptions. Additive migration preserves deposits/real withdrawals/referral history with nullable owners and immutable deleted-account markers. Legacy JWT checks account existence.
+- Preserved latest main deposit ignore (#295), KYC edge (#297), Support email and admin pagination; no matching/financial math, minimum-300/manual-credit, withdrawal execution or delivery changes. Migration timestamp follows deposit ignore and reuses its ignore fields.
+- Checks: backend/frontend builds PASS; 961 scoped Jest tests PASS (60 suites, 22 dedicated-DB tests skipped); 20 real disposable-PG/browser checks PASS at 1440/390. Evidence and operational boundaries: docs/qa/admin-user-deletion/. Broader exploratory test found unchanged CFD name expectation mismatch (Gold US Dollar vs Gold Spot); documented, no unrelated CFD edit.
+- Single Render instance/auto-deploy verified read-only. Unknown COMMIT outcome fails matching closed until DB recovery and service restart; no multi-replica guarantee added. No production users deleted, no secrets/config changed. PR CI and automatic deployment verification follow; no success claimed in this entry before they complete.
