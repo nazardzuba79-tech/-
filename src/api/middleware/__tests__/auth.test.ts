@@ -12,6 +12,7 @@ function mockReqRes(header?: string) {
 
 function makePrismaMock(session: any = null) {
   return {
+    user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1' }) },
     session: {
       findUnique: jest.fn().mockResolvedValue(session),
       update: jest.fn().mockResolvedValue({}),
@@ -20,6 +21,34 @@ function makePrismaMock(session: any = null) {
 }
 
 describe('requireAuth', () => {
+  it('rejects a legacy token after its user has been deleted', async () => {
+    const { req, res, next } = mockReqRes(`Bearer ${jwt.sign({ sub: 'deleted' }, process.env.JWT_SECRET!)}`);
+    const prisma = makePrismaMock();
+    prisma.user.findUnique.mockResolvedValue(null);
+    await requireAuth(prisma)(req, res, next);
+    expect(res.statusCode).toBe(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it.each([{}, { sub: '' }, { sub: 123 }])('rejects malformed identity claims %j before any DB lookup', async claims => {
+    const { req, res, next } = mockReqRes(`Bearer ${jwt.sign(claims, process.env.JWT_SECRET!)}`);
+    const prisma = makePrismaMock();
+    await requireAuth(prisma)(req, res, next);
+    expect(res.statusCode).toBe(401);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, 'session-1'])('fails closed on authorization database outage (sid=%s)', async sid => {
+    const { req, res, next } = mockReqRes(`Bearer ${jwt.sign({ sub: 'user-1', sid }, process.env.JWT_SECRET!)}`);
+    const prisma = makePrismaMock();
+    prisma.user.findUnique.mockRejectedValue(new Error('offline'));
+    prisma.session.findUnique.mockRejectedValue(new Error('offline'));
+    await requireAuth(prisma)(req, res, next);
+    expect(res.statusCode).toBe(503);
+    expect(next).not.toHaveBeenCalled();
+  });
+
   it('accepts a normal session token (no sid claim — pre-Session-model token) and sets req.userId', async () => {
     const token = jwt.sign({ sub: 'user-1' }, process.env.JWT_SECRET!);
     const { req, res, next } = mockReqRes(`Bearer ${token}`);

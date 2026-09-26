@@ -6,7 +6,7 @@ export const IGNORE_REASONS = ['HISTORICAL_WALLET_OPERATION', 'OWN_TRANSFER', 'N
 export type IgnoreReason = (typeof IGNORE_REASONS)[number];
 
 export class DepositIgnoreError extends Error {
-  constructor(readonly code: 'NOT_FOUND' | 'NOT_ADMIN' | 'CREDITED' | 'IN_PACKAGE' | 'CONFIRM_ASSIGNED' | 'NOTE_REQUIRED' | 'NOT_IGNORED' | 'ALREADY_IGNORED',
+  constructor(readonly code: 'NOT_FOUND' | 'NOT_ADMIN' | 'CREDITED' | 'IN_PACKAGE' | 'CONFIRM_ASSIGNED' | 'NOTE_REQUIRED' | 'NOT_IGNORED' | 'ALREADY_IGNORED' | 'DELETED_ACCOUNT',
     message: string) { super(message); }
 }
 
@@ -80,6 +80,8 @@ export class DepositIgnoreService {
     if (admin?.role !== 'ADMIN') throw new DepositIgnoreError('NOT_ADMIN', 'Admin access required');
     const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "Deposit" WHERE id = ${depositId} FOR UPDATE`;
     if (locked.length === 0) throw new DepositIgnoreError('NOT_FOUND', 'Перевод не найден.');
-    return tx.deposit.findUniqueOrThrow({ where: { id: depositId } });
+    const row = await tx.deposit.findUniqueOrThrow({ where: { id: depositId } });
+    if (row.deletedUserId) throw new DepositIgnoreError('DELETED_ACCOUNT', 'Перевод удалённого аккаунта сохранён только для истории.');
+    return row;
   }
 }

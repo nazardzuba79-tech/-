@@ -7,10 +7,12 @@ import { depositsRouter } from '../deposits';
 import { TreasuryWalletService } from '../../../services/TreasuryWalletService';
 
 function authHeader(userId: string) {
-  return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
+  return `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
 }
 
 function buildApp(prisma: any = {}, priceSource: any = { getTicker: jest.fn().mockResolvedValue(null) }) {
+  // Route fixtures model the persisted sessions issued by the current login flow.
+  prisma = { session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.replace('test-session:', ''), revokedAt: null, lastSeenAt: new Date() })) }, ...prisma };
   const app = express();
   app.use(express.json());
   const fullPrisma = { treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null), findMany: jest.fn().mockResolvedValue([]) }, ...prisma };
@@ -139,7 +141,7 @@ describe('deposits routes', () => {
       const upsert = jest.fn(async ({ create }: any) => { rows = [{ chain: create.chain, address: create.address }]; return rows[0]; });
       // One client shared by the deposits router and the admin write, as in
       // src/index.ts — the change counter is kept per client.
-      const prisma = { treasuryWallet: { findMany, upsert } };
+      const prisma = { session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: 'user-1', revokedAt: null, lastSeenAt: new Date() })) }, treasuryWallet: { findMany, upsert } };
       const app = express();
       app.use('/api/v1', depositsRouter(prisma as any, { getTicker: jest.fn().mockResolvedValue(null) } as any));
       const get = () => request(app).get('/api/v1/deposit-chains?includeConfig=true').set('Authorization', authHeader('user-1'));

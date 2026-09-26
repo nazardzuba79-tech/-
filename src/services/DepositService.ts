@@ -48,7 +48,7 @@ export class DepositService {
     const where = { chain_txHash: { chain: this.chainConfig.chain, txHash } };
     const existing = await this.prisma.deposit.findUnique({ where });
     if (existing && existing.asset !== asset) throw new DepositVerificationError('Transaction already recorded for another asset');
-    if (existing?.status === 'CREDITED') return this.result(existing, null);
+    if (existing?.deletedUserId || existing?.status === 'CREDITED') return this.result(existing, null);
 
     const proof = await proveTransfer(this.chainConfig, txHash, asset, { recipient: existing?.recipientAddress ?? undefined });
     assertSaneProof(proof);
@@ -116,7 +116,7 @@ export async function applyProof(db: PrismaClient, row: Deposit, proof: Transfer
     || !new BigNumber(row.amount.toString()).isEqualTo(proof.amount)
     || row.finalized !== proof.finalized || (!row.finalized && row.confirmations !== proof.confirmations);
   const updated = await db.deposit.updateMany({
-    where: { id: row.id, revision: row.revision, status: { not: 'CREDITED' }, batchId: null },
+    where: { id: row.id, revision: row.revision, deletedUserId: null, status: { not: 'CREDITED' }, batchId: null },
     data: { ...data, ...(material ? { revision: { increment: 1 } } : {}) },
   });
   if (updated.count === 0) return (await db.deposit.findUnique({ where: { id: row.id } })) ?? row;
@@ -132,7 +132,7 @@ export async function recordProofFailure(db: PrismaClient, row: Deposit, error: 
   const firstSeenAgeMs = now.getTime() - row.createdAt.getTime();
   const flag = !(error instanceof TransferNotFoundError) || (attempts >= 5 && firstSeenAgeMs > 30 * 60_000);
   await db.deposit.updateMany({
-    where: { id: row.id, revision: row.revision, status: { not: 'CREDITED' }, batchId: null },
+    where: { id: row.id, revision: row.revision, deletedUserId: null, status: { not: 'CREDITED' }, batchId: null },
     data: { verifyAttempts: attempts, lastVerifyAttemptAt: now,
       ...(flag ? { verifyError: error.message.slice(0, 300), revision: { increment: 1 } } : {}) },
   });

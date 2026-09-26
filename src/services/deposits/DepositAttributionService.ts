@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 
 export class DepositAttributionError extends Error {
-  constructor(readonly code: 'NOT_FOUND' | 'CREDITED' | 'ALREADY_ATTRIBUTED' | 'USER_NOT_FOUND' | 'NOT_ADMIN' | 'IGNORED', message: string) { super(message); }
+  constructor(readonly code: 'NOT_FOUND' | 'CREDITED' | 'ALREADY_ATTRIBUTED' | 'USER_NOT_FOUND' | 'NOT_ADMIN' | 'IGNORED' | 'DELETED_ACCOUNT', message: string) { super(message); }
 }
 
 /**
@@ -22,6 +22,7 @@ export class DepositAttributionService {
       const locked = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM "Deposit" WHERE id = ${params.depositId} FOR UPDATE`;
       if (locked.length === 0) throw new DepositAttributionError('NOT_FOUND', 'Перевод не найден.');
       const row = await tx.deposit.findUniqueOrThrow({ where: { id: params.depositId } });
+      if (row.deletedUserId) throw new DepositAttributionError('DELETED_ACCOUNT', 'Перевод принадлежит удалённому аккаунту.');
       if (row.status === 'CREDITED' || row.batchId) throw new DepositAttributionError('CREDITED', 'Зачисленный перевод нельзя перепривязать.');
       if (row.ignoredAt) throw new DepositAttributionError('IGNORED', 'Перевод в «Игнорированные». Сначала верните его в очередь.');
       if (row.userId === params.userId) return { depositId: row.id, userId: row.userId, changed: false };

@@ -18,7 +18,7 @@ import { NotFound, Conflict, MarkPriceUnavailable } from '../../../futures/Futur
  * middleware. Only the services behind them are doubled.
  */
 
-const authHeader = (userId: string) => `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
+const authHeader = (userId: string) => `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
 
 const POSITION = {
   id: 'pos-1',
@@ -49,6 +49,7 @@ const TRIGGER = {
 
 function makeApp(overrides: { protection?: any } = {}) {
   const prisma = {
+    session: { findUnique: jest.fn(async ({ where }: any) => ({ id: where.id, userId: where.id.replace('test-session:', ''), revokedAt: null, lastSeenAt: new Date() })) },
     apiKey: { findUnique: jest.fn(async () => null), update: jest.fn() },
     futuresPosition: {
       findMany: jest.fn(async ({ where }: any) => (where.userId === 'owner' ? [{ ...POSITION }] : [])),

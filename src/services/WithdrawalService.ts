@@ -189,10 +189,11 @@ export class WithdrawalService {
   private async requireStatus(tx: Prisma.TransactionClient, withdrawalId: string, allowed: string[]) {
     const withdrawal = await tx.withdrawal.findUnique({ where: { id: withdrawalId } });
     if (!withdrawal) throw new WithdrawalRequestError('Withdrawal request not found');
+    if (!withdrawal.userId) throw new WithdrawalRequestError('Historical withdrawal belongs to a deleted account');
     if (!allowed.includes(withdrawal.status)) {
       throw new WithdrawalRequestError(`Withdrawal request is already ${withdrawal.status}`);
     }
-    return withdrawal;
+    return { ...withdrawal, userId: withdrawal.userId };
   }
 
   private toResult(w: {

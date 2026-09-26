@@ -308,6 +308,7 @@ model Deposit {
   id            String   @id @default(uuid())
   userId        String?
   user          User?    @relation(fields: [userId], references: [id])
+  deletedUserId String?
   asset         String
   chain         String
   txHash        String
@@ -469,10 +470,12 @@ model DepositWatchState {
 /// referrer's spot balance — never a separate synthetic point currency.
 model ReferralReward {
   id             String   @id @default(uuid())
-  referrerId     String
-  referrer       User     @relation("ReferralRewardsEarned", fields: [referrerId], references: [id])
-  referredUserId String
-  referredUser   User     @relation("ReferralRewardsFromDeposits", fields: [referredUserId], references: [id])
+  referrerId     String?
+  deletedReferrerId String?
+  referrer       User?     @relation("ReferralRewardsEarned", fields: [referrerId], references: [id])
+  referredUserId String?
+  deletedReferredUserId String?
+  referredUser   User?     @relation("ReferralRewardsFromDeposits", fields: [referredUserId], references: [id])
   depositId      String   @unique
   deposit        Deposit  @relation(fields: [depositId], references: [id])
   asset          String
@@ -507,10 +510,12 @@ model ReferralReward {
 /// retried, replayed concurrently, or resumed after a restart.
 model BankingReferralReward {
   id             String   @id @default(uuid())
-  referrerId     String
-  referrer       User     @relation("BankingReferralRewardsEarned", fields: [referrerId], references: [id])
-  referredUserId String
-  referredUser   User     @relation("BankingReferralRewardsFromProfit", fields: [referredUserId], references: [id])
+  referrerId     String?
+  deletedReferrerId String?
+  referrer       User?     @relation("BankingReferralRewardsEarned", fields: [referrerId], references: [id])
+  referredUserId String?
+  deletedReferredUserId String?
+  referredUser   User?     @relation("BankingReferralRewardsFromProfit", fields: [referredUserId], references: [id])
   /// banking_placements.id — the referred user's placement that produced the
   /// profit. Not a Prisma relation: the banking_* tables are raw-SQL only and
   /// have no model to point at.
@@ -558,8 +563,9 @@ model IgnoredIncomingTransfer {
 /// single-treasury model doc comment).
 model Withdrawal {
   id                 String    @id @default(uuid())
-  userId             String
-  user               User      @relation(fields: [userId], references: [id])
+  userId             String?
+  deletedUserId      String?
+  user               User?     @relation(fields: [userId], references: [id])
   asset              String
   /// Free-text network label (e.g. "TRC20", "ERC20", "native") — withdrawal
   /// isn't limited to the few chains this deployment can verify a DEPOSIT
