@@ -8,6 +8,10 @@ const{CfdMarketDataService}=require('../dist/services/CfdMarketDataService');con
 const OUT=path.resolve('docs/qa/cfd-display-browser');fs.mkdirSync(OUT,{recursive:true});
 const report={revision:process.env.GITHUB_SHA||null,environment:'disposable loopback CI; real public display providers; no DB writes',startedAt:new Date().toISOString(),scenarios:[],pageErrors:[],findings:[],blockedWrites:0,blockedExternalHosts:[]};
 const denied=new Set();let server,browser,activePage;
+// At <=900px the terminal shows one mobile tab at a time (Chart / Trade /
+// Account, see TerminalMobileParity.css), so each step first opens the tab
+// its controls live in. Wider layouts show everything and need no switch.
+async function mobileTab(page,width,id,pane){if(width>900)return;await page.locator(`#mobile-trade-${id}`).click();if(pane!==undefined)await page.locator('.terminal-mobile-chart-tabs button').nth(pane).click();}
 const noDb=new Proxy({},{get(){throw new Error('Database access forbidden in CFD QA');}});
 function fixture(pathname){
  if(pathname==='/market/external/tickers')return{source:'qa',tickers:[{pair:'BTC/USDT',lastPrice:'65000',changePercent24h:'1.25',quoteVolume24h:'1000000',high24h:'66000',low24h:'64000'}]};
@@ -41,9 +45,9 @@ function fixture(pathname){
   });
   if(!selectedSymbol)throw new Error(`Selected CFD symbol missing at ${width}px`);
   await page.waitForFunction(symbol=>{const row=document.querySelector('.cfd-option.active');const p=(row?.querySelector('.cfd-price')?.textContent||'').trim();return row?.querySelector('.cfd-optionSymbol')?.textContent?.trim()===symbol&&p!==''&&!p.includes('—');},selectedSymbol,{timeout:10000});
-  await page.locator('.cfd-owned-chart-canvas canvas').first().waitFor({state:'visible',timeout:25000});await page.waitForFunction(()=>document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')==='ready',null,{timeout:25000});await page.locator('.cfd-order-panel form').waitFor({state:'visible',timeout:10000});
+  await page.locator('.cfd-owned-chart-canvas canvas').first().waitFor({state:'visible',timeout:25000});await page.waitForFunction(()=>document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')==='ready',null,{timeout:25000});await mobileTab(page,width,'trade');await page.locator('.cfd-order-panel form').waitFor({state:'visible',timeout:10000});
   const price=await page.locator('.cfd-option.active .cfd-price').innerText();const input=page.locator('.cfd-order-panel input[type=number]');await input.fill('0.01');const submit=page.locator('.cfd-order-panel button[type=submit]');await submit.waitFor({state:'visible'});if(await submit.isDisabled())throw new Error(`Order remained disabled at ${width}px`);await submit.click();
-  await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const openText=await page.locator('.cfd-position-content').innerText();if(!openText.includes(selectedSymbol))throw new Error(`Position missing at ${width}px`);
+  await mobileTab(page,width,'account');await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const openText=await page.locator('.cfd-position-content').innerText();if(!openText.includes(selectedSymbol))throw new Error(`Position missing at ${width}px`);
   const close=page.locator('.cfd-closeBtn').first();await page.waitForFunction(()=>{const b=document.querySelector('.cfd-closeBtn');return b&&!b.disabled;},null,{timeout:10000});await close.click();await page.locator('.cfd-tab').nth(1).click();await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const historyText=await page.locator('.cfd-position-content').innerText();if(!historyText.includes(selectedSymbol))throw new Error(`History missing at ${width}px`);
   const result=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,rows:document.querySelectorAll('.cfd-option').length,forms:document.querySelectorAll('.cfd-terminal form').length,submits:document.querySelectorAll('.cfd-terminal button[type=submit]').length,canvases:document.querySelectorAll('.cfd-owned-chart-canvas canvas').length,chartStatus:document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')||null,technicalLabels:document.querySelectorAll('.cfd-practice-badge,.cfd-practice-mode,.cfd-disclaimer').length}));
   report.scenarios.push({width,price,sampledDisplay:true,...result});if(result.overflow)report.findings.push(`Horizontal overflow ${width}px`);if(result.forms!==1||result.submits!==1)report.findings.push(`Order ticket incomplete ${width}px`);if(result.canvases<1||result.chartStatus!=='ready')report.findings.push(`Chart not ready ${width}px`);if(result.technicalLabels!==0)report.findings.push(`Technical labels visible ${width}px`);
@@ -53,6 +57,7 @@ function fixture(pathname){
   // a reload request even though the reload itself was served from storage.
   await page.waitForTimeout(750);const before=displayRequests.length;
   const reloadSymbol=selectedSymbol==='WTIUSD'?'XAUUSD':'WTIUSD';
+  await mobileTab(page,width,'chart',1);
   await page.locator('.cfd-option').filter({has:page.locator('.cfd-optionSymbol',{hasText:reloadSymbol})}).first().click();
   await page.waitForFunction(symbol=>document.querySelector('.cfd-option.active .cfd-optionSymbol')?.textContent?.trim()===symbol,reloadSymbol);
   if(new URL(page.url()).searchParams.get('symbol')!==reloadSymbol)report.findings.push(`CFD selection URL mismatch at ${width}px`);
