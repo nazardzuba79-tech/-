@@ -3969,6 +3969,13 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Tests/checks run: backend + frontend `tsc`; backend `tsc` build; frontend production build; 8 suites 117/117 incl. real PostgreSQL 16 (`supportNotificationPostgres.test.ts`: atomic rollback via trigger, one notification per message, retry transitions, two racing workers send once, inbound dedupe); full `npx jest` vs clean main `0f738418`: the same 26 suites / identical failing test names on both, none new. Browser QA `scripts/qa-support-email.cjs` (production bundle + real routers + local Postgres + local SMTP sink): guest first/second message (1 POST on double click), SMTP accepted → SENT, send-error UI, relay down → 201 + message stored + PENDING/CONNECTION, signed-in user, 430/390/360/320 launcher above tab bar + panel in viewport, admin diagnostics/test letter/thread/reply reaching the widget, admin at 390 without overflow. New CI workflow `support-email.yml` runs all of it.
 - Preserved: KYC mail service and its tests, registration mail, all trading/wallet/deposit code, Codex's admin pages and styles.
 - Unresolved / owner: confirm on Render that `SUPPORT_ADMIN_EMAIL=voltex.crypto@gmail.com` and `SMTP_HOST/PORT/SECURE/USER/PASS` are set (Gmail needs an app password), then Admin → Поддержка → «Отправить тестовое письмо» and check Inbox/Spam. Inbound replies are not configured (no provider webhook); Gmail replies go to the user's email, not into the chat.
+## Claude — 2026-09-26 — Admin → Пользователи: page switcher moved to the top
+
+- Base fresh main `0f738418`. Branch `claude/admin-users-pager-top`. Frontend only.
+- Owner (screenshot of /admin/users, 27 users): the page switcher at the bottom right sat under the support chat button, so page 2 could not be reached; asked to move it up, to the right end of the filter row.
+- `AdminPagination.tsx`: optional `placement="top"` (no top margin, right-aligned; default unchanged). `AdminUsersPage.tsx`: the filter tabs and the switcher share one row (`.admin-user-tabs-row`), the bottom switcher is removed. `adminConsole.css`: the row wraps on phones.
+- Checks run: frontend `tsc`; production build; `futuresRouteLoadAndAdminPagination`, `adminUsersActivity`, `routeCodeSplitting` pass. Browser (production bundle, 27 fixture users): at 2000/1440 the switcher sits on the tab row (y≈256), clear of the chat button; page 2 opens (21–27 из 27); at 390 it wraps under the tabs; no horizontal overflow, no page errors.
+- Preserved: Codex's admin layout, the user table, filters, activity polling; single-page lists still hide the switcher.
 
 ## Claude — 2026-09-26 — Deposit watcher: daytime Kyiv schedule (replaces every 6 h)
 
