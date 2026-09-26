@@ -261,13 +261,14 @@ describe('Spot orders truthful dense presentation', () => {
     expect(await cancelSpotOrders(ids, cancel)).toEqual({ succeeded: 2, failed: 1 });
     expect(cancel.mock.calls.map(([id]) => id)).toEqual(ids);
   });
-  it('preserves existing GET filters, 4-second polling, selected-pair filtering and per-order cancel endpoint', () => {
+  it('preserves existing GET filters, visible 4-second polling, selected-pair filtering and per-order cancel endpoint', () => {
     const open = source('OpenOrdersPanel.tsx');
     const history = source('OrderHistoryPanel.tsx');
     expect(open).toContain("getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED')");
     expect(history).toContain("getMyOrders('FILLED,CANCELLED')");
     for (const value of [open, history]) {
-      expect(value).toContain('setInterval(load, 4000)');
+      expect(value).toContain('startVisibleReadPolling(load, 4000)');
+      expect(value).toContain('stopPolling()');
       expect(value).toContain('o.pair === pair');
       expect(value).toContain('reader.current!.pause()');
       expect(value).toContain('void load(true)');

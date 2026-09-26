@@ -50,7 +50,12 @@ export function requireAuth(prisma: PrismaClient) {
     }
 
     if (payload.sid) {
-      const session = await prisma.session.findUnique({ where: { id: payload.sid } });
+      // Re-check the database on EVERY request, but do not transfer device/IP
+      // metadata that authorization never reads. No auth cache or TTL.
+      const session = await prisma.session.findUnique({
+        where: { id: payload.sid },
+        select: { id: true, userId: true, revokedAt: true, lastSeenAt: true },
+      });
       if (!session || session.userId !== payload.sub || session.revokedAt) {
         return res.status(401).json({ error: 'Session has been signed out' });
       }
@@ -58,7 +63,7 @@ export function requireAuth(prisma: PrismaClient) {
       if (Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {
         // Fire-and-forget — a missed "last seen" tick isn't worth failing
         // or delaying the actual request over.
-        prisma.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
+        prisma.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() }, select: { id: true } }).catch(() => {});
       }
     }
 

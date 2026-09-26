@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { SpotAssetsView } from './SpotOrdersView';
-import { createSpotReadController, type SpotReadController } from './spotOrderPresentation';
+import { createSpotReadController, startVisibleReadPolling, type SpotReadController } from './spotOrderPresentation';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import './SpotOrders.css';
 
@@ -32,8 +32,8 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
   // Futures reads the ONE shared account store — same 4s cadence, but it
   // is now the same /futures/balances response the order form and the
   // margin summary are already reading, so opening this tab no longer adds
-  // a third poller for a figure the page has twice over. Spot is untouched
-  // and still polls exactly as before; Futures must never read the Spot
+  // a third poller for a figure the page has twice over. Spot keeps its 4s
+  // visible cadence and sleeps in hidden tabs; Futures never reads the Spot
   // wallet and still does not.
   const isFutures = wallet === 'futures' && !compact;
   const futuresAccount = useFuturesAccount(isFutures ? { balances: 4000 } : {});
@@ -57,9 +57,8 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
       if (refreshKey > 0) void load(true);
       return () => { if (compact) reader.current!.pause(); };
     }
-    void load(true);
-    const interval = setInterval(load, 4000);
-    return () => { clearInterval(interval); if (compact) reader.current!.pause(); };
+    const stopPolling = startVisibleReadPolling(load, 4000);
+    return () => { stopPolling(); if (compact) reader.current!.pause(); };
   }, [load, refreshKey, compact, isFutures]);
 
   const rows = isFutures ? futuresAccount.balances.data : balances;

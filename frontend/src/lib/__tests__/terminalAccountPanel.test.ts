@@ -34,7 +34,8 @@ let dom: any, root: any, container: HTMLElement;
 const previous: Record<string, any> = {};
 beforeEach(() => {
   jest.useFakeTimers();
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost' });
+  // These cases model an actively viewed tab, not JSDOM's default prerender.
+  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost', pretendToBeVisual: true });
   for (const key of ['window', 'document', 'navigator', 'IS_REACT_ACT_ENVIRONMENT']) {
     previous[key] = (globalThis as any)[key];
     Object.defineProperty(globalThis, key, { configurable: true, writable: true, value: key === 'IS_REACT_ACT_ENVIRONMENT' ? true : dom.window[key] });
@@ -215,4 +216,37 @@ test('real terminal pages preserve tab navigation and mounted readers while the 
   expect(futures).toContain('useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 })');
   expect(futures).toContain('accountPanel.reveal()');
   for (const page of [spot, futures]) expect(page).toContain('hidden={accountPanel.compact}');
+});
+
+function setTabVisibility(value: 'visible' | 'hidden') {
+  Object.defineProperty(document, 'visibilityState', { configurable: true, value });
+  document.dispatchEvent(new dom.window.Event('visibilitychange'));
+}
+
+test('mounted Spot reader pauses for a hidden hour and refreshes once immediately on return', async () => {
+  const getMyOrders = jest.fn().mockResolvedValue([order]);
+  const App = spotHarness(getMyOrders);
+  await act(async () => { root.render(React.createElement(App)); await tick(); });
+  expect(getMyOrders).toHaveBeenCalledTimes(1);
+  await act(async () => { setTabVisibility('hidden'); jest.advanceTimersByTime(3_600_000); await tick(); });
+  expect(getMyOrders).toHaveBeenCalledTimes(1);
+  expect(container.querySelector('[data-order-id="actual-order"]')).not.toBeNull();
+  await act(async () => { setTabVisibility('visible'); await tick(); });
+  expect(getMyOrders).toHaveBeenCalledTimes(2);
+  await act(async () => { setTabVisibility('visible'); await tick(); });
+  expect(getMyOrders).toHaveBeenCalledTimes(2);
+  await act(async () => { jest.advanceTimersByTime(4000); await tick(); });
+  expect(getMyOrders).toHaveBeenCalledTimes(3);
+});
+
+test('a Spot reader mounted hidden does not fetch until the tab is shown', async () => {
+  setTabVisibility('hidden');
+  const getMyOrders = jest.fn().mockResolvedValue([order]);
+  const App = spotHarness(getMyOrders);
+  await act(async () => { root.render(React.createElement(App)); jest.advanceTimersByTime(3_600_000); await tick(); });
+  expect(getMyOrders).not.toHaveBeenCalled();
+  expect(container.textContent).toContain('trade.loading');
+  await act(async () => { setTabVisibility('visible'); await tick(); });
+  expect(getMyOrders).toHaveBeenCalledTimes(1);
+  expect(container.querySelector('[data-order-id="actual-order"]')).not.toBeNull();
 });
