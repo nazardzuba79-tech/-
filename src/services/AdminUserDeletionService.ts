@@ -96,7 +96,8 @@ export class AdminUserDeletionService {
         if (!['committed', 'aborted'].includes(outcome?.status ?? '')) throw new Error('Unknown transaction outcome');
       } catch {
         this.gate.haltUntilRestart();
-        throw new UserDeletionError(503, 'Результат удаления требует проверки. Обновите список после восстановления соединения.');
+        console.error('ADMIN_DELETE_COMMIT_UNKNOWN: matching paused; restart after database recovery');
+        throw new UserDeletionError(503, 'Результат удаления требует проверки администратором. Торговый сервис приостановлен до восстановления.');
       }
       if (outcome.status !== 'committed') throw commitError ?? new UserDeletionError(409, 'Удаление не завершено. Повторите попытку.');
       for (const order of prepared!.spot) this.books.spot.cancelOrder(order.pair, order.id);

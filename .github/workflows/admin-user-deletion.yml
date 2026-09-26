@@ -1,0 +1,52 @@
+name: Admin account deletion
+on:
+  pull_request:
+    paths:
+      - 'src/api/**'
+      - 'src/services/**'
+      - 'src/index.ts'
+      - 'prisma/**'
+      - 'frontend/src/pages/admin/**'
+      - 'scripts/qa-admin-user-deletion.cjs'
+      - '.github/workflows/admin-user-deletion.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm run build --prefix frontend
+      - name: Authentication, admin, retained transfers and trading regressions
+        run: >-
+          npm test -- --runInBand
+          src/api src/services/deposits src/matching-engine src/futures
+          src/services/__tests__/AccountDeletionGate.test.ts
+          src/services/__tests__/OrderService.test.ts src/services/__tests__/DemoTradingService.test.ts
+          src/services/__tests__/DepositService.test.ts src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/TreasuryWalletService.test.ts
+          frontend/src/lib/__tests__/admin frontend/src/lib/__tests__/depositAllWallets
+      - name: Install isolated disposable database and browser tools
+        run: npm install --prefix node_modules/.cache/admin-delete-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - name: PostgreSQL rollback, retained history, authentication revocation and browser QA
+        run: |
+          $env:ADMIN_DELETE_QA_DEPS = Join-Path (Get-Location) 'node_modules/.cache/admin-delete-qa/package.json'
+          $env:PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/admin-delete-qa/node_modules/playwright).Path
+          node scripts/qa-admin-user-deletion.cjs --browser
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-user-deletion-acceptance
+          path: output/admin-user-deletion
+          retention-days: 7

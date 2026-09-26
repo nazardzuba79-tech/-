@@ -48,7 +48,13 @@ async function main() {
  const database = await startDatabase(); let prisma;
  try {
   for(const dir of fs.readdirSync('prisma/migrations').sort()) {
-   const file=path.join('prisma/migrations',dir,'migration.sql'); if(fs.existsSync(file)) await database.db.query(fs.readFileSync(file,'utf8'));
+   const file=path.join('prisma/migrations',dir,'migration.sql');
+   if(dir.endsWith('_admin_account_deletion')) {
+    await database.db.query(`INSERT INTO "User" (id,email,"passwordHash","referralCode","updatedAt") VALUES ('migration-survivor','migration@example.invalid','fixture','migration-survivor',NOW())`);
+    await database.db.query(`INSERT INTO "Deposit" (id,"userId",chain,"txHash",asset,amount,status) VALUES ('migration-deposit','migration-survivor','tron','migration-hash','USDT',300,'CREDITED')`);
+    await database.db.query(`INSERT INTO "Withdrawal" (id,"userId",network,"txHash",asset,amount,status,"toAddress","updatedAt") VALUES ('migration-withdrawal','migration-survivor','TRC20','migration-outbound','USDT',25,'SENT','fixture',NOW())`);
+   }
+   if(fs.existsSync(file)) await database.db.query(fs.readFileSync(file,'utf8'));
   }
   prisma = new PrismaClient({datasources:{db:{url:database.url+'?connection_limit=12'}}});
   const gate = new AccountDeletionGate(); const books={spot:new MatchingEngine(),futures:new MatchingEngine(),demo:new MatchingEngine()};
@@ -61,6 +67,12 @@ async function main() {
   const header = id => 'Bearer '+jwt.sign({sub:id},process.env.JWT_SECRET);
   const remove = (id,caller='admin') => request(app).delete('/api/v1/admin/users/'+id).set('Authorization',header(caller));
   async function test(name,fn){try{await fn();report.checks.push(name);console.log('PASS '+name)}catch(error){report.failures.push({name,error:String(error.stack||error)});console.error('FAIL '+name+'\n'+(error.stack||error));}}
+  await test('additive migration preserves existing user, credited deposit and sent withdrawal',async()=>{
+   assert.ok(await prisma.user.findUnique({where:{id:'migration-survivor'}}));
+   const d=await prisma.deposit.findUnique({where:{id:'migration-deposit'}}),w=await prisma.withdrawal.findUnique({where:{id:'migration-withdrawal'}});
+   assert.equal(d.amount.toString(),'300');assert.equal(d.txHash,'migration-hash');assert.equal(d.status,'CREDITED');assert.equal(d.userId,'migration-survivor');
+   assert.equal(w.amount.toString(),'25');assert.equal(w.txHash,'migration-outbound');assert.equal(w.status,'SENT');assert.equal(w.userId,'migration-survivor');
+  });
   await test('ordinary empty USER deletion + one USER_DELETED without IP/UA',async()=>{
    await user('empty');assert.equal((await remove('empty')).status,200);
    assert.equal(await prisma.user.findUnique({where:{id:'empty'}}),null);
@@ -117,7 +129,16 @@ async function main() {
   await test('rollback preserves every table, audit and order books',async()=>{
    await database.db.query(`CREATE FUNCTION qa_reject_user_delete() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture rollback'; END; $$; CREATE TRIGGER qa_reject_user_delete BEFORE DELETE ON "User" FOR EACH ROW EXECUTE FUNCTION qa_reject_user_delete()`);
    try {assert.equal((await remove(id)).status,500);assert.ok(await prisma.user.findUnique({where:{id}}));assert.equal(await prisma.session.count({where:{userId:id}}),1);assert.equal((await prisma.deposit.findUnique({where:{id:'uncredited'}})).userId,id);assert.ok(books.spot.getBook(spot.pair).bestBid());assert.equal(await prisma.auditLog.count({where:{action:'USER_DELETED',metadata:{path:['deletedUserId'],equals:id}}}),0);}
-   finally{await database.db.query('DROP TRIGGER qa_reject_user_delete ON "User"; DROP FUNCTION qa_reject_user_delete()');}
+   finally{await database.db.query('DROP TRIGGER qa_reject_user_delete ON "User"');}
+  });
+  await test('deferred COMMIT failure preserves the account and all three books',async()=>{
+   await database.db.query(`CREATE CONSTRAINT TRIGGER qa_deferred_delete AFTER DELETE ON "User" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION qa_reject_user_delete()`);
+   try {
+    assert.equal((await remove(id)).status,409);
+    assert.ok(await prisma.user.findUnique({where:{id}}));
+    assert.ok(books.spot.getBook(spot.pair).bestBid());assert.ok(books.futures.getBook(fut.symbol).bestBid());assert.ok(books.demo.getBook(demo.pair).bestBid());
+    assert.equal(await prisma.auditLog.count({where:{action:'USER_DELETED',metadata:{path:['deletedUserId'],equals:id}}}),0);
+   } finally {await database.db.query('DROP TRIGGER qa_deferred_delete ON "User"; DROP FUNCTION qa_reject_user_delete()');}
   });
   await test('all owned records removed including balances/orders/positions/security/KYC/private/native/banking/card',async()=>{
    const res=await remove(id);assert.equal(res.status,200,JSON.stringify(res.body));
@@ -135,6 +156,8 @@ async function main() {
     await assert.rejects(prisma.deposit.delete({where:{id:depositId}}));
    }
    const duplicate=await prisma.deposit.createMany({data:[{asset:'USDT',chain:'tron',txHash:d.txHash,amount:'15',status:'DETECTED'}],skipDuplicates:true});assert.equal(duplicate.count,0);
+   const { DepositIgnoreService }=require('../dist/services/deposits/DepositIgnoreService');
+   await assert.rejects(new DepositIgnoreService(prisma).restore({adminId:'admin',depositId:'uncredited'}),e=>e.code==='DELETED_ACCOUNT');
   });
   await test('deleted deposits never enter queue or package accumulation',async()=>{
    const { DepositQueueService, buildPackage }=require('../dist/services/deposits/DepositQueueService');
@@ -168,6 +191,14 @@ async function main() {
    let release;const trace=[];const first=gate.run(false,async()=>{trace.push('active');await new Promise(r=>release=r);trace.push('settled');});
    await new Promise(r=>setImmediate(r));const deletion=gate.run(true,async()=>{trace.push('delete');throw Error('rollback');}).catch(()=>{});
    const next=gate.run(false,async()=>trace.push('next'));release();await Promise.all([first,deletion,next]);assert.deepEqual(trace,['active','settled','delete','next']);
+  });
+  await test('unverifiable COMMIT outcome fails closed instead of resuming stale matching',async()=>{
+   await user('uncertain');
+   const isolatedGate=new AccountDeletionGate();
+   const faultDb=new Proxy(prisma,{get(target,key){if(key==='$queryRaw')return async()=>{throw Error('verification connection lost')};const v=Reflect.get(target,key);return typeof v==='function'?v.bind(target):v;}});
+   await assert.rejects(new AdminUserDeletionService(faultDb,isolatedGate,books).delete('admin','uncertain'),e=>e.status===503);
+   assert.equal(await prisma.user.findUnique({where:{id:'uncertain'}}),null);
+   await assert.rejects(isolatedGate.run(false,async()=>{}),/reconciliation/);
   });
   if(process.argv.includes('--browser')) await test('desktop/mobile browser acceptance',()=>browserChecks(app,prisma,user,header));
   fs.writeFileSync(path.join(output,'report.json'),JSON.stringify(report,null,2));
@@ -215,14 +246,35 @@ async function browserChecks(app, prisma, user, header) {
    assert.ok(await prisma.user.findUnique({where:{id}}));
    await table.getByRole('button',{name:'Действия',exact:true}).click();
    await table.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
-   await page.getByRole('button',{name:'Удалить аккаунт безвозвратно',exact:true}).click();
+   let deleteRequests=0;
+   await page.route('**/api/v1/admin/users/'+id,async route=>{
+    if(route.request().method()!=='DELETE')return route.fallback();
+    deleteRequests++;
+    if(deleteRequests===1)return route.fulfill({status:409,json:{error:'Тестовый конфликт. Повторите попытку.'}});
+    return route.fallback();
+   });
+   const confirm=page.getByRole('button',{name:'Удалить аккаунт безвозвратно',exact:true});
+   await confirm.click();
+   await dialog.getByRole('alert').waitFor({state:'visible'});
+   assert.ok(await prisma.user.findUnique({where:{id}}));
+   await confirm.evaluate(button=>{button.click();button.click();});
    await dialog.waitFor({state:'hidden'});
+   assert.equal(deleteRequests,2,'double click submits only one retry');
    await page.waitForFunction(()=>document.body.textContent.includes('Никого не найдено.'));
    assert.equal(await prisma.user.findUnique({where:{id}}),null);
    assert.equal(await page.locator('a[href="/admin/audit-log"]').count(),0);
    await page.goto(origin+'/admin/users/'+id);await page.waitForURL(origin+'/admin/users');
+   const detailId='detail-'+width;await user(detailId);
+   await page.goto(origin+'/admin/users/'+detailId);
+   await page.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
+   await page.getByRole('button',{name:'Удалить аккаунт безвозвратно',exact:true}).click();
+   await page.waitForURL(origin+'/admin/users');
+   assert.equal(await prisma.user.findUnique({where:{id:detailId}}),null);
+   await page.goto(origin+'/admin/users/protected');
+   await page.getByText('voltex.crypto@gmail.com',{exact:true}).first().waitFor({state:'visible'});
+   assert.equal(await page.getByRole('button',{name:'Удалить аккаунт',exact:true}).count(),0);
    assert.deepEqual(errors,[]);
-   report.checks.push('browser '+width+'px: confirmation/cancel/delete/refresh/404 redirect/journal hidden');
+   report.checks.push('browser '+width+'px: confirmation/cancel/conflict/retry/double-click/list/detail/redirect/protected/journal hidden');
    console.log('PASS browser '+width+'px');await context.close();
   }
  } finally {await browser.close();await new Promise(r=>server.close(r));}
