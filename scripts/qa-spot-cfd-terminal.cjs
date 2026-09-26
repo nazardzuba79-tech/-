@@ -69,7 +69,7 @@ app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
 
 
 const DESKTOP = [[1920,1080],[1440,900],[1366,768]];
-const MOBILE = [[390,844],[430,932]];
+const MOBILE = [[320,740],[360,800],[390,844],[430,932]];
 const TERMINALS = [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']];
 const TOKENS = ['--bg-primary','--bg-secondary','--bg-tertiary','--border-color','--text-primary',
   '--text-secondary','--accent-yellow','--color-buy','--color-sell','--panel','--font-family'];
@@ -109,6 +109,15 @@ const READ = (tokenNames) => {
     smallTargets: [...document.querySelectorAll('button')]
       .filter(b => { const r = b.getBoundingClientRect(); return r.height > 0 && r.height < 28 && r.width > 8; })
       .length,
+    mobileTabs: [...document.querySelectorAll('.terminal-mobile-tabs button')]
+      .filter(b => { const r = b.getBoundingClientRect(); return r.width > 4 && r.height > 4; })
+      .map(b => ({ text: (b.textContent || '').trim(), h: Math.round(b.getBoundingClientRect().height), w: Math.round(b.getBoundingClientRect().width) })),
+    visibleSpotStats: [...document.querySelectorAll('.spot-terminal .ticker-bar .ticker-item')]
+      .filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0).length,
+    cfdMarketStateVisible: (() => {
+      const e = document.querySelector('.cfd-market-state');
+      return Boolean(e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0);
+    })(),
   };
 };
 
@@ -156,6 +165,27 @@ const READ = (tokenNames) => {
          fix, and failing on it would mean failing on someone else's bug. */
       if (mobile && name !== 'futures' && m.smallTargets > 0) {
         findings.push(`${name} @${key}: ${m.smallTargets} tap target(s) under 28px tall`);
+      }
+      if (mobile && name !== 'futures' && m.strip && m.strip.h > 112) {
+        findings.push(`${name} @${key}: mobile ticker is ${m.strip.h}px tall; expected <=112px`);
+      }
+      if (mobile && name !== 'futures' && (m.mobileTabs?.length ?? 0) !== 3) {
+        findings.push(`${name} @${key}: expected 3 primary mobile tabs, got ${m.mobileTabs?.length ?? 0}`);
+      }
+      if (mobile && name !== 'futures' && (m.mobileTabs || []).some(tab => tab.h < 44 || tab.w < 44)) {
+        findings.push(`${name} @${key}: primary mobile tab below 44px touch target`);
+      }
+      if (mobile && name === 'spot' && m.visibleSpotStats > 2) {
+        findings.push(`spot @${key}: ${m.visibleSpotStats} market stat blocks visible; compact mobile header should show only price/change`);
+      }
+      if (mobile && name === 'cfd' && m.cfdMarketStateVisible) {
+        findings.push(`cfd @${key}: desktop market-state label is still visible in compact mobile header`);
+      }
+      if (mobile && name !== 'futures' && (!m.tradeWorkspace?.visible || m.tradeWorkspace.chartVisible || m.tradeWorkspace.rightOverflow > 0)) {
+        findings.push(`${name} @${key}: Trade workspace isolation/width failed ${JSON.stringify(m.tradeWorkspace)}`);
+      }
+      if (mobile && name !== 'futures' && (!m.accountWorkspace?.visible || m.accountWorkspace.rightOverflow > 0)) {
+        findings.push(`${name} @${key}: Account workspace isolation/width failed ${JSON.stringify(m.accountWorkspace)}`);
       }
       if (mobile && name === 'futures' && m.smallTargets > 0) {
         (report.preExisting ||= []).push(`futures @${key}: ${m.smallTargets} tap target(s) under 28px tall (pre-existing on main, out of scope)`);
