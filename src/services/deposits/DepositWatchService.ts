@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma, Deposit, DepositWatchCursor } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
+import { notifyDeposit } from '../TelegramNotifications';
 import { ChainConfig } from '../../config/chains';
 import { DepositVerificationError, ProviderUnavailableError } from '../deposit-verifiers';
 import { TronDepositVerifier } from '../deposit-verifiers/TronDepositVerifier';
@@ -18,7 +19,7 @@ const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${S
  * It can: read the chain (TronGrid), store newly observed transfers, prove
  * and refresh their confirmations, and report scan progress.
  * It cannot: credit, attribute, touch Balance/FuturesBalance, pay referral,
- * withdraw, sign or send anything. It holds no admin identity: this class
+ * withdraw, sign or send chain transactions. It holds no admin identity: this class
  * has no path to DepositBatchService and never writes userId.
  *
  * Scan model per (network, treasury address, token contract) cursor:
@@ -102,6 +103,7 @@ export class DepositWatchService {
     private fetchFn: typeof fetch = fetch,
     private now: () => number = Date.now,
     limits: Partial<Omit<WatchLimits, 'chain'>> = {},
+    private readonly notifyTransfer: typeof notifyDeposit = notifyDeposit,
   ) { this.cfg = { ...WATCH, ...limits }; }
 
   async ensureState() {
@@ -352,13 +354,25 @@ export class DepositWatchService {
         : { scannedThroughMs: cursor.windowEndMs!, windowStartMs: null, windowEndMs: null, pageCursor: null, pagesInWindow: 0,
           lastPageAt: new Date(this.now()), lastError: null } });
       // Rows and progress commit together; an empty page only moves progress.
-      let inserted = { count: 0 };
+      let inserted: { id: string; amount: Prisma.Decimal; createdAt: Date }[] = [];
       let updated: DepositWatchCursor;
       if (rows.size === 0) updated = await cursorWrite;
-      else [inserted, updated] = await this.prisma.$transaction([this.prisma.deposit.createMany({ data: [...rows.values()], skipDuplicates: true }), cursorWrite]);
+      else [inserted, updated] = await this.prisma.$transaction([
+        // INSERT RETURNING replaces INSERT; no extra SELECT and only genuinely
+        // new rows are returned (overlap pages/unique conflicts return nothing).
+        this.prisma.deposit.createManyAndReturn({ data: [...rows.values()], skipDuplicates: true,
+          select: { id: true, amount: true, createdAt: true } }), cursorWrite,
+      ]);
       summary.observed += rows.size;
-      summary.newTransfers += inserted.count;
+      summary.newTransfers += inserted.length;
       cursor = updated;
+      // AFTER commit, fire-and-forget with bounded HTTP timeout. A notification
+      // never extends the scan lease, changes progress or makes discovery fail.
+      for (const transfer of inserted) {
+        // Promise boundary also isolates an injected notifier throwing synchronously.
+        void Promise.resolve().then(() => this.notifyTransfer(transfer))
+          .catch(() => console.warn('[notifications]', 'DELIVERY_UNAVAILABLE'));
+      }
     }
   }
 

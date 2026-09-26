@@ -87,6 +87,31 @@ function submitRequest({ bytes = JPEG, type = 'image/jpeg', fields = {}, auth = 
 let REQ = uuid();
 const ctx = { waitUntil: () => {} };
 
+test('Telegram receives existing identity only AFTER email and confirmation; no extra Render reads', async () => {
+  const h = harness(); const events = []; const tasks = [];
+  const env = envFor({ NOTIFICATIONS: { notify: async event => {
+    assert.equal(h.calls.sent.length, 1); assert.equal(h.calls.confirm.length, 1);
+    events.push(event); return { status: 'SENT' };
+  } } });
+  const response = await handle(await submitRequest(), env, { waitUntil: p => tasks.push(p) }, h.deps);
+  await Promise.all(tasks);
+  assert.equal(response.status, 201); assert.equal(events.length, 1);
+  assert.equal(events[0].email, USER_EMAIL); assert.equal(events[0].eventType, 'KYC_SUBMITTED');
+  assert.equal(h.calls.authorize.length, 1); assert.equal(h.calls.confirm.length, 1);
+  assert.deepEqual(Object.keys(events[0]).sort(), ['documentType', 'email', 'eventId', 'eventType', 'fullName', 'timestamp']);
+});
+test('Telegram failure cannot break successful KYC; ignored/non-submitted KYC emits nothing', async () => {
+  const tasks = []; let calls = 0;
+  const env = envFor({ NOTIFICATIONS: { notify: async () => { calls++; throw new Error('synthetic outage'); } } });
+  let h = harness();
+  assert.equal((await handle(await submitRequest(), env, { waitUntil: p => tasks.push(p) }, h.deps)).status, 201);
+  await Promise.all(tasks); assert.equal(calls, 1);
+  h = harness({ confirm: () => ({ status: 200, data: { status: 'ignored_approved' } }) });
+  await handle(await submitRequest(), env, ctx, h.deps); assert.equal(calls, 1);
+  h = harness({ send: () => { throw new Error('email rejected'); } });
+  assert.equal((await handle(await submitRequest(), env, ctx, h.deps)).status, 502); assert.equal(calls, 1);
+});
+
 test('sniffs JPEG, PNG, PDF and rejects everything else', () => {
   assert.equal(sniffDocument(JPEG), 'image/jpeg');
   assert.equal(sniffDocument(PNG), 'image/png');
@@ -242,7 +267,9 @@ test('metadata callback fails after email accepted → 202 + sealed receipt; rec
   let down = true;
   const h = harness({ confirm: () => (down ? 'throw' : { status: 201, data: { status: 'created' } }) });
   const waits = [];
-  const res = await handle(await submitRequest(), envFor(), { waitUntil: (p) => waits.push(p) }, h.deps);
+  const notifications = [];
+  const env = envFor({ NOTIFICATIONS: { notify: async event => { notifications.push(event); return { status: 'SENT' }; } } });
+  const res = await handle(await submitRequest(), env, { waitUntil: (p) => waits.push(p) }, h.deps);
   assert.equal(res.status, 202);
   const body = await res.json();
   assert.equal(body.confirmed, false);
@@ -250,13 +277,16 @@ test('metadata callback fails after email accepted → 202 + sealed receipt; rec
   assert.doesNotMatch(body.receipt, /Synthetic|1991/, 'receipt is sealed, not readable');
   assert.equal(h.calls.sent.length, 1);
   assert.equal(waits.length, 1, 'a short background retry is scheduled');
+  assert.equal(notifications.length, 0, 'no event before successful confirmation');
 
   down = false;
   const retry = await handle(new Request('https://kyc.example.test/v1/confirm', {
     method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://voltextech.net', 'content-length': '10' },
     body: JSON.stringify({ receipt: body.receipt }),
-  }), envFor(), ctx, h.deps);
+  }), env, ctx, h.deps);
   assert.equal(retry.status, 200);
+  assert.equal(notifications.length, 1);
+  assert.equal(notifications[0].email, USER_EMAIL, 'authenticated identity preserved in sealed receipt, no lookup');
   assert.equal((await retry.json()).submissionId, SUBMISSION);
   assert.equal(h.calls.sent.length, 1, 'no second email');
   assert.equal(h.calls.confirm.at(-1).body.submissionId, SUBMISSION);

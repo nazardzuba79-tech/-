@@ -14,6 +14,11 @@ routes = [
   { pattern = "kyc.voltextech.net", custom_domain = true }
 ]
 
+[[services]]
+binding = "NOTIFICATIONS"
+service = "voltex-notification-edge"
+entrypoint = "KycNotifications"
+
 [vars]
 VOLTEX_API_ORIGIN = "https://api.voltextech.net"
 ALLOWED_ORIGINS = "https://voltextech.net,https://www.voltextech.net,https://localhost,capacitor://localhost"

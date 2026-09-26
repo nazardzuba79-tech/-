@@ -4096,3 +4096,12 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Not done: no real transfer was ignored, credited or re-attributed. The owner's real 15 USDT is untouched.
 
 - Codex integration note: feature branch merged fresh main `1a60840509340b8214534a52ffe32628f21c1326`; the only conflict was these appended handoff entries, both preserved. PR #295 deposit-ignore implementation/schema are inherited unchanged, not part of the read-budget diff.
+
+## Codex — 2026-09-26 — Event-only Telegram notifications
+
+- Branch `codex/event-telegram-notifications`, base fresh main `f631e3d6`; implementation SHA recorded in the PR. Owner authorized merge/deploy after CI and a minimal Durable Object for idempotency only.
+- Material changes: `workers/notification-edge`, KYC edge notification hook/binding, `TelegramNotifications`, watcher INSERT RETURNING and after-commit dispatch, public verification-key endpoint, synthetic tests, deploy workflow and `docs/TELEGRAM_NOTIFICATIONS.md`.
+- Preserved: financial logic, deposit attribution/credit/proof/schedule, KYC authority/email acceptance, Support, browser budgets, frontend and schema. No registration notifications, polling, additional Neon queries or notification DB writes.
+- Durable claim fields only eventId/eventType/status/timestamp; one-shot 7-day cleanup (at most 60s clock-skew allowance), at-most-one Telegram attempt including timeout/crash. No documents/PII/token/financial history stored in DO. Missing Telegram secrets reports NOT_CONFIGURED, not delivery success.
+- Local verification before current-main integration: 37 Worker contract/runtime tests, 62 targeted backend tests, 23 isolated PostgreSQL acceptance checks, backend TypeScript, frontend production build, both Wrangler dry-runs PASS. Real workerd tests cover concurrent delivery, persisted restart and retention cleanup. No production event was generated.
+- Operational limits: owner must add bot token/chat ID at notification Worker; discovery has no known owner/aggregate so those optional fields are omitted without extra reads. Render verification public key pinned by deploy job; rotating JWT secret requires repinning. No delivery retry/backfill: at-most-once prioritizes no duplicate over guaranteed delivery.

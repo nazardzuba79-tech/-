@@ -1,0 +1,7 @@
+{
+  "name": "voltex-notification-edge",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test test.mjs integration.test.mjs" },
+  "devDependencies": { "wrangler": "4.141.0" }
+}

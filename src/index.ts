@@ -29,6 +29,7 @@ import { cfdRouter } from './api/routes/cfd';
 import { referralRouter } from './api/routes/referral';
 import { accountRouter } from './api/routes/account';
 import { kycRouter } from './api/routes/kyc';
+import { notificationPublicKey } from './services/TelegramNotifications';
 import { adminRouter } from './api/routes/admin';
 import { adminUsersRouter } from './api/routes/adminUsers';
 import { adminAuditLogRouter } from './api/routes/adminAuditLog';
@@ -220,6 +221,13 @@ app.get('/health', (_req, res) => res.json({
   branch: process.env.RENDER_GIT_BRANCH ?? null,
   startedAt: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
 }));
+// Deployment-only public verification material. No auth/session/DB reads.
+app.get('/notifications/public-key', (_req, res) => {
+  const x = notificationPublicKey();
+  res.setHeader('Cache-Control', 'no-store');
+  return x ? res.json({ alg: 'Ed25519', key: { kty: 'OKP', crv: 'Ed25519', x } })
+    : res.status(503).json({ status: 'NOT_CONFIGURED' });
+});
 // Test markets first: they answer the shared Spot endpoints for test pairs
 // only (simulated, never tradable) and pass every other pair through.
 app.use('/api/v1', testMarketsRouter());
