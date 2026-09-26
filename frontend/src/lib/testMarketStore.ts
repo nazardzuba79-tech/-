@@ -102,10 +102,16 @@ class TestMarketStore {
     return this.state.assets.some((asset) => asset.state.phase === 'live');
   }
 
+  private armedListings(): TestAsset[] {
+    return this.state.assets.filter((asset) => asset.listingArmed);
+  }
+
   private readonly onVisibility = () => {
     if (document.hidden || !this.subscribers.size) return;
-    // Live or not: a tab that slept through the listing moment must wake
-    // up on it rather than keep counting down to a time already passed.
+    // Preview-only listings are intentionally static: visibility changes
+    // must not start a clock or create background traffic.
+    if (this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;
+    // Live or armed pre-listing: a tab that slept through the listing moment must wake.
     const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
     if (Date.now() - this.fetchedAt >= cadence) void this.refresh();
   };
@@ -118,8 +124,11 @@ class TestMarketStore {
     const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
     let delay = Math.max(0, cadence - (Date.now() - this.fetchedAt));
     if (this.state.loaded && !this.state.error && this.state.assets.length > 0 && !this.anyLive()) {
+      const armed = this.armedListings();
+      // Unarmed preview: one initial request, then complete silence until a new deploy/reload arms it.
+      if (armed.length === 0) return;
       const serverNow = Date.now() + this.state.clockOffsetMs;
-      const nextListing = Math.min(...this.state.assets.map((asset) => Date.parse(asset.listingAt)));
+      const nextListing = Math.min(...armed.map((asset) => Date.parse(asset.listingAt)));
       delay = Math.max(1_000, nextListing - serverNow + 1_000);
     }
     this.timer = setTimeout(() => void this.refresh(), Math.min(delay, MAX_TIMEOUT_MS));
