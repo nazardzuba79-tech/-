@@ -63,5 +63,8 @@ describe('Spot/CFD mobile parity with Futures', () => {
     expect(css).toContain('min-height:52px');
     expect(css).toContain('font-size:16px !important');
     expect(css).toContain('height:clamp(360px,59dvh,600px)');
+    expect(css).toContain('display:none !important');
+    expect(css).toContain('display:flex !important');
+    expect(css).toContain('.cfd-market-state { display:none !important; }');
   });
 });
