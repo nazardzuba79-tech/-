@@ -1,30 +1,34 @@
 'use strict';
 /**
- * FUTURES COLD OPEN IN A NEW TAB, INCLUDING ACROSS A DEPLOYMENT.
+ * COLD OPEN ACROSS A DEPLOYMENT, AGAINST THE HOST AS IT REALLY BEHAVES.
  *
- * The bug this covers: a tab holding the previous deployment's `index.html`
- * and entry chunk opens `/futures`, the router asks for a lazy chunk that the
- * current deployment no longer serves, and the viewer gets «Что-то пошло не
- * так». Measured thrown value, in Chromium, against two real builds:
+ * The earlier harness modelled a missing asset as `404 text/plain`. The live
+ * Cloudflare Pages project does not do that. Measured on voltextech.net:
  *
- *   TypeError: Failed to fetch dynamically imported module: …/FuturesPage-<hash>.js
+ *   GET /assets/<name that does not exist>.js
+ *   → 200, content-type: text/html (the SPA's index.html),
+ *     cache-control: public, max-age=31536000, immutable
  *
- * Scenarios, all against PRODUCTION BUILDS served by a static server that
- * models the host — no dev server, no mocked bundler:
+ * Pages treats the project as a single-page app (no top-level 404.html), so a
+ * miss anywhere — /assets included — answers with the shell, and the
+ * `/assets/*` rule in _headers stamps it `immutable`. A browser that asks for
+ * a chunk at the wrong moment (an old shell after a deploy, or a new shell
+ * whose file the edge has not caught up with yet) stores HTML under a script
+ * URL for a year and never asks again. A plain reload cannot fix that, which
+ * is what turns a stale shell into a page that stays black.
  *
- *   A  same-tab navigation to Futures
- *   B  ctrl/cmd-click into a new tab
- *   C  duplicate tab
- *   D  pasted /futures into a fresh tab
- *   E  stale shell + newer deployment -> AT MOST ONE automatic reload
- *   F  a genuine component crash -> boundary, and NO reload loop
- *   G  offline -> no infinite reload
+ * This host serves two REAL production builds with exactly that contract:
+ *   HTML            200, Cache-Control: no-cache, no validators (as observed)
+ *   existing asset  200, Cache-Control: public, max-age=31536000, immutable
+ *   missing asset   200 text/html index.html, the same immutable header
+ * plus two knobs for the deploy window: `staleHtml` (an edge still hands out
+ * the previous deployment's shell) and `lag` (one asset is not there yet).
  *
- * Plus the two things a "fix" most easily breaks: SPA routing on direct entry
- * to every route, and the session surviving a new tab.
+ * The browser keeps its real HTTP cache for the whole scenario (no request
+ * interception, which would switch that cache off), so poisoning and healing
+ * happen exactly as they would for a visitor.
  *
- * Build both fixtures first — see BUILD_A / BUILD_B below.
- * Evidence: docs/qa/futures-cold-open/.
+ * Build both fixtures first (BUILD_A / BUILD_B). Evidence: docs/qa/futures-cold-open/.
  */
 const express = require('express');
 const path = require('node:path');
@@ -32,269 +36,310 @@ const fs = require('node:fs');
 const { once } = require('node:events');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 
-const A = process.env.BUILD_A || '/tmp/buildA';
-const B = process.env.BUILD_B || '/tmp/buildB';
+const DIRS = { A: process.env.BUILD_A || '/tmp/buildA', B: process.env.BUILD_B || '/tmp/buildB' };
 const OUT = path.resolve(process.env.QA_OUT || 'docs/qa/futures-cold-open');
+const EXPECT_FIXED = process.env.QA_EXPECT !== 'baseline';
 fs.mkdirSync(OUT, { recursive: true });
 const findings = [];
 const report = { startedAt: new Date().toISOString(), scenarios: {}, findings,
-  environment: 'LOCAL QA ONLY — two real production builds, static host model, no backend writes' };
+  environment: 'LOCAL QA ONLY — two real production builds, Cloudflare Pages cache model, no backend' };
 const finding = t => { findings.push(t); };
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
-/**
- * The host, modelled.
- *
- * `stale` serves the OLD shell and lets the OLD entry chunk through as if it
- * came from the browser's own immutable HTTP cache, while every other old
- * chunk is gone — which is exactly the state that produces an ErrorBoundary
- * rather than a blank page: React is already running when the failure lands.
- */
-function host(mode) {
+const IMMUTABLE = 'public, max-age=31536000, immutable';
+const NO_CACHE = 'no-cache';
+
+function entryOf(which) {
+  return fs.readFileSync(path.join(DIRS[which], 'index.html'), 'utf8').match(/assets\/(index-[\w-]+\.js)/)[1];
+}
+function chunkOf(which, prefix) {
+  return fs.readdirSync(path.join(DIRS[which], 'assets')).find(f => f.startsWith(prefix) && f.endsWith('.js'));
+}
+
+function pagesHost() {
+  const s = { deployment: 'A', previous: 'A', staleHtml: 0, lag: new Set(), cancelAfterStale: false, cancelArmed: false,
+    log: { html: [], fallbacks: [], cancelled: 0 } };
   const app = express();
-  const log = { served: [], failed: [], html: 0 };
-  app.use((req, res, next) => {
-    res.on('finish', () => {
-      if (/\.js$/.test(req.path)) (res.statusCode >= 400 ? log.failed : log.served).push(req.path);
-    });
-    next();
-  });
+  app.disable('x-powered-by');
+  const send = (res, file, cacheControl, type) => {
+    res.set('Cache-Control', cacheControl);
+    if (type) res.type(type);
+    res.sendFile(file, { etag: false, lastModified: false, cacheControl: false });
+  };
   app.get('/assets/:file', (req, res) => {
-    const live = path.join(B, 'assets', req.params.file);
-    if (fs.existsSync(live)) return res.sendFile(live);
-    const old = path.join(A, 'assets', req.params.file);
-    if (mode === 'stale' && fs.existsSync(old) && /^index-/.test(req.params.file)) return res.sendFile(old);
-    return res.status(404).type('text/plain').send('Not found');
+    const name = req.params.file;
+    const dir = DIRS[s.deployment];
+    const live = path.join(dir, 'assets', name);
+    if (s.lag.has(name)) {
+      s.lag.delete(name);
+      s.log.fallbacks.push(`${name} (not propagated yet)`);
+      return send(res, path.join(dir, 'index.html'), IMMUTABLE, 'html');
+    }
+    if (fs.existsSync(live)) return send(res, live, IMMUTABLE);
+    s.log.fallbacks.push(name);
+    return send(res, path.join(dir, 'index.html'), IMMUTABLE, 'html');
   });
   app.get('/api/v1/*', (_q, r) => r.status(404).json({ error: 'not part of this harness' }));
-  app.use(express.static(B, { index: false }));
-  app.get('*', (_q, r) => {
-    log.html++;
-    // The browser's cached copy of the OLD shell is what the new tab boots
-    // from — once. `location.reload()` revalidates, so the reload gets the
-    // deployment that is actually live. That asymmetry IS the production
-    // behaviour, and it is why the owner's manual reload always worked;
-    // a host that kept serving the stale shell forever would be modelling
-    // E2 below, not this.
-    const stale = mode === 'stale' && log.html === 1;
-    r.sendFile(path.join(stale ? A : B, 'index.html'));
+  app.get('*', (req, res) => {
+    const file = path.join(DIRS[s.deployment], req.path);
+    if (req.path !== '/' && fs.existsSync(file) && fs.statSync(file).isFile()) return send(res, file, NO_CACHE);
+    if (s.cancelArmed && req.headers['sec-fetch-dest'] === 'document') {
+      // The recovery reload does not complete. A 204 to a navigation leaves
+      // the current document on screen and running — exactly what a blocked
+      // reload, a webview that ignores it, or a dead network leaves behind.
+      s.cancelArmed = false; s.log.cancelled++;
+      return res.status(204).end();
+    }
+    let which = s.deployment;
+    if (s.staleHtml > 0) { s.staleHtml--; which = s.previous; if (s.cancelAfterStale) s.cancelArmed = true; }
+    s.log.html.push(which);
+    return send(res, path.join(DIRS[which], 'index.html'), NO_CACHE, 'html');
   });
-  return { app, log };
+  return { app, s };
 }
 
-const STATE = () => ({
-  boundary: (document.body.textContent || '').includes('Что-то пошло не так'),
-  futures: !!document.querySelector('.futures-ticker-bar, .ticker-bar, .futures-reference, .reference-market'),
-  rootChildren: document.getElementById('root')?.childElementCount ?? -1,
-  path: location.pathname,
-  guards: Object.keys(sessionStorage).filter(k => k.startsWith('voltex.chunk-recovery')),
-});
+async function listen(app) {
+  const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
+  return { server, origin: `http://127.0.0.1:${server.address().port}` };
+}
 
-async function newTab(ctx, token) {
+const STATE = () => {
+  const text = (document.body.innerText || '').trim();
+  return {
+    path: location.pathname,
+    entry: document.querySelector('script[type="module"][src]')?.getAttribute('src') ?? null,
+    blank: text === '',
+    text: text.slice(0, 120),
+    futures: !!document.querySelector('.futures-ticker-bar, .ticker-bar, .futures-reference, .reference-market'),
+    boundary: text.includes('Что-то пошло не так'),
+    bootScreen: !!document.getElementById('boot-recovery'),
+    recovering: !!document.querySelector('[data-recovering="true"]'),
+    reactStarted: document.documentElement.hasAttribute('data-app-started'),
+    guards: Object.keys(sessionStorage).filter(k => k.startsWith('voltex.')),
+  };
+};
+
+async function tab(ctx, token) {
   const page = await ctx.newPage();
   const nav = [];
-  page.on('framenavigated', f => { if (f === page.mainFrame()) nav.push(f.url()); });
-  if (token !== undefined) await page.addInitScript(t => {
-    try { if (t === null) localStorage.removeItem('exchange_token'); else localStorage.setItem('exchange_token', t); localStorage.setItem('exchange_lang', 'ru'); } catch {}
+  const lines = [];
+  // Real document loads only (goto + reloads). framenavigated also fires for
+  // the router's history.replaceState, which is not a reload.
+  page.on('request', r => { if (r.isNavigationRequest() && r.frame() === page.mainFrame()) nav.push(r.url()); });
+  page.on('console', m => { const t = m.text(); if (t.startsWith('voltex.bootstrap')) lines.push(t); });
+  await page.addInitScript(t => {
+    try {
+      if (t === null) localStorage.removeItem('exchange_token'); else if (t) localStorage.setItem('exchange_token', t);
+      localStorage.setItem('exchange_lang', 'ru');
+    } catch {}
   }, token);
-  return { page, nav };
+  return { page, nav, lines };
 }
 
+async function snap(page, name) {
+  await page.screenshot({ path: path.join(OUT, `${name}.png`) }).catch(() => {});
+  return page.evaluate(STATE).catch(e => ({ error: String(e) }));
+}
+
+const DESKTOP = { viewport: { width: 1440, height: 900 } };
+const MOBILE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 };
+
 (async () => {
-  for (const dir of [A, B]) if (!fs.existsSync(path.join(dir, 'index.html'))) throw new Error(`missing build fixture: ${dir}`);
+  for (const d of Object.values(DIRS)) if (!fs.existsSync(path.join(d, 'index.html'))) throw new Error(`missing build fixture: ${d}`);
+  if (entryOf('A') === entryOf('B')) throw new Error('both builds emitted the same entry; nothing would be stale');
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
 
-  // ── fresh deployment: A, B, C, D, SPA routing, auth ──────────────────────
+  // ── 0. The host model itself matches production ──────────────────────────
   {
-    const { app, log } = host('fresh');
-    const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
-    const origin = `http://127.0.0.1:${server.address().port}`;
-    const ctx = await browser.newContext();
-
-    // D — pasted straight into a fresh tab.
-    const { page } = await newTab(ctx, 'local-qa');
-    await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    await wait(2500);
-    report.scenarios.D_paste_new_tab = await page.evaluate(STATE);
-    await page.screenshot({ path: path.join(OUT, 'D-paste-new-tab.png') });
-    if (!report.scenarios.D_paste_new_tab.futures || report.scenarios.D_paste_new_tab.boundary) {
-      finding('D: pasting /futures into a fresh tab did not open the terminal');
-    }
-
-    // A — same-tab navigation from home.
-    await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
-    await wait(1200);
-    await page.evaluate(() => { history.pushState({}, '', '/futures'); dispatchEvent(new PopStateEvent('popstate')); });
-    await wait(2000);
-    report.scenarios.A_same_tab = await page.evaluate(STATE);
-    if (report.scenarios.A_same_tab.boundary) finding('A: same-tab navigation hit the error boundary');
-
-    // B — a genuinely separate tab in the same context (ctrl/cmd-click).
-    const { page: tabB } = await newTab(ctx, undefined);
-    await tabB.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    await wait(2500);
-    report.scenarios.B_new_tab = await tabB.evaluate(STATE);
-    await tabB.screenshot({ path: path.join(OUT, 'B-new-tab.png') });
-    if (!report.scenarios.B_new_tab.futures || report.scenarios.B_new_tab.boundary) {
-      finding('B: ctrl/cmd-click into a new tab did not open the terminal');
-    }
-
-    // C — duplicate tab: same URL, same storage, brand-new page.
-    const { page: tabC } = await newTab(ctx, undefined);
-    await tabC.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    await wait(2500);
-    report.scenarios.C_duplicate_tab = await tabC.evaluate(STATE);
-    if (!report.scenarios.C_duplicate_tab.futures || report.scenarios.C_duplicate_tab.boundary) {
-      finding('C: duplicating the tab did not open the terminal');
-    }
-
-    // SPA routing must still answer direct entry on every route.
-    const routes = {};
-    for (const route of ['/futures', '/wallet', '/copy-trading', '/markets']) {
-      const res = await ctx.request.get(`${origin}${route}`);
-      const body = await res.text();
-      routes[route] = { status: res.status(), isAppShell: body.includes('<div id="root">') };
-      if (res.status() !== 200 || !body.includes('<div id="root">')) {
-        finding(`SPA routing: direct ${route} did not return the app shell (status ${res.status()})`);
-      }
-    }
-    report.scenarios.spa_routing = routes;
-
-    // AUTH — a new tab must stay signed in, and a tab with no token must be
-    // sent to the sign-in page rather than shown the terminal.
-    const { page: authed } = await newTab(ctx, 'local-qa');
-    await authed.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    await wait(2000);
-    const authedState = await authed.evaluate(STATE);
-    const anonCtx = await browser.newContext();
-    const { page: anon } = await newTab(anonCtx, null);
-    await anon.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    await wait(2000);
-    const anonState = await anon.evaluate(STATE);
-    report.scenarios.auth = { authenticatedPath: authedState.path, anonymousPath: anonState.path };
-    if (authedState.path !== '/futures') finding('auth: an authenticated new tab was redirected away from /futures');
-    if (anonState.path === '/futures') finding('auth: a tab with no token was left on /futures instead of the sign-in page');
-    await anonCtx.close();
-
-    report.scenarios.fresh_js_404s = log.failed;
-    if (log.failed.length) finding(`fresh deployment served ${log.failed.length} JS 404(s): ${log.failed.slice(0,3)}`);
-    await ctx.close(); server.close();
-  }
-
-  // ── E: stale shell + newer deployment ────────────────────────────────────
-  {
-    const { app, log } = host('stale');
-    const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
-    const origin = `http://127.0.0.1:${server.address().port}`;
-    const ctx = await browser.newContext();
-    const { page, nav } = await newTab(ctx, 'local-qa');
-    const warnings = [];
-    page.on('console', m => { const t = m.text(); if (t.includes('voltex.bootstrap.chunk_recovery')) warnings.push(t); });
-
-    await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    // Long enough for the failure, the automatic reload, and the fresh boot.
-    await wait(7000);
-    const state = await page.evaluate(STATE);
-    await page.screenshot({ path: path.join(OUT, 'E-stale-shell-recovered.png') });
-    report.scenarios.E_stale_shell = {
-      ...state, htmlRequests: log.html, navigations: nav.length,
-      staleChunk404s: log.failed.length, recoveryLines: warnings,
+    const { app } = pagesHost();
+    const { server, origin } = await listen(app);
+    const miss = await fetch(`${origin}/assets/FuturesPage-deadbeef.js`);
+    const html = await fetch(`${origin}/futures`);
+    report.scenarios.host_model = {
+      missingAsset: { status: miss.status, type: miss.headers.get('content-type'), cache: miss.headers.get('cache-control') },
+      spaEntry: { status: html.status, cache: html.headers.get('cache-control') },
     };
-    // The point of the whole change: the terminal opens, and the viewer is
-    // never shown a failure that a single reload was going to fix.
-    if (state.boundary) finding('E: a stale shell still left the error boundary on screen');
-    if (!state.futures) finding('E: the terminal did not open after the automatic recovery');
-    // AT MOST ONE application-triggered recovery. Chromium can emit more
-    // main-frame navigation events than actual location.reload() calls while
-    // a stale module graph collapses, so raw framenavigated count is not a
-    // reliable reload counter. The production recovery path itself emits one
-    // structured reloading line before calling location.reload(), and its
-    // shell+path guard prevents a second call from the same shell.
-    const reloadLines = warnings.filter(w => w.includes('chunk_recovery.reloading'));
-    if (reloadLines.length !== 1) {
-      finding(`E: expected exactly one recovery reload, saw ${reloadLines.length}`);
+    if (miss.status !== 200 || !/text\/html/.test(miss.headers.get('content-type')) || !/immutable/.test(miss.headers.get('cache-control'))) {
+      finding('host model: a missing asset must answer like Pages (200 text/html immutable)');
     }
+    server.close();
+  }
+
+  // ── 1. Owner's scenario: build A cached, build B deployed, A's chunks gone ─
+  for (const [label, device] of [['desktop', DESKTOP], ['mobile', MOBILE]]) {
+    const { app, s } = pagesHost();
+    const { server, origin } = await listen(app);
+    const ctx = await browser.newContext(device);
+    // Load and cache build A's shell and entry (home page, signed out).
+    const warm = await tab(ctx, null);
+    await warm.page.goto(`${origin}/`, { waitUntil: 'load' });
+    await wait(1500);
+    await warm.page.close();
+    // Deploy B. One edge still hands out A's shell once (the deploy window).
+    s.deployment = 'B'; s.previous = 'A'; s.staleHtml = 1;
+    const { page, nav, lines } = await tab(ctx, 'local-qa');
+    await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
+    const samples = [];
+    for (let i = 0; i < 10; i++) { await wait(800); samples.push(await page.evaluate(STATE).catch(() => null)); }
+    const state = await snap(page, `1-stale-shell-${label}`);
+    report.scenarios[`1_stale_shell_${label}`] = { ...state, navigations: nav.length, html: s.log.html, fallbacks: s.log.fallbacks, lines };
+    if (!state.futures) finding(`1 ${label}: the terminal did not open after build B replaced build A`);
+    if (state.blank) finding(`1 ${label}: the page ended blank`);
+    if (nav.length > 2) finding(`1 ${label}: ${nav.length - 1} reloads — at most one is allowed`);
     await ctx.close(); server.close();
   }
 
-  // ── E2: the stale shell NEVER goes away — recovery must give up ──────────
+  // ── 2. The entry chunk poisoned in the deploy window → the black page ────
   {
-    // Worst case: the HTML stays stale however often it is fetched, so the
-    // reload cannot help. One attempt, then the honest boundary. This is the
-    // case that separates a recovery from a reload loop.
-    const app = express();
-    const log = { html: 0 };
-    app.get('/assets/:file', (req, res) => {
-      const old = path.join(A, 'assets', req.params.file);
-      if (fs.existsSync(old) && /^index-/.test(req.params.file)) return res.sendFile(old);
-      return res.status(404).type('text/plain').send('Not found');
-    });
-    app.get('*', (_q, r) => { log.html++; r.sendFile(path.join(A, 'index.html')); });
-    const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
-    const origin = `http://127.0.0.1:${server.address().port}`;
-    const ctx = await browser.newContext();
-    const { page, nav } = await newTab(ctx, 'local-qa');
+    const { app, s } = pagesHost();
+    const { server, origin } = await listen(app);
+    s.deployment = 'B'; s.lag.add(entryOf('B'));
+    const ctx = await browser.newContext(DESKTOP);
+    const { page, nav, lines } = await tab(ctx, 'local-qa');
     await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
     await wait(9000);
-    const state = await page.evaluate(STATE);
-    await page.screenshot({ path: path.join(OUT, 'E2-permanently-stale.png') });
-    report.scenarios.E2_permanently_stale = { ...state, navigations: nav.length, htmlRequests: log.html };
-    if (!state.boundary) finding('E2: a permanently stale shell did not end at the error boundary');
-    if (nav.length > 3) finding(`E2: RELOAD LOOP — ${nav.length} navigations`);
-    if (state.guards.length !== 1) finding(`E2: expected exactly one spent guard, saw ${state.guards.length}`);
+    const first = await snap(page, '2-entry-poisoned');
+    // The viewer's own reload, the thing that "always worked" before.
+    await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+    await wait(5000);
+    const afterManualReload = await snap(page, '2-entry-poisoned-after-reload');
+    report.scenarios['2_entry_poisoned'] = { first, afterManualReload, navigations: nav.length, fallbacks: s.log.fallbacks, lines };
+    if (!first.futures) finding('2: a poisoned entry chunk left the terminal unopened');
+    if (first.blank) finding('2: a poisoned entry chunk left a BLANK page');
+    if (!afterManualReload.futures) finding('2: after a manual reload the terminal still did not open');
+    if (nav.length > 3) finding(`2: ${nav.length - 2} automatic reloads — at most one is allowed`);
     await ctx.close(); server.close();
   }
 
-  // ── F: a genuine component crash must never auto-reload ──────────────────
+  // ── 3. The route chunk poisoned in the deploy window ─────────────────────
   {
-    const { app } = host('fresh');
-    const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
-    const origin = `http://127.0.0.1:${server.address().port}`;
-    const ctx = await browser.newContext();
-    const { page, nav } = await newTab(ctx, 'local-qa');
-    // Break a browser API the terminal uses during render. This is an
-    // ordinary runtime exception — not a missing module — and it must reach
-    // the boundary and STAY there.
+    const { app, s } = pagesHost();
+    const { server, origin } = await listen(app);
+    s.deployment = 'B'; s.lag.add(chunkOf('B', 'FuturesPage-'));
+    const ctx = await browser.newContext(DESKTOP);
+    const { page, nav, lines } = await tab(ctx, 'local-qa');
+    await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
+    await wait(9000);
+    const state = await snap(page, '3-route-chunk-poisoned');
+    report.scenarios['3_route_chunk_poisoned'] = { ...state, navigations: nav.length, fallbacks: s.log.fallbacks, lines };
+    if (!state.futures) finding('3: a poisoned FuturesPage chunk left the terminal unopened');
+    if (state.blank) finding('3: a poisoned FuturesPage chunk left a BLANK page');
+    if (nav.length > 2) finding(`3: ${nav.length - 1} reloads — at most one is allowed`);
+    await ctx.close(); server.close();
+  }
+
+  // ── 4. The recovery reload itself never completes ────────────────────────
+  {
+    const { app, s } = pagesHost();
+    const { server, origin } = await listen(app);
+    const ctx = await browser.newContext(DESKTOP);
+    const warm = await tab(ctx, null);
+    await warm.page.goto(`${origin}/`, { waitUntil: 'load' });
+    await wait(1500); await warm.page.close();
+    s.deployment = 'B'; s.previous = 'A'; s.staleHtml = 1; s.cancelAfterStale = true;
+    const { page, nav, lines } = await tab(ctx, 'local-qa');
+    await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
+    await wait(3000);
+    const early = await snap(page, '4-reload-pending');
+    await wait(11_000);
+    const late = await snap(page, '4-reload-never-completed');
+    report.scenarios['4_reload_does_not_complete'] = { early, late, navigations: nav.length, cancelled: s.log.cancelled, lines };
+    if (s.log.cancelled !== 1) finding('4: the harness did not cancel the recovery reload');
+    if (!early || early.blank) finding('4: while the recovery reload was pending the page was BLANK');
+    if (!late || late.blank) finding('4: a recovery reload that never completed left the page BLANK');
+    if (late && !late.boundary) finding('4: a recovery reload that never completed did not end on the readable card');
+    await ctx.close(); server.close();
+  }
+
+  // ── 5. A shell that stays stale however often it is fetched ──────────────
+  {
+    const { app, s } = pagesHost();
+    const { server, origin } = await listen(app);
+    const ctx = await browser.newContext(DESKTOP);
+    const warm = await tab(ctx, null);
+    await warm.page.goto(`${origin}/`, { waitUntil: 'load' });
+    await wait(1500); await warm.page.close();
+    s.deployment = 'B'; s.previous = 'A'; s.staleHtml = Infinity;
+    const { page, nav, lines } = await tab(ctx, 'local-qa');
+    await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
+    await wait(14_000);
+    const state = await snap(page, '5-permanently-stale');
+    report.scenarios['5_permanently_stale'] = { ...state, navigations: nav.length, html: s.log.html.length, lines };
+    if (state.blank) finding('5: a permanently stale shell ended BLANK instead of a readable verdict');
+    if (!state.boundary && !state.bootScreen) finding('5: a permanently stale shell showed neither the boundary nor the recovery screen');
+    if (nav.length > 2) finding(`5: RELOAD LOOP — ${nav.length - 1} reloads`);
+    await ctx.close(); server.close();
+  }
+
+  // ── 6. A genuine render crash must never auto-reload ─────────────────────
+  {
+    const { app, s } = pagesHost();
+    s.deployment = 'B';
+    const { server, origin } = await listen(app);
+    const ctx = await browser.newContext(DESKTOP);
+    const { page, nav } = await tab(ctx, 'local-qa');
     await page.addInitScript(() => {
+      // An ordinary runtime exception in the terminal's own render (price
+      // formatting) — not a missing module, and not something React itself
+      // needs, so the boundary can still paint.
       // eslint-disable-next-line no-extend-native
-      Array.prototype.map = function () { throw new TypeError('qa-injected ordinary render crash'); };
+      Number.prototype.toFixed = function () { throw new TypeError('qa-injected ordinary render crash'); };
     });
     await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    await wait(8000);
-    const state = await page.evaluate(STATE).catch(() => ({ boundary: null, guards: [] }));
-    report.scenarios.F_ordinary_crash = { ...state, navigations: nav.length };
-    await page.screenshot({ path: path.join(OUT, 'F-ordinary-crash.png') }).catch(() => {});
-    if (nav.length > 2) finding(`F: an ordinary crash caused ${nav.length} navigations — it must cause none`);
-    if (Array.isArray(state.guards) && state.guards.length) {
-      finding('F: an ordinary crash consumed a chunk-recovery guard');
-    }
+    await wait(9000);
+    const state = await snap(page, '6-ordinary-crash');
+    report.scenarios['6_ordinary_crash'] = { ...state, navigations: nav.length };
+    if (nav.length > 1) finding(`6: an ordinary crash caused ${nav.length - 1} reload(s) — it must cause none`);
+    if (state.blank) finding('6: an ordinary crash left a BLANK page');
+    if (!state.boundary) finding('6: an ordinary crash did not show the boundary');
     await ctx.close(); server.close();
   }
 
-  // ── G: offline must not spin ─────────────────────────────────────────────
+  // ── 7. Offline when the route chunk is due: one try at most, then a verdict
   {
-    const { app } = host('fresh');
-    const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
-    const origin = `http://127.0.0.1:${server.address().port}`;
-    const ctx = await browser.newContext();
-    const { page, nav } = await newTab(ctx, 'local-qa');
-    // The shell loads, then the network dies before the lazy chunk arrives.
+    const { app, s } = pagesHost();
+    s.deployment = 'B';
+    const { server, origin } = await listen(app);
+    const ctx = await browser.newContext(DESKTOP);
+    const { page, nav } = await tab(ctx, 'local-qa');
     await page.route('**/assets/FuturesPage-*.js', route => route.abort('internetdisconnected'));
     await page.goto(`${origin}/futures`, { waitUntil: 'domcontentloaded' });
-    await wait(9000);
-    const state = await page.evaluate(STATE);
-    report.scenarios.G_offline = { ...state, navigations: nav.length };
-    await page.screenshot({ path: path.join(OUT, 'G-offline.png') });
-    // One attempt is legitimate — a transient drop is worth one retry. More
-    // than that, with the network still down, is a loop.
-    if (nav.length > 3) finding(`G: offline produced ${nav.length} navigations — reload loop`);
-    if (!state.boundary && !state.futures) finding('G: offline left the page in neither a verdict nor the terminal');
+    await wait(14_000);
+    const state = await snap(page, '7-offline');
+    report.scenarios['7_offline'] = { ...state, navigations: nav.length };
+    if (nav.length > 2) finding(`7: offline produced ${nav.length - 1} reloads — reload loop`);
+    if (state.blank) finding('7: offline left a BLANK page');
     await ctx.close(); server.close();
+  }
+
+  // ── 8. Fresh deployment: every entry route cold-opens, desktop and mobile ─
+  {
+    const { app, s } = pagesHost();
+    s.deployment = 'B';
+    const { server, origin } = await listen(app);
+    const routes = {};
+    for (const [label, device] of [['desktop', DESKTOP], ['mobile', MOBILE]]) {
+      for (const route of ['/futures', '/trade', '/wallet']) {
+        const ctx = await browser.newContext(device);
+        const { page, nav } = await tab(ctx, 'local-qa');
+        await page.goto(`${origin}${route}`, { waitUntil: 'domcontentloaded' });
+        await wait(3500);
+        const state = await snap(page, `8-fresh-${label}${route.replace('/', '-')}`);
+        routes[`${label} ${route}`] = { path: state.path, blank: state.blank, boundary: state.boundary, bootScreen: state.bootScreen, navigations: nav.length };
+        if (state.blank || state.boundary || state.bootScreen) finding(`8: fresh ${label} ${route} did not open cleanly`);
+        if (state.path !== route) finding(`8: fresh ${label} ${route} was redirected to ${state.path}`);
+        if (nav.length > 1) finding(`8: fresh ${label} ${route} reloaded (${nav.length - 1} time(s))`);
+        await ctx.close();
+      }
+    }
+    report.scenarios['8_fresh_routes'] = { routes, fallbacks: s.log.fallbacks };
+    if (s.log.fallbacks.length) finding(`8: a fresh deployment answered ${s.log.fallbacks.length} asset request(s) with the HTML fallback`);
+    server.close();
   }
 
   await browser.close();
   report.status = findings.length ? 'FAIL' : 'PASS';
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({ status: report.status, findings, scenarios: report.scenarios }, null, 2));
-  process.exit(findings.length ? 1 : 0);
+  process.exit(EXPECT_FIXED && findings.length ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -90,6 +90,8 @@
 
 /* Users page: quick filters, СОБЫТИЕ badges and the «Зачислить» entry point. */
 .admin-user-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 2px; }
+.admin-user-tabs-row { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; }
+.admin-user-tabs-row .admin-pagination-top { margin-left: auto; }
 .admin-user-tabs button { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--text-secondary); font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .admin-user-tabs button.active { border-color: var(--admin-brand); color: var(--admin-brand); background: var(--admin-brand-dim); }
 .admin-user-tab-count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--neutral-dim, rgba(128,128,128,.14)); color: inherit; font-size: 11px; line-height: 18px; text-align: center; }
@@ -112,32 +114,3 @@
   .admin-deposit-row > :last-child { grid-column: 1 / -1; }
 }
 
-/* Поддержка: delivery facts, inbox rows and the thread (AdminSupportPage). */
-.admin-support-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 16px; margin: 0; }
-.admin-support-facts div { min-width: 0; }
-.admin-support-facts dt { font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px; }
-.admin-support-facts dd { margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.admin-support-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; align-items: start; }
-.admin-support-row { display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left; border: none; border-top: 1px solid var(--border); padding: 10px 14px; color: var(--text-primary); cursor: pointer; font: inherit; }
-.admin-support-row-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.admin-support-row-head strong { font-size: 13px; display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
-.admin-support-row-head time { font-size: 11px; color: var(--text-tertiary); white-space: nowrap; }
-.admin-support-row-meta { font-size: 11.5px; color: var(--text-secondary); overflow-wrap: anywhere; }
-.admin-support-row-preview { font-size: 12px; color: var(--text-tertiary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.admin-support-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--admin-brand, var(--accent)); flex: none; }
-.admin-support-thread-head { display: flex; flex-direction: column; gap: 3px; }
-.admin-support-thread-head strong { font-size: 15px; }
-.admin-support-thread-head span { font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
-.admin-support-thread { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-height: 460px; overflow-y: auto; }
-.admin-support-thread li { display: flex; flex-direction: column; gap: 3px; max-width: 85%; }
-.admin-support-thread li[data-sender="ADMIN"] { align-self: flex-end; align-items: flex-end; }
-.admin-support-bubble { padding: 9px 12px; border-radius: 10px; background: var(--panel-alt); font-size: 13px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
-.admin-support-thread li[data-sender="ADMIN"] .admin-support-bubble { background: var(--admin-brand-dim, var(--accent-dim)); }
-.admin-support-bubble-meta { font-size: 11px; color: var(--text-tertiary); }
-.admin-support-reply { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.admin-support-reply textarea { width: 100%; box-sizing: border-box; font: inherit; }
-@media (max-width: 900px) {
-  .admin-support-grid { grid-template-columns: minmax(0, 1fr); }
-  .admin-support-grid > div:first-child { max-height: 320px !important; }
-  .admin-support-thread li { max-width: 100%; }
-}

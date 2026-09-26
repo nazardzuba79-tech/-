@@ -173,11 +173,17 @@ describe('translation integrity', () => {
         // is; the heading itself stays one line, the hint is a title).
         // `trade.assetNotTradingYet` and `listing.*` are the order form's
         // answer and the listing card for an upcoming listing (VOLTORA).
+        // `support.form*` are the support form's result lines and address hint
+        // (2026-09-26: support became a form answered by email).
         const addedSinceDigest = ['futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
           'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
-          'listing.initialPrice', 'listing.startTime', 'listing.newListing'];
+          'listing.initialPrice', 'listing.startTime', 'listing.newListing',
+          'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
+          // KYC edge (2026-09-26): the verification form's file-preparation
+          // line and the edge's refusals; the existing KYC copy is unchanged.
+          'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed'];
         return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);

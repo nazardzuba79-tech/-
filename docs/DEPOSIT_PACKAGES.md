@@ -69,7 +69,7 @@ admin credit, including below the minimum) and `DEPOSIT_MINIMUM_ACCEPTANCE.md`.
   - an attributed transfer that is part of its owner's active package (detach it first);
   - any other attributed transfer without an explicit `confirmAssigned`.
 - **«Вернуть в очередь»:** ADMIN only. Clears the ignore fields and writes a `DEPOSIT_IGNORE_RESTORED` audit entry. No balance change, no credit.
-- **Migration `20260926180000_deposit_ignore`:**
+- **Migration `20260926200000_deposit_ignore`:**
   - Additive only.
   - It marks as `LEGACY_IGNORE` the unattributed, uncredited transfers that were already hidden with the old feed's «Игнорировать» (`IgnoredIncomingTransfer`), so they do not reappear in «Непривязанные».
 

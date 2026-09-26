@@ -1,6 +1,14 @@
 import nodemailer, { Transporter } from 'nodemailer';
 
 /**
+ * LEGACY — NOT WIRED INTO THE APP. Since the KYC edge (workers/kyc-edge), new
+ * documents are emailed by Cloudflare straight from the browser upload and
+ * never reach Render, so nothing constructs this service any more (see
+ * src/index.ts). It is kept only for NodemailerCompatibility's regression
+ * suite and can be deleted together with that suite.
+ *
+ * Original description:
+ *
  * Emails a copy of every KYC submission (data + the document itself, as an
  * attachment) to an admin mailbox the moment it's submitted — a second,
  * durable copy alongside the one on disk/in the DB. This exists because
@@ -10,8 +18,7 @@ import nodemailer, { Transporter } from 'nodemailer';
  * The DB row itself can also be lost the same way if the database isn't on
  * durable storage either — this email is the one copy that survives either.
  *
- * Same SMTP-via-nodemailer approach as SupportEmailService, and the same
- * "gracefully absent, not fake" pattern: unset KYC_ADMIN_EMAIL/SMTP_HOST
+ * SMTP via nodemailer, with a "gracefully absent, not fake" pattern: unset KYC_ADMIN_EMAIL/SMTP_HOST
  * and this just logs instead of sending, never blocks the submission.
  */
 

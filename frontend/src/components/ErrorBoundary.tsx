@@ -1,5 +1,12 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { attemptChunkRecovery, isDynamicImportFailure, recoveryAvailable } from '../lib/chunkRecovery';
+import {
+  attemptChunkRecovery, failedModuleUrl, healThenReload, isDynamicImportFailure, recoveryAvailable,
+} from '../lib/chunkRecovery';
+
+/** How long «Обновляем страницу…» may stay up before the reload is presumed
+ *  not to be coming (blocked, offline, a webview that ignores it). After this
+ *  the viewer gets the ordinary card and a button — never an empty screen. */
+export const RECOVERY_STALL_MS = 10_000;
 
 interface Props {
   children: ReactNode;
@@ -8,9 +15,11 @@ interface Props {
 interface State {
   error: Error | null;
   /** A stale-shell failure that this shell is still allowed to reload for.
-   *  Rendering nothing while the reload is on its way keeps «Что-то пошло не
-   *  так» off a screen that is about to fix itself — the viewer of a
-   *  successful recovery should never see a failure they did not have. */
+   *  While the reload is on its way the screen says «Обновляем страницу…»
+   *  rather than «Что-то пошло не так» — the viewer of a successful recovery
+   *  should never see a failure they did not have. It used to render
+   *  NOTHING here, which on the app's dark ground is a black page for as long
+   *  as the reload takes, and forever if it never comes. */
   recovering: boolean;
 }
 
@@ -39,6 +48,7 @@ interface State {
  */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null, recovering: false };
+  private stall: ReturnType<typeof setTimeout> | undefined;
 
   /** Pure, as React requires: it only READS the guard to decide whether the
    *  viewer should be shown a failure that is about to be reloaded away. The
@@ -51,14 +61,39 @@ export class ErrorBoundary extends Component<Props, State> {
     // Spends the one attempt and reloads, or returns false and falls through
     // to the ordinary boundary — including on the SECOND identical failure,
     // which is what stops this becoming a loop.
-    if (attemptChunkRecovery(error)) return;
+    if (attemptChunkRecovery(error)) {
+      if (!this.state.recovering) this.setState({ recovering: true });
+      clearTimeout(this.stall);
+      this.stall = setTimeout(() => this.setState({ recovering: false }), RECOVERY_STALL_MS);
+      return;
+    }
+    // No reload is coming (budget spent, or no storage to guard one with):
+    // the card, not a screen waiting for something that will not happen.
+    if (this.state.recovering) this.setState({ recovering: false });
     console.error('Unhandled render error:', error, info.componentStack);
   }
 
+  componentWillUnmount() {
+    clearTimeout(this.stall);
+  }
+
+  /** The manual reload also replaces a poisoned cached chunk first — a bare
+   *  reload would fetch the same broken copy from the browser cache. */
+  private reload = () => {
+    const url = failedModuleUrl(this.state.error);
+    healThenReload(url ? [url] : []);
+  };
+
   render() {
-    // A reload is already on its way. Painting the failure now would show the
-    // viewer an error that is about to disappear on its own.
-    if (this.state.error && this.state.recovering) return null;
+    // A reload is already on its way: a quiet, visible status on the app's
+    // own ground, never an empty screen.
+    if (this.state.error && this.state.recovering) {
+      return (
+        <div style={styles.wrap} data-recovering="true" role="status" aria-live="polite">
+          <p style={styles.text}>Обновляем страницу…</p>
+        </div>
+      );
+    }
     if (this.state.error) {
       return (
         <div style={styles.wrap}>
@@ -69,7 +104,7 @@ export class ErrorBoundary extends Component<Props, State> {
               Произошла непредвиденная ошибка. Попробуй перезагрузить страницу — если это повторится, дай нам знать
               через раздел поддержки.
             </p>
-            <button style={styles.button} onClick={() => window.location.reload()}>
+            <button style={styles.button} onClick={this.reload}>
               Перезагрузить страницу
             </button>
           </div>

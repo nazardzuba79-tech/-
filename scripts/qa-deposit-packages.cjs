@@ -573,7 +573,7 @@ async function main() {
     });
 
     await test('Migration backfill: transfers hidden with the old «Игнорировать» stay out of Непривязанные (unattributed, uncredited only)', async () => {
-      const sql = fs.readFileSync('prisma/migrations/20260926180000_deposit_ignore/migration.sql', 'utf8');
+      const sql = fs.readFileSync('prisma/migrations/20260926200000_deposit_ignore/migration.sql', 'utf8');
       const update = sql.slice(sql.indexOf('UPDATE "Deposit" d'), sql.indexOf(';', sql.indexOf('UPDATE "Deposit" d')) + 1);
       fixture.send(4100, '42'); fixture.send(4101, '43'); await scan();
       const legacyOwner = await makeUser('legacyowner');

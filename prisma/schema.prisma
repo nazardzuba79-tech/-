@@ -652,7 +652,17 @@ model KycSubmission {
   fullName          String
   dateOfBirth       DateTime
   documentType      String    // PASSPORT | ID_CARD | DRIVERS_LICENSE
-  documentImagePath String
+  /// LEGACY: local-disk path of a document uploaded through Render before the
+  /// KYC edge existed. NULL for every new submission — the document goes
+  /// browser → Cloudflare KYC edge → admin email and never touches Render/Neon.
+  documentImagePath String?
+  /// EMAIL (new: delivered by the KYC edge) | null (legacy file on disk).
+  documentDelivery  String?
+  /// RFC 5322 Message-ID the edge used; the admin finds the letter by it.
+  emailMessageId    String?
+  emailAcceptedAt   DateTime?
+  documentMimeType  String?
+  documentSizeBytes Int?
   status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
   rejectionReason   String?
   reviewedBy        String?
@@ -946,6 +956,11 @@ model InsuranceFundLedger {
   @@index([asset, createdAt])
 }
 
+// DORMANT since 2026-09-26: support is a form handled by the Cloudflare
+// Worker in workers/support-edge (email only, nothing stored). The support
+// enums and models below are kept so existing rows and migrations stay
+// intact; no code reads or writes them. Do not drop them in a migration
+// without the owner's decision.
 enum SupportSubject {
   TECHNICAL
   KYC
