@@ -41,4 +41,4 @@ jobs:
       - name: Real stores, mounted hooks, Futures and wallet preservation
         run: >-
           npm test -- --runInBand --silent
-          "--testPathPattern=frontend/src/lib/__tests__/(futures|accountReadLifecycle|adminConsoleInteractions|adminDepositRails|adminUsersActivity|renderBandwidthBudget|nativeLive|nativeTerminal|walletUnifiedAccount|browserReadBudget)"
+          "--testPathPattern=frontend/src/lib/__tests__/(futures|accountReadLifecycle|adminConsoleInteractions|adminDepositRails|adminUsersActivity|renderBandwidthBudget|nativeLive|nativeTerminal|nativeFuturesTerminal|walletUnifiedAccount|browserReadBudget)"
