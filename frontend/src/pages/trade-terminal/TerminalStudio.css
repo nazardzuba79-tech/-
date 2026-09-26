@@ -68,7 +68,7 @@
 .trade-terminal.terminal-studio .drawing-rail .tool-btn svg { width:28px; height:28px; stroke-width:1; }
 .trade-terminal.terminal-studio .drawing-rail .tool-btn { color:#b5c2d0; border-radius:4px; }
 .trade-terminal.terminal-studio .drawing-rail .tool-btn:hover { background:#243340; color:#f0f4f8; }
-.trade-terminal.terminal-studio .drawing-rail .tool-btn.active { background:#f5a5241c; color:#f0c964; box-shadow:inset 2px 0 #f0c964; }
+.trade-terminal.terminal-studio .drawing-rail .tool-btn.active { background:rgba(240,201,100,.10); color:#f0c964; box-shadow:none; }
 .trade-terminal.terminal-studio .drawing-rail [data-drawing-tool=erase] { color:#c69ba4; }
 .trade-terminal.terminal-studio .drawing-rail .tool-divider:has(+ .tool-divider) { display:none; }
 .terminal-tool-hint { position:fixed; z-index:10000; pointer-events:none; max-width:200px; padding:7px 10px; border:1px solid #3b4b5b; border-radius:4px; background:#1a1f27; color:#eaeef3; box-shadow:0 4px 16px #0006; font:12px/18px Inter,Arial,sans-serif; }

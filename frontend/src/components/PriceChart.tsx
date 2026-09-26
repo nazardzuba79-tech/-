@@ -1642,6 +1642,8 @@ function LegendItem({ color, label }: { color: string; label: string }) {
  * a feature that does nothing.
  */
 type ToolEntry = { id: Tool; label: string; icon: JSX.Element; shortcut?: string };
+/** Tools that also have a button of their own on the rail; picking one never lights its group. */
+const RAIL_OWN_BUTTON: ReadonlySet<string> = new Set(['ruler']);
 type ToolSection = { title?: string; tools: ToolEntry[] };
 type ToolGroupSpec = { id: string; label: string; sections: ToolSection[] };
 
@@ -1876,7 +1878,9 @@ function DrawToolbar({
   const group = (spec: ToolGroupSpec) => {
     const all = spec.sections.flatMap((section) => section.tools);
     const current = all.find((x) => x.id === (lastUsed[spec.id] ?? all[0].id)) ?? all[0];
-    const active = all.some((x) => x.id === tool);
+    // A tool with its own rail button (the ruler) lights that button only —
+    // never its group as well (owner, 2026-09-26: two highlights at once).
+    const active = !RAIL_OWN_BUTTON.has(tool) && all.some((x) => x.id === tool);
     const shown = active ? all.find((x) => x.id === tool) ?? current : current;
     const open = openGroup === spec.id;
     return <div key={spec.id} className={`tool-group ${open ? 'open' : ''}`} data-tool-group={spec.id}

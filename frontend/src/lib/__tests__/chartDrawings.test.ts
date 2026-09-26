@@ -118,6 +118,58 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   const props = { tool: 'cursor', onSelect: () => {}, onClear: () => {}, onFit: () => {}, terminal: true,
     stayInDrawMode: true, onToggleStay: () => {}, locked: false, onToggleLock: () => {} };
 
+  test('the ruler lights one button only — its own, never the forecast group as well (owner, 2026-09-26)', () => {
+    const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, tool: 'ruler', drawingTools: true, compactTools: true }));
+    const active = [...html.matchAll(/<button[^>]*class="tool-btn active"[^>]*>/g)].map((m) => /data-drawing-tool="([^"]+)"/.exec(m[0])?.[1]);
+    // `stay` is a toggle that is on in these props; of the tools, only the ruler is lit.
+    expect(active.filter((id) => id !== 'stay')).toEqual(['ruler']);
+    expect(html).not.toMatch(/data-tool-group="forecast"[^]*?class="tool-btn active"[^]*?data-tool-group="shapes"/);
+    // A tool that lives only in a group still lights its group.
+    const fib = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, tool: 'pricerange', drawingTools: true, compactTools: true }));
+    const lit = [...fib.matchAll(/<button[^>]*class="tool-btn active"[^>]*>/g)].map((m) => /data-drawing-tool="([^"]+)"/.exec(m[0])?.[1]).filter((id) => id !== 'stay');
+    expect(lit).toEqual(['pricerange']);
+  });
+
+  test('the selected rail tool is a quiet gold icon on a faint wash — no frame, no edge bar — in 36px squares', () => {
+    const premium = fs.readFileSync(path.resolve(__dirname, '../../pages/trade-terminal/TerminalPremium.css'), 'utf8');
+    const studio = fs.readFileSync(path.resolve(__dirname, '../../pages/trade-terminal/TerminalStudio.css'), 'utf8');
+    const activeRule = (sheet: string) => (/drawing-rail \.tool-btn\.active \{([^}]*)\}/.exec(sheet) ?? [])[1] ?? '';
+    for (const rule of [activeRule(css), activeRule(premium), activeRule(studio)]) {
+      expect(rule).toMatch(/rgba\(240, ?201, ?100, ?\.10\)/);
+      expect(rule).not.toMatch(/border-color:\s*(var\(--accent\)|#665732)/);
+      expect(rule).not.toMatch(/inset 2px/);
+    }
+    expect(css).toMatch(/\.drawing-rail \.tool-btn \{\s*width: 36px; height: 36px;/);
+  });
+
+  test('a label filled with a light colour gets dark text; a dark one keeps white', () => {
+    expect(drawings.readableTextOn('#ffffff')).toBe('#131722');
+    expect(drawings.readableTextOn('#ffeb3b')).toBe('#131722');
+    expect(drawings.readableTextOn('#b2b5be')).toBe('#131722');
+    expect(drawings.readableTextOn('#2962ff')).toBe('#ffffff');
+    expect(drawings.readableTextOn('#131722')).toBe('#ffffff');
+    const view = { x: (t: number) => t, y: (p: number) => 500 - p, range: drawings.drawingRange as any, lang: 'en' } as any;
+    for (const kind of ['note', 'callout', 'pricelabel'] as const) {
+      const points = kind === 'callout' ? [{ time: 10, price: 100 }, { time: 60, price: 150 }] : [{ time: 10, price: 100 }];
+      const g = geometry.drawingGeometry({ kind, points, text: 'Hi', style: { ...drawings.drawingStyle({ kind }), color: '#ffffff' } }, view);
+      const label = g!.prims.find((p) => p.t === 'label') as Extract<geometry.Primitive, { t: 'label' }>;
+      expect(label.bg).toBe('#ffffff');
+      expect(label.color).toBe('#131722');
+    }
+  });
+
+  test('the object toolbar is TradingView\'s: a grip that moves it, colour bars under pencil and bucket', () => {
+    const html = renderToStaticMarkup(React.createElement(layer.DrawingObjectToolbar, {
+      drawing: { id: 1, kind: 'rectangle', points: [{ time: 0, price: 1 }, { time: 1, price: 2 }], style: { ...drawings.drawingStyle({ kind: 'rectangle' }), color: '#ffffff' } },
+      locked: false, t: (k: string) => k, onStyle: () => {}, onToggleLock: () => {}, onClone: () => {}, onDelete: () => {}, onClose: () => {},
+    }));
+    expect(html.indexOf('data-object-action="drag"')).toBeLessThan(html.indexOf('data-object-action="color"'));
+    expect(html).toMatch(/data-object-action="color"[^]*?drawing-object-swatch" style="background:#ffffff"/);
+    expect(html).toContain('data-object-action="fill"');
+    for (const action of ['width', 'dash', 'lock', 'clone', 'delete']) expect(html).toContain(`data-object-action="${action}"`);
+    expect(css).toMatch(/\.drawing-object-grip \{[^}]*cursor: grab/);
+  });
+
   test('the rail carries TradingView\'s tool groups and toggles, each a real button', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools: true, compactTools: true }));
     expect(html).toContain('drawing-rail');
@@ -227,13 +279,14 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(callbacks.onToggleLock).not.toHaveBeenCalled();
     expect(callbacks.onSelect).not.toHaveBeenCalled();
   });
-  test('the measure label reads as TradingView\'s and keeps a tiny negative difference', () => {
+  test('the measure label is the move in percent — no raw price difference, no tick count (owner, 2026-09-26)', () => {
     const candles = [{ time: 0, volume: 1500 }, { time: 300, volume: 2500 }, { time: 600, volume: 1000 }, { time: 900, volume: 5 }];
     const range = drawings.drawingRange({ time: 0, price: 0.000001 }, { time: 900, price: 0.0000008 }, candles, 300, 0.0000001);
     const lines = drawings.drawingRangeLines(range, 'en');
-    expect(lines[0]).toContain('-0.0000002');
-    expect(lines[0]).toContain('(-20.00%)');
-    expect(lines[0]).toMatch(/ -2$/);
+    // A tiny negative move still reads as negative.
+    expect(lines[0]).toBe('-20.00%');
+    const up = drawings.drawingRange({ time: 0, price: 100 }, { time: 900, price: 117.44 }, candles, 300, 0.01);
+    expect(drawings.drawingRangeLines(up, 'ru')[0]).toBe('+17.44%');
     expect(lines[1]).toBe('3 bars, 15m');
     // Volume of the bars inside the span only; the closing bar is not in it.
     expect(lines[2]).toBe('Vol 5.00K');
@@ -692,10 +745,10 @@ describe('every drawing kind paints and can be picked', () => {
     expect(text).toContain('161.8');
   });
 
-  test('the price range label is the TradingView three-part reading', () => {
+  test('the ruler label reads the move in percent, then bars and time', () => {
     const g = geometry.drawingGeometry({ kind: 'ruler', points: [{ time: 0, price: 100 }, { time: 900, price: 110 }] }, linearView())!;
     const label = g.prims.find((p) => p.t === 'label') as Extract<geometry.Primitive, { t: 'label' }>;
-    expect(label.lines[0]).toBe('10 (10.00%) 1,000');
+    expect(label.lines[0]).toBe('+10.00%');
     expect(label.lines[1]).toBe('3 bars, 15m');
   });
 });
