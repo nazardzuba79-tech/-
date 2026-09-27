@@ -4186,3 +4186,9 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - The spot orders route still bypasses `AccountDeletionGate` (pre-existing; suggested as a separate task).
   - The PR's commit list shows the closed #123 history because of the `-s ours` merge; squash-merge, or approve a force-with-lease to drop it.
 - Draft PR only. No merge, no deploy, no production Render/Neon change.
+
+## Codex — 2026-09-27 — admin user last-login sorting
+- Implementation: `472dcc409ae6837870f26a82b6befff56ac5aa4f`, branch `codex/admin-users-last-login`, based on fresh main `276bec9c`.
+- Replaced the «Заблокированные» dropdown option with «По последнему входу»: descending lastLoginAt across the loaded list before pagination, with missing dates last. Default work-queue ordering, search, tabs, KYC and account actions remain unchanged.
+- Files: `frontend/src/pages/admin/AdminUsersPage.tsx`; updated its existing regression in `frontend/src/lib/__tests__/adminUsersActivity.test.ts`.
+- Verification: frontend TypeScript passed; exact admin users activity suite 9/9 passed, including last-login order and empty-date handling. No production data changes, merge or deploy. Browser sleep PR #303 remains separate.
