@@ -57,6 +57,18 @@ async function scenario(width){
   assert.equal((waking.hits['GET /api/v1/me']||0)-(sleeping.hits['GET /api/v1/me']||0),1);
   assert.equal(waking.hits['POST /api/v1/private-trading/native/commands']||0,sleeping.hits['POST /api/v1/private-trading/native/commands']||0);
   checks.push({width,name:'30m sleep, cold server restart, balance/position/order and draft preserved',pass:true});
+  const live = await api('live');
+  const mobilePositions = page.locator('#mobile-futures-positions');
+  if (await mobilePositions.isVisible()) await mobilePositions.click();
+  await page.locator('#futures-tab-positions').click();
+  await page.waitForFunction(expected => {
+    const row = document.querySelector('.futures-position-row[data-side]');
+    const number = element => Number(element?.textContent.replace(/[^0-9.+-]/g, ''));
+    return row && Math.abs(number(row.querySelector('.futures-position-money')) - expected.pnl) < 0.011
+      && Math.abs(number(row.querySelectorAll('td')[4]) - expected.mark) < 0.011;
+  }, {pnl:Number(live.positions[0].unrealizedPnl),mark:Number(live.positions[0].markPrice)});
+  checks.push({width,name:'restored visible mark and unrealized P&L match native authority',pass:true});
+  if (await mobile.isVisible()) await mobile.click();
   const balanceText=await page.locator('.futures-account-balance .mono').first().textContent();
   await page.evaluate(()=>window.__readBudget.hidden(true));
   await context.route('**/api/v1/me',r=>r.fulfill({status:503,json:{error:'isolated offline fixture'}}));

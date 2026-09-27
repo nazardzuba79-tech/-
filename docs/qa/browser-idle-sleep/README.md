@@ -28,15 +28,15 @@ Actual baseline/candidate production bundles, Microsoft Edge headless, isolated 
 
 `request-budget.json` includes initial, first five minutes, sleep, wake and hidden-tab intervals. All 13 candidate scenarios passed (nine desktop scenarios plus Futures at 320/360/390/430 px); nine baseline scenarios provide comparison. Desktop width: 1440 px. Candidate hidden intervals also had zero HTTP requests; streams were closed, no financial command was submitted on wake, session validation occurred once, and no browser errors or horizontal viewport overflow were observed.
 
-`native-restart.json` records seven browser checks at 1440/390 px against the compiled native engine and its local persisted review repository: positions/orders/balance/draft survive backend restart; a waking Buy click submits nothing; failed validation retains state without retry storms; explicit retry recovers; external close is not resurrected; reload retains the resting order; TradingView ownership detaches/remounts correctly. The separate disposable PostgreSQL regression checks persisted native authority after a new client/repository/service instance (47 tests across four suites). No retrospective TP/SL fill is invented.
+`native-restart.json` records nine browser checks at 1440/390 px against the compiled native engine and its local persisted review repository: positions/orders/balance/draft survive backend restart; a waking Buy click submits nothing; failed validation retains state without retry storms; explicit retry recovers; external close is not resurrected; reload retains the resting order; TradingView ownership detaches/remounts correctly. The separate disposable PostgreSQL regression checks persisted native authority after a new client/repository/service instance (47 tests across four suites). No retrospective TP/SL fill is invented.
 
 ## Validation / release gate
 
-- Lifecycle, session-body ownership and existing visible-read invariants: **33 passed**.
+- Lifecycle, session-body ownership and existing visible-read invariants: **34 passed**.
 - Critical Futures/native/authorization/chart regression: **1805 passed, zero failed** (90 passed suites). This run had 41 database-gated skips; the separate PostgreSQL run below covers native persistence/security. CI's full integration job supplies its own database for the broader database gates.
 - Disposable PostgreSQL native persistence/security suites: **47 passed**.
 - Browser matrix: **22 scenarios** (13 candidate, nine baseline), passed.
-- Native restart / error / iframe browser checks: **seven passed**.
+- Native restart / error / iframe browser checks: **nine passed**.
 - Backend/frontend TypeScript and production bundle builds passed locally. Existing Vite chunk-size warning remains.
 - Broad frontend sweep: 2470 passed / 103 failed, 131 passed / 21 failed suites. A final focused rerun fixed the remaining changed inactivity assertion: 23 passed / two unchanged failures in that suite, reducing the combined outstanding count to 102. All 21 remaining failed suites and all 102 remaining failed cases reproduce on the pristine main export with identical local dependencies. `frontend-failure-comparison.json` records the discrimination results, including stale loader/source/hash assertions. These red results are not release sign-off; keep the PR unmerged until the release gate is resolved.
 - Cold-open/cache/deployment recovery harness exited successfully, including fresh desktop/mobile Futures, Spot and Wallet routes. This uses local builds and a simulated hosting cache contract, not production navigation.

@@ -65,6 +65,17 @@ test('trusted input extends the deadline, and the first waking click is consumed
   const s=setup();await s.advance(299000);s.input('keydown');await s.advance(299000);assert.equal(s.api.getBrowserPhase(),'active');await s.advance(1000);
   assert.equal(s.input().blocked,true);await flush();await s.advance(151);assert.equal(s.api.getBrowserPhase(),'active');assert.equal(s.validations,1);s.stop();
 });
+
+test('a new deliberate gesture works immediately after the waking gesture is consumed', async () => {
+  const s=setup(); await s.advance(300000);
+  assert.equal(s.input('pointerdown').blocked,true);
+  await flush(); await s.advance(151);
+  assert.equal(s.api.getBrowserPhase(),'active');
+  assert.equal(s.input('click').blocked,true);
+  assert.equal(s.input('pointerdown').blocked,false);
+  assert.equal(s.input('click').blocked,false);
+  s.stop();
+});
 test('hidden stops immediately, focus + visibility + input join one validation',async()=>{
   const s=setup();let polls=0;s.api.browserSetInterval(()=>polls++,1000);s.hidden(true);await s.advance(1800000);assert.equal(polls,0);
   s.hidden(false);s.window.dispatchEvent(new Event('focus'));s.input();await flush();await s.advance(151);assert.equal(s.validations,1);assert.equal(polls,1);s.stop();

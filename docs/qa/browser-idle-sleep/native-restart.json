@@ -7,6 +7,11 @@
     },
     {
       "width": 1440,
+      "name": "restored visible mark and unrealized P&L match native authority",
+      "pass": true
+    },
+    {
+      "width": 1440,
       "name": "failed session refresh preserves balance/draft, no retry storm; explicit retry recovers",
       "pass": true
     },
@@ -23,6 +28,11 @@
     {
       "width": 390,
       "name": "30m sleep, cold server restart, balance/position/order and draft preserved",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "restored visible mark and unrealized P&L match native authority",
       "pass": true
     },
     {

@@ -1,5 +1,540 @@
 [
   {
+    "label": "baseline",
+    "route": "/admin/users",
+    "mode": "B",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/me": 1,
+      "GET /api/v1/admin/users": 1,
+      "GET /api/v1/admin/deposits/recent-by-user": 1,
+      "GET /api/v1/admin/user-activity": 1,
+      "GET /api/v1/admin/alerts-summary": 1
+    },
+    "first5m": {},
+    "sleep30m": {},
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "long": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "awake": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      }
+    },
+    "hidden30m": {},
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/admin/deposits",
+    "mode": "B",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/me": 1,
+      "GET /api/v1/admin/deposit-queue": 1,
+      "POST /api/v1/admin/deposit-watch/open": 1,
+      "GET /api/v1/admin/clients": 1,
+      "GET /api/v1/admin/alerts-summary": 1
+    },
+    "first5m": {
+      "GET /api/v1/admin/deposit-queue": 5
+    },
+    "sleep30m": {
+      "GET /api/v1/admin/deposit-queue": 30
+    },
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "long": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "awake": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      }
+    },
+    "hidden30m": {},
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/wallet",
+    "mode": "B",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/me": 1,
+      "GET /api/v1/deposits/me": 1,
+      "GET /api/v1/withdrawals/me": 1,
+      "GET /api/v1/wallet/overview": 1,
+      "GET /api/v1/private-trading/native/wallet": 1,
+      "GET /api/v1/wallet/performance": 2,
+      "GET /api/v1/market/external/rankings": 1,
+      "POST /api/v1/wallet/portfolio-snapshot": 1
+    },
+    "first5m": {},
+    "sleep30m": {},
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "long": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "awake": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      }
+    },
+    "hidden30m": {},
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/futures",
+    "mode": "A",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/market/display/spot-snapshot": 1,
+      "GET /api/v1/me": 1,
+      "GET /api/v1/futures/config": 1,
+      "GET /api/v1/market/display": 2,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 2,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 1,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 1,
+      "GET /api/v1/market/derivatives/BTC": 1,
+      "GET /api/v1/market/external/rankings": 1,
+      "GET /api/v1/private-trading/access": 3,
+      "GET /api/v1/market/universe": 1,
+      "GET /api/v1/market/assets/icons": 1,
+      "GET /api/v1/futures/balances": 1,
+      "GET /api/v1/futures/positions": 1,
+      "GET /api/v1/futures/orders/me": 1
+    },
+    "first5m": {
+      "GET /api/v1/market/display/spot-snapshot": 5,
+      "GET /api/v1/market/display": 10,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 60,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 10,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 5,
+      "GET /api/v1/market/derivatives/BTC": 5,
+      "GET /api/v1/market/external/rankings": 5,
+      "GET /api/v1/private-trading/access": 15,
+      "GET /api/v1/market/universe": 1,
+      "GET /api/v1/futures/balances": 5,
+      "GET /api/v1/futures/positions": 5,
+      "GET /api/v1/futures/orders/me": 5
+    },
+    "sleep30m": {
+      "GET /api/v1/market/display/spot-snapshot": 30,
+      "GET /api/v1/market/display": 60,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 360,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 60,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 30,
+      "GET /api/v1/market/derivatives/BTC": 30,
+      "GET /api/v1/market/external/rankings": 30,
+      "GET /api/v1/private-trading/access": 90,
+      "GET /api/v1/market/universe": 6,
+      "GET /api/v1/futures/balances": 30,
+      "GET /api/v1/futures/positions": 30,
+      "GET /api/v1/futures/orders/me": 30
+    },
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 4,
+        "closes": 3,
+        "sent": 17,
+        "received": 4,
+        "active": 1
+      },
+      "long": {
+        "opens": 23,
+        "closes": 22,
+        "sent": 114,
+        "received": 23,
+        "active": 1
+      },
+      "awake": {
+        "opens": 23,
+        "closes": 22,
+        "sent": 114,
+        "received": 23,
+        "active": 1
+      }
+    },
+    "hidden30m": {},
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/futures",
+    "mode": "B",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/market/display/spot-snapshot": 1,
+      "GET /api/v1/me": 1,
+      "GET /api/v1/futures/config": 1,
+      "GET /api/v1/market/display": 2,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 2,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 1,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 1,
+      "GET /api/v1/market/derivatives/BTC": 1,
+      "GET /api/v1/market/external/rankings": 1,
+      "GET /api/v1/private-trading/access": 3,
+      "GET /api/v1/market/universe": 1,
+      "GET /api/v1/market/assets/icons": 1,
+      "GET /api/v1/futures/balances": 1,
+      "GET /api/v1/futures/positions": 1,
+      "GET /api/v1/futures/orders/me": 1
+    },
+    "first5m": {
+      "GET /api/v1/market/display/spot-snapshot": 5,
+      "GET /api/v1/market/display": 10,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 60,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 10,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 5,
+      "GET /api/v1/market/derivatives/BTC": 5,
+      "GET /api/v1/market/external/rankings": 5,
+      "GET /api/v1/private-trading/access": 15,
+      "GET /api/v1/market/universe": 1,
+      "GET /api/v1/futures/balances": 10,
+      "GET /api/v1/futures/positions": 30,
+      "GET /api/v1/futures/orders/me": 5
+    },
+    "sleep30m": {
+      "GET /api/v1/market/display/spot-snapshot": 30,
+      "GET /api/v1/market/display": 60,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 360,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 60,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 30,
+      "GET /api/v1/market/derivatives/BTC": 30,
+      "GET /api/v1/market/external/rankings": 30,
+      "GET /api/v1/private-trading/access": 90,
+      "GET /api/v1/market/universe": 6,
+      "GET /api/v1/futures/balances": 60,
+      "GET /api/v1/futures/positions": 180,
+      "GET /api/v1/futures/orders/me": 30
+    },
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 4,
+        "closes": 3,
+        "sent": 17,
+        "received": 4,
+        "active": 1
+      },
+      "long": {
+        "opens": 23,
+        "closes": 22,
+        "sent": 114,
+        "received": 23,
+        "active": 1
+      },
+      "awake": {
+        "opens": 23,
+        "closes": 22,
+        "sent": 114,
+        "received": 23,
+        "active": 1
+      }
+    },
+    "hidden30m": {},
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/futures",
+    "mode": "C",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/market/display/spot-snapshot": 1,
+      "GET /api/v1/me": 1,
+      "GET /api/v1/futures/config": 1,
+      "GET /api/v1/market/display": 2,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 2,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 1,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 1,
+      "GET /api/v1/market/derivatives/BTC": 1,
+      "GET /api/v1/market/external/rankings": 1,
+      "GET /api/v1/private-trading/access": 3,
+      "GET /api/v1/market/universe": 1,
+      "GET /api/v1/market/assets/icons": 1,
+      "GET /api/v1/futures/balances": 1,
+      "GET /api/v1/futures/positions": 1,
+      "GET /api/v1/futures/orders/me": 1
+    },
+    "first5m": {
+      "GET /api/v1/market/display/spot-snapshot": 5,
+      "GET /api/v1/market/display": 10,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 60,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 10,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 5,
+      "GET /api/v1/market/derivatives/BTC": 5,
+      "GET /api/v1/market/external/rankings": 5,
+      "GET /api/v1/private-trading/access": 15,
+      "GET /api/v1/market/universe": 1,
+      "GET /api/v1/futures/balances": 10,
+      "GET /api/v1/futures/positions": 30,
+      "GET /api/v1/futures/orders/me": 20
+    },
+    "sleep30m": {
+      "GET /api/v1/market/display/spot-snapshot": 30,
+      "GET /api/v1/market/display": 60,
+      "GET /api/v1/market/futures/candles/BTC-USDT": 360,
+      "GET /api/v1/futures/mark-price/BTC-USDT": 60,
+      "GET /api/v1/futures/funding-rate/BTC-USDT": 30,
+      "GET /api/v1/market/derivatives/BTC": 30,
+      "GET /api/v1/market/external/rankings": 30,
+      "GET /api/v1/private-trading/access": 90,
+      "GET /api/v1/market/universe": 6,
+      "GET /api/v1/futures/balances": 60,
+      "GET /api/v1/futures/positions": 180,
+      "GET /api/v1/futures/orders/me": 120
+    },
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 4,
+        "closes": 3,
+        "sent": 17,
+        "received": 4,
+        "active": 1
+      },
+      "long": {
+        "opens": 23,
+        "closes": 22,
+        "sent": 114,
+        "received": 23,
+        "active": 1
+      },
+      "awake": {
+        "opens": 23,
+        "closes": 22,
+        "sent": 114,
+        "received": 23,
+        "active": 1
+      }
+    },
+    "hidden30m": {},
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/markets",
+    "mode": "B",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/market/display/spot-snapshot": 1,
+      "GET /api/v1/me": 1,
+      "GET /api/v1/market/test-assets": 1,
+      "GET /api/v1/market/assets": 1,
+      "GET /api/v1/futures/config": 1,
+      "GET /api/v1/market/external/rankings": 1,
+      "GET /api/v1/market/display": 1
+    },
+    "first5m": {
+      "GET /api/v1/market/display/spot-snapshot": 5,
+      "GET /api/v1/market/test-assets": 5,
+      "GET /api/v1/market/external/rankings": 1,
+      "GET /api/v1/market/display": 5
+    },
+    "sleep30m": {
+      "GET /api/v1/market/display/spot-snapshot": 30,
+      "GET /api/v1/market/test-assets": 30,
+      "GET /api/v1/market/assets": 3,
+      "GET /api/v1/market/external/rankings": 6,
+      "GET /api/v1/market/display": 30
+    },
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "long": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "awake": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      }
+    },
+    "hidden30m": {
+      "GET /api/v1/market/external/rankings": 6
+    },
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/trade",
+    "mode": "B",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/market/display/spot-snapshot": 1,
+      "GET /api/v1/me": 1,
+      "GET /api/v1/market/test-assets": 1,
+      "GET /api/v1/market/external/candles/BTC-USDT": 1,
+      "GET /api/v1/orders/me": 2,
+      "GET /api/v1/balances": 1,
+      "GET /api/v1/market/display/spot-book/BTC-USDT": 1
+    },
+    "first5m": {
+      "GET /api/v1/market/display/spot-snapshot": 5,
+      "GET /api/v1/market/test-assets": 5,
+      "GET /api/v1/market/external/candles/BTC-USDT": 60,
+      "GET /api/v1/orders/me": 150,
+      "GET /api/v1/balances": 75,
+      "GET /api/v1/market/display/spot-book/BTC-USDT": 5
+    },
+    "sleep30m": {
+      "GET /api/v1/market/display/spot-snapshot": 30,
+      "GET /api/v1/market/test-assets": 30,
+      "GET /api/v1/market/external/candles/BTC-USDT": 360,
+      "GET /api/v1/orders/me": 900,
+      "GET /api/v1/balances": 450,
+      "GET /api/v1/market/display/spot-book/BTC-USDT": 30
+    },
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "long": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "awake": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      }
+    },
+    "hidden30m": {
+      "GET /api/v1/orders/me": 450,
+      "GET /api/v1/balances": 450
+    },
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "label": "baseline",
+    "route": "/trade?market=cfd&pair=XAUUSD",
+    "mode": "B",
+    "width": 1440,
+    "first": {
+      "GET /api/v1/market/display/spot-snapshot": 1,
+      "GET /api/v1/me": 1,
+      "GET /api/v1/cfd/display/candles/XAUUSD": 1,
+      "GET /api/v1/cfd/config": 1,
+      "GET /api/v1/cfd/display/tickers": 1
+    },
+    "first5m": {
+      "GET /api/v1/market/display/spot-snapshot": 5,
+      "GET /api/v1/cfd/display/candles/XAUUSD": 5,
+      "GET /api/v1/cfd/display/tickers": 5
+    },
+    "sleep30m": {
+      "GET /api/v1/market/display/spot-snapshot": 30,
+      "GET /api/v1/cfd/display/candles/XAUUSD": 30,
+      "GET /api/v1/cfd/display/tickers": 30
+    },
+    "wake": {},
+    "transports": {
+      "asleep": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "long": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      },
+      "awake": {
+        "opens": 0,
+        "closes": 0,
+        "sent": 0,
+        "received": 0,
+        "active": 0
+      }
+    },
+    "hidden30m": {},
+    "overflow": false,
+    "errors": []
+  },
+  {
     "label": "candidate",
     "route": "/admin/users",
     "mode": "B",
@@ -847,541 +1382,6 @@
         "sent": 18,
         "received": 5,
         "active": 1
-      }
-    },
-    "hidden30m": {},
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/admin/users",
-    "mode": "B",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/me": 1,
-      "GET /api/v1/admin/users": 1,
-      "GET /api/v1/admin/deposits/recent-by-user": 1,
-      "GET /api/v1/admin/user-activity": 1,
-      "GET /api/v1/admin/alerts-summary": 1
-    },
-    "first5m": {},
-    "sleep30m": {},
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "long": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "awake": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      }
-    },
-    "hidden30m": {},
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/admin/deposits",
-    "mode": "B",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/me": 1,
-      "GET /api/v1/admin/deposit-queue": 1,
-      "POST /api/v1/admin/deposit-watch/open": 1,
-      "GET /api/v1/admin/clients": 1,
-      "GET /api/v1/admin/alerts-summary": 1
-    },
-    "first5m": {
-      "GET /api/v1/admin/deposit-queue": 5
-    },
-    "sleep30m": {
-      "GET /api/v1/admin/deposit-queue": 30
-    },
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "long": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "awake": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      }
-    },
-    "hidden30m": {},
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/wallet",
-    "mode": "B",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/me": 1,
-      "GET /api/v1/deposits/me": 1,
-      "GET /api/v1/withdrawals/me": 1,
-      "GET /api/v1/wallet/overview": 1,
-      "GET /api/v1/private-trading/native/wallet": 1,
-      "GET /api/v1/wallet/performance": 2,
-      "GET /api/v1/market/external/rankings": 1,
-      "POST /api/v1/wallet/portfolio-snapshot": 1
-    },
-    "first5m": {},
-    "sleep30m": {},
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "long": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "awake": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      }
-    },
-    "hidden30m": {},
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/futures",
-    "mode": "A",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/market/display/spot-snapshot": 1,
-      "GET /api/v1/me": 1,
-      "GET /api/v1/futures/config": 1,
-      "GET /api/v1/market/display": 2,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 2,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 1,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 1,
-      "GET /api/v1/market/derivatives/BTC": 1,
-      "GET /api/v1/market/external/rankings": 1,
-      "GET /api/v1/private-trading/access": 3,
-      "GET /api/v1/market/universe": 1,
-      "GET /api/v1/market/assets/icons": 1,
-      "GET /api/v1/futures/balances": 1,
-      "GET /api/v1/futures/positions": 1,
-      "GET /api/v1/futures/orders/me": 1
-    },
-    "first5m": {
-      "GET /api/v1/market/display/spot-snapshot": 5,
-      "GET /api/v1/market/display": 10,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 60,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 10,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 5,
-      "GET /api/v1/market/derivatives/BTC": 5,
-      "GET /api/v1/market/external/rankings": 5,
-      "GET /api/v1/private-trading/access": 15,
-      "GET /api/v1/market/universe": 1,
-      "GET /api/v1/futures/balances": 5,
-      "GET /api/v1/futures/positions": 5,
-      "GET /api/v1/futures/orders/me": 5
-    },
-    "sleep30m": {
-      "GET /api/v1/market/display/spot-snapshot": 30,
-      "GET /api/v1/market/display": 60,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 360,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 60,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 30,
-      "GET /api/v1/market/derivatives/BTC": 30,
-      "GET /api/v1/market/external/rankings": 30,
-      "GET /api/v1/private-trading/access": 90,
-      "GET /api/v1/market/universe": 6,
-      "GET /api/v1/futures/balances": 30,
-      "GET /api/v1/futures/positions": 30,
-      "GET /api/v1/futures/orders/me": 30
-    },
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 4,
-        "closes": 3,
-        "sent": 17,
-        "received": 4,
-        "active": 1
-      },
-      "long": {
-        "opens": 23,
-        "closes": 22,
-        "sent": 114,
-        "received": 23,
-        "active": 1
-      },
-      "awake": {
-        "opens": 23,
-        "closes": 22,
-        "sent": 114,
-        "received": 23,
-        "active": 1
-      }
-    },
-    "hidden30m": {},
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/futures",
-    "mode": "B",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/market/display/spot-snapshot": 1,
-      "GET /api/v1/me": 1,
-      "GET /api/v1/futures/config": 1,
-      "GET /api/v1/market/display": 2,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 2,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 1,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 1,
-      "GET /api/v1/market/derivatives/BTC": 1,
-      "GET /api/v1/market/external/rankings": 1,
-      "GET /api/v1/private-trading/access": 3,
-      "GET /api/v1/market/universe": 1,
-      "GET /api/v1/market/assets/icons": 1,
-      "GET /api/v1/futures/balances": 1,
-      "GET /api/v1/futures/positions": 1,
-      "GET /api/v1/futures/orders/me": 1
-    },
-    "first5m": {
-      "GET /api/v1/market/display/spot-snapshot": 5,
-      "GET /api/v1/market/display": 10,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 60,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 10,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 5,
-      "GET /api/v1/market/derivatives/BTC": 5,
-      "GET /api/v1/market/external/rankings": 5,
-      "GET /api/v1/private-trading/access": 15,
-      "GET /api/v1/market/universe": 1,
-      "GET /api/v1/futures/balances": 10,
-      "GET /api/v1/futures/positions": 30,
-      "GET /api/v1/futures/orders/me": 5
-    },
-    "sleep30m": {
-      "GET /api/v1/market/display/spot-snapshot": 30,
-      "GET /api/v1/market/display": 60,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 360,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 60,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 30,
-      "GET /api/v1/market/derivatives/BTC": 30,
-      "GET /api/v1/market/external/rankings": 30,
-      "GET /api/v1/private-trading/access": 90,
-      "GET /api/v1/market/universe": 6,
-      "GET /api/v1/futures/balances": 60,
-      "GET /api/v1/futures/positions": 180,
-      "GET /api/v1/futures/orders/me": 30
-    },
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 4,
-        "closes": 3,
-        "sent": 17,
-        "received": 4,
-        "active": 1
-      },
-      "long": {
-        "opens": 23,
-        "closes": 22,
-        "sent": 114,
-        "received": 23,
-        "active": 1
-      },
-      "awake": {
-        "opens": 23,
-        "closes": 22,
-        "sent": 114,
-        "received": 23,
-        "active": 1
-      }
-    },
-    "hidden30m": {},
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/futures",
-    "mode": "C",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/market/display/spot-snapshot": 1,
-      "GET /api/v1/me": 1,
-      "GET /api/v1/futures/config": 1,
-      "GET /api/v1/market/display": 2,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 2,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 1,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 1,
-      "GET /api/v1/market/derivatives/BTC": 1,
-      "GET /api/v1/market/external/rankings": 1,
-      "GET /api/v1/private-trading/access": 3,
-      "GET /api/v1/market/universe": 1,
-      "GET /api/v1/market/assets/icons": 1,
-      "GET /api/v1/futures/balances": 1,
-      "GET /api/v1/futures/positions": 1,
-      "GET /api/v1/futures/orders/me": 1
-    },
-    "first5m": {
-      "GET /api/v1/market/display/spot-snapshot": 5,
-      "GET /api/v1/market/display": 10,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 60,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 10,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 5,
-      "GET /api/v1/market/derivatives/BTC": 5,
-      "GET /api/v1/market/external/rankings": 5,
-      "GET /api/v1/private-trading/access": 15,
-      "GET /api/v1/market/universe": 1,
-      "GET /api/v1/futures/balances": 10,
-      "GET /api/v1/futures/positions": 30,
-      "GET /api/v1/futures/orders/me": 20
-    },
-    "sleep30m": {
-      "GET /api/v1/market/display/spot-snapshot": 30,
-      "GET /api/v1/market/display": 60,
-      "GET /api/v1/market/futures/candles/BTC-USDT": 360,
-      "GET /api/v1/futures/mark-price/BTC-USDT": 60,
-      "GET /api/v1/futures/funding-rate/BTC-USDT": 30,
-      "GET /api/v1/market/derivatives/BTC": 30,
-      "GET /api/v1/market/external/rankings": 30,
-      "GET /api/v1/private-trading/access": 90,
-      "GET /api/v1/market/universe": 6,
-      "GET /api/v1/futures/balances": 60,
-      "GET /api/v1/futures/positions": 180,
-      "GET /api/v1/futures/orders/me": 120
-    },
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 4,
-        "closes": 3,
-        "sent": 17,
-        "received": 4,
-        "active": 1
-      },
-      "long": {
-        "opens": 23,
-        "closes": 22,
-        "sent": 114,
-        "received": 23,
-        "active": 1
-      },
-      "awake": {
-        "opens": 23,
-        "closes": 22,
-        "sent": 114,
-        "received": 23,
-        "active": 1
-      }
-    },
-    "hidden30m": {},
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/markets",
-    "mode": "B",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/market/display/spot-snapshot": 1,
-      "GET /api/v1/me": 1,
-      "GET /api/v1/market/test-assets": 1,
-      "GET /api/v1/market/assets": 1,
-      "GET /api/v1/futures/config": 1,
-      "GET /api/v1/market/external/rankings": 1,
-      "GET /api/v1/market/display": 1
-    },
-    "first5m": {
-      "GET /api/v1/market/display/spot-snapshot": 5,
-      "GET /api/v1/market/test-assets": 5,
-      "GET /api/v1/market/external/rankings": 1,
-      "GET /api/v1/market/display": 5
-    },
-    "sleep30m": {
-      "GET /api/v1/market/display/spot-snapshot": 30,
-      "GET /api/v1/market/test-assets": 30,
-      "GET /api/v1/market/assets": 3,
-      "GET /api/v1/market/external/rankings": 6,
-      "GET /api/v1/market/display": 30
-    },
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "long": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "awake": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      }
-    },
-    "hidden30m": {
-      "GET /api/v1/market/external/rankings": 6
-    },
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/trade",
-    "mode": "B",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/market/display/spot-snapshot": 1,
-      "GET /api/v1/me": 1,
-      "GET /api/v1/market/test-assets": 1,
-      "GET /api/v1/market/external/candles/BTC-USDT": 1,
-      "GET /api/v1/orders/me": 2,
-      "GET /api/v1/balances": 1,
-      "GET /api/v1/market/display/spot-book/BTC-USDT": 1
-    },
-    "first5m": {
-      "GET /api/v1/market/display/spot-snapshot": 5,
-      "GET /api/v1/market/test-assets": 5,
-      "GET /api/v1/market/external/candles/BTC-USDT": 60,
-      "GET /api/v1/orders/me": 150,
-      "GET /api/v1/balances": 75,
-      "GET /api/v1/market/display/spot-book/BTC-USDT": 5
-    },
-    "sleep30m": {
-      "GET /api/v1/market/display/spot-snapshot": 30,
-      "GET /api/v1/market/test-assets": 30,
-      "GET /api/v1/market/external/candles/BTC-USDT": 360,
-      "GET /api/v1/orders/me": 900,
-      "GET /api/v1/balances": 450,
-      "GET /api/v1/market/display/spot-book/BTC-USDT": 30
-    },
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "long": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "awake": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      }
-    },
-    "hidden30m": {
-      "GET /api/v1/orders/me": 450,
-      "GET /api/v1/balances": 450
-    },
-    "overflow": false,
-    "errors": []
-  },
-  {
-    "label": "baseline",
-    "route": "/trade?market=cfd&pair=XAUUSD",
-    "mode": "B",
-    "width": 1440,
-    "first": {
-      "GET /api/v1/market/display/spot-snapshot": 1,
-      "GET /api/v1/me": 1,
-      "GET /api/v1/cfd/display/candles/XAUUSD": 1,
-      "GET /api/v1/cfd/config": 1,
-      "GET /api/v1/cfd/display/tickers": 1
-    },
-    "first5m": {
-      "GET /api/v1/market/display/spot-snapshot": 5,
-      "GET /api/v1/cfd/display/candles/XAUUSD": 5,
-      "GET /api/v1/cfd/display/tickers": 5
-    },
-    "sleep30m": {
-      "GET /api/v1/market/display/spot-snapshot": 30,
-      "GET /api/v1/cfd/display/candles/XAUUSD": 30,
-      "GET /api/v1/cfd/display/tickers": 30
-    },
-    "wake": {},
-    "transports": {
-      "asleep": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "long": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
-      },
-      "awake": {
-        "opens": 0,
-        "closes": 0,
-        "sent": 0,
-        "received": 0,
-        "active": 0
       }
     },
     "hidden30m": {},

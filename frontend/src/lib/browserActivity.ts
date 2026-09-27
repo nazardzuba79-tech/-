@@ -114,14 +114,16 @@ const displayIntervals = new Map<number, () => void>();
 /** Display-only interval: no ticking while asleep; one refresh when its screen resumes. */
 export function browserSetInterval(callback: () => unknown, milliseconds: number): number {
   const id = nextIntervalId--;
-  let timer: ReturnType<typeof setInterval> | undefined;
-  const stop = () => { clearInterval(timer); timer = undefined; };
+  const schedule = typeof window !== 'undefined' && window.setInterval ? window.setInterval.bind(window) : setInterval;
+  const cancel = typeof window !== 'undefined' && window.clearInterval ? window.clearInterval.bind(window) : clearInterval;
+  let timer: ReturnType<typeof schedule> | undefined;
+  const stop = () => { cancel(timer); timer = undefined; };
   const run = () => {
     if (isBrowserInactive()) return;
     const result = callback();
     if (result && typeof (result as Promise<unknown>).then === 'function') void trackBrowserRead(Promise.resolve(result)).catch(() => {});
   };
-  const start = () => { stop(); if (!isBrowserInactive()) timer = setInterval(run, milliseconds); };
+  const start = () => { stop(); if (!isBrowserInactive()) timer = schedule(run, milliseconds); };
   const changed = () => { start(); if (!isBrowserInactive()) run(); };
   addBrowserActivityListener(changed); start();
   displayIntervals.set(id, () => { stop(); removeBrowserActivityListener(changed); });
@@ -205,6 +207,9 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
     // Reload is the user's explicit recovery path, including while asleep.
     if (event.type === 'keydown' && (key.key === 'F5' || ((key.ctrlKey || key.metaKey) && key.key?.toLowerCase() === 'r'))) return;
     const action = ['pointerdown','click','keydown','touchstart','submit'].includes(event.type);
+    // Suppress the waking gesture's trailing click, not a new deliberate gesture
+    // after synchronization has completed.
+    if (phase === 'active' && ['pointerdown','keydown','touchstart'].includes(event.type)) suppressClickUntil = 0;
     if (phase !== 'active' || (event.type === 'click' && Date.now() < suppressClickUntil)) {
       if (action) { event.preventDefault(); event.stopImmediatePropagation(); suppressClickUntil = Date.now() + 750; }
       // Errors require deliberate retry, not another mousemove loop.
