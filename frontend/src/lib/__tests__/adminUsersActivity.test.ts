@@ -227,8 +227,11 @@ test('9. the page never uses the closed one-transfer credit or builds an amount'
   expect(client).toContain('/admin/user-activity');
 });
 
-test('10. search by email and the existing KYC / blocked filter still work together with the tabs', async () => {
+test('10. last-login sorting, search and KYC work with tabs; never-logged-in users stay last', async () => {
   users[0].isBlocked = true;
+  users[0].lastLoginAt = iso(HOUR);
+  users[2].lastLoginAt = iso(3 * HOUR);
+  users[4].lastLoginAt = iso(2 * HOUR);
   await mount();
   const input = host.querySelector('input[aria-label="Поиск пользователей"]') as HTMLInputElement;
   const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!;
@@ -237,8 +240,12 @@ test('10. search by email and the existing KYC / blocked filter still work toget
   await act(async () => { setValue.call(input, ''); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); await flush(); });
   const select = host.querySelector('select[aria-label="Фильтр пользователей"]') as HTMLSelectElement;
   const setSelect = Object.getOwnPropertyDescriptor(dom.window.HTMLSelectElement.prototype, 'value')!.set!;
-  await act(async () => { setSelect.call(select, 'blocked'); select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); await flush(); });
-  expect(rows()).toEqual(['old']);
+  expect(select.querySelector('option[value="blocked"]')).toBeNull();
+  await act(async () => { setSelect.call(select, 'lastLogin'); select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); await flush(); });
+  expect(rows()).toEqual(['old', 'kyc', 'payer', 'fresh', 'both']);
+  await click(host.querySelector('[data-user-tab="new"]'));
+  expect(rows()).toEqual(['fresh', 'both']);
+  await click(host.querySelector('[data-user-tab="all"]'));
   await act(async () => { setSelect.call(select, 'PENDING'); select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); await flush(); });
   expect(rows()).toEqual(['kyc']);
 });
