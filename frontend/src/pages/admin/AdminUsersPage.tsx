@@ -145,6 +145,10 @@ export function AdminUsersPage() {
   // Work first: packages ready for review, then packages awaiting a top-up,
   // then new registrations, then everyone else — newest first inside each group.
   const ordered = useMemo(() => {
+    if (filter === 'lastLogin') {
+      const loginAt = (u: User) => u.lastLoginAt ? Date.parse(u.lastLoginAt) || 0 : 0;
+      return [...(users ?? [])].sort((a, b) => loginAt(b) - loginAt(a));
+    }
     const rank = (u: User) => {
       const pkgs = pendingByUser.get(u.id);
       return pkgs ? (pkgs.some((p) => p.state === 'READY') ? 0 : 1) : isNew(u) ? 2 : 3;
@@ -154,10 +158,10 @@ export function AdminUsersPage() {
       return pending ? Math.max(...pending.map((p) => new Date(p.latestAt).getTime() || 0)) : new Date(u.createdAt).getTime();
     };
     return [...(users ?? [])].sort((a, b) => rank(a) - rank(b) || at(b) - at(a));
-  }, [users, pendingByUser]);
+  }, [users, pendingByUser, filter]);
 
   const matchesTab = (u: User) => tab === 'all' || (tab === 'new' ? isNew(u) : tab === 'deposits' ? hasPending(u) : u.kycStatus === 'PENDING');
-  const list = ordered.filter(u => u.email.toLowerCase().includes(search.toLowerCase()) && (!filter || (filter === 'blocked' ? u.isBlocked : u.kycStatus === filter)) && matchesTab(u));
+  const list = ordered.filter(u => u.email.toLowerCase().includes(search.toLowerCase()) && (filter !== 'PENDING' || u.kycStatus === 'PENDING') && matchesTab(u));
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = list.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -256,7 +260,7 @@ export function AdminUsersPage() {
       )}
       </div>
 
-      <div className="admin-toolbar"><input aria-label="Поиск пользователей" style={styles.input} placeholder="Email пользователя" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /><select aria-label="Фильтр пользователей" style={styles.input} value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}><option value="">Все пользователи</option><option value="PENDING">KYC на проверке</option><option value="blocked">Заблокированные</option></select></div>
+      <div className="admin-toolbar"><input aria-label="Поиск пользователей" style={styles.input} placeholder="Email пользователя" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /><select aria-label="Фильтр пользователей" style={styles.input} value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}><option value="">Все пользователи</option><option value="PENDING">KYC на проверке</option><option value="lastLogin">По последнему входу</option></select></div>
       {loadError && <p role="alert" style={styles.errorBox}>Не удалось загрузить пользователей. Обновите страницу.</p>}
       <div style={styles.table} className="admin-table-desktop">
         <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: TABLE_MIN_WIDTH }}>
