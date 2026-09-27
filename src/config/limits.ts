@@ -34,3 +34,28 @@ export const REFERRAL_REWARD_PERCENT = 5;
 // not. The sweeps only ever reach this while their tables are empty; one
 // open position holds them at their base cadence.
 export const IDLE_SWEEP_MAX_MS = 60_000;
+
+// How long after a start the background loops keep the bounded backoff above
+// before an empty sweep may put them to SLEEP (IdleBackoffScheduler `sleep`).
+// A Render deploy starts the new instance while the old one still serves
+// requests and only then stops it; anything the old instance commits in that
+// overlap woke the OLD instance's loops, not these. Ten minutes covers that
+// hand-over (Render gives the old instance 30 s to drain by default) with a
+// wide margin, at a cost of about a dozen sweeps per loop per deploy.
+export const WATCHER_SLEEP_GRACE_MS = 10 * 60_000;
+
+// A successful mutating API request (POST/PUT/PATCH/DELETE, status < 400)
+// nudges every sleeping loop to re-check its table once — the safety net for
+// a code path that creates work but forgets its wake(). The database is awake
+// for that request anyway, so this adds a few SELECTs while people are
+// active and nothing at all while nobody is. At most one such re-check per
+// this window; a request inside the window gets one trailing re-check.
+export const ACTIVITY_RECONCILE_COOLDOWN_MS = 30_000;
+
+// The scheduled re-check of every sleeping loop, for work that reached the
+// database without any request to this instance (a manual SQL fix, another
+// process). It rides the funding boundary (00:00/08:00/16:00 UTC), when the
+// funding settlement has just woken the database anyway, so it adds no
+// database wake of its own: this offset keeps it inside the minutes the
+// compute stays up after funding (Neon suspends after 5 idle minutes).
+export const RECONCILE_AFTER_FUNDING_MS = 2 * 60_000;

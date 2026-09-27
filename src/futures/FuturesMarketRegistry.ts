@@ -61,6 +61,8 @@ import type { MarketUniverse } from '../services/marketData/bybit/MarketUniverse
 export class FuturesMarketRegistry {
   private symbols: string[] = [...CORE_FUTURES_SYMBOLS];
   private timer: NodeJS.Timeout | null = null;
+  /** Set once an in-flight read has SUCCEEDED and its symbols were kept. */
+  private inFlightKnown = false;
 
   constructor(
     private marketData: KrakenMarketDataService,
@@ -98,6 +100,7 @@ export class FuturesMarketRegistry {
           distinct: ['symbol'],
         }),
       ]);
+      this.inFlightKnown = true;
       return [...positions.map((p) => p.symbol), ...orders.map((o) => o.symbol)];
     } catch (err) {
       // A database hiccup must not be able to delist anything either, so
@@ -160,7 +163,18 @@ export class FuturesMarketRegistry {
       .sort((a, b) => b[1] - a[1])
       .map(([pair]) => pair);
 
-    const inFlight = await this.symbolsInFlight();
+    // The in-flight read only matters for a symbol this refresh would DROP.
+    // Once one read has succeeded, every in-flight symbol is already in the
+    // current listing: its orders could only be placed while it was listed
+    // (the order route checks has()), and no refresh ever drops one. So a
+    // refresh that keeps every current symbol cannot be changed by the read,
+    // and skips it — which is what lets an idle backend leave the database
+    // alone between listing refreshes. The first refresh after a start
+    // always reads: a position opened before the restart may sit on a
+    // contract the new market data no longer lists.
+    const next = new Set([...CORE_FUTURES_SYMBOLS, ...eligible]);
+    const dropsSomething = this.symbols.some((symbol) => !next.has(symbol));
+    const inFlight = !this.inFlightKnown || dropsSomething ? await this.symbolsInFlight() : [];
 
     // Core first so the majors keep a stable place at the top of the panel,
     // then everything else by volume. Symbols only kept for an open

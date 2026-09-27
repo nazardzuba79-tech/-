@@ -1,0 +1,98 @@
+name: Server idle (sleeping background loops, idle database budget)
+
+# The backend's table sweeps sleep while the database has nothing for them
+# and wake on the mutation that creates their work. This proves, on every PR
+# that touches them: a simulated idle day issues no database query of the
+# sweeps' own; every work-creating path wakes its loop; and on a real
+# PostgreSQL each loop wakes, does its work (futures TP/SL/partial/full
+# close, spot triggers, CFD, native demo limit execution) and sleeps again,
+# including after a restart with no event at all.
+on:
+  pull_request:
+    paths:
+      - 'src/index.ts'
+      - 'src/serverBackground.ts'
+      - 'src/config/limits.ts'
+      - 'src/services/IdleBackoffScheduler.ts'
+      - 'src/services/BackgroundWorkCoordinator.ts'
+      - 'src/services/PriceWatcherService.ts'
+      - 'src/services/OrderService.ts'
+      - 'src/services/deposits/**'
+      - 'src/futures/**'
+      - 'src/cfd/**'
+      - 'src/private-trading/**'
+      - 'src/api/routes/orders.ts'
+      - 'src/api/routes/privateTrading.ts'
+      - 'src/__tests__/serverIdle*.ts'
+      - 'src/__tests__/serverWatcherSleep.pg.test.ts'
+      - 'src/services/__tests__/IdleBackoffScheduler*.ts'
+      - 'src/services/__tests__/BackgroundWorkCoordinator.test.ts'
+      - 'prisma/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/server-idle.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-idle-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  idle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: idle_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_idle_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U idle_qa -d voltex_idle_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      # Disposable loopback database, used by nothing else in this job.
+      DATABASE_URL: postgresql://idle_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_idle_test?schema=public
+      DIRECT_URL: postgresql://idle_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_idle_test?schema=public
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Migrate the empty database
+        run: npx prisma migrate deploy
+      - name: Backend typecheck and build
+        run: npm run build
+      - name: Sleep/wake mechanism, wake wiring and the simulated idle day
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/__tests__/IdleBackoffScheduler.test.ts
+          src/services/__tests__/IdleBackoffScheduler.sleep.test.ts
+          src/services/__tests__/BackgroundWorkCoordinator.test.ts
+          src/services/__tests__/idleSweepSafety.test.ts
+          src/__tests__/serverIdleWakeWiring.test.ts
+          src/__tests__/serverIdleDbBudget.test.ts
+      - name: Real PostgreSQL — wake, work, sleep, restart (futures, TP/SL, spot, CFD, native)
+        env:
+          VOLTEX_PG_TEST_URL: postgresql://idle_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_idle_test?schema=public
+        run: npx jest --runInBand --runTestsByPath src/__tests__/serverWatcherSleep.pg.test.ts
+      - name: Existing loop, trigger and demo suites
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/futures/__tests__/FuturesProtectionService.test.ts
+          src/futures/__tests__/FuturesMarketRegistry.test.ts
+          src/futures/__tests__/FuturesPositionService.test.ts
+          src/private-trading/__tests__/nativeSharedLane.test.ts
+          src/private-trading/__tests__/nativeOptimization.test.ts
+          src/private-trading/__tests__/service.runtime.test.ts

@@ -4,7 +4,7 @@ import { MarkPriceService } from './MarkPriceService';
 import { InsuranceFundService } from './InsuranceFundService';
 import { computeUnrealizedPnl, PositionSide } from './marginMath';
 import { LIQUIDATION_CHECK_INTERVAL_MS } from '../config/futuresConfig';
-import { IdleBackoffScheduler, type SweepOutcome } from '../services/IdleBackoffScheduler';
+import { IdleBackoffScheduler, type IdleSleepOptions, type SweepOutcome } from '../services/IdleBackoffScheduler';
 import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 type TxClient = Prisma.TransactionClient;
@@ -178,7 +178,7 @@ export class LiquidationEngine {
     });
   }
 
-  startScheduler(intervalMs: number = LIQUIDATION_CHECK_INTERVAL_MS): void {
+  startScheduler(intervalMs: number = LIQUIDATION_CHECK_INTERVAL_MS, options: { sleep?: IdleSleepOptions } = {}): void {
     this.scheduler = new IdleBackoffScheduler({
       baseMs: intervalMs,
       maxIdleMs: IDLE_SWEEP_MAX_MS,
@@ -187,6 +187,7 @@ export class LiquidationEngine {
         return this.lastSweepOutcome;
       },
       onError: (err) => console.error('Liquidation check failed', err),
+      sleep: options.sleep,
     });
     this.scheduler.start();
   }
@@ -198,6 +199,16 @@ export class LiquidationEngine {
    */
   wake(): void {
     this.scheduler?.wake();
+  }
+
+  /** "There may be work": re-check once unless already sweeping at base. */
+  nudge(): void {
+    this.scheduler?.nudge();
+  }
+
+  /** True while the sweep holds no timer (no open position was found). */
+  get asleep(): boolean {
+    return this.scheduler?.isAsleep ?? false;
   }
 
   stopScheduler(): void {

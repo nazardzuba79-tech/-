@@ -17,7 +17,7 @@ import { pendingNativeWallet } from './pendingWallet';
 /** Mounted AFTER normal authentication, BEFORE the unchanged legacy owner
  * gate. Only the allowlisted test USER enters this router. All other actors
  * fall through to their original policy. No admin or real-wallet API lives here. */
-export function nativeTestAccountRoutes(prisma: PrismaClient, service: PrivateTradingService): Router {
+export function nativeTestAccountRoutes(prisma: PrismaClient, service: PrivateTradingService, onNativeWork: () => void = () => {}): Router {
   const r = Router();
   const config = service.store?.config ?? privateTradingConfig;
   const native = service.market ? new NativeDemoService(new PrismaNativeRepository(prisma, config), service.market) : null;
@@ -60,7 +60,7 @@ export function nativeTestAccountRoutes(prisma: PrismaClient, service: PrivateTr
       return result;
     } finally { req.removeListener('aborted', disconnect); res.removeListener('close', disconnect); }
   }));
-  if (native) r.use('/native', nativeDemoRoutes(native, actor));
+  if (native) r.use('/native', nativeDemoRoutes(native, actor, onNativeWork));
   // No fall-through into allocate, previews or any other legacy owner tool.
   r.use((_req, _res, next) => next(new PrivateTradingError('private_access_denied', 'Режим недоступен', 403)));
   return r;

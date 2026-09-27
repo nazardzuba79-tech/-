@@ -7,7 +7,7 @@ import {
   PROTECTION_CHECK_INTERVAL_MS,
   PROTECTION_STALE_CLAIM_MS,
 } from '../config/futuresConfig';
-import { IdleBackoffScheduler, type SweepOutcome } from '../services/IdleBackoffScheduler';
+import { IdleBackoffScheduler, type IdleSleepOptions, type SweepOutcome } from '../services/IdleBackoffScheduler';
 import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 export type ProtectionKind = 'TAKE_PROFIT' | 'STOP_LOSS';
@@ -316,7 +316,20 @@ export class FuturesProtectionService {
       where: { status: { in: CLAIMABLE } },
     });
     this.lastSweepOutcome = armed.length > 0 ? 'found-work' : 'idle';
-    if (armed.length === 0) return 0;
+    if (armed.length === 0) {
+      // Nothing armed — but a row a crashed backend left mid-trigger is
+      // still work: the reclaim above returns it to PENDING only once it is
+      // PROTECTION_STALE_CLAIM_MS old, and a sweep that slept now would
+      // never come back to reclaim it. Only on the empty path, so a sweep
+      // with armed rows reads exactly what it always read.
+      const inFlight = await this.prisma.futuresPositionProtection.findMany({
+        where: { status: 'TRIGGERING' },
+        select: { id: true },
+        take: 1,
+      });
+      if (inFlight.length > 0) this.lastSweepOutcome = 'found-work';
+      return 0;
+    }
 
     // One mark-price read per contract per sweep, not one per trigger.
     const markPrices = new Map<string, BigNumber | null>();
@@ -583,7 +596,7 @@ export class FuturesProtectionService {
     });
   }
 
-  startScheduler(intervalMs: number = PROTECTION_CHECK_INTERVAL_MS): void {
+  startScheduler(intervalMs: number = PROTECTION_CHECK_INTERVAL_MS, options: { sleep?: IdleSleepOptions } = {}): void {
     this.scheduler = new IdleBackoffScheduler({
       baseMs: intervalMs,
       maxIdleMs: IDLE_SWEEP_MAX_MS,
@@ -592,6 +605,7 @@ export class FuturesProtectionService {
         return this.lastSweepOutcome;
       },
       onError: (err) => console.error('Futures protection sweep failed', err),
+      sleep: options.sleep,
     });
     this.scheduler.start();
   }
@@ -599,6 +613,16 @@ export class FuturesProtectionService {
   /** A stop or take-profit was just armed — resume the base cadence now. */
   wake(): void {
     this.scheduler?.wake();
+  }
+
+  /** "There may be work": re-check once unless already sweeping at base. */
+  nudge(): void {
+    this.scheduler?.nudge();
+  }
+
+  /** True while the sweep holds no timer (nothing armed or mid-trigger). */
+  get asleep(): boolean {
+    return this.scheduler?.isAsleep ?? false;
   }
 
   stopScheduler(): void {
