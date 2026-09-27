@@ -13,6 +13,7 @@ import { PrivateTradingService } from '../../private-trading/service';
 import { OwnerSession, PrivateTradingError, TradeRequest } from '../../private-trading/serviceTypes';
 import { PrivateMarketDataError } from '../../private-trading/marketData';
 import { isSimulationOnlyUser } from '../../private-trading/access';
+import { bestEffortWake } from '../../services/IdleBackoffScheduler';
 
 const signed = z.string().max(60).regex(/^-?\d{1,18}(?:\.\d{1,18})?$/).refine(v => new BigNumber(v).isFinite());
 const positive = signed.refine(v => new BigNumber(v).gt(0));
@@ -48,13 +49,14 @@ export const privatePreviewSchema = z.object({
   }
 });
 
-export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradingService): Router {
+/** `onNativeWork` wakes the native limit pass (see nativeDemoRoutes). */
+export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradingService, onNativeWork: () => void = () => {}): Router {
   const router = Router();
   const authenticate = requireAuth(prisma);
   router.use('/private-trading', (req, res, next) => { res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('Vary', 'Authorization'); void Promise.resolve(authenticate(req, res, next)).catch(next); });
   // An explicitly approved test USER receives native-only access after the
   // SAME authentication, without broadening the legacy owner/admin gate below.
-  router.use('/private-trading', nativeTestAccountRoutes(prisma, service));
+  router.use('/private-trading', nativeTestAccountRoutes(prisma, service, onNativeWork));
   router.use('/private-trading', async (req: AuthedRequest, res, next) => {
     try {
       // requireAuth has verified this same bearer token. Decode only its already-verified expiry.
@@ -66,7 +68,13 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
   router.use('/private-trading', rateLimit({ windowMs: 60_000, limit: 100, standardHeaders: true, legacyHeaders: false }));
   const actor = (res: Response) => res.locals.privateActor as OwnerSession;
   const handle = (run: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => {
-    void run(req, res).then(result => { if (!res.headersSent) res.json(result); }).catch(next);
+    void run(req, res).then(result => {
+      // A successful write may have left the owner-account pass something to
+      // do (a confirmed position, an order, new protection): let it look now.
+      // Best effort: the write has already committed and must answer as such.
+      if (req.method !== 'GET') bestEffortWake(() => service.nudge?.(), 'private-owner-pass')();
+      if (!res.headersSent) res.json(result);
+    }).catch(next);
   };
   // Same pinned owner configuration as the route gate; every repository read/write re-checks it.
   const native = service.market ? new NativeDemoService(new PrismaNativeRepository(prisma, service.store?.config), service.market) : null;
@@ -79,7 +87,7 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
     allowed: true, mode: 'PRIVATE_SIMULATION', nativeAvailable: !!native,
     simulationOnly: !!native && isSimulationOnlyUser(actor(res).userId),
   })));
-  if (native) router.use('/private-trading/native', nativeDemoRoutes(native, actor));
+  if (native) router.use('/private-trading/native', nativeDemoRoutes(native, actor, onNativeWork));
   router.get('/private-trading/state', handle(async (_req, res) => service.state(actor(res))));
   router.get('/private-trading/market', handle(async (req, res) => service.getMarket(actor(res), z.string().min(1).max(40).parse(req.query.symbol))));
   router.get('/private-trading/candles', handle(async (req, res) => {

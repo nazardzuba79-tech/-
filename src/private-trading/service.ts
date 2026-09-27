@@ -7,6 +7,8 @@ import { replayScenario } from './replay';
 import { CandleSelection, ContractRules, ModelProfile, ReplayResult, ResolvedCandleSelection } from './types';
 import { OwnerSession, PreviewResult, PrivateOrder, PrivatePosition, PrivateTradingError, TradeRequest } from './serviceTypes';
 import { applyPrivateFunding, availablePrivateBook, cancelPrivateOrder, closePrivatePosition, fillPrivateOrder, updatePosition } from './liveEngine';
+import { IdleBackoffScheduler, type IdleSleepOptions, type SweepOutcome } from '../services/IdleBackoffScheduler';
+import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 const number = (v: string) => new BigNumber(v);
 const iso = (time: number) => new Date(time).toISOString();
@@ -43,7 +45,10 @@ export function simulationProfile(instrument: PrivateInstrument): ModelProfile {
 
 export class PrivateTradingService {
   private jobs = new Map<string, AbortController>();
-  private timer: NodeJS.Timeout | null = null;
+  private scheduler: IdleBackoffScheduler | null = null;
+  /** Whether the last pass found anything to look after: a RUNNING preview,
+   *  an open position or an active order. Never how much it changed. */
+  private lastOutcome: SweepOutcome = 'found-work';
   private ticking = false;
   private unavailableSymbols = new Set<string>();
   private nextSymbol = 0;
@@ -632,16 +637,41 @@ export class PrivateTradingService {
     await this.store.authorized(actor);
     return card.payload;
   }
-  start() {
-    if (this.timer) return;
-    this.timer = setInterval(() => { void this.tick().catch(() => {}); }, 3_000); this.timer.unref();
+  /**
+   * The owner-account pass (previews to resume, protection, liquidation and
+   * funding for open positions) on a 3 s cadence while it has work. With
+   * `sleep` (production) a pass that finds none holds no timer; the routes
+   * nudge it after every successful command.
+   */
+  start(options: { sleep?: IdleSleepOptions } = {}) {
+    if (this.scheduler) return;
+    this.scheduler = new IdleBackoffScheduler({
+      baseMs: 3_000, maxIdleMs: IDLE_SWEEP_MAX_MS, sleep: options.sleep,
+      sweep: async () => {
+        try { await this.tick(); }
+        catch (error) {
+          // A refused session (expired, revoked, not the owner) cannot act
+          // until the owner acts again, and that action nudges this pass.
+          // Anything else is not evidence of an empty account: rethrown, it
+          // keeps the base cadence.
+          if (error instanceof PrivateTradingError) return 'idle';
+          throw error;
+        }
+        return this.lastOutcome;
+      },
+    });
+    this.scheduler.start();
   }
-  stop() { if (this.timer) clearInterval(this.timer); this.timer = null; for (const job of this.jobs.values()) job.abort(); }
+  stop() { this.scheduler?.stop(); this.scheduler = null; for (const job of this.jobs.values()) job.abort(); }
+  /** A command may have left work: run the pass now unless already at base cadence. */
+  nudge() { this.scheduler?.nudge(); }
+  get asleep() { return this.scheduler?.isAsleep ?? false; }
   async tick() {
-    if (!this.store.config().enabled || !this.store.config().ownerId) { for (const job of this.jobs.values()) job.abort(); return; }
+    if (!this.store.config().enabled || !this.store.config().ownerId) { this.lastOutcome = 'idle'; for (const job of this.jobs.values()) job.abort(); return; }
     if (this.ticking) return;
     this.ticking = true;
     try {
+      this.lastOutcome = 'idle';
       const account = await this.store.db.privateTradingAccount.findUnique({ where: { userId: this.store.config().ownerId } });
       if (!account) return;
       const state = account.state as any, actor = state.session as OwnerSession | null;
@@ -650,6 +680,7 @@ export class PrivateTradingService {
       const pending = await this.store.db.privateTradingPreview.findMany({ where: { userId: actor.userId, status: 'RUNNING' }, take: 1 });
       if (pending[0]) void this.runPreview(pending[0].id);
       const symbols = [...new Set<string>([...state.positions.filter((p: PrivatePosition) => p.status === 'OPEN').map((p: PrivatePosition) => p.symbol), ...state.orders.filter(activeOrder).map((o: PrivateOrder) => o.symbol)])];
+      if (pending[0] || symbols.length) this.lastOutcome = 'found-work';
       // New accounts are capped at four active contracts. Round-robin also drains any older oversized state.
       const batch = symbols.length ? Array.from({ length: Math.min(4, symbols.length) }, (_, i) => symbols[(this.nextSymbol + i) % symbols.length]) : [];
       this.nextSymbol = symbols.length ? (this.nextSymbol + batch.length) % symbols.length : 0;

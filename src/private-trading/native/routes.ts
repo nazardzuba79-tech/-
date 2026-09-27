@@ -10,6 +10,7 @@ import { ContractRuleError } from '../math';
 import { PrivateTradingError } from '../serviceTypes';
 import BigNumber from 'bignumber.js';
 import { historyQuery } from './historyPage';
+import { bestEffortWake } from '../../services/IdleBackoffScheduler';
 const key=z.string().min(8).max(100).regex(/^[a-zA-Z0-9:_-]+$/);
 const positive=z.string().max(60).regex(/^\d{1,18}(?:\.\d{1,18})?$/).refine(x=>new BigNumber(x).gt(0));
 const collateralAsset=z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2,16}$/);
@@ -83,15 +84,29 @@ const LIMIT_TEXT:Record<string,string>={
   maxMarketOrderQty:'Максимальное количество рыночного ордера',minNotionalValue:'Минимальная стоимость ордера, USDT',
   minLeverage:'Минимальное плечо',maxLeverage:'Максимальное плечо',leverageStep:'Шаг плеча',tierMaxLeverage:'Максимальное плечо для этого размера позиции',
 };
-/** Mount ONLY below the existing authenticated owner+ADMIN+session middleware. */
-export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession){
-  const r=Router();const handle=(run:(req:Request,res:Response)=>Promise<unknown>)=>(req:Request,res:Response,next:NextFunction)=>void run(req,res).then(result=>res.json(result)).catch(next);
+/** Does this account, as a command left it, need the server-side limit pass?
+ * The same two facts the pass's own scan selects on: an OPEN position or a
+ * working (OPEN / PARTIALLY_FILLED) order. A reply of any other shape answers
+ * yes — an unrecognised reply must never be the reason the pass sleeps. */
+export function nativeReplyHasWork(reply:unknown):boolean{
+  const view=reply as {positions?:unknown;orders?:unknown}|null;
+  if(!view||!Array.isArray(view.positions)||!Array.isArray(view.orders))return true;
+  return view.positions.some((p:any)=>p?.status==='OPEN')
+    ||view.orders.some((o:any)=>o?.status==='OPEN'||o?.status==='PARTIALLY_FILLED');
+}
+
+/** Mount ONLY below the existing authenticated owner+ADMIN+session middleware.
+ * `onWork` wakes the server-side limit pass after the COMMITTED command that
+ * leaves it something to do, and after a session admission (which is what
+ * lets a sleeping pass act for an account whose previous session expired). */
+export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession,onWork:()=>void=()=>{}){
+  const r=Router();const wake=bestEffortWake(onWork,'native-limit-pass');const handle=(run:(req:Request,res:Response)=>Promise<unknown>)=>(req:Request,res:Response,next:NextFunction)=>void run(req,res).then(result=>res.json(result)).catch(next);
   r.get('/state',handle((_req,res)=>service.state(actor(res))));
   r.get('/live',handle((_req,res)=>service.live(actor(res))));
   // Session admission for the existing executor, separate from pure GET revaluation.
   r.post('/execution-session',handle(async(_req,res)=>{
     if(!service.repository.activate)throw new PrivateTradingError('live_unavailable','Счёт временно недоступен',503);
-    await service.repository.activate(actor(res));return{ok:true};
+    await service.repository.activate(actor(res));wake();return{ok:true};
   }));
   r.get('/history',handle((req,res)=>{
     if(!service.repository.history)throw new PrivateTradingError('history_unavailable','История временно недоступна',503);
@@ -137,7 +152,7 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     if(input.kind==='OPEN')scope.trace('entry.reference',{executionMode:input.executionMode??'LIVE_EXECUTION',symbol:input.symbol,candle:input.candle??null});
     res.once('finish',()=>scope.trace('http.finish',{status:res.statusCode}));
     res.once('close',()=>{if(!res.writableFinished)scope.trace('http.disconnected');});
-    return service.command(actor(res),input,{scope});
+    return service.command(actor(res),input,{scope}).then(reply=>{if(nativeReplyHasWork(reply))wake();return reply;});
   }));
   /**
    * PRICING, NOT TRADING. This route computes and returns; it writes nothing,

@@ -38,9 +38,13 @@ const placeOcoOrderSchema = z.object({
   stopLimitPrice: priceString,
 });
 
-export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, priceSource: PriceSource): Router {
+/** `onConditionalOrderCommitted` wakes the price watcher once a stop /
+ *  take-profit / OCO order has committed. Without it an order placed here
+ *  waited for the watcher's own next sweep — up to a minute on the idle
+ *  backoff, and indefinitely once that watcher sleeps. */
+export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, priceSource: PriceSource, onConditionalOrderCommitted: () => void = () => {}): Router {
   const router = Router();
-  const orderService = new OrderService(prisma, engine, priceSource);
+  const orderService = new OrderService(prisma, engine, priceSource, onConditionalOrderCommitted);
 
   router.post('/orders', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);

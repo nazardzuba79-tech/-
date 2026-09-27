@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { OrderService, PriceSource } from './OrderService';
-import { IdleBackoffScheduler, type SweepOutcome } from './IdleBackoffScheduler';
+import { IdleBackoffScheduler, type IdleSleepOptions, type SweepOutcome } from './IdleBackoffScheduler';
 import { IDLE_SWEEP_MAX_MS } from '../config/limits';
 
 /**
@@ -86,7 +86,7 @@ export class PriceWatcherService {
     return triggeredCount;
   }
 
-  startScheduler(intervalMs: number): void {
+  startScheduler(intervalMs: number, options: { sleep?: IdleSleepOptions } = {}): void {
     this.scheduler = new IdleBackoffScheduler({
       baseMs: intervalMs,
       maxIdleMs: IDLE_SWEEP_MAX_MS,
@@ -95,6 +95,7 @@ export class PriceWatcherService {
         return this.lastSweepOutcome;
       },
       onError: (err) => console.error('[PriceWatcherService] Trigger check failed', err),
+      sleep: options.sleep,
     });
     this.scheduler.start();
   }
@@ -102,6 +103,16 @@ export class PriceWatcherService {
   /** A conditional order was just placed — resume the base cadence now. */
   wake(): void {
     this.scheduler?.wake();
+  }
+
+  /** "There may be work": re-check once unless already sweeping at base. */
+  nudge(): void {
+    this.scheduler?.nudge();
+  }
+
+  /** True while the sweep holds no timer (no resting conditional order). */
+  get asleep(): boolean {
+    return this.scheduler?.isAsleep ?? false;
   }
 
   stopScheduler(): void {

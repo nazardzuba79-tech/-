@@ -1,0 +1,120 @@
+{
+  "label": "before-30m",
+  "db": "voltex_before",
+  "distDir": "./before-dist",
+  "startedAt": "2026-09-27T08:01:00.686Z",
+  "endedAt": "2026-09-27T08:31:03.740Z",
+  "minutes": 30,
+  "statements": 1154,
+  "reads": 1052,
+  "writes": 34,
+  "byKind": {
+    "SELECT": 1052,
+    "BEGIN": 34,
+    "UPDATE": 33,
+    "COMMIT": 34,
+    "INSERT": 1
+  },
+  "topShapes": [
+    [
+      "SELECT \"public\".\"PrivateTradingAccount\".\"userId\", \"public\".\"PrivateTradingAccount\".\"available\", \"public\".\"PrivateTradingAccount\".\"reserved\",",
+      599
+    ],
+    [
+      "SELECT a.\"userId\", CASE WHEN COALESCE((p.\"executionSession\"->>'?')::numeric,0)",
+      179
+    ],
+    [
+      "SELECT 1",
+      138
+    ],
+    [
+      "BEGIN",
+      34
+    ],
+    [
+      "COMMIT",
+      34
+    ],
+    [
+      "SELECT \"public\".\"Order\".\"id\", \"public\".\"Order\".\"userId\", \"public\".\"Order\".\"pair\", \"public\".\"Order\".\"side\", \"public\".\"Order\".\"type\", \"public\"",
+      33
+    ],
+    [
+      "UPDATE \"public\".\"FuturesPositionProtection\" SET \"status\" = ?, \"triggeredAt\" = ?, \"lastError\" = ?, \"updatedAt\" = ? WHERE (\"public\".\"FuturesPo",
+      33
+    ],
+    [
+      "SELECT \"public\".\"FuturesPositionProtection\".\"id\", \"public\".\"FuturesPositionProtection\".\"positionId\", \"public\".\"FuturesPositionProtection\".\"u",
+      33
+    ],
+    [
+      "SELECT \"public\".\"FuturesPosition\".\"id\", \"public\".\"FuturesPosition\".\"userId\", \"public\".\"FuturesPosition\".\"symbol\", \"public\".\"FuturesPosition\"",
+      32
+    ],
+    [
+      "SELECT \"public\".\"CfdPosition\".\"id\", \"public\".\"CfdPosition\".\"userId\", \"public\".\"CfdPosition\".\"symbol\", \"public\".\"CfdPosition\".\"side\", \"public",
+      32
+    ],
+    [
+      "SELECT \"public\".\"FuturesPosition\".\"id\", \"public\".\"FuturesPosition\".\"symbol\" FROM \"public\".\"FuturesPosition\" WHERE \"public\".\"FuturesPosition\"",
+      2
+    ],
+    [
+      "SELECT \"public\".\"FuturesOrder\".\"id\", \"public\".\"FuturesOrder\".\"symbol\" FROM \"public\".\"FuturesOrder\" WHERE \"public\".\"FuturesOrder\".\"status\" IN",
+      2
+    ],
+    [
+      "SELECT \"public\".\"FuturesOrder\".\"id\", \"public\".\"FuturesOrder\".\"userId\", \"public\".\"FuturesOrder\".\"symbol\", \"public\".\"FuturesOrder\".\"side\", \"pu",
+      1
+    ],
+    [
+      "INSERT INTO \"public\".\"DepositWatchState\" (\"id\",\"updatedAt\",\"enabled\") VALUES (?,?,?) ON CONFLICT DO NOTHING",
+      1
+    ],
+    [
+      "SELECT \"public\".\"DepositWatchState\".\"id\", \"public\".\"DepositWatchState\".\"enabled\", \"public\".\"DepositWatchState\".\"leaseOwner\", \"public\".\"Depos",
+      1
+    ]
+  ],
+  "perMinute": {
+    "0": 58,
+    "1": 42,
+    "2": 38,
+    "3": 38,
+    "4": 38,
+    "5": 35,
+    "6": 37,
+    "7": 37,
+    "8": 37,
+    "9": 37,
+    "10": 36,
+    "11": 38,
+    "12": 38,
+    "13": 39,
+    "14": 38,
+    "15": 38,
+    "16": 38,
+    "17": 39,
+    "18": 38,
+    "19": 39,
+    "20": 36,
+    "21": 38,
+    "22": 37,
+    "23": 38,
+    "24": 38,
+    "25": 36,
+    "26": 38,
+    "27": 38,
+    "28": 39,
+    "29": 38
+  },
+  "serverLogTail": [
+    "[MarketUniverse] Refresh failed, keeping previous universe: Collector universe unavailable",
+    "[native-limit-pass] interval_ms=10000",
+    "Exchange API listening on :4701",
+    "[marketData] binance-liquidations circuit CLOSED -> OPEN (backing off)",
+    "[MarketUniverse] Refresh failed, keeping previous universe: Collector universe unavailable",
+    ""
+  ]
+}

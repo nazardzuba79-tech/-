@@ -32,7 +32,39 @@
  * within `maxIdleMs`. That bound is what keeps a missing wake-up a delay
  * instead of a silent failure, which is why it is a small number of seconds
  * rather than minutes.
+ *
+ * ── Sleep (opt-in: `sleep`) ─────────────────────────────────────────────
+ *
+ * A backend that runs around the clock turns even the 60 s ceiling into a
+ * query every minute, forever, against a table it has already proven empty —
+ * enough on its own to keep Neon's compute from ever suspending. With `sleep`
+ * set, a sweep that found NO ROWS AT ALL puts the loop to sleep instead: no
+ * timer at all, and no query, until `wake()` or `nudge()` is called. The
+ * found-work rule above is untouched, so a loop with anything to watch never
+ * sleeps.
+ *
+ * Sleeping makes wake() a correctness requirement, so the burden moves to
+ * the callers, and they carry it in layers (see BackgroundWorkCoordinator):
+ *   1. every mutation that creates work wakes its loop after the commit;
+ *   2. any successful mutating API request nudges every sleeping loop;
+ *   3. a reconciliation nudge rides the 8-hourly funding boundary, when the
+ *      database is awake for funding anyway;
+ *   4. for `graceMs` after start() the loop only backs off and never sleeps,
+ *      so work committed by the previous instance during a deploy overlap
+ *      is still found by this one.
  */
+
+/**
+ * A wake callback that can never fail the operation it follows. Wakes run
+ * after a commit: the work is already durable, and the request that created
+ * it must answer as a success whatever happens to the wake. A missed wake is
+ * then caught by the BackgroundWorkCoordinator's re-checks.
+ */
+export function bestEffortWake(wake: () => void, label = 'wake'): () => void {
+  return () => {
+    try { wake(); } catch (err) { console.error(`[background] ${label} failed`, err); }
+  };
+}
 
 export type SweepOutcome =
   /** The sweep's query matched at least one row. Stay at the base cadence. */
@@ -53,6 +85,15 @@ export interface IdleBackoffOptions {
   /** Injectable for deterministic tests. */
   setTimer?: (fn: () => void, ms: number) => NodeJS.Timeout;
   clearTimer?: (handle: NodeJS.Timeout) => void;
+  /** Sleep instead of polling an empty table. Off unless given. */
+  sleep?: IdleSleepOptions;
+  /** Clock for the sleep grace. Injectable for deterministic tests. */
+  now?: () => number;
+}
+
+export interface IdleSleepOptions {
+  /** How long after start() an idle sweep only backs off, never sleeps. */
+  graceMs: number;
 }
 
 export class IdleBackoffScheduler {
@@ -62,6 +103,8 @@ export class IdleBackoffScheduler {
   private readonly onError?: (err: unknown) => void;
   private readonly setTimer: (fn: () => void, ms: number) => NodeJS.Timeout;
   private readonly clearTimer: (handle: NodeJS.Timeout) => void;
+  private readonly sleepOptions: IdleSleepOptions | null;
+  private readonly now: () => number;
 
   private timer: NodeJS.Timeout | null = null;
   private delayMs: number;
@@ -70,6 +113,9 @@ export class IdleBackoffScheduler {
   /** A wake that lands mid-sweep must not be lost: the sweep in flight may
    *  have already read the table before the new row was committed. */
   private wakePending = false;
+  private asleep = false;
+  private startedAt = 0;
+  private lastOutcome: SweepOutcome | null = null;
 
   constructor(options: IdleBackoffOptions) {
     this.baseMs = options.baseMs;
@@ -78,6 +124,8 @@ export class IdleBackoffScheduler {
     this.onError = options.onError;
     this.setTimer = options.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
     this.clearTimer = options.clearTimer ?? ((handle) => clearTimeout(handle));
+    this.sleepOptions = options.sleep ?? null;
+    this.now = options.now ?? Date.now;
     this.delayMs = this.baseMs;
   }
 
@@ -87,15 +135,23 @@ export class IdleBackoffScheduler {
     return this.delayMs;
   }
 
+  /** True while the loop holds no timer at all, waiting for wake()/nudge(). */
+  get isAsleep(): boolean {
+    return this.asleep && !this.stopped;
+  }
+
   start(): void {
     if (!this.stopped) return;
     this.stopped = false;
+    this.asleep = false;
+    this.startedAt = this.now();
     this.delayMs = this.baseMs;
     this.schedule(this.baseMs);
   }
 
   stop(): void {
     this.stopped = true;
+    this.asleep = false;
     if (this.timer) {
       this.clearTimer(this.timer);
       this.timer = null;
@@ -110,6 +166,7 @@ export class IdleBackoffScheduler {
    */
   wake(): void {
     this.delayMs = this.baseMs;
+    this.asleep = false;
     if (this.stopped) return;
     if (this.running) {
       // The in-flight sweep may have queried before this row existed, so
@@ -118,6 +175,20 @@ export class IdleBackoffScheduler {
       return;
     }
     this.schedule(0);
+  }
+
+  /**
+   * "There may be work" — wake() unless the loop is already sweeping at its
+   * base cadence because its last sweep found work, in which case its next
+   * scheduled sweep will see anything new within `baseMs` and an extra
+   * immediate sweep would only add load. Used for signals that fire often
+   * (every browser refresh, every successful API write) rather than once
+   * per created row.
+   */
+  nudge(): void {
+    if (this.stopped) return;
+    if (!this.asleep && this.lastOutcome === 'found-work' && this.delayMs === this.baseMs) return;
+    this.wake();
   }
 
   private schedule(ms: number): void {
@@ -130,6 +201,7 @@ export class IdleBackoffScheduler {
 
   private async tick(): Promise<void> {
     if (this.stopped || this.running) return;
+    this.timer = null;
     this.running = true;
     let outcome: SweepOutcome = 'idle';
     try {
@@ -142,11 +214,20 @@ export class IdleBackoffScheduler {
     } finally {
       this.running = false;
     }
+    this.lastOutcome = outcome;
 
     if (this.wakePending) {
       this.wakePending = false;
       this.delayMs = this.baseMs;
       this.schedule(0);
+      return;
+    }
+
+    if (outcome === 'idle' && this.sleepOptions && this.now() - this.startedAt >= this.sleepOptions.graceMs) {
+      // Proven empty, and past the start-up grace: hold no timer at all.
+      // Only wake()/nudge() — which callers fire on real work — run it again.
+      this.asleep = true;
+      this.delayMs = this.baseMs;
       return;
     }
 
