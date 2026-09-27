@@ -13,6 +13,7 @@ import { PrivateTradingService } from '../../private-trading/service';
 import { OwnerSession, PrivateTradingError, TradeRequest } from '../../private-trading/serviceTypes';
 import { PrivateMarketDataError } from '../../private-trading/marketData';
 import { isSimulationOnlyUser } from '../../private-trading/access';
+import { bestEffortWake } from '../../services/IdleBackoffScheduler';
 
 const signed = z.string().max(60).regex(/^-?\d{1,18}(?:\.\d{1,18})?$/).refine(v => new BigNumber(v).isFinite());
 const positive = signed.refine(v => new BigNumber(v).gt(0));
@@ -71,7 +72,7 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
       // A successful write may have left the owner-account pass something to
       // do (a confirmed position, an order, new protection): let it look now.
       // Best effort: the write has already committed and must answer as such.
-      if (req.method !== 'GET') service.nudge?.();
+      if (req.method !== 'GET') bestEffortWake(() => service.nudge?.(), 'private-owner-pass')();
       if (!res.headersSent) res.json(result);
     }).catch(next);
   };

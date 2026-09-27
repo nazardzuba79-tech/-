@@ -9,6 +9,8 @@ import { MIN_PERP_24H_QUOTE_VOLUME } from '../config/futuresConfig';
 import { nativeDemoRoutes, nativeReplyHasWork } from '../private-trading/native/routes';
 import { PrivateTradingService } from '../private-trading/service';
 import { PrivateTradingError } from '../private-trading/serviceTypes';
+import { bestEffortWake } from '../services/IdleBackoffScheduler';
+import { BackgroundWorkCoordinator } from '../services/BackgroundWorkCoordinator';
 
 /**
  * The wakes a sleeping backend depends on, and the reads it no longer makes.
@@ -21,14 +23,14 @@ const src = (p: string) => readFileSync(resolve(__dirname, '..', p), 'utf8');
 describe('index.ts wires every work-creating path to its loop', () => {
   const index = src('index.ts');
   it('spot orders placed over HTTP wake the price watcher', () => {
-    expect(index).toContain("ordersRouter(prisma, engine, marketDataService, () => priceWatcherService.wake())");
+    expect(index).toContain("ordersRouter(prisma, engine, marketDataService, bestEffortWake(() => priceWatcherService.wake(), 'spot-conditional'))");
   });
   it('futures placements wake liquidation; CFD opens wake CFD liquidation', () => {
-    expect(index).toContain('new FuturesPositionService(prisma, futuresEngine, markPriceService, () => liquidationEngine.wake())');
-    expect(index).toContain('new CfdPositionService(prisma, cfdDataService, () => cfdLiquidationEngine.wake())');
+    expect(index).toContain("new FuturesPositionService(prisma, futuresEngine, markPriceService, bestEffortWake(() => liquidationEngine.wake(), 'futures-liquidation'))");
+    expect(index).toContain("new CfdPositionService(prisma, cfdDataService, bestEffortWake(() => cfdLiquidationEngine.wake(), 'cfd-liquidation'))");
   });
   it('native demo commands nudge the limit pass', () => {
-    expect(index).toContain('privateTradingRouter(prisma, privateTradingService, () => nativeLimitPass?.nudge())');
+    expect(index).toContain("privateTradingRouter(prisma, privateTradingService, bestEffortWake(() => nativeLimitPass?.nudge(), 'native-limit-pass'))");
   });
   it('the loops start through createServerBackground, with the activity net mounted before the routes', () => {
     expect(index).toContain('background.start();');
@@ -40,16 +42,45 @@ describe('index.ts wires every work-creating path to its loop', () => {
       expect(index).not.toContain(old);
     }
   });
+  it('every post-commit wake handed out by index.ts is best effort', () => {
+    const handed = index.match(/\(\) => [a-zA-Z]+\??\.(wake|nudge)\(\)/g) ?? [];
+    const wrapped = index.match(/bestEffortWake\(\(\) => [a-zA-Z]+\??\.(wake|nudge)\(\)/g) ?? [];
+    expect(handed.length).toBe(5);
+    expect(wrapped.length).toBe(handed.length);
+  });
   it('the orders router hands its wake to the OrderService it builds', () => {
     expect(src('api/routes/orders.ts')).toContain('new OrderService(prisma, engine, priceSource, onConditionalOrderCommitted)');
   });
   it('every successful legacy private write nudges the owner-account pass', () => {
-    expect(src('api/routes/privateTrading.ts')).toContain("if (req.method !== 'GET') service.nudge?.();");
+    expect(src('api/routes/privateTrading.ts')).toContain("if (req.method !== 'GET') bestEffortWake(() => service.nudge?.(), 'private-owner-pass')();");
   });
   it('both native mounts pass the wake through', () => {
     expect(src('api/routes/privateTrading.ts')).toContain("nativeDemoRoutes(native, actor, onNativeWork)");
     expect(src('api/routes/privateTrading.ts')).toContain('nativeTestAccountRoutes(prisma, service, onNativeWork)');
     expect(src('private-trading/native/testRoutes.ts')).toContain("nativeDemoRoutes(native, actor, onNativeWork)");
+  });
+});
+
+describe('post-commit wakes are best effort', () => {
+  it('bestEffortWake swallows (and logs) a failing wake', () => {
+    const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const calls: string[] = [];
+    bestEffortWake(() => { calls.push('ran'); throw new Error('boom'); }, 'test')();
+    expect(calls).toEqual(['ran']);
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
+  });
+  it('a watcher whose nudge throws does not affect a successful write\'s response', async () => {
+    const error = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const co = new BackgroundWorkCoordinator([{ name: 'broken', asleep: true, nudge: () => { throw new Error('boom'); } }], { activityCooldownMs: 0 });
+    co.start();
+    const a = express();
+    a.use(co.middleware());
+    a.post('/write', (_req, res) => res.status(201).json({ ok: true }));
+    const reply = await request(a).post('/write');
+    expect(reply.status).toBe(201);
+    co.stop();
+    error.mockRestore();
   });
 });
 
@@ -92,6 +123,18 @@ describe('native command route: wakes the limit pass only after a committed comm
     const { a, wakes } = app(null, true);
     expect((await request(a).post('/n/commands').send(open)).status).toBe(409);
     expect(wakes).toEqual([]);
+  });
+  it('a wake that throws never turns the committed command into an error', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    const service = { command: jest.fn(async () => ({ positions: [{ status: 'OPEN' }], orders: [] })), repository: { activate: jest.fn(async () => {}) } } as any;
+    const a = express();
+    a.use(express.json());
+    a.use('/n', nativeDemoRoutes(service, () => ({ userId: 'u', sessionId: 's', expiresAt: Date.now() + 60_000 }), () => { throw new Error('wake broke'); }));
+    const reply = await request(a).post('/n/commands').send(open);
+    expect(reply.status).toBe(200);
+    expect(reply.body.positions).toEqual([{ status: 'OPEN' }]);
+    expect((await request(a).post('/n/execution-session')).status).toBe(200);
+    (console.error as jest.Mock).mockRestore();
   });
   it('a session admission always does: it is what lets the pass act for a renewed session', async () => {
     const { a, wakes } = app(null);

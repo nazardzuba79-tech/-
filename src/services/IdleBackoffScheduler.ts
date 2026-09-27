@@ -54,6 +54,18 @@
  *      is still found by this one.
  */
 
+/**
+ * A wake callback that can never fail the operation it follows. Wakes run
+ * after a commit: the work is already durable, and the request that created
+ * it must answer as a success whatever happens to the wake. A missed wake is
+ * then caught by the BackgroundWorkCoordinator's re-checks.
+ */
+export function bestEffortWake(wake: () => void, label = 'wake'): () => void {
+  return () => {
+    try { wake(); } catch (err) { console.error(`[background] ${label} failed`, err); }
+  };
+}
+
 export type SweepOutcome =
   /** The sweep's query matched at least one row. Stay at the base cadence. */
   | 'found-work'

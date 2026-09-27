@@ -166,16 +166,18 @@ describePg('sleeping background loops on a real PostgreSQL', () => {
       await order(liquidity, 'BUY', 'LIMIT', '1', '61000');
       price.set('61000');
       await until(async () => (await db.futuresPosition.findUniqueOrThrow({ where: { id: long.id } })).status === 'CLOSED', 'take-profit closed the LONG');
-      const longRows = await db.futuresPositionProtection.findMany({ where: { positionId: long.id } });
-      expect(Object.fromEntries(longRows.map((r) => [r.kind, r.status]))).toEqual({ TAKE_PROFIT: 'EXECUTED', STOP_LOSS: 'CANCELLED' });
+      // The trigger resolves its rows in the step after the close commits.
+      const settled = async (positionId: string) => Object.fromEntries((await db.futuresPositionProtection.findMany({ where: { positionId } })).map((r) => [r.kind, r.status]));
+      await until(async () => (await settled(long.id)).TAKE_PROFIT === 'EXECUTED', 'take-profit row resolved');
+      expect(await settled(long.id)).toEqual({ TAKE_PROFIT: 'EXECUTED', STOP_LOSS: 'CANCELLED' });
 
       // SL on the SHORT (full close of both contracts).
       await protection.setProtection(maker, short.id, { takeProfit: new BigNumber('55000'), stopLoss: new BigNumber('62000') });
       await order(liquidity, 'SELL', 'LIMIT', '2', '62000');
       price.set('62000');
       await until(async () => (await db.futuresPosition.findUniqueOrThrow({ where: { id: short.id } })).status === 'CLOSED', 'stop-loss closed the SHORT');
-      const shortRows = await db.futuresPositionProtection.findMany({ where: { positionId: short.id } });
-      expect(Object.fromEntries(shortRows.map((r) => [r.kind, r.status]))).toEqual({ TAKE_PROFIT: 'CANCELLED', STOP_LOSS: 'EXECUTED' });
+      await until(async () => (await settled(short.id)).STOP_LOSS === 'EXECUTED', 'stop-loss row resolved');
+      expect(await settled(short.id)).toEqual({ TAKE_PROFIT: 'CANCELLED', STOP_LOSS: 'EXECUTED' });
 
       // Nothing open, nothing armed: both loops fall asleep and stay silent.
       expect(await db.futuresPosition.count({ where: { status: 'OPEN' } })).toBe(0);

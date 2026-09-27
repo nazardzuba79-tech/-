@@ -105,7 +105,12 @@ export class BackgroundWorkCoordinator {
   middleware() {
     return (req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
-        res.once('finish', () => { if (res.statusCode < 400) this.activity(); });
+        // After the response: nothing here may reach the request, or crash
+        // the process from an event listener.
+        res.once('finish', () => {
+          if (res.statusCode >= 400) return;
+          try { this.activity(); } catch (err) { console.error('[background] activity re-check failed', err); }
+        });
       }
       next();
     };

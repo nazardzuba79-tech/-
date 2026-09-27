@@ -85,6 +85,7 @@ import { testMarketsRouter } from './api/routes/testMarkets';
 import { marketOptionsRouter } from './api/routes/marketOptions';
 import { resolveBuildCommit } from './buildCommit';
 import { createServerBackground } from './serverBackground';
+import { bestEffortWake } from './services/IdleBackoffScheduler';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -110,7 +111,7 @@ const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY,
 // sweep SLEEPS (see createServerBackground), so these wakes are what bring
 // it back when work is created; BackgroundWorkCoordinator is the safety net
 // under them.
-const cfdPositionService = new CfdPositionService(prisma, cfdDataService, () => cfdLiquidationEngine.wake());
+const cfdPositionService = new CfdPositionService(prisma, cfdDataService, bestEffortWake(() => cfdLiquidationEngine.wake(), 'cfd-liquidation'));
 const walletPortfolioService = new WalletPortfolioService(prisma, marketDataService, cfdDataService);
 const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
 // KYC documents go browser -> Cloudflare KYC edge -> admin email; Render only
@@ -120,7 +121,7 @@ const kycEdgeTrust = new KycEdgeTrust();
 const accountDeletionGate = new AccountDeletionGate();
 const futuresEngine = new MatchingEngine();
 const markPriceService = new MarkPriceService(marketDataService);
-const futuresPositionService = accountDeletionGate.guard(new FuturesPositionService(prisma, futuresEngine, markPriceService, () => liquidationEngine.wake()), ['placeOrder', 'cancelOrder', 'withFuturesBook']);
+const futuresPositionService = accountDeletionGate.guard(new FuturesPositionService(prisma, futuresEngine, markPriceService, bestEffortWake(() => liquidationEngine.wake(), 'futures-liquidation')), ['placeOrder', 'cancelOrder', 'withFuturesBook']);
 
 const liveReferenceCollector = collectorFromEnv();
 const venueUniverseSource = liveReferenceCollector
@@ -134,7 +135,7 @@ const fundingRateService = new FundingRateService(prisma, markPriceService, () =
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 const futuresProtectionService = new FuturesProtectionService(prisma, futuresPositionService, markPriceService);
 
-const spotOrderService = accountDeletionGate.guard(new OrderService(prisma, engine, marketDataService, () => priceWatcherService.wake()), ['placeOrder', 'placeOcoOrder', 'triggerOrder', 'updateConditionalOrder', 'cancelOrder']);
+const spotOrderService = accountDeletionGate.guard(new OrderService(prisma, engine, marketDataService, bestEffortWake(() => priceWatcherService.wake(), 'spot-conditional')), ['placeOrder', 'placeOcoOrder', 'triggerOrder', 'updateConditionalOrder', 'cancelOrder']);
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
 
 const demoEngine = new MatchingEngine();
@@ -243,7 +244,7 @@ app.get('/notifications/public-key', (_req, res) => {
 // only (simulated, never tradable) and pass every other pair through.
 app.use('/api/v1', testMarketsRouter());
 app.use('/api/v1', displaySnapshotsRouter(liveReferenceCollector?.feed ?? null, marketDataService, marketUniverse));
-app.use('/api/v1', ordersRouter(prisma, engine, marketDataService, () => priceWatcherService.wake()));
+app.use('/api/v1', ordersRouter(prisma, engine, marketDataService, bestEffortWake(() => priceWatcherService.wake(), 'spot-conditional')));
 app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma, marketDataService));
 // USDT/TRC20 deposit watcher: observes and proves transfers only (never
@@ -278,7 +279,7 @@ app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, 
 // Support is a form handled by the voltex-support-edge Cloudflare Worker
 // (workers/support-edge): no support routes, timers or tables are used here.
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
-app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, () => nativeLimitPass?.nudge()));
+app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, bestEffortWake(() => nativeLimitPass?.nudge(), 'native-limit-pass')));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
