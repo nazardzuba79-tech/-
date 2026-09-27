@@ -166,6 +166,13 @@ app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();co
   leverageTiers:(i.riskTiers??[]).map((t,idx,all)=>({notionalCap:idx===all.length-1?null:Number(t.riskLimitValue),maxLeverage:Number(t.maxLeverage),maintenanceMarginRate:Number(t.maintenanceMarginRate),maintenanceAmount:Number(t.maintenanceDeduction??0)}))});}));
 app.get('/api/v1/futures/mark-price/:pair',asyncRoute(async(req,res)=>{const symbol=req.params.pair.replace('-',''),q=await market.freshQuote(symbol);res.json({symbol,markPrice:q.markPrice,indexPrice:null});}));
 app.get('/api/v1/market/external/tickers',asyncRoute(async(_req,res)=>res.json(await tickers())));
+// Mounted terminal display reads must have explicit fixture responses during wake.
+// Keep every unlisted account endpoint blocked by the preview's deny-all below.
+if(fixture){
+  app.get('/api/v1/futures/funding-rate/:pair',(req,res)=>res.json({symbol:req.params.pair.replace('-','/'),history:[]}));
+  app.get('/api/v1/market/derivatives/:baseAsset',(_req,res)=>res.json({available:false,reason:'ISOLATED_FIXTURE'}));
+  app.get('/api/v1/market/external/rankings',(_req,res)=>res.json({source:'isolated-fixture',rankings:[]}));
+}
 app.get('/api/v1/me',(_req,res)=>res.json({id:'preview-only',email:'preview.invalid',displayName:'Demo Preview',phone:null,country:null,avatarUrl:null,isAdmin:true,kycStatus:'NOT_STARTED',twoFactorEnabled:false,createdAt:new Date(started).toISOString()}));
 app.get('/api/v1/copy-trading/marketplace',asyncRoute(async(req,res)=>{
   if(!requestSession(req))return res.status(401).json({error:'Preview session required'});

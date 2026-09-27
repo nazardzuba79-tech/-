@@ -443,11 +443,18 @@ async function chartFlow(width) {
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===true);
       assert.deepEqual(JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference')),reference);
       failAccess=false;
+      const wakeFailures=[];
+      p.on('response',response=>{if(response.status()>=400)wakeFailures.push({path:new URL(response.url()).pathname,status:response.status()});});
+      p.on('requestfailed',request=>wakeFailures.push({path:new URL(request.url()).pathname,error:request.failure()?.errorText}));
       const recovered=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.ok());
       await returnToTab();
       await recovered;
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===false);
-      await p.waitForFunction(()=>!document.querySelector('[data-browser-phase]'));
+      await p.waitForFunction(()=>!document.querySelector('[data-browser-phase]')).catch(async error => {
+        error.message += `; browser phase: ${await p.locator('[data-browser-phase]').getAttribute('data-browser-phase')}`;
+        console.error('Wake transport failures',JSON.stringify(wakeFailures));
+        throw error;
+      });
     }
     await workspace(p, 'trade');
     const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
