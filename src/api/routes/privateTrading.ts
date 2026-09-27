@@ -70,7 +70,8 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
     void run(req, res).then(result => {
       // A successful write may have left the owner-account pass something to
       // do (a confirmed position, an order, new protection): let it look now.
-      if (req.method !== 'GET') service.nudge();
+      // Best effort: the write has already committed and must answer as such.
+      if (req.method !== 'GET') service.nudge?.();
       if (!res.headersSent) res.json(result);
     }).catch(next);
   };

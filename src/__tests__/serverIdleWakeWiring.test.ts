@@ -43,6 +43,9 @@ describe('index.ts wires every work-creating path to its loop', () => {
   it('the orders router hands its wake to the OrderService it builds', () => {
     expect(src('api/routes/orders.ts')).toContain('new OrderService(prisma, engine, priceSource, onConditionalOrderCommitted)');
   });
+  it('every successful legacy private write nudges the owner-account pass', () => {
+    expect(src('api/routes/privateTrading.ts')).toContain("if (req.method !== 'GET') service.nudge?.();");
+  });
   it('both native mounts pass the wake through', () => {
     expect(src('api/routes/privateTrading.ts')).toContain("nativeDemoRoutes(native, actor, onNativeWork)");
     expect(src('api/routes/privateTrading.ts')).toContain('nativeTestAccountRoutes(prisma, service, onNativeWork)');
