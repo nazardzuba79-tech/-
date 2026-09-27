@@ -1,0 +1,364 @@
+{
+  "mode": "before",
+  "start": "2026-09-28T00:30:00.000Z",
+  "empty": {
+    "scenario": "empty",
+    "firstHalfHour": {
+      "bySource": {
+        "futures-registry": {
+          "reads": 4,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-protection": {
+          "reads": 33,
+          "writes": 33,
+          "tx": 0
+        },
+        "private-owner-pass": {
+          "reads": 599,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-liquidation": {
+          "reads": 32,
+          "writes": 0,
+          "tx": 0
+        },
+        "cfd-liquidation": {
+          "reads": 32,
+          "writes": 0,
+          "tx": 0
+        },
+        "spot-conditional": {
+          "reads": 32,
+          "writes": 0,
+          "tx": 0
+        },
+        "native-limit-pass": {
+          "reads": 179,
+          "writes": 0,
+          "tx": 0
+        },
+        "deposit-watcher": {
+          "reads": 1,
+          "writes": 1,
+          "tx": 0
+        }
+      },
+      "wakesOfTheirOwn": 787,
+      "watchers": {
+        "reads": 911,
+        "writes": 33
+      },
+      "scheduled": {
+        "reads": 1,
+        "writes": 1,
+        "tx": 0
+      }
+    },
+    "steadyPerHour": {
+      "reads": 1808,
+      "writes": 60
+    },
+    "steady": {
+      "bySource": {
+        "futures-registry": {
+          "reads": 188,
+          "writes": 0,
+          "tx": 0
+        },
+        "private-owner-pass": {
+          "reads": 28200,
+          "writes": 0,
+          "tx": 0
+        },
+        "native-limit-pass": {
+          "reads": 8460,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-liquidation": {
+          "reads": 1410,
+          "writes": 0,
+          "tx": 0
+        },
+        "cfd-liquidation": {
+          "reads": 1410,
+          "writes": 0,
+          "tx": 0
+        },
+        "spot-conditional": {
+          "reads": 1410,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-protection": {
+          "reads": 1410,
+          "writes": 1410,
+          "tx": 0
+        },
+        "funding": {
+          "reads": 9,
+          "writes": 9,
+          "tx": 18
+        },
+        "deposit-watcher": {
+          "reads": 3,
+          "writes": 3,
+          "tx": 0
+        }
+      },
+      "wakesOfTheirOwn": 42944,
+      "watchers": {
+        "reads": 42488,
+        "writes": 1410
+      },
+      "scheduled": {
+        "reads": 12,
+        "writes": 12,
+        "tx": 18
+      }
+    },
+    "day": {
+      "bySource": {
+        "futures-registry": {
+          "reads": 192,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-protection": {
+          "reads": 1443,
+          "writes": 1443,
+          "tx": 0
+        },
+        "private-owner-pass": {
+          "reads": 28799,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-liquidation": {
+          "reads": 1442,
+          "writes": 0,
+          "tx": 0
+        },
+        "cfd-liquidation": {
+          "reads": 1442,
+          "writes": 0,
+          "tx": 0
+        },
+        "spot-conditional": {
+          "reads": 1442,
+          "writes": 0,
+          "tx": 0
+        },
+        "native-limit-pass": {
+          "reads": 8639,
+          "writes": 0,
+          "tx": 0
+        },
+        "deposit-watcher": {
+          "reads": 4,
+          "writes": 4,
+          "tx": 0
+        },
+        "funding": {
+          "reads": 9,
+          "writes": 9,
+          "tx": 18
+        }
+      },
+      "wakesOfTheirOwn": 43731,
+      "watchers": {
+        "reads": 43399,
+        "writes": 1443
+      },
+      "scheduled": {
+        "reads": 13,
+        "writes": 13,
+        "tx": 18
+      }
+    },
+    "timersAtRest": 9
+  },
+  "owner-session": {
+    "scenario": "owner-session",
+    "firstHalfHour": {
+      "bySource": {
+        "futures-registry": {
+          "reads": 4,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-protection": {
+          "reads": 33,
+          "writes": 33,
+          "tx": 0
+        },
+        "private-owner-pass": {
+          "reads": 2396,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-liquidation": {
+          "reads": 32,
+          "writes": 0,
+          "tx": 0
+        },
+        "cfd-liquidation": {
+          "reads": 32,
+          "writes": 0,
+          "tx": 0
+        },
+        "spot-conditional": {
+          "reads": 32,
+          "writes": 0,
+          "tx": 0
+        },
+        "native-limit-pass": {
+          "reads": 179,
+          "writes": 0,
+          "tx": 0
+        },
+        "deposit-watcher": {
+          "reads": 1,
+          "writes": 1,
+          "tx": 0
+        }
+      },
+      "wakesOfTheirOwn": 2281,
+      "watchers": {
+        "reads": 2708,
+        "writes": 33
+      },
+      "scheduled": {
+        "reads": 1,
+        "writes": 1,
+        "tx": 0
+      }
+    },
+    "steadyPerHour": {
+      "reads": 5408,
+      "writes": 60
+    },
+    "steady": {
+      "bySource": {
+        "futures-registry": {
+          "reads": 188,
+          "writes": 0,
+          "tx": 0
+        },
+        "private-owner-pass": {
+          "reads": 112800,
+          "writes": 0,
+          "tx": 0
+        },
+        "native-limit-pass": {
+          "reads": 8460,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-liquidation": {
+          "reads": 1410,
+          "writes": 0,
+          "tx": 0
+        },
+        "cfd-liquidation": {
+          "reads": 1410,
+          "writes": 0,
+          "tx": 0
+        },
+        "spot-conditional": {
+          "reads": 1410,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-protection": {
+          "reads": 1410,
+          "writes": 1410,
+          "tx": 0
+        },
+        "funding": {
+          "reads": 9,
+          "writes": 9,
+          "tx": 18
+        },
+        "deposit-watcher": {
+          "reads": 3,
+          "writes": 3,
+          "tx": 0
+        }
+      },
+      "wakesOfTheirOwn": 125726,
+      "watchers": {
+        "reads": 127088,
+        "writes": 1410
+      },
+      "scheduled": {
+        "reads": 12,
+        "writes": 12,
+        "tx": 18
+      }
+    },
+    "day": {
+      "bySource": {
+        "futures-registry": {
+          "reads": 192,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-protection": {
+          "reads": 1443,
+          "writes": 1443,
+          "tx": 0
+        },
+        "private-owner-pass": {
+          "reads": 115196,
+          "writes": 0,
+          "tx": 0
+        },
+        "futures-liquidation": {
+          "reads": 1442,
+          "writes": 0,
+          "tx": 0
+        },
+        "cfd-liquidation": {
+          "reads": 1442,
+          "writes": 0,
+          "tx": 0
+        },
+        "spot-conditional": {
+          "reads": 1442,
+          "writes": 0,
+          "tx": 0
+        },
+        "native-limit-pass": {
+          "reads": 8639,
+          "writes": 0,
+          "tx": 0
+        },
+        "deposit-watcher": {
+          "reads": 4,
+          "writes": 4,
+          "tx": 0
+        },
+        "funding": {
+          "reads": 9,
+          "writes": 9,
+          "tx": 18
+        }
+      },
+      "wakesOfTheirOwn": 128007,
+      "watchers": {
+        "reads": 129796,
+        "writes": 1443
+      },
+      "scheduled": {
+        "reads": 13,
+        "writes": 13,
+        "tx": 18
+      }
+    },
+    "timersAtRest": 9
+  }
+}
