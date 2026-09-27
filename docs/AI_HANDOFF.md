@@ -4167,7 +4167,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Real server + PostgreSQL 16, 30 min, zero requests:
     - main: steady 2 096.7 reads/h + 60 writes/h (35–39 statements every minute);
     - branch: 0 statements from minute 11 to 30 (first build);
-    - final head: FINAL_HANDOFF.
+    - final head `9456fc35`: 137 reads + 15 writes, all in minutes 0–10 (start-up scans + grace), then 0 statements from minute 11 to 30.
 - **Tests run:**
   - `tsc` passes.
   - Full jest: 0 new failures vs main (122 pre-existing on both).

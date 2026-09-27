@@ -81,16 +81,17 @@ pass exists), a CFD provider key set (so the CFD sweep queries), market data
 from a local stub (`market-stub.cjs`: Kraken tickers for three majors, 404
 for everything else — no real provider was called). BEFORE and the first
 AFTER ran side by side in the same window, 08:01–08:31 UTC (after the 08:00
-funding boundary, before the 12:00 Kyiv deposit slot), on separate databases.
+funding boundary, before the 12:00 Kyiv deposit slot), on separate databases;
+the final-head run followed at 08:19:46–08:49:49 UTC on a fresh database.
 
 | | main `14120a82` (BEFORE) | branch, first build (AFTER) | branch, final head `9456fc35` (AFTER) |
 |---|---|---|---|
-| whole 30 min: SELECT / INSERT+UPDATE / BEGIN+COMMIT | 1 052 / 34 / 68 | 140 / 15 / 30 | FINAL_WHOLE |
-| minutes 12–30 (steady state): reads / writes | **629 / 18** | **0 / 0** | FINAL_STEADY |
-| steady reads per hour / writes per hour | **2 096.7 / 60.0** | **0 / 0** | FINAL_RATE |
-| statements per minute | 58 in minute 0, then **35–39 every minute to the end** | 43 in minute 0, 12–17 per minute through minute 10 (the start-up grace), then **0 from minute 11 to 30** | FINAL_MINUTES |
+| whole 30 min: SELECT / INSERT+UPDATE / BEGIN+COMMIT | 1 052 / 34 / 68 | 140 / 15 / 30 | 137 / 15 / 30 |
+| minutes 12–30 (steady state): reads / writes | **629 / 18** | **0 / 0** | **0 / 0** (minutes 12–30 of its own window, 08:31:46–08:49:46) |
+| steady reads per hour / writes per hour | **2 096.7 / 60.0** | **0 / 0** | **0 / 0** |
+| statements per minute | 58 in minute 0, then **35–39 every minute to the end** | 43 in minute 0, 12–17 per minute through minute 10 (the start-up grace), then **0 from minute 11 to 30** | 43 in minute 0, 12–18 per minute through minute 10, then **0 from minute 11 to 30** |
 | biggest sources | owner pass `PrivateTradingAccount` 599 (every 3 s), native limit pass 179 (every 10 s), Prisma `SELECT 1` pre-checks 138, TP/SL 33 UPDATE + 33 SELECT, spot 33, futures 32, CFD 32 (every 60 s) | the same loops' start-up scans and grace backoff only | |
-| futures listing (positions/orders re-read) | 2 + 2 (start, +15 min) | 1 + 1 (start only; the +15 min refresh skipped it) | FINAL_REGISTRY |
+| futures listing (positions/orders re-read) | 2 + 2 (start, +15 min) | 1 + 1 (start only; the +15 min refresh skipped it) | 1 + 1 (start only) |
 | deposit watcher | 1 check (+60 s): INSERT … ON CONFLICT DO NOTHING + SELECT | same | same |
 
 Raw results: `real-30m-before-main-14120a82.json`,
