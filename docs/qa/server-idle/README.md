@@ -72,7 +72,37 @@ Scenario **owner-session** (the owner's legacy account exists with a live sessio
 
 ### 3.2 Real server, real PostgreSQL, 30 minutes, zero requests
 
-_Filled in below after the run._
+The compiled backend (`node dist/index.js`) against a local PostgreSQL 16 with
+`log_statement = 'all'`; every statement the server issued for its database
+was counted from the PostgreSQL log (`run-idle.cjs`, `window.cjs`). No HTTP
+request at all during the run. Production-like switches: private/demo
+trading on with an owner configured, collector URL set (so the native limit
+pass exists), a CFD provider key set (so the CFD sweep queries), market data
+from a local stub (`market-stub.cjs`: Kraken tickers for three majors, 404
+for everything else — no real provider was called). BEFORE and the first
+AFTER ran side by side in the same window, 08:01–08:31 UTC (after the 08:00
+funding boundary, before the 12:00 Kyiv deposit slot), on separate databases.
+
+| | main `14120a82` (BEFORE) | branch, first build (AFTER) | branch, final head `9456fc35` (AFTER) |
+|---|---|---|---|
+| whole 30 min: SELECT / INSERT+UPDATE / BEGIN+COMMIT | 1 052 / 34 / 68 | 140 / 15 / 30 | FINAL_WHOLE |
+| minutes 12–30 (steady state): reads / writes | **629 / 18** | **0 / 0** | FINAL_STEADY |
+| steady reads per hour / writes per hour | **2 096.7 / 60.0** | **0 / 0** | FINAL_RATE |
+| statements per minute | 58 in minute 0, then **35–39 every minute to the end** | 43 in minute 0, 12–17 per minute through minute 10 (the start-up grace), then **0 from minute 11 to 30** | FINAL_MINUTES |
+| biggest sources | owner pass `PrivateTradingAccount` 599 (every 3 s), native limit pass 179 (every 10 s), Prisma `SELECT 1` pre-checks 138, TP/SL 33 UPDATE + 33 SELECT, spot 33, futures 32, CFD 32 (every 60 s) | the same loops' start-up scans and grace backoff only | |
+| futures listing (positions/orders re-read) | 2 + 2 (start, +15 min) | 1 + 1 (start only; the +15 min refresh skipped it) | FINAL_REGISTRY |
+| deposit watcher | 1 check (+60 s): INSERT … ON CONFLICT DO NOTHING + SELECT | same | same |
+
+Raw results: `real-30m-before-main-14120a82.json`,
+`real-30m-after-first-build.json`, `real-30m-after-final-9456fc35.json`.
+"First build" is this branch's working tree when the run started (before the
+`nativeLimitTargets` extraction and the best-effort wake wrappers, neither of
+which touches an idle path); the final-head run repeats it on the exact code
+of the PR.
+
+Result: on an idle exchange main issues a statement roughly every 1.6 s,
+forever; this branch issues none once its 10-minute start-up grace has
+passed.
 
 ## 4. Correctness — real PostgreSQL (`src/__tests__/serverWatcherSleep.pg.test.ts`)
 
@@ -84,9 +114,29 @@ Real services and a real PostgreSQL 16, real timers (base 100 ms, grace 0). "Asl
 - **Native demo**: an OPEN through the real `nativeDemoRoutes` wakes the limit pass; a resting LIMIT is filled **by the pass** (no client command) when the market moves; closing everything puts the pass to sleep.
 - **Restart**: positions, TP/SL, a conditional order and a CFD position written with no wake at all are found by each loop's start-up scan; once cleared, every loop sleeps. An idle restart runs one scan per loop and then nothing.
 
+Also proven:
+- **the first wake is not lost** — a wake that lands while a sweep is in flight re-runs the sweep straight after it (`IdleBackoffScheduler.sleep.test.ts`), and on PostgreSQL a resting order wakes the loop, it sleeps again, and the opening fill wakes it synchronously;
+- **a wake can never turn a committed write into an error** — every wake handed out by `index.ts`, the native route's wake and the legacy owner-pass nudge run through `bestEffortWake`; with a wake that throws, the native command still answers 200 with its body (mutation-checked: 500 without the wrapper), and a watcher whose nudge throws does not change a write's response;
+- the 3 route tests that broke on the first commit (a legacy route's test double had no `nudge`) pass.
+
+The PostgreSQL suite passed three consecutive runs together with `futuresBookLock.pg` (22/22 each).
+
 Neon note: Neon's own guidance says scale-to-zero works with open client connections and severs them on suspend; the next query reconnects. Prisma re-validates a connection that has sat idle before reusing it (the `SELECT 1` visible in the statement log). Reconnect behaviour against Neon itself was **not** exercised here.
 
-## 5. Reproduce
+## 5. Regression against clean `main`
+
+Full `jest` on the final head vs a checkout of `main` `14120a82` (same machine, both with a backend `dist`, no frontend `dist`):
+
+| | suites | tests | passed | failed | skipped |
+|---|---|---|---|---|---|
+| main `14120a82` | 344 | 5 476 | 5 273 | 122 | 81 |
+| branch `9456fc35` | 349 | 5 522 | 5 314 | 122 | 86 |
+
+Failed-test sets are identical: **0 new failures, 0 fixed.** The 122 are pre-existing on `main` (frontend source-text guards, CFD quote safety, provider failure matrix, copy-trading canonical hashes and similar) and untouched here. The +5 skipped are the new PostgreSQL suite, which runs only with `VOLTEX_PG_TEST_URL` (and in the new `server-idle.yml` workflow).
+
+Database-gated suites run separately on local PostgreSQL 16: private trading / native (`service.integration`, `nativeDemo.integration`, `nativeCommandAcceptance.integration`, `nativeLivePostgres`) 42/42; `futuresBookLock.pg` + `serverWatcherSleep.pg` 22/22.
+
+## 6. Reproduce
 
 ```
 # simulated day (branch); run the same file in a checkout of main for BEFORE

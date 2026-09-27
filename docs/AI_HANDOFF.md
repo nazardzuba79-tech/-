@@ -4148,3 +4148,41 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - **Unresolved:**
   - `uuid` 9 → 11 (major; recommended as its own PR);
   - vite 5 → 6.4.3+ (major, dev-only).
+
+## Claude — 2026-09-27 — sleeping server watchers (idle Neon polling)
+
+- Base: fresh `origin/main` `14120a82`. Branch `claude/peaceful-volta-h5zw7g`. The branch name previously carried closed PR #123 (not merged; its engine work reached main through other PRs); its head `94b58a81` was merged in with `-s ours`: no force-push, no content from it.
+- **Audit** (`docs/qa/server-idle/README.md` §1): on an empty exchange main polled Neon from the legacy owner pass every 3 s (1–4 reads), the native limit pass every 10 s, futures liquidation / TP-SL / CFD / spot sweeps every 60 s after backoff, and the futures listing every 15 min. Market-data loops (collector client, streams, SSE) never touch Prisma.
+- **Change:**
+  - `IdleBackoffScheduler` opt-in sleep: an empty sweep after a 10-min start grace holds no timer; `wake()`/`nudge()` resume it. A loop with work keeps its original cadence; an error never counts as empty.
+  - Wakes after the commit on every work-creating path, including two that had none: the spot orders HTTP route (its own `OrderService` had no wake) and native demo commands / session admission. The legacy owner pass is nudged after writes. All post-commit wakes run through `bestEffortWake` and cannot fail a request.
+  - A TP/SL row left `TRIGGERING` counts as work until reclaimed.
+  - `BackgroundWorkCoordinator`: successful API writes re-check sleeping loops (30 s cooldown + one trailing re-check). A scheduled re-check rides each funding boundary + 2 min.
+  - Futures listing re-reads positions/orders only when a refresh would delist something.
+  - `createServerBackground`: the one start sequence shared by `index.ts` and the budget test.
+  - Legacy owner pass and native pass moved from `setInterval` to the scheduler; their cadence is unchanged while there is work.
+- **Unchanged:** funding formula/settlement (records feed the header rate), deposit watcher schedule and manual actions, all trading/balance/P&L/liquidation/TP-SL/matching/deposit-credit logic, schema.
+- **Measured (local only, not Neon billing):**
+  - Simulated day, loops only: main 1 808 reads + 60 writes/h → branch 0 queries outside the funding wake (0.9 reads/h, all piggybacked). Timers at rest 9 → 4.
+  - Real server + PostgreSQL 16, 30 min, zero requests:
+    - main: steady 2 096.7 reads/h + 60 writes/h (35–39 statements every minute);
+    - branch: 0 statements from minute 11 to 30 (first build);
+    - final head: FINAL_HANDOFF.
+- **Tests run:**
+  - `tsc` passes.
+  - Full jest: 0 new failures vs main (122 pre-existing on both).
+  - New suites, all passing:
+    - `IdleBackoffScheduler.sleep`;
+    - `BackgroundWorkCoordinator`;
+    - `serverIdleWakeWiring`;
+    - `serverIdleDbBudget`;
+    - `serverWatcherSleep.pg`, real PostgreSQL: futures TP/SL/partial/full close, spot, CFD, native limit execution, restart; 3 runs.
+  - DB-gated private/native suites: 42/42.
+  - New CI workflow `server-idle.yml`.
+- **Also added:** `docs/research/STAGING_BYBIT_MARKET_DATA.md` — the Bybit dependency map and a staging checklist to measure from the new host. Nothing was migrated or created.
+- **Unresolved:**
+  - Neon reconnect after suspend was not exercised against Neon itself.
+  - The production value of `NATIVE_LIMIT_PASS_MS` and whether `TWELVE_DATA_API_KEY` is set are unknown from here.
+  - The spot orders route still bypasses `AccountDeletionGate` (pre-existing; suggested as a separate task).
+  - The PR's commit list shows the closed #123 history because of the `-s ours` merge; squash-merge, or approve a force-with-lease to drop it.
+- Draft PR only. No merge, no deploy, no production Render/Neon change.
