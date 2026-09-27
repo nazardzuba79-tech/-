@@ -160,7 +160,7 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
     expect(page).toContain('<TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />');
     expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />');
     expect(page).not.toMatch(/TestMarketTickerBar|TestMarketBook|TestMarketOrderPanel/);
-    expect(page).toContain("marketType !== 'spot' || isTestMarketPair(pair) || document.hidden) return;");
+    expect(page).toContain("marketType !== 'spot' || isTestMarketPair(pair) || isBrowserInactive()) return;");
     expect(panels).toContain('tradingView={false}');
     expect(panels).not.toMatch(/api\.|placeOrder|fetch\(/);
   });

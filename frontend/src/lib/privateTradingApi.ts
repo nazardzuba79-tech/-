@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import { getToken } from './api';
 import { PrivateTradingError } from './privateTradingError';
 
@@ -59,10 +60,11 @@ export { PrivateTradingError } from './privateTradingError';
 
 /** This client cannot target production order, wallet or copy-trading routes. */
 export function createPrivateTradingClient(base:string,token:()=>string|null,fetcher:typeof fetch=fetch){
-  async function request<T>(path:string,method='GET',body?:unknown,signal?:AbortSignal):Promise<T>{
+  async function request<T>(path:string,method='GET',body?:unknown,signal?:AbortSignal,submitted=false):Promise<T>{
     const bearer=token();
     if(!bearer)throw new PrivateTradingError('Сессия завершена',401);
-    const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{
+    const transport=submitted&&fetcher===fetch?globalThis.fetch:fetcher;
+    const response=await transport(`${base.replace(/\/$/,'')}/private-trading${path}`,{
       method,signal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},
       ...(body===undefined?{}:{body:JSON.stringify(body)}),
     });
@@ -80,7 +82,7 @@ export function createPrivateTradingClient(base:string,token:()=>string|null,fet
     closeOnChart:(scenarioId:string,candle:PrivateCandleSelection,idempotencyKey:string)=>request<PrivatePreview>(`/scenarios/${id(scenarioId)}/close-on-chart`,'POST',{candle,idempotencyKey}),
     allocate:(amount:string,idempotencyKey:string)=>request('/allocate','POST',{amount,idempotencyKey}),
     preview:(body:PrivatePreviewRequest)=>request<PrivatePreview>('/previews','POST',body),
-    getPreview:(previewId:string,signal?:AbortSignal)=>request<PrivatePreview>(`/previews/${id(previewId)}`,'GET',undefined,signal),
+    getPreview:(previewId:string,signal?:AbortSignal,submitted=false)=>request<PrivatePreview>(`/previews/${id(previewId)}`,'GET',undefined,signal,submitted),
     cancelPreview:(previewId:string)=>request(`/previews/${id(previewId)}`,'DELETE'),
     confirm:(previewId:string,idempotencyKey:string)=>request(`/previews/${id(previewId)}/confirm`,'POST',{idempotencyKey}),
     cancelOrder:(orderId:string,idempotencyKey:string)=>request(`/orders/${id(orderId)}`,'DELETE',{idempotencyKey}),

@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -13,7 +14,7 @@ const React=req('react'),{createRoot}=req('react-dom/client'),{JSDOM}=req('jsdom
 function load(file:string,imports:Record<string,unknown>){
   const out:any={},source=readFileSync(resolve(frontend,'src',file),'utf8');
   const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-  new Function('require','exports',code)((name:string)=>name in imports?imports[name]:req(name),out);return out;
+  new Function('require','exports',code)((name:string)=>name.endsWith('/browserActivity')?browserActivity:name in imports?imports[name]:req(name),out);return out;
 }
 class TestError extends Error {constructor(message:string,public status:number,public code?:string){super(message);}}
 const initial=()=>({initialized:true,revision:7,source:'DEMO_BALANCE',asOf:1,model:{version:'test'},account:null,ledger:null,

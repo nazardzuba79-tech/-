@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
 import { api, getToken, onSessionChange } from './api';
 
 /**
@@ -160,7 +161,7 @@ class FuturesAccountStore {
   private sessionUnsubscribe: (() => void) | null = null;
   private visibilityWatching = false;
 
-  private readonly onVisibilityChange = () => {
+  private readonly onVisibilityChange = (event?: Event) => {
     // A background Futures tab must be completely quiet. Timers are removed
     // while hidden; an already in-flight request is allowed to settle, but
     // no new poll is scheduled. When the trader returns, restart only the
@@ -168,7 +169,7 @@ class FuturesAccountStore {
     for (const resource of RESOURCE_KEYS) this.retime(resource);
     if (this.isHidden()) return;
     for (const resource of RESOURCE_KEYS) {
-      if (this.isWanted(resource) && this.needsRefresh(resource)) void this.refresh(resource);
+      if (this.isWanted(resource) && (event?.type === 'voltex:browser-activity' || this.needsRefresh(resource))) void this.refresh(resource);
     }
   };
 
@@ -318,18 +319,18 @@ class FuturesAccountStore {
   }
 
   private isHidden(): boolean {
-    return typeof document !== 'undefined' && document.hidden;
+    return typeof document !== 'undefined' && isBrowserInactive();
   }
 
   private ensureVisibilityWatch(): void {
     if (this.visibilityWatching || typeof document === 'undefined') return;
-    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    addBrowserActivityListener(this.onVisibilityChange);
     this.visibilityWatching = true;
   }
 
   private stopVisibilityWatch(): void {
     if (!this.visibilityWatching || typeof document === 'undefined') return;
-    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    removeBrowserActivityListener(this.onVisibilityChange);
     this.visibilityWatching = false;
   }
 

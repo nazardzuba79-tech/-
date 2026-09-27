@@ -12,6 +12,10 @@
 import type { Key } from './keys';
 
 export const EN: Record<Key, string> = {
+  'browserSleeping': "Updates paused. Data may be out of date.",
+  'browserSyncing': "Updating data…",
+  'browserSyncError': "Could not refresh. Showing the last received values.",
+  'browserContinue': "Continue",
   'futures.chart': 'Chart',
   'nav.trade': 'Trade',
   'nav.tradeSpotDesc': 'Spot crypto trading',

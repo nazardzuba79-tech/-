@@ -1,3 +1,4 @@
+import { isBrowserInactive, onBrowserPhase } from '../lib/browserActivity';
 /** Presentation arithmetic only: preserve the API's decimal strings instead
  * of rounding small prices to zero or manufacturing floating-point dust. */
 type Decimal = { units: bigint; scale: number };
@@ -134,7 +135,7 @@ export function startVisibleReadPolling(
   let timer: ReturnType<typeof setInterval> | undefined;
   let disposed = false;
   let wasVisible = false;
-  const visible = () => visibility.visibilityState === 'visible';
+  const visible = () => visibility.visibilityState === 'visible' && !isBrowserInactive();
   const stop = () => {
     if (timer !== undefined) { clearInterval(timer); timer = undefined; }
   };
@@ -152,10 +153,12 @@ export function startVisibleReadPolling(
     }
   };
   visibility.addEventListener('visibilitychange', update);
+  const offPhase = onBrowserPhase(update);
   update();
   return () => {
     disposed = true;
     stop();
     visibility.removeEventListener('visibilitychange', update);
+    offPhase();
   };
 }

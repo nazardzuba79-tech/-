@@ -1,0 +1,149 @@
+[
+  {
+    "suite": "copyFirstLoad.test.ts",
+    "currentFailed": 3,
+    "cleanMainFailed": 3,
+    "cleanMainStatus": "failed",
+    "cause": "  ● VX-001 profile opens before API response and hydrates without remount/scroll reset     expect(received).toBeGreaterThan(expected)     Expected: > 10     Received:   3       116 |   expect(profile).not.toBeNull();"
+  },
+  {
+    "suite": "avatarIdentityPresentation.test.ts",
+    "currentFailed": 2,
+    "cleanMainFailed": 2,
+    "cleanMainStatus": "failed",
+    "cause": "  ● actual onError removes broken image, retains geometry and retries changed owner URL     expect(received).toBe(expected) // Object.is equality     Expected: \"img\"     Received: \"div\"       71 |   const TestAvatar = component(() => [failed, (value: string) => { failed = value; }], () => photo);"
+  },
+  {
+    "suite": "cfdChartFallback.test.ts",
+    "currentFailed": 20,
+    "cleanMainFailed": 20,
+    "cleanMainStatus": "failed",
+    "cause": "  ● one chart across ten rapid switches, detached late work cannot stack: spot     SyntaxError: Cannot use 'import.meta' outside a module         at new Function (<anonymous>)       18 |   const output:any={};modules.set(file,output);       19 |   const code=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.Com"
+  },
+  {
+    "suite": "nazaraCardPresentation.test.ts",
+    "currentFailed": 16,
+    "cleanMainFailed": 16,
+    "cleanMainStatus": "failed",
+    "cause": "  ● Nazara marketplace presentation only › 7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input     ReferenceError: LiveMetric is not defined       at TraderCard (eval at Object.<anonymous> (frontend/src/lib/__tests__/nazaraCardPresentation.test.ts:46:1), <anonymous>:28:2491)       at renderWithHooks (../voltex/frontend/node_modules/react-dom/cjs/react-dom-server"
+  },
+  {
+    "suite": "nazarProfileCorrection.test.ts",
+    "currentFailed": 8,
+    "cleanMainFailed": 8,
+    "cleanMainStatus": "failed",
+    "cause": "  ● 7D keeps lifetime statistics separate from the selected chart period     ReferenceError: useEffect is not defined       at Profile (eval at Object.<anonymous> (frontend/src/lib/__tests__/nazarProfileCorrection.test.ts:45:1), <anonymous>:116:5)       at renderWithHooks (../voltex/frontend/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5662:16)       at renderIndeterminat"
+  },
+  {
+    "suite": "copyPrelaunchPromotion.test.ts",
+    "currentFailed": 1,
+    "cleanMainFailed": 1,
+    "cleanMainStatus": "failed",
+    "cause": "  ● normal API paths replace review-only sources without altering token or request behavior     expect(received).toContain(expected) // indexOf     Expected substring: \"api.getNazarCopyTrading()\"     Received string:    \"import { useEffect, useMemo, useState } from 'react';     import { Toaster } from 'sonner';"
+  },
+  {
+    "suite": "walletUxRefinement.test.ts",
+    "currentFailed": 23,
+    "cleanMainFailed": 23,
+    "cleanMainStatus": "failed",
+    "cause": "  ● desktop ledger has exactly the six approved columns and original quantity/USD meaning     Cannot find module '../../lib/toast' from 'frontend/package.json'       18 |   } }).outputText;       19 |   const output: Record<string, any> = {};     > 20 |   new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name] ?? req(name));"
+  },
+  {
+    "suite": "supportForm.test.ts",
+    "currentFailed": 1,
+    "cleanMainFailed": 1,
+    "cleanMainStatus": "failed",
+    "cause": "  ● no mail secret, SMTP setting or recipient address lives anywhere in the frontend source     expect(received).toEqual(expected) // deep equality     - Expected  - 1     + Received  + 1       Object {"
+  },
+  {
+    "suite": "walletOverview.test.ts",
+    "currentFailed": 2,
+    "cleanMainFailed": 2,
+    "cleanMainStatus": "failed",
+    "cause": "  ● 4. two accounts, two ledgers › lists each account with the server’s own figure and sums them once, in the headline     expect(received).toContain(expected) // indexOf     Expected substring: \"$1 000 250,50\"     Received string:    \"<div class=\\\"wallet-overview min-w-0\\\"><header class=\\\"wallet-overview-head\\\"><div class=\\\"min-w-0\\\"><div class=\\\"flex items-center gap-2.5\\\"><h2 class=\\\"text-[17px"
+  },
+  {
+    "suite": "sharedHeaderStylesheetOwnership.test.ts",
+    "currentFailed": 5,
+    "cleanMainFailed": 5,
+    "cleanMainStatus": "failed",
+    "cause": "  ● no route stylesheet may move the shared authenticated header › finds the page-root resets this repo actually ships     expect(received).toEqual(expected) // deep equality     - Expected  -  7     + Received  + 14       Array ["
+  },
+  {
+    "suite": "plainLanguage.test.ts",
+    "currentFailed": 1,
+    "cleanMainFailed": 1,
+    "cleanMainStatus": "failed",
+    "cause": "  ● hardcoded component copy speaks about the product, not about the plumbing     expect(received).toEqual(expected) // deep equality     - Expected  - 1     + Received  + 4     - Array []"
+  },
+  {
+    "suite": "spotPairTransition.test.ts",
+    "currentFailed": 2,
+    "cleanMainFailed": 2,
+    "cleanMainStatus": "failed",
+    "cause": "  ● actual parent synchronously withholds mismatched depth before any new-pair effect     expect(received).toContain(expected) // indexOf     Expected substring: \"setBook({ pair, bids: res.bids, asks: res.asks })\"     Received string:    \"import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';·"
+  },
+  {
+    "suite": "noProviderBranding.test.ts",
+    "currentFailed": 1,
+    "cleanMainFailed": 1,
+    "cleanMainStatus": "failed",
+    "cause": "  ● customer-facing components render no provider branding › has no provider name in any executable line     expect(received).toEqual(expected) // deep equality     - Expected  -  1     + Received  + 12     - Array []"
+  },
+  {
+    "suite": "marketUniverseScale.test.ts",
+    "currentFailed": 2,
+    "cleanMainFailed": 2,
+    "cleanMainStatus": "failed",
+    "cause": "  ● the frontend never calls a venue directly › contains no direct upstream market API host     expect(received).toEqual(expected) // deep equality     - Expected  - 1     + Received  + 5     - Array []"
+  },
+  {
+    "suite": "spotBookRefresh.test.ts",
+    "currentFailed": 5,
+    "cleanMainFailed": 5,
+    "cleanMainStatus": "failed",
+    "cause": "  ● slow REST remains single-flight and can complete across repeated polling ticks     ReferenceError: marketType is not defined       at eval (eval at callback (frontend/src/lib/__tests__/spotBookRefresh.test.ts:37:57), <anonymous>:27:11)       at Object.callback (frontend/src/lib/__tests__/spotBookRefresh.test.ts:38:40)       at Object.<anonymous> (frontend/src/lib/__tests__/spotBookRefresh.test"
+  },
+  {
+    "suite": "homepageTailwindUtilities.test.ts",
+    "currentFailed": 2,
+    "cleanMainFailed": 2,
+    "cleanMainStatus": "failed",
+    "cause": "  ● the homepage does not borrow another route's stylesheet › 7. route splitting is intact: the homepage is eager, the rest are not     expect(received).toMatch(expected)     Expected pattern: /lazy\\(\\(\\) => import\\([^)]*CopyTradingPage/     Received string:  \"import { lazy, Suspense, useEffect } from 'react';     import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from"
+  },
+  {
+    "suite": "orderBookFreshnessAndExecution.test.ts",
+    "currentFailed": 2,
+    "cleanMainFailed": 2,
+    "cleanMainStatus": "failed",
+    "cause": "  ● 3. the last real snapshot stays on screen › empties the Spot ladder only when the market itself changed     expect(received).toHaveLength(expected)     Expected length: 1     Received length: 0     Received array:  []"
+  },
+  {
+    "suite": "cryptoCardProductionPromotion.test.ts",
+    "currentFailed": 3,
+    "cleanMainFailed": 3,
+    "cleanMainStatus": "failed",
+    "cause": "  ● selective Card promotion preserves the exact approved page, composition, copy and state machine     expect(received).toEqual(expected) // deep equality     - Expected  - 1     + Received  + 1       Object {"
+  },
+  {
+    "suite": "orderBookCalmMotion.test.ts",
+    "currentFailed": 1,
+    "cleanMainFailed": 1,
+    "cleanMainStatus": "failed",
+    "cause": "  ● depth bars are muted and settle between publishes › keeps the bar on a transform, so a bar change never re-lays-out the row     expect(received).not.toMatch(expected)     Expected pattern: not /style=\\{\\{\\s*width:/     Received string:      \"const rows = (levels: SpotDepthLevel[], side: 'bid' | 'ask') => levels.map((level, index) => {         const exact = spotLevelPrice(level.price, step);"
+  },
+  {
+    "suite": "registerWalletTailwindOwnership.test.ts",
+    "currentFailed": 2,
+    "cleanMainFailed": 2,
+    "cleanMainStatus": "failed",
+    "cause": "  ● the utilities layers in this repo are the three we think they are › exactly three stylesheets carry @tailwind utilities, each named     expect(received).toEqual(expected) // deep equality     - Expected  - 3     + Received  + 3       Array ["
+  },
+  {
+    "suite": "heroReferenceTerminal.test.ts",
+    "currentFailed": 0,
+    "cleanMainFailed": 0,
+    "cleanMainStatus": "failed",
+    "cause": "  ● Test suite failed to run     Cannot find module './testMarkets' from 'frontend/package.json'       13 |   }).outputText;       14 |   const output: any = {};     > 15 |   new Function('require', 'exports', compiled)((name: string) => overrides[name] ?? req(name), output);"
+  }
+]

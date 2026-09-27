@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFetch as fetch } from './browserActivity';
 import { useEffect, useState } from 'react';
 import { API_BASE } from './api';
 import { parseTestMarkets, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
@@ -64,7 +65,7 @@ class TestMarketStore {
     const key = Symbol('test-market-subscriber');
     this.subscribers.set(key, { listener, intervalMs });
     listener(this.state);
-    if (this.subscribers.size === 1 && typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
+    if (this.subscribers.size === 1 && typeof document !== 'undefined') addBrowserActivityListener(this.onVisibility);
     if (!this.state.loaded || (this.anyLive() && Date.now() - this.fetchedAt >= intervalMs)) void this.refresh();
     else this.schedule();
     return () => {
@@ -72,13 +73,13 @@ class TestMarketStore {
       if (this.subscribers.size > 0) return this.schedule();
       if (this.timer) clearTimeout(this.timer);
       this.timer = null;
-      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisibility);
+      if (typeof document !== 'undefined') removeBrowserActivityListener(this.onVisibility);
     };
   }
 
   refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
-    if (typeof document !== 'undefined' && document.hidden && this.state.loaded) return Promise.resolve();
+    if (typeof document !== 'undefined' && isBrowserInactive() && this.state.loaded) return Promise.resolve();
     this.inFlight = fetchTestMarketJson(`${API_BASE}/market/test-assets`)
       .then((body) => {
         const snapshot = parseTestMarkets(body);
@@ -107,7 +108,7 @@ class TestMarketStore {
   }
 
   private readonly onVisibility = () => {
-    if (document.hidden || !this.subscribers.size) return;
+    if (isBrowserInactive() || !this.subscribers.size) return;
     // Preview-only listings are intentionally static: visibility changes
     // must not start a clock or create background traffic.
     if (this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;

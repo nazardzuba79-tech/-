@@ -65,7 +65,7 @@ beforeAll(async () => {
   Page = load(resolve(sourceRoot,'src/pages/CopyTradingPage.tsx')).CopyTradingPage;
 },30000);
 beforeEach(() => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/copy-trading'});
+  dom = new JSDOM('<!doctype html><div id="root"></div>',{pretendToBeVisual:true,url:'http://localhost/copy-trading'});
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,localStorage:dom.window.localStorage,IS_REACT_ACT_ENVIRONMENT:true});
   dom.window.scrollTo = jest.fn();
   session='viewer-a'; clock=Date.parse('2026-09-11T12:00:00Z');

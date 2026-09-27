@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useCallback, useEffect, useState } from 'react';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
@@ -48,8 +49,8 @@ export function ArbitragePage() {
 
   useEffect(() => {
     load();
-    const id = setInterval(load, REFRESH_INTERVAL_MS);
-    return () => clearInterval(id);
+    const id = browserSetInterval(load, REFRESH_INTERVAL_MS);
+    return () => browserClearInterval(id);
   }, [load]);
 
   return (

@@ -120,7 +120,7 @@ test('actual balance reader keeps Retry busy through failure and recovery withou
   let poll!: () => void;
   let cleanup!: () => void;
   const bindings = { api: { getBalances }, useEffect: (fn: () => () => void) => { cleanup = fn(); },
-    window: { setInterval: (fn: () => void) => { poll = fn; return 1; } }, clearInterval: jest.fn(),
+    browserSetInterval: (fn: () => void) => { poll = fn; return 1; }, browserClearInterval: jest.fn(),
     baseAsset: 'BTC', quoteAsset: 'USDT', side: 'BUY', refreshKey: 0, balanceVersion: 0,
     setBalanceLoading: jest.fn(), setBalanceError: jest.fn(), setBalanceReady: jest.fn(), setAvailable: jest.fn() };
   const code = ts.transpileModule(effect, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;

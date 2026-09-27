@@ -1,3 +1,4 @@
+import { browserFetch as fetch, waitUntilActive, trackBrowserRead } from './browserActivity';
 import { nativeRequestDeadline } from './nativeRequestDeadline';
 import { getToken } from './api';
 import { PrivateTradingError, type PrivateResultCard } from './privateTradingApi';
@@ -169,6 +170,8 @@ export type NativeDraft=
 export function createNativeDemoClient(base:string,token:()=>string|null,fetcher:typeof fetch=fetch){
   async function request<T>(path:string,body?:unknown,signal?:AbortSignal):Promise<T>{
     const bearer=token();if(!bearer)throw new PrivateTradingError('Войдите в аккаунт',401);
+    if(body===undefined)await waitUntilActive(signal);
+    if(token()!==bearer)throw new PrivateTradingError('Сессия завершена',401);
     return nativeRequestDeadline(async requestSignal=>{
     const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal:requestSignal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
     const data=await response.json().catch(()=>null);if(token()!==bearer)throw new PrivateTradingError('Сессия завершена',401);
@@ -185,7 +188,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),
     state:(signal?:AbortSignal)=>request<NativeState>('/native/state',undefined,signal),
     live:(signal?:AbortSignal)=>request<NativeState>('/native/live',undefined,signal),
-    activate:(signal?:AbortSignal)=>request<{ok:true}>('/native/execution-session',{},signal),
+    activate:async(signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<{ok:true}>('/native/execution-session',{},signal));},
     history:<K extends keyof NativeHistoryItems>(kind:K,revision:number,options:{symbol?:string;cursor?:string;signal?:AbortSignal}={})=>{
       const params=new URLSearchParams({kind,revision:String(revision),limit:'50'});
       if(options.symbol)params.set('symbol',options.symbol);
@@ -226,7 +229,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
      * touches no repository, issues no command and creates no revision,
      * which is why it takes no idempotency key.
      */
-    quote:(input:NativeQuoteInput,signal?:AbortSignal)=>request<NativeQuoteResult>('/native/quote',input,signal),
+    quote:async(input:NativeQuoteInput,signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<NativeQuoteResult>('/native/quote',input,signal));},
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),
     getCard:(id:string)=>{const m=/^native:(\d+):(native-[a-zA-Z0-9-]+)$/.exec(id);if(!m)throw new PrivateTradingError('Карточка не найдена',404);return request<PrivateResultCard>(`/native/cards/${m[1]}/${m[2]}`);},
   };

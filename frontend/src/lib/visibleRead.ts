@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
 /** A read scheduler, not an account cache. Hidden/unmounted readers own no timer.
  * Successful acquisition time (not visibility or a failed attempt) determines age.
  * A mutation during a GET queues one subsequent GET; it never joins an old snapshot.
@@ -9,7 +10,7 @@ export function createVisibleRead(read: () => Promise<void>, staleMs: number, po
   let attemptedAt: number | null = null;
   let running: Promise<void> | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
-  const hidden = () => typeof document !== 'undefined' && document.hidden;
+  const hidden = () => typeof document !== 'undefined' && isBrowserInactive();
   const clear = () => { if (timer !== null) clearTimeout(timer); timer = null; };
   const schedule = () => {
     clear();
@@ -34,16 +35,17 @@ export function createVisibleRead(read: () => Promise<void>, staleMs: number, po
       });
     return running;
   };
-  const visible = () => {
+  const visible = (event?: Event) => {
     clear();
     if (hidden() || stopped) return;
+    if (event?.type === 'voltex:browser-activity') dirty = true;
     if (dirty || succeededAt === null || Date.now() - succeededAt >= staleMs) void load();
     else schedule();
   };
-  document.addEventListener('visibilitychange', visible);
+  addBrowserActivityListener(visible);
   visible();
   return {
     refresh: () => { dirty = true; return load(); },
-    stop: () => { stopped = true; clear(); document.removeEventListener('visibilitychange', visible); },
+    stop: () => { stopped = true; clear(); removeBrowserActivityListener(visible); },
   };
 }

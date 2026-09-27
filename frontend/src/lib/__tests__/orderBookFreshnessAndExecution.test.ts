@@ -82,7 +82,7 @@ describe('2. the cadence is quiet, and it is the shared one', () => {
   it('suppresses the fallback entirely while the live stream is delivering', () => {
     expect(depth).toContain("if (active.source === 'socket' && active.status === 'live') return;");
     // And never polls for a tab nobody is looking at.
-    expect(depth).toContain("if (typeof document !== 'undefined' && document.hidden) return;");
+    expect(depth).toContain("if (typeof document !== 'undefined' && isBrowserInactive()) return;");
   });
 });
 

@@ -1,3 +1,5 @@
+import { browserFetch as fetch, isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
+
 export const DISPLAY_REFRESH_MS = 60_000;
 export const SLOW_DISPLAY_REFRESH_MS = 6 * 60 * 60 * 1000;
 const STORAGE_KEY = 'voltex.public-display.v1';
@@ -104,7 +106,7 @@ export class SampledMarketSource {
   private closed = false;
   private lastAttempt = -Infinity;
   constructor(private url: string) {
-    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.visibility);
+    if (typeof document !== 'undefined') addBrowserActivityListener(this.visibility);
     void Promise.resolve().then(() => this.load());
   }
   addEventListener(type: string, listener: any): void {
@@ -112,16 +114,16 @@ export class SampledMarketSource {
   }
   private visibility = () => {
     if (this.closed) return;
-    if (document.hidden) { if (this.timer) clearTimeout(this.timer); this.timer = null; this.controller?.abort(); return; }
+    if (isBrowserInactive()) { if (this.timer) clearTimeout(this.timer); this.timer = null; this.controller?.abort(); return; }
     this.schedule(0); // The shared snapshot cache enforces remaining TTL on visibility resume.
   };
   private schedule(ms: number) {
-    if (this.closed || (typeof document !== 'undefined' && document.hidden)) return;
+    if (this.closed || (typeof document !== 'undefined' && isBrowserInactive())) return;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => { this.timer = null; void this.load(); }, ms);
   }
   private async load() {
-    if (this.closed || this.controller || (typeof document !== 'undefined' && document.hidden)) return;
+    if (this.closed || this.controller || (typeof document !== 'undefined' && isBrowserInactive())) return;
     const controller = new AbortController(); this.controller = controller; this.lastAttempt = Date.now();
     let delay = DISPLAY_REFRESH_MS;
     try {
@@ -134,11 +136,11 @@ export class SampledMarketSource {
       }
     } catch {
       if (!this.closed && !controller.signal.aborted) this.onerror?.call(this as unknown as EventSource, new Event('error'));
-    } finally { if (this.controller === controller) this.controller = null; this.schedule(controller.signal.aborted && !this.closed && !(typeof document !== 'undefined' && document.hidden) ? 0 : delay); }
+    } finally { if (this.controller === controller) this.controller = null; this.schedule(controller.signal.aborted && !this.closed && !(typeof document !== 'undefined' && isBrowserInactive()) ? 0 : delay); }
   }
   close(): void {
     this.closed = true; if (this.timer) clearTimeout(this.timer); this.timer = null;
     this.controller?.abort(); this.controller = null; this.callbacks.clear();
-    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.visibility);
+    if (typeof document !== 'undefined') removeBrowserActivityListener(this.visibility);
   }
 }

@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../../lib/browserActivity';
 import { useEffect, useMemo, useState } from 'react';
 import type { AnalyticsSnapshot } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
@@ -36,8 +37,8 @@ export function MarketsAnalyticsSection() {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    const timer = browserSetInterval(() => setNow(Date.now()), 1000);
+    return () => browserClearInterval(timer);
   }, []);
 
   const assets = snapshot?.trackedAssets ?? snapshot?.contracts.map((symbol) => symbol.split('/')[0]) ?? [];

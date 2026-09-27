@@ -1,3 +1,5 @@
+import { isBrowserInactive, browserSetInterval, browserClearInterval } from '../lib/browserActivity';
+
 import { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -983,7 +985,7 @@ export function PriceChart({
     }
 
     async function load() {
-      if (loading || historyLoading || historicalWindow || (typeof document !== 'undefined' && document.hidden)) return;
+      if (loading || historyLoading || historicalWindow || (typeof document !== 'undefined' && isBrowserInactive())) return;
       loading=true;
       const requestController = new AbortController();
       controller=requestController;
@@ -1082,7 +1084,7 @@ export function PriceChart({
 
     retryCandlesRef.current = () => { setLoadFailed(false); void load(); };
     load();
-    const poll = window.setInterval(load, 5000);
+    const poll = browserSetInterval(load, 5000);
     return () => {
       cancelled = true;
       retryCandlesRef.current = null;
@@ -1093,7 +1095,7 @@ export function PriceChart({
         privateHistoryRef.current = null;
         chartRef.current?.timeScale().unsubscribeVisibleLogicalRangeChange(onRangeChange);
       }
-      window.clearInterval(poll);
+      browserClearInterval(poll);
     };
   }, [pair, interval, drawingToolsOn, spotChartRefinements, candleLoader, privateTrading?.enabled]);
 
@@ -1130,13 +1132,13 @@ export function PriceChart({
         .catch(() => {});
     }
     load();
-    const poll = window.setInterval(load, 4000);
+    const poll = browserSetInterval(load, 4000);
     return () => {
       // `cancelled` covers the stale-response case without relying on the
       // router remounting: leaving spot re-runs this effect, the cleanup
       // fires first, and a request already in the air can no longer commit.
       cancelled = true;
-      window.clearInterval(poll);
+      browserClearInterval(poll);
     };
   }, [pair, spotConditionalOrders]);
 

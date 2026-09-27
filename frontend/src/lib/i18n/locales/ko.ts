@@ -12,6 +12,10 @@
 import type { Key } from './keys';
 
 export const KO: Record<Key, string> = {
+  'browserSleeping': "업데이트가 일시 중지되었습니다. 데이터가 오래되었을 수 있습니다.",
+  'browserSyncing': "데이터 업데이트 중…",
+  'browserSyncError': "업데이트하지 못했습니다. 마지막으로 받은 값을 표시합니다.",
+  'browserContinue': "계속",
   'futures.chart': '차트',
   'nav.trade': '거래',
   'nav.tradeSpotDesc': '현물 암호화폐 거래',

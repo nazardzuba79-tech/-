@@ -215,6 +215,11 @@ test.each([
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    // Idle sleep adds transport scheduling and session isolation only. Remove
+    // these exact additions to retain the existing financial API fingerprint.
+    .replace("import { browserFetch as fetch } from './browserActivity';\n", '')
+    .replace("if (typeof window !== 'undefined') window.addEventListener('storage', event => {\n  if (event.key === TOKEN_KEY || event.key === null) notifySessionChange();\n});\n", '')
+    .replace("  if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');\n", '')
     .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
     .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",

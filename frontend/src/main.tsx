@@ -8,6 +8,17 @@ import { SupportWidget } from './components/SupportWidget';
 import './index.css';
 import './spotTerminalOverrides.css';
 import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
+import { startBrowserActivity } from './lib/browserActivity';
+import { validateBrowserSession } from './lib/browserSession';
+import { getToken, onSessionChange } from './lib/api';
+import { BrowserSleepNotice } from './components/BrowserSleepNotice';
+
+startBrowserActivity({ validate: validateBrowserSession, identity: getToken });
+
+function SessionContent() {
+  const token = React.useSyncExternalStore(onSessionChange, getToken);
+  return <React.Fragment key={token ?? 'guest'}><App /><SupportWidget /></React.Fragment>;
+}
 
 // Start authenticated direct-entry I/O alongside the lazy page chunk, before
 // React commits. This is route-scoped; other pages create no Copy traffic.
@@ -18,8 +29,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <LanguageProvider>
         <ToastProvider>
-          <App />
-          <SupportWidget />
+          <SessionContent />
+          <BrowserSleepNotice />
         </ToastProvider>
       </LanguageProvider>
     </ErrorBoundary>

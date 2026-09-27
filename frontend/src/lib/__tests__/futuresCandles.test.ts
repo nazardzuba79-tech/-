@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
@@ -5,6 +6,7 @@ const output:any={};let klineCallback:any=null;const originalWindow=(globalThis 
 const source=fs.readFileSync(path.resolve(__dirname,'../futuresCandles.ts'),'utf8').replace('import.meta.env.VITE_API_URL',"'/api/v1'");
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
 new Function('exports','require',compiled)(output,(name:string)=>{
+  if(name==='./browserActivity')return browserActivity;
   if(name==='./futuresDepth')return {subscribeFuturesKline:(_pair:string,_interval:string,callback:any)=>{klineCallback=callback;return()=>{klineCallback=null;}}};
   throw new Error(`unexpected require ${name}`);
 });

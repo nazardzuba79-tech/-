@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../../lib/browserActivity';
 import { useEffect, useState } from 'react';
 import { useLanguage } from '../../lib/i18n';
 import { useAnalyticsSnapshot } from './analyticsStore';
@@ -18,8 +19,8 @@ export function AnalyticsWorkspace() {
   const [requestedAsset, setRequestedAsset] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    const timer = browserSetInterval(() => setNow(Date.now()), 1000);
+    return () => browserClearInterval(timer);
   }, []);
   const assets = snapshot?.trackedAssets ?? snapshot?.contracts.map(symbol => symbol.split('/')[0]) ?? [];
   const echoedAsset = snapshot?.selectedAsset ?? assets[0] ?? null;

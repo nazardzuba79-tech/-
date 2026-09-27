@@ -12,6 +12,10 @@
 import type { Key } from './keys';
 
 export const JA: Record<Key, string> = {
+  'browserSleeping': "更新は一時停止中です。データが古い可能性があります。",
+  'browserSyncing': "データを更新中…",
+  'browserSyncError': "更新できませんでした。最後に受信した値を表示しています。",
+  'browserContinue': "続行",
   'futures.chart': 'チャート',
   'nav.trade': '取引',
   'nav.tradeSpotDesc': '暗号資産の現物取引',

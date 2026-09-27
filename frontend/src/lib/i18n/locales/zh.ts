@@ -12,6 +12,10 @@
 import type { Key } from './keys';
 
 export const ZH: Record<Key, string> = {
+  'browserSleeping': "更新已暂停。数据可能已过时。",
+  'browserSyncing': "正在更新数据…",
+  'browserSyncError': "无法更新。显示上次收到的数据。",
+  'browserContinue': "继续",
   'futures.chart': '图表',
   'nav.trade': '交易',
   'nav.tradeSpotDesc': '现货加密货币交易',

@@ -1,0 +1,40 @@
+{
+  "checks": [
+    {
+      "width": 1440,
+      "name": "30m sleep, cold server restart, balance/position/order and draft preserved",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "failed session refresh preserves balance/draft, no retry storm; explicit retry recovers",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "external close is not resurrected; F5 retains resting order",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "TradingView iframe detached on sleep and freshly mounted on wake",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "30m sleep, cold server restart, balance/position/order and draft preserved",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "failed session refresh preserves balance/draft, no retry storm; explicit retry recovers",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "external close is not resurrected; F5 retains resting order",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

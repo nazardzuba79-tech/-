@@ -1,3 +1,4 @@
+import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
 import { useEffect,useRef } from 'react';
 import { privateTradingApi,type PrivatePreview,type PrivateScenario } from './privateTradingApi';
 
@@ -14,7 +15,7 @@ export async function refreshPrivateScenario(id:string,client:AdvanceClient,sign
     job=await client.advance(id,new Date().toISOString(),crypto.randomUUID());
     for(let polls=0;job.status==='RUNNING'&&polls<45;polls++){
       if(signal.aborted||!canContinue())return;
-      await wait(signal);job=await client.getPreview(job.id,signal);
+      await wait(signal);job=await client.getPreview(job.id,signal,true);
     }
     if(job.status!=='READY'||signal.aborted||!canContinue())return;
     await client.confirm(job.id,crypto.randomUUID());confirmed=true;
@@ -27,14 +28,14 @@ export function usePrivateScenarioRefresh(scenarios:PrivateScenario[],paused:boo
   useEffect(()=>{
     const controller=new AbortController();let running=false;const attempted=new Map<string,number>();
     const tick=async()=>{
-      if(running||controller.signal.aborted||document.hidden||current.current.paused)return;
+      if(running||controller.signal.aborted||isBrowserInactive()||current.current.paused)return;
       const scenario=current.current.scenarios.find(s=>s.status==='OPEN'&&s.verification==='VERIFIED'&&s.evaluatedThrough&&Date.now()-Date.parse(s.asOf)>60_000&&Date.now()-(attempted.get(s.id)||0)>60_000);
       if(!scenario)return;attempted.set(scenario.id,Date.now());running=true;
-      try{await refreshPrivateScenario(scenario.id,privateTradingApi,controller.signal,()=>!document.hidden&&!current.current.paused,()=>current.current.onConfirmed());}
+      try{await refreshPrivateScenario(scenario.id,privateTradingApi,controller.signal,()=>!current.current.paused,()=>current.current.onConfirmed());}
       catch(error){if(!controller.signal.aborted)current.current.onDenied(error);}
       finally{running=false;}
     };
-    const timer=window.setInterval(()=>void tick(),5000);document.addEventListener('visibilitychange',tick);
-    return()=>{controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',tick);};
+    const timer=browserSetInterval(()=>void tick(),5000);addBrowserActivityListener(tick);
+    return()=>{controller.abort();browserClearInterval(timer);removeBrowserActivityListener(tick);};
   },[]);
 }

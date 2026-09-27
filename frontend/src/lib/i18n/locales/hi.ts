@@ -12,6 +12,10 @@
 import type { Key } from './keys';
 
 export const HI: Record<Key, string> = {
+  'browserSleeping': "अपडेट रुके हुए हैं। डेटा पुराना हो सकता है।",
+  'browserSyncing': "डेटा अपडेट हो रहा है…",
+  'browserSyncError': "अपडेट नहीं हो सका। अंतिम प्राप्त मान दिखाए जा रहे हैं।",
+  'browserContinue': "जारी रखें",
   'futures.chart': 'चार्ट',
   'nav.trade': 'ट्रेड करें',
   'nav.tradeSpotDesc': 'स्पॉट क्रिप्टो ट्रेडिंग',

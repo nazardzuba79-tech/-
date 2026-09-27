@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
 import type { CardApplicationSnapshot, CardProduct } from '../pages/crypto-card-final/cardApplicationState';
 
@@ -40,6 +41,9 @@ export function clearToken() {
  */
 type SessionListener = () => void;
 const sessionListeners = new Set<SessionListener>();
+if (typeof window !== 'undefined') window.addEventListener('storage', event => {
+  if (event.key === TOKEN_KEY || event.key === null) notifySessionChange();
+});
 
 export function onSessionChange(listener: SessionListener): () => void {
   sessionListeners.add(listener);
@@ -511,6 +515,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     },
   });
 
+  if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');
   if (!res.ok) {
     handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));

@@ -1,3 +1,4 @@
+import { browserFetch as fetch, browserSetInterval, browserClearInterval, isBrowserInactive } from './browserActivity';
 import { useEffect, useMemo, useState } from 'react';
 import { api, clearToken, getToken } from './api';
 import { depositMinimumEquivalent, validDepositConfig, type DepositConfig } from './depositMinimum';
@@ -193,8 +194,8 @@ export function useMinimumEquivalent(
       }).catch(() => { if (!cancelled) setQuote(null); });
     };
     setQuote(null); refresh();
-    const timer = setInterval(refresh, 30_000);
-    return () => { cancelled = true; clearInterval(timer); };
+    const timer = browserSetInterval(refresh, 30_000);
+    return () => { cancelled = true; browserClearInterval(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, minDepositUsd, asset, stable]);
 

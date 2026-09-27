@@ -17,7 +17,8 @@ export function browserReadModules(react: any, api: any, doc: any = typeof docum
     }, result, doc);
     return result;
   };
-  const visible = compile('visibleRead', {});
+  const activity = compile('browserActivity', {});
+  const visible = compile('visibleRead', { './browserActivity': activity });
   const mark = compile('useFuturesMark', { react, './api': { api }, './visibleRead': visible });
-  return { visible, mark };
+  return { visible, mark, activity };
 }

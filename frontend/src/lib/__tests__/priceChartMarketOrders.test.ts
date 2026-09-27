@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -41,7 +42,7 @@ function drawingLayer() {
   new Function('require', 'exports', compiled)((name: string) => {
     if (name === '../lib/chartDrawings') return drawings;
     if (name === '../lib/drawingGeometry') return drawingGeometry;
-    return req(name);
+    return (name.endsWith('/browserActivity') ? browserActivity : req(name));
   }, layer);
   return layer;
 }
@@ -112,7 +113,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
-    return req(name);
+    return (name.endsWith('/browserActivity') ? browserActivity : req(name));
   }, output, windowStub());
 
   const Component = output.PriceChart;

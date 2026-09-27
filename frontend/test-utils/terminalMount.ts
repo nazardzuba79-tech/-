@@ -127,6 +127,7 @@ export function mountComponent(file: string, options: MountOptions = {}): Mounte
       if (name === '../lib/api') return { api, ApiError: Error };
       if (name === '../lib/useFuturesMark') return readModules.mark;
       if (name === '../lib/visibleRead') return readModules.visible;
+      if (name === '../lib/browserActivity') return readModules.activity;
       if (name === '../lib/useFuturesAccount') {
         return {
           useFuturesAccount: () => options.account,

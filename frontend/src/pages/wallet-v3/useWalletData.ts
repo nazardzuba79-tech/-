@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, getToken } from '../../lib/api';
+import { isBrowserInactive } from '../../lib/browserActivity';
 import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
 import { createVisibleRead } from '../../lib/visibleRead';
 import { CoinRanking } from '../../lib/pairList';
@@ -238,7 +239,7 @@ export function useWalletData() {
    * half-loaded page can never record a zero.
    */
   useEffect(() => {
-    if (snapshotRecorded.current || unified === undefined) return;
+    if (snapshotRecorded.current || unified === undefined || isBrowserInactive()) return;
     const total = account?.walletEquityUsd ?? null;
     if (total === null || total <= 0) return;
     snapshotRecorded.current = true;

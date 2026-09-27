@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { api } from '../lib/api';
 import { useMarketTicker } from '../lib/useMarketData';
@@ -119,8 +120,8 @@ export function OrderForm({
       .finally(() => { pending = false; if (!cancelled) setBalanceLoading(false); });
     }
     void load();
-    const timer = window.setInterval(load, 4000);
-    return () => { cancelled = true; clearInterval(timer); };
+    const timer = browserSetInterval(load, 4000);
+    return () => { cancelled = true; browserClearInterval(timer); };
   }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion]);
 
   const { ticker: referenceTicker } = useMarketTicker(pair, 5000);

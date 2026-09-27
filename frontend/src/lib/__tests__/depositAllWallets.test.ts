@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -31,7 +32,7 @@ function evaluate(file: string, imports: Record<string, unknown> = {}) {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   } }).outputText;
   const output: Record<string, any> = {};
-  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name] ?? req(name));
+  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('/browserActivity') ? browserActivity : name.endsWith('.css') ? {} : imports[name] ?? req(name));
   return output;
 }
 

@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from '../../lib/browserActivity';
 import { useState } from 'react';
 import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
 import { API_BASE, getToken } from '../../lib/api';

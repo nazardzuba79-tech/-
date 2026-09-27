@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -10,7 +11,7 @@ function load(file: string, imports: Record<string, unknown> = {}, expose?: stri
   const output: any = {};
   const source = readFileSync(resolve(frontend, 'src', file), 'utf8').replace('import.meta.env.VITE_API_URL', 'undefined');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  new Function('require', 'exports', compiled + (expose ? `\nexports.${expose} = ${expose};` : ''))((name: string) => name in imports ? imports[name] : name.endsWith('.css') ? {} : req(name), output);
+  new Function('require', 'exports', compiled + (expose ? `\nexports.${expose} = ${expose};` : ''))((name: string) => name.endsWith('/browserActivity') ? browserActivity : name in imports ? imports[name] : name.endsWith('.css') ? {} : req(name), output);
   return output;
 }
 const actualApi = load('lib/privateTradingApi.ts', { './api': { getToken: () => null }, './privateTradingError': load('lib/privateTradingError.ts') });

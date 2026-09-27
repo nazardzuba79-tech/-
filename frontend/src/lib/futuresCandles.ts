@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import type { Candle } from './indicators';
 import { subscribeFuturesKline, type FuturesKlineUpdate } from './futuresDepth';
 

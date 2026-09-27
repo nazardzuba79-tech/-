@@ -7,7 +7,7 @@ const read = (file: string) => readFileSync(resolve(frontend, 'src/pages/home', 
 test('homepage public market surfaces use one six-hour quote cadence', () => {
   const market = read('useHomeMarket.ts');
   expect(market).toContain('export const HOME_MARKET_REFRESH_MS = 6 * 60 * 60 * 1000');
-  expect(market).toContain('window.setInterval(refresh, HOME_MARKET_REFRESH_MS)');
+  expect(market).toContain('browserSetInterval(refresh, HOME_MARKET_REFRESH_MS)');
   expect(market).not.toContain('15_000');
 });
 

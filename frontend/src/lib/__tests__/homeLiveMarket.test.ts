@@ -110,9 +110,14 @@ function mount(overrides: Record<string, jest.Mock> = {},
     (name: string) => { throw new Error(`Unexpected snapshot dependency: ${name}`); }, snapshot, window,
   );
   const output: any = {};
+  const activity: any = {};
+  const activitySource = readFileSync(resolve(__dirname, '../browserActivity.ts'), 'utf8');
+  const activityCompiled = ts.transpileModule(activitySource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  new Function('exports','window','document','setInterval','clearInterval',activityCompiled)(activity,window,document,window.setInterval,window.clearInterval);
   new Function('require', 'exports', 'window', 'document', 'IntersectionObserver', 'Date', compiled)(
     (name: string) => {
       if (name === 'react') return react;
+      if (name === '../../lib/browserActivity') return activity;
       if (name === '../../lib/api') return { api };
       if (name === '../../lib/futuresConfigStore') return { futuresConfigStore: { load: loadConfig } };
       if (name === '../../lib/priceChange') return { parseChangePercent: (raw: string) => parseFloat(raw) };

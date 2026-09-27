@@ -1,3 +1,5 @@
+import { readDisplayJson } from '../displaySnapshotCache';
+jest.mock('../displaySnapshotCache', () => ({ readDisplayJson: jest.fn() }));
 import { marketDataStore, type MarketState } from '../marketDataStore';
 import { assetMetadataStore } from '../assetMetadataStore';
 import { api } from '../api';
@@ -23,7 +25,7 @@ jest.mock('../api', () => ({
   },
 }));
 
-const getMarketSnapshot = api.getMarketSnapshot as jest.Mock;
+const getMarketSnapshot = readDisplayJson as jest.Mock;
 const getAssetIcons = api.getAssetIcons as jest.Mock;
 
 function snapshot(overrides: Record<string, unknown> = {}) {
@@ -91,7 +93,7 @@ describe('marketDataStore', () => {
   });
 
   it('serves 100 concurrent subscribers from ONE request and ONE timer', async () => {
-    const unsubscribes = Array.from({ length: 100 }, () => marketDataStore.subscribe(() => {}, 4000));
+    const unsubscribes = Array.from({ length: 100 }, () => marketDataStore.subscribe(() => {}, 60_000));
     await flush();
 
     // The headline number: 100 components mounting together cost VOLTEX
@@ -104,11 +106,11 @@ describe('marketDataStore', () => {
   });
 
   it('still runs exactly one timer after a full poll cycle with many subscribers', async () => {
-    const unsubscribes = Array.from({ length: 50 }, () => marketDataStore.subscribe(() => {}, 3000));
+    const unsubscribes = Array.from({ length: 50 }, () => marketDataStore.subscribe(() => {}, 60_000));
     await flush();
     expect(getMarketSnapshot).toHaveBeenCalledTimes(1);
 
-    jest.advanceTimersByTime(3000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
     // One tick, one request — not one per subscriber.
@@ -132,8 +134,8 @@ describe('marketDataStore', () => {
   });
 
   it('stops polling entirely when the last subscriber leaves', async () => {
-    const off1 = marketDataStore.subscribe(() => {}, 3000);
-    const off2 = marketDataStore.subscribe(() => {}, 3000);
+    const off1 = marketDataStore.subscribe(() => {}, 60_000);
+    const off2 = marketDataStore.subscribe(() => {}, 60_000);
     await flush();
     expect(marketDataStore._timerCount).toBe(1);
 
@@ -151,15 +153,15 @@ describe('marketDataStore', () => {
   });
 
   it('polls at the fastest cadence any live subscriber asked for', async () => {
-    const offSlow = marketDataStore.subscribe(() => {}, 15_000);
-    const offFast = marketDataStore.subscribe(() => {}, 3_000);
+    const offSlow = marketDataStore.subscribe(() => {}, 120_000);
+    const offFast = marketDataStore.subscribe(() => {}, 60_000);
     await flush();
     const baseline = getMarketSnapshot.mock.calls.length;
 
-    jest.advanceTimersByTime(3_000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
-    // The 15s subscriber is served the 3s data — nobody is ever given
+    // The 120s subscriber is served the 60s data — nobody is ever given
     // staler data than they asked for.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(baseline + 1);
     offSlow();
@@ -171,9 +173,9 @@ describe('marketDataStore', () => {
     await flush();
     const baseline = getMarketSnapshot.mock.calls.length;
 
-    jest.advanceTimersByTime(2_900);
+    jest.advanceTimersByTime(59_900);
     await flush();
-    // Floored at 3s: polling under the backend's 5s ticker cache cannot
+    // Floored at 60s: polling under the display snapshot budget cannot
     // return fresher data, it can only cost requests.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(baseline);
 
@@ -185,7 +187,7 @@ describe('marketDataStore', () => {
 
   it('exposes source and freshness rather than hiding them', async () => {
     let state: MarketState | null = null;
-    const off = marketDataStore.subscribe((s) => { state = s; }, 3000);
+    const off = marketDataStore.subscribe((s) => { state = s; }, 60_000);
     await flush();
 
     expect(state!.tickersMeta).toEqual({ source: 'kraken', fetchedAt: 1_700_000_000_000, stale: false });
@@ -199,7 +201,7 @@ describe('marketDataStore', () => {
       })
     );
     let state: MarketState | null = null;
-    const off = marketDataStore.subscribe((s) => { state = s; }, 3000);
+    const off = marketDataStore.subscribe((s) => { state = s; }, 60_000);
     await flush();
 
     expect(state!.tickersMeta!.stale).toBe(true);
@@ -210,7 +212,7 @@ describe('marketDataStore', () => {
 
   it('keeps a REAL zero as zero', async () => {
     let state: MarketState | null = null;
-    const off = marketDataStore.subscribe((s) => { state = s; }, 3000);
+    const off = marketDataStore.subscribe((s) => { state = s; }, 60_000);
     await flush();
 
     // volume24h is genuinely "0" in the fixture. It must survive as "0",
@@ -224,7 +226,7 @@ describe('marketDataStore', () => {
       snapshot({ overview: { available: false, reason: 'provider_unavailable' } })
     );
     let state: MarketState | null = null;
-    const off = marketDataStore.subscribe((s) => { state = s; }, 3000);
+    const off = marketDataStore.subscribe((s) => { state = s; }, 60_000);
     await flush();
 
     // null, so a view renders a dash. Not 0, which would render as a real
@@ -238,12 +240,12 @@ describe('marketDataStore', () => {
 
   it('keeps the last known good data when a poll fails, and flags the error', async () => {
     let state: MarketState | null = null;
-    const off = marketDataStore.subscribe((s) => { state = s; }, 3000);
+    const off = marketDataStore.subscribe((s) => { state = s; }, 60_000);
     await flush();
     expect(state!.tickers.size).toBe(1);
 
     getMarketSnapshot.mockRejectedValueOnce(new Error('network'));
-    jest.advanceTimersByTime(3000);
+    jest.advanceTimersByTime(60_000);
     await flush();
 
     expect(state!.status).toBe('error');
@@ -254,11 +256,11 @@ describe('marketDataStore', () => {
   });
 
   it('gives a late subscriber the current snapshot immediately', async () => {
-    const off1 = marketDataStore.subscribe(() => {}, 3000);
+    const off1 = marketDataStore.subscribe(() => {}, 60_000);
     await flush();
 
     let lateState: MarketState | null = null;
-    const off2 = marketDataStore.subscribe((s) => { lateState = s; }, 3000);
+    const off2 = marketDataStore.subscribe((s) => { lateState = s; }, 60_000);
 
     // Synchronously, with no extra request.
     expect(lateState).not.toBeNull();

@@ -1,4 +1,5 @@
 import type { LiveQuote, LiveState } from './liveMarketTypes';
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
 import { readLiveQuoteCache, writeLiveQuoteCache } from './terminalWarmCache';
 
 type Source = Pick<EventSource, 'addEventListener' | 'close' | 'onerror'>;
@@ -32,12 +33,17 @@ export class LiveMarketStore {
   }
 
   getState = (): LiveState => this.state;
+  private activity = () => {
+    if (isBrowserInactive()) { this.stopTransport(); this.stale(); }
+    else this.connect();
+  };
   subscribe = (listener: (state: LiveState) => void): (() => void) => {
     this.listeners.add(listener); listener(this.state);
+    addBrowserActivityListener(this.activity);
     if (!this.source && !this.retry) this.connect();
     return () => {
       this.listeners.delete(listener);
-      if (!this.listeners.size) { this.stopTransport(); this.stale(); }
+      if (!this.listeners.size) { removeBrowserActivityListener(this.activity); this.stopTransport(); this.stale(); }
     };
   };
   private emit(): void { for (const listener of this.listeners) listener(this.state); }
@@ -47,7 +53,7 @@ export class LiveMarketStore {
     this.emit();
   }
   private connect(): void {
-    if (!this.listeners.size || this.source) return;
+    if (!this.listeners.size || this.source || isBrowserInactive()) return;
     try {
       const source = this.createSource(); this.source = source; this.lastMessage = Date.now();
       const connectedAt = Date.now();
@@ -99,7 +105,7 @@ export class LiveMarketStore {
     this.schedule(Math.max(this.policy.retryFloorMs ?? 0, Math.min(30_000, 1000 * 2 ** Math.min(this.attempts++, 5)) * (0.75 + Math.random() * 0.25)));
   }
   private schedule(ms: number): void {
-    if (this.listeners.size && !this.retry) this.retry = setTimeout(() => { this.retry = null; this.connect(); }, ms);
+    if (!isBrowserInactive() && this.listeners.size && !this.retry) this.retry = setTimeout(() => { this.retry = null; this.connect(); }, ms);
   }
   private stopTransport(): void {
     const source = this.source; this.source = null; source?.close();

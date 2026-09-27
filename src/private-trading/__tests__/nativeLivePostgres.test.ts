@@ -31,6 +31,29 @@ pg('native projection real PostgreSQL transactions and pagination',()=>{
     await repo.initialize(actor,'initialize-test');queries=[];
   });
   afterAll(()=>db.$disconnect());
+  test('cold repository after browser/server sleep retains positions, orders and funds; live read never backfills TP/SL',async()=>{
+    const f=setup();await f.service.initialize(fixtureActor,key());
+    await f.service.command(fixtureActor,{kind:'OPEN',symbol:'BTCUSDT',side:'LONG',type:'MARKET',quantity:'1',leverage:'10',protection:{takeProfit:'51000'},idempotencyKey:key()});
+    await f.service.command(fixtureActor,{kind:'OPEN',symbol:'BTCUSDT',side:'LONG',type:'LIMIT',quantity:'0.1',leverage:'10',price:'49000',idempotencyKey:key()});
+    await repo.commit(actor,1,structuredClone(f.repo.row!),'sleep-fixture','sleep-hash');
+    const before=await db.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}});
+    const revisions=await db.nativeDemoRevision.count({where:{userId:actor.userId}});
+    // A new client, repository and service have no process cache from the writer.
+    const coldDb=new PrismaClient({datasources:{db:{url:url!}}});
+    try{
+      const cold=new NativeDemoService(new PrismaNativeRepository(coldDb,config),f.market as unknown as PrivateTradingMarketData,f.clock.now);
+      f.clock.t+=30*60_000;
+      const historyBefore=f.market.calls.history;
+      const live=await cold.live(actor);
+      expect(live.positions).toHaveLength(1);expect(live.orders).toHaveLength(1);
+      expect(live.positions[0].status).toBe('OPEN');
+      expect(live.positions[0].protection.takeProfit).toBe('51000');
+      expect(f.market.calls.history).toBe(historyBefore);
+      expect(await coldDb.nativeDemoAccount.findUniqueOrThrow({where:{userId:actor.userId}})).toEqual(before);
+      expect(await coldDb.nativeDemoRevision.count({where:{userId:actor.userId}})).toBe(revisions);
+      expect((await cold.live(actor)).revision).toBe(live.revision);
+    }finally{await coldDb.$disconnect();}
+  });
   test('successful commit atomically advances projection; steady reads have no journal/revisions/writes',async()=>{
     await repo.commit(actor,1,fixture,'commit-test','hash');
     queries=[];const p=await repo.live(actor);

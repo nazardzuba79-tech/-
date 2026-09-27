@@ -49,6 +49,10 @@ function setup(initial) {
   const time = clock(), doc = visibility(initial);
   const mod = compile('frontend/src/components/spotOrderPresentation.ts', {
     setInterval: time.setInterval, clearInterval: time.clearInterval, document: doc,
+    require: name => {
+      assert.equal(name, '../lib/browserActivity');
+      return compile('frontend/src/lib/browserActivity.ts', { document: doc });
+    },
   });
   return { time, doc, ...mod };
 }

@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
 import { displayRefreshDelay, readDisplayJson, SLOW_DISPLAY_REFRESH_MS } from './displaySnapshotCache';
 import { useEffect,useRef,useState } from 'react';
 import { api, API_BASE } from './api';
@@ -30,9 +31,9 @@ export function useCfdTickers(enabled = true){
     if(!enabled){reloadRef.current=()=>{};return;}
     let cancelled=false,inFlight=false;let lastAttempt=-Infinity;
     let timer:ReturnType<typeof setTimeout>|null=null;
-    const schedule=(ms:number)=>{if(timer)clearTimeout(timer);timer=null;if(!cancelled&&!document.hidden)timer=setTimeout(()=>void load(),ms);};
+    const schedule=(ms:number)=>{if(timer)clearTimeout(timer);timer=null;if(!cancelled&&!isBrowserInactive())timer=setTimeout(()=>void load(),ms);};
     async function load(){
-      if(cancelled||document.hidden||inFlight)return;
+      if(cancelled||isBrowserInactive()||inFlight)return;
       inFlight=true;lastAttempt=Date.now();let delay=POLL_MS;
       try{
         const endpoint=production()?MARKET_EDGE_BASE+'/cfd/display/tickers?v=9':`${API_BASE.replace(/\/$/,'')}/cfd/display/tickers`;
@@ -46,10 +47,10 @@ export function useCfdTickers(enabled = true){
       }catch{if(!cancelled){setLoadError(true);setTickers(old=>old.map(row=>({...row,status:'stale',stale:true})));}delay=60_000;}
       finally{inFlight=false;schedule(delay);}
     }
-    const visible=()=>{if(document.hidden){if(timer)clearTimeout(timer);timer=null;}else void load();};
+    const visible=()=>{if(isBrowserInactive()){if(timer)clearTimeout(timer);timer=null;}else void load();};
     reloadRef.current=()=>void load();
-    document.addEventListener('visibilitychange',visible);void load();
-    return()=>{cancelled=true;if(timer)clearTimeout(timer);document.removeEventListener('visibilitychange',visible);reloadRef.current=()=>{};};
+    addBrowserActivityListener(visible);void load();
+    return()=>{cancelled=true;if(timer)clearTimeout(timer);removeBrowserActivityListener(visible);reloadRef.current=()=>{};};
   },[enabled]);
   return{tickers,configured,loadError,reload:()=>reloadRef.current()};
 }

@@ -147,6 +147,9 @@ const fixed = (n) => n.toFixed(8);
 
 function marketRoutes(pathname) {
   if (BUDGET_QA) {
+    if (pathname === '/api/v1/cfd/display/tickers') return {configured:true,source:'isolated-fixture',tickers:[{symbol:'XAUUSD',name:'Gold',price:'2650',status:'sampled',fetchedAt:now,asOf:now,changePercent24h:'1.2'}]};
+    if (pathname.startsWith('/api/v1/cfd/display/candles/')) return {symbol:'XAUUSD',interval:'1h',fetchedAt:now,bars:Array.from({length:320},(_,i)=>({openTime:now-(320-i)*3600000,open:2600+i/10,high:2602+i/10,low:2598+i/10,close:2601+i/10,volume:10}))};
+    if (pathname.startsWith('/api/v1/market/display/spot-book/')) return marketRoutes('/api/v1/market/external/orderbook/BTC-USDT');
     if (pathname === '/api/v1/market/display/spot-snapshot') return marketRoutes('/api/v1/market/snapshot');
     if (pathname === '/api/v1/market/display') return { type: 'snapshot', rows: [] };
     if (pathname === '/api/v1/market/universe') return { available: false, instruments: [] };

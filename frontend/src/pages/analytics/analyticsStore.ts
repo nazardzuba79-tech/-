@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../../lib/browserActivity';
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import type { AnalyticsSnapshot } from '../../lib/api';
@@ -54,7 +55,7 @@ type Listener = (state: AnalyticsState) => void;
 class AnalyticsStore {
   private state: AnalyticsState = EMPTY;
   private listeners = new Map<symbol, Listener>();
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: number | null = null;
   private inFlight: Promise<void> | null = null;
   /**
    * Which asset the per-asset sections should describe.
@@ -83,7 +84,7 @@ class AnalyticsStore {
     if (this.state.loaded) listener(this.state);
 
     if (this.timer === null) {
-      this.timer = setInterval(() => void this.refresh(), Math.max(MIN_INTERVAL_MS, intervalMs));
+      this.timer = browserSetInterval(() => void this.refresh(), Math.max(MIN_INTERVAL_MS, intervalMs));
     }
     if (!this.state.loaded) void this.refresh();
 
@@ -140,7 +141,7 @@ class AnalyticsStore {
 
   private stop(): void {
     if (this.timer !== null) {
-      clearInterval(this.timer);
+      browserClearInterval(this.timer);
       this.timer = null;
     }
   }

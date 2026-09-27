@@ -12,6 +12,10 @@
 import type { Key } from './keys';
 
 export const ES: Record<Key, string> = {
+  'browserSleeping': "Actualizaciones en pausa. Los datos pueden estar desactualizados.",
+  'browserSyncing': "Actualizando datos…",
+  'browserSyncError': "No se pudo actualizar. Se muestran los últimos valores recibidos.",
+  'browserContinue': "Continuar",
   'futures.chart': 'Gráfico',
   'nav.trade': 'Operar',
   'nav.tradeSpotDesc': 'Trading spot de criptomonedas',
