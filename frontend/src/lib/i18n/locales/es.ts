@@ -1519,6 +1519,8 @@ export const ES: Record<Key, string> = {
   'calc.fundingNote': 'Una estimación: la tasa puede cambiar antes de la liquidación.',
   'calc.unavailable': 'El cálculo no está disponible temporalmente',
   'calc.open': 'Calculadora',
+  'trade.assetPurchaseUnavailable': "La compra de este activo no está disponible.",
+  'trade.assetOrderTypeUnavailable': "Este tipo de orden no está disponible para este activo.",
   'trade.assetNotTradingYet': 'Este activo todavía no se negocia',
   'listing.untilStart': 'Faltan para el inicio',
   'listing.days': 'Días',

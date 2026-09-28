@@ -1519,6 +1519,8 @@ export const JA: Record<Key, string> = {
   'calc.fundingNote': '見積りです。決済前にレートが変わることがあります。',
   'calc.unavailable': '計算を一時的に利用できません',
   'calc.open': '計算機',
+  'trade.assetPurchaseUnavailable': "この資産は購入できません。",
+  'trade.assetOrderTypeUnavailable': "この資産では、この注文タイプをご利用いただけません。",
   'trade.assetNotTradingYet': 'この銘柄はまだ取引されていません',
   'listing.untilStart': '取引開始まで',
   'listing.days': '日',

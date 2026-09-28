@@ -1519,6 +1519,8 @@ export const HI: Record<Key, string> = {
   'calc.fundingNote': 'अनुमान — निपटान से पहले दर बदल सकती है।',
   'calc.unavailable': 'गणना अस्थायी रूप से अनुपलब्ध',
   'calc.open': 'कैलकुलेटर',
+  'trade.assetPurchaseUnavailable': "इस परिसंपत्ति की खरीद उपलब्ध नहीं है।",
+  'trade.assetOrderTypeUnavailable': "इस परिसंपत्ति के लिए यह ऑर्डर प्रकार उपलब्ध नहीं है।",
   'trade.assetNotTradingYet': 'इस एसेट में अभी ट्रेडिंग शुरू नहीं हुई है',
   'listing.untilStart': 'ट्रेडिंग शुरू होने में',
   'listing.days': 'दिन',

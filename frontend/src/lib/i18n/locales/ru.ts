@@ -1578,6 +1578,8 @@ export const RU = {
   'calc.fundingNote': 'Оценка: ставка может измениться до расчёта.',
   'calc.unavailable': 'Расчёт временно недоступен',
   'calc.open': 'Калькулятор',
+  'trade.assetPurchaseUnavailable': "Покупка этого актива недоступна.",
+  'trade.assetOrderTypeUnavailable': "Этот тип ордера для данного актива недоступен.",
   'trade.assetNotTradingYet': 'Этот актив пока не торгуется',
   'listing.untilStart': 'До начала торгов',
   'listing.days': 'Дни',

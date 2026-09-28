@@ -1,0 +1,142 @@
+{
+  "base": "87199526082a0d24e0623516b7dde5df8af9005b",
+  "suites": [
+    {
+      "suite": "src/services/testMarkets/__tests__/testMarketSimulation.test.ts",
+      "status": "passed",
+      "tests": 36,
+      "failed": 0
+    },
+    {
+      "suite": "src/api/routes/__tests__/testMarkets.test.ts",
+      "status": "passed",
+      "tests": 12,
+      "failed": 0
+    },
+    {
+      "suite": "src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts",
+      "status": "passed",
+      "tests": 4,
+      "failed": 0
+    },
+    {
+      "suite": "src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts",
+      "status": "passed",
+      "tests": 15,
+      "failed": 0
+    },
+    {
+      "suite": "src/api/routes/__tests__/demoTrading.test.ts",
+      "status": "passed",
+      "tests": 9,
+      "failed": 0
+    },
+    {
+      "suite": "src/services/__tests__/OrderService.test.ts",
+      "status": "passed",
+      "tests": 23,
+      "failed": 0
+    },
+    {
+      "suite": "src/services/__tests__/DemoTradingService.test.ts",
+      "status": "passed",
+      "tests": 14,
+      "failed": 0
+    },
+    {
+      "suite": "src/matching-engine/__tests__/MatchingEngine.test.ts",
+      "status": "passed",
+      "tests": 5,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeDemoService.test.ts",
+      "status": "passed",
+      "tests": 60,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeHistoricalCurrent.test.ts",
+      "status": "passed",
+      "tests": 29,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeHistoricalEntryExecution.test.ts",
+      "status": "passed",
+      "tests": 31,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeRiskContract.test.ts",
+      "status": "passed",
+      "tests": 21,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeTradeLifecycle.test.ts",
+      "status": "passed",
+      "tests": 10,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeOrderSizing.test.ts",
+      "status": "passed",
+      "tests": 70,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeReduceOnlyClose.test.ts",
+      "status": "passed",
+      "tests": 6,
+      "failed": 0
+    },
+    {
+      "suite": "src/private-trading/__tests__/nativeLiveProjection.test.ts",
+      "status": "passed",
+      "tests": 6,
+      "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/spotBookRefresh.test.ts",
+      "status": "passed",
+      "tests": 6,
+      "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/vtaSpotAccount.test.ts",
+      "status": "passed",
+      "tests": 4,
+      "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/spotButtonLabels.test.ts",
+      "status": "passed",
+      "tests": 10,
+      "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "status": "passed",
+      "tests": 35,
+      "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/futuresMobileScope.test.ts",
+      "status": "passed",
+      "tests": 2,
+      "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/terminalMobileParity.test.ts",
+      "status": "passed",
+      "tests": 5,
+      "failed": 0
+    }
+  ],
+  "tests": 413,
+  "failed": 0,
+  "backendBuild": "PASS",
+  "frontendTypes": "PASS",
+  "frontendBuild": "PASS (existing Vite chunk >500 kB advisory)"
+}

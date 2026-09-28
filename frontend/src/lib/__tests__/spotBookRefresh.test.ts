@@ -34,8 +34,8 @@ function setup() {
     bookRequestRef: { current: 0 }, bookWsVersionRef: { current: 0 },
     bookPendingRef: { current: null as null | { generation: number; request: number } } };
   const setBook = jest.fn();
-  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'api', 'setBook', 'pair', ...Object.keys(refs),
-    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api, setBook, pair, ...Object.values(refs)) as () => void;
+  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'api', 'setBook', 'pair', 'marketType', 'isTestMarketPair', 'document', 'readSpotPublicBook', ...Object.keys(refs),
+    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api, setBook, pair, 'spot', () => false, { hidden: false }, api.getExternalOrderBook, ...Object.values(refs)) as () => void;
   return { requests, api, refs, setBook, callback };
 }
 const settle = async () => { for (let tick = 0; tick < 5; tick++) await Promise.resolve(); };
@@ -50,7 +50,7 @@ test('slow REST remains single-flight and can complete across repeated polling t
   refresh(); refresh(); refresh(); refresh();
   expect(ctx.api.getExternalOrderBook).toHaveBeenCalledTimes(1);
   ctx.requests[0].resolve(book); await settle();
-  expect(ctx.setBook).toHaveBeenCalledWith({ pair: 'BTC/USDT', ...book });
+  expect(ctx.setBook).toHaveBeenCalledWith({ pair: 'BTC/USDT', ...book, asOf: undefined });
   expect(ctx.refs.bookPendingRef.current).toBeNull();
   refresh(); expect(ctx.api.getExternalOrderBook).toHaveBeenCalledTimes(2);
 });
