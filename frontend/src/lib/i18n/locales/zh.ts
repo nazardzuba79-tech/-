@@ -1542,6 +1542,8 @@ export const ZH: Record<Key, string> = {
   'calc.fundingNote': '仅为估算，结算前费率可能变动。',
   'calc.unavailable': '计算暂时不可用',
   'calc.open': '计算器',
+  'trade.assetPurchaseUnavailable': "暂不支持购买此资产。",
+  'trade.assetOrderTypeUnavailable': "此资产不支持该订单类型。",
   'trade.assetNotTradingYet': '该资产尚未开放交易',
   'listing.untilStart': '距离开盘',
   'listing.days': '天',

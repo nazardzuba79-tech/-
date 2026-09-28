@@ -169,7 +169,12 @@
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=chart] .main-grid > :not(.chart-area) { display:none; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=book] .main-grid > :not(.orderbook-area) { display:none; }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .main-grid > :not(.left-panel) { display:none; }
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=book] .orderbook-area,
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=book] .orderbook-area {
+    display:flex;
+    flex-direction:column;
+    max-height:none;
+    flex-shrink:0;
+  }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=chart][data-mobile-pane=markets] .left-panel {
     display:block;
   }

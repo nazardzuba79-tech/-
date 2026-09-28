@@ -1,4 +1,22 @@
-import { parseDirectSpotBook, parseDirectSpotCandles } from '../spotPublicMarket';
+import { parseDirectSpotBook, parseDirectSpotCandles, readSpotPublicBook } from '../spotPublicMarket';
+jest.mock('../api', () => ({ API_BASE: 'https://voltex-api.invalid/api/v1' }));
+jest.mock('../testMarketStore', () => ({ fetchTestMarketJson: jest.fn() }));
+
+test('VTA book uses only VOLTEX API, including errors and pre-listing; no external fallback', async () => {
+  const { fetchTestMarketJson } = require('../testMarketStore');
+  const originalFetch = global.fetch;
+  global.fetch = jest.fn();
+  try {
+    fetchTestMarketJson.mockResolvedValueOnce({ pair:'VTA/USDT', bids:[{price:'0.01',quantity:'100'}],asks:[{price:'0.010004',quantity:'120'}],timestamp:1 });
+    expect((await readSpotPublicBook('VTA/USDT')).bids).toHaveLength(1);
+    expect(fetchTestMarketJson).toHaveBeenCalledWith('https://voltex-api.invalid/api/v1/market/display/spot-book/VTA-USDT', undefined);
+    fetchTestMarketJson.mockResolvedValueOnce({ pair:'VTA/USDT',available:false,bids:[],asks:[],timestamp:1 });
+    expect((await readSpotPublicBook('VTA/USDT')).status).toBe('unavailable');
+    fetchTestMarketJson.mockRejectedValueOnce(new Error('offline'));
+    await expect(readSpotPublicBook('VTA/USDT')).rejects.toThrow('offline');
+    expect(global.fetch).not.toHaveBeenCalled();
+  } finally { global.fetch = originalFetch; }
+});
 
 test('normalizes Kraken spot depth without inventing levels', () => {
   const snapshot = parseDirectSpotBook({

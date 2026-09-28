@@ -13,6 +13,11 @@ const receipt = (order: { id: string; price: unknown; originalQuantity: unknown 
   const quantity = new BigNumber(String(order.originalQuantity));
   return { id: order.id, price: price.toFixed(), quantity: quantity.toFixed(), proceeds: price.times(quantity).toFixed() };
 };
+const saleId = (userId: string, requestId: string) => uuidv5(`voltex:vta-demo-sale:${userId}:${requestId}`, uuidv5.URL);
+async function authorize(db: Prisma.TransactionClient, userId: string) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { role: true, blockedAt: true } });
+  if (user?.role !== 'ADMIN' || user.blockedAt) throw new VtaDemoError('Доступ запрещён.', 403);
+}
 
 /** Private simulated liquidation, not an order submitted to the real Spot book.
  * Only DemoBalance/DemoOrder/DemoTrade and the audit log may be written here.
@@ -21,12 +26,38 @@ export class VtaDemoSales {
   constructor(private prisma: PrismaClient, private clock: () => number = Date.now) {}
 
   async snapshot(userId: string) {
-    const [balances, orders] = await Promise.all([
-      this.prisma.demoBalance.findMany({ where: { userId, asset: { in: ['VTA', 'USDT'] } } }),
-      this.prisma.demoOrder.findMany({ where: { userId, pair: VOLTORA.pair, side: 'SELL', status: 'FILLED' }, orderBy: { createdAt: 'desc' }, take: 20 }),
-    ]);
-    return { balances: balances.map(b => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })),
-      sales: orders.map(o => ({ ...receipt(o), createdAt: o.createdAt })) };
+    // One committed ledger version for balances AND receipts. Never merge this
+    // projection into real wallet totals or withdrawal/deposit availability.
+    return this.prisma.$transaction(async tx => {
+      await authorize(tx, userId);
+      const [held, orders] = await Promise.all([
+        tx.demoBalance.findMany({ where: { userId, asset: { in: ['VTA', 'USDT'] } } }),
+        tx.demoOrder.findMany({ where: { userId, pair: VOLTORA.pair, side: 'SELL', status: 'FILLED' }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 20 }),
+      ]);
+      const asOf = this.clock(), state = publicTestAsset(VOLTORA, asOf).state;
+      const mark = state.phase === 'live' && state.lastPrice !== null
+        ? new BigNumber(state.lastPrice).decimalPlaces(10, BigNumber.ROUND_DOWN).toFixed() : null;
+      const balances = ['VTA', 'USDT'].map(asset => {
+        const b = held.find(h => h.asset === asset);
+        const available = b?.available.toString() ?? '0', locked = b?.locked.toString() ?? '0';
+        const priceUsd = asset === 'USDT' ? '1' : mark;
+        const quantity = new BigNumber(available).plus(locked);
+        return { asset, available, locked, priceUsd,
+          valueUsd: quantity.isZero() ? '0' : priceUsd === null ? null : quantity.times(priceUsd).toFixed() };
+      });
+      return { account: { id: userId, scope: 'SIMULATION_SPOT' as const, cashPolicy: 'SHARED_DEMO_BALANCE' as const,
+        active: held.some(b => b.asset === 'VTA') || orders.length > 0 },
+        asOf, valuationSource: 'VOLTORA_SIMULATION' as const, balances,
+        totalValueUsd: balances.some(b => b.valueUsd === null) ? null : balances.reduce((sum, b) => sum.plus(b.valueUsd!), new BigNumber(0)).toFixed(),
+        sales: orders.map(o => ({ ...receipt(o), createdAt: o.createdAt })) };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  /** Read-only recovery. A missing receipt is not permission to create a new intent. */
+  async operation(userId: string, requestId: string) {
+    await authorize(this.prisma, userId);
+    const order = await this.prisma.demoOrder.findFirst({ where: { id: saleId(userId, requestId), userId, pair: VOLTORA.pair, side: 'SELL', status: 'FILLED' } });
+    return { receipt: order ? { ...receipt(order), createdAt: order.createdAt } : null };
   }
 
   async sell(params: { userId: string; requestId: string; quantity: string }) {
@@ -34,7 +65,7 @@ export class VtaDemoSales {
     if (!quantity.isFinite() || quantity.lte(0) || quantity.decimalPlaces()! > 8 || quantity.gte('1000000000000000000')) {
       throw new VtaDemoError('Количество должно быть положительным числом, не более 8 знаков после запятой.');
     }
-    const id = uuidv5(`voltex:vta-demo-sale:${params.userId}:${params.requestId}`, uuidv5.URL);
+    const id = saleId(params.userId, params.requestId);
     const replay = (order: any) => {
       if (order.userId !== params.userId || order.pair !== VOLTORA.pair || order.side !== 'SELL'
         || order.status !== 'FILLED' || !quantity.eq(String(order.originalQuantity))) {

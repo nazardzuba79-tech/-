@@ -22,6 +22,20 @@ function adminPrisma(role: 'ADMIN' | 'USER' = 'ADMIN') {
 }
 
 describe('demo trading routes', () => {
+  it('VTA receipt lookup is read-only, admin-only and scoped to the authenticated account', async () => {
+    const id = '91b4b181-2ba2-4e56-9ffb-f9ca5f72e41e';
+    const vta = { operation: jest.fn().mockResolvedValue({ receipt: null }), sell: jest.fn() };
+    const app = buildApp(adminPrisma(), {}, vta);
+    expect((await request(app).get(`/api/v1/demo/vta/sales/${id}`)).status).toBe(401);
+    expect((await request(buildApp(adminPrisma('USER'), {}, vta)).get(`/api/v1/demo/vta/sales/${id}`).set('Authorization', authHeader('customer'))).status).toBe(403);
+    expect((await request(app).get('/api/v1/demo/vta/sales/not-a-uuid').set('Authorization', authHeader('owner'))).status).toBe(400);
+    const result = await request(app).get(`/api/v1/demo/vta/sales/${id}?userId=victim`).set('Authorization', authHeader('owner'));
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual({ receipt: null });
+    expect(vta.operation).toHaveBeenCalledTimes(1);
+    expect(vta.operation).toHaveBeenCalledWith('owner', id);
+    expect(vta.sell).not.toHaveBeenCalled();
+  });
   it('VTA sale is admin-only and binds the debit to the authenticated account', async () => {
     const vta = { sell: jest.fn().mockResolvedValue({ id: 'receipt' }) };
     const body = { requestId: '91b4b181-2ba2-4e56-9ffb-f9ca5f72e41e', quantity: '2.5' };

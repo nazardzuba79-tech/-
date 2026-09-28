@@ -1,0 +1,57 @@
+{
+  "rows": [
+    {
+      "width": 1440,
+      "uiParity": "10 side/order-type combinations identical; unsupported submissions refused with zero POSTs",
+      "prelisting": "blocked",
+      "autoEstimate": "1.02",
+      "retry": "one fill",
+      "reload": "standard history and assets persisted",
+      "wallet": "VTA\n\t4 545 354,54545454\t4 545 354,54545454\t0\t$46 317,19",
+      "cash": "U\nUSDT\n\t1,02\t1,02\t0\t$1,02",
+      "remainingVta": "4545354.54545454",
+      "simulationUsdt": "1.0190006",
+      "serverTotal": "46318.20909090903532724",
+      "nativeAssetsValue": "100001.0190006",
+      "errors": [],
+      "over": 0
+    },
+    {
+      "width": 390,
+      "uiParity": "10 side/order-type combinations identical; unsupported submissions refused with zero POSTs",
+      "prelisting": "blocked",
+      "autoEstimate": "1.02",
+      "retry": "one fill",
+      "reload": "standard history and assets persisted",
+      "wallet": "VTA\n\t4 545 254,54545454\t4 545 254,54545454\t0\t$46 316,17",
+      "cash": "U\nUSDT\n\t2,04\t2,04\t0\t$2,04",
+      "remainingVta": "4545254.54545454",
+      "simulationUsdt": "2.0380012",
+      "serverTotal": "46318.20909090903532724",
+      "nativeAssetsValue": "100002.0380012",
+      "errors": [],
+      "over": 0
+    },
+    {
+      "sessionSwitch": "logout + account switch during committed request; late 401 cannot clear new session; original receipt recovered with GET"
+    },
+    {
+      "twoTabs": "one full fill; no oversell; no dust",
+      "exactSold": "4545154.54545454",
+      "remainingVta": "0",
+      "simulationUsdt": "46318.20909090903532724",
+      "realUsdt": "50000"
+    },
+    {
+      "walletSwitch": "account scope resets on cross-tab session change; owner projection never leaks"
+    },
+    {
+      "ordinarySpot": "all controls enabled, zero private reads",
+      "nonAdmin": "blocked, zero private reads"
+    }
+  ],
+  "saleRequests": 9,
+  "uniqueSales": 4,
+  "lookupRequests": 7,
+  "nativeReads": 7
+}

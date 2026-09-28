@@ -110,7 +110,10 @@ test.each([
   // Admin console only: add overview/config response fields and remove unused
   // admin Product methods. Prefix before admin methods and support suffix are
   // byte-identical to main ab564ae; all Futures/Spot/request/auth code is intact.
-  ['frontend/src/lib/api.ts', '3c53bdec366ac73a6db5a4df35a4ca235660915222a87b9431319d47dc838972'],
+  // VTA recovery: scoped projection/receipt GET, bounded requests, and late-401
+  // token identity guards. Existing Spot/Futures endpoint methods are unchanged.
+  // The browser regression exercises the session-switch guard with a real 401.
+  ['frontend/src/lib/api.ts', '9996af394163425ecf441ff16035fb40733413675c9243346ae54ddaedc8421e'],
   ['src/api/routes/futures.ts', '3eff9ba113edc85e3b44dd88cb876cd88e09ce99412353ed85221bdadbd2bc19'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —

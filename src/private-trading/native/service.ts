@@ -1,3 +1,4 @@
+import { testAssetForSymbol } from '../../services/testMarkets/testAssetConfig';
 import { randomUUID } from 'crypto';
 import {CommandScope, commandScope, commandCheck, commandRead, commandSignal, withoutCommandScope } from './commandScope';
 import BigNumber from 'bignumber.js';
@@ -156,7 +157,11 @@ type CollateralMarket = { symbol:string; source:string };
 const COLLATERAL_MARKET_OVERRIDES:Readonly<Record<string,CollateralMarket>>=Object.freeze({
   EUR:{symbol:'EURUSDUSDT',source:'BYBIT_FX_EURUSDUSDT_MARK'},
 });
+// Simulation-only Spot holdings are outside native collateral, including when
+// holdings arrive from a prepared command context rather than repository.holdings.
+const nativeHoldings = (holdings:CollateralHolding[]) => holdings.filter(h => !testAssetForSymbol(h.asset));
 export function collateralMarket(asset:string):CollateralMarket|null{
+  if(testAssetForSymbol(asset))return null;
   const normalized=asset.trim().toUpperCase();
   if(normalized==='USDT')return null;
   return COLLATERAL_MARKET_OVERRIDES[normalized]??{symbol:`${normalized}USDT`,source:'BYBIT_LINEAR_MARK'};
@@ -292,7 +297,7 @@ export class NativeDemoService {
    */
   async collateral(actor:OwnerSession,row?:NativeAccount|null,options:{reuse?:boolean;holdings?:CollateralHolding[]}={}):Promise<CollateralValuation>{
     const accountRow=row===undefined?await commandRead('repository.read',()=>this.repository.read(actor)):row;
-    const holdings=options.holdings??await commandRead('repository.holdings',()=>this.repository.holdings(actor));
+    const holdings=nativeHoldings(options.holdings??await commandRead('repository.holdings',()=>this.repository.holdings(actor)));
     if(accountRow?.executionMode==='HISTORICAL_DEMO'){
       const symbols=holdings.filter(h=>h.asset!=='USDT'&&new BigNumber(h.available).plus(h.locked??'0').gt(0)).map(h=>collateralMarket(h.asset)!.symbol);
       const prices=await this.demoCurrentPrices(symbols,new Set());
@@ -461,6 +466,7 @@ export class NativeDemoService {
    */
   async setCollateralPreference(actor:OwnerSession,assetInput:string,enabled:boolean,idempotencyKey:string){
     const asset=assetInput.toUpperCase();
+    if(testAssetForSymbol(asset))throw new PrivateTradingError('collateral_asset_ineligible','Этот актив не используется как обеспечение фьючерсов.',409);
     if(asset==='USDT')throw new PrivateTradingError('collateral_locked','USDT является расчётным активом и всегда используется как обеспечение.',409);
     const hash=commandHash({kind:'COLLATERAL_PREFERENCE',asset,enabled});
     const prior=await this.repository.prior(actor,idempotencyKey,hash);
@@ -874,6 +880,7 @@ export class NativeDemoService {
       throw new PrivateMarketDataError('near_live_price_stale');
   }
   private demoCollateral(holdings:CollateralHolding[],prices:Map<string,PrivateMark>,row:NativeAccount){
+    holdings=nativeHoldings(holdings);
     const quoted:CollateralPrice[]=[];
     for(const holding of holdings){
       const market=collateralMarket(holding.asset);if(!market)continue;

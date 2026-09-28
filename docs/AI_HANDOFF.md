@@ -4239,7 +4239,33 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Broader 40 wallet/transition tests: 36 PASS / 4 FAIL. Reproduced the same four failures with current-main sources restored temporarily, then restored all working files: two existing wallet unified valuation fixture mismatches; old sampled-book source assertion; missing terminalPresentation mock. Evidence output/vta-demo/baseline-spot-wallet.log. No unrelated cleanup.
 - Browser harness fixtures intentionally do not provide live venue streams/charts; production read-only visual verification remains required after publication.
 
+
+
+## Codex — 2026-09-28 — Complete standard VTA Spot flow
+- Implementation: 6c00871ffdb6a12e36bc06218de1690766989c38; review branch codex/complete-vta-spot-flow, fresh main 87199526082a0d24e0623516b7dde5df8af9005b. Owner explicitly requested main and review PR only.
+- Material files: OrderForm, shared VTA account/intent/API, FundingView and standard table adapter; VtaDemoSales projection/lookup, demo routes, native service eligibility; focused PostgreSQL/browser tests, localization, CI and docs/qa/vta-spot-complete.
+- Preserved: ordinary BUY/LIMIT default and complete standard Spot UI/styles; owner correction keeps BUY and every order-type selectable, rejecting unsupported submissions explicitly. Existing matching, listing configuration/price/candles, fee policy, shared DemoBalance USDT/native semantics and real customer ledgers are preserved.
+- Fixed: VTA external Futures price lookup, incomplete wallet projection, unresolved sale identity after reload, cross-tab/account recovery and late-401 session clearing. No VTA_PRIVATE_USDT policy or new financial engine.
+- Verification: 413 unique targeted Jest tests PASS after updating two stale fixture bindings and the reviewed API fingerprint. Actual VTA/native services share disposable PostgreSQL; production build/types PASS. Browser 1440/390 PASS for UI parity, prelisting/refusals, exact partial/full sale, 503/429/timeout/reload, account switch and concurrent tabs. Evidence/report committed. Existing Vite >500 kB advisory remains.
+- Not performed: merge, deploy, production credit, reallocation, or owner production sale. Production allocation observations come from the owner brief; not refreshed in this task. Next: PR review/CI; broader whole-repository Jest not claimed.
+
+- VTA CI follow-up to e9c0bfc77cfb17246fbe216718effab0188d44ba: actual PostgreSQL/browser workflow passed; wider pipelines exposed the shared locale fingerprint and obsolete public-listing source guard. Updated only these contracts, retaining every prior dictionary digest and adding exact localized refusal assertions. 49 further tests PASS; total 462 targeted tests / 24 suites. Runtime implementation and screenshot evidence unchanged.
+
+- Public listing browser follow-up: replaced obsolete disabled-BUY/submit expectations with the owner's interactive standard tabs and explicit purchase/type/prelisting refusals. Five widths (1440/430/390/360/320) PASS, zero writes/errors/overflow; report committed. Test/docs only.
+
+## Codex — 2026-09-28 — Owner-requested VTA timer postponement
+- Implementation: 65bf3aee164bcc6b34351a324fd7129e7509ec3d. Changed testAssetConfig listingAt from 2026-09-28 14:00 UTC to 15:00 UTC (+1 hour); updated the existing config assertion.
+- Preserved standard Spot UI, balances, accounting, seed, initial price and relative simulation price path. No production changes, merge or deployment performed; earlier no-deployment restriction remains.
+- Verification: all 36 testMarketSimulation tests PASS, including prelisting and first tick. Review branch/PR #316 updated; publication requires owner authorization.
+
 ## Codex — 2026-09-28 — Publish only VTA countdown postponement
 - Implementation: 91557a7d399a90764d25bb06fa0e3294e2f83efb, based on current main 87199526082a0d24e0623516b7dde5df8af9005b. Owner authorized publication of the timer change only.
 - Changed testAssetConfig listingAt from 14:00 UTC to 15:00 UTC on 2026-09-28; updated existing test assertion. UI, balances, seed, pricing rules and unrelated review PR #316 remain unchanged.
 - Targeted simulation suite: 36 PASS on the same two-file patch. Next: publish isolated timer PR and verify public listingAt.
+
+## Codex — 2026-09-28 — VTA live display and Spot percentage fix
+- Implementation: 42c304d49bce6a756c8d76b7c389a3c438fa313a on existing review PR #316. Synced published timer main 443ec7ab25872d97b5ccb671acc887f4d3b706bf via f4902e536b98c2f337aa15a1ad6e8af000dba76f; only handoff text conflicted, both factual histories preserved. PR itself is not merged.
+- Material files: canonical testMarketDepth/completed tick reader, testMarkets routes, spotPublicMarket transport and TradePage refresh; ProfessionalTerminal percentage specificity and TerminalMobileParity book flex clipping; focused unit/browser tests and existing CI workflows.
+- Preserved: complete standard Spot OrderForm/defaults, prior #316 accounting/recovery/authorization, VTA owner allocation, real ledgers, canonical price path/seed/fees, listing at 15:00 UTC; ordinary venue market transport unchanged. No new trading engine or financial writes in display generation.
+- Verification: 474 unique tests / 26 suites PASS; actual VTA/native PostgreSQL browser scenarios PASS at 1440/390, including listing transition without reload, unclipped depth, clean visible copy, exact partial/full sale, recovery and two tabs. Public listing 1440/430/390/360/320 PASS. Backend/frontend types and production build PASS (existing chunk advisory). Evidence: docs/qa/vta-market-display.
+- Not performed in this task: PR merge, deployment, production data changes, owner credit or owner sale. Existing unrelated docs/qa/voltora-listing untracked files left untouched. Next: review PR #316 and final-head CI; no Phase 2 or unrelated cleanup.

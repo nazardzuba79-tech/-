@@ -161,7 +161,7 @@ export function TradePage() {
   // look — actual order matching always happens on our own internal book
   // (see OrderForm), this is display only.
   const refreshBook = useCallback(() => {
-    if (bookPairRef.current !== pair || marketType !== 'spot' || isTestMarketPair(pair) || document.hidden) return;
+    if (bookPairRef.current !== pair || marketType !== 'spot' || document.hidden) return;
     const generation = bookGenerationRef.current;
     // A slow fallback must finish instead of being invalidated by every 2s
     // poll. A new pair/generation can still start immediately while its old
@@ -183,19 +183,20 @@ export function TradePage() {
       });
   }, [pair, marketType]);
 
-  // DISPLAY ONLY. A snapshot/minute; local CSS animates without changing levels.
+  // Local VTA depth follows the canonical 10s tick; venue snapshots stay at 60s.
+  const bookLive = !testPair || testMarket.asset?.state.phase === 'live';
   useEffect(() => {
     bookGenerationRef.current += 1;
     if (bookShownPairRef.current !== pair) {
       setBook({ pair, bids: [], asks: [], asOf: null });setPickedPrice(null);bookShownPairRef.current=pair;
     }
-    if (marketType !== 'spot' || isTestMarketPair(pair)) return;
+    if (marketType !== 'spot' || !bookLive) return;
     refreshBook();
-    const timer=window.setInterval(()=>{if(!document.hidden)refreshBook();},60_000);
+    const timer=window.setInterval(()=>{if(!document.hidden)refreshBook();},testPair ? 10_000 : 60_000);
     const visible=()=>{if(!document.hidden)refreshBook();};
     document.addEventListener('visibilitychange',visible);
     return()=>{bookGenerationRef.current+=1;clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
-  }, [pair,marketType,refreshBook]);
+  }, [pair,marketType,refreshBook,bookLive,testPair]);
 
   function handleOrderPlaced() {
     setAccountOpenOrderCount(null);

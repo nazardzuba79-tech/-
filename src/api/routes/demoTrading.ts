@@ -30,7 +30,18 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
   const router = Router();
 
   router.get('/demo/vta', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {
-    try { res.json(await vtaDemo.snapshot(req.userId!)); } catch (error) { next(error); }
+    try { res.json(await vtaDemo.snapshot(req.userId!)); } catch (error) {
+      if (error instanceof VtaDemoError) return res.status(error.status).json({ error: error.message });
+      next(error);
+    }
+  });
+  router.get('/demo/vta/sales/:requestId', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {
+    const parsed = z.string().uuid().safeParse(req.params.requestId);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid request ID' });
+    try { res.json(await vtaDemo.operation(req.userId!, parsed.data)); } catch (error) {
+      if (error instanceof VtaDemoError) return res.status(error.status).json({ error: error.message });
+      next(error);
+    }
   });
   const vtaSaleSchema = z.object({ requestId: z.string().uuid(), quantity: priceString }).strict();
   router.post('/demo/vta/sell', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {
@@ -38,7 +49,7 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     if (!parsed.success) return res.status(400).json({ error: 'Некорректный запрос продажи.' });
     try { res.json(await vtaDemo.sell({ userId: req.userId!, ...parsed.data })); }
     catch (error) {
-      if (error instanceof VtaDemoError) return res.status(error.status).json({ error: error.message });
+      if (error instanceof VtaDemoError) return res.status(error.status).json({ error: error.message, ...(error.status === 400 ? { vtaOutcome: 'REJECTED' } : {}) });
       next(error);
     }
   });

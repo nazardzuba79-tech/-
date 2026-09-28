@@ -4,12 +4,16 @@ on:
     paths:
       - 'src/services/testMarkets/VtaDemoSales.ts'
       - 'src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts'
+      - 'src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts'
+      - 'src/private-trading/native/service.ts'
       - 'src/services/DemoTradingService.ts'
       - 'src/api/routes/demoTrading.ts'
       - 'src/api/routes/__tests__/demoTrading.test.ts'
       - 'frontend/src/components/VtaSpotPanels.tsx'
       - 'frontend/src/components/OrderForm.tsx'
       - 'frontend/src/lib/useVtaSpotAccount.ts'
+      - 'frontend/src/lib/vtaSaleIntent.ts'
+      - 'frontend/src/lib/__tests__/vtaSpotAccount.test.ts'
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/lib/api.ts'
       - 'src/index.ts'
@@ -53,15 +57,26 @@ jobs:
         run: >-
           npx jest --runInBand --runTestsByPath
           src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts
+          src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts
           src/services/__tests__/DemoTradingService.test.ts
           src/services/__tests__/OrderService.test.ts
           src/matching-engine/__tests__/MatchingEngine.test.ts
           src/api/routes/__tests__/demoTrading.test.ts
           src/api/routes/__tests__/testMarkets.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
+          src/services/testMarkets/__tests__/testMarketDepth.test.ts
           frontend/src/lib/__tests__/futuresTickerHeader.test.ts
           frontend/src/lib/__tests__/futuresMobileScope.test.ts
           frontend/src/lib/__tests__/terminalMobileParity.test.ts
+      - name: Shared account projection and durable intent lifecycle
+        env:
+          NODE_PATH: ./frontend/node_modules
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/vtaSpotAccount.test.ts
+          frontend/src/lib/__tests__/spotPublicMarket.test.ts
+          frontend/src/lib/__tests__/spotButtonLabels.test.ts
+          frontend/src/lib/__tests__/spotBookRefresh.test.ts
       - run: npm run build
       - run: npm run build --prefix frontend
       - name: Disposable browser

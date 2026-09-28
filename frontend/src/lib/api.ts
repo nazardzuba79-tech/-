@@ -13,7 +13,11 @@ export const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }
 export interface VtaDemoSnapshot {
-  balances: { asset: string; available: string; locked: string }[];
+  account: { id: string; scope: 'SIMULATION_SPOT'; cashPolicy: 'SHARED_DEMO_BALANCE'; active: boolean };
+  asOf: number;
+  valuationSource: 'VOLTORA_SIMULATION';
+  totalValueUsd: string | null;
+  balances: { asset: string; available: string; locked: string; priceUsd: string | null; valueUsd: string | null }[];
   sales: (VtaSaleReceipt & { createdAt: string })[];
 }
 
@@ -518,12 +522,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
-    handleUnauthorized(res.status, !!token);
+    if (getToken() === token) handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
     throw new ApiError(extractErrorMessage(body, res.status), res.status, body);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+// A bounded VTA request never retries a write. Timeout leaves its saved intent
+// unresolved; read-only lookup or an explicit same-key retry resolves it.
+async function vtaRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try { return await request<T>(path, { ...options, signal: controller.signal }); }
+  finally { clearTimeout(timer); }
 }
 
 // Like request(), but for multipart/form-data (file uploads) — the browser
@@ -536,7 +549,7 @@ async function requestForm<T>(path: string, formData: FormData): Promise<T> {
     body: formData,
   });
   if (!res.ok) {
-    handleUnauthorized(res.status, !!token);
+    if (getToken() === token) handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
     throw new ApiError(extractErrorMessage(body, res.status), res.status, body);
   }
@@ -552,7 +565,7 @@ async function requestBlobUrl(path: string): Promise<{ url: string; contentType:
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
   if (!res.ok) {
-    handleUnauthorized(res.status, !!token);
+    if (getToken() === token) handleUnauthorized(res.status, !!token);
     throw new ApiError(`Request failed (${res.status})`, res.status);
   }
   const blob = await res.blob();
@@ -655,8 +668,9 @@ export const api = {
   // Demo trading — admin-only sandbox, its own order book/balances,
   // completely separate from the real ones above.
   getDemoBalances: () => request<{ asset: string; available: string; locked: string }[]>('/demo/balances'),
-  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),
-  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {
+  getVtaDemo: () => vtaRequest<VtaDemoSnapshot>('/demo/vta'),
+  getVtaSale: (requestId: string) => vtaRequest<{ receipt: VtaSaleReceipt | null }>(`/demo/vta/sales/${encodeURIComponent(requestId)}`),
+  sellVtaDemo: (requestId: string, quantity: string) => vtaRequest<VtaSaleReceipt>('/demo/vta/sell', {
     method: 'POST', body: JSON.stringify({ requestId, quantity }),
   }),
 

@@ -2,8 +2,8 @@
 
 // VOLTORA (VTA/USDT) upcoming listing, in the production frontend bundle
 // against an isolated read-only fixture API: the ordinary Spot terminal,
-// a running countdown, Buy/Sell answering that the asset is not trading
-// yet, no technical wording, no request that writes anything.
+// a running countdown, interactive standard tabs with explicit operation
+// refusals, no technical wording, no request that writes anything.
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -110,14 +110,21 @@ function testAssets(now) {
       assert.doesNotMatch(await page.locator('body').innerText(), TECHNICAL, `technical wording on the page @${width}`);
       await page.screenshot({ path: path.join(out, `voltora-${width}-chart.png`) });
 
-      // The standard form stays visible; the public prelisting controls
-      // cannot submit a sale or route the private asset to real matching.
+      // Standard tabs stay interactive. Unavailable operations refuse through
+      // the ordinary error pattern, without reaching any matching engine.
       if (mobile) await page.locator('#mobile-trade-trade').click();
       const form = page.locator('.order-form-area');
-      assert.equal(await form.locator('.order-form-tab.buy').isEnabled(), false);
-      assert.equal(await form.locator('button[type="submit"]').isEnabled(), false);
+      assert.equal(await form.locator('.order-form-tab.buy').isEnabled(), true);
+      assert.equal(await form.locator('button[type="submit"]').isEnabled(), true);
       await form.getByLabel('Количество', { exact: true }).first().fill('100');
-      assert.equal(await form.locator('button[type="submit"]').isEnabled(), false);
+      await form.locator('button[type="submit"]').click();
+      await page.getByText('Покупка этого актива недоступна.', { exact: true }).first().waitFor();
+      await form.locator('.order-form-tab.sell').click();
+      await form.locator('button[type="submit"]').click();
+      await page.getByText('Этот тип ордера для данного актива недоступен.', { exact: true }).first().waitFor();
+      await form.getByRole('button', { name: 'Рынок', exact: true }).click();
+      await form.locator('button[type="submit"]').click();
+      await page.getByText(REFUSAL, { exact: true }).first().waitFor();
       assert.equal(writes, 0, `unexpected write requests @${width}`);
 
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

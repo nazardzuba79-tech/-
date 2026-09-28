@@ -1548,6 +1548,8 @@ export const EN: Record<Key, string> = {
   'calc.fundingNote': 'An estimate — the rate can change before settlement.',
   'calc.unavailable': 'Calculation is temporarily unavailable',
   'calc.open': 'Calculator',
+  'trade.assetPurchaseUnavailable': "Purchasing this asset is unavailable.",
+  'trade.assetOrderTypeUnavailable': "This order type is unavailable for this asset.",
   'trade.assetNotTradingYet': 'This asset is not trading yet',
   'listing.untilStart': 'Trading starts in',
   'listing.days': 'Days',

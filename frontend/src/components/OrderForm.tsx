@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { api, ApiError, getToken, onSessionChange } from '../lib/api';
+import { readVtaIntent, prepareVtaIntent, clearVtaIntent, withVtaSaleLock } from '../lib/vtaSaleIntent';
 import { useVtaSpotAccount } from '../lib/useVtaSpotAccount';
 import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
@@ -44,8 +45,8 @@ export function OrderForm({
   const vta = useVtaSpotAccount(privateVta);
   const vtaPending = useRef<{ requestId: string; quantity: string } | null>(null);
   const [vtaUnconfirmed, setVtaUnconfirmed] = useState(false);
-  const [side, setSide] = useState<'BUY' | 'SELL'>(privateVta ? 'SELL' : 'BUY');
-  const [family, setFamily] = useState<OrderFamily>(privateVta ? 'MARKET' : 'LIMIT');
+  const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
+  const [family, setFamily] = useState<OrderFamily>('LIMIT');
   const [execution, setExecution] = useState<Execution>('LIMIT');
   const [price, setPrice] = useState('');
   const [triggerPrice, setTriggerPrice] = useState('');
@@ -83,6 +84,36 @@ export function OrderForm({
     vtaPending.current = null; setVtaUnconfirmed(false); setQuantity(''); setError(null);
   }), [privateVta]);
   useEffect(() => {
+    const accountId = vta.snapshot?.account.id;
+    if (!privateVta || !accountId) return;
+    const token = getToken(); let disposed = false;
+    const current = () => !disposed && getToken() === token;
+    const recover = async () => {
+      try {
+        const pending = readVtaIntent(accountId);
+        if (!current()) return;
+        vtaPending.current = pending; setVtaUnconfirmed(!!pending);
+        if (!pending) return;
+        setSide('SELL'); setFamily('MARKET'); setQuantity(pending.quantity); setError(t('trade.orderStatusUnconfirmed'));
+        // Recovery is a GET only. Missing/failed lookup keeps the same intent.
+        const result = await api.getVtaSale(pending.requestId);
+        if (!current() || vtaPending.current?.requestId !== pending.requestId) return;
+        if (result.receipt) {
+          clearVtaIntent(accountId, pending.requestId);
+          vtaPending.current = null; setVtaUnconfirmed(false); setQuantity(''); setError(null);
+          void vta.refresh();
+        }
+      } catch { if (current()) setError(t('trade.orderStatusUnconfirmed')); }
+    };
+    void recover();
+    const changed = (event: StorageEvent) => {
+      if (event.key === 'exchange_token') { disposed = true; vtaPending.current = null; setVtaUnconfirmed(false); setQuantity(''); return; }
+      if (event.key === 'voltex:vta-sale:v1:' + accountId) { void recover(); void vta.refresh(); }
+    };
+    window.addEventListener('storage', changed);
+    return () => { disposed = true; window.removeEventListener('storage', changed); };
+  }, [privateVta, vta.snapshot?.account.id]);
+  useEffect(() => {
     if (!privateVta) return;
     setAvailable({
       base: Number(vta.snapshot?.balances.find(b => b.asset === 'VTA')?.available ?? 0),
@@ -110,7 +141,7 @@ export function OrderForm({
   // a limit price, so the form switches to LIMIT rather than silently
   // setting a field the active order type would ignore.
   useEffect(() => {
-    if (privateVta || !pickedPrice || (pickedPrice.pair && pickedPrice.pair !== pair)) return;
+    if (!pickedPrice || (pickedPrice.pair && pickedPrice.pair !== pair)) return;
     setPrice(pickedPrice.value);
     setFamily('LIMIT');
     setExecution('LIMIT');
@@ -216,6 +247,10 @@ export function OrderForm({
     e.preventDefault();
     if (submittingRef.current) return;
     setError(null);
+    if (privateVta && (side === 'BUY' || family !== 'MARKET')) {
+      const message = t(side === 'BUY' ? 'trade.assetPurchaseUnavailable' : 'trade.assetOrderTypeUnavailable');
+      setError(message); toast.error(message); return;
+    }
     if (notTradingYet) {
       const message = t('trade.assetNotTradingYet');
       setError(message);
@@ -237,10 +272,28 @@ export function OrderForm({
       let feedback: SpotOrderFeedback = { kind: 'placed' };
       if (privateVta) {
         if (side !== 'SELL' || family !== 'MARKET' || (!vta.snapshot && !vtaPending.current)) return;
-        vtaPending.current ??= { requestId: crypto.randomUUID(), quantity };
-        await api.sellVtaDemo(vtaPending.current.requestId, vtaPending.current.quantity);
+        const accountId = vta.snapshot?.account.id;
+        if (!accountId) return;
+        await withVtaSaleLock(accountId, async () => {
+          if (getToken() !== session) return;
+          const existed = readVtaIntent(accountId) !== null;
+          const pending = prepareVtaIntent(accountId, quantity);
+          vtaPending.current = pending; setVtaUnconfirmed(true); setQuantity(pending.quantity);
+          try {
+            await api.sellVtaDemo(pending.requestId, pending.quantity);
+            if (getToken() !== session) return;
+            clearVtaIntent(accountId, pending.requestId);
+            vtaPending.current = null; setVtaUnconfirmed(false);
+          } catch (error) {
+            // Only an explicit first-attempt server rejection can discard an
+            // intent. 429, timeout, conflict or any earlier ambiguity retain it.
+            if (getToken() === session && !existed && error instanceof ApiError && error.body.vtaOutcome === 'REJECTED') {
+              clearVtaIntent(accountId, pending.requestId); vtaPending.current = null;
+            }
+            throw error;
+          }
+        });
         if (getToken() !== session) return;
-        vtaPending.current = null; setVtaUnconfirmed(false);
         await vta.refresh();
         if (getToken() !== session) return;
       } else if (family === 'OCO') {
@@ -281,7 +334,6 @@ export function OrderForm({
     } catch (err) {
       if (privateVta) {
         if (getToken() !== session) return;
-        if (err instanceof ApiError && err.status >= 400 && err.status < 500) vtaPending.current = null;
         setVtaUnconfirmed(vtaPending.current !== null);
       }
       const message = customerErrorText(err, t, t('trade.placeOrderError'));
@@ -328,7 +380,6 @@ export function OrderForm({
           type="button"
           className={`order-form-tab buy ${side === 'BUY' ? 'active' : ''}`}
           aria-pressed={side === 'BUY'}
-          disabled={privateVta}
           onClick={() => { setSide('BUY'); setPercent(0); setError(null); }}
         >
           {/* Spot says «Купить» / «Продать», never «Купить BTC». The ticker
@@ -355,7 +406,6 @@ export function OrderForm({
             type="button"
             className={`order-type-tab ${family === f.id ? 'active' : ''}`}
             aria-pressed={family === f.id}
-            disabled={privateVta && f.id !== 'MARKET'}
             onClick={() => { setFamily(f.id); setPercent(0); setError(null); }}
           >
             {f.label}
@@ -363,7 +413,7 @@ export function OrderForm({
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="order-form-content" noValidate={notTradingYet}>
+      <form onSubmit={handleSubmit} className="order-form-content" noValidate={notTradingYet || privateVta}>
         {/* Stop and take-profit orders can execute as either a limit or a
             market order — the reference has no equivalent control because
             it has no conditional orders, so this reuses its order-type tab
@@ -533,7 +583,7 @@ export function OrderForm({
           </div>
         )}
 
-        <button type="submit" disabled={submitting || (privateVta && notTradingYet && !vtaUnconfirmed)} className={`submit-btn ${sideClass}`}>
+        <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
           {submitting ? t('auth.wait') : side === 'BUY' ? t('trade.buy') : t('trade.sell')}
         </button>
 

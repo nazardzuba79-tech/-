@@ -38,6 +38,7 @@ const t = (lang: (typeof LOCALES)[number]) => (key: string, params?: Record<stri
 // side and the dictionary, and on nothing else.
 const stubs = (lang: (typeof LOCALES)[number]) => ({
   '../lib/api': { api: {} },
+  '../lib/vtaSaleIntent': {},
   '../lib/useVtaSpotAccount': { useVtaSpotAccount: () => ({ snapshot: null, failed: false, loading: false }) },
   // The real display boundary, not a stub: the form's failure text is
   // composed there now, and a stub would let the two drift apart.
@@ -69,7 +70,7 @@ const actionLabels = (html: string) =>
     .map(m => m[1].replace(/<[^>]*>/g, '').replace(/&#x27;/g, "'").trim());
 
 describe('Spot action buttons never carry the asset ticker', () => {
-  const PAIRS = ['BTC/USDT', 'ETH/USDT', 'USELESS/USDT', 'SOL/USDC', 'DOGE/EUR'];
+  const PAIRS = ['BTC/USDT', 'ETH/USDT', 'USELESS/USDT', 'SOL/USDC', 'DOGE/EUR', 'VTA/USDT'];
 
   it('reads «Купить» and «Продать» on every pair, with no symbol appended', () => {
     const seen = PAIRS.map(pair => actionLabels(renderSpotForm(pair)));

@@ -1,0 +1,60 @@
+{
+  "environment": "production frontend bundle + isolated read-only fixture API",
+  "widths": [
+    {
+      "width": 1440,
+      "countdown": [
+        "01:23:59:59",
+        "01:23:59:57"
+      ],
+      "writes": 0,
+      "pageErrors": [],
+      "overflow": 0,
+      "marketsOverflow": 0
+    },
+    {
+      "width": 430,
+      "countdown": [
+        "01:23:59:59",
+        "01:23:59:57"
+      ],
+      "writes": 0,
+      "pageErrors": [],
+      "overflow": 0,
+      "marketsOverflow": 0
+    },
+    {
+      "width": 390,
+      "countdown": [
+        "01:23:59:59",
+        "01:23:59:57"
+      ],
+      "writes": 0,
+      "pageErrors": [],
+      "overflow": 0,
+      "marketsOverflow": 0
+    },
+    {
+      "width": 360,
+      "countdown": [
+        "01:23:59:59",
+        "01:23:59:57"
+      ],
+      "writes": 0,
+      "pageErrors": [],
+      "overflow": 0,
+      "marketsOverflow": 0
+    },
+    {
+      "width": 320,
+      "countdown": [
+        "01:23:59:59",
+        "01:23:59:57"
+      ],
+      "writes": 0,
+      "pageErrors": [],
+      "overflow": 0,
+      "marketsOverflow": 0
+    }
+  ]
+}
