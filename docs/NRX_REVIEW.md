@@ -2,6 +2,7 @@
 
 Base: `9511ce037993d65fa375da6a4bc5d1c5675922ad` (fresh `origin/main`).
 Branch: `codex/nrx-investor-market`.
+Implementation commit: `4091253a8035684a2ed431e90f7b92388dc27eb6` (followed only by this factual handoff).
 
 The owner clarified that this is a prototype presentation for informed early-stage investors. Generated public market activity is not an execution ledger or evidence of customer trading.
 
