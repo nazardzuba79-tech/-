@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_BASE } from './api';
+import { fetchNrxPublic, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
 import { parseTestMarkets, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
 
 /**
@@ -32,6 +33,7 @@ function simulationPreviewTime(): string | null {
 
 /** A test-market GET: public, uncached, with the dev-only preview clock when allowed. */
 export async function fetchTestMarketJson(url: string, signal?: AbortSignal): Promise<unknown> {
+  if (url.toUpperCase().includes('NRX')) return fetchNrxPublic(url, signal);
   const response = await fetch(withSimulationPreview(url, simulationPreviewTime()), {
     signal, credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json' },
   });
@@ -50,6 +52,7 @@ export interface TestMarketsState {
 type Listener = (state: TestMarketsState) => void;
 
 class TestMarketStore {
+  constructor(private readonly endpoint = `${API_BASE}/market/test-assets`) {}
   private state: TestMarketsState = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
   private subscribers = new Map<symbol, { listener: Listener; intervalMs: number }>();
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -79,7 +82,7 @@ class TestMarketStore {
   refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
     if (typeof document !== 'undefined' && document.hidden && this.state.loaded) return Promise.resolve();
-    this.inFlight = fetchTestMarketJson(`${API_BASE}/market/test-assets`)
+    this.inFlight = fetchTestMarketJson(this.endpoint)
       .then((body) => {
         const snapshot = parseTestMarkets(body);
         if (!snapshot) throw new Error('test_market_shape');
@@ -136,6 +139,10 @@ class TestMarketStore {
 }
 
 export const testMarketStore = new TestMarketStore();
+export const nrxMarketStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`);
+export function refreshTestMarket(pair: string): Promise<void> {
+  return (isNrxPair(pair) ? nrxMarketStore : testMarketStore).refresh();
+}
 
 // Preview builds only (VITE_SIMULATION_PREVIEW=1): moving the preview clock
 // re-reads at once instead of waiting for the next poll. A production build
@@ -145,15 +152,23 @@ if (import.meta.env.VITE_SIMULATION_PREVIEW === '1' && typeof window !== 'undefi
 }
 
 /** Every test market. `enabled: false` subscribes to nothing. */
-export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true): TestMarketsState {
-  const [state, setState] = useState<TestMarketsState>(() => testMarketStore.getState());
-  useEffect(() => (enabled ? testMarketStore.subscribe(setState, intervalMs) : undefined), [intervalMs, enabled]);
+function useStore(store: TestMarketStore, intervalMs: number, enabled: boolean): TestMarketsState {
+  const [state, setState] = useState<TestMarketsState>(() => store.getState());
+  useEffect(() => (enabled ? store.subscribe(setState, intervalMs) : undefined), [store, intervalMs, enabled]);
   return state;
+}
+
+export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true, pair?: string): TestMarketsState {
+  const vta = useStore(testMarketStore, intervalMs, enabled && (!pair || !isNrxPair(pair)));
+  const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!pair || isNrxPair(pair)));
+  if (pair) return isNrxPair(pair) ? nrx : vta;
+  return { loaded: vta.loaded && nrx.loaded, error: vta.error || nrx.error,
+    assets: [...vta.assets, ...nrx.assets], clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : vta.clockOffsetMs };
 }
 
 /** One test market, or nothing for an ordinary pair (which then costs no request). */
 export function useTestMarket(pair: string | null, intervalMs = TEST_MARKET_TERMINAL_INTERVAL_MS) {
-  const state = useTestMarkets(intervalMs, pair !== null);
+  const state = useTestMarkets(intervalMs, pair !== null, pair ?? undefined);
   return {
     asset: pair ? state.assets.find((asset) => asset.pair === pair.toUpperCase()) ?? null : null,
     loaded: state.loaded,

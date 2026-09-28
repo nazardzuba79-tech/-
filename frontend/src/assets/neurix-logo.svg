@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NEURIX">
+  <defs><linearGradient id="n" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#40c8ff"/><stop offset="1" stop-color="#9363ff"/></linearGradient></defs>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="#101b34" stroke="#739aff" stroke-width="2"/>
+  <path d="M19 45V19l26 26V19" fill="none" stroke="url(#n)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="19" cy="19" r="4" fill="#8be4ff"/><circle cx="45" cy="45" r="4" fill="#b197ff"/>
+</svg>

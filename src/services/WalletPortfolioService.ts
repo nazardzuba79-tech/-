@@ -161,6 +161,15 @@ export class WalletPortfolioService {
       if (Number.isFinite(price) && price > 0) byBase.set(base, price);
     }
 
+    // Account valuation, not a public market-data request. The listing price
+    // values seeded inventory before launch; afterwards the canonical path does.
+    // Never identify NRX through a colliding external venue symbol.
+    if (wanted.has('NRX')) {
+      const { NEURIX } = await import('./testMarkets/neurix');
+      const { simulationFor } = await import('./testMarkets/testMarketSimulation');
+      byBase.set('NRX', simulationFor(NEURIX).priceAt(Date.now()) ?? NEURIX.initialPrice);
+    }
+
     let eurUsd: number | null = null;
     if (wanted.has('EUR') && this.cfdData.isConfigured()) {
       try {

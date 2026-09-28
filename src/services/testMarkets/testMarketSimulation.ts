@@ -440,7 +440,7 @@ export interface TestMarketState {
   symbol: string;
   name: string;
   isTestAsset: true;
-  isTradable: false;
+  isTradable: boolean;
   listingAt: number;
   initialPrice: number;
   serverTime: number;
@@ -466,7 +466,7 @@ export function getCurrentTestMarketState(simulation: TestMarketSimulation, now:
   const asset = simulation.asset;
   const base = {
     pair: asset.pair, symbol: asset.symbol, name: asset.name,
-    isTestAsset: true as const, isTradable: false as const,
+    isTestAsset: true as const, isTradable: asset.isTradable,
     listingAt: asset.listingAt, initialPrice: asset.initialPrice, serverTime: now,
   };
   if (now < asset.listingAt) {

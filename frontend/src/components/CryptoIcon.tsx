@@ -4,8 +4,9 @@ import { assetMetadataStore } from '../lib/assetMetadataStore';
 // the same ticker there. PLACEHOLDER until the owner supplies the approved
 // VOLTORA logo — replacing this one file swaps it everywhere.
 import voltoraLogo from '../assets/voltora-logo.svg';
+import neurixLogo from '../assets/neurix-logo.svg';
 
-const TEST_ASSET_ICONS: Readonly<Record<string, string>> = { VTA: voltoraLogo };
+const TEST_ASSET_ICONS: Readonly<Record<string, string>> = { VTA: voltoraLogo, NRX: neurixLogo };
 
 /**
  * Icon resolution, in order:

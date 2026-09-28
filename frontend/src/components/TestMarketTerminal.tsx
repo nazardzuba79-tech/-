@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { localeOf, useLanguage } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { TerminalChart } from './TerminalChart';
-import { testMarketStore } from '../lib/testMarketStore';
+import { refreshTestMarket } from '../lib/testMarketStore';
+import { nrxListingTime } from '../lib/nrxMarket';
 import { testMarketCandleLoader } from '../lib/testMarketCandles';
 import { countdownParts, formatListingMoment, formatTestAxisPrice, formatTestPrice, type TestAsset } from '../lib/testMarkets';
 import './TestMarketTerminal.css';
@@ -44,9 +45,9 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
     if (!counting || !Number.isFinite(left)) { reachedRef.current = false; return; }
     if (left <= 0 && !reachedRef.current) {
       reachedRef.current = true;
-      void testMarketStore.refresh();
+      void refreshTestMarket(pair);
     }
-  }, [counting, left]);
+  }, [counting, left, pair]);
 
   if (asset && !preListing) {
     return <TerminalChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
@@ -58,13 +59,14 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
   const cells: [number, string][] = [
     [parts.days, t('listing.days')], [parts.hours, t('listing.hours')], [parts.minutes, t('listing.minutes')], [parts.seconds, t('listing.seconds')],
   ];
-  const startsAt = asset ? formatListingMoment(asset.listingAt, localeOf(lang)) : '';
+  const startsAt = asset ? (asset.symbol === 'NRX' ? nrxListingTime(asset.listingAt) : formatListingMoment(asset.listingAt, localeOf(lang))) : '';
+  const name = asset?.name ?? (pair === 'NRX/USDT' ? 'NEURIX' : 'VOLTORA');
 
   return (
-    <section className="vta-prelisting" aria-label={`${asset?.name ?? 'VOLTORA'} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}>
+    <section className="vta-prelisting" aria-label={`${name} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}>
       <div className="vta-prelisting-card">
         <div className="vta-prelisting-mark"><CryptoIcon symbol={pair.split('/')[0]} size={64} /></div>
-        <h2 className="vta-prelisting-name">{asset?.name ?? 'VOLTORA'}</h2>
+        <h2 className="vta-prelisting-name">{name}</h2>
         <div className="vta-prelisting-pair">{pair}</div>
         {asset ? (
           <>

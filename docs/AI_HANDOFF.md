@@ -4270,6 +4270,23 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Verification: 474 unique tests / 26 suites PASS; actual VTA/native PostgreSQL browser scenarios PASS at 1440/390, including listing transition without reload, unclipped depth, clean visible copy, exact partial/full sale, recovery and two tabs. Public listing 1440/430/390/360/320 PASS. Backend/frontend types and production build PASS (existing chunk advisory). Evidence: docs/qa/vta-market-display.
 - Not performed in this task: PR merge, deployment, production data changes, owner credit or owner sale. Existing unrelated docs/qa/voltora-listing untracked files left untouched. Next: review PR #316 and final-head CI; no Phase 2 or unrelated cleanup.
 
+## Codex — 2026-09-28 — NRX investor market, review only
+
+- Implementation: `4091253a8035684a2ed431e90f7b92388dc27eb6`, branch `codex/nrx-investor-market`, fresh main `9511ce037993d65fa375da6a4bc5d1c5675922ad`.
+- Material changes: shared NEURIX config/public edge adapter, explicit NRX ordinary-Spot listing/conditional-price routing, idempotent maintenance allocation, wallet valuation, Cloudflare Worker entry, existing standard terminal data routing/logo/book-tape tabs, scoped tests/workflows. Exact 52-file manifest and screenshots: `docs/NRX_REVIEW.md`.
+- Owner clarified informed investor demo and selected ordinary Spot inventory: 31,250 NRX at 0.80 USDT initial valuation, no USDT debit. Function is not wired to startup/HTTP/migrations and has NOT been executed against production. No safe Ksenia account mapping was established; no Ksenia allocation.
+- Preserved: VTA seed/date/growth/private-sale accounting, standard Spot form/defaults and all order families, matching engine, Futures financial logic, CFD, database schema and public-user balances. Display depth/tape never creates orders/fills; real NRX fills require funded counterparties in the ordinary book.
+- Verification: 225 unit/preservation tests + 8 actual disposable PostgreSQL integration tests PASS; bundled edge zero-IO and existing Worker contracts PASS; backend/frontend TypeScript and production build PASS (existing chunk warning). Isolated browser 1440/390 PASS including boundary without reload, tape, standard insufficient-funds response, no overflow/page exceptions/visible demo wording. All production access blocked in QA.
+- No merge, deployment, production data change, production allocation or real order. Next: owner review of PR and CI; coordinated frontend/edge publication and verified-owner allocation require separate approval. No production readiness or live NRX availability claimed.
+
+## Codex — 2026-09-28 — NRX PR #319 review follow-up
+
+- PR #319 builds on implementation `4091253a8035684a2ed431e90f7b92388dc27eb6`. Restrict legacy NRX redirects to public GET/HEAD paths; regression proves account routes are not intercepted.
+- Initial CI revealed two preservation-guard integration gaps: the optional NRX book title and the new shared API import. Retain the audited book fingerprint by reversing only that title slot; cover the NRX dependency in both Copy workflow triggers and accept CRLF in the coverage test. No Copy/Futures business logic changed.
+- Changed follow-up files: `src/api/routes/testMarkets.ts`, `src/services/testMarkets/__tests__/nrxPublic.test.ts`, `frontend/src/lib/__tests__/futuresUiPolish.test.ts`, `frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts`, `.github/workflows/copy-trading-card-regression.yml`, `.github/workflows/nrx-market.yml`, `docs/NRX_REVIEW.md`, this handoff. Full 55-file PR manifest is in NRX_REVIEW.
+- Reverified 261 targeted tests / 19 suites and backend TypeScript: PASS. Together with the 8 previously passed disposable PostgreSQL tests: 269 unique tests. Frontend/Worker code and previously verified builds/browser evidence unchanged by this follow-up. New guards are included in NRX CI. Recheck remote CI before release.
+- Review only: no merge/deploy, production allocation/data change or real order. Owner inventory remains prepared, not live-credited.
+
 ## 2026-09-28 — Codex — Manual deposit catalogue review branch
 - Branch: `codex/manual-deposit-catalogue`, owner-requested fresh main base `9511ce037993d65fa375da6a4bc5d1c5675922ad`.
 - Implementation commit: `f3f6171b1f48254cad81a25902503f041b7596b5`.
@@ -4295,3 +4312,10 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Material changes: deposit-catalogue wrangler production environment, local bundle ignore and runbook only. Existing Worker/runtime/UI and all financial/legacy paths preserved.
 - Verified: 148 Jest tests/9 suites, 15 workerd tests, backend build and production dry-run PASS. Remote staging auth/CAS (1 commit, 11 conflicts), persistence after redeploy, edit/disable/memo clearing PASS; Workers Free unchanged.
 - At commit: production catalogue, Render connectivity and frontend flag remain pending separate gated operations/live QA. No production address or balance mutations.
+
+## Codex — 2026-09-28 — NRX production preparation, current-main synchronization
+- Owner explicitly authorized PR #319 merge, exact merged-tree application/edge deployment and an idempotent 31,250 NRX allocation only after verifying the production VTA owner ADMIN. Fresh remote NRX head `538db46db4bdbe5b82d88861ae8213c0d36991f8`; main `936b12d7114fc040681e61e4b2e8d1c6a2a46994` includes #318 and #320.
+- Merged that current main into the NRX branch. Only conflict: this log; retained both histories. Deposit catalogue runtime/addresses, schema, VTA config/seed and financial engines preserved. Never merged cloudflare-market-edge.
+- Adjusted catalogue regression's obsolete branch-wide git-diff assertion into a source guard for the catalogue Worker itself; it now remains useful on later unrelated Worker PRs. Updated NRX mobile screenshot from the merged-tree isolated browser run.
+- Verification: 407 unit/regression tests across 27 suites (406 initial PASS; branch-scope guard failed, then all 32 catalogue tests PASS after correction); 8 real disposable PostgreSQL NRX tests; 15 actual workerd catalogue tests; 5 read-only exporter tests; bundled NRX 10 checks/existing edge contracts; backend/frontend types and production build; NRX 1440/390 browser QA PASS. No production order, credential exposure, schema or balance write performed at commit time.
+- Next: final-head CI, PR merge, exact merged-tree deployment and production read-only QA. Allocation only after live owner identity/receipt checks; do not claim it from this preparation commit.

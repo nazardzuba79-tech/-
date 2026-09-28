@@ -6,7 +6,6 @@ import { AddressEntry, CatalogueDocument, CatalogueError, CatalogueStore, Cloudf
 import { CoinRanking } from '../../CoinGeckoService';
 import { depositCatalogueRouter } from '../../../api/routes/depositCatalogue';
 import { readFileSync } from 'fs';
-import { execFileSync } from 'child_process';
 
 const address = '0x' + '1'.repeat(40);
 const entry = (assetId: string, networkId: string, value = address): AddressEntry => ({ assetId, networkId, address: value, enabled: true, memo: '', memoLabel: '' });
@@ -165,9 +164,10 @@ describe('manual receiving-address catalogue', () => {
       const source = readFileSync(`src/services/depositCatalogue/${file}`, 'utf8');
       expect(source).not.toMatch(/from ['"].*(?:prisma|DepositService|Watch|WalletService)|setInterval|setTimeout\(/);
     }
-    const changes = execFileSync('git', ['diff', '--name-only', 'origin/main'], { encoding: 'utf8' }).split('\n');
-    // This follow-up explicitly adds a standalone catalogue Worker only.
-    expect(changes.filter(f => /^(prisma\/|workers\/|.*(?:Scheduler|Watcher)\.ts$)/.test(f)
-      && !f.startsWith('workers/deposit-catalogue/'))).toEqual([]);
+    // Guard the catalogue itself, not unrelated files changed by whichever PR
+    // runs this regression after the catalogue has already merged into main.
+    const worker = readFileSync('workers/deposit-catalogue/src/index.js', 'utf8');
+    expect(worker).not.toMatch(/@prisma|@neondatabase|DATABASE_URL|setInterval|setTimeout\(|scheduled\s*\(/);
+    expect(worker).not.toMatch(/DepositService|TreasuryWalletService|balance\.(?:update|upsert)|creditBalance/);
   });
 });

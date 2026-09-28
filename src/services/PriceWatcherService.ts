@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js';
 import { OrderService, PriceSource } from './OrderService';
 import { IdleBackoffScheduler, type IdleSleepOptions, type SweepOutcome } from './IdleBackoffScheduler';
 import { IDLE_SWEEP_MAX_MS } from '../config/limits';
+import { spotPriceSource } from './testMarkets/nrxSpot';
 
 /**
  * Background trigger engine for conditional orders (STOP_LIMIT,
@@ -58,7 +59,7 @@ export class PriceWatcherService {
         // Never trigger off missing data — an honest skip beats acting on
         // a stale/fabricated price.
         try {
-          const ticker = await this.priceSource.getTicker(order.pair);
+          const ticker = await spotPriceSource(this.priceSource).getTicker(order.pair);
           price = ticker ? new BigNumber(ticker.lastPrice) : null;
         } catch {
           price = null;
