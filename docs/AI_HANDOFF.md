@@ -4251,3 +4251,8 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - VTA CI follow-up to e9c0bfc77cfb17246fbe216718effab0188d44ba: actual PostgreSQL/browser workflow passed; wider pipelines exposed the shared locale fingerprint and obsolete public-listing source guard. Updated only these contracts, retaining every prior dictionary digest and adding exact localized refusal assertions. 49 further tests PASS; total 462 targeted tests / 24 suites. Runtime implementation and screenshot evidence unchanged.
 
 - Public listing browser follow-up: replaced obsolete disabled-BUY/submit expectations with the owner's interactive standard tabs and explicit purchase/type/prelisting refusals. Five widths (1440/430/390/360/320) PASS, zero writes/errors/overflow; report committed. Test/docs only.
+
+## Codex — 2026-09-28 — Owner-requested VTA timer postponement
+- Implementation: 65bf3aee164bcc6b34351a324fd7129e7509ec3d. Changed testAssetConfig listingAt from 2026-09-28 14:00 UTC to 15:00 UTC (+1 hour); updated the existing config assertion.
+- Preserved standard Spot UI, balances, accounting, seed, initial price and relative simulation price path. No production changes, merge or deployment performed; earlier no-deployment restriction remains.
+- Verification: all 36 testMarketSimulation tests PASS, including prelisting and first tick. Review branch/PR #316 updated; publication requires owner authorization.
