@@ -1,5 +1,6 @@
 import type { Candle } from './indicators';
 import type { FuturesDepthSnapshot } from './futuresDepth';
+import { isTestMarketPair } from './testMarkets';
 
 const APP_API_BASE = '/api/v1';
 const DIRECT_KRAKEN_BASE = 'https://api.kraken.com';
@@ -89,6 +90,16 @@ export function parseEdgeSpotBook(payload: any, pair: string): FuturesDepthSnaps
 
 export async function readSpotPublicBook(pair: string, signal?: AbortSignal): Promise<{ pair: string } & FuturesDepthSnapshot> {
   if (!/^[A-Z0-9]{1,32}\/[A-Z0-9]{2,12}$/.test(pair)) throw new Error('Invalid spot pair');
+
+  // Canonical local market only: never try an external venue or its fallback.
+  if (isTestMarketPair(pair)) {
+    const [{ fetchTestMarketJson }, { API_BASE }] = await Promise.all([import('./testMarketStore'), import('./api')]);
+    const body: any = await fetchTestMarketJson(`${API_BASE}/market/display/spot-book/${pairSlug(pair)}`, signal);
+    if (body?.pair === pair && body.available === false && body.bids?.length === 0 && body.asks?.length === 0) {
+      return { pair, bids: [], asks: [], asOf: body.timestamp, source: 'rest', status: 'unavailable' };
+    }
+    return { pair, ...parseEdgeSpotBook(body, pair) };
+  }
 
   if (!productionSite()) {
     const body = await fetchJson(`${APP_API_BASE}/market/display/spot-book/${pairSlug(pair)}`, signal);

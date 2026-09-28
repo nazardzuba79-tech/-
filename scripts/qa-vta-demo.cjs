@@ -109,6 +109,88 @@ app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
 
 
 
+const forbiddenCopy = /\b(?:demo|test|simulation|simulated|synthetic|fixture|preview|sandbox)\b|not tradable|демо|тест|симуляц|синтетич|предпросмотр/i;
+async function cleanCopy(page, label) {
+ const text=await page.locator('body').innerText();
+ const match=text.match(forbiddenCopy);
+ if(match)throw Error('Forbidden customer copy '+label+': '+match[0]);
+ fs.writeFileSync(OUT+'/'+label+'.txt',text);
+}
+async function marketDisplayQA(browser,origin,width) {
+ const ctx=await browser.newContext({viewport:{width,height:1100},locale:'ru-RU'});
+ await ctx.addInitScript(()=>{localStorage.setItem('exchange_token','fixture');localStorage.setItem('exchange_lang','ru');});
+ const externalVta=[],errors=[],reads=[];
+ await ctx.route('**/*',r=>{const url=r.request().url();if(!url.startsWith(origin)&&/VTA|VOLTORA/i.test(decodeURIComponent(url)))externalVta.push(url);return url.startsWith(origin)?r.continue():r.abort();});
+ const page=await ctx.newPage();page.on('pageerror',e=>errors.push(String(e)));page.on('request',q=>{if(q.url().includes('/spot-book/VTA-USDT'))reads.push(q.url());});
+ const audit=async phase=>{
+  for(const route of ['/markets','/wallet']){
+   await page.goto(origin+route);
+   if(route==='/wallet')await page.getByRole('button',{name:'Финансирование',exact:true}).click();
+   await page.locator(route==='/markets'?'.test-market-row[data-pair="VTA/USDT"]':'.wallet-funding-row[data-asset="VTA"]').waitFor({state:'attached'});
+   await cleanCopy(page,phase+'-'+route.slice(1)+'-'+width);
+   await page.screenshot({path:OUT+'/'+phase+'-'+route.slice(1)+'-'+width+'.png',fullPage:true});
+  }
+ };
+ simNow=VOLTORA.listingAt-5000;await audit('before');
+ await page.goto(origin+'/trade?pair=VTA%2FUSDT');
+ await page.locator('[role="timer"]').waitFor();
+ await cleanCopy(page,'before-trade-'+width);
+ await page.screenshot({path:OUT+'/before-trade-'+width+'.png',fullPage:true});
+ if(await page.locator('.ob-row').count())throw Error('Pre-listing depth leaked');
+ await page.evaluate(()=>window.__listingDocument='same-document');
+ const writes=financialAttempts.length;
+ simNow=VOLTORA.listingAt+60000;
+ // Advance only the server fixture clock. The existing countdown/store must wake by itself.
+ await page.waitForFunction(()=>!document.querySelector('[role="timer"]'),{},{timeout:15000});
+ await page.locator('.chart-area canvas').first().waitFor({state:'attached'});
+ await page.waitForFunction(()=>document.querySelector('.ticker-bar .value.price')?.textContent.includes('0.01'));
+ if(await page.evaluate(()=>window.__listingDocument)!=='same-document')throw Error('Listing reloaded document');
+ if(width<900){await page.locator('#mobile-trade-chart').click();await page.locator('.terminal-mobile-chart-tabs').getByRole('button',{name:'Стакан',exact:true}).click();}
+ await page.waitForFunction(()=>['.orderbook-bids','.orderbook-asks'].every(selector=>{
+  const area=document.querySelector('.orderbook-area').getBoundingClientRect();
+  return Array.from(document.querySelectorAll(selector+' .ob-row')).filter(row=>{
+   const r=row.getBoundingClientRect(),p=row.parentElement.getBoundingClientRect();
+   return r.height>0&&r.top>=Math.max(area.top,p.top)-1&&r.bottom<=Math.min(area.bottom,p.bottom,innerHeight-54)+1;
+  }).length>=10;
+ }));
+ const levels=await page.locator('.orderbook-area').evaluate(el=>{
+  const read=s=>Array.from(el.querySelectorAll(s+' .ob-row')).map(row=>({price:Number(row.querySelector('.cell').title),quantity:Number(row.querySelectorAll('.cell')[1].title),depth:row.querySelector('.ob-depth-bar').style.transform}));
+  return {bids:read('.orderbook-bids'),asks:read('.orderbook-asks'),spread:el.querySelector('.ob-spread-detail').textContent};
+ });
+ if(Math.max(...levels.bids.map(l=>l.price))>=Math.min(...levels.asks.map(l=>l.price))||[...levels.bids,...levels.asks].some(l=>!l.price||!l.quantity||l.depth==='scaleX(0)'))throw Error('Invalid rendered depth');
+ await cleanCopy(page,'after-trade-'+width);await page.screenshot({path:OUT+'/after-trade-'+width+'.png',fullPage:true});
+ const bookUrl=origin+'/api/v1/market/display/spot-book/VTA-USDT';
+ const book=await (await fetch(bookUrl)).json();
+ const tape=await (await fetch(origin+'/api/v1/market/external/trades/VTA-USDT')).json();
+ if(!tape.trades.length||tape.trades.some(t=>t.timestamp>simNow))throw Error('Tape empty or future');
+ const row=page.locator('.orderbook-bids .ob-row').first(),price=await row.locator('.cell').first().getAttribute('title');
+ await row.click();if(width<900)await page.locator('#mobile-trade-trade').click();
+ const form=page.locator('.order-form-area');
+ await page.waitForFunction(p=>document.querySelector('.order-form-area input[aria-label="Цена"]')?.value===p,price);
+ await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
+ await form.locator('input[type="number"][aria-label="Количество"]').fill('100');
+ await form.locator('button[type="submit"]').click();
+ await form.getByRole('alert').filter({hasText:'Этот тип ордера для данного актива недоступен.'}).waitFor();
+ if(financialAttempts.length!==writes)throw Error('Book click LIMIT mutated finances');
+ await form.getByRole('button',{name:'Рынок',exact:true}).click();
+ for(const value of [0,25,50,75,100]){
+  await form.getByRole('button',{name:value+'%',exact:true}).click();
+  const backgrounds=await form.locator('.slider-step').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).backgroundColor));
+  if(backgrounds.some(c=>c!=='rgba(0, 0, 0, 0)'))throw Error('Percentage button red/green fill: '+backgrounds);
+ }
+ if(await form.locator('button[type="submit"]').isDisabled()||Number(await form.getByLabel('Итого',{exact:true}).inputValue())<=0)throw Error('Live SELL did not become ready');
+ await page.mouse.move(0,0);await page.screenshot({path:OUT+'/percentages-'+width+'.png',fullPage:true});
+ await page.reload();if(width<900){await page.locator('#mobile-trade-chart').click();await page.locator('.terminal-mobile-chart-tabs').getByRole('button',{name:'Стакан',exact:true}).click();}
+ await page.locator('.orderbook-bids .ob-row').first().waitFor();
+ if(JSON.stringify(await (await fetch(bookUrl)).json())!==JSON.stringify(book))throw Error('Fixed server tick changed on reload');
+ const oldText=await page.locator('.orderbook-area').innerText();simNow+=10000;
+ await page.waitForFunction(old=>document.querySelector('.orderbook-area')?.innerText!==old,oldText,{timeout:15000});
+ await audit('after');
+ if(externalVta.length||errors.length)throw Error(JSON.stringify({externalVta,errors}));
+ const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);if(overflow>1)throw Error('Mobile overflow '+overflow);
+ await ctx.close();return {width,levels,tapeCount:tape.trades.length,externalVta,errors,reads:reads.length,transition:'same document; timer to chart, ticker, book and form; server fixture clock only',copy:'trade/markets/wallet before and after PASS',percentageBackground:'transparent at all five steps',overflow};
+}
+
 async function panelStates(page, width, expected) {
  await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important}'});
  await page.evaluate(()=>document.fonts.ready);
@@ -156,7 +238,10 @@ async function panelStates(page, width, expected) {
  const server=app.listen(0,'127.0.0.1'); await once(server,'listening');
  const origin='http://127.0.0.1:'+server.address().port;
  const browser=await chromium.launch({headless:true}); const rows=[];
- try { for(const width of [1440,390]) {
+ try {
+  const display=[];
+  for(const width of [1440,390]) { display.push(await marketDisplayQA(browser,origin,width));fs.writeFileSync(OUT+'/market-display.json',JSON.stringify(display,null,2)); }
+  for(const width of [1440,390]) {
   const ctx=await browser.newContext({viewport:{width,height:1000},locale:'ru-RU'});
   await ctx.addInitScript(()=>{localStorage.setItem('exchange_token','fixture');localStorage.setItem('exchange_lang','ru');});
   await ctx.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
@@ -180,7 +265,10 @@ async function panelStates(page, width, expected) {
   await form.getByRole('alert').filter({hasText:'Этот актив пока не торгуется'}).waitFor();
   if(saleRequests!==preListingWrites)throw Error('prelisting write');
   if(await page.locator('.vta-demo-spot').count())throw Error('custom panel returned');
-  simNow=VOLTORA.listingAt+60000; await page.reload();
+  await page.evaluate(()=>window.__saleListingDocument=true);
+  simNow=VOLTORA.listingAt+60000;
+  await page.waitForFunction(()=>!document.querySelector('[role="timer"]'),{},{timeout:15000});
+  if(!await page.evaluate(()=>window.__saleListingDocument))throw Error('Sale transition reloaded the page');
   if(width<900)await page.locator('#mobile-trade-trade').click();
   await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.order-form-area .amount')?.textContent.includes('VTA') && document.querySelector('.order-form-area .amount')?.textContent.includes('4545'));

@@ -64,6 +64,7 @@ jobs:
           src/api/routes/__tests__/demoTrading.test.ts
           src/api/routes/__tests__/testMarkets.test.ts
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
+          src/services/testMarkets/__tests__/testMarketDepth.test.ts
           frontend/src/lib/__tests__/futuresTickerHeader.test.ts
           frontend/src/lib/__tests__/futuresMobileScope.test.ts
           frontend/src/lib/__tests__/terminalMobileParity.test.ts
@@ -73,6 +74,7 @@ jobs:
         run: >-
           npx jest --runInBand --runTestsByPath
           frontend/src/lib/__tests__/vtaSpotAccount.test.ts
+          frontend/src/lib/__tests__/spotPublicMarket.test.ts
           frontend/src/lib/__tests__/spotButtonLabels.test.ts
           frontend/src/lib/__tests__/spotBookRefresh.test.ts
       - run: npm run build

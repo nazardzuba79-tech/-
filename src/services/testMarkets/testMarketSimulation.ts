@@ -339,6 +339,29 @@ export class TestMarketSimulation {
       plan.sigma, plan.cluster, this.asset.initialPrice);
   }
 
+  /** Read-only tape of completed canonical ticks; never samples a future tick. */
+  recentTrades(now: number, limit = 100) {
+    const done = Math.max(0, Math.floor((now - this.asset.listingAt) / TICK_MS));
+    const count = Math.min(done, Math.max(0, Math.min(500, Math.floor(limit))));
+    const trades: { id: string; timestamp: number; price: string; quantity: string; quoteVolume: string; side: 'BUY' | 'SELL' }[] = [];
+    let cachedIndex = -1, ticks: Tick[] = [], plan: HourPlan;
+    for (let index = done - 1; index >= done - count; index--) {
+      const candleIndex = Math.floor(index / TICKS_PER_CANDLE);
+      const slot = candleIndex % CANDLES_PER_HOUR;
+      if (cachedIndex !== candleIndex) {
+        plan = this.hourPlan(Math.floor(candleIndex / CANDLES_PER_HOUR));
+        ticks = this.ticks(plan, slot);
+        cachedIndex = candleIndex;
+      }
+      const offset = index % TICKS_PER_CANDLE, tick = ticks[offset];
+      const previous = offset ? ticks[offset - 1].price : plan!.boundaries[slot];
+      trades.push({ id: `${this.asset.symbol}:${index + 1}`, timestamp: this.asset.listingAt + (index + 1) * TICK_MS,
+        price: String(round(tick.price)), quantity: tick.volume.toFixed(8), quoteVolume: tick.quoteVolume.toFixed(8),
+        side: tick.price >= previous ? 'BUY' : 'SELL' });
+    }
+    return trades;
+  }
+
   /**
    * The canonical 5m series from the listing up to `now`. The last candle
    * is the one forming at `now`, built from completed ticks only. Empty

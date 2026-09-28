@@ -38,7 +38,7 @@ describe('the frontend reads exactly what the server serves', () => {
     expect(vta.state.phase).toBe('pre-listing');
     const ticker = testAssetTicker(vta);
     expect([ticker.lastPrice, ticker.changePercent24h, ticker.quoteVolume24h, ticker.high24h]).toEqual(['', '', '', '']);
-    expect(formatListingTime(vta.listingAt)).toBe('28 Sep 2026 · 14:00 UTC');
+    expect(formatListingTime(vta.listingAt)).toBe('28 Sep 2026 · 15:00 UTC');
   });
 
   test('+48h: the ticker row carries the served figures', async () => {
@@ -160,7 +160,10 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
     expect(page).toContain('<TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />');
     expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />');
     expect(page).not.toMatch(/TestMarketTickerBar|TestMarketBook|TestMarketOrderPanel/);
-    expect(page).toContain("marketType !== 'spot' || isTestMarketPair(pair) || document.hidden) return;");
+    expect(page).toContain("marketType !== 'spot' || document.hidden) return;");
+    expect(page).toContain("const bookLive = !testPair || testMarket.asset?.state.phase === 'live';");
+    expect(page).toContain("if (marketType !== 'spot' || !bookLive) return;");
+    expect(page).toContain('testPair ? 10_000 : 60_000');
     expect(panels).toContain('tradingView={false}');
     expect(panels).not.toMatch(/api\.|placeOrder|fetch\(/);
   });

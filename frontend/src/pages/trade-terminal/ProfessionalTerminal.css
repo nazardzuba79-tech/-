@@ -82,7 +82,8 @@
 .trade-terminal.trade-terminal button, .trade-terminal.trade-terminal input, .trade-terminal.trade-terminal select { font-family:var(--font-family); }
 .trade-terminal.trade-terminal .ob-row.ob-row--spot { padding-inline:8px; gap:5px; }
 .trade-terminal.trade-terminal .ob-row.ob-row--spot .cell { padding-inline:0; }
-.trade-terminal.trade-terminal .slider-step.active { background:transparent; }
+.trade-terminal.trade-terminal .slider-step.active,
+.trade-terminal.trade-terminal .slider-step.active.sell { background:transparent; }
 
 .trade-terminal.trade-terminal .submit-btn, .trade-terminal.trade-terminal .cfd-submit { height:38px; }
 .trade-terminal.trade-terminal .terminal-size-range { appearance:none; background:transparent; border:0; padding:0; }

@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { TEST_ASSETS, testAssetForPair, type TestAssetConfig } from '../../services/testMarkets/testAssetConfig';
 import { getCurrentTestMarketState, simulationFor } from '../../services/testMarkets/testMarketSimulation';
+import { testMarketDepth } from '../../services/testMarkets/testMarketDepth';
 import {
   effectiveTestMarketNow, publicTestAsset, resolveSimulationNow, testMarketCandles, UnsupportedTestIntervalError,
 } from '../../services/testMarkets/testMarketService';
@@ -72,8 +73,9 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
     noStore(res);
     if (state.phase !== 'live' || state.lastPrice === null) return res.status(404).json({ error: `No ticker for ${asset.pair}`, isTestAsset: true, listingAt: new Date(asset.listingAt).toISOString() });
     const last = String(state.lastPrice);
+    const book = testMarketDepth(simulationFor(asset), state.serverTime);
     res.json({ source: 'simulation', isTestAsset: true, isTradable: false, ticker: {
-      pair: asset.pair, lastPrice: last, bidPrice: last, askPrice: last,
+      pair: asset.pair, lastPrice: last, bidPrice: book.bids[0].price, askPrice: book.asks[0].price,
       high24h: String(state.high24h), low24h: String(state.low24h),
       volume24h: String(state.volume24h), quoteVolume24h: String(state.quoteVolume24h),
       changePercent24h: String(state.change24hPercent),
@@ -82,17 +84,18 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
   router.get('/market/external/tickers/:pair', forTestPair(ticker));
   router.get('/market/ticker/:pair', forTestPair(ticker));
 
-  // A test asset has no liquidity: its book and tape are honestly empty.
-  const emptyBook = (asset: TestAssetConfig, req: Request, res: Response) => {
+  // Read-only display depth. No orders, matching, database reads or mutations.
+  const sendBook = (asset: TestAssetConfig, req: Request, res: Response) => {
     noStore(res);
-    res.json({ source: 'simulation', pair: asset.pair, isTestAsset: true, available: false, reason: 'test_asset', bids: [], asks: [], timestamp: nowFor(req) });
+    res.json(testMarketDepth(simulationFor(asset), effectiveTestMarketNow(asset, nowFor(req))));
   };
-  router.get('/market/external/orderbook/:pair', forTestPair(emptyBook));
-  router.get('/market/display/spot-book/:pair', forTestPair(emptyBook));
-  router.get('/orderbook/:pair', forTestPair(emptyBook));
-  router.get('/market/external/trades/:pair', forTestPair((asset, _req, res) => {
+  router.get('/market/external/orderbook/:pair', forTestPair(sendBook));
+  router.get('/market/display/spot-book/:pair', forTestPair(sendBook));
+  router.get('/orderbook/:pair', forTestPair(sendBook));
+  router.get('/market/external/trades/:pair', forTestPair((asset, req, res) => {
     noStore(res);
-    res.json({ source: 'simulation', pair: asset.pair, isTestAsset: true, trades: [] });
+    res.json({ source: 'simulation', pair: asset.pair, isTestAsset: true,
+      trades: simulationFor(asset).recentTrades(effectiveTestMarketNow(asset, nowFor(req))) });
   }));
 
   return router;

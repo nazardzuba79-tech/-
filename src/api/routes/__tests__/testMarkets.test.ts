@@ -65,18 +65,32 @@ describe('the test-asset list and state', () => {
     expect(res.body.candles[9].time * 1000).toBe(L + 50 * HOUR);
   });
 
-  test('ticker, empty book and empty tape for the test pair', async () => {
+  test('live ticker, all three book routes and completed-tick tape share one market', async () => {
     const now = L + 20 * HOUR;
     const ticker = await request(app(now)).get('/api/v1/market/external/tickers/VTA-USDT');
     const state = (await request(app(now)).get('/api/v1/market/test-assets/VTA-USDT')).body.state;
     expect(ticker.body.ticker.lastPrice).toBe(String(state.lastPrice));
     expect(ticker.body.ticker.changePercent24h).toBe(String(state.change24hPercent));
     expect(ticker.body).toMatchObject({ isTestAsset: true, isTradable: false });
+    let canonical: any;
     for (const path of ['/market/external/orderbook/VTA-USDT', '/market/display/spot-book/VTA-USDT', '/orderbook/VTA-USDT']) {
       const book = await request(app(now)).get(`/api/v1${path}`);
-      expect(book.body).toMatchObject({ isTestAsset: true, available: false, bids: [], asks: [] });
+      expect(book.body).toMatchObject({ isTestAsset: true, available: true });
+      expect(book.body.bids).toHaveLength(25);
+      expect(book.body.asks).toHaveLength(25);
+      if (canonical) expect(book.body).toEqual(canonical);
+      canonical = book.body;
+      expect(new BigNumber(book.body.bids[0].price).eq(new BigNumber(state.lastPrice).decimalPlaces(10, BigNumber.ROUND_DOWN))).toBe(true);
     }
-    expect((await request(app(now)).get('/api/v1/market/external/trades/VTA-USDT')).body.trades).toEqual([]);
+    expect(ticker.body.ticker.bidPrice).toBe(canonical.bids[0].price);
+    expect(ticker.body.ticker.askPrice).toBe(canonical.asks[0].price);
+    const tape = (await request(app(now)).get('/api/v1/market/external/trades/VTA-USDT')).body.trades;
+    expect(tape.length).toBeGreaterThan(0);
+    expect(tape.every((t: any) => t.timestamp <= now && Number(t.quantity) > 0 && Number(t.price) > 0)).toBe(true);
+    for (const path of ['/market/external/orderbook/VTA-USDT', '/market/display/spot-book/VTA-USDT', '/orderbook/VTA-USDT']) {
+      expect((await request(app(L - 1)).get(`/api/v1${path}`)).body).toMatchObject({ available: false, bids: [], asks: [] });
+    }
+    expect((await request(app(L - 1)).get('/api/v1/market/external/trades/VTA-USDT')).body.trades).toEqual([]);
     expect((await request(app(L - 1)).get('/api/v1/market/external/tickers/VTA-USDT')).status).toBe(404);
   });
 
