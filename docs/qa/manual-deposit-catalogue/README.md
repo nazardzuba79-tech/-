@@ -5,15 +5,16 @@ Branch: `codex/manual-deposit-catalogue`.
 
 ## Scope and activation blocker
 
-This is the explicitly permitted adapter + synthetic-test delivery. No suitable
-persistent Cloudflare store is wired in the repository. No infrastructure was
-provisioned. Production activation is blocked pending the configuration and
-verified legacy-address snapshot described in
+The persistent Cloudflare Worker + SQLite Durable Object is implemented and
+verified locally, including restart and CAS. No infrastructure was provisioned.
+Production activation remains blocked pending separate deployment, secret setup
+and owner review/approval of the read-only legacy-address snapshot described in
 [the storage runbook](../../manual-deposit-catalogue.md).
 
 The new frontend mode is opt-in; ordinary deployments keep the existing
 TreasuryWallet-based flow. The unconfigured new backend fails closed (503).
-Tests use an in-memory store only, never production addresses or accounts.
+Browser/legacy fixtures use an in-memory store; the persistence integration suite
+uses real workerd + SQLite. All tests use synthetic addresses/accounts.
 Initial fixture: **3 configured assets, 4 asset/network entries, 3 networks**:
 BTC/Bitcoin, ETH/Ethereum, USDT/Ethereum and USDT/TRON. This is not a production
 inventory; the live configured count was not independently queried.
