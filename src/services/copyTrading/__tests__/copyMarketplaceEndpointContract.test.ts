@@ -154,7 +154,7 @@ it('a new UTC day serves the last confirmed snapshot without waiting for the dai
   // Production evidence showed the daily append can be much slower than the
   // browser's 15s timeout. Hold that authoritative append forever here: the
   // marketplace must still paint the already-confirmed stored snapshot.
-  const never = new Promise<SyntheticCopyResponse>(() => {});
+  const never = new Promise<any>(() => {});
   (today as any).get = () => never;
 
   const started = Date.now();
