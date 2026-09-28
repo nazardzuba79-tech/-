@@ -18,6 +18,7 @@ function load(file: string): any {
   const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
+    if (name.endsWith('/depositCatalogue')) return { MANUAL_DEPOSIT_CATALOGUE: false };
     if (name.endsWith('/api')) return { api, getToken: () => token, ApiError: class extends Error {} };
     if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);

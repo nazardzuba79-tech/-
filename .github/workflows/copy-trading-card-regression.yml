@@ -40,6 +40,7 @@ on:
       - 'frontend/src/lib/monthlyCopyPerformance.ts'
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
+      - 'frontend/src/lib/depositCatalogue.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
       - 'frontend/src/lib/adminAlertApi.ts'
       # The strings both cards render, in every locale the switcher offers.
@@ -117,6 +118,7 @@ on:
       - 'frontend/src/lib/monthlyCopyPerformance.ts'
       - 'frontend/src/lib/depositMinimum.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
+      - 'frontend/src/lib/depositCatalogue.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
       - 'frontend/src/lib/adminAlertApi.ts'
       # The strings both cards render, in every locale the switcher offers.

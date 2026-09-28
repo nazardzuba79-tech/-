@@ -31,7 +31,8 @@ function evaluate(file: string, imports: Record<string, unknown> = {}) {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   } }).outputText;
   const output: Record<string, any> = {};
-  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name] ?? req(name));
+  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name]
+    ?? (name.endsWith('/depositCatalogue') ? { MANUAL_DEPOSIT_CATALOGUE: false } : req(name)));
   return output;
 }
 
@@ -55,7 +56,7 @@ const WALLETS = [
 
 function renderModal(state: Record<string, unknown>, lang: (typeof LOCALES)[number] = 'ru') {
   const mod = evaluate('frontend/src/components/DepositModal.tsx', {
-    '../lib/useDepositOptions': { useDepositWallets: () => state },
+    '../lib/useDepositOptions': { useDepositWallets: () => state, useDepositSelection: () => ({ wallet: null }) },
     '../lib/i18n': { useLanguage: () => language(lang) },
   });
   return renderToStaticMarkup(React.createElement(mod.DepositModal, { onClose: () => undefined }));

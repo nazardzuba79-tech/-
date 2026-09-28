@@ -1,0 +1,40 @@
+{
+  "date": "2026-09-28T16:48:27.599Z",
+  "jest": {
+    "passed": 147,
+    "failed": 0,
+    "suites": 9
+  },
+  "worker": {
+    "passed": 15,
+    "failed": 0,
+    "runtime": "workerd + SQLite (Miniflare)",
+    "restartPersistence": "PASS",
+    "concurrency": {
+      "writers": 12,
+      "commits": 1,
+      "conflicts": 11
+    },
+    "backendCache": "PASS",
+    "uncertainWriteReconciliation": "PASS",
+    "outboundRequests": 0
+  },
+  "exporter": {
+    "passed": 5,
+    "failed": 0
+  },
+  "total": 167,
+  "backendBuild": "PASS",
+  "frontendTypes": "PASS",
+  "wranglerStagingDryRun": "PASS",
+  "cloudflareDeployed": false,
+  "productionActivation": false,
+  "baseline": {
+    "mode": "read-only authenticated legacy admin DOM",
+    "rails": 4,
+    "networks": 3,
+    "localFile": "output/deposit-catalogue-baseline/production-baseline-review-20260928.json",
+    "ownerReviewed": false,
+    "seeded": false
+  }
+}

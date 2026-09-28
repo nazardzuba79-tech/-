@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useDepositWallets } from '../lib/useDepositOptions';
+import { useDepositWallets, useDepositSelection } from '../lib/useDepositOptions';
+import { MANUAL_DEPOSIT_CATALOGUE } from '../lib/depositCatalogue';
 import { useLanguage } from '../lib/i18n';
 
 /**
@@ -35,6 +36,8 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     ton: t('deposit.network.ton'),
   };
   const { loaded, wallets, minDepositUsd, error: loadError } = useDepositWallets(true);
+  const selection = useDepositSelection(wallets);
+  const visibleWallets = MANUAL_DEPOSIT_CATALOGUE ? selection.wallet ? [selection.wallet] : [] : wallets;
   const error = loadError ? t(loadError === 'chains' ? 'deposit.loadChainsError' : 'deposit.loadAddressError') : null;
   // Which card was copied, not a bare flag — six Copy buttons share this.
   const [copied, setCopied] = useState<string | null>(null);
@@ -72,12 +75,17 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
         {wallets.length > 0 && (
           <>
             <div style={styles.walletList}>
-              {wallets.map((wallet) => (
+              {MANUAL_DEPOSIT_CATALOGUE && <>
+                <label>{t('wallet.colAsset')}<select aria-label={t('wallet.colAsset')} style={styles.wallet} value={selection.asset} onChange={e => selection.setAsset(e.target.value)}>{selection.assets.map(a => <option key={a}>{a}</option>)}</select></label>
+                <label>{t('deposit.network')}<select aria-label={t('deposit.network')} style={styles.wallet} value={selection.chain} onChange={e => selection.setChain(e.target.value)}>{selection.networks.map(n => <option key={n.chain} value={n.chain}>{n.networkName} · {n.standard}</option>)}</select></label>
+              </>}
+              {visibleWallets.map((wallet) => (
                 <div style={styles.wallet} key={wallet.chain}>
                   <div style={styles.walletHead}>
-                    <span style={styles.walletChain}>{CHAIN_LABEL[wallet.chain] ?? wallet.chain}</span>
+                    <span style={styles.walletChain}>{wallet.networkName ?? CHAIN_LABEL[wallet.chain] ?? wallet.chain}{wallet.standard ? ` · ${wallet.standard}` : ''}</span>
                     <span style={styles.walletAssets}>{wallet.assets.join(' · ')}</span>
                   </div>
+                  {wallet.memo && <div style={styles.addressBox}><span style={styles.address}>{wallet.memoLabel || 'Memo / Tag'}: {wallet.memo}</span><button style={styles.copyBtn} onClick={() => handleCopy(`${wallet.chain}:memo`, wallet.memo!)}>{copied === `${wallet.chain}:memo` ? t('deposit.copied') : t('deposit.copy')}</button></div>}
                   <div style={styles.addressBox}>
                     <span className="mono" style={styles.address}>
                       {wallet.address}
@@ -96,14 +104,14 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
                   <p style={styles.warning}>
                     {t('deposit.warningAddress', {
                       assets: wallet.assets.join(' / '),
-                      chain: NETWORK_NAME[wallet.chain] ?? wallet.chain,
+                      chain: wallet.networkName ?? NETWORK_NAME[wallet.chain] ?? wallet.chain,
                     })}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div style={styles.success}>{t('deposit.manualCreditNote')}</div>
+            <div style={styles.success}>{t(MANUAL_DEPOSIT_CATALOGUE ? 'deposit.transferCreditNote' : 'deposit.manualCreditNote')}</div>
           </>
         )}
 

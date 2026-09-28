@@ -4286,3 +4286,36 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Changed follow-up files: `src/api/routes/testMarkets.ts`, `src/services/testMarkets/__tests__/nrxPublic.test.ts`, `frontend/src/lib/__tests__/futuresUiPolish.test.ts`, `frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts`, `.github/workflows/copy-trading-card-regression.yml`, `.github/workflows/nrx-market.yml`, `docs/NRX_REVIEW.md`, this handoff. Full 55-file PR manifest is in NRX_REVIEW.
 - Reverified 261 targeted tests / 19 suites and backend TypeScript: PASS. Together with the 8 previously passed disposable PostgreSQL tests: 269 unique tests. Frontend/Worker code and previously verified builds/browser evidence unchanged by this follow-up. New guards are included in NRX CI. Recheck remote CI before release.
 - Review only: no merge/deploy, production allocation/data change or real order. Owner inventory remains prepared, not live-credited.
+
+## 2026-09-28 — Codex — Manual deposit catalogue review branch
+- Branch: `codex/manual-deposit-catalogue`, owner-requested fresh main base `9511ce037993d65fa375da6a4bc5d1c5675922ad`.
+- Implementation commit: `f3f6171b1f48254cad81a25902503f041b7596b5`.
+- Material files: new `src/services/depositCatalogue/*`, `src/api/routes/depositCatalogue.ts`, catalogue admin UI/client, both existing Deposit modals/hook, localized neutral wording, isolated browser runner and CI. Exact manifest: `docs/qa/manual-deposit-catalogue/files-changed.txt`.
+- Preserved: legacy deposit mode by default; existing TreasuryWallet services, admin shell, auth middleware, financial state, VTA and other agents' terminal/accounting work. No production mutations, merge or deploy.
+- Verified locally: 107 tests / 6 suites PASS; backend/frontend types and builds PASS; real UI with synthetic catalogue endpoints at 1440/390 px; 9 browser scenarios PASS, 60.1-second idle windows zero requests. No catalogue Neon reads/writes or incoming-transfer tracking.
+- Intentional blocker: repository has no suitable wired persistent Cloudflare binding. Delivered store interface + HTTPS/CAS adapter and test memory store per owner fallback. Activation stays off pending a separately approved persistent Worker/DO endpoint, server secret and verified snapshot of all current resolved legacy addresses. Runbook: `docs/manual-deposit-catalogue.md`. No infrastructure provisioned; no production address count claimed.
+- Next: owner review only. Do not enable flag or deploy before storage prerequisite is completed. Screenshots and measured load: `docs/qa/manual-deposit-catalogue/README.md`.
+
+- Catalogue CI follow-up to `3158e5ade5ef5a061f551b669a1d3aba9ee3edb5`: updated legacy admin test loader, preserved locale-byte integrity with the new key explicitly checked, and added the shared client to Copy Trading CI triggers. Targeted total now 147 PASS / 9 suites. Runtime unchanged; initial dedicated catalogue CI passed.
+
+## 2026-09-28 — Codex — Persistent receiving-address catalogue (PR #318)
+- Implementation commit: `1869c0c2f5a58ba4fb38a661f4b62f8968de766f`, continuing reviewed `451148696e6398e630fd34f7f2f10b7cd603981b`; main rechecked as `9511ce037993d65fa375da6a4bc5d1c5675922ad`.
+- Added dedicated Worker/SQLite Durable Object, one canonical document, atomic If-Match CAS, server Bearer auth, shared schema, explicit uncertain-write reread, read-only baseline exporter and CI. Exact follow-up manifest: `docs/qa/manual-deposit-catalogue/storage-followup-files.txt`.
+- Preserved completed catalogue UI, styles, existing 147 tests, default-off flag, legacy TreasuryWallet/auth/financial behavior and other agents' VTA work; unrelated untracked `docs/qa/voltora-listing` untouched.
+- Local verification: 147/147 Jest (9 suites), 15/15 actual workerd/SQLite integration tests, 5/5 exporter tests; backend build, frontend types, Wrangler staging dry-run PASS. Restart retained document/revision; 12 concurrent writes produced 1 commit/11 conflicts. No Worker external requests.
+- Read-only production legacy admin DOM captured 4 rails / 3 networks, all six known chains accounted for. Generated local `output/deposit-catalogue-baseline/production-baseline-review-20260928.json`; no browser secret extraction, no direct production SQL, no seeding. Owner address review remains pending.
+- Worker prepared only; no merge, production deploy, production address/data changes, Neon schema/catalogue storage, blockchain polling or auto-credit. Feature flag not enabled. Next: review final-head CI and owner baseline, then separate deployment/activation authorization. No Phase 2 work.
+
+
+## Codex — 2026-09-28 — Catalogue production environment
+- Base: 405431f43905a51b4b26c11a2fe85fbb6ee6a004 (merged #318, including POL). Owner explicitly authorized production rollout on a narrow new branch. Implementation SHA: this entry’s commit.
+- Material changes: deposit-catalogue wrangler production environment, local bundle ignore and runbook only. Existing Worker/runtime/UI and all financial/legacy paths preserved.
+- Verified: 148 Jest tests/9 suites, 15 workerd tests, backend build and production dry-run PASS. Remote staging auth/CAS (1 commit, 11 conflicts), persistence after redeploy, edit/disable/memo clearing PASS; Workers Free unchanged.
+- At commit: production catalogue, Render connectivity and frontend flag remain pending separate gated operations/live QA. No production address or balance mutations.
+
+## Codex — 2026-09-28 — NRX production preparation, current-main synchronization
+- Owner explicitly authorized PR #319 merge, exact merged-tree application/edge deployment and an idempotent 31,250 NRX allocation only after verifying the production VTA owner ADMIN. Fresh remote NRX head `538db46db4bdbe5b82d88861ae8213c0d36991f8`; main `936b12d7114fc040681e61e4b2e8d1c6a2a46994` includes #318 and #320.
+- Merged that current main into the NRX branch. Only conflict: this log; retained both histories. Deposit catalogue runtime/addresses, schema, VTA config/seed and financial engines preserved. Never merged cloudflare-market-edge.
+- Adjusted catalogue regression's obsolete branch-wide git-diff assertion into a source guard for the catalogue Worker itself; it now remains useful on later unrelated Worker PRs. Updated NRX mobile screenshot from the merged-tree isolated browser run.
+- Verification: 407 unit/regression tests across 27 suites (406 initial PASS; branch-scope guard failed, then all 32 catalogue tests PASS after correction); 8 real disposable PostgreSQL NRX tests; 15 actual workerd catalogue tests; 5 read-only exporter tests; bundled NRX 10 checks/existing edge contracts; backend/frontend types and production build; NRX 1440/390 browser QA PASS. No production order, credential exposure, schema or balance write performed at commit time.
+- Next: final-head CI, PR merge, exact merged-tree deployment and production read-only QA. Allocation only after live owner identity/receipt checks; do not claim it from this preparation commit.

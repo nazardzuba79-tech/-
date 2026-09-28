@@ -1,0 +1,74 @@
+name: Manual deposit catalogue
+on:
+  pull_request:
+    paths:
+      - 'src/services/depositCatalogue/**'
+      - 'src/api/routes/depositCatalogue.ts'
+      - 'src/index.ts'
+      - 'frontend/src/lib/depositCatalogue.ts'
+      - 'frontend/src/lib/useDepositOptions.ts'
+      - 'frontend/src/lib/i18n/**'
+      - 'frontend/src/lib/__tests__/deposit*.test.ts'
+      - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
+      - 'frontend/src/components/DepositModal.tsx'
+      - 'frontend/src/pages/wallet-v3/DepositModal.tsx'
+      - 'frontend/src/pages/admin/Admin*Catalogue*'
+      - 'frontend/src/pages/admin/AdminWalletsPage.tsx'
+      - 'frontend/src/pages/admin/depositCatalogue.css'
+      - 'scripts/qa-deposit-catalogue.cjs'
+      - 'scripts/export-deposit-catalogue-baseline*'
+      - 'workers/deposit-catalogue/**'
+      - '.github/workflows/deposit-catalogue.yml'
+permissions:
+  contents: read
+jobs:
+  catalogue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false, fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Catalogue and existing deposit regressions (synthetic only)
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/services/depositCatalogue/__tests__/catalogue.test.ts
+          src/api/routes/__tests__/adminWallets.test.ts
+          src/api/routes/__tests__/deposits.test.ts
+          src/services/__tests__/TreasuryWalletService.test.ts
+          frontend/src/lib/__tests__/depositAllWallets.test.ts
+          frontend/src/lib/__tests__/adminDepositRails.test.ts
+          frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+      - run: npm run build
+      - name: Read-only exporter regression (synthetic only)
+        run: node --test scripts/export-deposit-catalogue-baseline.test.cjs
+      - run: npm ci --prefix workers/deposit-catalogue --no-audit --no-fund
+      - name: Actual workerd / SQLite persistence, CAS and backend cache
+        run: npm test --prefix workers/deposit-catalogue
+      - name: Validate Worker bundle and staging configuration without deploy
+        run: npm run build:check --prefix workers/deposit-catalogue
+      - run: npx tsc -b frontend
+      - name: Build isolated catalogue preview
+        working-directory: frontend
+        env:
+          VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+          VITE_API_URL: /api/v1
+        run: npx vite build --outDir ../output/deposit-catalogue-frontend
+      - run: npm install --prefix output/qa-tools --no-save --package-lock=false playwright@1.58.2
+      - run: node output/qa-tools/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Desktop, mobile and one-minute idle measurement
+        env:
+          QA_PLAYWRIGHT_MODULE: ../output/qa-tools/node_modules/playwright
+        run: node scripts/qa-deposit-catalogue.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manual-deposit-catalogue-evidence
+          path: docs/qa/manual-deposit-catalogue
+          retention-days: 7

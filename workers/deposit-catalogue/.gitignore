@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+.output/
+.output-production/
+.dev.vars*
+.env*
