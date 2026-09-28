@@ -75,6 +75,10 @@ describe('manual receiving-address catalogue', () => {
     expect((await request(s.app).put(adminPath).set('Authorization', auth).set('If-Match', '1').send(entry('ethereum', 'ethereum'))).status).toBe(401);
     expect(s.store.writes).toBe(0);
   });
+  test('Polygon POL is an explicit native EVM receiving rail', () => {
+    expect(entrySchema.safeParse(entry('polygon-ecosystem-token', 'polygon')).success).toBe(true);
+    expect(entrySchema.safeParse(entry('polygon-ecosystem-token', 'ethereum')).success).toBe(false);
+  });
   test('USDC multi-network destinations remain distinct; XRP memo survives', async () => {
     const s = setup(); await s.service.save(entry('usd-coin', 'ethereum'), '1');
     await s.service.save(entry('usd-coin', 'solana', 'C'.repeat(44)), '2');
