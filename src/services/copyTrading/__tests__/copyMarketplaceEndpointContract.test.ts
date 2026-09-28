@@ -144,6 +144,30 @@ it('every section is logged, by name and outcome, with nothing identifying in th
  * second abort can never reach a card at all, and a warm response that takes
  * seconds means the day cache has stopped working.
  */
+it('a new UTC day serves the last confirmed snapshot without waiting for the daily append', async () => {
+  const db = scenarioTable();
+  const yesterday = new CopyPerformanceService(db, () => new Date('2026-09-27T12:00:00Z'));
+  await yesterday.get('nazar');
+  await yesterday.get('ksenia');
+
+  const today = new CopyPerformanceService(db, () => new Date('2026-09-28T12:00:00Z'));
+  // Production evidence showed the daily append can be much slower than the
+  // browser's 15s timeout. Hold that authoritative append forever here: the
+  // marketplace must still paint the already-confirmed stored snapshot.
+  const never = new Promise<SyntheticCopyResponse>(() => {});
+  (today as any).get = () => never;
+
+  const started = Date.now();
+  const response = await get(app(today));
+  const elapsed = Date.now() - started;
+
+  expect(response.status).toBe(200);
+  expect(elapsed).toBeLessThan(2_000);
+  expect(validStrategy(response.body.nazar, 'VX-001')).toBe(true);
+  expect(validStrategy(response.body.ksenia, 'VX-KSENIA')).toBe(true);
+  expect(response.body.nazar.simulation.simulatedAt.slice(0, 10)).toBe('2026-09-27');
+  expect(response.body.ksenia.simulation.simulatedAt.slice(0, 10)).toBe('2026-09-27');
+});
 it('the endpoint stays inside the client\'s own fifteen-second abort window', async () => {
   const svc = service();
   const server = app(svc);
