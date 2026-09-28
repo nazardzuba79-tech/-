@@ -733,4 +733,3 @@ html[data-telegram-theme=light] .review-safety {
 .mobile-review {
   padding-bottom: calc(110px + max(env(safe-area-inset-bottom),var(--tg-bottom,0px)))
 }
-
