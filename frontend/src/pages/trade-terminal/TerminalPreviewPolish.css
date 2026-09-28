@@ -247,7 +247,6 @@
   border: 1px solid #edc76a2b;
   border-radius: var(--preview-radius);
   color: var(--text-primary);
-  min-height: 40px;
 }
 :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .archive-protection-toggle[aria-expanded=true] {
   border-color: #edc76a70;
