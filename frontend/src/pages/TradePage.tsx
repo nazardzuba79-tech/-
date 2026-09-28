@@ -309,6 +309,7 @@ export function TradePage() {
     );
   }
 
+  const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal">
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
@@ -367,8 +368,7 @@ export function TradePage() {
           </div>
 
           <div className="order-form-area">
-            {testPair ? <VtaDemoSpot key={pair}><OrderForm pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} /></VtaDemoSpot>
-              : <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />}
+            {testPair ? <VtaDemoSpot key={pair}>{spotOrderForm}</VtaDemoSpot> : spotOrderForm}
           </div>
         </div>
 

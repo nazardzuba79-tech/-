@@ -4,12 +4,15 @@ import { api, ApiError, getToken, type VtaDemoSnapshot, type VtaSaleReceipt } fr
 import { useVisibleAccountRead } from '../lib/useVisibleAccountRead';
 import { useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
 import './VtaDemoSpot.css';
+import { customerErrorText } from '../lib/customerError';
+import { useLanguage } from '../lib/i18n';
 
 const number = (value: string | number, digits = 8) => Number(value).toLocaleString('ru-RU', { maximumFractionDigits: digits });
 
 /** Private administrator ledger. Never contributes to real wallet totals,
  * deposits, withdrawal availability or the normal Spot order form. */
 export function VtaDemoSpot({ wallet = false, hidden = false, children }: { wallet?: boolean; hidden?: boolean; children?: ReactNode }) {
+  const { t } = useLanguage();
   const [userId, setUserId] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<VtaDemoSnapshot | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -47,7 +50,7 @@ export function VtaDemoSpot({ wallet = false, hidden = false, children }: { wall
     } catch (e) {
       if (getToken() !== session) return;
       if (e instanceof ApiError && e.status >= 400 && e.status < 500) pending.current = null;
-      setError(e instanceof Error ? e.message : 'Не удалось подтвердить продажу. Повторите запрос.');
+      setError(customerErrorText(e, t, 'Не удалось подтвердить продажу. Повторите запрос.'));
     } finally { sending.current = false; setBusy(false); }
   };
 

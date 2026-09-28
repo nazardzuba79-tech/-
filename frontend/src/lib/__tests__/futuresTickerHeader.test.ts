@@ -215,6 +215,10 @@ test.each([
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    // Private VTA adds only these two methods and response types. Continue
+    // fingerprinting every pre-existing Futures/Spot method unchanged.
+    .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')
+    .replace("  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),\n  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {\n    method: 'POST', body: JSON.stringify({ requestId, quantity }),\n  }),\n", '')
     .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
     .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
