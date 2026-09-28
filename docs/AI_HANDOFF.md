@@ -4200,3 +4200,12 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved Claude's ticker/quote fallback, freshness/headroom, historical entry and all risk/settlement/replay engines. No UI, Spot, CFD, Copy Trading or Wallet business logic changed.
 - Verification: 813 distinct backend tests passed across runs (full suite 811 plus two additional cases), 40 environment-gated tests skipped. Frontend preservation 69 passed / 1 existing CRLF-sensitive source assertion failed. Backend/frontend TypeScript and frontend production build passed. Browser QNT entry 61.08 / mark 264.51 and AKE entry 0.004 / mark 0.0538 survive reload on isolated synthetic accounts.
 - Limits: direct authenticated production collector responses were inaccessible (loopback-only, ephemeral token); existing production logs plus public-provider reproduction are documented, not misrepresented as production endpoint probes. No merge, push, deployment, real orders or production changes. Owner review next.
+
+## Codex — 2026-09-28 — systemic historical current-price fallback
+
+- Implementation: `6c3d5f9c7c6232ca421c08159406be7ca284c784`; fresh main base `b413e0ba53f3b767aac8f31ebe1dd5d5f8edbc37` (PR #308 was already merged externally). Follow-up branch `codex/historical-price-fallback`.
+- Frame transport failure no longer blocks authenticated ticker/quote fallback. Every candidate now honors command freshness headroom before selection, so a 45.001–60-second ticker cannot suppress a usable fresh quote.
+- Files: `src/private-trading/marketData.ts`, new `historicalPriceFallback.test.ts`, expanded `nativeThinContract.test.ts`, `.github/workflows/private-trading.yml`, `docs/HISTORICAL_CURRENT_PRICE_FALLBACK.md`, this handoff.
+- Preserved: prior risk-tier parser fix, Claude's acquisition ordering/concurrency/deadlines, cancellation, malformed-frame refusal, 60s display / 45s command / 5s live quote policies, final financial-write validation, historical entry and all financial engines; no UI or unrelated product edits.
+- Verification: 860 backend and 60 frontend tests passed; 40 environment-gated database tests skipped. Backend/frontend TypeScript and frontend production build passed (existing Vite >500 kB warning). Regression failures reproduced before fix; authenticated loopback collector + parser + native commands cover QNT/AKE/ETH with synthetic upstream/repository.
+- Limits: no live-production execution test or database writes. All-current-sources-unavailable/stale still refuses safely. No merge/deploy performed; owner review remains required.
