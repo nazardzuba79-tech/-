@@ -40,8 +40,8 @@ export const VOLTORA: TestAssetConfig = {
   // `listingAt`. TEST_MARKET_LISTING_ARMED=0 on the server holds it again
   // (no countdown, no candles) without a code change.
   listingArmed: process.env.TEST_MARKET_LISTING_ARMED !== '0',
-  // 48 hours after the countdown was switched on.
-  listingAt: Date.parse('2026-09-28T14:00:00Z'),
+  // Owner postponed the original countdown by one hour on 2026-09-28.
+  listingAt: Date.parse('2026-09-28T15:00:00Z'),
   initialPrice: 0.01,
   seed: 'voltora-2026-09-27',
 };

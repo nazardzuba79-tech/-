@@ -11,7 +11,7 @@ const fresh = () => new TestMarketSimulation(VOLTORA);
 describe('VOLTORA is a test asset, recognised however the pair is spelled', () => {
   test('config', () => {
     expect(VOLTORA).toMatchObject({ symbol: 'VTA', name: 'VOLTORA', pair: 'VTA/USDT', isTestAsset: true, isTradable: false, initialPrice: 0.01 });
-    expect(new Date(VOLTORA.listingAt).toISOString()).toBe('2026-09-28T14:00:00.000Z');
+    expect(new Date(VOLTORA.listingAt).toISOString()).toBe('2026-09-28T15:00:00.000Z');
   });
   test('the listing is armed unless the server holds it with TEST_MARKET_LISTING_ARMED=0', () => {
     const armedWith = (value: string | undefined) => {
