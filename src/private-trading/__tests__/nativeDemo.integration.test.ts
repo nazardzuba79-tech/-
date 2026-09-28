@@ -181,8 +181,8 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(wallet?.rows.map(row => row.asset)).not.toContain(VOLTORA.symbol);
     expect(wallet?.rows.map(row => row.asset)).not.toContain(privateQuoteAsset);
     // The private balances themselves remain persisted and untouched.
-    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: VOLTORA.symbol } } }))?.available.toString()).toBe('4545454.545454540000000000');
-    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: privateQuoteAsset } } }))?.available.toString()).toBe('12345.670000000000000000');
+    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: VOLTORA.symbol } } }))?.available.toString()).toBe('4545454.54545454');
+    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: privateQuoteAsset } } }))?.available.toString()).toBe('12345.67');
   });
 
   test('a wallet with no demo funds is offered nothing to open an account with', async () => {
