@@ -48,6 +48,23 @@ export const VOLTORA: TestAssetConfig = {
 
 export const TEST_ASSETS: readonly TestAssetConfig[] = [VOLTORA];
 
+/**
+ * Private operator-only test-market balances share the DemoBalance table for
+ * persistence, but they are NOT part of the native Futures demo wallet.
+ * Keep their quote proceeds under a pair-specific internal asset key so a
+ * sale can never mint generic DemoBalance USDT (which is Futures collateral).
+ */
+export function testAssetPrivateQuoteAsset(asset: TestAssetConfig): string {
+  return `${asset.symbol}_PRIVATE_${asset.quote}`;
+}
+
+/** Any DemoBalance row owned exclusively by a test market's private ledger. */
+export function isTestAssetPrivateLedgerAsset(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const normalized = value.trim().toUpperCase();
+  return TEST_ASSETS.some((asset) => normalized === asset.symbol || normalized === testAssetPrivateQuoteAsset(asset));
+}
+
 /** The single sentence every refused trading action shows. */
 export const TEST_ASSET_NOT_TRADABLE_MESSAGE = 'VOLTORA is a test asset and is not available for trading.';
 
