@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { v5 as uuidv5 } from 'uuid';
-import { VOLTORA } from './testAssetConfig';
+import { VOLTORA, testAssetPrivateQuoteAsset } from './testAssetConfig';
 import { publicTestAsset } from './testMarketService';
 
 export class VtaDemoError extends Error {
@@ -20,12 +20,14 @@ const receipt = (order: { id: string; price: unknown; originalQuantity: unknown 
 export class VtaDemoSales {
   constructor(private prisma: PrismaClient, private clock: () => number = Date.now) {}
 
+  private readonly proceedsAsset = testAssetPrivateQuoteAsset(VOLTORA);
+
   async snapshot(userId: string) {
     const [balances, orders] = await Promise.all([
-      this.prisma.demoBalance.findMany({ where: { userId, asset: { in: ['VTA', 'USDT'] } } }),
+      this.prisma.demoBalance.findMany({ where: { userId, asset: { in: [VOLTORA.symbol, this.proceedsAsset] } } }),
       this.prisma.demoOrder.findMany({ where: { userId, pair: VOLTORA.pair, side: 'SELL', status: 'FILLED' }, orderBy: { createdAt: 'desc' }, take: 20 }),
     ]);
-    return { balances: balances.map(b => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })),
+    return { balances: balances.map(b => ({ asset: b.asset === this.proceedsAsset ? VOLTORA.quote : b.asset, available: b.available.toString(), locked: b.locked.toString() })),
       sales: orders.map(o => ({ ...receipt(o), createdAt: o.createdAt })) };
   }
 
@@ -60,13 +62,15 @@ export class VtaDemoSales {
         const debit = await tx.demoBalance.updateMany({ where: { userId: params.userId, asset: 'VTA', available: { gte: quantity.toFixed() } },
           data: { available: { decrement: quantity.toFixed() } } });
         if (debit.count !== 1) throw new VtaDemoError('Недостаточно VTA.');
-        await tx.demoBalance.upsert({ where: { userId_asset: { userId: params.userId, asset: 'USDT' } },
-          create: { userId: params.userId, asset: 'USDT', available: proceeds.toFixed(), locked: '0' },
+        // Private VTA proceeds must never enter generic DemoBalance USDT:
+        // that row is the native Futures demo wallet's settle collateral.
+        await tx.demoBalance.upsert({ where: { userId_asset: { userId: params.userId, asset: this.proceedsAsset } },
+          create: { userId: params.userId, asset: this.proceedsAsset, available: proceeds.toFixed(), locked: '0' },
           update: { available: { increment: proceeds.toFixed() } } });
         await tx.demoTrade.create({ data: { id, pair: VOLTORA.pair, takerOrderId: id, makerOrderId: 'simulation:VTA',
           takerUserId: params.userId, makerUserId: 'simulation:VTA', side: 'SELL', price: price.toFixed(), quantity: quantity.toFixed() } });
         await tx.auditLog.create({ data: { userId: params.userId, action: 'VTA_DEMO_SOLD',
-          metadata: { orderId: id, quantity: quantity.toFixed(), price: price.toFixed(), proceeds: proceeds.toFixed(), source: 'VOLTORA simulation', ledger: 'DEMO' } } });
+          metadata: { orderId: id, quantity: quantity.toFixed(), price: price.toFixed(), proceeds: proceeds.toFixed(), source: 'VOLTORA simulation', ledger: 'VTA_PRIVATE_DEMO' } } });
         return { id, price: price.toFixed(), quantity: quantity.toFixed(), proceeds: proceeds.toFixed() };
       });
     } catch (error) {
