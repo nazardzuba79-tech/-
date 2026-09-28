@@ -388,6 +388,7 @@ export const EN: Record<Key, string> = {
   'deposit.title': 'Deposit',
   'deposit.close': 'Close',
   'deposit.manualCreditNote': 'Your deposit will be credited within 30-60 minutes.',
+  'deposit.transferCreditNote': 'After the transfer, funds will be credited to your account.',
   'deposit.loadingNetworks': 'Loading networks...',
   'deposit.noneConfigured': 'Deposits are not available yet: no wallet addresses are connected.',
   'deposit.network': 'Network',

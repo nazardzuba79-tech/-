@@ -1,0 +1,290 @@
+{
+  "scope": "Synthetic fixture data only; real catalogue endpoints and standard UI; no production data",
+  "widths": [
+    1440,
+    390
+  ],
+  "checks": [
+    "add + persisted across full reload",
+    "edit",
+    "disable",
+    "memo",
+    "existing USDT networks",
+    "existing ETH native",
+    "disabled/unconfigured excluded; address + memo copy",
+    "reopen revalidates changed catalogue",
+    "clear address overrides legacy baseline"
+  ],
+  "layouts": [
+    {
+      "name": "admin-desktop.png",
+      "width": 1440,
+      "documentWidth": 1440
+    },
+    {
+      "name": "admin-mobile.png",
+      "width": 390,
+      "documentWidth": 390
+    },
+    {
+      "name": "admin-editor-mobile.png",
+      "width": 390,
+      "documentWidth": 390
+    },
+    {
+      "name": "customer-mobile.png",
+      "width": 390,
+      "documentWidth": 390
+    },
+    {
+      "name": "customer-desktop.png",
+      "width": 1440,
+      "documentWidth": 1440
+    }
+  ],
+  "requests": {
+    "adminColdOpen": {
+      "requests": 3,
+      "featureRequests": 1,
+      "storeReads": 1,
+      "storeWrites": 0,
+      "authReads": 2
+    },
+    "adminIdle60s": {
+      "requests": 0,
+      "featureRequests": 0,
+      "storeReads": 0,
+      "storeWrites": 0,
+      "authReads": 0
+    },
+    "customerColdOpen": {
+      "requests": 8,
+      "featureRequests": 1,
+      "storeReads": 1,
+      "storeWrites": 0,
+      "authReads": 0
+    },
+    "selectAndCopy": {
+      "requests": 0,
+      "featureRequests": 0,
+      "storeReads": 0,
+      "storeWrites": 0,
+      "authReads": 0
+    },
+    "customerIdle60s": {
+      "requests": 0,
+      "featureRequests": 0,
+      "storeReads": 0,
+      "storeWrites": 0,
+      "authReads": 0
+    }
+  },
+  "pageErrors": [],
+  "forbidden": [],
+  "featureRequests": [
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    }
+  ],
+  "totalApiRequests": [
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/alerts-summary"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/alerts-summary"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/deposits/me"
+    },
+    {
+      "method": "GET",
+      "path": "/withdrawals/me"
+    },
+    {
+      "method": "GET",
+      "path": "/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/wallet/overview"
+    },
+    {
+      "method": "GET",
+      "path": "/private-trading/native/wallet"
+    },
+    {
+      "method": "GET",
+      "path": "/wallet/performance"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/deposits/me"
+    },
+    {
+      "method": "GET",
+      "path": "/withdrawals/me"
+    },
+    {
+      "method": "GET",
+      "path": "/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/wallet/overview"
+    },
+    {
+      "method": "GET",
+      "path": "/private-trading/native/wallet"
+    },
+    {
+      "method": "GET",
+      "path": "/wallet/performance"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/alerts-summary"
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/deposit-catalogue"
+    },
+    {
+      "method": "GET",
+      "path": "/admin/deposit-catalogue"
+    }
+  ],
+  "result": "PASS",
+  "idleMs": 60100
+}

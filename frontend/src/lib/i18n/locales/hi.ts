@@ -385,6 +385,7 @@ export const HI: Record<Key, string> = {
   'deposit.title': 'डिपॉज़िट',
   'deposit.close': 'बंद करें',
   'deposit.manualCreditNote': 'आपका डिपॉज़िट 30-60 मिनट में जमा कर दिया जाएगा।',
+  'deposit.transferCreditNote': 'ट्रांसफ़र के बाद धनराशि आपके खाते में जमा कर दी जाएगी।',
   'deposit.loadingNetworks': 'नेटवर्क लोड हो रहे हैं...',
   'deposit.noneConfigured': 'डिपॉज़िट अभी उपलब्ध नहीं हैं: कोई वॉलेट पता जुड़ा नहीं है।',
   'deposit.network': 'नेटवर्क',

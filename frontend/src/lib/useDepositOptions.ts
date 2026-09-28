@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, clearToken, getToken } from './api';
 import { depositMinimumEquivalent, validDepositConfig, type DepositConfig } from './depositMinimum';
+import { MANUAL_DEPOSIT_CATALOGUE, getPublicCatalogue } from './depositCatalogue';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
@@ -92,6 +93,7 @@ export function loadDepositConfig(): Promise<DepositConfig> {
 
 /** Start the check on intent (hover/focus of a Deposit button). */
 export function prefetchDepositConfig(): void {
+  if (MANUAL_DEPOSIT_CATALOGUE) return;
   if (!getToken()) return;
   loadDepositConfig().catch(() => { /* the panel retries and reports on open */ });
 }
@@ -101,6 +103,10 @@ export interface DepositWallet {
   address: string;
   /** Exactly the assets the backend will credit on this chain. Never widened. */
   assets: string[];
+  networkName?: string;
+  standard?: string;
+  memo?: string;
+  memoLabel?: string;
 }
 
 /**
@@ -134,6 +140,15 @@ export function useDepositWallets(active: boolean) {
     // Nothing is drawn from the device copy before the server's fingerprint
     // confirms it: a rotated address must never be shown, even briefly.
     setState(empty);
+    if (MANUAL_DEPOSIT_CATALOGUE) {
+      getPublicCatalogue().then(value => {
+        if (cancelled) return;
+        setState({ loaded: true, wallets: value.entries.map(e => ({ chain: `${e.assetId}:${e.networkId}`,
+          assets: [e.asset], address: e.address, networkName: e.networkName, standard: e.standard, memo: e.memo, memoLabel: e.memoLabel })),
+          minDepositUsd: null, usdPeggedAssets: [], error: null });
+      }).catch(() => { if (!cancelled) setState({ ...empty, loaded: true, error: 'chains' }); });
+      return () => { cancelled = true; };
+    }
     loadDepositConfig().then(async value => {
       if (cancelled) return;
       if (!validDepositConfig(value)) throw new Error('Invalid deposit configuration');
@@ -243,5 +258,6 @@ export function useDepositSelection(wallets: DepositWallet[]) {
     chain: wallet?.chain ?? '',
     setChain,
     address: wallet?.address ?? null,
+    wallet,
   };
 }

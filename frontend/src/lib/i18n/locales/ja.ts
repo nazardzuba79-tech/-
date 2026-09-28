@@ -385,6 +385,7 @@ export const JA: Record<Key, string> = {
   'deposit.title': '入金',
   'deposit.close': '閉じる',
   'deposit.manualCreditNote': '入金は30〜60分以内に反映されます。',
+  'deposit.transferCreditNote': '送金後、資金がお客様のアカウントに入金されます。',
   'deposit.loadingNetworks': 'ネットワークを読み込み中...',
   'deposit.noneConfigured': '入金はまだご利用いただけません。ウォレットアドレスが接続されていません。',
   'deposit.network': 'ネットワーク',

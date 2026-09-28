@@ -385,6 +385,7 @@ export const ES: Record<Key, string> = {
   'deposit.title': 'Depositar',
   'deposit.close': 'Cerrar',
   'deposit.manualCreditNote': 'Tu depósito se acreditará en 30-60 minutos.',
+  'deposit.transferCreditNote': 'Después de la transferencia, los fondos se abonarán en tu cuenta.',
   'deposit.loadingNetworks': 'Cargando redes...',
   'deposit.noneConfigured': 'Los depósitos aún no están disponibles: no hay direcciones de billetera conectadas.',
   'deposit.network': 'Red',

@@ -1,0 +1,38 @@
+{
+  "passed": 107,
+  "failed": 0,
+  "suites": 6,
+  "failedSuites": 0,
+  "suitesDetail": [
+    {
+      "suite": "frontend/src/lib/__tests__/depositAllWallets.test.ts",
+      "status": "passed",
+      "tests": 24
+    },
+    {
+      "suite": "src/services/depositCatalogue/__tests__/catalogue.test.ts",
+      "status": "passed",
+      "tests": 31
+    },
+    {
+      "suite": "src/api/routes/__tests__/deposits.test.ts",
+      "status": "passed",
+      "tests": 24
+    },
+    {
+      "suite": "src/api/routes/__tests__/adminWallets.test.ts",
+      "status": "passed",
+      "tests": 9
+    },
+    {
+      "suite": "src/services/__tests__/TreasuryWalletService.test.ts",
+      "status": "passed",
+      "tests": 10
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/adminDepositRails.test.ts",
+      "status": "passed",
+      "tests": 9
+    }
+  ]
+}
