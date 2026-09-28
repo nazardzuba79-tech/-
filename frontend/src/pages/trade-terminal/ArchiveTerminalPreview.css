@@ -33,7 +33,7 @@
   background:var(--panel); overflow-x:auto; scrollbar-width:thin; box-shadow:none;
 }
 #archive-terminal-preview .ticker-bar > * { flex:0 0 auto; grid-area:auto; }
-#archive-terminal-preview .archive-ticker-metrics { display:grid; grid-template-columns:repeat(7,max-content); justify-content:space-between; column-gap:24px; }
+#archive-terminal-preview .archive-ticker-metrics { display:grid; grid-template-columns:repeat(7,max-content); justify-content:start; column-gap:24px; }
 #archive-terminal-preview .ticker-bar .ticker-item { grid-area:auto; display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0; padding:0; border:0; }
 #archive-terminal-preview .ticker-bar .label { font-size:11px; line-height:16px; color:var(--archive-label); white-space:nowrap; }
 #archive-terminal-preview .ticker-bar .value:not(.price) { font-size:13px; line-height:19px; font-weight:550; color:var(--text-primary); white-space:nowrap; }
@@ -201,6 +201,7 @@
    so the selects' edges missed the fields' by 2px; both now share the
    panel's own 14px. */
 @media (min-width:901px) {
+  #archive-terminal-preview .ticker-bar .ticker-item { min-width:0; margin:0; }
   #archive-terminal-preview .fo-panel { padding:14px 14px 18px; }
   #archive-terminal-preview .fo-form { gap:14px; }
   #archive-terminal-preview .fo-form > .fo-mlWrap { top:14px; left:14px; right:14px; }

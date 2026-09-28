@@ -11,6 +11,12 @@ const TOKEN_KEY = 'exchange_token';
 // the single-domain deployment.
 export const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
+export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }
+export interface VtaDemoSnapshot {
+  balances: { asset: string; available: string; locked: string }[];
+  sales: (VtaSaleReceipt & { createdAt: string })[];
+}
+
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -649,6 +655,10 @@ export const api = {
   // Demo trading — admin-only sandbox, its own order book/balances,
   // completely separate from the real ones above.
   getDemoBalances: () => request<{ asset: string; available: string; locked: string }[]>('/demo/balances'),
+  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),
+  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {
+    method: 'POST', body: JSON.stringify({ requestId, quantity }),
+  }),
 
   getDemoOrderBook: (pair: string) =>
     request<{

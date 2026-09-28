@@ -4220,3 +4220,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Verification: six new regression failures reproduced before implementation; final 11 targeted suites, 140 PASS / 0 FAIL / 0 skipped. Includes real Express routers/auth middleware with synthetic Prisma fixtures and rendered React/JSDOM customer list, sorting, KYC/deposit tabs and pagination. Backend TypeScript, frontend TypeScript and production frontend build PASS. No production browser or real-database QA claimed.
 - Warnings retained: existing AdminPagination border/borderColor warning exposed by pagination regression, unconfigured notification warning in auth tests, Vite >500 kB chunk warning. No test assertions weakened.
 - Owner review PR only. Do not merge or deploy. Production, infrastructure and accounts unchanged.
+
+
+## Codex — 2026-09-28 — market header alignment and private VTA
+- Implementation commit: 951ed851440f3ee68ddb194636aed65b53153826.
+- Material files: terminal Archive/Voltex styles, PriceChart, VtaDemoSpot, TradePage, FundingView, API client/routes, DemoTradingService, VtaDemoSales, index wiring and focused tests/workflow.
+- Preserved: existing Spot/Futures matching and financial math, public test-market trading prohibition, mobile layout, account deletion gate, real balances/withdrawals and customer-only admin list.
+- Verification: 113 backend/PG + 42 header/mobile tests pass; private browser at 1440/390 and public listing at five widths pass. Additional wallet set has the exact same 25 failures on clean main and this branch (97 pass); no new failures after updating the isolated FundingView child stub. See docs/qa/terminal-header-private-vta.md.
+- Pending at commit: PR/CI/deploy and separately authorized self-admin allocation. No production sale or credit performed by QA.

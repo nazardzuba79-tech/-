@@ -1,5 +1,6 @@
 import { ArrowDownToLineIcon, ArrowLeftRightIcon, ArrowUpFromLineIcon, LandmarkIcon, WifiOffIcon } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
+import { VtaDemoSpot } from '../../components/VtaDemoSpot';
 import { useLanguage } from '../../lib/i18n';
 import { EmptyState } from './ui';
 import { EM_DASH, MASK, decimalsFor, formatAmount, formatUsd } from './format';
@@ -71,6 +72,7 @@ export function FundingView({
         </div>
       </header>
 
+      <VtaDemoSpot wallet hidden={hidden} />
       <section aria-label={t('wallet.assets')} className="wallet-funding-table wallet-card mt-5 overflow-hidden">
         {unavailable ? (
           <EmptyState icon={WifiOffIcon} title={t('wallet.dataUnavailable')} description={t('wallet.dataUnavailableBody')} compact />

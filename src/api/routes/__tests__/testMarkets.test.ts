@@ -108,7 +108,7 @@ describe('the preview clock is development-only', () => {
   });
 });
 
-describe('a test asset can never trade, hold a balance, deposit or withdraw', () => {
+describe('a test asset cannot reach real trading or balances', () => {
   // Every dependency throws if touched: the refusal must come first.
   const untouchable = new Proxy({}, { get: () => { throw new Error('touched a real dependency'); } }) as never;
 
@@ -119,7 +119,7 @@ describe('a test asset can never trade, hold a balance, deposit or withdraw', ()
       await expect(orders.placeOcoOrder({ userId: 'u', pair, side: 'SELL', quantity: new BigNumber(1), takeProfitPrice: new BigNumber(2), stopTriggerPrice: new BigNumber(1), stopLimitPrice: new BigNumber(1) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     }
   });
-  test('demo orders and admin demo top-ups too', async () => {
+  test('generic demo matching and cross-account test-asset top-ups remain refused', async () => {
     const demo = new DemoTradingService(untouchable, untouchable as never);
     await expect(demo.placeOrder({ userId: 'u', pair: 'VTA/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber(1) })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     await expect(demo.topUp({ userId: 'u', asset: 'VTA', amount: '100', performedByAdminId: 'a' })).rejects.toThrow(TEST_ASSET_NOT_TRADABLE_MESSAGE);

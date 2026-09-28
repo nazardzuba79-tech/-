@@ -8,6 +8,7 @@ import { TickerBar } from '../components/TickerBar';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
+import { VtaDemoSpot } from '../components/VtaDemoSpot';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
@@ -308,6 +309,7 @@ export function TradePage() {
     );
   }
 
+  const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />;
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal">
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
@@ -366,7 +368,7 @@ export function TradePage() {
           </div>
 
           <div className="order-form-area">
-            <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />
+            {testPair ? <VtaDemoSpot key={pair}>{spotOrderForm}</VtaDemoSpot> : spotOrderForm}
           </div>
         </div>
 

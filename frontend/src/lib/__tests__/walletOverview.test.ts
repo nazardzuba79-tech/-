@@ -316,6 +316,7 @@ describe('6. the labels exist in every locale', () => {
 describe('7. the funding view', () => {
   function fundingHtml(props: Record<string, unknown>) {
     const { FundingView } = evaluate(wallet + 'FundingView.tsx', {
+      '../../components/VtaDemoSpot': { VtaDemoSpot: () => null },
       'lucide-react': icons, '../../lib/i18n': i18n, './format': fmt,
       './ui': { EmptyState: stub('EmptyState') }, '../../components/CryptoIcon': { CryptoIcon: () => React.createElement('i') },
     });

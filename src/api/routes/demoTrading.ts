@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
+import { VtaDemoSales, VtaDemoError } from '../../services/testMarkets/VtaDemoSales';
 
 const priceString = z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'must be > 0');
 
@@ -25,8 +26,22 @@ const placeOrderSchema = z
  * this is a private testing tool for the operator, not a feature any real
  * user account can reach.
  */
-export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTradingService): Router {
+export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTradingService, vtaDemo = new VtaDemoSales(prisma)): Router {
   const router = Router();
+
+  router.get('/demo/vta', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {
+    try { res.json(await vtaDemo.snapshot(req.userId!)); } catch (error) { next(error); }
+  });
+  const vtaSaleSchema = z.object({ requestId: z.string().uuid(), quantity: priceString }).strict();
+  router.post('/demo/vta/sell', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res, next) => {
+    const parsed = vtaSaleSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Некорректный запрос продажи.' });
+    try { res.json(await vtaDemo.sell({ userId: req.userId!, ...parsed.data })); }
+    catch (error) {
+      if (error instanceof VtaDemoError) return res.status(error.status).json({ error: error.message });
+      next(error);
+    }
+  });
 
   router.get('/demo/balances', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const balances = await demoTrading.getBalances(req.userId!);

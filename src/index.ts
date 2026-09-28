@@ -58,6 +58,7 @@ import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { VtaDemoSales } from './services/testMarkets/VtaDemoSales';
 import { privateTradingRouter } from './api/routes/privateTrading';
 import { createNativeLimitPass } from './private-trading/native/limitPass';
 import { PrivateTradingService } from './private-trading/service';
@@ -278,7 +279,7 @@ app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
 // Support is a form handled by the voltex-support-edge Cloudflare Worker
 // (workers/support-edge): no support routes, timers or tables are used here.
-app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
+app.use('/api/v1', demoTradingRouter(prisma, demoTradingService, accountDeletionGate.guard(new VtaDemoSales(prisma), ['sell'])));
 app.use('/api/v1', privateTradingRouter(prisma, privateTradingService, bestEffortWake(() => nativeLimitPass?.nudge(), 'native-limit-pass')));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
