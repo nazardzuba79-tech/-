@@ -249,8 +249,8 @@ describe('payload size', () => {
 describe('wiring', () => {
   const route = readFileSync(resolve(__dirname, '../../../../src/api/routes/copyPerformance.ts'), 'utf8');
   it('summarizes both the aggregate and the per-strategy endpoints', () => {
-    expect(route).toContain("service.get('nazar').then(summarizeStrategy)");
-    expect(route).toContain("service.get('ksenia').then(summarizeStrategy)");
+    expect(route).toContain("service.getMarketplace('nazar').then(summarizeStrategy)");
+    expect(route).toContain("service.getMarketplace('ksenia').then(summarizeStrategy)");
     expect(route).toContain('summarizeStrategy(await service.get(strategy))');
   });
 
