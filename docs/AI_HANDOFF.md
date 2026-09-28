@@ -4240,6 +4240,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Browser harness fixtures intentionally do not provide live venue streams/charts; production read-only visual verification remains required after publication.
 
 
+
 ## Codex — 2026-09-28 — Complete standard VTA Spot flow
 - Implementation: 6c00871ffdb6a12e36bc06218de1690766989c38; review branch codex/complete-vta-spot-flow, fresh main 87199526082a0d24e0623516b7dde5df8af9005b. Owner explicitly requested main and review PR only.
 - Material files: OrderForm, shared VTA account/intent/API, FundingView and standard table adapter; VtaDemoSales projection/lookup, demo routes, native service eligibility; focused PostgreSQL/browser tests, localization, CI and docs/qa/vta-spot-complete.
@@ -4256,3 +4257,9 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Implementation: 65bf3aee164bcc6b34351a324fd7129e7509ec3d. Changed testAssetConfig listingAt from 2026-09-28 14:00 UTC to 15:00 UTC (+1 hour); updated the existing config assertion.
 - Preserved standard Spot UI, balances, accounting, seed, initial price and relative simulation price path. No production changes, merge or deployment performed; earlier no-deployment restriction remains.
 - Verification: all 36 testMarketSimulation tests PASS, including prelisting and first tick. Review branch/PR #316 updated; publication requires owner authorization.
+
+## Codex — 2026-09-28 — Publish only VTA countdown postponement
+- Implementation: 91557a7d399a90764d25bb06fa0e3294e2f83efb, based on current main 87199526082a0d24e0623516b7dde5df8af9005b. Owner authorized publication of the timer change only.
+- Changed testAssetConfig listingAt from 14:00 UTC to 15:00 UTC on 2026-09-28; updated existing test assertion. UI, balances, seed, pricing rules and unrelated review PR #316 remain unchanged.
+- Targeted simulation suite: 36 PASS on the same two-file patch. Next: publish isolated timer PR and verify public listingAt.
+
