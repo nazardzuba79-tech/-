@@ -263,17 +263,30 @@ export class CollectorPrivateTradingSource {
       cursors.add(cursor);
     }
     rawTiers.sort((a, b) => new BigNumber(decimal(a.riskLimitValue)).comparedTo(decimal(b.riskLimitValue)) ?? 0);
+    // Bybit can leave mmDeduction blank across the initial constant-MMR
+    // plateau (QNT has four such tiers), not just the lowest tier. Its
+    // deduction remains exactly zero: D[n] = D[n-1] + L[n-1]*(MMR[n]-MMR[n-1]).
+    // Only normalize an explicitly flagged lowest-tier zero plateau. Missing,
+    // malformed, re-flagged or later nonzero deductions still fail closed.
+    let zeroDeductionPrefix = rawTiers[0]?.isLowestRisk === 1;
+    const riskTiers = rawTiers.map((t, index) => {
+      const maintenanceMarginRate = decimal(t.maintenanceMargin);
+      zeroDeductionPrefix = zeroDeductionPrefix
+        && (index === 0 || (t.isLowestRisk === 0
+          && new BigNumber(maintenanceMarginRate).eq(decimal(rawTiers[0].maintenanceMargin))))
+        && (t.mmDeduction === '' || new BigNumber(t.mmDeduction).isZero());
+      return { riskLimitValue: decimal(t.riskLimitValue), maintenanceMarginRate,
+        initialMarginRate: decimal(t.initialMargin),
+        maintenanceDeduction: t.mmDeduction === '' && zeroDeductionPrefix ? '0' : decimal(t.mmDeduction),
+        maxLeverage: decimal(t.maxLeverage) };
+    });
     const parameters = {
       filters: { tickSize: item.priceFilter?.tickSize, minPrice: item.priceFilter?.minPrice, maxPrice: item.priceFilter?.maxPrice,
         qtyStep: item.lotSizeFilter?.qtyStep, minOrderQty: item.lotSizeFilter?.minOrderQty,
         maxOrderQty: item.lotSizeFilter?.maxOrderQty, maxMarketOrderQty: item.lotSizeFilter?.maxMktOrderQty,
         minNotionalValue: item.lotSizeFilter?.minNotionalValue },
       leverage: { min: item.leverageFilter?.minLeverage, max: item.leverageFilter?.maxLeverage, step: item.leverageFilter?.leverageStep },
-      riskTiers: rawTiers.map((t, index) => ({ riskLimitValue: decimal(t.riskLimitValue), maintenanceMarginRate: decimal(t.maintenanceMargin),
-        // Bybit documents an empty deduction for the explicitly flagged lowest tier.
-        // There is no lower tier to deduct; absent/non-numeric higher-tier values still fail closed.
-        initialMarginRate: decimal(t.initialMargin), maintenanceDeduction: t.mmDeduction === '' && index === 0 && t.isLowestRisk === 1 ? '0' : decimal(t.mmDeduction),
-        maxLeverage: decimal(t.maxLeverage) })),
+      riskTiers,
     };
     const value = read(privateInstrumentSchema, { provider: 'bybit', symbol: contract, baseAsset: item.baseCoin,
       quoteAsset: item.quoteCoin, settleAsset: item.settleCoin, status: item.status, contractType: item.contractType,

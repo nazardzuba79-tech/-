@@ -12,6 +12,7 @@ const{PrivateTradingMarketData,CollectorPrivateTradingSource}=require('../dist/p
 const{CopyPerformanceService}=require('../dist/services/copyTrading/CopyPerformanceService');
 const root=path.resolve(__dirname,'..'),dist=path.join(root,'frontend/dist');
 const fixture=process.env.NATIVE_PREVIEW_FIXTURE==='1';
+const thinContractQa=fixture&&process.env.NATIVE_PREVIEW_THIN_CONTRACT_QA==='1';
 const dataDir=path.join(os.tmpdir(),'voltex-native-demo-review');fs.mkdirSync(dataDir,{recursive:true});
 const app=express();app.disable('x-powered-by');app.use(express.json({limit:'50kb'}));
 app.use((_req,res,next)=>{res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');next();});
@@ -23,7 +24,7 @@ const now=()=>Date.now(),started=now();
    — one REST call every 5s, cached, exactly as before. No socket is opened
    per symbol, so widening the list costs nothing at runtime.
    Fixture mode keeps a tiny deterministic set because it invents candles. */
-const FIXTURE_SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT','AKEUSDT'];
+const FIXTURE_SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT','AKEUSDT',...(thinContractQa?['QNTUSDT']:[])];
 /* Synthetic preview capital, same category as the 10,000,000 settle deposit
    below: a non-settle holding that makes the multi-asset collateral path real
    in review and in CI. It is NOT an account value — it is priced every read
@@ -55,10 +56,13 @@ function akePrice(t){
    distance from the other. */
 function fixtureSpot(symbol,at=now()){return symbol==='AKEUSDT'&&AKE_DRIFT_PER_MINUTE?akePrice(at).toFixed(4):fixtureCandle(Math.floor(at/60000)*60000,60000,symbol).close;}
 function fixtureCandle(t,interval=60000,symbol='BTCUSDT'){
+  if(thinContractQa&&symbol==='QNTUSDT'){const p=t<started-6*3600000?'61.08':'264.51';return{timestamp:t,open:p,high:(Number(p)+0.5).toFixed(2),low:(Number(p)-0.5).toFixed(2),close:p,volume:'100'};}
+  if(thinContractQa&&symbol==='AKEUSDT'){const p=akePrice(t);return{timestamp:t,open:p.toFixed(4),high:(p+0.0001).toFixed(4),low:(p-0.0001).toFixed(4),close:p.toFixed(4),volume:'125000'};}
   if(symbol==='AKEUSDT'){const o=akePrice(t),c=akePrice(t+interval);return{timestamp:t,open:o.toFixed(4),high:Math.max(o,c).toFixed(4),low:Math.min(o,c).toFixed(4),close:c.toFixed(4),volume:'125000'};}
   const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}
 const sizes={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
 function fixtureInstrument(symbol){const base={provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};
+  if(thinContractQa&&symbol==='QNTUSDT')return{...base,filters:{...base.filters,tickSize:'0.01',minPrice:'0.01',qtyStep:'0.01',minOrderQty:'0.01'}};
   // AKE: whole-contract steps, a 1 000 000 venue ceiling and a 2x top tier — the owner's 1 500 000 at 3x breaks both live rules on purpose.
   if(symbol==='AKEUSDT')return{...base,filters:{tickSize:'0.0001',minPrice:'0.0001',maxPrice:'1000',qtyStep:'1',minOrderQty:'1',maxOrderQty:'1000000',maxMarketOrderQty:'1000000',minNotionalValue:'5'},riskTiers:[{riskLimitValue:'2000',maintenanceMarginRate:'0.01',initialMarginRate:'0.02',maintenanceDeduction:'0',maxLeverage:'50'},{riskLimitValue:'1000000000',maintenanceMarginRate:'0.02',initialMarginRate:'0.5',maintenanceDeduction:'20',maxLeverage:'2'}]};
   return base;}
@@ -68,7 +72,7 @@ async function transport(url,options={}){
     const requested=[...new Set((u.searchParams.get('symbols')||'').split(','))];
     if(!requested.length||requested.length>64||requested.some(s=>!symbols.includes(s)))throw new Error('Invalid preview marks');
     const marks=await Promise.all(requested.map(async symbol=>{
-      if(fixture){const at=now(),price=fixtureSpot(symbol,at);return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
+      if(fixture){const at=now(),price=fixtureSpot(symbol,at),age=thinContractQa&&['QNTUSDT','AKEUSDT'].includes(symbol)?61000:0;return{symbol,markPrice:price,lastPrice:price,markProviderTimestamp:at-age,receivedAt:at-age,fetchedAt:at};}
       const q=await source.freshQuote(symbol,options.signal);return{symbol,markPrice:q.markPrice,lastPrice:q.lastPrice,markProviderTimestamp:q.markProviderTimestamp,receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt};
     }));
     return new Response(JSON.stringify({status:'live',fetchedAt:now(),marks}),{status:200,headers:{'Content-Type':'application/json'}});

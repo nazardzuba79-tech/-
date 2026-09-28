@@ -154,6 +154,27 @@ describe('collector public venue adapter', () => {
     await expect(new CollectorPrivateTradingSource(request, () => NOW).instrument('BTCUSDT')).rejects.toThrow();
     expect(request).toHaveBeenCalledTimes(3);
   });
+  test('QNT initial constant-MMR plateau has zero deduction, preserving every later supplied tier', async () => {
+    const payload = publicInstrument(); Object.assign(payload.result.list[0], { symbol: 'QNTUSDT', baseCoin: 'QNT' });
+    // Public QNT risk-limit shape observed 2026-09-28. The previous parser
+    // refused tier 2 before historical entry/current ticker acquisition.
+    const list = ['5000', '7000', '10000', '12000', '14000'].map((limit, i) => ({
+      symbol: 'QNTUSDT', riskLimitValue: limit, maintenanceMargin: i < 4 ? '0.01' : '0.015',
+      initialMargin: '0.02', isLowestRisk: i === 0 ? 1 : 0, maxLeverage: '50', mmDeduction: i < 4 ? '' : '60',
+    }));
+    const load = (rows: typeof list) => new CollectorPrivateTradingSource(jest.fn()
+      .mockResolvedValueOnce(response(payload))
+      .mockResolvedValueOnce(response({ retCode: 0, result: { category: 'linear', list: rows } })), () => NOW).instrument('QNTUSDT');
+    expect((await load(list)).riskTiers.map(t => t.maintenanceDeduction)).toEqual(['0', '0', '0', '0', '60']);
+    for (const value of [undefined, null, 'NaN', '']) {
+      const bad = structuredClone(list); (bad[4] as any).mmDeduction = value;
+      await expect(load(bad)).rejects.toThrow('market_data_invalid');
+    }
+    const afterNonzero = [...list, { ...list[4], riskLimitValue: '16000', mmDeduction: '' }];
+    await expect(load(afterNonzero)).rejects.toThrow('market_data_invalid');
+    const duplicate = structuredClone(list); duplicate[1].riskLimitValue = duplicate[0].riskLimitValue;
+    await expect(load(duplicate)).rejects.toThrow('market_data_invalid');
+  });
   test('selected fresh source uses engine timestamp and simultaneous ticker mark, never catalogue ticker', async () => {
     const value = quote(); const request = jest.fn(async (url: string) => response(url.includes('/orderbook?') ? {
       retCode: 0, result: { s: 'BTCUSDT', b: value.bids.map(l => [l.price, l.quantity]), a: value.asks.map(l => [l.price, l.quantity]), ts: NOW, cts: NOW - 100 },
