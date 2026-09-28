@@ -50,7 +50,7 @@ export function useMarketTicker(pair: string, intervalMs?: number): TickerView {
   // the venue snapshot. Before its first trade it has no figures at all, so
   // the row stays null (a dash) rather than a zero price.
   const testPair = isTestMarketPair(pair);
-  const test = useTestMarkets(TEST_MARKET_TERMINAL_INTERVAL_MS, testPair);
+  const test = useTestMarkets(TEST_MARKET_TERMINAL_INTERVAL_MS, testPair, pair);
   if (testPair) {
     const asset = test.assets.find((row) => row.pair === pair.toUpperCase());
     const row = asset ? testAssetTicker(asset) : null;

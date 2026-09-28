@@ -19,7 +19,7 @@ export interface PublicTestAsset {
   name: string;
   quote: string;
   isTestAsset: true;
-  isTradable: false;
+  isTradable: boolean;
   status: string;
   listingArmed: boolean;
   listingAt: string;
@@ -40,8 +40,8 @@ export function publicTestAsset(asset: TestAssetConfig, now: number): PublicTest
     name: asset.name,
     quote: asset.quote,
     isTestAsset: true,
-    isTradable: false,
-    status: TEST_ASSET_STATUS_LABEL,
+    isTradable: asset.isTradable,
+    status: asset.isTradable ? 'SPOT' : TEST_ASSET_STATUS_LABEL,
     listingArmed: asset.listingArmed,
     listingAt: new Date(asset.listingAt).toISOString(),
     initialPrice: asset.initialPrice,

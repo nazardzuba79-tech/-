@@ -5,7 +5,7 @@ import BigNumber from 'bignumber.js';
 import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
-import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
+import { assertSpotListing, spotPriceSource } from './testMarkets/nrxSpot';
 
 export type ExtendedOrderType = OrderType | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET';
 
@@ -70,7 +70,7 @@ export class OrderService {
     ocoGroupId?: string; // internal — set by placeOcoOrder, not exposed on the public route
   }) {
     // A test asset is shown, never traded: it never reaches the engine.
-    if (isTestAssetPairOrSymbol(params.pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    assertSpotListing(params.pair);
     const [base, quote] = params.pair.split('/'); // e.g. BTC/USDT
     const conditional = isConditionalType(params.type);
     const effType = effectiveOrderType(params.type);
@@ -84,7 +84,7 @@ export class OrderService {
 
     let currentPrice: BigNumber | null = null;
     if (conditional) {
-      const ticker = await this.priceSource.getTicker(params.pair);
+      const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
       if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger price');
       currentPrice = new BigNumber(ticker.lastPrice);
       this.validateTriggerDirection(params.type, params.side, params.triggerPrice!, currentPrice);
@@ -192,9 +192,9 @@ export class OrderService {
     stopTriggerPrice: BigNumber;
     stopLimitPrice: BigNumber;
   }) {
-    if (isTestAssetPairOrSymbol(params.pair)) throw new Error(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    assertSpotListing(params.pair);
     const [base, quote] = params.pair.split('/');
-    const ticker = await this.priceSource.getTicker(params.pair);
+    const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger prices');
     const currentPrice = new BigNumber(ticker.lastPrice);
 
@@ -338,7 +338,7 @@ export class OrderService {
       const newTriggerPrice = updates.triggerPrice ?? new BigNumber(row.triggerPrice!.toString());
       const newPrice = effType === 'LIMIT' ? updates.price ?? new BigNumber(row.price!.toString()) : null;
 
-      const ticker = await this.priceSource.getTicker(row.pair);
+      const ticker = await spotPriceSource(this.priceSource).getTicker(row.pair);
       if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger price');
       const currentPrice = new BigNumber(ticker.lastPrice);
       this.validateTriggerDirection(row.type as ExtendedOrderType, row.side as OrderSide, newTriggerPrice, currentPrice);

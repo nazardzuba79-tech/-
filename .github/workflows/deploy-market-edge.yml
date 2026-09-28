@@ -8,10 +8,12 @@ on:
     branches: [cloudflare-market-edge]
     paths:
       - 'workers/market-edge/**'
+      - 'src/services/testMarkets/**'
       - '.github/workflows/deploy-market-edge.yml'
   pull_request:
     paths:
       - 'workers/market-edge/**'
+      - 'src/services/testMarkets/**'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/futuresDepth.ts'
       - 'frontend/src/lib/__tests__/futuresCandles.test.ts'
@@ -51,6 +53,8 @@ jobs:
           node-version: 22
       - name: Worker contract and isolation tests
         run: node --experimental-default-type=module test.mjs
+      - name: Install shared simulation dependency
+        run: npm ci --prefix ../.. --ignore-scripts --no-audit --no-fund
       - name: Wrangler dry-run
         run: npx --yes wrangler@4 deploy --dry-run
 
@@ -66,7 +70,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install shared simulation dependency
+        run: npm ci --prefix ../.. --ignore-scripts --no-audit --no-fund
       - name: Deploy Worker
+        # Still gated by the existing explicit deploy condition, never a PR.
         run: npx --yes wrangler@4 deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

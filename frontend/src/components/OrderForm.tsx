@@ -77,7 +77,7 @@ export function OrderForm({
   // An upcoming listing (VOLTORA) shows the whole form, like any pair, but
   // trading has not opened: a Buy/Sell answers with that and sends nothing.
   // The server refuses the pair on its own as well (OrderService).
-  const notTradingYet = isTestMarketPair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
+  const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
   const vtaLocked = privateVta && (submitting || vtaUnconfirmed);
   useEffect(() => onSessionChange(() => {
     if (!privateVta) return;

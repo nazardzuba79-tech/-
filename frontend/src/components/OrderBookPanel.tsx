@@ -1,5 +1,5 @@
 import { formatBookAmount, formatBookTotal, formatCompactBookValue } from '../lib/terminalPresentation';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice } from '../lib/formatNumber';
 import { PanelRightClose } from 'lucide-react';
@@ -103,6 +103,7 @@ export function OrderBookPanel({
   onCollapse,
   spotPrecision = false,
   initialFinestGrouping = false,
+  headerTitle,
 }: {
   bids: Level[];
   asks: Level[];
@@ -113,6 +114,7 @@ export function OrderBookPanel({
   spotPrecision?: boolean;
   /** Start a precision-aware book at the finest available step for dense Futures depth. */
   initialFinestGrouping?: boolean;
+  headerTitle?: ReactNode;
 }) {
   const { t } = useLanguage();
   const asksViewport = useRef<HTMLDivElement>(null);
@@ -182,7 +184,7 @@ export function OrderBookPanel({
   return (
     <>
       <div className="orderbook-header">
-        <span className="orderbook-title">{t('trade.orderBook')}</span>
+        {headerTitle ?? <span className="orderbook-title">{t('trade.orderBook')}</span>}
         <div className="orderbook-header-actions">
           <select
             className="ob-group-select"

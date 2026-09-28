@@ -2,6 +2,7 @@ import { Star } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { localeOf, useLanguage } from '../../lib/i18n';
 import { useTestMarkets } from '../../lib/testMarketStore';
+import { nrxListingTime } from '../../lib/nrxMarket';
 import { formatListingMoment, formatTestCompact, formatTestPercent, formatTestPrice, matchesTestAssetSearch } from '../../lib/testMarkets';
 import './TestMarketsStrip.css';
 
@@ -57,7 +58,7 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
                 <strong>{live ? `${formatTestCompact(state.quoteVolume24h)} ${asset.quote}` : '—'}</strong>
               </span>
               <span className="test-market-listing">
-                {live ? '' : `${t('listing.startTime')}: ${formatListingMoment(asset.listingAt, localeOf(lang))}`}
+                {live ? '' : `${t('listing.startTime')}: ${asset.symbol === 'NRX' ? nrxListingTime(asset.listingAt) : formatListingMoment(asset.listingAt, localeOf(lang))}`}
               </span>
             </button>
           </div>

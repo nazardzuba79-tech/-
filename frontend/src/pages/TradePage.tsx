@@ -1,4 +1,5 @@
 import { VtaSpotPanels } from '../components/VtaSpotPanels';
+import { NrxBookTabs } from '../components/NrxBookTabs';
 import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -358,6 +359,7 @@ export function TradePage() {
 
           <div className="orderbook-area" data-sampled-book="true">
             <SampledDataNote asOf={book.pair === pair ? book.asOf : null} />
+            <NrxBookTabs enabled={pair === 'NRX/USDT'} live={bookLive}>
                 <OrderBookPanel
               bids={visibleBook.bids}
               asks={visibleBook.asks}
@@ -366,6 +368,7 @@ export function TradePage() {
               onPickPrice={(value) => setPickedPrice((prev) => ({ value, pair, seq: (prev?.seq ?? 0) + 1 }))}
               onCollapse={() => setOrderBookCollapsed(true)}
             />
+            </NrxBookTabs>
           </div>
 
           <div className="order-form-area">

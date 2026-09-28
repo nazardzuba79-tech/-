@@ -1,0 +1,12 @@
+.nrx-book-tabs { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.orderbook-area .nrx-book-tabs .orderbook-header { gap: 4px; padding-inline: 6px; }
+.nrx-book-tabs .orderbook-header-actions { gap: 4px; }
+.nrx-book-tabs .ob-group-select { width: 96px; min-width: 0; max-width: 96px; padding: 4px; font-size: 11px; }
+.nrx-book-tabs-bar { display: flex; flex-shrink: 0; gap: 8px; font-size: 11px; }
+.nrx-book-tabs-bar button { padding: 2px 0; background: transparent; border: 0; color: #89929f; cursor: pointer; font: inherit; }
+.nrx-book-tabs-bar button[aria-selected="true"] { color: #edc85b; }
+.nrx-tape { min-height: 0; flex: 1; overflow: auto; font-variant-numeric: tabular-nums; }
+.nrx-tape-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 5px 10px; font-size: 12px; }
+.nrx-tape-row > :not(:first-child) { text-align: right; }
+.nrx-tape-labels { color: #89929f; }
+.nrx-tape-empty { padding: 24px; text-align: center; color: #89929f; }

@@ -1,0 +1,67 @@
+name: NRX investor market review
+on:
+  pull_request:
+    paths:
+      - 'src/services/testMarkets/**'
+      - 'src/services/OrderService.ts'
+      - 'src/services/PriceWatcherService.ts'
+      - 'src/services/WalletPortfolioService.ts'
+      - 'frontend/src/**'
+      - 'workers/market-edge/**'
+      - 'scripts/*nrx*'
+      - '.github/workflows/nrx-market.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: voltex_nrx_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_nrx_test
+      DIRECT_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_nrx_test
+      VOLTEX_NRX_TEST_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_nrx_test
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/testMarkets/__tests__/nrxPublic.test.ts
+          src/services/testMarkets/__tests__/nrxSpot.pg.test.ts
+          src/services/testMarkets/__tests__/testMarketSimulation.test.ts
+          src/services/testMarkets/__tests__/testMarketDepth.test.ts
+          src/api/routes/__tests__/testMarkets.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/services/__tests__/PriceWatcherService.test.ts
+          src/services/__tests__/WalletPortfolioService.test.ts
+          src/matching-engine/__tests__/MatchingEngine.test.ts
+          frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/nrxMarket.test.ts
+          frontend/src/lib/__tests__/spotPublicMarket.test.ts
+      - run: node scripts/test-nrx-edge.cjs && node workers/market-edge/test.mjs
+      - run: npm run build && npm run build --prefix frontend
+      - name: Isolated browser QA dependencies
+        run: npm install --prefix /tmp/nrx-browser-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+      - run: node /tmp/nrx-browser-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - run: node scripts/qa-nrx-market.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/nrx-browser-qa/node_modules/playwright
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nrx-market-review
+          path: docs/qa/nrx-market

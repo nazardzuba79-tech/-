@@ -2,12 +2,13 @@
  * TEST ASSETS — simulated markets that exist only to exercise the trading
  * terminal and the chart engine.
  *
- * A test asset is listed like any Spot market (Markets, Search, Favorites,
- * the Spot terminal) but it is never tradable: it has no order book, no
- * matching, no balances, no deposits and no withdrawals. Its prices come
- * from a deterministic, seeded simulation on the server
- * (`testMarketSimulation.ts`) — never from a venue and never from trades.
+ * Public display prices come from one deterministic simulation, never a
+ * venue. VTA retains its private sale-only account. NRX uses ordinary Spot
+ * balances/orders by explicit owner choice, but display depth is not liquidity.
+ * Shared restrictions still exclude these assets from other financial paths.
  */
+
+import { NEURIX } from './neurix';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -18,7 +19,7 @@ export interface TestAssetConfig {
   /** The pair as the rest of VOLTEX spells it: `VTA/USDT`. */
   pair: string;
   isTestAsset: true;
-  isTradable: false;
+  isTradable: boolean;
   /** Operational gate. False holds the asset before its listing: no countdown, candles or automatic listing. */
   listingArmed: boolean;
   /** First simulated tick, epoch ms. Used only after listingArmed is true. */
@@ -46,6 +47,7 @@ export const VOLTORA: TestAssetConfig = {
   seed: 'voltora-2026-09-27',
 };
 
+// Render's existing public listing. NRX metadata is owned exclusively by the edge.
 export const TEST_ASSETS: readonly TestAssetConfig[] = [VOLTORA];
 
 /** The single sentence every refused trading action shows. */
@@ -59,17 +61,17 @@ function normalizePair(pair: string): string {
 export function testAssetForPair(pair: string | null | undefined): TestAssetConfig | null {
   if (!pair) return null;
   const normalized = normalizePair(pair);
-  return TEST_ASSETS.find((asset) => asset.pair === normalized) ?? null;
+  return [NEURIX, ...TEST_ASSETS].find((asset) => asset.pair === normalized) ?? null;
 }
 
 /** The test asset behind a bare symbol (`VTA`), if any. */
 export function testAssetForSymbol(symbol: string | null | undefined): TestAssetConfig | null {
   if (!symbol) return null;
   const normalized = symbol.trim().toUpperCase();
-  return TEST_ASSETS.find((asset) => asset.symbol === normalized) ?? null;
+  return [NEURIX, ...TEST_ASSETS].find((asset) => asset.symbol === normalized) ?? null;
 }
 
-/** True when the pair or symbol names a test asset — the one check every trading path uses. */
+/** Restricted-asset guard. Only ordinary Spot explicitly admits listed NRX. */
 export function isTestAssetPairOrSymbol(value: string | null | undefined): boolean {
   return testAssetForPair(value) !== null || testAssetForSymbol(value) !== null;
 }

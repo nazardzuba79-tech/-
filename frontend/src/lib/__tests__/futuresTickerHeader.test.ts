@@ -218,6 +218,10 @@ test.each([
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    // NRX public reads alone use Cloudflare; byte-pin all existing transports,
+    // especially index/funding/internal OI and every account write, as before.
+    .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')
+    .replace(/\(isNrxPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
     // Private VTA adds only these two methods and response types. Continue
     // fingerprinting every pre-existing Futures/Spot method unchanged.
     .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')

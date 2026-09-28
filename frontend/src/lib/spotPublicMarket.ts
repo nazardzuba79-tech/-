@@ -1,6 +1,7 @@
 import type { Candle } from './indicators';
 import type { FuturesDepthSnapshot } from './futuresDepth';
 import { isTestMarketPair } from './testMarkets';
+import { fetchNrxPublic, isNrxPair } from './nrxMarket';
 
 const APP_API_BASE = '/api/v1';
 const DIRECT_KRAKEN_BASE = 'https://api.kraken.com';
@@ -150,6 +151,9 @@ function parseEdgeSpotCandles(payload: any, pair: string, interval: string): Can
 }
 
 export async function getSpotPublicCandles(pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number): Promise<{ candles: Candle[] }> {
+  if (isNrxPair(pair)) {
+    return fetchNrxPublic(`/market/test-assets/NRX-USDT/candles?interval=${encodeURIComponent(interval)}&limit=${Math.min(1000, limit)}`, signal);
+  }
   if (!/^[A-Z0-9]{1,32}\/[A-Z0-9]{2,12}$/.test(pair) || !INTERVAL_MINUTES[interval] || !Number.isInteger(limit) || limit < 1) {
     throw new Error('Unsupported spot candle instrument');
   }

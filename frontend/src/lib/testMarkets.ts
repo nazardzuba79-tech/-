@@ -3,9 +3,9 @@ import type { MarketTicker } from './api';
 /**
  * TEST MARKETS — the pure half (no network, no React).
  *
- * A test asset (today only VOLTORA, VTA/USDT) is a simulated, read-only
- * market: it is listed in Markets, Search, Favorites and the terminal rail,
- * it opens the Spot terminal, and it can never trade. The server owns the
+ * VTA/NRX share deterministic market presentation in Markets, Search,
+ * Favorites and the terminal. VTA retains its private sale restrictions;
+ * listed NRX uses normal Spot account operations. The server owns the
  * simulation and the clock (src/services/testMarkets); this file only
  * reads what it serves and formats it. The network half is
  * lib/testMarketStore.
@@ -16,7 +16,7 @@ export const TEST_ASSET_STATUS_LABEL = 'TEST · NOT TRADABLE';
 
 /** Known before the first response, so a deep link or a starred pair is
  *  recognised as a test market without waiting on the network. */
-export const TEST_MARKET_PAIRS: readonly string[] = ['VTA/USDT'];
+export const TEST_MARKET_PAIRS: readonly string[] = ['VTA/USDT', 'NRX/USDT'];
 
 export interface TestMarketState {
   phase: 'pre-listing' | 'live';
@@ -36,7 +36,7 @@ export interface TestAsset {
   name: string;
   quote: string;
   isTestAsset: true;
-  isTradable: false;
+  isTradable: boolean;
   status: string;
   listingArmed: boolean;
   listingAt: string;
@@ -61,7 +61,8 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
   if (!body || typeof body.serverTime !== 'number' || !Array.isArray(body.assets)) return null;
   const assets: TestAsset[] = [];
   for (const raw of body.assets as any[]) {
-    if (!raw || typeof raw.pair !== 'string' || !isTestMarketPair(raw.pair) || raw.isTestAsset !== true || raw.isTradable !== false) continue;
+    if (!raw || typeof raw.pair !== 'string' || !isTestMarketPair(raw.pair) || raw.isTestAsset !== true
+      || raw.isTradable !== (raw.pair.toUpperCase() === 'NRX/USDT')) continue;
     const listingAt = typeof raw.listingAt === 'string' ? Date.parse(raw.listingAt) : NaN;
     const state = raw.state ?? {};
     if (!Number.isFinite(listingAt) || (state.phase !== 'pre-listing' && state.phase !== 'live')) continue;
@@ -71,7 +72,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
       name: String(raw.name ?? raw.symbol),
       quote: String(raw.quote ?? raw.pair.split('/')[1]),
       isTestAsset: true,
-      isTradable: false,
+      isTradable: raw.isTradable,
       status: typeof raw.status === 'string' ? raw.status : TEST_ASSET_STATUS_LABEL,
       listingArmed: typeof raw.listingArmed === 'boolean' ? raw.listingArmed : true,
       listingAt: raw.listingAt,

@@ -1,0 +1,100 @@
+[
+  {
+    "width": 1440,
+    "normalSpotForm": true,
+    "listingTransitionWithoutReload": true,
+    "localFixtureSubmissions": 1,
+    "productionWrites": 0,
+    "errors": [],
+    "overflow": 0,
+    "nrxRequests": [
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/test-assets/NRX-USDT/candles"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/display/spot-book/NRX-USDT"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/test-assets/NRX-USDT/candles"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/display/spot-book/NRX-USDT"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/test-assets/NRX-USDT/candles"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/external/trades/NRX-USDT"
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "normalSpotForm": true,
+    "listingTransitionWithoutReload": true,
+    "localFixtureSubmissions": 1,
+    "productionWrites": 0,
+    "errors": [],
+    "overflow": 0,
+    "nrxRequests": [
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/test-assets/NRX-USDT/candles"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/display/spot-book/NRX-USDT"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/nrx"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/test-assets/NRX-USDT/candles"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/display/spot-book/NRX-USDT"
+      },
+      {
+        "host": "market.voltextech.net",
+        "path": "/market/test-assets/NRX-USDT/candles"
+      }
+    ]
+  }
+]
