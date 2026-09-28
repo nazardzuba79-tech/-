@@ -3,8 +3,10 @@
  * terminal and the chart engine.
  *
  * A test asset is listed like any Spot market (Markets, Search, Favorites,
- * the Spot terminal) but it is never tradable: it has no order book, no
- * matching, no balances, no deposits and no withdrawals. Its prices come
+ * the Spot terminal) but it is never publicly tradable: it has no public
+ * order book, matching, balances, deposits or withdrawals. An explicitly
+ * private operator sandbox may keep isolated DemoBalance rows; those rows
+ * are never part of public Spot or native Futures collateral. Its prices come
  * from a deterministic, seeded simulation on the server
  * (`testMarketSimulation.ts`) — never from a venue and never from trades.
  */
