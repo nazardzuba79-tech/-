@@ -4249,3 +4249,5 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Not performed: merge, deploy, production credit, reallocation, or owner production sale. Production allocation observations come from the owner brief; not refreshed in this task. Next: PR review/CI; broader whole-repository Jest not claimed.
 
 - VTA CI follow-up to e9c0bfc77cfb17246fbe216718effab0188d44ba: actual PostgreSQL/browser workflow passed; wider pipelines exposed the shared locale fingerprint and obsolete public-listing source guard. Updated only these contracts, retaining every prior dictionary digest and adding exact localized refusal assertions. 49 further tests PASS; total 462 targeted tests / 24 suites. Runtime implementation and screenshot evidence unchanged.
+
+- Public listing browser follow-up: replaced obsolete disabled-BUY/submit expectations with the owner's interactive standard tabs and explicit purchase/type/prelisting refusals. Five widths (1440/430/390/360/320) PASS, zero writes/errors/overflow; report committed. Test/docs only.

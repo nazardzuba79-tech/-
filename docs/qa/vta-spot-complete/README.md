@@ -62,3 +62,5 @@ Next step: review the PR. Merge/deploy are explicitly unauthorized.
 ## CI contract follow-up
 
 Initial head e9c0bfc77cfb17246fbe216718effab0188d44ba passed the complete VTA PostgreSQL/browser workflow. Five wider workflows failed on the same locale fingerprint, and the public listing workflow also expected the old ref-only sale call/noValidate condition. The follow-up excludes only the two added refusal keys from the existing locale digests (all original dictionary bytes remain pinned), explicitly asserts RU wording and seven distinct translations, and checks the durable locked intent instead of the obsolete ref call. These 49 tests now pass locally. No runtime code or screenshots changed in this follow-up.
+
+The next public-listing browser stage also contained obsolete disabled-BUY/submit assertions. It now verifies selectable BUY, explicit purchase/type/prelisting refusals and zero write requests at 1440/430/390/360/320 px. All five widths pass with zero page errors or horizontal overflow; see listing-browser.json. Runtime remains unchanged.
