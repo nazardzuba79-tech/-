@@ -4238,3 +4238,8 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Checks: frontend build PASS (existing large-chunk advisory); 138 UI/mobile guards PASS; 102 affected Spot/listing tests PASS. Browser 1440/390 PASS: prelisting disabled, automatic estimate, exact max quantity, lost-response replay = one fill, reload history/assets, standard wallet row, zero overflow/page errors. Ordinary Spot controls unchanged/zero private reads; non-admin blocked/zero private reads.
 - Broader 40 wallet/transition tests: 36 PASS / 4 FAIL. Reproduced the same four failures with current-main sources restored temporarily, then restored all working files: two existing wallet unified valuation fixture mismatches; old sampled-book source assertion; missing terminalPresentation mock. Evidence output/vta-demo/baseline-spot-wallet.log. No unrelated cleanup.
 - Browser harness fixtures intentionally do not provide live venue streams/charts; production read-only visual verification remains required after publication.
+
+## Codex — 2026-09-28 — Publish only VTA countdown postponement
+- Implementation: 91557a7d399a90764d25bb06fa0e3294e2f83efb, based on current main 87199526082a0d24e0623516b7dde5df8af9005b. Owner authorized publication of the timer change only.
+- Changed testAssetConfig listingAt from 14:00 UTC to 15:00 UTC on 2026-09-28; updated existing test assertion. UI, balances, seed, pricing rules and unrelated review PR #316 remain unchanged.
+- Targeted simulation suite: 36 PASS on the same two-file patch. Next: publish isolated timer PR and verify public listingAt.
