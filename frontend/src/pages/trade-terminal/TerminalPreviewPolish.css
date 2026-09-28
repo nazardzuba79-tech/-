@@ -284,3 +284,13 @@ body:has([data-premium-terminal-preview]) .support-launcher {
 @media (prefers-reduced-motion:reduce) {
   :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(button, input, .input-group) { transition: none; }
 }
+
+
+/* TerminalMobileParity intentionally forces pure white primary text on Spot/CFD
+ * phones. The premium layer uses one primary text token across all three
+ * terminals, so restore that token here without changing any geometry. */
+@media (max-width:900px) {
+  .trade-terminal.vx-terminal[data-premium-terminal-preview] {
+    --text-primary: #eef0f4 !important;
+  }
+}
