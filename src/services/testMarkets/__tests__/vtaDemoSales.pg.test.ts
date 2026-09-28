@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
 import { VtaDemoSales } from '../VtaDemoSales';
-import { VOLTORA } from '../testAssetConfig';
+import { VOLTORA, testAssetPrivateQuoteAsset } from '../testAssetConfig';
 import { publicTestAsset } from '../testMarketService';
 import { DemoTradingService } from '../../DemoTradingService';
 import { MatchingEngine } from '../../../matching-engine/MatchingEngine';
@@ -14,9 +14,11 @@ pg('private VOLTORA demo sale — real PostgreSQL', () => {
   const users: string[] = [];
   const quantity = '4545454.54545454';
   const now = VOLTORA.listingAt + 60_000;
+  const privateQuoteAsset = testAssetPrivateQuoteAsset(VOLTORA);
   const service = () => new VtaDemoSales(db, () => now);
   const topUp = () => new DemoTradingService(db, new MatchingEngine());
   const balance = async (asset: string) => (await db.demoBalance.findUnique({ where: { userId_asset: { userId: owner, asset } } }))?.available.toString() ?? '0';
+  const privateProceeds = () => balance(privateQuoteAsset);
   beforeAll(() => { db = new PrismaClient({ datasources: { db: { url } } }); });
   beforeEach(async () => {
     owner = randomUUID(); other = randomUUID(); users.push(owner, other);
@@ -61,19 +63,33 @@ pg('private VOLTORA demo sale — real PostgreSQL', () => {
     expect(result.price).toBe(expectedPrice.toFixed());
     expect(result.proceeds).toBe(expectedPrice.times(quantity).toFixed());
     expect(await balance('VTA')).toBe('0');
-    expect(await balance('USDT')).toBe(result.proceeds);
+    expect(await privateProceeds()).toBe(result.proceeds);
+    // Generic demo USDT backs the native Futures sandbox and must stay untouched.
+    expect(await balance('USDT')).toBe('0');
     const snapshot = await service().snapshot(owner);
+    expect(snapshot.balances.find(b => b.asset === 'USDT')?.available).toBe(result.proceeds);
+    expect(snapshot.balances.some(b => b.asset === privateQuoteAsset)).toBe(false);
     expect(snapshot.sales).toHaveLength(1);
     expect(snapshot.sales[0]).toMatchObject(result);
     expect(await db.order.count({ where: { userId: owner } })).toBe(0);
     expect((await db.balance.findMany({ where: { userId: owner } })).map(b => [b.asset, b.available.toString()])).toEqual([['USDT', '50000']]);
     expect(await db.demoBalance.count({ where: { userId: other } })).toBe(0);
   });
+  test('private quote proceeds use a pair-scoped row, never the native Futures USDT row', async () => {
+    await credit();
+    const result = await sell('250');
+    expect(privateQuoteAsset).toBe('VTA_PRIVATE_USDT');
+    expect(await privateProceeds()).toBe(result.proceeds);
+    expect(await balance('USDT')).toBe('0');
+    const rows = await db.demoBalance.findMany({ where: { userId: owner }, orderBy: { asset: 'asc' } });
+    expect(rows.map(row => row.asset)).toEqual(['VTA', privateQuoteAsset].sort());
+  });
   test('partial sales conserve remaining tokens and proceeds', async () => {
     await credit();
     const first = await sell('100.12345678');
     expect(await balance('VTA')).toBe(new BigNumber(quantity).minus(first.quantity).toFixed());
-    expect(await balance('USDT')).toBe(first.proceeds);
+    expect(await privateProceeds()).toBe(first.proceeds);
+    expect(await balance('USDT')).toBe('0');
   });
   test('sequential and concurrent identical retries commit one sale; changed quantity conflicts', async () => {
     await credit(); const id = randomUUID();
@@ -84,7 +100,8 @@ pg('private VOLTORA demo sale — real PostgreSQL', () => {
     expect(await db.demoOrder.count({ where: { userId: owner } })).toBe(1);
     expect(await db.demoTrade.count({ where: { takerUserId: owner } })).toBe(1);
     expect(await db.auditLog.count({ where: { userId: owner, action: 'VTA_DEMO_SOLD' } })).toBe(1);
-    expect(await balance('USDT')).toBe(results[0].proceeds);
+    expect(await privateProceeds()).toBe(results[0].proceeds);
+    expect(await balance('USDT')).toBe('0');
   });
   test('competing requests cannot oversell and failed debit rolls back its order', async () => {
     await credit();
@@ -102,7 +119,7 @@ pg('private VOLTORA demo sale — real PostgreSQL', () => {
       } })));
     } });
     await expect(new VtaDemoSales(failing, () => now).sell({ userId: owner, quantity, requestId: randomUUID() })).rejects.toThrow('audit fixture outage');
-    expect(await balance('VTA')).toBe(quantity); expect(await balance('USDT')).toBe('0');
+    expect(await balance('VTA')).toBe(quantity); expect(await privateProceeds()).toBe('0'); expect(await balance('USDT')).toBe('0');
     expect(await db.demoOrder.count({ where: { userId: owner } })).toBe(0);
     expect(await db.demoTrade.count({ where: { takerUserId: owner } })).toBe(0);
   });
