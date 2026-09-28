@@ -24,7 +24,7 @@ unmapped new ranked assets are unconfigured, and VTA is excluded.
 
 ## Verification
 
-- **107 tests PASS, 0 FAIL, 6 suites PASS**, including 31 new catalogue tests.
+- **147 tests PASS, 0 FAIL, 9 suites PASS**, including 31 new catalogue tests.
 - Backend and frontend TypeScript checks: PASS.
 - Backend build: PASS.
 - Frontend builds with the feature enabled and disabled: PASS. Vite reports its
@@ -84,3 +84,8 @@ Merged: **NO**. Deployed: **NO**. Production data changed: **NO**.
 Neon schema changed: **NO**. Neon address storage added: **NO**.
 Deposit event storage added: **NO**. Automatic deposit credit added: **NO**.
 Blockchain polling added: **NO**. txHash submission added: **NO**.
+
+CI integration follow-up: preserved the existing locale-byte digests while explicitly
+validating the one added neutral key, included the new shared client in Copy Trading
+workflow triggers, and set the legacy-mode flag in the old admin test loader. No
+runtime code changed in this follow-up; the existing browser evidence remains valid.

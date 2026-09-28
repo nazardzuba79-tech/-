@@ -7,6 +7,9 @@ on:
       - 'src/index.ts'
       - 'frontend/src/lib/depositCatalogue.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
+      - 'frontend/src/lib/i18n/**'
+      - 'frontend/src/lib/__tests__/deposit*.test.ts'
+      - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
       - 'frontend/src/components/DepositModal.tsx'
       - 'frontend/src/pages/wallet-v3/DepositModal.tsx'
       - 'frontend/src/pages/admin/Admin*Catalogue*'
@@ -37,6 +40,9 @@ jobs:
           src/services/__tests__/TreasuryWalletService.test.ts
           frontend/src/lib/__tests__/depositAllWallets.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
+          frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
       - run: npm run build
       - run: npx tsc -b frontend
       - name: Build isolated catalogue preview

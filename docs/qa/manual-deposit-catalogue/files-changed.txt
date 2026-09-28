@@ -1,3 +1,4 @@
+.github/workflows/copy-trading-card-regression.yml
 .github/workflows/deposit-catalogue.yml
 docs/AI_HANDOFF.md
 docs/manual-deposit-catalogue.md
@@ -11,7 +12,9 @@ docs/qa/manual-deposit-catalogue/customer-mobile.png
 docs/qa/manual-deposit-catalogue/files-changed.txt
 docs/qa/manual-deposit-catalogue/tests-summary.json
 frontend/src/components/DepositModal.tsx
+frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
 frontend/src/lib/__tests__/depositAllWallets.test.ts
+frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
 frontend/src/lib/depositCatalogue.ts
 frontend/src/lib/i18n/locales/en.ts
 frontend/src/lib/i18n/locales/es.ts
