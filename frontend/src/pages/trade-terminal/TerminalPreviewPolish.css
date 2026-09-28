@@ -245,6 +245,7 @@
 :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .archive-protection-toggle {
   background: #edc76a06;
   border: 1px solid #edc76a2b;
+  box-sizing: border-box;
   border-radius: var(--preview-radius);
   color: var(--text-primary);
 }
