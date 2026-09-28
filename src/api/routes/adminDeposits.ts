@@ -108,10 +108,10 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     try {
       const [totalUsers, newUsers24h, pendingKyc, q] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({ where: { createdAt: { gte: since } } }),
-        prisma.user.count({ where: { kycStatus: 'PENDING' } }),
-        queue.load({ creditedLimit: 0 }),
+        prisma.user.count({ where: { role: 'USER' } }),
+        prisma.user.count({ where: { role: 'USER', createdAt: { gte: since } } }),
+        prisma.user.count({ where: { role: 'USER', kycStatus: 'PENDING' } }),
+        queue.load({ customerActivityOnly: true }),
       ]);
       const unconfirmedByUser = new Map<string, number>();
       for (const r of q.rows) if (r.userId && r.state === 'AWAITING_CONFIRMATIONS') unconfirmedByUser.set(r.userId, (unconfirmedByUser.get(r.userId) ?? 0) + 1);

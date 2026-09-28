@@ -8,7 +8,7 @@ import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 
 /**
- * Admin's view into every registered account — the registration data,
+ * Admin's customer list — the registration data,
  * verification status, and balances the admin panel's Users section needs,
  * plus (on the detail route) a client's full activity history. Login times
  * come from Session; infrastructure IPs are not presented as client IPs.
@@ -22,7 +22,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
 
     const [users, balances, lastLogins] = await Promise.all([
       prisma.user.findMany({
-        where: search ? { email: { contains: search, mode: 'insensitive' } } : undefined,
+        where: { role: 'USER', ...(search ? { email: { contains: search, mode: 'insensitive' as const } } : {}) },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.balance.findMany(),

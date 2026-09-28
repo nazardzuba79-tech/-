@@ -150,19 +150,25 @@ export async function buildPackage(
 export class DepositQueueService {
   constructor(private prisma: PrismaClient, private prices: PriceSourceWithMeta) {}
 
-  async load(options: { creditedLimit?: number } = {}): Promise<DepositQueue> {
+  async load(options: { creditedLimit?: number; customerActivityOnly?: boolean } = {}): Promise<DepositQueue> {
+    // The Users page is a customer work queue, not the deposit registry.
+    // Scope before the row cap/count so service deposits cannot displace customers.
+    // Unmatched transfers stay visible for attribution; the full registry is unchanged.
+    const customerScope = options.customerActivityOnly
+      ? { OR: [{ userId: null }, { user: { role: 'USER' as const } }] }
+      : {};
     const [uncredited, uncreditedTotal, creditedCount, credited, batches] = await Promise.all([
       this.prisma.deposit.findMany({
-        where: { status: { not: 'CREDITED' }, deletedUserId: null }, orderBy: { createdAt: 'asc' }, take: QUEUE_ROW_CAP,
+        where: { status: { not: 'CREDITED' }, deletedUserId: null, ...customerScope }, orderBy: { createdAt: 'asc' }, take: QUEUE_ROW_CAP,
         include: { user: { select: { email: true } } },
       }),
-      this.prisma.deposit.count({ where: { status: { not: 'CREDITED' }, deletedUserId: null } }),
-      this.prisma.deposit.count({ where: { status: 'CREDITED' } }),
-      this.prisma.deposit.findMany({
+      this.prisma.deposit.count({ where: { status: { not: 'CREDITED' }, deletedUserId: null, ...customerScope } }),
+      options.customerActivityOnly ? Promise.resolve(0) : this.prisma.deposit.count({ where: { status: 'CREDITED' } }),
+      options.customerActivityOnly ? Promise.resolve([]) : this.prisma.deposit.findMany({
         where: { status: 'CREDITED' }, orderBy: [{ creditedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
         take: options.creditedLimit ?? 50, include: { user: { select: { email: true } } },
       }),
-      options.creditedLimit === 0 ? Promise.resolve([]) : this.prisma.depositBatch.findMany({
+      options.customerActivityOnly || options.creditedLimit === 0 ? Promise.resolve([]) : this.prisma.depositBatch.findMany({
         orderBy: { createdAt: 'desc' }, take: 30,
         include: { deposits: { orderBy: { createdAt: 'asc' }, select: { id: true, txHash: true, amount: true, confirmations: true, blockTimestamp: true } } },
       }),
