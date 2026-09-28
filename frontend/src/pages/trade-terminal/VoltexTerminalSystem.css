@@ -97,6 +97,17 @@
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .ticker-item {
   display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0; padding:0; border:0;
 }
+/* Content-sized columns keep a constant rhythm instead of stretching the
+   readings across the viewport. The mobile summary retains its own grid. */
+@media (min-width:901px) {
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.spot-terminal .ticker-bar {
+    display:flex; flex-wrap:nowrap; justify-content:flex-start; align-items:center; gap:24px;
+  }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.spot-terminal .ticker-bar > :is(.pair-selector,.ticker-item) {
+    flex:0 0 auto; width:auto; min-width:0; margin:0;
+  }
+  .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.spot-terminal .ticker-bar .ticker-item > :is(.label,.value) { line-height:20px; }
+}
 .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .ticker-bar .label {
   font-size:11px; line-height:16px; color:var(--archive-label); white-space:nowrap;
 }

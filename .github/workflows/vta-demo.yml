@@ -1,0 +1,79 @@
+name: Private VTA demo and terminal headers
+on:
+  pull_request:
+    paths:
+      - 'src/services/testMarkets/VtaDemoSales.ts'
+      - 'src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts'
+      - 'src/services/DemoTradingService.ts'
+      - 'src/api/routes/demoTrading.ts'
+      - 'src/api/routes/__tests__/demoTrading.test.ts'
+      - 'frontend/src/components/VtaDemoSpot*'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/lib/api.ts'
+      - 'src/index.ts'
+      - 'scripts/qa-vta-demo.cjs'
+      - 'frontend/src/pages/wallet-v3/FundingView.tsx'
+      - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
+      - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
+      - '.github/workflows/vta-demo.yml'
+permissions:
+  contents: read
+jobs:
+  private-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: voltex_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_test
+      DIRECT_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_test
+      VOLTEX_PG_TEST_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_test
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - name: Real PostgreSQL settlement and existing Spot engine
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts
+          src/services/__tests__/DemoTradingService.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/matching-engine/__tests__/MatchingEngine.test.ts
+          src/api/routes/__tests__/demoTrading.test.ts
+          src/api/routes/__tests__/testMarkets.test.ts
+          src/services/testMarkets/__tests__/testMarketSimulation.test.ts
+          frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+          frontend/src/lib/__tests__/futuresMobileScope.test.ts
+          frontend/src/lib/__tests__/terminalMobileParity.test.ts
+      - run: npm run build
+      - run: npm run build --prefix frontend
+      - name: Disposable browser
+        run: |
+          npm install --prefix /tmp/vta-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/vta-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Private VTA browser regression
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/vta-browser/node_modules/playwright
+        run: node scripts/qa-vta-demo.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: private-vta-${{ github.sha }}
+          path: output/vta-demo/
+          if-no-files-found: ignore
+          retention-days: 7

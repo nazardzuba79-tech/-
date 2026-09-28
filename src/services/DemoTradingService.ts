@@ -245,12 +245,17 @@ export class DemoTradingService {
   /** Manual credit/debit — the demo equivalent of BalanceAdjustmentService,
    * used only by the admin "demo top-up" route. Always logs to AuditLog. */
   async topUp(params: { userId: string; asset: string; amount: string; performedByAdminId: string; note?: string }) {
-    if (isTestAssetPairOrSymbol(params.asset)) throw new DemoTradingError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    const ownVtaDemo = params.asset === 'VTA' && params.userId === params.performedByAdminId;
+    if (isTestAssetPairOrSymbol(params.asset) && !ownVtaDemo) throw new DemoTradingError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
     const delta = new BigNumber(params.amount);
     if (!delta.isFinite() || delta.isZero()) throw new DemoTradingError('Amount must be a non-zero number');
     exactDemoDelta(delta);
 
     return this.prisma.$transaction(async (tx: TxClient) => {
+      if (ownVtaDemo) {
+        const admin = await tx.user.findUnique({ where: { id: params.userId }, select: { role: true, blockedAt: true } });
+        if (admin?.role !== 'ADMIN' || admin.blockedAt) throw new DemoTradingError('Admin access required');
+      }
       await this.adjustBalance(tx, params.userId, params.asset, { available: delta });
       // The preceding atomic mutation holds this row's lock until commit.
       const updated = await tx.demoBalance.findUniqueOrThrow({ where: { userId_asset: { userId: params.userId, asset: params.asset } } });

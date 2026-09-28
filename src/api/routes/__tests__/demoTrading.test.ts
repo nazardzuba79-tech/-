@@ -10,10 +10,10 @@ function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
 }
 
-function buildApp(prisma: any, demoTrading: any) {
+function buildApp(prisma: any, demoTrading: any, vtaDemo?: any) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', demoTradingRouter(prisma, demoTrading));
+  app.use('/api/v1', demoTradingRouter(prisma, demoTrading, vtaDemo));
   return app;
 }
 
@@ -22,6 +22,20 @@ function adminPrisma(role: 'ADMIN' | 'USER' = 'ADMIN') {
 }
 
 describe('demo trading routes', () => {
+  it('VTA sale is admin-only and binds the debit to the authenticated account', async () => {
+    const vta = { sell: jest.fn().mockResolvedValue({ id: 'receipt' }) };
+    const body = { requestId: '91b4b181-2ba2-4e56-9ffb-f9ca5f72e41e', quantity: '2.5' };
+    expect((await request(buildApp(adminPrisma('USER'), {}, vta)).post('/api/v1/demo/vta/sell').set('Authorization', authHeader('customer')).send(body)).status).toBe(403);
+    expect(vta.sell).not.toHaveBeenCalled();
+    const app = buildApp(adminPrisma(), {}, vta);
+    expect((await request(app).post('/api/v1/demo/vta/sell').send(body)).status).toBe(401);
+    for (const injected of [{ userId: 'victim' }, { price: '999' }, { side: 'BUY' }, { type: 'LIMIT' }]) {
+      expect((await request(app).post('/api/v1/demo/vta/sell').set('Authorization', authHeader('owner')).send({ ...body, ...injected })).status).toBe(400);
+    }
+    expect((await request(app).post('/api/v1/demo/vta/sell').set('Authorization', authHeader('owner')).send(body)).status).toBe(200);
+    expect(vta.sell).toHaveBeenCalledTimes(1);
+    expect(vta.sell).toHaveBeenCalledWith({ userId: 'owner', ...body });
+  });
   it('requires an admin account for placing a demo order', async () => {
     const demoTrading = { placeOrder: jest.fn() };
     const app = buildApp(adminPrisma('USER'), demoTrading);
