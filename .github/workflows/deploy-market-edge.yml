@@ -5,7 +5,7 @@ name: Verify / deploy voltex-market-edge (Cloudflare Worker)
 # or when manually started after the workflow exists on the default branch.
 on:
   push:
-    branches: [cloudflare-market-edge, main]
+    branches: [cloudflare-market-edge]
     paths:
       - 'workers/market-edge/**'
       - 'src/services/testMarkets/**'
