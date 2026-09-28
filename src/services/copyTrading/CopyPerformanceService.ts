@@ -91,6 +91,53 @@ export class CopyPerformanceService {
   private cached = new Map<PerformanceStrategy, { date: string; response: SyntheticCopyResponse }>();
   constructor(private db: PerformanceDatabase, private now: () => Date = () => new Date()) {}
 
+  private responseOf(strategy: PerformanceStrategy, state: CashflowReviewState): SyntheticCopyResponse {
+    return strategy === 'nazar' ? nazarPresentationResponse(state) : kseniaReviewResponse(state);
+  }
+
+  private validateStored(strategy: PerformanceStrategy, row: { stateText: string; simulatedAt: Date }): CashflowReviewState {
+    const stored = decodePerformanceState(row.stateText);
+    const expectedSeed = strategy === 'nazar' ? REVIEW_PERFORMANCE_V8_CONFIG.seed : KSENIA_REVIEW.seed;
+    if (stored.seed !== expectedSeed) throw new Error('Stored performance namespace mismatch; refusing to rewrite history');
+    if (new Date(stored.simulatedAt).getTime() !== row.simulatedAt.getTime()) {
+      throw new Error('Stored performance date mismatch; refusing to rewrite history');
+    }
+    return stored;
+  }
+
+  /**
+   * MARKETPLACE FIRST PAINT.
+   *
+   * The first request after a new UTC day used to wait for the whole canonical
+   * append + gzip + database write before it could show either featured card.
+   * On production that cold append has been observed above 40 seconds, while
+   * the browser deliberately abandons the request after 15 seconds. The data
+   * already persisted for the previous day is still real, complete history;
+   * it is merely one day stale. Serve that confirmed snapshot immediately,
+   * then let warmMarketplace advance the canonical rows in the background.
+   *
+   * Nothing is fabricated and no history is rewritten. If no stored row
+   * exists, fall back to the authoritative get path and build it once.
+   */
+  async getMarketplace(strategy: PerformanceStrategy): Promise<SyntheticCopyResponse> {
+    const cached = this.cached.get(strategy);
+    if (cached) return cached.response;
+    const row = await this.db.copyPerformanceScenario.findUnique({ where: { id: PERFORMANCE_SCENARIOS[strategy].id } });
+    if (!row) return this.get(strategy);
+    const stored = this.validateStored(strategy, row);
+    const response = this.responseOf(strategy, stored);
+    this.cached.set(strategy, { date: utcDay(new Date(stored.simulatedAt)), response });
+    return response;
+  }
+
+  /** Advance the two canonical strategies sequentially after the response.
+   * Sequential is intentional: doing both large appends at once exceeds the
+   * memory envelope of the single production service. */
+  async warmMarketplace(): Promise<void> {
+    await this.get('nazar');
+    await this.get('ksenia');
+  }
+
   async get(strategy: PerformanceStrategy): Promise<SyntheticCopyResponse> {
     const today = utcDay(this.now());
     const cached = this.cached.get(strategy);
@@ -101,7 +148,7 @@ export class CopyPerformanceService {
       return this.get(strategy); // Recheck UTC day if it changed while pending.
     }
     const task = this.current(strategy, today).then(state => {
-      const response = strategy === 'nazar' ? nazarPresentationResponse(state) : kseniaReviewResponse(state);
+      const response = this.responseOf(strategy, state);
       this.cached.set(strategy, { date: utcDay(new Date(state.simulatedAt)), response });
       return response;
     }).finally(() => this.pending.delete(strategy));
@@ -128,12 +175,7 @@ export class CopyPerformanceService {
           throw error;
         }
       }
-      const stored = decodePerformanceState(row.stateText);
-      const expectedSeed = strategy === 'nazar' ? REVIEW_PERFORMANCE_V8_CONFIG.seed : KSENIA_REVIEW.seed;
-      if (stored.seed !== expectedSeed) throw new Error('Stored performance namespace mismatch; refusing to rewrite history');
-      if (new Date(stored.simulatedAt).getTime() !== row.simulatedAt.getTime()) {
-        throw new Error('Stored performance date mismatch; refusing to rewrite history');
-      }
+      const stored = this.validateStored(strategy, row);
       // Clock rollback may serve the already-persisted future snapshot; it must
       // NEVER regenerate an earlier state or remove previously appended trades.
       if (utcDay(new Date(stored.simulatedAt)) >= today) return stored;
