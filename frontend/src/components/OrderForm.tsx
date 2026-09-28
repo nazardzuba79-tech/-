@@ -472,7 +472,7 @@ export function OrderForm({
           </div>
         </div>
 
-        <div className="order-summary">
+        <div className="order-summary" data-initial-loading={balanceLoading && !balanceReady && !balanceError || undefined} aria-busy={balanceLoading && !balanceReady && !balanceError}>
           <div className="available-balance">
             <span>{t('trade.available')}</span>
             <span className="amount">

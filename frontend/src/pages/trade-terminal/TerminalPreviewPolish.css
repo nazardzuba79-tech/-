@@ -1,0 +1,286 @@
+/* Local review candidate. A single, terminal-only finishing layer over the
+ * existing design system. No layout tracks, data, precision or chart options.
+ * The ID arm matches the existing archive stylesheet's specificity; the marker
+ * prevents these rules from affecting Home, private trading or other pages. */
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] {
+  --preview-base: #0d0f13;
+  --preview-panel: #16191f;
+  --preview-field: #22262e;
+  --preview-line: #303640;
+  --preview-muted: #9ca5b3;
+  --preview-radius: 8px;
+  --preview-control-height: 44px;
+  --preview-buy: #16825f;
+  --preview-sell: #b83e50;
+  --text-primary: #eef0f4;
+  --text-secondary: #b4bdca;
+  --text-tertiary: #909baa;
+  --accent: #edc76a;
+  --accent-yellow: #edc76a;
+  --color-accent: #edc76a;
+  --accent-dim: #edc76a12;
+  --field-line: var(--preview-line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Preserve the approved chart canvas/geometry; give its surrounding chrome a
+ * quiet, flat hierarchy instead of transparent controls on varying gradients. */
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.ticker-bar, .futures-ticker-bar, .cfd-ticker-bar, .terminal-chart-heading,
+      .chart-toolbar, .orderbook-header, .rb-tabs, .reference-order-heading) {
+  background: var(--preview-panel);
+  border-color: var(--preview-line);
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.ticker-item .label, .cfd-ticker-metric > span:first-child) {
+  color: var(--preview-muted);
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.ticker-item .value:not(.price), .cfd-ticker-metric strong) {
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Existing order-panel tokens are extended rather than changing its wiring. */
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .fo-panel {
+  --fo-surface: var(--preview-panel);
+  --fo-control: var(--preview-field);
+  --fo-control-hover: #282e37;
+  --fo-hairline: var(--preview-line);
+  --fo-text: #eef0f4;
+  --fo-text-2: var(--preview-muted);
+  --fo-text-3: #a7b0be;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.order-form-area, .cfd-order-panel) { background: var(--preview-panel); }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.input-group, .fo-priceInputRow, .fo-qtyInputRow, .fo-mlTrigger, .order-family-input, .cfd-input) {
+  /* Legacy market styles use !important for transparent field fills. */
+  background: var(--preview-field) !important;
+  border: 1px solid var(--preview-line) !important;
+  border-radius: var(--preview-radius);
+  box-shadow: none;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.input-group, .fo-priceInputRow, .fo-qtyInputRow, .order-family-input):focus-within,
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .cfd-input:focus {
+  border-color: var(--accent) !important;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .input-group input {
+  border: 0;
+  border-radius: inherit;
+  box-shadow: none;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.input-group input, .cfd-input, .fo-input) {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.input-label, .fo-fieldCaption, .fo-inputCaption, .cfd-label) {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.input-suffix, .fo-qtyUnit, .fo-inputUnit) {
+  color: var(--preview-muted);
+  font-size: 11px;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.order-summary, .cfd-infoBox, .fo-infoBox) {
+  background: var(--preview-base) !important;
+  border: 1px solid #292e37 !important;
+  border-radius: var(--preview-radius);
+  padding: 12px;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.info-row, .fo-infoRow, .cfd-infoRow) {
+  gap: 12px;
+  font-size: 12px;
+  line-height: 20px;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.info-label, .fo-infoRow > span:first-child, .cfd-infoRow > span:first-child) { color: var(--preview-muted); }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.info-value, .fo-infoRow > span:last-child, .cfd-infoRow > span:last-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* Deep trading colours retain direction, without competing with the chart. */
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(.submit-btn, .cfd-submit) {
+  min-height: var(--preview-control-height);
+  border-radius: var(--preview-radius);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(.submit-btn.buy, .cfd-submit.buy) { background: var(--preview-buy); }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(.submit-btn.sell, .cfd-submit.sell) { background: var(--preview-sell); }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(.submit-btn, .cfd-submit):hover:not(:disabled) { filter: brightness(1.09); }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(.submit-btn, .cfd-submit):active:not(:disabled) { box-shadow: inset 0 2px 5px #0003; }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(.submit-btn, .cfd-submit):disabled {
+  opacity: 1;
+  background: #29343a;
+  color: #aab5c0;
+  cursor: not-allowed;
+}
+
+/* One quiet secondary control language, never a fabricated status/control. */
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.bottom-tab, .cfd-tab, .order-type-tab, .order-family-tabs button, .rb-tabs button) { font-weight: 500; }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.tab-count, .bottom-tab .count, .cfd-tab span, .futures-mobile-tabs button span) {
+  background: #ffffff0b;
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.orderbook-col-headers, .rb-columns, .orders-table th, .cfd-th) {
+  color: var(--preview-muted);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.ob-row, .rb-row) { font-variant-numeric: tabular-nums; }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .ob-row:hover { background: #ffffff07; }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.terminal-account-state, .cfd-error) {
+  padding: 10px 12px;
+  border: 1px solid #b83e5038;
+  border-radius: var(--preview-radius);
+  background: #b83e500a;
+  line-height: 18px;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.terminal-account-retry, .chart-error button) {
+  border: 1px solid var(--preview-line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text-primary);
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] [aria-busy=true] { cursor: progress; }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .skeleton {
+  background: #242a33;
+  opacity: .7;
+  animation: none;
+}
+/* Real initial-loading flags only. Never turn an unavailable price into a
+ * perpetual skeleton; the existing error text/retry remain in the DOM. */
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  .order-summary[data-initial-loading] .available-balance > span:last-child {
+  color: transparent !important;
+  background: #303640;
+  border-radius: 4px;
+  min-width: 64px;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.pairs-list[data-initial-loading], .spot-orders-empty[aria-busy=true])::after {
+  content: '';
+  display: block;
+  height: 80px;
+  min-width: 150px;
+  margin: 12px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(to bottom, #29303a 0 10px, transparent 10px 26px);
+  opacity: .65;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.order-form-tab.buy.active, .cfd-sideTab.buy.active) { background: #193b30; color: #91dbbe; }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+  :is(.order-form-tab.sell.active, .cfd-sideTab.sell.active) { background: #44252e; color: #f1adb7; }
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .archive-tool-dialog {
+  background: var(--preview-panel);
+  border: 1px solid var(--preview-line);
+  border-radius: 12px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+}
+
+/* Keep shared header geometry/colours owned by the eager global stylesheet. */
+/* The current desktop CFD footer cuts across the ticket at short heights.
+ * Keep the action within its own scrolling panel, not behind that footer. */
+@media (min-width:901px) {
+  #archive-terminal-preview[data-premium-terminal-preview] .archive-ticker-metrics { column-gap: clamp(8px, 0.75vw, 16px); }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .cfd-form-area { overflow: hidden; }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .cfd-order-panel { min-height: 0; height: 100%; display: flex; flex-direction: column; }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .cfd-form { flex: 1; min-height: 0; gap: 10px; padding: 12px; overflow: hidden; }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .cfd-form-fields {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #414955 transparent;
+    padding-right: 2px;
+  }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .cfd-submit {
+    position: static;
+    flex-shrink: 0;
+  }
+}
+@media (min-width:901px) and (max-width:1500px) {
+  #archive-terminal-preview[data-premium-terminal-preview] .ticker-bar { gap: 12px; padding-inline: 12px; }
+  #archive-terminal-preview[data-premium-terminal-preview] .archive-ticker-metrics { column-gap: 8px; }
+  #archive-terminal-preview[data-premium-terminal-preview] .futures-primary-price { min-width: 112px; }
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .archive-protection-toggle {
+  background: #edc76a06;
+  border: 1px solid #edc76a2b;
+  border-radius: var(--preview-radius);
+  color: var(--text-primary);
+  min-height: 40px;
+}
+:is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .archive-protection-toggle[aria-expanded=true] {
+  border-color: #edc76a70;
+  background: #edc76a0c;
+}
+body:has([data-premium-terminal-preview]) .support-launcher {
+  /* The widget owns inline geometry/colour; override only on terminals. */
+  background: #20252e !important;
+  color: #edc76a !important;
+  border: 1px solid #3a414c !important;
+  box-shadow: 0 3px 12px #0002 !important;
+  --on-accent: #edc76a;
+}
+@media (max-width:900px) {
+  html:has([data-premium-terminal-preview]) { scroll-padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .cfd-form-area {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+    :is(.fo-input, .input-group input, .cfd-input, .order-family-input input) { font-size: 16px; }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+    :is(.fo-mlTrigger, .cfd-sideTab, .order-type-tab, .order-family-tabs button, .cfd-leverage-presets button) { min-height: 44px; }
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
+    :is(.fo-submitPair .submit-btn, .cfd-submit, .submit-btn) { min-height: 48px; }
+  /* Reserve a utility slot instead of floating over the sticky trade CTA. */
+  body:has([data-premium-terminal-preview]) .bottom-nav { padding-right: 56px; }
+  body:has([data-premium-terminal-preview]) .support-launcher {
+    width: 44px !important;
+    height: 44px !important;
+    right: 6px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] :is(button, input, .input-group) { transition: none; }
+}

@@ -121,6 +121,7 @@ export function CfdOrderForm({
         <span>{t('futures.isolated')}</span>
       </div>
       <form onSubmit={handleSubmit} className="cfd-form">
+        <div className="cfd-form-fields" style={{ display: 'contents' }}>
         <LeverageSlider
           value={leverage}
           onChange={setLeverage}
@@ -173,6 +174,7 @@ export function CfdOrderForm({
         </div>
 
         {error && <div className="cfd-error" role="alert">{error}</div>}
+        </div>
 
         <button
           type="submit"

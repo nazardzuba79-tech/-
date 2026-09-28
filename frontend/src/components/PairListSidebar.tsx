@@ -261,7 +261,7 @@ export const PairListSidebar = forwardRef<
           </button>
         </div>
 
-        <div className="pairs-list" ref={listRef}>
+        <div className="pairs-list" ref={listRef} data-initial-loading={loading && tickers.length === 0 && !loadError || undefined} aria-busy={loading && tickers.length === 0 && !loadError}>
           {filtered.map((tk) => {
             // Rounded before the direction is picked from it, not after: a
             // change of -0.001% otherwise printed as a red, downward
