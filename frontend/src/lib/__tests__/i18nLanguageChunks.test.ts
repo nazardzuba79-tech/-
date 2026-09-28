@@ -178,6 +178,7 @@ describe('translation integrity', () => {
         const addedSinceDigest = ['futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
+          'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
           'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
           'listing.initialPrice', 'listing.startTime', 'listing.newListing',
           'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
@@ -197,6 +198,16 @@ describe('translation integrity', () => {
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
+    }
+  });
+
+  it('localizes both explicit VTA operation refusals without changing existing copy', () => {
+    expect(dicts.ru['trade.assetPurchaseUnavailable']).toBe('Покупка этого актива недоступна.');
+    expect(dicts.ru['trade.assetOrderTypeUnavailable']).toBe('Этот тип ордера для данного актива недоступен.');
+    for (const key of ['trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable']) {
+      const values = LOCALES.map(code => dicts[code][key].trim());
+      expect(values.every(Boolean)).toBe(true);
+      expect(new Set(values).size).toBe(LOCALES.length);
     }
   });
 

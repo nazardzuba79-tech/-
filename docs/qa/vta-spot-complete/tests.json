@@ -132,9 +132,21 @@
       "status": "passed",
       "tests": 5,
       "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "status": "passed",
+      "tests": 28,
+      "failed": 0
+    },
+    {
+      "suite": "frontend/src/lib/__tests__/testMarkets.test.ts",
+      "status": "passed",
+      "tests": 21,
+      "failed": 0
     }
   ],
-  "tests": 413,
+  "tests": 462,
   "failed": 0,
   "backendBuild": "PASS",
   "frontendTypes": "PASS",

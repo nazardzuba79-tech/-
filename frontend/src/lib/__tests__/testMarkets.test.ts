@@ -168,8 +168,11 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
     const submit = form.slice(form.indexOf('async function handleSubmit'), form.indexOf('api.placeOcoOrder'));
     expect(submit).toContain("if (notTradingYet) {\n      const message = t('trade.assetNotTradingYet');\n      setError(message);\n      toast.error(message);\n      return;\n    }");
     expect(form).toContain('const notTradingYet = isTestMarketPair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;');
-    expect(form).toContain('await api.sellVtaDemo(vtaPending.current.requestId, vtaPending.current.quantity)');
-    expect(form).toContain('noValidate={notTradingYet}');
+    expect(form).toContain('await withVtaSaleLock(accountId, async () => {');
+    expect(form).toContain('const pending = prepareVtaIntent(accountId, quantity);');
+    expect(form).toContain('await api.sellVtaDemo(pending.requestId, pending.quantity)');
+    expect(submit).toContain("if (privateVta && (side === 'BUY' || family !== 'MARKET'))");
+    expect(form).toContain('noValidate={notTradingYet || privateVta}');
   });
   test('no technical wording on the listing card or the Markets row', () => {
     const strip = src('pages/markets-bolt/TestMarketsStrip.tsx');

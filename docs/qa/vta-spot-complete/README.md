@@ -31,6 +31,7 @@ The existing wallet table renders an explicit selected account scope. Simulation
 | PostgreSQL VTA, native coexistence, real Spot/demo engine and routes | PASS | 118 tests in 8 suites |
 | Native historical/current execution, risk, sizing, lifecycle, reduce-only; Spot labels/book races; shared account/intent | PASS | 253 tests in 11 suites |
 | Futures header/mobile guards | PASS | 42 tests in 3 suites |
+| Localization integrity and public listing guards | PASS | 49 tests in 2 suites |
 | Backend / frontend TypeScript / frontend build | PASS | Existing Vite >500 kB advisory retained |
 | Standard UI parity | PASS | 1440 and 390 px, 10 BUY/SELL/order-family states each; styles, sizes and placement compared |
 | Prelisting / unauthorized / unsupported execution | PASS | No financial POSTs from rejected UI; backend guards covered separately |
@@ -40,7 +41,7 @@ The existing wallet table renders an explicit selected account scope. Simulation
 | Two tabs | PASS | One full remaining-balance fill; zero VTA dust/oversell; real funds unchanged |
 | Shared reads | PASS | Multiple views share a single read; one invalidation; no idle polling |
 
-413 unique targeted tests passed, zero remaining targeted failures. This is not a claim that the entire repository Jest suite was run.
+462 unique targeted tests passed, zero remaining targeted failures. This is not a claim that the entire repository Jest suite was run.
 
 Test maintenance: the Spot static-render harness needed its new intent dependency stub (four failures); the existing book callback harness lacked its current marketType/document/readSpotPublicBook dependencies (five failures, production TradePage unchanged). Updated only fixture bindings, preserving race assertions. The header's API fingerprint was advanced for the reviewed projection/recovery/late-401 changes; its other file guards remain pinned. No production behavior was changed to satisfy these tests.
 
@@ -57,3 +58,7 @@ Initial VTA: 4545454.54545454. Native initialized with 100000 simulation USDT be
 Production allocation and balances were not re-read or changed in this task. Browser recovery requires storage and Web Locks; failure refuses safely. Unresolved identities remain until an authoritative receipt or an explicit first-attempt definitive rejection, rather than guessing from a later HTTP error. No auto sale occurs on reload/reconnect.
 
 Next step: review the PR. Merge/deploy are explicitly unauthorized.
+
+## CI contract follow-up
+
+Initial head e9c0bfc77cfb17246fbe216718effab0188d44ba passed the complete VTA PostgreSQL/browser workflow. Five wider workflows failed on the same locale fingerprint, and the public listing workflow also expected the old ref-only sale call/noValidate condition. The follow-up excludes only the two added refusal keys from the existing locale digests (all original dictionary bytes remain pinned), explicitly asserts RU wording and seven distinct translations, and checks the durable locked intent instead of the obsolete ref call. These 49 tests now pass locally. No runtime code or screenshots changed in this follow-up.
