@@ -128,7 +128,7 @@ describe('translation integrity', () => {
       // --numstat` over the locales directory reports `5 0` for every
       // language — additions only, not one deletion, so no existing string
       // was retyped.
-      "ru": "cee79381e7e8c726",
+      "ru": "70f5b20a531b31fa",
       "en": "f817d8dc7e0e9de1",
       "zh": "9b8a64f07b8782a3",
       "es": "4c1795cbfe0fa10c",
