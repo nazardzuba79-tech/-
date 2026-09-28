@@ -4192,3 +4192,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Replaced the «Заблокированные» dropdown option with «По последнему входу»: descending lastLoginAt across the loaded list before pagination, with missing dates last. Default work-queue ordering, search, tabs, KYC and account actions remain unchanged.
 - Files: `frontend/src/pages/admin/AdminUsersPage.tsx`; updated its existing regression in `frontend/src/lib/__tests__/adminUsersActivity.test.ts`.
 - Verification: frontend TypeScript passed; exact admin users activity suite 9/9 passed, including last-login order and empty-date handling. No production data changes, merge or deploy. Browser sleep PR #303 remains separate.
+
+## Codex — 2026-09-28 — QNT historical graph OPEN admission
+- Implementation: `7364b83db834d28ce2e85a32df8bb34525446636`, branch `codex/historical-current-price-fix`, fresh main `0f02773e`.
+- Production logs prove `collector_unavailable` at `market.instrument`, before current-price reads. Unchanged source with current public QNT data reproduces `market_data_invalid`: blank deductions on initial equal-MMR tiers beyond tier 1. Normalize only the provably zero initial plateau; retain fail-closed rejection elsewhere.
+- Files: `src/private-trading/marketData.ts`, its `marketData.test.ts`, new `nativeThinContract.test.ts`, opt-in fixture in `scripts/serve-native-demo-review.cjs`, `docs/HISTORICAL_QNT_CURRENT_PRICE_FIX.md`.
+- Preserved Claude's ticker/quote fallback, freshness/headroom, historical entry and all risk/settlement/replay engines. No UI, Spot, CFD, Copy Trading or Wallet business logic changed.
+- Verification: 813 distinct backend tests passed across runs (full suite 811 plus two additional cases), 40 environment-gated tests skipped. Frontend preservation 69 passed / 1 existing CRLF-sensitive source assertion failed. Backend/frontend TypeScript and frontend production build passed. Browser QNT entry 61.08 / mark 264.51 and AKE entry 0.004 / mark 0.0538 survive reload on isolated synthetic accounts.
+- Limits: direct authenticated production collector responses were inaccessible (loopback-only, ephemeral token); existing production logs plus public-provider reproduction are documented, not misrepresented as production endpoint probes. No merge, push, deployment, real orders or production changes. Owner review next.
