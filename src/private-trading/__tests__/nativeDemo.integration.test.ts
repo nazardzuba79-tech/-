@@ -8,6 +8,7 @@ import { instructionDigest } from '../native/replay';
 import { NativeAccount, PrismaNativeRepository, inflate, StoredNativeAccount } from '../native/store';
 import type { OwnerSession } from '../serviceTypes';
 import type { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateHistoryRequest } from '../marketData';
+import { VOLTORA, testAssetPrivateQuoteAsset } from '../../services/testMarkets/testAssetConfig';
 
 const enabled = process.env.PRIVATE_TRADING_DB_TESTS === '1';
 if (enabled) {
@@ -154,6 +155,34 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(revalued.account?.collateral).toBe('1150000');
     // ...while the ledger side is untouched by a price change.
     expect(revalued.account?.settleBalance).toBe('1000000');
+  });
+
+  test('private VTA inventory and proceeds never enter native Futures collateral', async () => {
+    const f = await fixture('1000000');
+    const privateQuoteAsset = testAssetPrivateQuoteAsset(VOLTORA);
+    await db.demoBalance.createMany({ data: [
+      { userId: f.user.id, asset: VOLTORA.symbol, available: '4545454.54545454', locked: '0' },
+      { userId: f.user.id, asset: privateQuoteAsset, available: '12345.67', locked: '0' },
+    ] });
+
+    // The repository boundary is authoritative: these rows are owned by the
+    // private VTA sandbox and are not holdings of the native Futures wallet.
+    expect((await f.repository.holdings(f.actor)).map(h => h.asset)).toEqual(['USDT']);
+
+    await f.service.initialize(f.actor, `init-${randomUUID()}`);
+    const after = await f.service.state(f.actor);
+    expect(after.account?.settleBalance).toBe('1000000');
+    expect(after.account?.walletCollateral).toBe('0');
+    expect(after.account?.collateral).toBe('1000000');
+    expect(after.account?.collateralComplete).toBe(true);
+    expect(after.account?.unpricedAssets).toEqual([]);
+
+    const wallet = await f.service.wallet(f.actor);
+    expect(wallet?.rows.map(row => row.asset)).not.toContain(VOLTORA.symbol);
+    expect(wallet?.rows.map(row => row.asset)).not.toContain(privateQuoteAsset);
+    // The private balances themselves remain persisted and untouched.
+    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: VOLTORA.symbol } } }))?.available.toString()).toBe('4545454.545454540000000000');
+    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: privateQuoteAsset } } }))?.available.toString()).toBe('12345.670000000000000000');
   });
 
   test('a wallet with no demo funds is offered nothing to open an account with', async () => {
