@@ -4209,3 +4209,13 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved: prior risk-tier parser fix, Claude's acquisition ordering/concurrency/deadlines, cancellation, malformed-frame refusal, 60s display / 45s command / 5s live quote policies, final financial-write validation, historical entry and all financial engines; no UI or unrelated product edits.
 - Verification: 860 backend and 60 frontend tests passed; 40 environment-gated database tests skipped. Backend/frontend TypeScript and frontend production build passed (existing Vite >500 kB warning). Regression failures reproduced before fix; authenticated loopback collector + parser + native commands cover QNT/AKE/ETH with synthetic upstream/repository.
 - Limits: no live-production execution test or database writes. All-current-sources-unavailable/stale still refuses safely. No merge/deploy performed; owner review remains required.
+
+## Codex — 2026-09-28 — Futures Positions unrealized P&L / ROI presentation
+
+- Implementation: `52c3ff212917c8a8efa516569aba400c2da7f226`; branch `codex/futures-pnl-roi-presentation`, from fresh main `ee33c9733edfa18b6fe3b269373ea92deb48e537` including #308/#309.
+- Exact engine P&L + quote asset on line one, signed ROI in parentheses below; existing financial formatters retain sub-cent precision. Zero/unknown neutral; existing green/red and grouped numbers. Mobile P&L uses a full-width row; desktop keeps internal scrolling and existing row height.
+- Files: FuturesPositionsPanel, new FuturesUnrealizedPnl TSX/CSS, FuturesPositionParity CSS, Russian locale, two presentation test files, native browser QA script/workflow, `docs/FUTURES_UNREALIZED_PNL_REVIEW.md`, this handoff. Full exact paths are in the review report.
+- Preserved: authoritative adapter fields, backend/financial engines and persistence, historical current-price fixes, chart position marker, realized P&L, close/protection/card actions, unrelated products. No new financial formula.
+- Verification: 174 UI/unit + 167 historical/parser/native/chart tests passed; 43/43 existing native browser checks + 42/42 new position layout checks (320–1920px) passed. Backend/frontend TypeScript and production build passed. Existing Vite chunk warning; QA instrumented build also emits existing Tailwind content warning.
+- Local synthetic screenshots/reports: `C:/Users/nazar/.codex/visualizations/2026/09/28/futures-pnl-review/`. Generated old tracked QA artifacts restored; new evidence is outside Git.
+- Review only: no push (avoids automatic preview/deploy), no merge, no deployment, no production changes. CI wired but not run remotely. Await owner visual review.
