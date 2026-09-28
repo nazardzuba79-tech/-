@@ -4288,3 +4288,10 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Local verification: 147/147 Jest (9 suites), 15/15 actual workerd/SQLite integration tests, 5/5 exporter tests; backend build, frontend types, Wrangler staging dry-run PASS. Restart retained document/revision; 12 concurrent writes produced 1 commit/11 conflicts. No Worker external requests.
 - Read-only production legacy admin DOM captured 4 rails / 3 networks, all six known chains accounted for. Generated local `output/deposit-catalogue-baseline/production-baseline-review-20260928.json`; no browser secret extraction, no direct production SQL, no seeding. Owner address review remains pending.
 - Worker prepared only; no merge, production deploy, production address/data changes, Neon schema/catalogue storage, blockchain polling or auto-credit. Feature flag not enabled. Next: review final-head CI and owner baseline, then separate deployment/activation authorization. No Phase 2 work.
+
+
+## Codex — 2026-09-28 — Catalogue production environment
+- Base: 405431f43905a51b4b26c11a2fe85fbb6ee6a004 (merged #318, including POL). Owner explicitly authorized production rollout on a narrow new branch. Implementation SHA: this entry’s commit.
+- Material changes: deposit-catalogue wrangler production environment, local bundle ignore and runbook only. Existing Worker/runtime/UI and all financial/legacy paths preserved.
+- Verified: 148 Jest tests/9 suites, 15 workerd tests, backend build and production dry-run PASS. Remote staging auth/CAS (1 commit, 11 conflicts), persistence after redeploy, edit/disable/memo clearing PASS; Workers Free unchanged.
+- At commit: production catalogue, Render connectivity and frontend flag remain pending separate gated operations/live QA. No production address or balance mutations.

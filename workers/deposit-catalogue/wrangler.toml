@@ -1,4 +1,4 @@
-# Prepared only. No production route/account or deploy workflow is configured.
+# Explicit environments only; no account ID, custom route or deploy automation.
 name = "voltex-deposit-catalogue-local"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
@@ -22,5 +22,13 @@ preview_urls = false
 name = "RECEIVING_ADDRESS_CATALOGUE"
 class_name = "ReceivingAddressCatalogueDO"
 
-# Set DEPOSIT_CATALOGUE_STORE_TOKEN as a secret only after deployment approval.
-# No production environment until the owner has reviewed the exported baseline.
+# Production has its own Worker, secret and SQLite namespace. Never reuse staging.
+[env.production]
+name = "voltex-deposit-catalogue-production"
+workers_dev = true
+preview_urls = false
+[[env.production.durable_objects.bindings]]
+name = "RECEIVING_ADDRESS_CATALOGUE"
+class_name = "ReceivingAddressCatalogueDO"
+
+# Set DEPOSIT_CATALOGUE_STORE_TOKEN separately in each authorized environment.

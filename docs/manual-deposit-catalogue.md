@@ -1,5 +1,30 @@
 # Manual receiving-address catalogue — review implementation
 
+## Owner-authorized activation follow-up (2026-09-28)
+
+PR #318 is merged in `405431f43905a51b4b26c11a2fe85fbb6ee6a004`.
+The owner has authorized the separate staging/production rollout and supplied
+nine explicit asset/network destinations, including native POL/Polygon and TON
+with an empty memo. Real destinations remain outside source control.
+
+The production environment is `voltex-deposit-catalogue-production`, with its own
+Worker, secret and SQLite namespace. Its binding/class/object/endpoint names
+are the same as staging; never connect production Render to the staging URL.
+No custom route or account ID is added. Set the server secret independently in
+each environment. Production frontend activation must follow verified storage,
+CAS seeding with a saved previous document, Render connectivity and a successful
+public catalogue response. Preserve unrelated rails and legacy configuration.
+
+Pre-release verification: 148 existing tests PASS, 15 actual local SQLite/Worker
+tests PASS and production bundle dry-run PASS. Authorized remote staging verifies
+unauthorized GET/PUT refusal, one commit versus eleven concurrent conflicts,
+persisted revision/document after redeploy, and edit/disable/memo clearing.
+Cloudflare account is Workers Free; no paid upgrade was requested or performed.
+These results do not claim production activation; record actual deployment and
+live QA separately after the release gates complete.
+
+The sections below retain the original pre-activation implementation history.
+
 This change is **not activated in production**. Default builds continue to use
 the existing TreasuryWallet-backed Admin and Deposit flows. No production
 addresses, database records, platform settings or deployments were changed.
