@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { api } from '../lib/api';
+import { api, ApiError, getToken, onSessionChange } from '../lib/api';
+import { useVtaSpotAccount } from '../lib/useVtaSpotAccount';
 import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
@@ -39,8 +40,12 @@ export function OrderForm({
   const { t } = useLanguage();
   const toast = useToast();
   const [baseAsset, quoteAsset] = pair.split('/');
-  const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
-  const [family, setFamily] = useState<OrderFamily>('LIMIT');
+  const privateVta = pair.toUpperCase() === 'VTA/USDT';
+  const vta = useVtaSpotAccount(privateVta);
+  const vtaPending = useRef<{ requestId: string; quantity: string } | null>(null);
+  const [vtaUnconfirmed, setVtaUnconfirmed] = useState(false);
+  const [side, setSide] = useState<'BUY' | 'SELL'>(privateVta ? 'SELL' : 'BUY');
+  const [family, setFamily] = useState<OrderFamily>(privateVta ? 'MARKET' : 'LIMIT');
   const [execution, setExecution] = useState<Execution>('LIMIT');
   const [price, setPrice] = useState('');
   const [triggerPrice, setTriggerPrice] = useState('');
@@ -71,7 +76,20 @@ export function OrderForm({
   // An upcoming listing (VOLTORA) shows the whole form, like any pair, but
   // trading has not opened: a Buy/Sell answers with that and sends nothing.
   // The server refuses the pair on its own as well (OrderService).
-  const notTradingYet = isTestMarketPair(pair);
+  const notTradingYet = isTestMarketPair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
+  const vtaLocked = privateVta && (submitting || vtaUnconfirmed);
+  useEffect(() => onSessionChange(() => {
+    if (!privateVta) return;
+    vtaPending.current = null; setVtaUnconfirmed(false); setQuantity(''); setError(null);
+  }), [privateVta]);
+  useEffect(() => {
+    if (!privateVta) return;
+    setAvailable({
+      base: Number(vta.snapshot?.balances.find(b => b.asset === 'VTA')?.available ?? 0),
+      quote: Number(vta.snapshot?.balances.find(b => b.asset === 'USDT')?.available ?? 0),
+    });
+    setBalanceReady(!!vta.snapshot); setBalanceError(vta.failed); setBalanceLoading(vta.loading);
+  }, [privateVta, vta.snapshot, vta.failed, vta.loading]);
 
   const isConditional = family === 'STOP' || family === 'TAKE_PROFIT';
   const type: 'LIMIT' | 'MARKET' | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET' =
@@ -92,14 +110,15 @@ export function OrderForm({
   // a limit price, so the form switches to LIMIT rather than silently
   // setting a field the active order type would ignore.
   useEffect(() => {
-    if (!pickedPrice || (pickedPrice.pair && pickedPrice.pair !== pair)) return;
+    if (privateVta || !pickedPrice || (pickedPrice.pair && pickedPrice.pair !== pair)) return;
     setPrice(pickedPrice.value);
     setFamily('LIMIT');
     setExecution('LIMIT');
-  }, [pickedPrice, pair]);
+  }, [pickedPrice, pair, privateVta]);
 
   useEffect(() => {
     let cancelled = false;
+    if (privateVta) return;
     let pending = false;
     async function load() {
       if (pending) return;
@@ -121,7 +140,7 @@ export function OrderForm({
     void load();
     const timer = window.setInterval(load, 4000);
     return () => { cancelled = true; clearInterval(timer); };
-  }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion]);
+  }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion, privateVta]);
 
   const { ticker: referenceTicker } = useMarketTicker(pair, 5000);
 
@@ -138,7 +157,7 @@ export function OrderForm({
   // hint. Order placement, validation and execution are unchanged, and the
   // server re-validates every trigger direction against its own book.
   useEffect(() => {
-    if (!referenceTicker) return;
+    if (!referenceTicker) { if (privateVta) { setMarketPrice(null); setMarketStats(null); } return; }
     setMarketPrice(positiveOrderNumber(referenceTicker.lastPrice));
     setMarketStats({
       changePercent24h: parseChangePercent(referenceTicker.changePercent24h, pair),
@@ -148,7 +167,7 @@ export function OrderForm({
       quoteVolume24h: parseFloat(referenceTicker.quoteVolume24h),
     });
     return;
-  }, [pair, referenceTicker]);
+  }, [pair, referenceTicker, privateVta]);
 
   const effectivePrice =
     family === 'OCO' ? Math.max(Number(ocoTakeProfitPrice) || 0, Number(ocoStopLimitPrice) || 0) :
@@ -159,13 +178,17 @@ export function OrderForm({
   // side of the trade — quote balance (e.g. USDT) for a buy, base balance
   // (e.g. BTC) for a sell — driven by real balances, not a fake number.
   function applyPercent(pct: number) {
-    if (!balanceReady || balanceError) return;
+    if (!balanceReady || balanceError || vtaLocked) return;
     setPercent(pct);
     if (side === 'BUY') {
       const funding = orderFundingPrice(family, execution, price, triggerPrice, ocoTakeProfitPrice, ocoStopLimitPrice, marketPrice);
       setQuantity(balancePercentageQuantity(available.quote, pct, funding));
     } else {
-      setQuantity(balancePercentageQuantity(available.base, pct));
+      if (privateVta && pct === 100) {
+        setQuantity(vta.snapshot?.balances.find(b => b.asset === 'VTA')?.available ?? '0');
+      } else {
+        setQuantity(balancePercentageQuantity(available.base, pct));
+      }
     }
   }
 
@@ -209,9 +232,18 @@ export function OrderForm({
     }
     submittingRef.current = true;
     setSubmitting(true);
+    const session = getToken();
     try {
       let feedback: SpotOrderFeedback = { kind: 'placed' };
-      if (family === 'OCO') {
+      if (privateVta) {
+        if (side !== 'SELL' || family !== 'MARKET' || (!vta.snapshot && !vtaPending.current)) return;
+        vtaPending.current ??= { requestId: crypto.randomUUID(), quantity };
+        await api.sellVtaDemo(vtaPending.current.requestId, vtaPending.current.quantity);
+        if (getToken() !== session) return;
+        vtaPending.current = null; setVtaUnconfirmed(false);
+        await vta.refresh();
+        if (getToken() !== session) return;
+      } else if (family === 'OCO') {
         await api.placeOcoOrder({
           pair,
           side,
@@ -247,6 +279,11 @@ export function OrderForm({
         toast.success(t('trade.orderPlaced'));
       }
     } catch (err) {
+      if (privateVta) {
+        if (getToken() !== session) return;
+        if (err instanceof ApiError && err.status >= 400 && err.status < 500) vtaPending.current = null;
+        setVtaUnconfirmed(vtaPending.current !== null);
+      }
       const message = customerErrorText(err, t, t('trade.placeOrderError'));
       setError(message);
       toast.error(message);
@@ -291,6 +328,7 @@ export function OrderForm({
           type="button"
           className={`order-form-tab buy ${side === 'BUY' ? 'active' : ''}`}
           aria-pressed={side === 'BUY'}
+          disabled={privateVta}
           onClick={() => { setSide('BUY'); setPercent(0); setError(null); }}
         >
           {/* Spot says «Купить» / «Продать», never «Купить BTC». The ticker
@@ -317,6 +355,7 @@ export function OrderForm({
             type="button"
             className={`order-type-tab ${family === f.id ? 'active' : ''}`}
             aria-pressed={family === f.id}
+            disabled={privateVta && f.id !== 'MARKET'}
             onClick={() => { setFamily(f.id); setPercent(0); setError(null); }}
           >
             {f.label}
@@ -430,6 +469,7 @@ export function OrderForm({
               type="number"
               step="any"
               required
+              disabled={vtaLocked}
               value={quantity}
               onChange={(e) => {
                 setQuantity(e.target.value);
@@ -444,13 +484,13 @@ export function OrderForm({
         <div className="form-group">
           <div className="form-label"><span>{t('trade.total')}</span></div>
           <div className="input-group">
-            <input aria-label={t('trade.total')} type="number" step="any" value={total === '0.00' ? '' : total} onChange={(e) => applyTotal(e.target.value)} placeholder="0.00" />
+            <input aria-label={t('trade.total')} type="number" step="any" disabled={vtaLocked} value={total === '0.00' ? '' : total} onChange={(e) => applyTotal(e.target.value)} placeholder="0.00" />
             <span className="input-suffix">{quoteAsset}</span>
           </div>
         </div>
 
         <div className="slider-container">
-          <input className="terminal-size-range" type="range" min="0" max="100" step="25" aria-label={t('trade.quantity')} value={percent} disabled={!balanceReady || balanceError} onChange={event => applyPercent(Number(event.target.value))} />
+          <input className="terminal-size-range" type="range" min="0" max="100" step="25" aria-label={t('trade.quantity')} value={percent} disabled={!balanceReady || balanceError || vtaLocked} onChange={event => applyPercent(Number(event.target.value))} />
           <div className="slider-track">
             {SLIDER_STEPS.map((step, idx) => (
               <button
@@ -459,7 +499,7 @@ export function OrderForm({
                 data-label={`${step}%`}
                 aria-label={`${step}%`}
                 aria-pressed={percent === step}
-                disabled={!balanceReady || balanceError}
+                disabled={!balanceReady || balanceError || vtaLocked}
                 className={`slider-step ${percent >= step ? 'active' : ''} ${sideClass}`}
                 onClick={() => applyPercent(SLIDER_STEPS[idx])}
               />
@@ -476,7 +516,7 @@ export function OrderForm({
           <div className="available-balance">
             <span>{t('trade.available')}</span>
             <span className="amount">
-              {balanceReady && !balanceError ? (side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6) : '—'}{' '}
+              {balanceReady && !balanceError ? (side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : privateVta ? 8 : 6) : '—'}{' '}
               {side === 'BUY' ? quoteAsset : baseAsset}
             </span>
           </div>
@@ -485,7 +525,7 @@ export function OrderForm({
 
         {balanceError && <div className="terminal-account-state" role="alert" aria-busy={balanceLoading}>
           <span>{t('trade.loadAssetsError')}</span>
-          <button type="button" className="terminal-account-retry" disabled={balanceLoading} onClick={() => setBalanceVersion(version => version + 1)}>{t('trade.retry')}</button>
+          <button type="button" className="terminal-account-retry" disabled={balanceLoading} onClick={() => privateVta ? void vta.refresh() : setBalanceVersion(version => version + 1)}>{t('trade.retry')}</button>
         </div>}
         {error && (
           <div role="alert" className="available-balance" style={{ color: 'var(--color-sell)' }}>
@@ -493,7 +533,7 @@ export function OrderForm({
           </div>
         )}
 
-        <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
+        <button type="submit" disabled={submitting || (privateVta && notTradingYet && !vtaUnconfirmed)} className={`submit-btn ${sideClass}`}>
           {submitting ? t('auth.wait') : side === 'BUY' ? t('trade.buy') : t('trade.sell')}
         </button>
 

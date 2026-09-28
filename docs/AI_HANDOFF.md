@@ -4228,3 +4228,13 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved: existing Spot/Futures matching and financial math, public test-market trading prohibition, mobile layout, account deletion gate, real balances/withdrawals and customer-only admin list.
 - Verification: 113 backend/PG + 42 header/mobile tests pass; private browser at 1440/390 and public listing at five widths pass. Additional wallet set has the exact same 25 failures on clean main and this branch (97 pass); no new failures after updating the isolated FundingView child stub. See docs/qa/terminal-header-private-vta.md.
 - Pending at commit: PR/CI/deploy and separately authorized self-admin allocation. No production sale or credit performed by QA.
+
+
+## 2026-09-28 — Restore standard Spot UI for owner VTA
+- User correction: remove unsolicited VTA-specific order panel; preserve standard Spot appearance and credited private balance. Base main: 1d41c1f3f9e6ea769b428aaadc8f0115cee31d0f.
+- Standard OrderForm now reads the isolated authorized VTA account and uses the existing server-priced MARKET SELL endpoint. Preserves listing gate, exact 100% quantity, same idempotency key/quantity after an uncertain response, session guards and no real-ledger fallback.
+- Removed VtaDemoSpot component/CSS. Funding displays VTA in the existing asset table; real wallet valuation, withdrawals and transfers stay unchanged. Existing Spot history/assets table components show private sales/balances for VTA.
+- No backend, trading math, production credit or owner sale performed. Existing 4,545,454.54545454 VTA credit is not duplicated. Header spacing and Spot ellipsis removal preserved.
+- Checks: frontend build PASS (existing large-chunk advisory); 138 UI/mobile guards PASS; 102 affected Spot/listing tests PASS. Browser 1440/390 PASS: prelisting disabled, automatic estimate, exact max quantity, lost-response replay = one fill, reload history/assets, standard wallet row, zero overflow/page errors. Ordinary Spot controls unchanged/zero private reads; non-admin blocked/zero private reads.
+- Broader 40 wallet/transition tests: 36 PASS / 4 FAIL. Reproduced the same four failures with current-main sources restored temporarily, then restored all working files: two existing wallet unified valuation fixture mismatches; old sampled-book source assertion; missing terminalPresentation mock. Evidence output/vta-demo/baseline-spot-wallet.log. No unrelated cleanup.
+- Browser harness fixtures intentionally do not provide live venue streams/charts; production read-only visual verification remains required after publication.

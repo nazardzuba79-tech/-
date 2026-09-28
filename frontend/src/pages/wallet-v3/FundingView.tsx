@@ -1,6 +1,6 @@
 import { ArrowDownToLineIcon, ArrowLeftRightIcon, ArrowUpFromLineIcon, LandmarkIcon, WifiOffIcon } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
-import { VtaDemoSpot } from '../../components/VtaDemoSpot';
+import { useVtaSpotAccount } from '../../lib/useVtaSpotAccount';
 import { useLanguage } from '../../lib/i18n';
 import { EmptyState } from './ui';
 import { EM_DASH, MASK, decimalsFor, formatAmount, formatUsd } from './format';
@@ -41,7 +41,13 @@ export function FundingView({
   onTransfer: () => void;
 }) {
   const { t, lang } = useLanguage();
-  const balances = overview?.real.spot ?? [];
+  const vta = useVtaSpotAccount(true);
+  const privateBalance = vta.snapshot?.balances.find(b => b.asset === 'VTA');
+  const balances = [...(overview?.real.spot ?? [])];
+  // Keep the private holding out of real totals and withdrawal availability.
+  if (privateBalance && !balances.some(b => b.asset === 'VTA')) {
+    balances.push({ ...privateBalance, priceUsd: null, valueUsd: null });
+  }
   const held = balances.filter((b) => Number(b.available) + Number(b.locked) > 0);
   const totalUsd = unavailable || !overview ? null : overview.real.spotValueUsd;
 
@@ -72,7 +78,6 @@ export function FundingView({
         </div>
       </header>
 
-      <VtaDemoSpot wallet hidden={hidden} />
       <section aria-label={t('wallet.assets')} className="wallet-funding-table wallet-card mt-5 overflow-hidden">
         {unavailable ? (
           <EmptyState icon={WifiOffIcon} title={t('wallet.dataUnavailable')} description={t('wallet.dataUnavailableBody')} compact />
@@ -103,7 +108,7 @@ export function FundingView({
               </thead>
               <tbody>
                 {held.map((b) => {
-                  const dp = decimalsFor(b.asset);
+                  const dp = b.asset === 'VTA' ? 8 : decimalsFor(b.asset);
                   const available = Number(b.available);
                   const locked = Number(b.locked);
                   return (
