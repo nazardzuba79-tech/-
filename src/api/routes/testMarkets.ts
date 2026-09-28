@@ -26,7 +26,8 @@ export function testMarketsRouter(clock: () => number = Date.now, env: NodeJS.Pr
   // NRX public reads belong to the edge. This is a redirect, not a Render
   // generation/proxy fallback. The original VTA endpoints remain unchanged.
   router.use((req, res, next) => {
-    if (req.method === 'GET' && req.path.toUpperCase().includes('NRX')) {
+    const publicMarketPath = /^\/(?:market\/(?:test-assets|external|display|ticker)\/|orderbook\/)/.test(req.path);
+    if (['GET', 'HEAD'].includes(req.method) && publicMarketPath && req.path.toUpperCase().includes('NRX')) {
       res.setHeader('Cache-Control', 'no-store');
       return res.redirect(307, `https://market.voltextech.net${req.url}`);
     }

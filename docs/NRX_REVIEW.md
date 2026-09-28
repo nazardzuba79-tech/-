@@ -2,7 +2,7 @@
 
 Base: `9511ce037993d65fa375da6a4bc5d1c5675922ad` (fresh `origin/main`).
 Branch: `codex/nrx-investor-market`.
-Implementation commit: `4091253a8035684a2ed431e90f7b92388dc27eb6` (followed only by this factual handoff).
+Primary implementation commit: `4091253a8035684a2ed431e90f7b92388dc27eb6`; review follow-up confines GET/HEAD redirects to public market routes.
 
 The owner clarified that this is a prototype presentation for informed early-stage investors. Generated public market activity is not an execution ledger or evidence of customer trading.
 
@@ -33,8 +33,9 @@ The ordinary wallet values prelisting inventory at the configured listing price 
 ## Verification
 
 - Backend TypeScript build; frontend TypeScript and production Vite build passed. Existing >500 kB chunk advisory remains.
-- 225 targeted unit/preservation tests passed: NRX, VTA simulation/depth/API, normal Spot orders and conditional orders, wallet pricing, matching engine, private VTA/DemoTrading, mobile layout, and Futures header/API preservation. The Futures API fingerprint still pins every existing method; only the explicit NRX public transport branches are normalized out.
-- All **8** disposable PostgreSQL integration tests passed (233 Jest tests total). They cover exact allocation/no USDT debit/no airdrop, concurrency/idempotency, denied allocations, ordinary insufficient balances, actual counterparty matching, prelisting rejection, standard conditional/OCO handling, and a real conditional-trigger settlement against a funded resting order.
+- 261 targeted unit/preservation tests passed in 19 suites: NRX, VTA simulation/depth/API, normal Spot orders and conditional orders, wallet pricing, matching engine, private VTA/DemoTrading, mobile layout, Futures header/API/book preservation, and Copy Trading critical path/CI coverage. Existing API/book fingerprints remain pinned; only the explicit NRX transport branches and optional book title are normalized out. Public GET/HEAD redirects do not intercept account routes.
+- All **8** disposable PostgreSQL integration tests passed (269 Jest tests total). They cover exact allocation/no USDT debit/no airdrop, concurrency/idempotency, denied allocations, ordinary insufficient balances, actual counterparty matching, prelisting rejection, standard conditional/OCO handling, and a real conditional-trigger settlement against a funded resting order.
+- Initial PR CI exposed the optional book-title fingerprint and a missing import-coverage path. The follow-up preserves the existing fingerprint, adds the NRX path to both Copy regression triggers, and makes the coverage parser CRLF-safe; no Copy/Futures business logic changed. These guards now pass locally and are included in the NRX workflow. Final remote CI status must be checked separately before any release.
 - Actual bundled Worker runs in an edge-like runtime with all network IO forbidden. NRX metadata, boundary, candles, book, tape and ticker pass; no Node environment/Prisma dependency is bundled. Existing market-edge contract script also passes.
 - Browser QA uses the production frontend bundle plus the real NRX handler with an injected **local-only** clock. All outside network requests and WebSockets are blocked, account data is fixture-only, and the single ordinary Spot submission at each width returns a synthetic insufficient-balance response. It creates no real account/order/deposit.
 - 1440/390 QA checks Markets, exact listing time, standard BUY/SELL/form, real server-boundary transition without reload, visible canonical chart/book/tape, normal localized insufficient balance, no horizontal overflow, no page exceptions and no visible demo/test wording. Later chart screenshots advance the fixture to six hours after listing; they are not production screenshots.
@@ -52,6 +53,7 @@ This is a review PR, not a live listing. Edge endpoints and frontend routing mus
 
 ## Exact changed files (including QA evidence and handoff)
 
+- `.github/workflows/copy-trading-card-regression.yml`
 - `.github/workflows/deploy-market-edge.yml`
 - `.github/workflows/nrx-market.yml`
 - `docs/AI_HANDOFF.md`
@@ -76,6 +78,8 @@ This is a review PR, not a live listing. Edge endpoints and frontend routing mus
 - `frontend/src/components/OrderForm.tsx`
 - `frontend/src/components/TestMarketTerminal.tsx`
 - `frontend/src/lib/__tests__/futuresTickerHeader.test.ts`
+- `frontend/src/lib/__tests__/futuresUiPolish.test.ts`
+- `frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts`
 - `frontend/src/lib/__tests__/nrxMarket.test.ts`
 - `frontend/src/lib/__tests__/testMarkets.test.ts`
 - `frontend/src/lib/api.ts`

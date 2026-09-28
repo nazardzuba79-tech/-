@@ -11,7 +11,14 @@ const ts=require('typescript'),crypto=require('node:crypto');
 function restoreBookPresentation(source) {
  // Only display amount strings and their tooltips changed. Restore those exact
  // statements before checking the frozen aggregation/click-selection fingerprint.
- return source.replace(/import \{ formatBookAmount \} from '..\/lib\/terminalPresentation';\r?\n/, '')
+ return source.replace(/\r\n/g, '\n')
+  // NRX supplies its own book/tape tab title. All existing callers retain the
+  // original title; reverse only this optional presentation slot, not book logic.
+  .replace(', type ReactNode', '')
+  .replace('  headerTitle,\n', '')
+  .replace('  headerTitle?: ReactNode;\n', '')
+  .replace("{headerTitle ?? <span className=\"orderbook-title\">{t('trade.orderBook')}</span>}", "<span className=\"orderbook-title\">{t('trade.orderBook')}</span>")
+  .replace(/import \{ formatBookAmount \} from '..\/lib\/terminalPresentation';\r?\n/, '')
   .replace('const quantityText = formatBookAmount(level.quantity);', 'const quantityText = spotStep === undefined ? level.quantity.toFixed(5) : formatSpotBookNumber(level.quantity);')
   .replace('const totalText = formatBookAmount(level.price * level.quantity);', 'const totalText = spotStep === undefined ? (level.price * level.quantity).toFixed(2) : formatSpotBookNumber(level.price * level.quantity);')
   .replace('title={String(level.quantity)}','title={spotStep !== undefined ? quantityText : undefined}')

@@ -52,6 +52,14 @@ jobs:
           frontend/src/lib/__tests__/testMarkets.test.ts
           frontend/src/lib/__tests__/nrxMarket.test.ts
           frontend/src/lib/__tests__/spotPublicMarket.test.ts
+          frontend/src/lib/__tests__/futuresUiPolish.test.ts
+          frontend/src/lib/__tests__/futuresTickerHeader.test.ts
+          frontend/src/lib/__tests__/terminalMobileParity.test.ts
+          frontend/src/lib/__tests__/copyTradingCriticalPath.test.ts
+          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+          src/services/copyTrading/__tests__/copyMarketplaceEndpointContract.test.ts
+          src/api/routes/__tests__/demoTrading.test.ts
+          src/services/__tests__/DemoTradingService.test.ts
       - run: node scripts/test-nrx-edge.cjs && node workers/market-edge/test.mjs
       - run: npm run build && npm run build --prefix frontend
       - name: Isolated browser QA dependencies

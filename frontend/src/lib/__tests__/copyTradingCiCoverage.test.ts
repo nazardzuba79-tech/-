@@ -77,7 +77,7 @@ function importClosure(entries: string[]): string[] {
 
 /** The workflow's `paths:` entries, both triggers, as written. */
 function workflowPaths(): string[] {
-  return readFileSync(WORKFLOW, 'utf8').split('\n')
+  return readFileSync(WORKFLOW, 'utf8').split(/\r?\n/)
     .map(line => line.match(/^\s+- '(.+)'$/)?.[1])
     .filter((value): value is string => !!value);
 }

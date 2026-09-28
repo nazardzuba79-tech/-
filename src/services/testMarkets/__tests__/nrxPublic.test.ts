@@ -4,11 +4,26 @@ import { publicTestAsset, testMarketCandles } from '../testMarketService';
 import { simulationFor, TestMarketSimulation, HOUR_MS } from '../testMarketSimulation';
 import { VOLTORA, isTestAssetPairOrSymbol } from '../testAssetConfig';
 import { spotPriceSource, assertSpotListing } from '../nrxSpot';
+import express from 'express';
+import http from 'supertest';
+import { testMarketsRouter } from '../../../api/routes/testMarkets';
 
 const request = (path: string, now: number, init?: RequestInit) => nrxPublicResponse(
   new Request(`https://market.voltextech.net${path}`, init), () => now,
 )!;
 const listing = NEURIX.listingAt;
+
+test('Render redirects only public NRX reads, including HEAD; account routes are untouched', async () => {
+  const app = express();
+  app.use('/api/v1', testMarketsRouter());
+  app.get('/api/v1/account/NRX', (_req, res) => res.json({ accountRoute: true }));
+  const path = '/api/v1/market/test-assets/NRX-USDT';
+  for (const response of [await http(app).get(path), await http(app).head(path)]) {
+    expect(response.status).toBe(307);
+    expect(response.headers.location).toBe('https://market.voltextech.net/market/test-assets/NRX-USDT');
+  }
+  expect((await http(app).get('/api/v1/account/NRX')).body).toEqual({ accountRoute: true });
+});
 
 test('NRX identity, listing boundary and 0.80 initial price; VTA unchanged', async () => {
   expect(new Date(listing).toISOString()).toBe('2026-10-03T13:00:00.000Z');
