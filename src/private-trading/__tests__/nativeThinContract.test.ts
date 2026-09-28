@@ -8,7 +8,7 @@ import { actor, setup, key, H } from '../native/testing/liveFixture';
 
 // Real authenticated collector HTTP routes + venue parser + native command
 // and replay. Only the upstream public venue and repository are synthetic.
-describe.each(['QNTUSDT', 'AKEUSDT'])('%s historical entry / current valuation', symbol => {
+describe.each(['QNTUSDT', 'AKEUSDT', 'ETHUSDT'])('%s historical entry / current valuation', symbol => {
   const network = global.fetch;
   const entry = '61.08', current = '264.51';
   let runtime: ReturnType<typeof collectorServer>;
@@ -17,16 +17,19 @@ describe.each(['QNTUSDT', 'AKEUSDT'])('%s historical entry / current valuation',
   let service: NativeDemoService;
   let paths: string[];
   let tickerOffline: boolean, quoteOffline: boolean, allStale: boolean, malformedTier: boolean;
+  let marksFailure: 'http' | 'network' | undefined, tickerAge: number, tickerReads: number;
   beforeEach(async () => {
     f = setup({ price: current }); paths = [];
     tickerOffline = quoteOffline = allStale = malformedTier = false;
+    marksFailure = undefined; tickerAge = 100; tickerReads = 0;
     jest.spyOn(Date, 'now').mockImplementation(f.clock.now);
     jest.spyOn(console, 'info').mockImplementation(() => {});
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     jest.spyOn(global, 'fetch').mockImplementation(async input => {
       const u = new URL(String(input)), endpoint = u.pathname.split('/').pop();
       expect(u.hostname).toBe('api.bybit.com');
-      const at = f.clock.now() - (allStale ? 61_000 : 100);
+      const age = endpoint === 'tickers' && tickerReads++ === 0 ? tickerAge : 100;
+      const at = f.clock.now() - (allStale ? 61_000 : age);
       let result: unknown;
       if (endpoint === 'instruments-info') result = { category: 'linear', list: [{
         symbol, baseCoin: symbol.slice(0, -4), quoteCoin: 'USDT', settleCoin: 'USDT',
@@ -59,6 +62,10 @@ describe.each(['QNTUSDT', 'AKEUSDT'])('%s historical entry / current valuation',
     const url = `http://127.0.0.1:${(runtime.server.address() as AddressInfo).port}`;
     const request: typeof fetch = async (input, options) => {
       const path = new URL(String(input)).pathname; paths.push(path);
+      if (path.endsWith('/marks') && marksFailure) {
+        if (marksFailure === 'network') throw new TypeError('fetch failed');
+        return new Response('{}', { status: 503 });
+      }
       if (tickerOffline && path.includes('/ticker/')) return new Response('{}', { status: 503 });
       if (quoteOffline && path.includes('/quote/')) return new Response('{}', { status: 503 });
       return network(input, options);
@@ -87,9 +94,32 @@ describe.each(['QNTUSDT', 'AKEUSDT'])('%s historical entry / current valuation',
     const loaded = await new NativeDemoService(f.repo, market, f.clock.now).live(actor);
     expect(loaded.positions[0].entryPrice).toBe(entry); expect(loaded.positions[0].markPrice).toBe(current);
   });
-  test.each(['stale', 'unavailable'])('all current sources %s: refuses without any financial persistence', async mode => {
+  test.each(['http', 'network'] as const)('marks %s failure still opens using authenticated current ticker', async failure => {
+    marksFailure = failure;
+    await open();
+    expect(f.repo.commits).toBe(1);
+    expect(f.repo.row!.snapshot.positions[0]).toMatchObject({ entryPrice: entry, markPrice: current, status: 'OPEN' });
+    expect(paths.filter(p => /\/(marks|ticker|quote)(\/|$)/.test(p))).toEqual([
+      '/internal/v1/private-trading/marks', `/internal/v1/private-trading/ticker/${symbol}`,
+    ]);
+  });
+  test.each([45_001, 50_000, 60_000])('ticker age %s must fall through to fresh quote before committing', async age => {
+    tickerAge = age;
+    await open();
+    expect(f.repo.commits).toBe(1);
+    expect(f.repo.row!.snapshot.positions[0]).toMatchObject({ entryPrice: entry, markPrice: current, status: 'OPEN' });
+    expect(paths).toContain(`/internal/v1/private-trading/quote/${symbol}`);
+  });
+  test('headroom-insufficient ticker and unavailable quote never persist', async () => {
+    tickerAge = 50_000; quoteOffline = true;
+    const before = structuredClone(f.repo.row);
+    await expect(open()).rejects.toMatchObject({ code: 'near_live_price_unavailable' });
+    expect(f.repo.row).toEqual(before); expect(f.repo.commits).toBe(0);
+  });
+  test.each(['stale', 'unavailable', 'including-marks'])('all current sources %s: refuses without any financial persistence', async mode => {
     allStale = mode === 'stale';
-    tickerOffline = quoteOffline = mode === 'unavailable';
+    tickerOffline = quoteOffline = mode !== 'stale';
+    if (mode === 'including-marks') marksFailure = 'http';
     const before = structuredClone(f.repo.row);
     await expect(open()).rejects.toMatchObject({ code: 'near_live_price_unavailable' });
     expect(f.repo.row).toEqual(before); expect(f.repo.commits).toBe(0);
