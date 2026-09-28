@@ -179,6 +179,7 @@ describe('translation integrity', () => {
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
+          'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
           'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
           'listing.initialPrice', 'listing.startTime', 'listing.newListing',
           'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
@@ -199,6 +200,13 @@ describe('translation integrity', () => {
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
     }
+  });
+
+  it('localizes the neutral manual-catalogue note without changing legacy deposit copy', () => {
+    expect(dicts.ru['deposit.transferCreditNote']).toBe('После перевода средства будут зачислены на ваш аккаунт.');
+    const values = LOCALES.map(code => dicts[code]['deposit.transferCreditNote'].trim());
+    expect(values.every(Boolean)).toBe(true);
+    expect(new Set(values).size).toBe(LOCALES.length);
   });
 
   it('localizes both explicit VTA operation refusals without changing existing copy', () => {

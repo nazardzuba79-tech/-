@@ -385,6 +385,7 @@ export const KO: Record<Key, string> = {
   'deposit.title': '입금',
   'deposit.close': '닫기',
   'deposit.manualCreditNote': '입금은 30~60분 이내에 반영됩니다.',
+  'deposit.transferCreditNote': '송금 후 자금이 계정에 입금됩니다.',
   'deposit.loadingNetworks': '네트워크를 불러오는 중...',
   'deposit.noneConfigured': '입금은 아직 사용할 수 없습니다. 연결된 지갑 주소가 없습니다.',
   'deposit.network': '네트워크',

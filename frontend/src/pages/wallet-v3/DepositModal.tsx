@@ -4,6 +4,7 @@ import { useDepositSelection, useDepositWallets, useMinimumEquivalent } from '..
 import { Key, useLanguage } from '../../lib/i18n';
 import { FieldLabel, Modal, SecondaryButton, Select } from './ui';
 import { formatAmount, formatUsd } from './format';
+import { MANUAL_DEPOSIT_CATALOGUE } from '../../lib/depositCatalogue';
 
 /**
  * The approved V3 deposit design, on the real deposit backend.
@@ -24,9 +25,9 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
     ton: 'deposit.chain.ton',
   };
 
-  const { wallets, minDepositUsd, usdPeggedAssets, error: loadError } = useDepositWallets(open);
+  const { loaded, wallets, minDepositUsd, usdPeggedAssets, error: loadError } = useDepositWallets(open);
   // Asset first, then the networks that carry it — see useDepositSelection.
-  const { assets, asset, setAsset, networks, chain, setChain, address } = useDepositSelection(wallets);
+  const { assets, asset, setAsset, networks, chain, setChain, address, wallet } = useDepositSelection(wallets);
   const { minEquivalent, stable } = useMinimumEquivalent(minDepositUsd, usdPeggedAssets, asset, open);
   const error = loadError ? t(loadError === 'chains' ? 'deposit.loadChainsError' : 'deposit.loadAddressError') : null;
   const [copied, setCopied] = useState(false);
@@ -37,7 +38,7 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
     return () => window.clearTimeout(id);
   }, [copied]);
 
-  const chainLabel = (c: string) => (CHAIN_LABEL[c] ? t(CHAIN_LABEL[c]) : c);
+  const chainLabel = (c: string) => wallets.find(w => w.chain === c)?.networkName ?? (CHAIN_LABEL[c] ? t(CHAIN_LABEL[c]) : c);
 
   return (
     <Modal
@@ -78,7 +79,7 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
             id="deposit-network"
             value={chain}
             onChange={setChain}
-            options={networks.map((c) => ({ value: c.chain, label: chainLabel(c.chain) }))}
+            options={networks.map((c) => ({ value: c.chain, label: `${chainLabel(c.chain)}${c.standard ? ` · ${c.standard}` : ''}` }))}
           />
         </div>
 
@@ -87,7 +88,7 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
             <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-3">{t('deposit.address')}</p>
           </div>
           <div className="p-3.5">
-            <p className="num break-all text-[12.5px] leading-[18px] text-ink">{address ?? t('wallet.loading')}</p>
+            <p className="num break-all text-[12.5px] leading-[18px] text-ink">{address ?? t(loaded ? 'deposit.noneConfigured' : 'wallet.loading')}</p>
             <button
               type="button"
               disabled={!address}
@@ -102,6 +103,11 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
               {copied ? t('deposit.copied') : t('deposit.copy')}
             </button>
           </div>
+          {wallet?.memo && <div className="border-t border-hair-soft p-3.5"><FieldLabel>{wallet.memoLabel || 'Memo / Tag'}</FieldLabel>
+            <p className="num break-all text-[12.5px] text-ink">{wallet.memo}</p>
+            <SecondaryButton onClick={() => { navigator.clipboard?.writeText(wallet.memo!).catch(() => undefined); }}>{t('deposit.copy')}</SecondaryButton>
+          </div>}
+          {!MANUAL_DEPOSIT_CATALOGUE &&
           <dl className="border-t border-hair-soft px-3.5 py-2.5">
             <dt className="text-[11px] text-ink-4">{t('deposit.minAmount')}</dt>
             <dd className="num mt-1 text-[12.5px] font-medium text-ink-2">
@@ -109,13 +115,14 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
                 ? `${formatUsd(minDepositUsd, lang, 0)} ≈ ${formatAmount(minEquivalent, lang, 8)} ${asset}`
                 : formatUsd(minDepositUsd, lang, 0)}
             </dd>
-          </dl>
+          </dl>}
         </div>
 
         <p className="flex items-start gap-2 rounded-w border border-[#efe1c0] bg-gold-wash px-3 py-2.5 text-[11.5px] leading-[17px] text-[#7a5b15]">
           <TriangleAlertIcon className="mt-px h-3.5 w-3.5 shrink-0 text-gold-deep" strokeWidth={1.8} />
           <span>{t('wallet.depositWarning', { asset: asset || '—', chain: chain ? chainLabel(chain) : '—' })}</span>
         </p>
+        {MANUAL_DEPOSIT_CATALOGUE && address && <p className="text-[12px] text-ink-2">{t('deposit.transferCreditNote')}</p>}
       </div>
     </Modal>
   );

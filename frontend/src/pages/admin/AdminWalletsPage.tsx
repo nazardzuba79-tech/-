@@ -4,11 +4,17 @@ import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
 import { depositRails, addressAdvice, networkName } from './depositRails';
 import { AdminModal, CopyValue } from './AdminPrimitives';
+import { MANUAL_DEPOSIT_CATALOGUE } from '../../lib/depositCatalogue';
+import { AdminDepositCatalogue } from './AdminDepositCatalogue';
 
 type Wallet = Awaited<ReturnType<typeof api.getAdminWallets>>[number];
 type Rail = ReturnType<typeof depositRails<Wallet>>[number];
 
 export function AdminWalletsPage() {
+  return MANUAL_DEPOSIT_CATALOGUE ? <AdminDepositCatalogue /> : <LegacyAdminWalletsPage />;
+}
+
+function LegacyAdminWalletsPage() {
   const [wallets, setWallets] = useState<Wallet[] | null>(null);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Rail | null>(null);

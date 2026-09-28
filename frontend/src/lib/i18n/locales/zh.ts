@@ -388,6 +388,7 @@ export const ZH: Record<Key, string> = {
   'deposit.title': '充值',
   'deposit.close': '关闭',
   'deposit.manualCreditNote': '存款将在30-60分钟内到账。',
+  'deposit.transferCreditNote': '转账后，资金将存入您的账户。',
   'deposit.loadingNetworks': '正在加载网络...',
   'deposit.noneConfigured': '暂时无法充值：尚未接入钱包地址。',
   'deposit.network': '网络',

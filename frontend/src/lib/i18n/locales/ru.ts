@@ -391,6 +391,7 @@ export const RU = {
   'deposit.title': 'Пополнение',
   'deposit.close': 'Закрыть',
   'deposit.manualCreditNote': 'Депозит будет зачислен в течение 30-60 минут.',
+  'deposit.transferCreditNote': 'После перевода средства будут зачислены на ваш аккаунт.',
   'deposit.loadingNetworks': 'Загрузка сетей...',
   'deposit.noneConfigured': 'Пополнение пока недоступно: адреса кошельков ещё не подключены.',
   'deposit.network': 'Сеть',
