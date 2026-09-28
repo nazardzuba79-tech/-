@@ -443,8 +443,18 @@ export class PrivateTradingMarketData {
     const wanted=[...new Set(symbols.map(symbol))],out=new Map<string,PrivateMark>();
     if(!wanted.length)return out;
     if(wanted.length>PRIVATE_MARKS_MAX)throw new PrivateMarketDataError('invalid_symbol',400);
-    const page=read(privateMarksSchema,await this.get(`marks?${new URLSearchParams({symbols:wanted.join(',')})}`,signal));
-    for(const value of page.marks){
+    let frame:unknown,frameFailure:string|undefined;
+    try{frame=await this.get(`marks?${new URLSearchParams({symbols:wanted.join(',')})}`,signal);}
+    catch(e){
+      abort(signal);
+      // A frame transport outage must not suppress the independent authenticated
+      // ticker/quote reads. Invalid JSON, validation errors and cancellation are
+      // not availability failures; keep them fail-closed.
+      if((e as Error)?.name==='SyntaxError'||(e instanceof PrivateMarketDataError&&e.code!=='collector_unavailable'))throw e;
+      frameFailure=reason(e);
+    }
+    const page=frameFailure===undefined?read(privateMarksSchema,frame):undefined;
+    for(const value of page?.marks??[]){
       if(!wanted.includes(value.symbol)||out.has(value.symbol))return invalid();
       if([value.markProviderTimestamp,value.receivedAt,value.fetchedAt].every(t=>fresh(t,this.now(),maxAge)))out.set(value.symbol,value);
     }
@@ -456,15 +466,20 @@ export class PrivateTradingMarketData {
     // collector built before the ticker route existed. Never carry an
     // almost-expired frame through account/receipt persistence; its live
     // book checks remain unchanged.
+    const candidate=(value:unknown,s:string):PrivateMark=>{
+      const now=this.now(),price=assertHistoricalDemoCurrentPrice(value,s,now);
+      if(![price.markProviderTimestamp,price.receivedAt,price.fetchedAt].every(t=>fresh(t,now,maxAge)))throw new PrivateMarketDataError('near_live_price_stale');
+      return price;
+    };
     const missing=wanted.filter(s=>!out.has(s));
     for(let i=0;i<missing.length;i+=4)await Promise.all(missing.slice(i,i+4).map(async s=>{
-      const failures:string[]=[];
-      try{out.set(s,assertHistoricalDemoCurrentPrice(await this.get(`ticker/${s}`,signal),s,this.now()));return;}
+      const failures:string[]=frameFailure===undefined?[]:[frameFailure];
+      try{out.set(s,candidate(await this.get(`ticker/${s}`,signal),s));return;}
       catch(e){abort(signal);failures.push(reason(e));}
       try{
         const q=await this.freshQuote(s,signal);
-        out.set(s,assertHistoricalDemoCurrentPrice({symbol:s,markPrice:q.markPrice,lastPrice:q.lastPrice,
-          markProviderTimestamp:Math.min(q.markProviderTimestamp,q.providerTimestamp),receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt},s,this.now()));
+        out.set(s,candidate({symbol:s,markPrice:q.markPrice,lastPrice:q.lastPrice,
+          markProviderTimestamp:Math.min(q.markProviderTimestamp,q.providerTimestamp),receivedAt:q.fetchedAt,fetchedAt:q.fetchedAt},s));
       }catch(e){
         abort(signal);failures.push(reason(e));
         // Missing collateral stays unpriced; execution symbols are required by
