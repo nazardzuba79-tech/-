@@ -73,7 +73,7 @@ describe('admin users routes', () => {
       expect(res.status).toBe(403);
     });
 
-    it('lists every user with balances and does not expose infrastructure IP', async () => {
+    it('lists customers with balances and does not expose infrastructure IP', async () => {
       const prisma = adminPrisma({
         user: {
           findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }),
@@ -113,7 +113,7 @@ describe('admin users routes', () => {
       await request(app).get('/api/v1/admin/users?search=alice').set('Authorization', authHeader('admin-1'));
 
       expect(prisma.user.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { email: { contains: 'alice', mode: 'insensitive' } } })
+        expect.objectContaining({ where: { role: 'USER', email: { contains: 'alice', mode: 'insensitive' } } })
       );
     });
   });

@@ -103,7 +103,7 @@ export function AdminUsersPage() {
   const loadUsers = useCallback(() => {
     api
       .getAdminUsers()
-      .then((next) => { setUsers(next.filter((user) => !deletedIds.current.has(user.id))); setLoadError(false); })
+      .then((next) => { setUsers(next.filter((user) => user.role === 'USER' && !user.isAdmin && !deletedIds.current.has(user.id))); setLoadError(false); })
       .catch(() => setLoadError(true));
     // The server returns only the newest deposit per user from the last 24h.
     // Do not download the full admin deposit history just to paint badges.
@@ -130,13 +130,20 @@ export function AdminUsersPage() {
     lastSignature.current = signature;
   }, [signature, loadUsers]);
 
+  // Defensive against a stale API response: only loaded customer packages
+  // belong in this page's work items and summary totals.
+  const customerPackages = useMemo(() => {
+    const ids = new Set(users?.map((user) => user.id));
+    return (activity?.packages ?? []).filter((p) => ids.has(p.userId));
+  }, [activity, users]);
+
   // Ready packages first inside a user: those are the ones an admin can act on.
   const pendingByUser = useMemo(() => {
     const map = new Map<string, AdminDepositPackage[]>();
     const order = { READY: 0, NEEDS_REVIEW: 1, AWAITING_TOPUP: 2 } as const;
-    for (const p of activity?.packages ?? []) map.set(p.userId, [...(map.get(p.userId) ?? []), p].sort((a, b) => order[a.state] - order[b.state]));
+    for (const p of customerPackages) map.set(p.userId, [...(map.get(p.userId) ?? []), p].sort((a, b) => order[a.state] - order[b.state]));
     return map;
-  }, [activity]);
+  }, [customerPackages]);
 
   const now = Date.now();
   const isNew = (u: User) => now - new Date(u.createdAt).getTime() <= ONE_DAY_MS;
@@ -178,11 +185,11 @@ export function AdminUsersPage() {
   // Ready totals, summed per asset only — different assets are never added together.
   const readyByAsset = useMemo(() => {
     const sums = new Map<string, string>();
-    for (const p of activity?.packages ?? []) if (p.state === 'READY') sums.set(p.asset, addDecimalStrings(sums.get(p.asset) ?? '0', p.total) ?? p.total);
+    for (const p of customerPackages) if (p.state === 'READY') sums.set(p.asset, addDecimalStrings(sums.get(p.asset) ?? '0', p.total) ?? p.total);
     return [...sums].map(([asset, amount]) => `${amount} ${asset}`).join(' · ');
-  }, [activity]);
-  const readyCount = activity?.packages.filter((p) => p.state === 'READY').length ?? 0;
-  const topUpCount = activity?.packages.filter((p) => p.state !== 'READY').length ?? 0;
+  }, [customerPackages]);
+  const readyCount = customerPackages.filter((p) => p.state === 'READY').length;
+  const topUpCount = customerPackages.filter((p) => p.state !== 'READY').length;
 
   function deletionDone() {
     if (!deleting) return;

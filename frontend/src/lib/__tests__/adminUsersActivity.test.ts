@@ -249,3 +249,40 @@ test('10. last-login sorting, search and KYC work with tabs; never-logged-in use
   await act(async () => { setSelect.call(select, 'PENDING'); select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); await flush(); });
   expect(rows()).toEqual(['kyc']);
 });
+
+test('11. admin accounts and their packages never render as customers, even in a stale response', async () => {
+  users.push(user('service', 'service@example.invalid', HOUR, { role: 'ADMIN', isAdmin: true, kycStatus: 'PENDING', lastLoginAt: iso(0) }));
+  users.push(user('legacy-service', 'legacy@example.invalid', HOUR, { isAdmin: true }));
+  activity.packages.push(pkg('service', '9999', 'READY', 0));
+  await mount();
+  expect(rows()).not.toContain('service');
+  expect(rows()).not.toContain('legacy-service');
+  expect(host.textContent).not.toContain('service@example.invalid');
+  expect(host.textContent).not.toContain('9999');
+  expect(host.querySelector('[data-user-tab="new"]')!.textContent).toBe('Новые2');
+  expect(host.querySelector('[data-user-tab="kyc"]')!.textContent).toBe('KYC1');
+  await click(host.querySelector('[data-user-tab="deposits"]'));
+  expect(rows()).toEqual(['payer', 'both']);
+  await click(host.querySelector('[data-user-tab="kyc"]'));
+  expect(rows()).toEqual(['kyc']);
+  await click(host.querySelector('[data-user-tab="all"]'));
+  const input = host.querySelector('input[aria-label="Поиск пользователей"]') as HTMLInputElement;
+  const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!;
+  await act(async () => { setValue.call(input, 'service'); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); await flush(); });
+  expect(rows()).toEqual([]);
+});
+
+test('12. customer-only pagination and last-login sorting span pages without an admin slot', async () => {
+  users = Array.from({ length: 21 }, (_, i) => user(`customer-${i}`, `customer-${i}@example.invalid`, 30 * 24 * HOUR, { lastLoginAt: iso(i * HOUR) }));
+  users.unshift(user('service', 'service@example.invalid', HOUR, { role: 'ADMIN', isAdmin: true, lastLoginAt: iso(0) }));
+  activity.packages = [];
+  await mount();
+  const select = host.querySelector('select[aria-label="Фильтр пользователей"]') as HTMLSelectElement;
+  const setSelect = Object.getOwnPropertyDescriptor(dom.window.HTMLSelectElement.prototype, 'value')!.set!;
+  await act(async () => { setSelect.call(select, 'lastLogin'); select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); await flush(); });
+  expect(rows()).toEqual(Array.from({ length: 20 }, (_, i) => `customer-${i}`));
+  expect(host.textContent).toContain('1–20 из 21');
+  await click(Array.from(host.querySelectorAll('.admin-pagination-top button')).find((button) => button.textContent === '2') ?? null);
+  expect(rows()).toEqual(['customer-20']);
+  expect(host.textContent).toContain('21–21 из 21');
+});
