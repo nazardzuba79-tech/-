@@ -4280,3 +4280,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Next: owner review only. Do not enable flag or deploy before storage prerequisite is completed. Screenshots and measured load: `docs/qa/manual-deposit-catalogue/README.md`.
 
 - Catalogue CI follow-up to `3158e5ade5ef5a061f551b669a1d3aba9ee3edb5`: updated legacy admin test loader, preserved locale-byte integrity with the new key explicitly checked, and added the shared client to Copy Trading CI triggers. Targeted total now 147 PASS / 9 suites. Runtime unchanged; initial dedicated catalogue CI passed.
+
+## 2026-09-28 — Codex — Persistent receiving-address catalogue (PR #318)
+- Implementation commit: `1869c0c2f5a58ba4fb38a661f4b62f8968de766f`, continuing reviewed `451148696e6398e630fd34f7f2f10b7cd603981b`; main rechecked as `9511ce037993d65fa375da6a4bc5d1c5675922ad`.
+- Added dedicated Worker/SQLite Durable Object, one canonical document, atomic If-Match CAS, server Bearer auth, shared schema, explicit uncertain-write reread, read-only baseline exporter and CI. Exact follow-up manifest: `docs/qa/manual-deposit-catalogue/storage-followup-files.txt`.
+- Preserved completed catalogue UI, styles, existing 147 tests, default-off flag, legacy TreasuryWallet/auth/financial behavior and other agents' VTA work; unrelated untracked `docs/qa/voltora-listing` untouched.
+- Local verification: 147/147 Jest (9 suites), 15/15 actual workerd/SQLite integration tests, 5/5 exporter tests; backend build, frontend types, Wrangler staging dry-run PASS. Restart retained document/revision; 12 concurrent writes produced 1 commit/11 conflicts. No Worker external requests.
+- Read-only production legacy admin DOM captured 4 rails / 3 networks, all six known chains accounted for. Generated local `output/deposit-catalogue-baseline/production-baseline-review-20260928.json`; no browser secret extraction, no direct production SQL, no seeding. Owner address review remains pending.
+- Worker prepared only; no merge, production deploy, production address/data changes, Neon schema/catalogue storage, blockchain polling or auto-credit. Feature flag not enabled. Next: review final-head CI and owner baseline, then separate deployment/activation authorization. No Phase 2 work.
