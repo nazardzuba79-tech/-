@@ -119,7 +119,7 @@ test('actual balance reader keeps Retry busy through failure and recovery withou
     .mockResolvedValue([{ asset: 'BTC', available: '0.5' }, { asset: 'USDT', available: '100' }]);
   let poll!: () => void;
   let cleanup!: () => void;
-  const bindings = { api: { getBalances }, useEffect: (fn: () => () => void) => { cleanup = fn(); },
+  const bindings = { privateVta: false, api: { getBalances }, useEffect: (fn: () => () => void) => { cleanup = fn(); },
     window: { setInterval: (fn: () => void) => { poll = fn; return 1; } }, clearInterval: jest.fn(),
     baseAsset: 'BTC', quoteAsset: 'USDT', side: 'BUY', refreshKey: 0, balanceVersion: 0,
     setBalanceLoading: jest.fn(), setBalanceError: jest.fn(), setBalanceReady: jest.fn(), setAvailable: jest.fn() };

@@ -1,3 +1,4 @@
+import { VtaSpotPanels } from '../components/VtaSpotPanels';
 import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -8,7 +9,6 @@ import { TickerBar } from '../components/TickerBar';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
-import { VtaDemoSpot } from '../components/VtaDemoSpot';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
@@ -368,7 +368,7 @@ export function TradePage() {
           </div>
 
           <div className="order-form-area">
-            {testPair ? <VtaDemoSpot key={pair}>{spotOrderForm}</VtaDemoSpot> : spotOrderForm}
+            {spotOrderForm}
           </div>
         </div>
 
@@ -410,8 +410,8 @@ export function TradePage() {
             <div className="account-tab-content" hidden={bottomTab !== 'open'}>
               <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} onAccountCount={setAccountOpenOrderCount} />
             </div>
-            {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-            {bottomTab === 'assets' && <AssetsPanel compact refreshKey={ordersRefreshKey} />}
+            {bottomTab === 'orderHistory' && (pair === 'VTA/USDT' ? <VtaSpotPanels history refreshKey={ordersRefreshKey} /> : <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />)}
+            {bottomTab === 'assets' && (pair === 'VTA/USDT' ? <VtaSpotPanels refreshKey={ordersRefreshKey} /> : <AssetsPanel compact refreshKey={ordersRefreshKey} />)}
           </div>
         </div>
       </div>

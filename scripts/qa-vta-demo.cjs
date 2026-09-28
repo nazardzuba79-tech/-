@@ -16,13 +16,13 @@ const app = express();
 app.use(express.json());
 const {VOLTORA}=require(path.join(root, "dist/services/testMarkets/testAssetConfig.js"));
 const {publicTestAsset}=require(path.join(root, "dist/services/testMarkets/testMarketService.js"));
-let simNow=VOLTORA.listingAt-1000;let available='4545454.54545454',usdt='0';const sales=[],keys=new Map();let saleRequests=0,loseResponse=false;
+let simNow=VOLTORA.listingAt-1000;let available='4545454.54545454',usdt='0';const sales=[],keys=new Map();let saleRequests=0,loseResponse=false,isAdmin=true,privateReads=0;
 const BN=require('bignumber.js');
 app.get('/api/v1/market/test-assets',(_q,r)=>r.json({serverTime:simNow,assets:[publicTestAsset(VOLTORA,simNow)]}));
-app.get('/api/v1/demo/vta',(_q,r)=>r.json({balances:[{asset:'VTA',available,locked:'0'},{asset:'USDT',available:usdt,locked:'0'}],sales}));
+app.get('/api/v1/demo/vta',(_q,r)=>{privateReads++;return r.json({balances:[{asset:'VTA',available,locked:'0'},{asset:'USDT',available:usdt,locked:'0'}],sales});});
 app.post('/api/v1/demo/vta/sell',(q,r)=>{saleRequests++;if(keys.has(q.body.requestId))return r.json(keys.get(q.body.requestId));const price=String(publicTestAsset(VOLTORA,simNow).state.lastPrice);const proceeds=new BN(price).times(q.body.quantity).toFixed();available=new BN(available).minus(q.body.quantity).toFixed();usdt=new BN(usdt).plus(proceeds).toFixed();const receipt={id:q.body.requestId,price,quantity:q.body.quantity,proceeds};keys.set(receipt.id,receipt);sales.unshift({...receipt,createdAt:new Date().toISOString()});if(loseResponse){loseResponse=false;return r.status(503).json({error:'Temporary response failure'});}r.json(receipt);});
 
-app.get('/api/v1/me', (_q,r)=>r.json({id:'qa',displayName:'QA',email:'qa@example.invalid',kycStatus:'NOT_STARTED',isAdmin:true,role:'ADMIN'}));
+app.get('/api/v1/me', (_q,r)=>r.json({id:'qa',displayName:'QA',email:'qa@example.invalid',kycStatus:'NOT_STARTED',isAdmin,role:isAdmin?'ADMIN':'USER'}));
 app.get('/api/v1/futures/config',(_q,r)=>r.json({symbols:PAIRS,minLeverage:1,maxLeverage:100,leverageStep:1,fundingIntervalHours:8,highLeverageWarningThreshold:25,leverageTiers:[{notionalCap:null,maxLeverage:100,maintenanceMarginRate:0.005,maintenanceAmount:0}]}));
 app.get('/api/v1/market/universe',(_q,r)=>r.json({available:true,value:{instruments:PAIRS.map(p=>({symbol:p,providerSymbol:p.replace('/',''),marketType:'linear_perpetual',baseAsset:p.split('/')[0],quoteAsset:'USDT',settleAsset:'USDT',status:'Trading',fundingIntervalMinutes:480}))}}));
 app.get('/api/v1/market/external/tickers',(_q,r)=>r.json({tickers:PAIRS.map(p=>({pair:p,lastPrice:84890.1,high24h:85954.6,low24h:83535,changePercent:1.25,quoteVolume24h:3.19e9,volume24h:15000}))}));
@@ -60,4 +60,81 @@ app.get('*',(_q,r)=>r.sendFile(path.join(dist,'index.html')));
 
 
 
-(async()=>{const server=app.listen(0,'127.0.0.1');await once(server,'listening');const origin='http://127.0.0.1:'+server.address().port;const browser=await chromium.launch({headless:true});const rows=[];try{for(const width of [1440,390]){const ctx=await browser.newContext({viewport:{width,height:1000},locale:'ru-RU'});await ctx.addInitScript(()=>{localStorage.setItem('exchange_token','fixture');localStorage.setItem('exchange_lang','ru');});await ctx.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());const page=await ctx.newPage();const errors=[];page.on('console',m=>{if(m.type()==='error')console.error(m.text())});page.on('pageerror',e=>{errors.push(String(e));console.error(String(e))});await page.goto(origin+'/trade?pair=VTA%2FUSDT');if(width<900)await page.locator('#mobile-trade-trade').click();const button=page.getByRole('button',{name:'Продать VTA',exact:true});await button.waitFor();if(await button.isEnabled())throw Error('prelisting sale enabled');simNow=VOLTORA.listingAt+60000;await page.reload();if(width<900)await page.locator('#mobile-trade-trade').click();await page.getByLabel('Количество VTA',{exact:true}).fill('100');await page.waitForTimeout(500);if(!await button.isEnabled())throw Error('live sale disabled');const estimate=await page.locator('.vta-demo-balance').allTextContents();await page.screenshot({path:OUT+'/vta-form-'+width+'.png',fullPage:true});loseResponse=true;await button.click();await page.getByRole('button',{name:'Проверить продажу'}).waitFor();await page.getByRole('button',{name:'Проверить продажу'}).click();await page.getByRole('status').filter({hasText:'Продано'}).waitFor();if(keys.size!==rows.length+1)throw Error('duplicate sale');await page.reload();if(width<900)await page.locator('#mobile-trade-trade').click();await page.locator('.vta-demo-spot details summary').waitFor();await page.goto(origin+'/wallet');await page.waitForTimeout(1000);await page.screenshot({path:OUT+'/wallet-debug.png'});await page.getByRole('button',{name:'Финансирование',exact:true}).click();await page.locator('.vta-demo-wallet').waitFor();await page.screenshot({path:OUT+'/vta-wallet-'+width+'.png',fullPage:true});const over=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);if(over>1||errors.length)throw Error(JSON.stringify({over,errors}));rows.push({width,prelisting:'blocked',autoEstimate:estimate,retry:'one fill',reload:'persisted',wallet:await page.locator('.vta-demo-wallet').innerText(),errors,over});simNow=VOLTORA.listingAt-1000;await ctx.close();}}finally{fs.writeFileSync(OUT+'/vta-browser.json',JSON.stringify({rows,saleRequests,uniqueSales:keys.size},null,2));await browser.close();server.close();}console.log(JSON.stringify({rows,saleRequests,uniqueSales:keys.size}));})().catch(e=>{console.error(e);process.exitCode=1;});
+
+(async () => {
+ const server=app.listen(0,'127.0.0.1'); await once(server,'listening');
+ const origin='http://127.0.0.1:'+server.address().port;
+ const browser=await chromium.launch({headless:true}); const rows=[];
+ try { for(const width of [1440,390]) {
+  const ctx=await browser.newContext({viewport:{width,height:1000},locale:'ru-RU'});
+  await ctx.addInitScript(()=>{localStorage.setItem('exchange_token','fixture');localStorage.setItem('exchange_lang','ru');});
+  await ctx.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
+  const page=await ctx.newPage(), errors=[];
+  page.on('pageerror',e=>errors.push(String(e)));
+  await page.goto(origin+'/trade?pair=VTA%2FUSDT');
+  if(width<900)await page.locator('#mobile-trade-trade').click();
+  const form=page.locator('.order-form-area');
+  const button=form.locator('button[type="submit"]');
+  const quantity=form.locator('input[type="number"][aria-label="Количество"]');
+  await button.waitFor();
+  if(await button.isEnabled())throw Error('prelisting sale enabled');
+  if(await page.locator('.vta-demo-spot').count())throw Error('custom panel returned');
+  simNow=VOLTORA.listingAt+60000; await page.reload();
+  if(width<900)await page.locator('#mobile-trade-trade').click();
+  await page.waitForFunction(()=>document.querySelector('.order-form-area .amount')?.textContent.includes('VTA') && document.querySelector('.order-form-area .amount')?.textContent.includes('4545'));
+  await form.getByRole('button',{name:'100%',exact:true}).click();
+  if(await quantity.inputValue()!==available)throw Error('100% lost decimal precision');
+  await quantity.fill('100');
+  await page.waitForFunction(()=>Number(document.querySelector('.order-form-area input[aria-label="Итого"]')?.value)>0);
+  const estimate=await form.getByLabel('Итого',{exact:true}).inputValue();
+  if(Math.abs(Number(estimate)-Number(publicTestAsset(VOLTORA,simNow).state.lastPrice)*100)>0.011)throw Error('incorrect estimate');
+  if(await form.getByRole('button',{name:'Купить',exact:true}).isEnabled())throw Error('unsupported buy enabled');
+  if(await form.getByRole('button',{name:'Лимит',exact:true}).isEnabled())throw Error('unsupported limit enabled');
+  await page.screenshot({path:OUT+'/vta-form-'+width+'.png',fullPage:true});
+  loseResponse=true; await button.click();
+  await form.getByRole('alert').waitFor();
+  if(await quantity.isEnabled())throw Error('uncertain sale quantity editable');
+  await button.click();
+  await page.waitForFunction(()=>document.querySelector('.order-form-area input[type="number"][aria-label="Количество"]')?.value==='');
+  if(keys.size!==rows.length+1)throw Error('duplicate sale');
+  await page.reload();
+  if(width<900)await page.locator('#mobile-trade-account').click();
+  await page.locator('#spot-tab-orderHistory').click();
+  await page.getByRole('cell',{name:'VTA/USDT',exact:true}).first().waitFor();
+  await page.locator('#spot-tab-assets').click();
+  await page.getByRole('cell',{name:'VTA',exact:true}).waitFor();
+  await page.goto(origin+'/wallet');
+  await page.getByRole('button',{name:'Финансирование',exact:true}).click();
+  const asset=page.locator('.wallet-funding-row[data-asset="VTA"]'); await asset.waitFor();
+  if(await page.locator('.vta-demo-wallet').count())throw Error('custom wallet card returned');
+  const wallet=await asset.innerText();
+  await page.screenshot({path:OUT+'/vta-wallet-'+width+'.png',fullPage:true});
+  const over=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
+  if(over>1||errors.length)throw Error(JSON.stringify({over,errors}));
+  rows.push({width,prelisting:'blocked',autoEstimate:estimate,retry:'one fill',reload:'standard history and assets persisted',wallet,errors,over});
+  simNow=VOLTORA.listingAt-1000; await ctx.close();
+ }
+ const ctx=await browser.newContext({viewport:{width:1440,height:1000}});
+ await ctx.addInitScript(()=>{localStorage.setItem('exchange_token','fixture');localStorage.setItem('exchange_lang','ru');});
+ await ctx.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
+ const page=await ctx.newPage(); const before=privateReads;
+ await page.goto(origin+'/trade?pair=BTC%2FUSDT');
+ await page.locator('.order-form-area .order-type-tabs').waitFor();
+ for(const label of ['Купить','Лимит','Рынок','Стоп','Тейк-профит','OCO']) {
+  if(!await page.locator('.order-form-area').getByRole('button',{name:label,exact:true}).first().isEnabled())throw Error('ordinary Spot disabled '+label);
+ }
+ if(privateReads!==before)throw Error('ordinary Spot read private ledger');
+ isAdmin=false; simNow=VOLTORA.listingAt+60000;
+ await page.goto(origin+'/trade?pair=VTA%2FUSDT');
+ await page.locator('.order-form-area button[type="submit"]').waitFor();
+ await page.waitForTimeout(400);
+ if(await page.locator('.order-form-area button[type="submit"]').isEnabled())throw Error('non-admin private sale enabled');
+ if(privateReads!==before)throw Error('non-admin private read');
+ rows.push({ordinarySpot:'all controls enabled, zero private reads',nonAdmin:'blocked, zero private reads'});
+ await ctx.close();
+ } finally {
+  fs.writeFileSync(OUT+'/vta-browser.json',JSON.stringify({rows,saleRequests,uniqueSales:keys.size},null,2));
+  await browser.close(); server.close();
+ }
+ console.log(JSON.stringify({rows,saleRequests,uniqueSales:keys.size}));
+})().catch(e=>{console.error(e);process.exitCode=1;});

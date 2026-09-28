@@ -164,10 +164,11 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
     expect(panels).toContain('tradingView={false}');
     expect(panels).not.toMatch(/api\.|placeOrder|fetch\(/);
   });
-  test('Buy and Sell answer that the asset is not trading yet and send nothing', () => {
+  test('prelisting and non-admin orders remain blocked; only the private live sale is admitted', () => {
     const submit = form.slice(form.indexOf('async function handleSubmit'), form.indexOf('api.placeOcoOrder'));
     expect(submit).toContain("if (notTradingYet) {\n      const message = t('trade.assetNotTradingYet');\n      setError(message);\n      toast.error(message);\n      return;\n    }");
-    expect(form).toContain('const notTradingYet = isTestMarketPair(pair);');
+    expect(form).toContain('const notTradingYet = isTestMarketPair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;');
+    expect(form).toContain('await api.sellVtaDemo(vtaPending.current.requestId, vtaPending.current.quantity)');
     expect(form).toContain('noValidate={notTradingYet}');
   });
   test('no technical wording on the listing card or the Markets row', () => {

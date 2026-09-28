@@ -110,16 +110,14 @@ function testAssets(now) {
       assert.doesNotMatch(await page.locator('body').innerText(), TECHNICAL, `technical wording on the page @${width}`);
       await page.screenshot({ path: path.join(out, `voltora-${width}-chart.png`) });
 
-      // Buy, then Sell: an amount and a click answer with the refusal.
+      // The standard form stays visible; the public prelisting controls
+      // cannot submit a sale or route the private asset to real matching.
       if (mobile) await page.locator('#mobile-trade-trade').click();
       const form = page.locator('.order-form-area');
-      for (const side of ['Купить', 'Продать']) {
-        await form.locator('.order-form-tab', { hasText: side }).click();
-        await form.getByLabel('Количество', { exact: true }).first().fill('100');
-        await form.locator('button[type="submit"]').scrollIntoViewIfNeeded();
-        await form.locator('button[type="submit"]').click();
-        await form.getByRole('alert').filter({ hasText: REFUSAL }).waitFor({ state: 'visible', timeout: 5000 });
-      }
+      assert.equal(await form.locator('.order-form-tab.buy').isEnabled(), false);
+      assert.equal(await form.locator('button[type="submit"]').isEnabled(), false);
+      await form.getByLabel('Количество', { exact: true }).first().fill('100');
+      assert.equal(await form.locator('button[type="submit"]').isEnabled(), false);
       assert.equal(writes, 0, `unexpected write requests @${width}`);
 
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

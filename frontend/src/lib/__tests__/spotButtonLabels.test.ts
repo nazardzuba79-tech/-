@@ -38,6 +38,7 @@ const t = (lang: (typeof LOCALES)[number]) => (key: string, params?: Record<stri
 // side and the dictionary, and on nothing else.
 const stubs = (lang: (typeof LOCALES)[number]) => ({
   '../lib/api': { api: {} },
+  '../lib/useVtaSpotAccount': { useVtaSpotAccount: () => ({ snapshot: null, failed: false, loading: false }) },
   // The real display boundary, not a stub: the form's failure text is
   // composed there now, and a stub would let the two drift apart.
   '../lib/customerError': { customerErrorText },
