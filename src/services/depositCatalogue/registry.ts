@@ -15,6 +15,7 @@ const definitions: [string, string, string, string, string, boolean?][] = [
   ['usd-coin', 'USDC', 'solana', 'Solana', 'SPL'],
   ['binancecoin', 'BNB', 'bsc', 'BNB Smart Chain', 'Native'],
   ['solana', 'SOL', 'solana', 'Solana', 'Native'],
+  ['polygon-ecosystem-token', 'POL', 'polygon', 'Polygon', 'Native'],
   ['ripple', 'XRP', 'xrp', 'XRP Ledger', 'Native', true],
   ['dogecoin', 'DOGE', 'dogecoin', 'Dogecoin', 'Native'],
   ['cardano', 'ADA', 'cardano', 'Cardano', 'Native'],
@@ -49,7 +50,7 @@ export const railKey = (rail: Pick<RailDefinition, 'assetId' | 'networkId'>) => 
  * Operations must independently verify the destination before enabling it. */
 export function validAddress(network: string, address: string): boolean {
   if (address.length > 256 || !address || /[\s<>"'`\\]/.test(address)) return false;
-  if (['ethereum', 'bsc', 'avalanche', 'hyperevm'].includes(network)) return isAddress(address);
+  if (['ethereum', 'bsc', 'polygon', 'avalanche', 'hyperevm'].includes(network)) return isAddress(address);
   const patterns: Record<string, RegExp> = {
     bitcoin: /^(?:bc1[ac-hj-np-z02-9]{11,71}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/,
     tron: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
