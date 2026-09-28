@@ -127,6 +127,7 @@ including stablecoins; it does not make the explicit rail registry a ranking.
 Saved destinations outside the top 20 remain in “Другие сохранённые”, including
 disabled addresses. A newly ranked unmapped asset is visible as unconfigured
 and cannot accept an address until its network is explicitly reviewed/mapped.
+Polygon POL is registered explicitly as `polygon-ecosystem-token` on the native `polygon` rail; its EVM address format is validated independently from Ethereum/BSC and is not inferred from the shared 0x address value.
 Wrapped/staked assets are separate stable identities. Rank-provider failure
 retains saved destinations and offers the explicit registry without fake ranks.
 
