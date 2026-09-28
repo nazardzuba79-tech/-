@@ -1,0 +1,54 @@
+name: Mobile clients isolated review
+on:
+  push:
+    branches: [codex/mobile-clients-review]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/src/mobile-review/**'
+      - 'frontend/mobile-review/**'
+      - 'frontend/mobile-review.html'
+      - 'frontend/vite.mobile-review.config.ts'
+      - 'src/auth/telegramInitData.ts'
+      - 'src/auth/__tests__/telegramInitData.test.ts'
+      - 'scripts/*mobile*'
+      - '.github/workflows/**'
+permissions:
+  contents: read
+concurrency:
+  group: mobile-review-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  fixtures-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: node scripts/mobile-review-ci-safety.cjs
+      - run: node scripts/mobile-review-checks.cjs
+      - name: Frontend typecheck and normal bundle isolation
+        run: npm run build --prefix frontend
+      - name: Isolated mobile bundle
+        working-directory: frontend
+        run: node node_modules/vite/bin/vite.js build --config vite.mobile-review.config.ts
+      - name: Disposable browser tooling
+        run: |
+          npm install --prefix /tmp/mobile-review-tools --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/mobile-review-tools/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Local browser fixtures and offline checks
+        env:
+          MOBILE_REVIEW_PLAYWRIGHT: /tmp/mobile-review-tools/node_modules/playwright
+        run: node scripts/qa-mobile-review.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-review-evidence
+          path: output/mobile-review/
+          retention-days: 7

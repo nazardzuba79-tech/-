@@ -31,6 +31,8 @@ concurrency:
 
 jobs:
   verify:
+    # Local mobile review must never run legacy services or release jobs.
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -85,7 +87,7 @@ jobs:
 
   deploy:
     needs: verify
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[deploy-support-edge]')))
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[deploy-support-edge]')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:

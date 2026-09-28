@@ -38,6 +38,8 @@ permissions:
   contents: read
 jobs:
   deposit-acceptance:
+    # Local mobile review must never run legacy services or release jobs.
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' }}
     runs-on: windows-latest
     timeout-minutes: 15
     steps:

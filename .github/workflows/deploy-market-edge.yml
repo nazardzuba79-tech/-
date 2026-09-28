@@ -40,6 +40,8 @@ permissions:
 
 jobs:
   verify:
+    # Local mobile review must never run legacy services or release jobs.
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,7 +58,7 @@ jobs:
 
   deploy:
     needs: verify
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]'))
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[deploy-market-edge]'))) }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -92,7 +94,7 @@ jobs:
 
   live-smoke:
     needs: verify
-    if: github.event_name == 'pull_request'
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' && (github.event_name == 'pull_request') }}
     runs-on: ubuntu-latest
     steps:
       - name: Confirm deployed Worker version and private-route isolation

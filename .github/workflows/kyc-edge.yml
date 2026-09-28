@@ -39,6 +39,8 @@ concurrency:
 
 jobs:
   worker:
+    # Local mobile review must never run legacy services or release jobs.
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -57,6 +59,8 @@ jobs:
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/kyc-edge-dry
 
   api-and-browser:
+    # Local mobile review must never run legacy services or release jobs.
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:

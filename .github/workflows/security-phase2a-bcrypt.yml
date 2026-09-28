@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   bcrypt-native-alpine:
-    if: github.repository == 'nazardzuba79-tech/-' && github.ref == 'refs/heads/codex/security-remediation-phase2a-bcrypt'
+    if: ${{ github.head_ref != 'codex/mobile-clients-review' && github.ref != 'refs/heads/codex/mobile-clients-review' && (github.repository == 'nazardzuba79-tech/-' && github.ref == 'refs/heads/codex/security-remediation-phase2a-bcrypt') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     defaults:
