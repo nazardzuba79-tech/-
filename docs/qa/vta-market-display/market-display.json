@@ -1,0 +1,308 @@
+[
+  {
+    "width": 1440,
+    "levels": {
+      "bids": [
+        {
+          "price": 0.01019,
+          "quantity": 7235.58709371,
+          "depth": "scaleX(0.0176409)"
+        },
+        {
+          "price": 0.0101879,
+          "quantity": 10633.20702383,
+          "depth": "scaleX(0.0435654)"
+        },
+        {
+          "price": 0.0101859,
+          "quantity": 12513.84369076,
+          "depth": "scaleX(0.074075)"
+        },
+        {
+          "price": 0.0101838,
+          "quantity": 17455.27204486,
+          "depth": "scaleX(0.116632)"
+        },
+        {
+          "price": 0.0101818,
+          "quantity": 19986.53370836,
+          "depth": "scaleX(0.165361)"
+        },
+        {
+          "price": 0.0101798,
+          "quantity": 25252.52859287,
+          "depth": "scaleX(0.226928)"
+        },
+        {
+          "price": 0.0101777,
+          "quantity": 22294.03204181,
+          "depth": "scaleX(0.281282)"
+        },
+        {
+          "price": 0.0101757,
+          "quantity": 26362.30946911,
+          "depth": "scaleX(0.345556)"
+        },
+        {
+          "price": 0.0101737,
+          "quantity": 24620.43322933,
+          "depth": "scaleX(0.405582)"
+        },
+        {
+          "price": 0.0101716,
+          "quantity": 33967.04592957,
+          "depth": "scaleX(0.488396)"
+        },
+        {
+          "price": 0.0101696,
+          "quantity": 38449.05231698,
+          "depth": "scaleX(0.582137)"
+        },
+        {
+          "price": 0.0101675,
+          "quantity": 41585.87039396,
+          "depth": "scaleX(0.683527)"
+        },
+        {
+          "price": 0.0101655,
+          "quantity": 48165.9960133,
+          "depth": "scaleX(0.800959)"
+        },
+        {
+          "price": 0.0101635,
+          "quantity": 43191.41770206,
+          "depth": "scaleX(0.906262)"
+        },
+        {
+          "price": 0.0101614,
+          "quantity": 38447.49663841,
+          "depth": "scaleX(1)"
+        }
+      ],
+      "asks": [
+        {
+          "price": 0.0101941,
+          "quantity": 9145.38894261,
+          "depth": "scaleX(0.0222971)"
+        },
+        {
+          "price": 0.0101962,
+          "quantity": 8968.44549573,
+          "depth": "scaleX(0.0441628)"
+        },
+        {
+          "price": 0.0101982,
+          "quantity": 11440.01213162,
+          "depth": "scaleX(0.0720543)"
+        },
+        {
+          "price": 0.0102002,
+          "quantity": 15625.49011143,
+          "depth": "scaleX(0.11015)"
+        },
+        {
+          "price": 0.0102023,
+          "quantity": 17539.16108792,
+          "depth": "scaleX(0.152912)"
+        },
+        {
+          "price": 0.0102043,
+          "quantity": 17940.54463154,
+          "depth": "scaleX(0.196652)"
+        },
+        {
+          "price": 0.0102064,
+          "quantity": 28173.84896228,
+          "depth": "scaleX(0.265342)"
+        },
+        {
+          "price": 0.0102084,
+          "quantity": 26849.18103261,
+          "depth": "scaleX(0.330802)"
+        },
+        {
+          "price": 0.0102104,
+          "quantity": 28603.23021227,
+          "depth": "scaleX(0.400539)"
+        },
+        {
+          "price": 0.0102125,
+          "quantity": 38956.90345049,
+          "depth": "scaleX(0.495519)"
+        },
+        {
+          "price": 0.0102145,
+          "quantity": 30671.04825118,
+          "depth": "scaleX(0.570297)"
+        },
+        {
+          "price": 0.0102166,
+          "quantity": 32363.19048294,
+          "depth": "scaleX(0.6492)"
+        },
+        {
+          "price": 0.0102186,
+          "quantity": 39060.67958379,
+          "depth": "scaleX(0.744433)"
+        },
+        {
+          "price": 0.0102206,
+          "quantity": 46045.14894965,
+          "depth": "scaleX(0.856694)"
+        },
+        {
+          "price": 0.0102227,
+          "quantity": 50286.92713705,
+          "depth": "scaleX(0.979297)"
+        }
+      ],
+      "spread": "Спред 0.0000040762 (0.040%)"
+    },
+    "tapeCount": 6,
+    "externalVta": [],
+    "errors": [],
+    "reads": 3,
+    "transition": "same document; timer to chart, ticker, book and form; server fixture clock only",
+    "copy": "trade/markets/wallet before and after PASS",
+    "percentageBackground": "transparent at all five steps",
+    "overflow": 0
+  },
+  {
+    "width": 390,
+    "levels": {
+      "bids": [
+        {
+          "price": 0.01019,
+          "quantity": 7235.58709371,
+          "depth": "scaleX(0.0258086)"
+        },
+        {
+          "price": 0.0101879,
+          "quantity": 10633.20702383,
+          "depth": "scaleX(0.0637362)"
+        },
+        {
+          "price": 0.0101859,
+          "quantity": 12513.84369076,
+          "depth": "scaleX(0.108372)"
+        },
+        {
+          "price": 0.0101838,
+          "quantity": 17455.27204486,
+          "depth": "scaleX(0.170633)"
+        },
+        {
+          "price": 0.0101818,
+          "quantity": 19986.53370836,
+          "depth": "scaleX(0.241923)"
+        },
+        {
+          "price": 0.0101798,
+          "quantity": 25252.52859287,
+          "depth": "scaleX(0.331996)"
+        },
+        {
+          "price": 0.0101777,
+          "quantity": 22294.03204181,
+          "depth": "scaleX(0.411517)"
+        },
+        {
+          "price": 0.0101757,
+          "quantity": 26362.30946911,
+          "depth": "scaleX(0.505548)"
+        },
+        {
+          "price": 0.0101737,
+          "quantity": 24620.43322933,
+          "depth": "scaleX(0.593367)"
+        },
+        {
+          "price": 0.0101716,
+          "quantity": 33967.04592957,
+          "depth": "scaleX(0.714524)"
+        },
+        {
+          "price": 0.0101696,
+          "quantity": 38449.05231698,
+          "depth": "scaleX(0.851667)"
+        },
+        {
+          "price": 0.0101675,
+          "quantity": 41585.87039396,
+          "depth": "scaleX(1)"
+        }
+      ],
+      "asks": [
+        {
+          "price": 0.0101941,
+          "quantity": 9145.38894261,
+          "depth": "scaleX(0.0326207)"
+        },
+        {
+          "price": 0.0101962,
+          "quantity": 8968.44549573,
+          "depth": "scaleX(0.0646102)"
+        },
+        {
+          "price": 0.0101982,
+          "quantity": 11440.01213162,
+          "depth": "scaleX(0.105416)"
+        },
+        {
+          "price": 0.0102002,
+          "quantity": 15625.49011143,
+          "depth": "scaleX(0.16115)"
+        },
+        {
+          "price": 0.0102023,
+          "quantity": 17539.16108792,
+          "depth": "scaleX(0.22371)"
+        },
+        {
+          "price": 0.0102043,
+          "quantity": 17940.54463154,
+          "depth": "scaleX(0.287703)"
+        },
+        {
+          "price": 0.0102064,
+          "quantity": 28173.84896228,
+          "depth": "scaleX(0.388196)"
+        },
+        {
+          "price": 0.0102084,
+          "quantity": 26849.18103261,
+          "depth": "scaleX(0.483964)"
+        },
+        {
+          "price": 0.0102104,
+          "quantity": 28603.23021227,
+          "depth": "scaleX(0.585989)"
+        },
+        {
+          "price": 0.0102125,
+          "quantity": 38956.90345049,
+          "depth": "scaleX(0.724944)"
+        },
+        {
+          "price": 0.0102145,
+          "quantity": 30671.04825118,
+          "depth": "scaleX(0.834345)"
+        },
+        {
+          "price": 0.0102166,
+          "quantity": 32363.19048294,
+          "depth": "scaleX(0.949781)"
+        }
+      ],
+      "spread": "Спред 0.0000040762 (0.040%)"
+    },
+    "tapeCount": 6,
+    "externalVta": [],
+    "errors": [],
+    "reads": 3,
+    "transition": "same document; timer to chart, ticker, book and form; server fixture clock only",
+    "copy": "trade/markets/wallet before and after PASS",
+    "percentageBackground": "transparent at all five steps",
+    "overflow": 0
+  }
+]
