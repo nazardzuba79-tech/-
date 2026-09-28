@@ -78,9 +78,9 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     // concurrently needs a third more live heap (128 MB instead of < 96 MB,
     // measured) inside a container whose memory is shared with the market
     // collector. Identities are a small read and still run alongside.
-    const nazarSection = service.get('nazar').then(summarizeStrategy).then(redactTradeHistory);
+    const nazarSection = service.getMarketplace('nazar').then(summarizeStrategy).then(redactTradeHistory);
     const kseniaSection = nazarSection.catch(() => undefined)
-      .then(() => service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade)
+      .then(() => service.getMarketplace('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade)
         .then(withKseniaReportedWeek).then(redactTradeHistory));
     const results = await Promise.allSettled([
       nazarSection,
@@ -100,6 +100,15 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     logSections(requestId, results, Date.now() - startedAt);
     res.status(results.every(result => result.status === 'rejected') ? 503 : 200)
       .json({ nazar, ksenia, identities, generatedAt: new Date().toISOString(), errors });
+    // First paint never waits for the once-per-day canonical append. Advance
+    // the two large histories only after the response has left, sequentially
+    // to preserve the production memory bound. The next refresh receives the
+    // new UTC-day snapshot; until then the confirmed previous snapshot is
+    // real data and the client can mark it stale instead of showing a loader.
+    void service.warmMarketplace().catch(error => {
+      console.error('[copy-trading] background marketplace warmup unavailable: '
+        + (error instanceof Error ? error.message : 'unknown'));
+    });
   });
   for (const strategy of ['nazar', 'ksenia'] as const) {
     router.get(`/copy-trading/${strategy}`, requireAuth(prisma), async (_req, res) => {
