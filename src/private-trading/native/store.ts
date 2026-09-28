@@ -9,6 +9,7 @@ import { NativeCheckpoint, NativeInstruction } from './replay';
 import { CollateralHolding } from './collateral';
 import { deriveNativeLiveProjection, projectionDigest, verifiedProjection, type NativeLiveProjection } from './liveProjection';
 import { nativeHistoryPage, type HistoryQuery } from './historyPage';
+import { isTestAssetPrivateLedgerAsset } from '../../services/testMarkets/testAssetConfig';
 
 export interface NativeAccount {
   executionMode?:'LIVE_EXECUTION'|'HISTORICAL_DEMO';
@@ -80,6 +81,8 @@ const forward=(stored:NativeAccount):NativeAccount=>{
   };
 };
 export const commandHash=(v:unknown):string=>createHash('sha256').update(JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x)).digest('hex');
+/** Test-market private balances are a separate sandbox, never native Futures collateral. */
+export const nativeCollateralRows=<T extends {asset:string}>(rows:T[]):T[]=>rows.filter(row=>!isTestAssetPrivateLedgerAsset(row.asset));
 export interface NativeRepository {
   /** Repositories using the same DB client share scheduling, never financial state. */
   readonly commandLaneScope?: object;
@@ -195,11 +198,12 @@ export class PrismaNativeRepository implements NativeRepository {
   }
   async commandContext(actor:OwnerSession,key:string,hash:string){
     await this.owner(this.db,actor);
-    const [prior,row,holdings]=await Promise.all([
+    const [prior,row,allHoldings]=await Promise.all([
       this.db.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId:actor.userId,requestKey:key}}}),
       this.commandRow(actor.userId),
       this.db.demoBalance.findMany({where:{userId:actor.userId},orderBy:{asset:'asc'}}),
     ]);
+    const holdings=nativeCollateralRows(allHoldings);
     await this.owner(this.db,actor);
     if(prior&&prior.requestHash!==hash)throw new PrivateTradingError('idempotency_conflict','Запрос с этим ключом уже содержит другие параметры',409);
     return{prior:prior?forward(prior.payload as unknown as NativeAccount):null,row,
@@ -209,10 +213,10 @@ export class PrismaNativeRepository implements NativeRepository {
   async available(actor:OwnerSession){await this.owner(this.db,actor);const b=await this.db.demoBalance.findUnique({where:{userId_asset:{userId:actor.userId,asset:'USDT'}}});await this.owner(this.db,actor);return b?b.available.toString():null;}
   async holdings(actor:OwnerSession){
     await this.owner(this.db,actor);
-    const rows=await this.db.demoBalance.findMany({where:{userId:actor.userId},orderBy:{asset:'asc'}});
+    const rows=nativeCollateralRows(await this.db.demoBalance.findMany({where:{userId:actor.userId},orderBy:{asset:'asc'}}));
     await this.owner(this.db,actor);
-    // Both columns travel: locked quantity still backs this account and
-    // leaving it out would understate the collateral.
+    // Both columns travel for native-wallet assets. Test-market private
+    // inventory/proceeds are deliberately outside this account entirely.
     return rows.map(r=>({asset:r.asset,available:r.available.toString(),locked:r.locked.toString()}));
   }
   async revision(actor:OwnerSession,revision:number){await this.owner(this.db,actor);const row=await this.db.nativeDemoRevision.findUnique({where:{userId_revision:{userId:actor.userId,revision}}});await this.owner(this.db,actor);return row?forward(row.payload as unknown as NativeAccount):null;}
