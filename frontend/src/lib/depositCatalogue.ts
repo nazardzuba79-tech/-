@@ -19,7 +19,9 @@ async function catalogueRequest<T>(path: string, options: RequestInit = {}, admi
     ...(admin ? { Authorization: `Bearer ${getToken() ?? ''}` } : {}), ...options.headers,
   } });
   if (!response.ok) throw new Error(response.status === 409 ? 'Конфигурация изменилась. Обновите список перед сохранением.'
-    : response.status === 503 ? 'Хранилище адресов недоступно. Изменения не сохранены.' : 'Не удалось выполнить запрос.');
+    : response.status === 503 ? (options.method === 'PUT'
+      ? 'Не удалось подтвердить сохранение. Обновите список перед повторной попыткой.'
+      : 'Хранилище адресов недоступно.') : 'Не удалось выполнить запрос.');
   return response.json();
 }
 export const getAdminCatalogue = (refresh = false) => catalogueRequest<AdminCatalogue>(`/admin/deposit-catalogue${refresh ? '?refresh=true' : ''}`, {}, true);

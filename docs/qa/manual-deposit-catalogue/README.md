@@ -89,3 +89,13 @@ CI integration follow-up: preserved the existing locale-byte digests while expli
 validating the one added neutral key, included the new shared client in Copy Trading
 workflow triggers, and set the legacy-mode flag in the old admin test loader. No
 runtime code changed in this follow-up; the existing browser evidence remains valid.
+
+## Persistent Worker follow-up (PR #318)
+
+- Existing regressions: 147 PASS / 9 suites in the final complete run (local jsdom resolver path corrected).
+- Actual workerd + SQLite DO: 15 PASS, including full runtime restart, 12-way CAS (1 commit / 11 conflicts), two backend instances, uncertain commit recovery, shared inflight and TTL.
+- Read-only baseline exporter: 5 PASS. Total targeted: 167 PASS / 0 FAIL.
+- Backend build, frontend TypeScript and Wrangler staging dry-run: PASS.
+- No visual/layout changes; existing approved screenshots retained. Follow-up changes only persistence and truthful uncertain-save error copy. CI repeats the existing browser scenarios.
+- Actual production baseline: 4 rails / 3 networks, captured read-only from authenticated legacy admin DOM; BSC/Solana/TON unconfigured. Local file: `output/deposit-catalogue-baseline/production-baseline-review-20260928.json`. Not committed, seeded or activated; owner review pending.
+- Worker prepared only, not deployed; feature flag remains off by default. See runbook for exact names and separate activation gates.

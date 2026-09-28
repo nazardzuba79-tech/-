@@ -157,11 +157,13 @@ describe('manual receiving-address catalogue', () => {
     await request(s.app).get(publicPath); expect(s.store.writes).toBe(0); expect(s.forbidden).not.toHaveBeenCalled();
   });
   test('new catalogue has no financial dependencies, polling, jobs or migrations', () => {
-    for (const file of ['registry.ts', 'service.ts', 'store.ts']) {
+    for (const file of ['registry.ts', 'schema.ts', 'service.ts', 'store.ts']) {
       const source = readFileSync(`src/services/depositCatalogue/${file}`, 'utf8');
       expect(source).not.toMatch(/from ['"].*(?:prisma|DepositService|Watch|WalletService)|setInterval|setTimeout\(/);
     }
     const changes = execFileSync('git', ['diff', '--name-only', 'origin/main'], { encoding: 'utf8' }).split('\n');
-    expect(changes.filter(f => /^(prisma\/|workers\/|.*(?:Scheduler|Watcher)\.ts$)/.test(f))).toEqual([]);
+    // This follow-up explicitly adds a standalone catalogue Worker only.
+    expect(changes.filter(f => /^(prisma\/|workers\/|.*(?:Scheduler|Watcher)\.ts$)/.test(f)
+      && !f.startsWith('workers/deposit-catalogue/'))).toEqual([]);
   });
 });

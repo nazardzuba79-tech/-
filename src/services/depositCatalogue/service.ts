@@ -61,6 +61,14 @@ export class DepositCatalogue {
     const overrides = document.overrides.filter(e => railKey(e) !== railKey(parsed.data));
     overrides.push(parsed.data); // Empty/disabled is an explicit tombstone, not fallback to baseline.
     try { return await this.store.replace({ ...document, overrides }, revision); }
+    catch (error) {
+      if (error instanceof CatalogueError && error.status === 409) throw error;
+      // A timeout/invalid response may follow a committed write. Never retry PUT
+      // or report success/failure from that response. Force a fresh read now;
+      // the next UI refresh reads again even if this reconciliation also fails.
+      try { await this.store.read(); } catch { /* Remains explicitly uncertain. */ }
+      throw new CatalogueError(503, 'Save outcome unknown; refresh catalogue before retrying');
+    }
     finally { this.generation++; this.cached = undefined; this.pending = undefined; }
   }
 }

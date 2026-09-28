@@ -16,6 +16,8 @@ on:
       - 'frontend/src/pages/admin/AdminWalletsPage.tsx'
       - 'frontend/src/pages/admin/depositCatalogue.css'
       - 'scripts/qa-deposit-catalogue.cjs'
+      - 'scripts/export-deposit-catalogue-baseline*'
+      - 'workers/deposit-catalogue/**'
       - '.github/workflows/deposit-catalogue.yml'
 permissions:
   contents: read
@@ -44,6 +46,13 @@ jobs:
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
           frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
       - run: npm run build
+      - name: Read-only exporter regression (synthetic only)
+        run: node --test scripts/export-deposit-catalogue-baseline.test.cjs
+      - run: npm ci --prefix workers/deposit-catalogue --no-audit --no-fund
+      - name: Actual workerd / SQLite persistence, CAS and backend cache
+        run: npm test --prefix workers/deposit-catalogue
+      - name: Validate Worker bundle and staging configuration without deploy
+        run: npm run build:check --prefix workers/deposit-catalogue
       - run: npx tsc -b frontend
       - name: Build isolated catalogue preview
         working-directory: frontend

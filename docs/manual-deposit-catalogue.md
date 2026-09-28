@@ -4,46 +4,89 @@ This change is **not activated in production**. Default builds continue to use
 the existing TreasuryWallet-backed Admin and Deposit flows. No production
 addresses, database records, platform settings or deployments were changed.
 
-## Storage prerequisite / intentional stop
+## Persistent storage follow-up — prepared, not deployed
 
-Inspection of the four existing `workers/*/wrangler.toml` files found no KV,
-Durable Object, R2 or D1 persistence binding. The market-edge configuration
-explicitly states “No KV / DO / R2 yet.” The email workers have service/email
-bindings and rate limiters, not a suitable persistent configuration store.
-No Cloudflare account inventory connector is available in this session; this
-finding concerns the project's wired configuration, not every resource that
-may exist in the account.
+The original adapter-only stop below is historical. The follow-up to PR #318
+implements `workers/deposit-catalogue` and verifies actual workerd + SQLite
+restart persistence, atomic CAS, authentication, cache and uncertain-write
+recovery. No Cloudflare resources or secrets were provisioned.
 
-Following the owner's fallback instruction, this PR delivers the store
-interface, server-only Cloudflare HTTP adapter and mock-backed tests. It does
-**not** provision or implement/deploy a new storage Worker. Missing storage
-returns 503; it never substitutes temporary files, process memory, localStorage,
-Git commits or PostgreSQL as production persistence.
+| Setting | Exact value |
+| --- | --- |
+| Local Worker | `voltex-deposit-catalogue-local` |
+| Prepared staging Worker | `voltex-deposit-catalogue-staging` |
+| Durable Object class | `ReceivingAddressCatalogueDO` |
+| Binding | `RECEIVING_ADDRESS_CATALOGUE` |
+| Single named object | `voltex-receiving-addresses-v1` |
+| Endpoint | `/receiving-address-catalogue` |
+| Cloudflare secret | `DEPOSIT_CATALOGUE_STORE_TOKEN` (random, at least 32 characters) |
+| Render server env | `DEPOSIT_CATALOGUE_STORE_URL`, `DEPOSIT_CATALOGUE_STORE_TOKEN` |
 
-Minimal proposed follow-up configuration (requires separate authorization):
+The staging namespace belongs to its own Worker. No account ID, production
+environment/route, cron or deployment automation is configured. Default
+workers.dev and previews are disabled. Staging workers.dev requires the secret.
+Origin-bearing requests are rejected; no CORS. Never add a VITE secret.
 
-1. One Cloudflare Worker endpoint, e.g. `/receiving-address-catalogue`, bound to
-   one SQLite-backed Durable Object namespace/class and a single named object
-   `voltex-receiving-addresses-v1`. Use its persistent storage API for one JSON
-   document plus revision. No alarms, cron, queues, blockchain calls or Neon.
-2. A server-to-server bearer secret on both that Worker and the backend.
-   Backend environment keys: `DEPOSIT_CATALOGUE_STORE_URL` (HTTPS endpoint) and
-   `DEPOSIT_CATALOGUE_STORE_TOKEN` (secret, never a VITE variable).
-3. The endpoint contract below, including atomic conditional writes. Plain KV
-   read/modify/write is insufficient for concurrent administrators/instances.
-4. A verified, one-time snapshot of **all currently resolved legacy addresses**
-   in `baseline`, including TreasuryWallet overrides. Do not seed from env alone.
-   Compare every existing asset/network/address with the owner before enabling.
-   This PR contains only synthetic addresses, not an export of production.
-5. Only after verifying persistence, CAS, restart and baseline parity, build
-   with `VITE_MANUAL_DEPOSIT_CATALOGUE=true`. This initial enablement requires a
-   frontend release; subsequent Admin address edits require **no redeploy**.
+A singleton SQLite table stores the canonical JSON and decimal-string revision.
+An unseeded object returns revision `0` and an empty document. `transactionSync`
+performs read/compare/increment/write without an await. No memory/KV fallback.
+Body limit: 256 KiB. The Worker imports the same strict backend schema and rails.
+No alarms, scheduled handlers, blockchain requests or financial dependencies.
 
-Cloudflare documents SQLite-backed Durable Objects on the Workers Free plan:
-<https://developers.cloudflare.com/durable-objects/platform/pricing/>.
-KV is not intended for atomic read-modify-write transactions:
-<https://developers.cloudflare.com/kv/concepts/how-kv-works/>.
-No paid service was created or selected.
+Local verification (no credentials/deployment):
+
+```sh
+npm run build
+npm ci --prefix workers/deposit-catalogue
+npm test --prefix workers/deposit-catalogue
+npm run build:check --prefix workers/deposit-catalogue
+node --test scripts/export-deposit-catalogue-baseline.test.cjs
+```
+
+`build:check` uses `wrangler deploy --dry-run --env staging`: bundle/configuration
+validation only. Deployment, secrets, baseline seeding and feature activation
+each remain separate owner-approved operations.
+
+Sources: [SQLite storage / transactionSync](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/),
+[DO migrations](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/).
+
+### Read-only baseline exporter
+
+`scripts/export-deposit-catalogue-baseline.cjs` reads the existing authenticated
+`GET /api/v1/admin/wallets` resolver, which applies overrides over env defaults.
+This one-time legacy read is separate from runtime catalogue persistence.
+Use an existing admin credential only through `VOLTEX_BASELINE_ADMIN_TOKEN` in
+the local process environment; never paste it in command arguments/output and
+never use the Worker secret. The script does not load .env or Prisma:
+
+```sh
+node scripts/export-deposit-catalogue-baseline.cjs --api-base https://BACKEND/api/v1 --out BASELINE-REVIEW.json
+```
+
+Alternatively `--ui-snapshot FILE` converts a complete read-only DOM capture
+from the existing authenticated legacy admin page, avoiding extraction of browser
+credentials. Both modes require all six legacy chains accounted for, reject
+unknown/unmapped rails and duplicates, and preserve addresses verbatim. Unknown
+tokens block export rather than being dropped or mapped to an invented network.
+No remote mutation, output overwrite, Worker seeding or blockchain lookup occurs.
+
+Actual capture: **2026-09-28T16:39:11.917Z**, authenticated
+`https://voltextech.net/admin/wallets` DOM backed by the existing resolver.
+The UI reports **4 rails / 3 networks**: BTC Bitcoin, ETH Ethereum, USDT Ethereum,
+USDT TRON; BSC/Solana/TON explicitly unconfigured. Script-generated local files:
+
+- `output/deposit-catalogue-baseline/production-admin-dom-20260928.json`
+- `output/deposit-catalogue-baseline/production-baseline-review-20260928.json`
+
+These owner-review files are excluded from git/CI artifacts. The review file
+includes provenance, timestamp, canonical document and SHA-256. No secret was
+extracted, no address seeded, and address ownership is not independently verified.
+Refresh and review the snapshot with the owner before activation. No direct
+production SQL or direct authenticated API export was run in this session.
+
+Keep `VITE_MANUAL_DEPOSIT_CATALOGUE` absent/false in production. Implementation
+is ready for review; deployment, reviewed baseline seeding, remote verification
+and feature activation remain pending explicit owner authorization.
 
 ## Adapter contract
 
@@ -68,7 +111,10 @@ an EVM treasury. Stored documents reject duplicate rails and unknown fields.
 
 Server cache: one shared in-flight load, 30-second TTL, public fingerprint/ETag,
 explicit Admin refresh, local invalidation after save (including uncertain
-responses). Other API instances revalidate within the TTL. No stale-on-error
+responses). An uncertain PUT forces one fresh GET without retrying PUT or
+assuming success/failure; the caller must refresh before another save. Even if
+reconciliation also fails, local cache is invalidated. Other API instances
+revalidate within the TTL. No stale-on-error
 fallback after expiry. Browsers fetch once per open, never keep authoritative
 addresses locally and never fetch per asset/network row. An already-open modal
 is a snapshot until reopened; there is intentionally no polling.
