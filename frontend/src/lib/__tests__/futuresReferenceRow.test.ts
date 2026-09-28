@@ -143,9 +143,8 @@ describe('2. the positions row carries the reference columns', () => {
 
   test('unrealized carries ROI under it, and realized is its OWN column', () => {
     expect(PANEL).toContain('futures-position-pnl');
-    // ROI is grouped like every other figure in the row now (`12,009.96%`),
-    // the same `group()` the money columns use, so the guard follows it.
-    expect(PANEL).toMatch(/futures-position-pnl[\s\S]{0,700}group\(roe, 2\)/);
+    // The dedicated cell consumes both authoritative values together.
+    expect(PANEL).toContain('<FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset}>');
     expect(PANEL).toContain('const realized = parseFloat(p.realizedPnl);');
     // The two are NEVER summed: adding them would double-count the fees and
     // funding already inside the realized figure, on a size that is no
@@ -153,18 +152,17 @@ describe('2. the positions row carries the reference columns', () => {
     expect(PANEL).not.toMatch(/realized\s*\+\s*pnl|pnl\s*\+\s*realized/);
   });
 
-  test('P&L presentation names the quote asset and formats positive values like the reference without changing the numeric node', () => {
-    expect(PANEL).toContain('className="futures-position-money"');
-    expect(PANEL).toContain('className="futures-position-roi"');
+  test('P&L presentation carries explicit amount/unit and ROI text; realized keeps its existing formatting', () => {
+    const cell = source('components/FuturesUnrealizedPnl.tsx');
+    expect(cell).toContain('className="futures-position-money"');
+    expect(cell).toContain('className="futures-position-roi"');
     expect(PANEL).toContain('className="futures-position-realized"');
-    expect(PANEL.match(/data-unit=/g)!.length).toBe(2);
+    expect(PANEL.match(/data-unit=/g)!.length).toBe(1);
     expect(ROW_PARITY_CSS).toContain("content: ' ' attr(data-unit);");
-    // No plus sign: the reference prints `2,120.5422 USDT` and `(106.84%)`
-    // for a profit; the colour carries the sign (owner's screenshot, 2026-09-22).
+    // Signs and parentheses must not be synthesized a second time by CSS.
     expect(ROW_PARITY_CSS).not.toContain("content: '(+';");
     expect(ROW_PARITY_CSS).not.toContain("content: '+';");
-    expect(ROW_PARITY_CSS).toContain("content: '(';");
-    expect(ROW_PARITY_CSS).toContain("content: ')';");
+    expect(cell).toContain('`(${percent}%)`');
   });
 
   test('TP/SL, both close methods and the P&L card button', () => {

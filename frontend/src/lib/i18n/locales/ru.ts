@@ -1133,7 +1133,7 @@ export const RU = {
   'futures.colEntry': 'Цена Входа',
   'futures.colMark': 'Цена марк.',
   'futures.colLiq': 'Цена ликвид.',
-  'futures.colUnrealized': 'Нереализованный P&L(ROI)',
+  'futures.colUnrealized': 'Нереализованный P&L (ROI)',
   'futures.colRealized': 'Реализованный P&L',
   'futures.colCloseAs': 'Закрыть как',
   'futures.hintValue': 'Стоимость позиции: количество × цена маркировки',
