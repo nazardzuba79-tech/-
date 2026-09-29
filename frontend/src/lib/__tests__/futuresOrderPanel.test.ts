@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as futuresMath from '../futuresMath';
+import * as decimalInput from '../decimalInput';
 import * as formatNumber from '../formatNumber';
 import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
 
@@ -162,6 +163,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, p?: any) => (p ? `${key}:${JSON.stringify(p)}` : key) }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/futuresMath') return futuresMath;
+    if (name === '../lib/decimalInput') return decimalInput;
     if (name === '../lib/formatNumber') return formatNumber;
     /**
      * The engine seam (PR: original terminal + account/execution adapter).

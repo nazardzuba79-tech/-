@@ -4681,3 +4681,80 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - VTA keeps the legacy generator before fixed `2026-10-01T00:00:00Z`; IMPULSE_TREND begins only at that aligned hour. New managed listings retain the four-profile round-robin from listing time.
 - No production market, balance, allocation, order or Worker was changed by preparation. Final-head CI and staged Render/frontend → market-edge release remain pending.
 
+
+
+## Codex — 2026-09-29 13:46 UTC — VTA varied six-hour impulses and ordinary wicks
+
+- Request: ten different six-hour downside/partial-buyback/upside episodes beginning in the current 13:00 UTC hour, plus modestly larger ordinary candle shadows.
+- Implementation commit SHA: 8742147d750df025d94c372b175065a0b9ae9071; fresh base main 9c746c61370db741db07f45ebc86660b11e86e52. Short-lived branch: codex/vta-six-hour-shock-recovery-20260929.
+- Material files: testAssetConfig.ts, testMarketSimulation.ts, new simulationCycles.ts, new simulationCycles.test.ts, existing realism/simulation regression tests, .github/workflows/test-markets.yml; reproducible scripts/qa-vta-cycles.{mjs,py} and docs/qa/vta-cycles evidence.
+- Behavior: first low 0.60 of hourly open and close 0.80; ten differing drop/buyback/timing/upper-shadow presets every six hours. Recovery rejoins the original end-of-second-hour baseline. All candle intervals, tape and priceAt share canonical ticks. Ordinary tick shadows expand only after the fixed cutoff.
+- Preserved: original completed ticks through 2026-09-29 13:55 UTC, seed/listing, daily anchors including P48/P168, original VTA and NRX golden digests, NRX/managed-listing defaults, private-sale protections, balances, allocations, orders, trades and all unrelated Claude/Codex work. Original October 1 profile contract remains tested in an explicit fixture; live VTA retains aggregate/continuity/no-future/daily-anchor coverage.
+- Evidence actually run: real Jest 98 tests / 4 suites PASS (52.477s); new cycle suite independently 14/14 PASS; separate reviewer 77/77 existing regressions PASS. Actual-generator offline PNG/JSON preview inspected: first low -40%, close -20%, recovery +65.6673%, upper shadow 11%; all ten baseline rejoin differences zero. Mean ordinary 5m shadow length in the 192-candle preview increases 7.67975%; bodies unchanged. This is simulated preview, not browser or production evidence.
+- Release gate / next step: PR final-head CI and Render deployment must finish BEFORE fixed notBefore 2026-09-29 13:55 UTC; retime forward before merge if missed, never backdate. Verify Render /health exact merged SHA and public VTA endpoints. Worker imports shared code for NRX regression but does not directly serve VTA; no Worker configuration change. No production deployment claimed by this entry.
+
+<!-- Historical Claude entry preserved verbatim from PR #339 (cc4fc3d027136cb07e067987480e5fea89c779e6). The completion entry below supersedes its cached volatile-asset estimate. -->
+
+## Claude — 2026-09-29 — Deposit: explicit «Актив» field, network radios, minimum 300 USD, USDT · TRC-20 first
+
+- Base: `main` `9c746c61`. Branch `claude/peaceful-volta-h5zw7g-deposit-asset` (separate PR, owner asked for one). Commit: the one carrying this entry.
+- **Owner asks:**
+  - «Bitcoin ›» was the only (hidden) way to change the asset;
+  - the 300 USD minimum was not visible;
+  - network must be its own control;
+  - follow-up: USDT on TRC-20 first, and a more obvious chevron.
+- **Changes**
+  - `DepositCatalogueDialog.tsx/.css`:
+    - **Актив** field (icon, ticker, name, gold 38 px chevron key). It opens a popover under the field on desktop and a bottom sheet on phones (≤600 px). The menu has search and the active row is marked ✓. A second press, an outside press or Esc closes it; Esc closes only the menu and returns focus to the field.
+    - **Сеть** as on-screen radios with arrow keys (USDT: TRC-20 and ERC-20 side by side); a single network shows a fixed field.
+    - **Минимальное пополнение** block before the address.
+    - The «assets»/«networks» sub-screens are gone.
+  - `lib/depositMinimum.ts`: `DEPOSIT_MINIMUM_USD` / `DEPOSIT_USD_PEGGED` / `DEPOSIT_PRICE_MAX_AGE_MS` and `depositMinimumView`:
+    - pegged assets show `= 300 USDT`;
+    - others show `≈ X` only from a positive price no older than 2 min;
+    - otherwise USD alone.
+  - `lib/depositOrder.ts`: USDT TRC-20 → USDT others → catalogue order. Order only; a Wallet `initialAsset` still wins.
+  - i18n: 5 `deposit.ui.*` keys in 7 locales.
+- **Price source:** `marketDataStore.getState()` read only (no subscribe, no fetch, no timer).
+- **Preserved:** catalogue contents, addresses, memo, Cloudflare direct read and ETag path, `getPublicCatalogue`, legacy (treasury) modal and `useDepositSelection`, deposit/minimum/credit logic on the server, the copy/QR/memo/retry/focus-trap behaviour.
+- **Tests and CI**
+  - New: `depositMinimumRule.test.ts` pins the constants to `src/config/limits.ts`; `depositOrder.test.ts`.
+  - `i18nLanguageChunks` deposit.ui key list extended.
+  - `copy-trading-card-regression.yml` and `deposit-catalogue.yml` cover `depositOrder.ts` and `depositMinimum.ts` and run the new tests.
+  - QA scripts updated for the new controls and default:
+    - `qa-deposit-ui.cjs` gains checks for the menu (open/close/outside/Esc), the USDT · TRC-20 default, «USDT first», the minimum for all 8 assets (above the address), a held-price estimate and a stale-price suppression, the sheet/popover geometry, and 60 px sheet rows. Widths: 1920/1440/430/390/360/320/1440×480.
+    - `qa-deposit-catalogue.cjs` and `-edge.cjs` updated.
+  - Preview harness gets `setPrices`.
+- **Checks actually run (local, synthetic data only):**
+  - frontend `tsc -b` and production build: PASS.
+  - `qa-deposit-ui.cjs`: PASS, 283 checks (including a press on the dimmed area closing only the list). Header and Wallet each: 1 catalogue GET on open, 0 on interactions, 1 on retry, 0 in 60 s idle.
+  - `qa-deposit-catalogue.cjs`: PASS.
+  - `qa-deposit-catalogue-edge.cjs` (real workerd Worker): PASS. 1 anonymous GET, 0 Render calls, no fallback.
+  - Full `npx jest frontend/src`: 141 pass / 20 fail; the failing suites are identical to `main` `9c746c61` run the same way.
+  - Before/after screenshots: `docs/qa/deposit-asset-picker/`.
+- **Not done:** no merge, no deploy, no production data or catalogue change. Minimum-in-asset appears in production only where the page already holds a fresh `ASSET/USDT` price (terminal/markets); on Wallet alone it shows the USD rule.
+
+## Codex — 2026-09-29 15:33 UTC — Complete Futures, Deposit and managed Listings work
+
+- Owner's go-ahead: finish the reviewed Claude/Codex work on current release main; base d2e98bb083d11ba128b72abab7b1618a4b4c1399. Short-lived candidate branch: codex/finish-futures-deposit-listings-20260929.
+- Published implementation objects: e292d965db94bbdef63e87796bb2fce6799de935 (three completion areas) and c1b4ad7a7a324ffa1d347fe073c0fbed2371a364 (tiny header follow-up plus natural simulation wicks). The final evidence/handoff commit follows these. Local capture SHAs in the QA reports identify the reviewed local commits; the published implementation contains the same recorded source trees/fingerprints.
+- Futures: complete the existing fail-closed decimal flow for price, amount and TP/SL, retaining invalid drafts and incomplete trailing dots, localized per-field errors, exact fractional input and canonical programmatic tiny prices. Last/picked/calculator/historical inputs retain standard decimal strings; authoritative historical price still governs submission. A narrow shared formatter correction preserves nonzero quotes below 1e-6 in the actual ticker header, including 0.0000001. Preserve #337 validation, #334 visual work, direction checks, Reduce Only, margin/readiness/contract rules, native engine, armed TP/SL and existing dictionary digests.
+- Deposit: preserve Claude #339's explicit asset picker, separate network radios, mobile sheet, USDT/TRC-20 default and Wallet initial asset. Show the 300 USD rule before the address. Fixed pegged assets retain their exact 300-unit display; BTC/ETH and other variable assets use USD-only, with no market-store access/subscription/price fetch/timer. This deliberately supersedes the earlier cached-price approximation described in the historical Claude entry above. Refine the minimum wording in seven locales to match confirmed deposits in one asset/network. No server credit policy, deposit address/catalogue, memo, copy, QR, retry or ETag behavior changed.
+- Listings: the shared catalogue refresh respects the fastest active subscription, route re-entry and pending-request coalescing, including future-only and empty discovery. Unsaved editable drafts, a pending logo read and late preview responses cannot reuse a stale saved preview; save, preview and publish remain tied to the stored revision. Preserve existing confirmation, idempotency, revision CAS, seed/history locks, launch behavior and VTA/NRX discovery policy. Reserve #331's alternative architecture; it is not merged wholesale.
+- Material files: frontend decimalInput and formatNumber helpers; FuturesPage/FuturesOrderForm/FuturesCalculator; DepositCatalogueDialog, depositMinimum/depositOrder and locale/QA changes; managedListings polling and AdminListings draft/preview guards; their targeted tests and existing CI workflows. The precise delta is in the implementation commits.
+- Checks actually run: initial combined focused frontend run 371/371 in 15 suites; the later directly affected ticker/visual-polish suites 72/72. Full frontend tsc -b --force and Vite builds passed for both recorded source revisions. Four scoped local browser runners total 352 PASS: Deposit UI 297, actual catalogue Worker 7, updated tiny-price/native-engine 28, Admin Listings 20. These runs use synthetic local accounts, addresses and listings; all 352 were not rerun on one final bundle. Ten selected PNGs and unchanged machine reports are in docs/qa/finish-20260929, with exact source trees, hashes and scope limitations.
+- Measured behavior: each Deposit entry point made one initial catalogue GET, no interaction GETs, one explicit-retry GET and no GETs during 60,100 ms idle. The catalogue Worker used no Render fallback. Each tiny-price viewport accepted exactly one native order at price 0.0000001 and quantity 100000000; invalid drafts sent zero commands. Markets discovered a future publication in 55,604 ms with zero reloads; the two terminal tabs made 30 edge requests in 30 seconds. No browser errors or horizontal overflow in the stated tiny-price scope.
+- Remaining release gate at this commit: final-head GitHub checks, reviewed merge, then exact merged-SHA Render/Pages verification. No production deployment is claimed by this entry. #339 can be closed as superseded after this replacement release is verified; #331 stays reserved, #303's older idle-browser draft and #311's review-only PWA/MiniApp remain separate work, not silently declared complete.
+
+## Codex — 2026-09-29 15:33 UTC — Natural VTA shadows and future simulation policy
+
+- Owner supplied two BTC 15m screenshots and explicitly requested revising approximately half of already completed VTA candles plus similar shadows going forward and in new simulations. This supersedes the previous closed-candle-range preservation requirement only for authorized shadows; executable prices and candle bodies remain preserved.
+- Implementation SHA: c1b4ad7a7a324ffa1d347fe073c0fbed2371a364, on base d2e98bb083d11ba128b72abab7b1618a4b4c1399. Reviewed local runtime d74ec1c07d8e34c79f0b9dc8aecb68a82c582446 has the identical captured source fingerprint 60c74f3ebbe33582ef6b4123ed878d75751a33a1ab175d3a0036775d06f204e0.
+- Material runtime files: new simulationNaturalWicks.ts; testMarketSimulation.ts; testAssetConfig.ts; listingConfig.ts; adminListings.ts. Separate deterministic selection changes four of eight ordinary UTC 15m windows, with upper-only, lower-only or asymmetric two-sided additions scaled to local body/range and bounded by the profile. Fixed historical/future boundary: 2026-09-29 14:45 UTC. Canonical tick extrema feed every interval; no renderer-only decoration is added.
+- Actual historical result from listing at 2026-09-28 15:00 UTC through the fixed cutoff: 44 of 95 closed 15m candles change, exactly 44 of 88 ordinary candles. All seven completed cyclic-episode candles remain exact. The changes include 9 upper-only, 11 lower-only and 24 both-side extensions; median total wick/body changes 0.719 to 1.059. The next 24h VTA sample changes 32/64 ordinary candles (32/96 overall); every one of the four new-listing profile samples changes 48/96.
+- Persisted model: new managed-listing INSERT assigns NATURAL_V1 with its stable profile. Edits retain the model or its absence; published history locks it. Render strips client attempts to set either assigned field. Existing managed listings without a model and legacy NRX keep their original shadows. No migration, new secret, UI control or production listing mutation is required.
+- Preserved and tested: all 8,551 historical executable tick prices through the fixed cutoff, all candle opens/closes/volumes, sampled canonical tape and display depth, and all ten original six-hour impulse episodes including exact hourly OHLCV, schedules, lows/recovery closes/peaks. Last/reference price and percentage/volume fields remain identical; high24h/low24h and range-sensitive indicators can change as intended. Financial-path review found no VTA sale, stored receipt replay or balance recalculation driven by these high/low fields.
+- Validation actually run: 117/117 generator tests in five suites, 52/52 Listing configuration/Admin API tests in two suites, 13/13 real workerd integration tests, backend TypeScript build and scoped diff check PASS. Existing golden constants were not changed; two explicitly legacy fixtures exclude the new optional model. Offline actual-generator QA includes six samples, raw JSON, metrics and eight PNGs with identical before/after axes; root and independent reviewers inspected the plots. BTC screenshots supplied qualitative morphology only; no numerical BTC benchmark is claimed.
+- Integrated source identity: backend src tree b0e7f52e1ef6348f461d7246c244c916f4694c87 equals the built wick candidate; frontend tree 18b4cbe0b40d7890a933ed4d7e61479b5899369c equals the verified tiny-price follow-up. The VTA chart replaces all returned candles on each successful visible five-second poll, so revised historical extrema are accepted without a persistent-cache change.
+- Release-smoke controls: a loopback HTTP response built from the actual candidate generator passes all 95 bars; original pre-wick data and a wrong expected API commit both fail. Node syntax, workflow ordering/path/activation checks and independent static review passed. Public fixed-history digest: 7904302a49b005e092a1d98dea8426642119e553cc09e3c73a51ec63cb7775c5.
+- Rollout order: compatible Render must be live before the market Worker begins persisting NATURAL_V1. VTA candles themselves are Render-served. The release-specific read-only VTA smoke compares all fixed 95 public historical candles to the committed actual-generator evidence before the explicitly tagged Worker deploy. Its fixed history fits the latest-1000 endpoint only until 2026-10-09 01:00 UTC; use its explicit verification marker/input for this release, not an unconditional permanent gate. Record the exact merged Render/Pages and Worker deployment evidence in the associated PR after release; no production success is claimed here.

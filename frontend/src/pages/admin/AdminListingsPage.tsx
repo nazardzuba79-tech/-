@@ -9,6 +9,7 @@ import './adminListings.css';
 
 const LOGO_MAX_BYTES = 64 * 1024;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+const REVISION_CONFLICT_MESSAGE = 'Черновик уже изменён в другом окне или другим администратором. Обновите список и повторите.';
 
 interface FormState {
   name: string; symbol: string; logo: string | null; initialPrice: string;
@@ -29,6 +30,13 @@ const fromConfig = (config: ListingConfig): FormState => ({
   ownerAllocation: config.ownerAllocation, seedMode: config.seedMode, seed: config.seed, tradable: config.tradable,
   simulationProfile: config.simulationProfile ?? null,
 });
+
+// Compare editable values, including exact text drafts. An automatic seed is
+// assigned by the store; a hidden manual-seed edit does not change auto mode.
+const formSignature = (form: FormState): string => JSON.stringify([
+  form.name, form.symbol, form.logo, form.initialPrice, form.wallTime, form.timeZone,
+  form.ownerAllocation, form.seedMode, form.seedMode === 'manual' ? form.seed : null, form.tradable,
+]);
 
 const PROFILE_LABELS: Record<NonNullable<ListingConfig['simulationProfile']>, string> = {
   CALM_TREND: 'Спокойный тренд',
@@ -55,7 +63,7 @@ function statusOf(listing: AdminListing): { text: string; tone: 'draft' | 'live'
 
 const errorText = (error: unknown) => {
   if (!(error instanceof ListingApiError)) return 'Не удалось выполнить запрос.';
-  if (error.status === 409 && error.code === 'revision_conflict') return 'Черновик уже изменён в другом окне или другим администратором. Обновите список и повторите.';
+  if (error.status === 409 && error.code === 'revision_conflict') return REVISION_CONFLICT_MESSAGE;
   if (error.code === 'STORE_NOT_CONFIGURED') return 'Листинги не подключены: хранилище Cloudflare не настроено на сервере. Создание и публикация недоступны, ничего не сохранено.';
   if (error.code === 'STORE_AUTH_FAILED') return 'Листинги не подключены: ключ хранилища на сервере и в Cloudflare не совпадает. Создание и публикация недоступны, ничего не сохранено.';
   if (error.status === 503) return 'Хранилище листингов временно недоступно. Ничего не сохранено — повторите позже.';
@@ -81,10 +89,13 @@ export function AdminListingsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [logoReading, setLogoReading] = useState(false);
   const [preview, setPreview] = useState<ListingPreview | null>(null);
   const [previewAt, setPreviewAt] = useState('');
   const [publishing, setPublishing] = useState<{ listing: AdminListing; key: string } | null>(null);
   const loading = useRef(false);
+  const previewRequest = useRef(0);
+  const logoRequest = useRef(0);
 
   const load = useCallback(async () => {
     if (loading.current) return;
@@ -103,14 +114,34 @@ export function AdminListingsPage() {
 
   const current = useMemo(() => (editing?.id ? listings?.find((item) => item.id === editing.id) ?? null : null), [editing, listings]);
   const listingAtUtc = form.wallTime ? zonedWallTimeToUtc(form.wallTime, form.timeZone) : null;
+  const draftIsSaved = Boolean(!logoReading && current && editing?.revision === current.draftRevision
+    && formSignature(form) === formSignature(fromConfig(current.draft)));
+
+  function invalidatePreview() {
+    previewRequest.current += 1;
+    setPreview(null);
+  }
+
+  function changeForm(next: FormState | ((previous: FormState) => FormState)) {
+    invalidatePreview();
+    setPublishing(null);
+    setForm(next);
+  }
+
+  function cancelLogoRead() {
+    logoRequest.current += 1;
+    setLogoReading(false);
+  }
 
   function openCreate() {
+    cancelLogoRead();
     setEditing({ id: null, revision: 0, locked: false });
-    setForm(emptyForm()); setFormError(null); setNotice(null); setPreview(null);
+    changeForm(emptyForm()); setFormError(null); setNotice(null);
   }
   function openEdit(listing: AdminListing) {
+    cancelLogoRead();
     setEditing({ id: listing.id, revision: listing.draftRevision, locked: listing.activeVersion !== null });
-    setForm(fromConfig(listing.draft)); setFormError(null); setNotice(null); setPreview(null);
+    changeForm(fromConfig(listing.draft)); setFormError(null); setNotice(null);
   }
 
   function onLogo(event: ChangeEvent<HTMLInputElement>) {
@@ -119,14 +150,24 @@ export function AdminListingsPage() {
     if (!file) return;
     if (!LOGO_TYPES.includes(file.type)) return setFormError('Логотип: PNG, JPEG, WebP или SVG.');
     if (file.size > LOGO_MAX_BYTES) return setFormError('Логотип не больше 64 КБ.');
+    const request = ++logoRequest.current;
+    invalidatePreview(); setPublishing(null); setLogoReading(true); setFormError(null);
     const reader = new FileReader();
-    reader.onload = () => { setForm((f) => ({ ...f, logo: String(reader.result) })); setFormError(null); };
+    reader.onload = () => {
+      if (request !== logoRequest.current) return;
+      changeForm((f) => ({ ...f, logo: String(reader.result) }));
+      setLogoReading(false); setFormError(null);
+    };
+    reader.onerror = () => {
+      if (request !== logoRequest.current) return;
+      setLogoReading(false); setFormError('Не удалось прочитать логотип. Выберите файл ещё раз.');
+    };
     reader.readAsDataURL(file);
   }
 
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!editing || busy) return;
+    if (!editing || busy || logoReading) return;
     if (!listingAtUtc) return setFormError('Укажите дату и время листинга.');
     const payload: ListingForm = {
       name: form.name.trim(), symbol: form.symbol.trim().toUpperCase(), logo: form.logo, initialPrice: form.initialPrice.trim(),
@@ -137,7 +178,7 @@ export function AdminListingsPage() {
     try {
       const saved = editing.id ? await adminListingsApi.saveDraft(editing.id, payload, editing.revision) : await adminListingsApi.create(payload);
       setEditing({ id: saved.id, revision: saved.draftRevision, locked: editing.locked });
-      setForm(fromConfig(saved.draft));
+      changeForm(fromConfig(saved.draft));
       setNotice(`Черновик ${saved.draft.symbol}/USDT сохранён (ревизия ${saved.draftRevision}). Seed: ${saved.draft.seed}`);
       await load();
     } catch (error) {
@@ -146,22 +187,38 @@ export function AdminListingsPage() {
   }
 
   async function runPreview() {
-    if (!editing?.id) return;
+    if (!editing?.id || busy || !draftIsSaved) return;
+    const request = ++previewRequest.current;
     setBusy(true);
     try {
       const at = previewAt ? zonedWallTimeToUtc(previewAt, form.timeZone) : null;
-      setPreview(await adminListingsApi.preview(editing.id, at));
+      const result = await adminListingsApi.preview(editing.id, at);
+      if (request !== previewRequest.current) return;
+      if (result.draftRevision !== editing.revision) {
+        setPreview(null);
+        setFormError(REVISION_CONFLICT_MESSAGE);
+        return;
+      }
+      setPreview(result);
       setFormError(null);
-    } catch (error) { setFormError(errorText(error)); } finally { setBusy(false); }
+    } catch (error) {
+      if (request === previewRequest.current) setFormError(errorText(error));
+    } finally { setBusy(false); }
+  }
+
+  function openPublish() {
+    if (!current || busy || !draftIsSaved) return;
+    setPublishing({ listing: current, key: newPublishKey() });
   }
 
   async function confirmPublish() {
-    if (!publishing || busy) return;
+    if (!publishing || busy || !draftIsSaved || publishing.listing.id !== editing?.id
+      || publishing.listing.draftRevision !== editing.revision) return;
     setBusy(true);
     try {
       // The key was fixed when this confirmation opened: a retry is the same publish.
       const result = await adminListingsApi.publish(publishing.listing.id, publishing.listing.draftRevision, publishing.key);
-      setNotice(result.replayed ? `Уже опубликовано: версия ${result.version}.` : `Опубликовано: версия ${result.version}. На бирже появится в течение 15 секунд.`);
+      setNotice(result.replayed ? `Уже опубликовано: версия ${result.version}.` : `Опубликовано: версия ${result.version}. Рынок появится при ближайшем обновлении списка.`);
       setPublishing(null);
       await load();
     } catch (error) {
@@ -215,21 +272,21 @@ export function AdminListingsPage() {
           <h2>{editing.id ? `Листинг ${form.symbol}/USDT` : 'Новый листинг'}</h2>
           {editing.locked && <p className="listing-hint">Опубликован: тикер, seed и начальная цена больше не меняются — это защищает историю цен. Время можно перенести только до открытия.</p>}
           <div className="listing-grid">
-            <label>Название<input value={form.name} maxLength={40} onChange={(e) => setForm({ ...form, name: e.target.value })} data-field="name" required /></label>
-            <label>Тикер<input value={form.symbol} maxLength={10} disabled={editing.locked} onChange={(e) => setForm({ ...form, symbol: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} data-field="symbol" required /></label>
-            <label>Начальная цена, USDT<input value={form.initialPrice} inputMode="decimal" disabled={editing.locked} onChange={(e) => setForm({ ...form, initialPrice: e.target.value.replace(',', '.') })} data-field="initialPrice" required /></label>
-            <label>Owner allocation, {form.symbol || 'актив'}<input value={form.ownerAllocation} inputMode="decimal" onChange={(e) => setForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
+            <label>Название<input value={form.name} maxLength={40} onChange={(e) => changeForm({ ...form, name: e.target.value })} data-field="name" required /></label>
+            <label>Тикер<input value={form.symbol} maxLength={10} disabled={editing.locked} onChange={(e) => changeForm({ ...form, symbol: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} data-field="symbol" required /></label>
+            <label>Начальная цена, USDT<input value={form.initialPrice} inputMode="decimal" disabled={editing.locked} onChange={(e) => changeForm({ ...form, initialPrice: e.target.value.replace(',', '.') })} data-field="initialPrice" required /></label>
+            <label>Owner allocation, {form.symbol || 'актив'}<input value={form.ownerAllocation} inputMode="decimal" onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
               <small>Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.</small></label>
-            <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => setForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
-            <label>Часовой пояс<select value={form.timeZone} onChange={(e) => setForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
+            <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => changeForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
+            <label>Часовой пояс<select value={form.timeZone} onChange={(e) => changeForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
               {LISTING_TIME_ZONES.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
             </select>
               <small data-listing-utc>{listingAtUtc ? `= ${listingMoment(listingAtUtc, form.timeZone)}` : 'Время указывается в выбранном поясе'}</small></label>
             <fieldset className="listing-seed" disabled={editing.locked}>
               <legend>Seed истории цены</legend>
-              <label><input type="radio" checked={form.seedMode === 'auto'} onChange={() => setForm({ ...form, seedMode: 'auto' })} /> Автоматически</label>
-              <label><input type="radio" checked={form.seedMode === 'manual'} onChange={() => setForm({ ...form, seedMode: 'manual' })} /> Вручную</label>
-              {form.seedMode === 'manual' && <input value={form.seed} onChange={(e) => setForm({ ...form, seed: e.target.value.toLowerCase() })} placeholder="например qax-launch-0001" data-field="seed" />}
+              <label><input type="radio" checked={form.seedMode === 'auto'} onChange={() => changeForm({ ...form, seedMode: 'auto', seed: current?.draft.seed ?? '' })} /> Автоматически</label>
+              <label><input type="radio" checked={form.seedMode === 'manual'} onChange={() => changeForm({ ...form, seedMode: 'manual' })} /> Вручную</label>
+              {form.seedMode === 'manual' && <input value={form.seed} onChange={(e) => changeForm({ ...form, seed: e.target.value.toLowerCase() })} placeholder="например qax-launch-0001" data-field="seed" />}
               {form.seedMode === 'auto' && form.seed && <small>Сохранён: <code data-saved-seed>{form.seed}</code> — не меняется при правках.</small>}
             </fieldset>
             <div className="listing-profile" data-listing-profile={form.simulationProfile ?? (editing.id ? 'original' : 'pending')}>
@@ -242,27 +299,29 @@ export function AdminListingsPage() {
               <div>
                 {form.logo ? <img src={form.logo} alt="Логотип" width={40} height={40} /> : <span className="listing-letter">{form.symbol[0] ?? '?'}</span>}
                 <input type="file" accept={LOGO_TYPES.join(',')} onChange={onLogo} data-field="logo" aria-label="Загрузить логотип" />
-                {form.logo && <button type="button" onClick={() => setForm({ ...form, logo: null })}>Убрать</button>}
+                {form.logo && <button type="button" onClick={() => { cancelLogoRead(); changeForm({ ...form, logo: null }); }}>Убрать</button>}
               </div>
               <small>PNG, JPEG, WebP или SVG, до 64 КБ.</small>
+              {logoReading && <small role="status" data-logo-reading>Загрузка логотипа…</small>}
             </div>
-            <label className="listing-check"><input type="checkbox" checked={form.tradable} onChange={(e) => setForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Торговля на Spot после листинга
+            <label className="listing-check"><input type="checkbox" checked={form.tradable} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Торговля на Spot после листинга
               <small>Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.</small></label>
           </div>
           {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
+          {editing.id && !draftIsSaved && !logoReading && <p className="listing-hint" role="status" data-unsaved-draft>Сначала сохраните изменения черновика, чтобы открыть предпросмотр или опубликовать их.</p>}
           <div className="listing-buttons">
-            <button type="submit" className="listing-primary" disabled={busy} data-save-draft>Сохранить черновик</button>
-            {editing.id && <button type="button" disabled={busy} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
-            {current && <button type="button" disabled={busy} onClick={() => setPublishing({ listing: current, key: newPublishKey() })} data-publish>Опубликовать</button>}
-            <button type="button" onClick={() => { setEditing(null); setPreview(null); }}>Закрыть</button>
+            <button type="submit" className="listing-primary" disabled={busy || logoReading} data-save-draft>Сохранить черновик</button>
+            {editing.id && <button type="button" disabled={busy || !draftIsSaved} onClick={() => void runPreview()} data-preview>Предпросмотр</button>}
+            {current && <button type="button" disabled={busy || !draftIsSaved} onClick={openPublish} data-publish>Опубликовать</button>}
+            <button type="button" onClick={() => { cancelLogoRead(); setEditing(null); setPublishing(null); invalidatePreview(); }}>Закрыть</button>
           </div>
           {editing.id && (
             <div className="listing-preview-controls">
-              <label>Момент предпросмотра ({form.timeZone})<input type="datetime-local" value={previewAt} onChange={(e) => setPreviewAt(e.target.value)} data-field="previewAt" /></label>
+              <label>Момент предпросмотра ({form.timeZone})<input type="datetime-local" value={previewAt} onChange={(e) => { invalidatePreview(); setPreviewAt(e.target.value); }} data-field="previewAt" /></label>
               <small>Пусто = через 2 часа после листинга. Предпросмотр виден только администратору.</small>
             </div>
           )}
-          {preview && (
+          {preview && draftIsSaved && (
             <section className="listing-preview" data-listing-preview={preview.asset.state.phase} aria-label="Предпросмотр">
               <header>
                 <b>{preview.asset.pair}</b>
@@ -295,7 +354,7 @@ export function AdminListingsPage() {
             <p>Листинг: {listingMoment(publishing.listing.draft.listingAt, publishing.listing.draft.displayTimeZone)}</p>
             <p className="listing-hint">После публикации рынок виден всем. Тикер, seed и начальная цена фиксируются. Баланс владельца не зачисляется.</p>
             <div className="listing-buttons">
-              <button type="button" className="listing-primary" disabled={busy} onClick={() => void confirmPublish()} data-confirm-publish>Опубликовать</button>
+              <button type="button" className="listing-primary" disabled={busy || !draftIsSaved} onClick={() => void confirmPublish()} data-confirm-publish>Опубликовать</button>
               <button type="button" disabled={busy} onClick={() => setPublishing(null)}>Отмена</button>
             </div>
           </div>

@@ -51,6 +51,7 @@ on:
       - 'frontend/src/components/DepositCatalogueDialog.tsx'
       - 'frontend/src/lib/assetMetadataStore.ts'
       - 'frontend/src/lib/depositAssetMetadata.ts'
+      - 'frontend/src/lib/depositOrder.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
       - 'frontend/src/lib/adminAlertApi.ts'
       # The strings both cards render, in every locale the switcher offers.
@@ -141,6 +142,7 @@ on:
       - 'frontend/src/components/DepositCatalogueDialog.tsx'
       - 'frontend/src/lib/assetMetadataStore.ts'
       - 'frontend/src/lib/depositAssetMetadata.ts'
+      - 'frontend/src/lib/depositOrder.ts'
       - 'frontend/src/lib/useAdminAlerts.ts'
       - 'frontend/src/lib/adminAlertApi.ts'
       # The strings both cards render, in every locale the switcher offers.

@@ -35,10 +35,16 @@
  * and hands the INSIDE of each hour — how its fixed return is spread over
  * twelve candles, and each candle's wicks — to `simulationRealism.ts`. An
  * asset without one is generated exactly as before.
+ * Optional cyclic impulses replace two hours of canonical ticks and rejoin
+ * the original price anchor at the end of the second hour. Their fixed
+ * cutover preserves every earlier tick, even inside the first shock hour.
  */
 import type { TestAssetConfig } from './testAssetConfig';
 import { normal, seededRandom } from './simulationRandom';
 import { REALISM_PROFILES, isSimulationProfile, realisticHour, realisticTicks, type CandleShape, type RealismParams } from './simulationRealism';
+import { cycleForHour, cycleHourTicks, cycleShockClose } from './simulationCycles';
+import { NATURAL_WICK_WINDOW_MS, naturalWickCandles, naturalWickLimit, naturalWickWindowAllowed, naturalWickWindowSelected,
+  type NaturalWickCandle } from './simulationNaturalWicks';
 
 export { seededRandom };
 
@@ -261,6 +267,8 @@ interface HourPlan {
   boundaries: number[];
   /** Realism only: the shape of each of the twelve candles. */
   shapes?: CandleShape[];
+  /** A cycle's complete canonical hour; boundaries are sampled from it. */
+  cycleTicks?: Tick[];
 }
 
 /**
@@ -272,6 +280,8 @@ export class TestMarketSimulation {
   private blocks = new Map<number, Block>();
   private hourOpens: number[] = [];
   private closedCandles = new Map<number, SimCandle>();
+  private cycleHours = new Map<number, HourPlan>();
+  private naturalWindows = new Map<number, NaturalWickCandle[]>();
   /** The profile's parameters, or null for the legacy intra-hour path. */
   private readonly realism: RealismParams | null;
   private readonly realismOffset: number;
@@ -309,7 +319,7 @@ export class TestMarketSimulation {
     return block.regimes[hour - block.startHour];
   }
 
-  hourPlan(hour: number): HourPlan {
+  private baselineHourPlan(hour: number): HourPlan {
     const block = this.block(blockIndexOfHour(hour));
     const regime = block.regimes[hour - block.startHour];
     const logReturn = block.logReturns[hour - block.startHour];
@@ -333,7 +343,26 @@ export class TestMarketSimulation {
     return { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}) };
   }
 
-  private ticks(plan: HourPlan, slot: number): Tick[] {
+  hourPlan(hour: number): HourPlan {
+    const cycle = cycleForHour(this.asset.cyclicImpulse, this.asset.listingAt, hour);
+    if (!cycle) return this.baselineHourPlan(hour);
+    const cached = this.cycleHours.get(hour);
+    if (cached) return cached;
+    const baseline = this.baselineHourPlan(hour);
+    const original = Array.from({ length: CANDLES_PER_HOUR }, (_, slot) => this.baselineTicks(baseline, slot)).flat();
+    const shockOpen = this.hourOpen(cycle.shockHour);
+    const cycleTicks = cycleHourTicks(this.asset.seed, hour, cycle, shockOpen, this.hourOpen(cycle.shockHour + 2), original);
+    const open = cycle.phase === 'shock' ? baseline.open : cycleShockClose(shockOpen, cycle.preset);
+    const boundaries = [open];
+    for (let slot = 0; slot < CANDLES_PER_HOUR; slot++) boundaries.push(cycleTicks[(slot + 1) * TICKS_PER_CANDLE - 1].price);
+    const plan = { ...baseline, open, logReturn: Math.log(boundaries[CANDLES_PER_HOUR] / open), boundaries, cycleTicks };
+    this.cycleHours.set(hour, plan);
+    // A bounded cache does not change the seeded result when an hour is rebuilt.
+    if (this.cycleHours.size > 96) this.cycleHours.delete(this.cycleHours.keys().next().value as number);
+    return plan;
+  }
+
+  private baselineTicks(plan: HourPlan, slot: number): Tick[] {
     const open = plan.boundaries[slot], close = plan.boundaries[slot + 1];
     if (plan.shapes && this.realism) {
       const volumeBase = BASE_QUOTE_VOLUME * Math.pow(open / this.asset.initialPrice, 0.3) * REGIME_VOLUME[plan.regime];
@@ -341,6 +370,58 @@ export class TestMarketSimulation {
         plan.cluster, volumeBase, this.realism);
     }
     return candleTicks(this.asset.seed, plan.hour, slot, plan.regime, open, close, plan.sigma, plan.cluster, this.asset.initialPrice);
+  }
+
+  private originalTicks(plan: HourPlan, slot: number): Tick[] {
+    if (plan.cycleTicks) return plan.cycleTicks.slice(slot * TICKS_PER_CANDLE, (slot + 1) * TICKS_PER_CANDLE);
+    const ticks = this.baselineTicks(plan, slot);
+    const from = this.asset.wickBoostFrom;
+    if (from === undefined || !Number.isFinite(from)) return ticks;
+    const candleAt = this.asset.listingAt + plan.hour * HOUR_MS + slot * CANDLE_MS;
+    const ceiling = plan.shapes && this.realism ? Math.max(plan.boundaries[slot], plan.boundaries[slot + 1]) * Math.exp(this.realism.maxWick) : Infinity;
+    const floor = plan.shapes && this.realism ? Math.min(plan.boundaries[slot], plan.boundaries[slot + 1]) * Math.exp(-this.realism.maxWick) : Number.MIN_VALUE;
+    return ticks.map((tick, i) => {
+      // Preserve ticks at the cutoff as well; only subsequently completed
+      // simulated ranges receive the modest VTA-specific shadow increase.
+      if (candleAt + (i + 1) * TICK_MS <= from) return tick;
+      const previous = i ? ticks[i - 1].price : plan.boundaries[slot];
+      const top = Math.max(previous, tick.price), bottom = Math.min(previous, tick.price);
+      return { ...tick, high: Math.min(ceiling, top + (tick.high - top) * 1.55),
+        low: Math.max(floor, bottom - (bottom - tick.low) * 1.55) };
+    });
+  }
+
+  private ticks(plan: HourPlan, slot: number): Tick[] {
+    const policy = this.asset.naturalWicks;
+    // Cycle extrema are part of the owner's exact shock/recovery contract.
+    if (!policy || plan.cycleTicks) return this.originalTicks(plan, slot);
+    const index = plan.hour * CANDLES_PER_HOUR + slot;
+    const at = this.asset.listingAt + index * CANDLE_MS;
+    const windowAt = Math.floor(at / NATURAL_WICK_WINDOW_MS) * NATURAL_WICK_WINDOW_MS;
+    const firstWindow = Math.floor(this.asset.listingAt / NATURAL_WICK_WINDOW_MS) * NATURAL_WICK_WINDOW_MS;
+    const windowIndex = (windowAt - firstWindow) / NATURAL_WICK_WINDOW_MS;
+    if (!naturalWickWindowAllowed(policy, windowAt) || !naturalWickWindowSelected(this.asset.seed, this.realismOffset, windowIndex)) {
+      return this.originalTicks(plan, slot);
+    }
+    let window = this.naturalWindows.get(windowAt);
+    if (!window) {
+      const first = Math.max(0, Math.ceil((windowAt - this.asset.listingAt) / CANDLE_MS));
+      const end = Math.ceil((windowAt + NATURAL_WICK_WINDOW_MS - this.asset.listingAt) / CANDLE_MS);
+      const original: NaturalWickCandle[] = [];
+      for (let member = first; member < end; member += 1) {
+        const hour = Math.floor(member / CANDLES_PER_HOUR), memberSlot = member % CANDLES_PER_HOUR;
+        const memberPlan = hour === plan.hour ? plan : this.hourPlan(hour);
+        // Non-aligned listings can have a UTC bucket spanning two hour plans.
+        // Keep the entire bucket intact if either belongs to an exact cycle.
+        if (memberPlan.cycleTicks) return this.originalTicks(plan, slot);
+        original.push({ index: member, open: memberPlan.boundaries[memberSlot], close: memberPlan.boundaries[memberSlot + 1],
+          maxWick: naturalWickLimit(this.realism?.maxWick), ticks: this.originalTicks(memberPlan, memberSlot) });
+      }
+      window = naturalWickCandles(this.asset.seed, this.realismOffset, windowIndex, original);
+      this.naturalWindows.set(windowAt, window);
+      if (this.naturalWindows.size > 96) this.naturalWindows.delete(this.naturalWindows.keys().next().value as number);
+    }
+    return window.find((candle) => candle.index === index)!.ticks;
   }
 
   /** Read-only tape of completed canonical ticks; never samples a future tick. */
@@ -539,7 +620,9 @@ const MAX_SIMULATIONS = 64;
  * exactly one simulation as before.
  */
 export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}`;
+  const cycle = asset.cyclicImpulse;
+  const natural = asset.naturalWicks;
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycle ? `${cycle.anchorAt}:${cycle.notBefore}:${cycle.periodHours}` : 'no-cycle'}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${natural ? `${natural.historicalUntil ?? 'no-history'}:${natural.futureFrom}` : 'original-wicks'}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);

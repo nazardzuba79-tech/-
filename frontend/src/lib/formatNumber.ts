@@ -19,6 +19,9 @@
 export function formatPrice(value: number): string {
   if (!Number.isFinite(value)) return '—';
   const abs = Math.abs(value);
+  // Tiny quotes need significant digits: a six-decimal cap turns real
+  // prices such as 0.0000001 into zero. Keep standard decimal notation.
+  if (abs > 0 && abs < 0.000001) return value.toLocaleString('en-US', { maximumSignificantDigits: 6 });
   // Below 1 the significant digits are all to the right of the point, so
   // that tier takes a maximum rather than a fixed count — "0.9998" should
   // not print as "0.999800".

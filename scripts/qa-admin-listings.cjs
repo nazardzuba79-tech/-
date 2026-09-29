@@ -174,7 +174,7 @@ async function run() {
     page.on('request', (request) => { if (request.url().startsWith(EDGE)) edgeRequests.push({ at: Date.now(), who, url: request.url().slice(EDGE.length) }); });
     return page;
   };
-  const shot = async (page, name) => { await page.screenshot({ path: path.join(output, name), fullPage: false }); report.screenshots.push(name); };
+  const shot = async (page, name) => { await page.screenshot({ path: path.join(output, name), fullPage: false, animations: 'disabled' }); report.screenshots.push(name); };
   const noOverflow = async (page, name) => {
     const layout = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth }));
     report.layouts.push({ name, ...layout });
@@ -220,7 +220,9 @@ async function run() {
     /* 2. Admin creates a pair that exists nowhere in the code. */
     const symbol = 'QRB';
     assert.equal(fs.readFileSync(path.join(root, 'src/services/testMarkets/testAssetConfig.ts'), 'utf8').includes(symbol), false);
-    const listingAt = Math.ceil((Date.now() + 75_000) / 60_000) * 60_000;
+    // Leave one complete discovery interval for the already-open, future-only
+    // Markets tab below before this first listing switches to live.
+    const listingAt = Math.ceil((Date.now() + 150_000) / 60_000) * 60_000;
     const admin = await newPage('admin', 1440);
     await admin.goto(`${origin}/admin/listings`);
     await admin.locator('[data-create-listing]').click();
@@ -275,7 +277,79 @@ async function run() {
     assert.equal((await render(`/admin/listings/${listing.id}/preview`, { token: tokens.user })).status, 403);
     check(`Preview (admin only): ${preview.candles.length} candles, book and tape; the same instant gives identical candles; USER → 403`);
 
+    /* 4b. Unsaved form values must never preview or publish an older draft. */
+    const previewPublishCalls = () => renderCalls.filter((call) => /\/admin\/listings\/[^/]+\/(preview|publish)$/.test(call)).length;
+    const beforeDirty = previewPublishCalls();
+    await admin.fill('[data-field="initialPrice"]', '0.43');
+    await admin.locator('[data-unsaved-draft]').waitFor();
+    assert.equal(await admin.locator('[data-listing-preview]').count(), 0);
+    assert.equal(await admin.locator('[data-preview]').isDisabled(), true);
+    assert.equal(await admin.locator('[data-publish]').isDisabled(), true);
+    assert.equal(previewPublishCalls(), beforeDirty);
+    await admin.locator('[data-unsaved-draft]').scrollIntoViewIfNeeded();
+    await shot(admin, 'dirty-draft-1440.png');
+    await admin.setViewportSize({ width: 390, height: 844 });
+    await admin.waitForFunction(() => document.querySelector('.admin-mobile-sidebar')?.getBoundingClientRect().right <= 1);
+    await admin.locator('[data-unsaved-draft]').scrollIntoViewIfNeeded();
+    await noOverflow(admin, 'dirty-draft-390');
+    await shot(admin, 'dirty-draft-390.png');
+    await admin.setViewportSize({ width: 1440, height: 1000 });
+    await admin.fill('[data-field="initialPrice"]', '0.42');
+    await admin.waitForFunction(() => !document.querySelector('[data-preview]')?.disabled);
+    assert.equal(await admin.locator('[data-publish]').isDisabled(), false);
+    assert.equal(await admin.locator('[data-listing-preview]').count(), 0, 'Reverting a field must not restore a stale preview');
+    check('unsaved change hides preview, disables Preview/Publish without a request; reverting restores actions but not the old preview (1440/390)');
+
+    /* 4c. A real private Preview response delayed until AFTER an edit stays hidden. */
+    const previewPath = /\/api\/v1\/admin\/listings\/[^/]+\/preview(?:\?|$)/;
+    let releasePreview;
+    const previewGate = new Promise((resolve) => { releasePreview = resolve; });
+    await admin.route(previewPath, async (route) => {
+      const response = await route.fetch();
+      await previewGate;
+      await route.fulfill({ response });
+    });
+    try {
+      const requested = admin.waitForRequest(previewPath);
+      await admin.locator('[data-preview]').click();
+      await requested;
+      await admin.fill('[data-field="initialPrice"]', '0.43');
+      const delivered = admin.waitForResponse(previewPath);
+      releasePreview();
+      await delivered;
+      await admin.waitForFunction(() => !document.querySelector('[data-save-draft]')?.disabled);
+      assert.equal(await admin.locator('[data-listing-preview]').count(), 0);
+      assert.equal(await admin.locator('[data-preview]').isDisabled(), true);
+      assert.equal(await admin.locator('[data-publish]').isDisabled(), true);
+    } finally {
+      releasePreview();
+      await admin.unroute(previewPath);
+    }
+    const nextSave = admin.waitForResponse((r) => r.url().endsWith(`/admin/listings/${listing.id}/draft`) && r.request().method() === 'PUT');
+    await admin.locator('[data-save-draft]').click();
+    const savedResponse = await nextSave;
+    assert.equal(savedResponse.status(), 200);
+    const savedDraft = await savedResponse.json();
+    assert.equal(savedDraft.draft.initialPrice, '0.43');
+    assert.equal(savedDraft.draft.seed, seed);
+    assert.ok(savedDraft.draftRevision > listing.draftRevision);
+    await admin.waitForFunction(() => !document.querySelector('[data-preview]')?.disabled);
+    listing = (await render('/admin/listings')).body.listings.find((l) => l.symbol === symbol);
+    const freshPreviewRequest = admin.waitForResponse((r) => previewPath.test(r.url()));
+    await admin.locator('[data-preview]').click();
+    const freshPreview = await (await freshPreviewRequest).json();
+    await admin.locator('[data-listing-preview]').waitFor();
+    assert.equal(freshPreview.draftRevision, listing.draftRevision);
+    check('late preview after an edit is discarded; saving the new revision re-enables a fresh preview of exactly that revision');
+
     /* 5. Publish through the confirmation dialog. */
+    const publishPosts = () => renderCalls.filter((call) => /^POST \/admin\/listings\/[^/]+\/publish$/.test(call)).length;
+    const postsBeforeDialog = publishPosts();
+    await admin.locator('[data-publish]').click();
+    await admin.locator('[data-publish-dialog]').waitFor();
+    await admin.locator('[data-publish-dialog]').getByRole('button', { name: 'Отмена', exact: true }).click();
+    await admin.locator('[data-publish-dialog]').waitFor({ state: 'hidden' });
+    assert.equal(publishPosts(), postsBeforeDialog, 'Cancel must not publish');
     await admin.locator('[data-publish]').click();
     await admin.locator('[data-publish-dialog]').waitFor();
     await shot(admin, 'publish-dialog-1440.png');
@@ -284,10 +358,11 @@ async function run() {
     const published = await (await publishResponse).json();
     assert.deepEqual([published.version, published.replayed], [1, false]);
     await admin.locator('[data-publish-dialog]').waitFor({ state: 'hidden' });
+    assert.equal(publishPosts(), postsBeforeDialog + 1, 'One confirmation must send one publish POST');
     await shot(admin, 'published-list-1440.png');
     const replay = await render(`/admin/listings/${listing.id}/publish`, { method: 'POST', body: { draftRevision: listing.draftRevision, publishKey: 'qa-second-tab-publish-key-0001' } });
     assert.deepEqual([replay.status, replay.body.version, replay.body.replayed], [200, 1, true]);
-    check('published v1 through the dialog; a second publish of the unchanged draft (another key) replays v1, no new version');
+    check('cancel publishes nothing; one confirmation publishes v1 once; a second publish of the unchanged draft (another key) replays v1, no new version');
 
     /* 6. Public catalogue, Render trading registry — no redeploy anywhere. */
     await new Promise((r) => setTimeout(r, 1200));
@@ -302,6 +377,14 @@ async function run() {
     assert.throws(() => assertSpotListing(`${symbol}/USDT`, Date.now()), /not started/);
     check('public catalogue lists QRB/USDT pre-listing with no seed/owner allocation; Render learned the pair from the store and refuses Spot orders before the opening');
 
+    // Keep this tab open on a catalogue containing only future listings. The
+    // later second publication must appear through discovery, without reload.
+    const discovery = await newPage('user', 1440, 'discovery');
+    await discovery.goto(`${origin}/markets`);
+    await discovery.locator(`.test-market-row[data-pair="${symbol}/USDT"][data-phase="pre-listing"]`).waitFor();
+    let discoveryNavigations = 0;
+    discovery.on('framenavigated', (frame) => { if (frame === discovery.mainFrame()) discoveryNavigations++; });
+
     /* 7. A regular user finds it on Markets (same bundle) and opens it. */
     const markets = await newPage('user', 1440);
     await markets.goto(`${origin}/markets`);
@@ -309,6 +392,7 @@ async function run() {
     await stripRow.waitFor({ timeout: 20000 });
     assert.equal(await stripRow.getAttribute('data-phase'), 'pre-listing');
     assert.match(await stripRow.innerText(), /Europe\/Kyiv/);
+    await stripRow.scrollIntoViewIfNeeded();
     await shot(markets, 'markets-prelisting-1440.png');
     await stripRow.locator('.test-market-open').click();
     await markets.waitForURL(/\/trade\?pair=QRB/);
@@ -328,6 +412,16 @@ async function run() {
       displayTimeZone: 'UTC', ownerAllocation: '0', seedMode: 'manual', seed: 'qdl-qa-synthetic-0001', tradable: false } } });
     assert.equal(second.status, 201);
     assert.equal((await render(`/admin/listings/${second.body.id}/publish`, { method: 'POST', body: { draftRevision: second.body.draftRevision, publishKey: 'qa-second-listing-key-0001' } })).status, 200);
+    const discoveryStart = Date.now();
+    await discovery.locator('.test-market-row[data-pair="QDL/USDT"]').waitFor({ timeout: 65_000 });
+    assert.equal(discoveryNavigations, 0, 'New publication must appear without a navigation/reload');
+    assert.equal((await edgeJson('/market/listings')).body.assets.find((a) => a.symbol === symbol).state.phase, 'pre-listing',
+      'Discovery fixture must still contain only future markets during this check');
+    report.requests.futureCatalogueDiscovery = { elapsedMs: Date.now() - discoveryStart, reloads: discoveryNavigations };
+    await discovery.locator('.test-market-row[data-pair="QDL/USDT"]').scrollIntoViewIfNeeded();
+    await shot(discovery, 'markets-discovery-without-reload-1440.png');
+    await discovery.context().close();
+    check('an already-open Markets tab with only future listings discovers the second publication within one 60-second cadence, without reload');
     const onVenue = await render('/admin/listings', { method: 'POST', body: { config: { ...second.body.draft, symbol: 'BTC', seed: 'btc-clash-0001' } } });
     assert.equal(onVenue.status, 422);
     check('a second listing (QDL, +3 days, not tradable) publishes alongside; a ticker already on the venue (BTC) is refused');

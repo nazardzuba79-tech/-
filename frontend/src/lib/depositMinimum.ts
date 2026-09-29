@@ -34,3 +34,34 @@ export function depositMinimumEquivalent(config: DepositConfig, asset: string, l
   const equivalent = config.minDepositUsd / price;
   return Number.isFinite(price) && price > 0 && Number.isFinite(equivalent) && equivalent > 0 ? equivalent : null;
 }
+
+/**
+ * The production deposit rule, as the backend enforces it
+ * (`src/config/limits.ts`: MIN_DEPOSIT_USD, DEPOSIT_USD_PEGGED_ASSETS).
+ * The manual catalogue — read straight from
+ * Cloudflare — carries addresses only, so the deposit window states the rule
+ * from here; `depositMinimumRule.test.ts` fails the moment the two differ.
+ * Nothing here decides a credit: the server re-prices at credit time.
+ */
+export const DEPOSIT_MINIMUM_USD = 300;
+export const DEPOSIT_USD_PEGGED = ['USDT', 'USDC', 'USD', 'DAI'] as const;
+
+export interface DepositMinimumView {
+  /** The rule itself, in USD. */
+  usd: number;
+  /** The server's fixed one-to-one minimum for a USD-pegged asset;
+   *  null for every asset that would need a market-price estimate. */
+  equivalent: number | null;
+  pegged: boolean;
+}
+
+/**
+ * The deposit window states the USD rule and the server's fixed peg policy.
+ * Other assets stay USD-only: an open address window has no live quote
+ * subscription, so a cached conversion could become stale while it is open.
+ * This view needs no market read, request, subscription or expiry timer.
+ */
+export function depositMinimumView(asset: string): DepositMinimumView {
+  const pegged = DEPOSIT_USD_PEGGED.some(symbol => symbol === asset);
+  return { usd: DEPOSIT_MINIMUM_USD, equivalent: pegged ? DEPOSIT_MINIMUM_USD : null, pegged };
+}

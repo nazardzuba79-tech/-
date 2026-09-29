@@ -7,6 +7,12 @@ import {
 
 const L = VOLTORA.listingAt;
 const fresh = () => new TestMarketSimulation(VOLTORA);
+/** Only the original regime/volume contract uses the unmodified baseline. All other tests exercise live VTA. */
+const {
+  simulationProfile: _vtaProfile, realismFrom: _vtaFrom,
+  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, naturalWicks: _vtaNaturalWicks, ...BASE
+} = VOLTORA;
+const baseline = () => new TestMarketSimulation(BASE);
 
 describe('VOLTORA is a test asset, recognised however the pair is spelled', () => {
   test('config', () => {
@@ -158,8 +164,8 @@ describe('the first 48 hours', () => {
     expect(Math.abs(p48 / anchor - 1)).toBeLessThan(1e-6);
   });
 
-  test('each hour stays in its regime band', () => {
-    const sim = fresh();
+  test('the original baseline stays in its regime band before the cycle overlay', () => {
+    const sim = baseline();
     for (let hour = 0; hour < 48; hour++) {
       const plan = sim.hourPlan(hour);
       const r = Math.exp(plan.logReturn) - 1;
@@ -169,8 +175,8 @@ describe('the first 48 hours', () => {
     }
   });
 
-  test('a liquid market, not a staircase: red candles in impulses, green in pullbacks, volume with the move', () => {
-    const sim = fresh();
+  test('the original baseline has red candles in impulses, green in pullbacks and volume with the move', () => {
+    const sim = baseline();
     const candles = sim.candles5m(L + 48 * HOUR_MS - 1);
     const by = { impulse: [] as SimCandle[], consolidation: [] as SimCandle[], pullback: [] as SimCandle[] };
     candles.forEach((c, i) => by[sim.hourPlan(Math.floor(i / 12)).regime].push(c));
