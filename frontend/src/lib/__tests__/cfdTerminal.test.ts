@@ -37,7 +37,9 @@ function mount(file:string,options:any={}){
     if(name.endsWith('/sampledDepth'))return{readSpotDisplayBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     if(name.endsWith('/spotPublicMarket'))return{readSpotPublicBook:()=>Promise.resolve({bids:[],asks:[],asOf:null})};
     if(name.endsWith('/testMarkets'))return testMarkets;
-    if(name.endsWith('/testMarketStore'))return{useTestMarket:()=>({asset:null,loaded:false,error:false,clockOffsetMs:0}),TEST_MARKET_TERMINAL_INTERVAL_MS:5000};
+    if(name.endsWith('/testMarketStore'))return{useTestMarket:()=>({asset:null,loaded:false,error:false,clockOffsetMs:0}),useManagedListingDiscovery:()=>({assets:[],loaded:false,error:false,clockOffsetMs:0}),TEST_MARKET_TERMINAL_INTERVAL_MS:5000};
+    if(name.endsWith('/useMarketData'))return{useMarketData:()=>({tickers:new Map(),loaded:false,status:'idle'})};
+    if(name.endsWith('/nrxMarket'))return{isEdgeMarketPair:()=>false,isNrxPair:()=>false};
     return req(name);
   },output,{setInterval,clearInterval,setTimeout,clearTimeout,location:options.location},{hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()});
   return{components,render(props={}){index=0;const fn:any=Object.values(output).find(v=>typeof v==='function');const tree=fn(props);effects.splice(0).forEach(fn=>fn());return tree;}};

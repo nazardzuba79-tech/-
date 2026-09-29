@@ -9,11 +9,13 @@ on:
     paths:
       - 'workers/market-edge/**'
       - 'src/services/testMarkets/**'
+      - 'src/services/listings/**'
       - '.github/workflows/deploy-market-edge.yml'
   pull_request:
     paths:
       - 'workers/market-edge/**'
       - 'src/services/testMarkets/**'
+      - 'src/services/listings/**'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/futuresDepth.ts'
       - 'frontend/src/lib/__tests__/futuresCandles.test.ts'
@@ -55,6 +57,8 @@ jobs:
         run: node --experimental-default-type=module test.mjs
       - name: Install shared simulation dependency
         run: npm ci --prefix ../.. --ignore-scripts --no-audit --no-fund
+      - name: Managed listings Durable Object on real workerd
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm run test:listings
       - name: Wrangler dry-run
         run: npx --yes wrangler@4 deploy --dry-run
 
@@ -83,11 +87,11 @@ jobs:
           health_ok=0
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if health="$(curl --connect-timeout 5 --max-time 10 -fsS https://market.voltextech.net/health)" \
-              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v9')process.exit(1)})"; then
+              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v10')process.exit(1)})"; then
               health_ok=1
               break
             fi
-            echo "waiting_for_v9 attempt=$attempt"
+            echo "waiting_for_v10 attempt=$attempt"
             sleep 5
           done
           test "$health_ok" = "1"
@@ -105,7 +109,7 @@ jobs:
       - name: Confirm deployed Worker version and private-route isolation
         run: |
           health="$(curl --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 -fsS https://market.voltextech.net/health)"
-          printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||!['futures-edge-direct-v6','public-display-edge-v7','public-display-edge-v8','public-display-edge-v9'].includes(j.version))process.exit(1)})"
+          printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||!['futures-edge-direct-v6','public-display-edge-v7','public-display-edge-v8','public-display-edge-v9','public-display-edge-v10'].includes(j.version))process.exit(1)})"
           echo "health_identity=ok"
           private_status="$(curl --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)"
           echo "private_route_status=$private_status"
