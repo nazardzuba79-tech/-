@@ -1,0 +1,54 @@
+name: Admin access gate and Users loading states
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/lib/useAdminGate.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/useVisibleAccountRead.ts'
+      - 'frontend/src/lib/visibleRead.ts'
+      - 'frontend/src/pages/admin/AdminLayout.tsx'
+      - 'frontend/src/pages/admin/AdminUsersPage.tsx'
+      - 'frontend/src/pages/admin/adminUserActivity.ts'
+      - 'frontend/src/pages/admin/adminStyles.ts'
+      - 'frontend/src/pages/admin/adminConsole.css'
+      - 'frontend/src/lib/__tests__/adminConsoleInteractions.test.ts'
+      - 'frontend/src/lib/__tests__/adminUsersActivity.test.ts'
+      - 'scripts/qa-admin-gate.cjs'
+      - '.github/workflows/admin-gate.yml'
+permissions:
+  contents: read
+jobs:
+  admin-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Gate states, activity failures and the Users page (JSDOM, real components)
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
+          frontend/src/lib/__tests__/adminUsersActivity.test.ts
+          frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
+      - name: Production frontend build
+        run: npm run build --prefix frontend
+      - name: Disposable Chromium
+        run: |
+          npm install --prefix /tmp/admin-gate-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/admin-gate-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Browser QA at 390 and 1440 against a fixture API (no production service)
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-gate-qa/node_modules/playwright
+          QA_OUT: docs/qa/admin-gate/ci
+        run: node scripts/qa-admin-gate.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-gate-qa
+          path: docs/qa/admin-gate/ci

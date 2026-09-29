@@ -4412,3 +4412,33 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Combined verification actually run: 17 focused suites / 325 tests PASS, covering P&L/ROI, locale integrity, native terminal/unknown-account behavior, homepage snapshots and SSR, Copy period rendering/progression, published snapshots/request deadlines, payload redaction and workflow coverage. Backend TypeScript build and frontend TypeScript plus standard Vite production build PASS; changed browser-script syntax and diff whitespace PASS. Existing Vite large-chunk warning remains.
 - No release migration: Prisma schema, migration files and dependency manifests/locks are unchanged relative to `b3864580`. No production database or production account was accessed to make that comparison.
 - Browser QA remains the final-head CI gate because this workspace has no Chromium executable; no new browser run is claimed. This combined preparation performed no push, remote merge, deployment, production request or trade.
+
+## Claude — 2026-09-29 — PR 1: /admin access-check states and Users activity failures
+
+- **Base:** fresh `origin/main` `a7925e90` (release #324). Branch `claude/ecstatic-brahmagupta-cwkvt5`.
+- **Files:**
+  - `frontend/src/lib/useAdminGate.ts`
+  - `frontend/src/pages/admin/AdminLayout.tsx`
+  - `adminUserActivity.ts`
+  - `AdminUsersPage.tsx`
+  - `adminStyles.ts`, `adminConsole.css`
+  - `frontend/src/lib/api.ts` (optional `signal` for `getMe` / `getAdminUsers`)
+  - tests: `adminConsoleInteractions`, `adminUsersActivity`, and the `futuresTickerHeader` api fingerprint normalisation
+  - `scripts/qa-admin-gate.cjs`, `.github/workflows/admin-gate.yml`, `docs/qa/admin-gate/`
+- **Gate:**
+  - States: checking / ok / denied (no token, 401, 403, non-admin) / error (5xx, network, malformed, or a 15 s timeout that aborts the request).
+  - The error state keeps the admin on `/admin` with «Повторить» — no redirect.
+  - Admin pages and their requests mount only on ok; the server-side `requireAdmin` is unchanged.
+  - Retry is single-flight, and a session change re-checks.
+- **Users page:**
+  - The activity read has a 20 s timeout and strict parsing: an incomplete answer is a failure, not zeros.
+  - Unknown numbers render as «—» and «…»; after a good read, a failure keeps the data and is marked stale.
+  - Contextual «Повторить» on the activity and the users list; the users list also gets a 20 s timeout and an in-flight guard.
+  - Hourly visible-only polling and the removal of the page-wide «Обновить» are preserved.
+- **Preserved:** Codex's customer-only list (#306 era) and last-login sort; НОВЫЙ next to the email; the deposit/credit flows; the alert poll (now started only on ok).
+- **Checks:**
+  - Frontend `tsc -b` + build.
+  - Jest: `adminConsoleInteractions` 19/19, `adminUsersActivity` 17/17, `futuresTickerHeader` 35/35, plus `renderBandwidthBudget`, `adminDepositRails`, `routeCodeSplitting`.
+  - Full Jest branch vs clean main: the only difference was the api fingerprint (now normalised) and `registerWalletTailwindOwnership` "build output", which fails identically on a clean-main build (pre-existing, skipped when `dist` is absent).
+  - Browser: `qa-admin-gate.cjs` 22/22, three consecutive runs.
+- **Unresolved:** the production slowdown is not measured or claimed fixed; the admin gate CI workflow has not yet run remotely.
