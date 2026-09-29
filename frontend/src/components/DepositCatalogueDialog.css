@@ -59,12 +59,11 @@
 .dc-network-option:hover{border-color:#c9a444}
 .dc-network-option.is-selected{background:#fff8e5;border-color:#dcb350;box-shadow:inset 0 0 0 1px #dcb350}
 /* The minimum, before the address: plain and firm, not an alarm. */
-.dc-minimum{padding:12px 14px;border:1px solid #efdca6;border-radius:13px;background:#fffaeb;color:#4a3b12}
-.dc-minimum-row{display:flex;align-items:baseline;justify-content:space-between;gap:4px 12px;flex-wrap:wrap}
-.dc-minimum-row span{font-size:13px;font-weight:600;color:#5c4a17}
-.dc-minimum-row strong{font-size:17px;font-weight:700;color:#172033;font-variant-numeric:tabular-nums;white-space:nowrap}
-.dc-minimum-equivalent{text-align:right;font-size:13px;color:#5c4a17;font-variant-numeric:tabular-nums;margin-top:1px}
-.dc-minimum p{margin:7px 0 0;font-size:12px;line-height:1.5;color:#6b5a2a}
+.dc-minimum{padding:11px 14px;border:1px solid #efdca6;border-radius:13px;background:#fffaeb}
+.dc-minimum-line{margin:0;font-size:14px;line-height:1.45;color:#172033;font-variant-numeric:tabular-nums}
+.dc-minimum-line strong{font-weight:650}
+.dc-minimum-estimate{color:#5c4a17;white-space:nowrap}
+.dc-minimum-note{margin:3px 0 0;font-size:12px;line-height:1.5;color:#6b5a2a}
 /* Phones: the asset list is a bottom sheet with large rows. */
 @media(max-width:600px){
   .dc-menu-backdrop{display:block;position:fixed;inset:0;z-index:30;background:rgba(16,24,40,.45)}
@@ -76,4 +75,3 @@
   .dc-menu .dc-asset-row{min-height:60px;padding:10px 12px}
 }
 @media(prefers-reduced-motion:reduce){.dc-asset-trigger,.dc-trigger-chevron,.dc-trigger-chevron svg{transition:none}}
-@media(max-width:380px){.dc-minimum-equivalent{text-align:left}}

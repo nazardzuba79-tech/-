@@ -38,19 +38,20 @@ const pickAsset = async (page, symbol, method = 'click') => {
   await page.getByRole('heading', exact('Ваш адрес ' + symbol)).waitFor();
 };
 const address = page => page.getByTestId('deposit-address').innerText();
-/** The 300 USD rule is on screen for this destination, ABOVE the address. A
- *  USD-pegged asset follows the server's fixed policy; every other asset
- *  stays USD-only even when the page holds a market price. */
-async function minimumShown(page, entry, symbol) {
+/** The minimum is on screen for this destination, ABOVE the address, in two
+ *  lines (owner, 2026-09-29): «Минимальное пополнение — 300 USDT» for a
+ *  USD-pegged coin, «… — 300 USDT или эквивалент в BTC» for any other, then one
+ *  short sentence. «(≈ X BTC)» only from a live, current price. */
+async function minimumShown(page, entry, symbol, priced = false) {
   const box = page.getByTestId('deposit-minimum');
   const text = await box.innerText();
   const minY = (await box.boundingBox()).y, addressY = (await page.getByTestId('deposit-address').boundingBox()).y;
   const equivalent = await page.getByTestId('deposit-minimum-equivalent').count();
   const pegged = symbol === 'USDT' || symbol === 'USDC';
-  check(`${entry}: ${symbol} minimum 300 USD before the address`, text.includes('Минимальное пополнение') && text.includes('300 USD')
-    && text.includes('Для зачисления сумма подтверждённых пополнений в одном активе и одной сети должна быть не ниже минимума.') && minY < addressY);
-  check(`${entry}: ${symbol} minimum ${pegged ? 'follows the 1:1 policy' : 'stays USD-only'}`,
-    pegged ? (await page.getByTestId('deposit-minimum-equivalent').innerText()) === `= 300 ${symbol}` : equivalent === 0);
+  const line = pegged ? `Минимальное пополнение — 300 ${symbol}` : `Минимальное пополнение — 300 USDT или эквивалент в ${symbol}`;
+  check(`${entry}: ${symbol} minimum in two lines before the address`, text.startsWith(line)
+    && text.includes('Несколько переводов в одном активе и сети суммируются.') && text.split('\n').filter(Boolean).length === 2 && minY < addressY);
+  check(`${entry}: ${symbol} ${priced ? 'shows' : 'has no'} ≈ estimate`, equivalent === (priced && !pegged ? 1 : 0));
 }
 // Wait for a committed parent render so a negative assertion cannot pass
 // before the component has had a chance to observe the injected quote.
@@ -101,14 +102,16 @@ async function entryChecks(entry) {
     await assetField(page).click();
     check(entry + ': USDT heads the asset list', (await page.getByRole('option').first().locator('strong').innerText()) === 'USDT');
     await page.keyboard.press('Escape');
-    // Volatile assets never borrow a cached conversion from the page.
-    // Covers the reviewed stale-flag bug and the former fresh-price path.
+    // «(≈ X)» for a non-pegged coin comes only from a LIVE price the page
+    // already holds, no older than the server's 2-minute bound (the #339
+    // review's stale-flag and render-only-age gaps are both closed).
     await pickAsset(page, 'BTC'); await minimumShown(page, entry, 'BTC');
+    await screenshot(page, entry.toLowerCase() + '-btc-no-price');
     await setPagePrices(page, { BTC: '100000', ETH: '2500' });
-    await minimumShown(page, entry, 'BTC');
-    check(entry + ': fresh cached quote cannot add a BTC estimate', await page.getByTestId('deposit-minimum-equivalent').count() === 0);
-    await screenshot(page, entry.toLowerCase() + '-btc-usd-only');
-    await pickAsset(page, 'ETH'); await minimumShown(page, entry, 'ETH');
+    await minimumShown(page, entry, 'BTC', true);
+    check(entry + ': live BTC price gives (≈ 0,003 BTC)', (await page.getByTestId('deposit-minimum-equivalent').innerText()).trim() === '(≈ 0,003 BTC)');
+    await screenshot(page, entry.toLowerCase() + '-btc-estimate');
+    await pickAsset(page, 'ETH'); await minimumShown(page, entry, 'ETH', true);
     await pickAsset(page, 'BTC');
     await setPagePrices(page, { BTC: '100000' }, 10_000, true);
     await minimumShown(page, entry, 'BTC');
@@ -116,6 +119,12 @@ async function entryChecks(entry) {
     await setPagePrices(page, { BTC: '100000' }, 3 * 60_000);
     await minimumShown(page, entry, 'BTC');
     check(entry + ': expired quote cannot add an estimate', await page.getByTestId('deposit-minimum-equivalent').count() === 0);
+    // An estimate already on screen leaves when its price ages out, with no
+    // re-render from the page.
+    await setPagePrices(page, { BTC: '100000' }, 120_000 - 1_500);
+    check(entry + ': near-expiry estimate is shown', await page.getByTestId('deposit-minimum-equivalent').count() === 1);
+    await page.waitForTimeout(2_000);
+    check(entry + ': estimate removed on expiry without a page re-render', await page.getByTestId('deposit-minimum-equivalent').count() === 0);
     await setPagePrices(page, null);
     await assetField(page).click();
     const initialUsdt = page.getByRole('option').filter({ hasText: 'Tether' });

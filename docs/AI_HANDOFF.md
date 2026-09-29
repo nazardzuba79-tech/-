@@ -4774,3 +4774,32 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved prior Claude/Codex listing data, ordinary/Auto scale, chart/UI design, polling intervals, trading/accounting, existing infrastructure and paused PR #331.
 - Local validation: 97 focused tests / 6 suites PASS; frontend types/build PASS; production-bundle fixture QA VTA 390/1440/2552 and BTC 1440 shows zero geometry changes across background polls. Additional unchanged spotPairTransition suite retains 3 stale-harness/assertion failures (2 pass); see docs/qa/vta-layout-stability.md.
 - Next: verify PR CI and the authorized existing Pages production deployment. No production trades, credits, backend or hosting-config changes.
+
+## Claude — 2026-09-29 — Deposit minimum in two plain lines; Wallet «V» removed
+
+- Base: `main` `9742375b`. Branch `claude/peaceful-volta-h5zw7g-deposit-minimum-line`. Commit: the one carrying this entry.
+- **Owner ask:** Codex's note («Для зачисления сумма подтверждённых пополнений в одном активе и одной сети…») is hard for newcomers.
+  - Approved per-asset line: «Минимальное пополнение — 300 USDT» (pegged: USDT/USDC/USD/DAI show their own ticker), otherwise «— 300 USDT или эквивалент в BTC (≈ 0,003 BTC)».
+  - Second line: «Несколько переводов в одном активе и сети суммируются.» (owner: «активе», not «монете»).
+  - Remove the big «V» on the Wallet overview.
+- **Changes**
+  - `DepositCatalogueDialog.tsx/.css`: two-line `dc-minimum`.
+  - `depositMinimum.ts`:
+    - `depositMinimumView(asset, quote?, now?)` adds `estimate` / `estimateExpiresAt`.
+    - `DEPOSIT_PRICE_MAX_AGE_MS` restored and pinned to `src/config/limits.ts`.
+  - Locales (7): `minimumTitle` / `minimumEquivalent` / `minimumPegged` replaced by `minimumPeggedLine` / `minimumOtherLine` / `minimumApprox`; `minimumNote` reworded.
+  - `WalletOverview.tsx` / `wallet.css`: `.wallet-overview-mark` removed.
+- **Reconciled with Codex (`e292d965`), which had removed the ≈ estimate after the #339 review.** The owner explicitly approved «(≈ 0,003 BTC)», so it returns with both review gaps closed:
+  - only a live quote (`tickersMeta.stale === false`), younger than the server's 2-min bound;
+  - a one-shot timeout removes a shown estimate at expiry without any parent render;
+  - still `getState()` only: no request, subscription or polling.
+  - Codex's stale and expired QA cases are kept; its «fresh quote cannot add an estimate» case is now «live quote shows (≈ 0,003 BTC)», plus a new expiry-without-re-render check.
+- **Checks actually run (local, synthetic data):**
+  - frontend `tsc -b` and production build: PASS.
+  - `depositMinimumRule` / `i18nLanguageChunks` / `depositOrder` / `depositAllWallets` / `copyTradingCiCoverage`: PASS.
+  - `walletOverview.test.ts`: 4 failures, identical on unmodified `main`.
+  - `qa-deposit-ui.cjs`: PASS, 303 checks. 1 GET on open, 0 on interactions, 0 in 60 s idle.
+  - Full `npx jest frontend/src`: 143 pass / 20 fail; the same 20 suites as the earlier `main` baseline.
+  - Wallet page on the local fixture at 1440/390: no `.wallet-overview-mark`.
+  - Screenshots: `docs/qa/deposit-asset-picker/minimum-*`, `wallet-no-v-*`.
+- **Not done:** no merge, no deploy.

@@ -731,24 +731,6 @@
   }
 }
 /* The decorative V from the approved header: gold, faint, clipped. */
-.vx-wallet .wallet-overview-mark {
-  position: absolute;
-  top: -34px;
-  right: -6px;
-  font-size: 180px;
-  font-weight: 700;
-  line-height: 1;
-  color: rgba(242, 180, 0, 0.16);
-  pointer-events: none;
-  user-select: none;
-}
-@media (max-width: 1024px) {
-  .vx-wallet .wallet-overview-mark {
-    font-size: 120px;
-    right: -14px;
-    top: -20px;
-  }
-}
 .vx-wallet .wallet-overview-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
