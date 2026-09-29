@@ -1,0 +1,98 @@
+{
+  "sourceBase": "e92951c794d1a05faa1576723170d8284521cbd8",
+  "failedPr": 345,
+  "failedPrHead": "b343c355",
+  "failedPrTree": "89edcb0c",
+  "appWorkflowCommit": "bfa6ffb5f98674faae9404e2dea59819319b2b2f",
+  "adminHarnessCommit": "79b20941bfe184330b6fc0312d4e3d6844722cee",
+  "testedFrontendSourceTree": "9e7c662fc1469a52afb38e26e2f6f0f305fa4358",
+  "remoteFailures": [
+    {
+      "workflow": "App shell and chunk recovery",
+      "runId": 36604258453,
+      "jobId": 109529122059,
+      "failure": "Alphanumeric-only entry grep returns empty for both real hashes containing underscores."
+    },
+    {
+      "workflow": "Admin access gate and Users loading states",
+      "runId": 36604258622,
+      "jobId": 109529122636,
+      "failure": "After eight passing mobile scenarios, hourly-read fixture timed out waiting for stale activity because unobserved tab correctly slept after five minutes."
+    }
+  ],
+  "localRuntime": {
+    "node": "v24.19.0",
+    "playwright": "1.62.1",
+    "chromium": "153.0.8010.0",
+    "locale": "en-US",
+    "serviceScope": "loopback fixtures only"
+  },
+  "remoteRuntime": {
+    "node": "22",
+    "playwright": "1.56.1",
+    "chromium": "141.0.7390.37"
+  },
+  "buildA": {
+    "entry": "index-gAizF_5B.js",
+    "files": 145,
+    "sha256OfSortedPathSha256Json": "81173ea2b6b9838b656e11669a71c40892820f6e4e0a14b6844f031a7077cebd",
+    "allFilesIndependentRegularFiles": true,
+    "symlinkCount": 0,
+    "hardlinkCount": 0
+  },
+  "buildB": {
+    "entry": "index-ClWgg_OL.js",
+    "files": 145,
+    "sha256OfSortedPathSha256Json": "f4f5b8dc08e7a8b91383aa48e84bcc2616e3af58bb68c342cd28a9fc9e060196",
+    "allFilesIndependentRegularFiles": true,
+    "symlinkCount": 0,
+    "hardlinkCount": 0
+  },
+  "buildBChange": "Workflow-only data-build=\"b\" attribute added to FuturesPage to produce different real entry/lazy hashes; source restored after build.",
+  "adminFullRun": {
+    "exitCode": 0,
+    "scenarios": 24,
+    "allPassed": true,
+    "localOnlyTransform": "Exact committed script with root resolved absolutely and dist pointed at the complete frozen build A; no other byte difference. All 24 committed scenarios, browser API routing, synthetic token fixture, security assertions, trusted input, clock and static host retained.",
+    "transformedScriptSha256": "03ce25b6d22516fc36cf3c8f0c2f81fb97958390262efec4ca475cecc70e2f9b"
+  },
+  "appShellFullRun": {
+    "exitCode": 0,
+    "groups": 10,
+    "findings": [],
+    "unchangedHarness": true
+  },
+  "jest": {
+    "exitCode": 0,
+    "passedTests": 66,
+    "totalTests": 66,
+    "passedSuites": 4,
+    "pendingTests": 0,
+    "todoTests": 0
+  },
+  "sourceBlobs": {
+    ".github/workflows/app-shell-recovery.yml": "124c69642dcbf64c92761df5b61244eee03babfd",
+    "scripts/qa-admin-gate.cjs": "68a0599b3fbc03e85db31344f477f67614da2643",
+    "scripts/qa-futures-cold-open.cjs": "264fb0f03d13702b0c15da0d82ae9292cc820232",
+    "frontend/src/lib/browserActivity.ts": "7657698c4751a84362e44f2f82c9da594f8fb3b0",
+    "frontend/src/pages/admin/adminUserActivity.ts": "3b9724e4d6ae2810abac50b018a96801faea62cc"
+  },
+  "artifacts": {
+    "entry-guard-report.json": "55384144b5f492b401aee5145fd1f19069afe0b6a497e2b991c2d13ac8a51376",
+    "app-shell-report.json": "22162c9e18c9243805a8fd62d479935f79ade5a6e190dbb821cca9ded729c916",
+    "admin-gate-report.json": "a383a41ce83cc6bfa2b4cf10e6c38cdbb9e763a58e7ae38f1fa1242c29e4184c",
+    "focused-jest.json": "38007d587c2e54a488cd2f667253e884a48f891e87840050fe31e71a1c03af11",
+    "app-shell-browser.log": "fdb7c7037c7eb673d428b49c8a8aefec79f5ea81846b20e93cc8bcb5bdaa228c",
+    "admin-gate-browser.log": "5eff4d139ad4e29af01c7d0baf7a3fb07c2c200dc3ebb586349bcc5aa065cd53",
+    "focused-jest.log": "17aaf6630f4003a94156a12215d61e818101a02edd1c809a7ee8cb1bf9d46a42",
+    "app-shell-recovered-390.png": "f21be4ec275e5cd9365072ef5b32f2ca7688655c4698d4d087b402d507e80bb9",
+    "admin-activity-stale-390.png": "567ee0124b050075545f4bb0c79864979c9e704d9acb559d31332ad4d2dc9fd1",
+    "admin-activity-idle-wake-1440.png": "b6c5d9e807fa4a116726296b5f71fbea2ee98312e30727e69fec7db1e833405c"
+  },
+  "limits": [
+    "The exact updated PR head must run both full CI gates before release.",
+    "Early local Admin attempts were invalidated by build B HTML in a build A asset tree; the final run uses the immutable complete A copy. ERR_CACHE_MISS was a boot-guard cache probe, not a demonstrated browser defect. No cache/server workaround is committed.",
+    "This lane performed remote reads only, with no push, rerun, merge, deployment, production API, account or database operation."
+  ],
+  "buildSnapshotsShareInodes": false
+}
