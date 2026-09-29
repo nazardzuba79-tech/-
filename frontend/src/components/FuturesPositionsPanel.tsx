@@ -9,6 +9,7 @@ import { formatPositionQuantity } from '../lib/futuresPositionActions';
 import { ExternalLink } from 'lucide-react';
 import { ArchivePositionCard } from './ArchiveTerminalDialogs';
 import { FuturesLimitCloseDialog } from './FuturesLimitCloseDialog';
+import { FuturesUnrealizedPnl } from './FuturesUnrealizedPnl';
 import type { FuturesPosition } from '../lib/futuresAccountStore';
 import './FuturesPositionParity.css';
 
@@ -420,11 +421,7 @@ export function FuturesPositionsPanel({
                   <Th>{t('futures.colEntry')}</Th>
                   <Th title={t('futures.hintMark')}>{t('futures.colMark')}</Th>
                   <Th title={t('futures.hintLiq')}>{t('futures.colLiq')}</Th>
-                  {/* Narrow: the heading drops its «(ROI)» suffix — the
-                      ROI is still the cell's second line and the hint names
-                      it — because that one word is what keeps the row wider
-                      than a 1440 panel (owner: no heading may wrap). */}
-                  <Th title={t('futures.hintUnrealized')}>{narrow ? t('futures.colUnrealized').replace(/\s*\(ROI\)\s*$/, '') : t('futures.colUnrealized')}</Th>
+                  <Th title={t('futures.hintUnrealized')}>{t('futures.colUnrealized')}</Th>
                   <Th title={t('futures.hintRealized')}>{t('futures.colRealized')}</Th>
                   {narrow
                     ? <Th>{t('futures.tpsl')} · {t('futures.colCloseAs')}</Th>
@@ -433,9 +430,6 @@ export function FuturesPositionsPanel({
               </thead>
               <tbody>
                 {positions.map((p) => {
-                  const pnl = p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : null;
-                  const roe = p.roe !== null ? parseFloat(p.roe) : null;
-                  const positive = (pnl ?? 0) >= 0;
                   const quoteAsset = p.symbol.split('/')[1] ?? '';
                   // Position value is the size at the price the position is
                   // currently marked at — the same two server figures the
@@ -531,28 +525,11 @@ export function FuturesPositionsPanel({
                       <Td label={t('futures.colLiq')} className="mono" style={{ color: archive ? 'var(--accent)' : 'var(--sell)' }}>{liquidationPrice === null ? <span className="futures-position-empty">—</span> : archive ? formatPrice(Number(liquidationPrice)) : liquidationPrice}</Td>
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
-                      {/* The archive terminal prints a USDT figure with two
-                          decimals and no «≈ USD» line under it: the line
-                          repeated the figure above it to the cent, and cost
-                          the row a third line. Elsewhere the fuller form
-                          stays. */}
-                      <Td label={t('futures.colUnrealized')} className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
-                        <div className="futures-position-pnl">
-                          <span className="futures-position-figure">
-                            <span
-                              className="futures-position-money"
-                              data-unit={pnl !== null ? quoteAsset : undefined}
-                              data-positive={pnl !== null && pnl > 0 ? 'true' : undefined}
-                            >{pnl !== null ? group(pnl, archive ? 2 : 4) : '—'}</span>
-                            <small
-                              className="futures-position-roi"
-                              data-positive={roe !== null && roe > 0 ? 'true' : undefined}
-                            >{roe !== null ? `${group(roe, 2)}%` : '—'}</small>
-                            {!archive && pnl !== null && <small className="futures-position-approx">≈{group(pnl, 2)} USD</small>}
-                            {archive && <button type="button" className="archive-pnl-open" title={t('futures.pnlCard')} aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
-                              onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
-                          </span>
-                        </div>
+                      <Td label={t('futures.colUnrealized')} className="mono futures-unrealized-cell">
+                        <FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset}>
+                          {archive && <button type="button" className="archive-pnl-open" title={t('futures.pnlCard')} aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
+                            onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
+                        </FuturesUnrealizedPnl>
                       </Td>
                       <Td label={t('futures.colRealized')} className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">

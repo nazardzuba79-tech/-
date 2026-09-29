@@ -6,6 +6,13 @@ import { toResponse } from '../canonical/SyntheticCopyTradingEngine';
 import { resolveStrategyOwner, KSENIA_EXTERNAL_OWNER_ID } from '../strategyOwner';
 import { nazarPresentationResponse, NAZAR_PRESENTATION_REVISION } from '../nazarPresentation';
 
+// These cases replay whole histories several times — 6–10 s each on one
+// core, measured on main too. Jest's default 5 s was never actually applied
+// to them: the replay held the event loop, so the timeout timer could not
+// fire until the test had already finished. The service now yields between
+// its heavy steps, which makes the timer real, so the budget is stated.
+jest.setTimeout(120_000);
+
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const now = () => new Date('2026-09-06T12:00:00Z');
 function database() {

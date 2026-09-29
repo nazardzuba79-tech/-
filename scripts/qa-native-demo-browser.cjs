@@ -11,8 +11,9 @@ const { reviewHistoryPage } = require('./native-demo-review-repository.cjs');
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const root = path.resolve(__dirname, '..'), front = path.join(root, 'frontend');
-const largeOnly = process.env.NATIVE_QA_LARGE_ONLY === '1';
-const out = path.join(root, 'docs/qa/native-demo', largeOnly ? 'large-numbers' : '');
+const pnlOnly = process.env.NATIVE_QA_PNL_ONLY === '1';
+const largeOnly = pnlOnly || process.env.NATIVE_QA_LARGE_ONLY === '1';
+const out = path.join(root, 'docs/qa/native-demo', pnlOnly ? 'pnl-roi' : largeOnly ? 'large-numbers' : '');
 fs.mkdirSync(out, { recursive: true });
 const port = process.env.NATIVE_QA_PORT || '4178';
 const origin = `http://127.0.0.1:${port}`;
@@ -473,6 +474,15 @@ const CASES = [
   { id: 'roi-128450', pnl: '4820000.5', roi: '128450.75' }, { id: 'roi-negative-99999', pnl: '-8750000.25', roi: '-99999.99' },
   { id: 'real-zero', pnl: '0', roi: '0' },
 ];
+const PNL_CASES = [
+  { id: 'huge-profit', pnl: '16136162', roi: '33391.29' },
+  { id: 'profit', pnl: '136.25', roi: '3.91' },
+  { id: 'loss', pnl: '-136.25', roi: '-3.91' },
+  { id: 'zero', pnl: '0', roi: '0' },
+  { id: 'tiny-profit', pnl: '0.0000012345', roi: '0.001', formatted: '+0.0000012345' },
+  { id: 'huge-roi', pnl: '136.25', roi: '123456789.12' },
+];
+const signed = value => Number(value) === 0 ? grouped(value, 2) : (Number(value) > 0 ? '+' : '') + grouped(value, 2);
 function intersects(a, b) { return a.right > b.left + 1 && b.right > a.left + 1 && a.bottom > b.top + 1 && b.bottom > a.top + 1; }
 async function cardGlyphs(page, model) {
   const g = await page.evaluate(model => {
@@ -507,28 +517,40 @@ async function largeValues(width) {
     await s.context.route('**/native/cards', route => route.fulfill({ json: cardModel }));
   });
   try {
-    for (const example of CASES) {
+    for (const example of pnlOnly ? PNL_CASES : CASES) {
       current = structuredClone(s.base);
       Object.assign(current.positions[0], { quantity: '1250.5', entryPrice: '1875000.5', markPrice: '1999999.99', unrealizedPnl: example.pnl, realizedPnl: example.pnl, roiPercent: example.roi });
       current.account.unrealizedPnl = example.pnl;
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
       await s.page.reload(); await ready(s); await accountTab(s.page, 'positions'); await rows(s.page).first().waitFor();
       await check(`large-table-${example.id}-${width}`, async () => {
-        // The row prints the figure grouped and whole, never truncated or in
-        // exponent form, with the unit and the ROI grouped in brackets (the
-        // brackets and the unit are drawn by the stylesheet, so innerText
-        // carries neither). Since 2026-09-24 the archive design — the one
-        // this page opens — prints the USDT figure to two decimals and no
-        // longer draws the `≈ … USD` line under it, which repeated the
-        // figure above to the cent and cost the row a third line (the
-        // owner's approved recommendation after #220). The other designs
-        // keep four decimals and the line.
-        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 2));
-        assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), grouped(example.roi, 2) + '%');
+        // Signs, unit and ROI parentheses are accessible DOM text, not CSS content.
+        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), (example.formatted || signed(example.pnl)) + ' USDT');
+        const roi = Number(grouped(example.roi, 2).replaceAll(',', '')) === 0 ? '0.00' : signed(example.roi);
+        assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), `(${roi}%)`);
         assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
-        assert.equal(await s.page.locator('.futures-position-money').first().getAttribute('data-unit'), 'USDT');
-        return tableLayout(s.page, width);
+        const layout = await tableLayout(s.page, width);
+        const cell = await s.page.locator('.futures-unrealized').evaluate(e => {
+          const money = e.querySelector('.futures-position-money'), roi = e.querySelector('.futures-position-roi');
+          const a = money.getBoundingClientRect(), b = roi.getBoundingClientRect(), td = e.closest('td').getBoundingClientRect();
+          return { amount: { top:a.top,bottom:a.bottom,left:a.left,right:a.right }, roi: { top:b.top,bottom:b.bottom,left:b.left,right:b.right }, td: {left:td.left,right:td.right}, tone:e.dataset.tone, color:getComputedStyle(e).color, profit:getComputedStyle(e).getPropertyValue('--buy').trim(), loss:getComputedStyle(e).getPropertyValue('--sell').trim() };
+        });
+        assert(cell.roi.top >= cell.amount.bottom - 1, 'ROI must be on its own line');
+        for (const line of [cell.amount, cell.roi]) assert(line.left >= cell.td.left && line.right <= cell.td.right + 1, 'P&L text escapes its cell');
+        assert.equal(cell.tone, Number(example.pnl) === 0 ? 'neutral' : Number(example.pnl) > 0 ? 'profit' : 'loss');
+        if (pnlOnly && example.id === 'huge-profit') {
+          // Reveal the complete cell inside the existing horizontal scroller,
+          // clear of its pinned action column, just as a user scrolls the row.
+          if (width > 900) await s.page.locator('.futures-unrealized').evaluate(e => {
+            const scroller = e.closest('.futures-positions-scroll'), last = e.closest('tr').lastElementChild;
+            const end = last.getBoundingClientRect().left - 48, right = e.getBoundingClientRect().right;
+            if (right > end) scroller.scrollLeft += right - end;
+          });
+          await s.page.locator('.futures-positions-panel').screenshot({ path: path.join(out, `positions-${width}.png`) });
+        }
+        return { ...layout, cell };
       });
+      if (pnlOnly) continue;
       await check(`large-card-glyphs-${example.id}-${width}`, () => cardGlyphs(s.page, cardModel));
       await check(`large-card-png-${example.id}-${width}`, async () => { await s.page.locator('.futures-position-card, .archive-pnl-open').click(); return card(s.page, `card-${example.id}-${width}.png`, width); });
       const completed = { ...current.positions[0], status: 'CLOSED', closedAt: current.asOf, netPnl: example.pnl, liquidationPrice: null };
@@ -650,8 +672,8 @@ async function main() {
   if (!largeOnly) for (const [width,height] of [[1366,768],[1440,900],[1920,1080]]) {
     await check(`desktop-position-actions-${width}`, () => archivePositionActions(width,height));
   }
-  if (largeOnly) await check('large-values-320', () => largeValues(320));
-  for (const width of [1440, 390]) {
+  if (largeOnly && !pnlOnly) await check('large-values-320', () => largeValues(320));
+  for (const width of pnlOnly ? [1920, 1440, 1280, 1024, 390, 320] : [1440, 390]) {
     if (largeOnly) { await check(`large-values-${width}`, () => largeValues(width)); continue; }
     await check(`normal-owner-flow-${width}`, () => normalFlow(width));
     await check(`access-outage-no-real-fallback-${width}`, () => outage(width, 'access'));

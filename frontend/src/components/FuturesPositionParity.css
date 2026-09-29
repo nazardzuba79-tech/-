@@ -1,17 +1,7 @@
-/* The reference prints a profit without a plus sign (`2,120.5422 USDT`,
-   `(106.84%)`) and a loss with its minus; the colour carries the sign.
-   Owner's screenshot, 2026-09-22. */
-.trade-terminal.trade-terminal.futures-reference .futures-position-money[data-unit]::after,
+/* Preserve realized P&L's existing unit presentation. Unrealized amount,
+   sign, unit and ROI parentheses are explicit text in FuturesUnrealizedPnl. */
 .trade-terminal.trade-terminal.futures-reference .futures-position-realized[data-unit]::after {
   content: ' ' attr(data-unit);
-}
-
-.trade-terminal.trade-terminal.futures-reference .futures-position-roi::before {
-  content: '(';
-}
-
-.trade-terminal.trade-terminal.futures-reference .futures-position-roi::after {
-  content: ')';
 }
 
 /* The closed-position history table's cell padding.

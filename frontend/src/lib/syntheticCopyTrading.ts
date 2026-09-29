@@ -148,7 +148,7 @@ export interface SyntheticCopyTradingResponse {
   };
   equityHistory: { date: string; equity: number }[];
   aumHistory: { date: string; aum: number; followerCount?: number }[];
-  dailyResults: { date: string; startEquity: number; endEquity: number; realizedPnl: number; dailyReturn: number; drawdown: number }[];
+  dailyResults: { date: string; startEquity: number; endEquity: number; realizedPnl: number; dailyReturn: number; drawdown: number; numberOfTrades?: number }[];
   followers: { id: string; displayName: string; copyStartDate: string; allocatedCapital: number; currentEquity: number; realizedPnl: number; unrealizedPnl: number; roi: number; copiedTrades: number; copyRatio: number; slippageBps: number; latencyMs: number; active: boolean; startingAllocation?: number; grossPnl?: number; performanceFees?: number; netPnl?: number; copiedVolume?: number; highWaterMark?: number }[];
   weekly: { period: string; roi: number; pnl: number; trades: number; winRate: number; maxDrawdown: number }[];
   monthly: { period: string; roi: number; pnl: number; trades: number; winRate: number; maxDrawdown: number }[];
@@ -431,6 +431,39 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
     trades,
     tradesHidden: data.tradeVisibility?.mode === 'HIDDEN',
     summarized: stats !== undefined,
+  };
+}
+
+/**
+ * What a ratio's `null` cannot say on its own, read off the SAME period slice.
+ *
+ * The server sends `profitFactor` and `sortino` as `null` whenever their
+ * denominator is zero — and a zero denominator is two different facts. With
+ * no losing trade (or no losing day) and at least one gain, the ratio is
+ * unbounded: `∞` is the true value, and a dash would read as «unknown». With
+ * nothing at all in the window it is genuinely undefined and stays a dash.
+ * No finite number is ever made up for either case.
+ *
+ * `lastTradeDate` is the newest day in the window that closed a trade, from
+ * the ledger's own daily rows — a date, never an execution.
+ */
+export interface PeriodRatioFacts {
+  profitFactorUnbounded: boolean;
+  sortinoUnbounded: boolean;
+  lastTradeDate: string | null;
+  /** v8 counts a win rate over resolved trades: a 0-PnL close is neither. */
+  breakevenExcluded: boolean;
+}
+
+export function periodRatioFacts(data: Pick<SyntheticPeriodAnalytics,
+  'daily' | 'profitFactor' | 'sortino' | 'winningTrades' | 'losingTrades' | 'methodology'>): PeriodRatioFacts {
+  const returns = data.daily.map(day => day.dailyReturn);
+  return {
+    profitFactorUnbounded: data.profitFactor === null && data.losingTrades === 0 && data.winningTrades > 0,
+    sortinoUnbounded: data.sortino === null && returns.length > 0
+      && returns.every(value => value >= 0) && returns.some(value => value > 0),
+    lastTradeDate: [...data.daily].reverse().find(day => (day.numberOfTrades ?? 0) > 0)?.date ?? null,
+    breakevenExcluded: data.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN',
   };
 }
 

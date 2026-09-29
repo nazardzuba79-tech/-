@@ -301,8 +301,12 @@
   min-width: 5ch; border-radius: 4px; background: currentColor;
   opacity: .18; overflow: hidden;
 }
+/* Only a skeleton hides its dash. Once the request is over, an unknown
+   figure is a visible «—», not a placeholder that reads as loading. */
 .copytrading-bolt-root .copy-marketplace .trader-card .copy-metric-dash,
-.copytrading-bolt-root.profile-view .trader-profile-page .copy-metric-dash { visibility: hidden; font: inherit; }
+.copytrading-bolt-root.profile-view .trader-profile-page .copy-metric-dash { font: inherit; }
+.copytrading-bolt-root .copy-marketplace .trader-card .copy-metric-skeleton .copy-metric-dash,
+.copytrading-bolt-root.profile-view .trader-profile-page .copy-metric-skeleton .copy-metric-dash { visibility: hidden; }
 .copytrading-bolt-root .copy-chart-skeleton {
   background: linear-gradient(110deg, #87919d12, #87919d24, #87919d12);
   border-radius: 6px;
@@ -383,4 +387,8 @@
     gap: 12px;
   }
   .copytrading-bolt-root.profile-view .trades-hidden-note p { font-size: 13px; }
+}
+/* «Единицы измерения: USDT» under the period's performance block. */
+.copytrading-bolt-root.profile-view .profile-metrics-units {
+  margin: 12px 0 0; font-size: 11px; line-height: 1.5; color: var(--profile-muted, #8b919b);
 }

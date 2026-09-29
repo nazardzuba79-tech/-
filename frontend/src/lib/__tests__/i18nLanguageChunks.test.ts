@@ -139,7 +139,7 @@ describe('translation integrity', () => {
       // --numstat` over the locales directory reports `5 0` for every
       // language — additions only, not one deletion, so no existing string
       // was retyped.
-      "ru": "cee79381e7e8c726",
+      "ru": "70f5b20a531b31fa",
       "en": "f817d8dc7e0e9de1",
       "zh": "9b8a64f07b8782a3",
       "es": "4c1795cbfe0fa10c",
@@ -167,6 +167,22 @@ describe('translation integrity', () => {
           'draw.clone', 'draw.deleteObject', 'draw.dash.solid', 'draw.dash.dashed', 'draw.dash.dotted'];
     for (const code of LOCALES) {
       for (const key of drawingPanelKeys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
+    }
+    // 2026-09-29, Copy Trading «Эффективность»: the period performance
+    // block's labels, period names and holding-time units. `git diff
+    // --numstat` over the locales directory reports `30 0` for every
+    // language — additions only. ROI, P&L and USDT stay as written in every
+    // language; asserted by name here so this re-take covers nothing else.
+    const copyPerformanceKeys = ['title', 'windowRolling', 'windowAll', 'period.7D', 'period.30D', 'period.90D', 'period.ALL',
+      'roi', 'masterPnl', 'followersPnl', 'winRate', 'maxDrawdown', 'averagePnl', 'profitFactor', 'tradesPerWeek', 'holdingTime',
+      'volatility', 'sharpe', 'sortino', 'lastTrade', 'totalTrades', 'winningTrades', 'losingTrades', 'units', 'noLosingTrades',
+      'noLosingDays', 'winRateNote', 'duration.days', 'duration.hours', 'duration.minutes'].map(key => `copyPerformance.${key}`);
+    for (const code of LOCALES) {
+      for (const key of copyPerformanceKeys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
+      expect(dicts[code]['copyPerformance.roi']).toBe('ROI');
+      expect(dicts[code]['copyPerformance.masterPnl']).toContain('P&L');
+      expect(dicts[code]['copyPerformance.followersPnl']).toContain('P&L');
+      expect(dicts[code]['copyPerformance.units']).toContain('USDT');
     }
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
@@ -197,7 +213,8 @@ describe('translation integrity', () => {
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.
           'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed'];
-        return !key || (!depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key));
+        return !key || (!depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
+          && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       // Added for the approved compact order-panel disclosure; older copy remains frozen.
