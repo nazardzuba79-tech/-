@@ -54,10 +54,14 @@ test('create requires If-Match 0; a stale revision never overwrites', async () =
   assert.equal((await saveDraft('qax', config())).status, 428);
   const created = await saveDraft('qax', config(), 0);
   assert.equal(created.status, 200);
-  assert.equal((await created.json()).draftRevision, 1);
+  const saved = await created.json();
+  assert.equal(saved.draftRevision, 1);
+  assert.equal(saved.draft.simulationProfile, 'CALM_TREND');
+  assert.equal(saved.draft.wickModel, 'NATURAL_V1');
   assert.equal((await saveDraft('qax', config({ name: 'Other' }), 0)).status, 409);
   const list = await (await admin('/internal/listings')).json();
   assert.equal(list.listings[0].draft.name, 'QA Example');
+  assert.equal(list.listings[0].draft.wickModel, 'NATURAL_V1');
   assert.equal(list.listings[0].draftUpdatedBy, 'admin-qa-1');
 });
 
@@ -72,6 +76,9 @@ test('validation: reserved ticker, bad shape, duplicate ticker across listings',
   assert.equal((await saveDraft('vta-clone', config({ symbol: 'VTA' }), 0)).status, 422);
   assert.equal((await saveDraft('bad', config({ initialPrice: '-1' }), 0)).status, 422);
   assert.equal((await saveDraft('bad', { ...config(), extra: true }, 0)).status, 422);
+  const unknownModel = await saveDraft('bad', config({ wickModel: 'NATURAL_V2' }), 0);
+  assert.equal(unknownModel.status, 422);
+  assert.equal((await unknownModel.json()).error, 'INVALID_CONFIG');
   const dup = await saveDraft('qax-two', config(), 0);
   assert.equal(dup.status, 409);
   assert.equal((await dup.json()).error, 'DUPLICATE_TICKER');
@@ -157,28 +164,45 @@ test('several future listings with different dates are published side by side', 
 
 const profiles = async () => Object.fromEntries((await (await admin('/internal/listings')).json()).listings
   .map((l) => [l.id, [l.draft.simulationProfile, l.active?.simulationProfile ?? null]]));
+const wickModels = async () => Object.fromEntries((await (await admin('/internal/listings')).json()).listings
+  .map((l) => [l.id, [l.draft.wickModel, l.active?.wickModel ?? null]]));
 
 test('simulation profiles rotate by creation order and never change afterwards', async () => {
   // qax was listing #1 and qbx #2; the refused and duplicate attempts above spent no ordinal.
   assert.deepEqual(await profiles(), { qax: ['CALM_TREND', 'CALM_TREND'], qbx: ['IMPULSE_TREND', 'IMPULSE_TREND'] });
+  assert.deepEqual(await wickModels(), { qax: ['NATURAL_V1', 'NATURAL_V1'], qbx: ['NATURAL_V1', 'NATURAL_V1'] });
   for (const [id, symbol] of [['qcx', 'QCX'], ['qdx', 'QDX'], ['qex', 'QEX']]) {
     // A request that names a profile is ignored: the rotation decides.
-    assert.equal((await saveDraft(id, config({ symbol, simulationProfile: 'CALM_TREND' }), 0)).status, 200);
+    assert.equal((await saveDraft(id, config({ symbol, simulationProfile: 'CALM_TREND', wickModel: 'NATURAL_V1' }), 0)).status, 200);
   }
   const listing = (await (await admin('/internal/listings')).json()).listings.find((l) => l.id === 'qcx');
-  assert.equal((await saveDraft('qcx', config({ symbol: 'QCX', name: 'Edited', simulationProfile: 'COMPRESSION_BREAKOUT' }), listing.draftRevision)).status, 200);
+  // Omitting the wick model on edit cannot remove the stored choice.
+  const edit = await saveDraft('qcx', config({ symbol: 'QCX', name: 'Edited', simulationProfile: 'COMPRESSION_BREAKOUT' }), listing.draftRevision);
+  assert.equal(edit.status, 200);
+  const edited = await edit.json();
+  assert.equal(edited.draft.wickModel, 'NATURAL_V1');
+  const unknownModel = await saveDraft('qcx', config({ symbol: 'QCX', wickModel: 'NATURAL_V2' }), edited.draftRevision);
+  assert.equal(unknownModel.status, 422);
+  assert.equal((await unknownModel.json()).error, 'INVALID_CONFIG');
+  assert.equal((await (await admin('/internal/listings')).json()).listings.find((l) => l.id === 'qcx').draftRevision, edited.draftRevision);
   assert.deepEqual(await profiles(), {
     qax: ['CALM_TREND', 'CALM_TREND'], qbx: ['IMPULSE_TREND', 'IMPULSE_TREND'],
     qcx: ['PULLBACK_TREND', null], qdx: ['COMPRESSION_BREAKOUT', null], qex: ['CALM_TREND', null],
   });
+  assert.deepEqual(await wickModels(), {
+    qax: ['NATURAL_V1', 'NATURAL_V1'], qbx: ['NATURAL_V1', 'NATURAL_V1'],
+    qcx: ['NATURAL_V1', null], qdx: ['NATURAL_V1', null], qex: ['NATURAL_V1', null],
+  });
   // The public catalogue shape is unchanged: no profile in it.
   assert.ok(!JSON.stringify(await catalogue()).includes('_TREND'));
+  assert.ok(!JSON.stringify(await catalogue()).includes('wickModel'));
 });
 
 test('whole workerd restart keeps drafts, versions and the active configuration', async () => {
   const before = await (await admin('/internal/listings')).json();
   const publicBefore = (await catalogue()).assets.map((a) => [a.pair, a.version, a.name]);
   const profilesBefore = await profiles();
+  const modelsBefore = await wickModels();
   await mf.dispose();
   mf = new Miniflare(options);
   const after = await (await admin('/internal/listings')).json();
@@ -186,7 +210,10 @@ test('whole workerd restart keeps drafts, versions and the active configuration'
   assert.deepEqual((await catalogue()).assets.map((a) => [a.pair, a.version, a.name]), publicBefore);
   // Profiles survive the restart, and the rotation continues where it stopped (#6 = IMPULSE_TREND).
   assert.deepEqual(await profiles(), profilesBefore);
-  assert.equal((await (await saveDraft('qfx', config({ symbol: 'QFX' }), 0)).json()).draft.simulationProfile, 'IMPULSE_TREND');
+  assert.deepEqual(await wickModels(), modelsBefore);
+  const created = await (await saveDraft('qfx', config({ symbol: 'QFX' }), 0)).json();
+  assert.equal(created.draft.simulationProfile, 'IMPULSE_TREND');
+  assert.equal(created.draft.wickModel, 'NATURAL_V1');
 });
 
 test('the existing NRX edge is untouched and calls out to nothing', async () => {

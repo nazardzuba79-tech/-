@@ -190,6 +190,7 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
   test('the countdown ticks only while an armed listing is still ahead', () => {
     expect(panels).toContain("const counting = preListing && asset?.listingArmed === true && Number.isFinite(listingAt);");
     expect(panels).toContain('const now = useServerNow(clockOffsetMs, counting);');
-    expect(src('lib/testMarketStore.ts')).toContain('if (armed.length === 0) return;');
+    // Fixed VTA/NRX previews stay silent; the managed catalogue must still discover new rows.
+    expect(src('lib/testMarketStore.ts')).toContain('if (armed.length === 0 && !this.catalogue) return;');
   });
 });

@@ -241,7 +241,12 @@ test.each([
     // Follow-up: TP/SL uses the round plus, and decimal text drafts are fail-closed:
     // comma decimals normalize to a dot, unsupported syntax is preserved as invalid
     // instead of being silently rewritten into another executable number.
-    "0fa57c8e5477c4c1675db3bdb90d723155a09718caef853a1f439fa1d5085774"
+    // Decimal completion: plain programmatic prices, linked localized refusal
+    // notes, valid-only blur normalization and exact decimal-string payloads.
+    // The mounted compact/standard-ticket suite covers refusal of all four
+    // fields, tiny-price execution, protection and historical-entry precision.
+    // Existing engine, leverage, margin, contract and Reduce Only checks stay.
+    "e5ed95cf21299c1c68c3dc4b31899e4618dc240a5618b062d92e224ab6773e7c"
   ],
   [
     "components/FuturesAccountSummary.tsx",

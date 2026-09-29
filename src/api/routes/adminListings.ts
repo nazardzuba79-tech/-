@@ -42,13 +42,13 @@ function failure(res: Response, error: unknown) {
 
 /**
  * Build a config from the admin form: the server fills the schema version and
- * an automatic seed. The simulation profile is never taken from a request —
- * the store assigns it once, by creation order.
+ * an automatic seed. The simulation profile and wick model are never taken
+ * from a request — the store assigns them once on creation.
  */
 function configFromBody(body: unknown, previous: ListingConfig | null): ListingConfig {
   const raw = (body && typeof body === 'object' ? (body as Record<string, unknown>).config : null) as Record<string, unknown> | null;
   if (!raw || typeof raw !== 'object') throw new ListingValidationError('INVALID_CONFIG', 'config is required');
-  const { simulationProfile: _assignedByStore, ...input } = raw;
+  const { simulationProfile: _assignedByStore, wickModel: _wickModelAssignedByStore, ...input } = raw;
   const seedMode = input.seedMode === 'manual' ? 'manual' : 'auto';
   const symbol = typeof input.symbol === 'string' ? input.symbol.trim().toUpperCase() : '';
   const listingAt = typeof input.listingAt === 'string' ? input.listingAt : '';

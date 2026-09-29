@@ -5,6 +5,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as futuresMath from '../futuresMath';
+import * as decimalInput from '../decimalInput';
 import * as orderPresentation from '../../components/spotOrderPresentation';
 import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
 
@@ -173,6 +174,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/formatNumber') return { formatPrice: String, formatAmount: String };
     if (name === '../lib/futuresMath') return futuresMath;
+    if (name === '../lib/decimalInput') return decimalInput;
     if (name === './spotOrderPresentation') return orderPresentation;
     if (name === './FuturesPositionProtection') return { FuturesPositionProtectionCell: () => null };
     if (name === './OrderFamilyPresentation') return { OrderFamilyTabs: () => null, OrderFamilyFields: () => null };

@@ -443,6 +443,38 @@ const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
 beforeEach(() => { jest.useFakeTimers(); jest.setSystemTime(new Date('2026-09-08T03:22:43Z')); });
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
+test('tiny price formatting keeps nonzero digits and existing zero, precision and magnitude tiers', () => {
+  for (const [value, expected] of [
+    [0.0000001, '0.0000001'], [0.00000011, '0.00000011'], [0.00000009, '0.00000009'],
+    [-0.0000001, '-0.0000001'], [0.000000123456789, '0.000000123457'],
+    [0, '0'], [-0, '-0'], [0.000001, '0.000001'], [0.046193, '0.046193'],
+    [5.7391, '5.7391'], [97.96, '97.96'], [76714.6, '76,714.60'],
+  ] as const) expect(numbers.formatPrice(value)).toBe(expected);
+  for (const value of [1e-12, 1e-24, Number.MIN_VALUE]) {
+    const displayed = numbers.formatPrice(value);
+    expect(displayed).toMatch(/^0\.0*[1-9]\d*$/);
+    expect(Number(displayed)).toBeGreaterThan(0);
+  }
+  for (const value of [NaN, Infinity, -Infinity]) expect(numbers.formatPrice(value)).toBe('—');
+  expect(numbers.formatAmount(0.0000001, 8)).toBe('0.00000010');
+});
+
+test.each([false, true])('tiny last, mark, high and low prices survive the actual header render (archive=%s)', async archive => {
+  const component = mount({
+    __ticker: { lastPrice: '0.0000001', high24h: '0.00000011', low24h: '0.00000009' },
+    getFuturesMarkPrice: jest.fn(async () => ({ markPrice: '0.0000001', indexPrice: '0.0000001' })),
+  });
+  const props = { symbol: 'BTC/USDT', archive };
+  component.render(props); await flush();
+  const tree = component.render(props);
+  const last = nodes(tree).find(node => node.props['aria-label'] === 'trade.lastPrice');
+  const mark = nodes(tree).find(node => node.props['aria-label'] === 'futures.markPrice');
+  expect(text(last).replace(/[↑↓]/g, '').trim()).toBe('0.0000001');
+  expect(text(mark)).toBe('0.0000001');
+  expect(text(tree)).toContain('futures.headerHigh24h0.00000011');
+  expect(text(tree)).toContain('futures.headerLow24h0.00000009');
+});
+
 test('visible metrics follow price, market, derivatives order, with the mark as the only secondary price', async () => {
   // ONE SECONDARY REFERENCE PRICE, and this test changed to say so.
   //

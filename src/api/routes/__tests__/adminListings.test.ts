@@ -70,17 +70,28 @@ describe('Admin → Listings routes', () => {
     expect(store.calls[0]).toMatch(/^save:qax-[a-f0-9]{8}:0:admin-1$/);
   });
 
-  test('a request never chooses the simulation profile: Render drops it and the store assigns one by creation order', async () => {
+  test.each([
+    { simulationProfile: 'COMPRESSION_BREAKOUT', wickModel: 'NATURAL_V1' },
+    { simulationProfile: 'NOT_A_PROFILE', wickModel: 'NATURAL_V2' },
+  ])('Render drops requested model fields on create and edit: %j', async (modelFields) => {
     const { server, store } = app();
     const created = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1'))
-      .send({ config: form({ simulationProfile: 'COMPRESSION_BREAKOUT' }) });
+      .send({ config: form(modelFields) });
     expect(created.status).toBe(201);
+    // This pass-through store exposes exactly what Render forwards; the real store assigns both fields.
     const saved = [...store.drafts.values()][0].draft;
     expect('simulationProfile' in saved).toBe(false);
+    expect('wickModel' in saved).toBe(false);
     const edited = await request(server).put(`/api/v1/admin/listings/${created.body.id}/draft`).set('Authorization', auth('admin-1')).set('If-Match', '1')
-      .send({ config: form({ simulationProfile: 'NOT_A_PROFILE' }) });
+      .send({ config: form({ ...modelFields, name: 'Renamed' }) });
     expect(edited.status).toBe(200);
+    expect(edited.body.draft.name).toBe('Renamed');
     expect('simulationProfile' in edited.body.draft).toBe(false);
+    expect('wickModel' in edited.body.draft).toBe(false);
+    expect(store.calls).toEqual([
+      `save:${created.body.id}:0:admin-1`,
+      `save:${created.body.id}:1:admin-1`,
+    ]);
   });
 
   test.each([

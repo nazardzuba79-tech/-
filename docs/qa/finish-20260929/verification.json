@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-09-29T15:29:25.412Z",
+  "aggregate": {
+    "result": "PASS",
+    "browserChecks": 352,
+    "runnerCount": 4,
+    "selectedScreenshotCount": 10,
+    "selectedScreenshotBytes": 984791
+  },
+  "scope": {
+    "localOnly": true,
+    "syntheticAccounts": true,
+    "syntheticAddresses": true,
+    "productionVerified": false,
+    "productionWrites": false,
+    "neonAccess": false,
+    "areas": [
+      "Deposit UI and catalogue requests",
+      "Futures decimal ticket, tiny header and native-order acceptance",
+      "Admin Listings discovery and saved-draft guards"
+    ],
+    "vtaSimulationIncluded": false
+  },
+  "provenance": {
+    "integrationBase": "d2e98bb083d11ba128b72abab7b1618a4b4c1399",
+    "original": {
+      "sourceCommit": "51012a0901f066296e69934b520693d9b0d55687",
+      "frontendGitTree": "7e8b475e999bc7b0ee32725762582153b76b4e3c",
+      "runs": [
+        "deposit-ui",
+        "deposit-worker",
+        "admin-listings"
+      ]
+    },
+    "updated": {
+      "sourceCommit": "b7e0e1a5dc8a7a468a30747f424dbb0c4cd0f3e6",
+      "frontendGitTree": "18b4cbe0b40d7890a933ed4d7e61479b5899369c",
+      "runs": [
+        "futures-tiny-price"
+      ],
+      "change": "Preserve nonzero price display below 1e-6 using significant digits; add actual header regression and browser assertion."
+    },
+    "captureHarnessCommit": "0c016678fc0e20a43edc1234bee694df328b16eb"
+  },
+  "build": {
+    "initial": {
+      "result": "PASS",
+      "sourceCommit": "51012a0901f066296e69934b520693d9b0d55687",
+      "frontendGitTree": "7e8b475e999bc7b0ee32725762582153b76b4e3c"
+    },
+    "updated": {
+      "result": "PASS",
+      "sourceCommit": "b7e0e1a5dc8a7a468a30747f424dbb0c4cd0f3e6",
+      "frontendGitTree": "18b4cbe0b40d7890a933ed4d7e61479b5899369c"
+    },
+    "workingDirectory": "frontend",
+    "commands": [
+      "node node_modules/typescript/bin/tsc -b --force",
+      "node node_modules/vite/bin/vite.js build"
+    ],
+    "environment": {
+      "VITE_API_URL": "/api/v1",
+      "VITE_MANUAL_DEPOSIT_CATALOGUE": "true",
+      "VITE_MARKET_EDGE_URL": "http://127.0.0.1:8787",
+      "VITE_DEPOSIT_CATALOGUE_URL": "http://127.0.0.1:8791"
+    },
+    "depositComponentFixture": {
+      "url": "http://127.0.0.1:4262/qa/deposit-preview.html",
+      "environment": {
+        "VITE_API_URL": "/api/v1",
+        "VITE_MANUAL_DEPOSIT_CATALOGUE": "true",
+        "VITE_MARKET_EDGE_URL": "",
+        "VITE_DEPOSIT_CATALOGUE_URL": ""
+      }
+    },
+    "outputsCheckedIn": false
+  },
+  "runtime": {
+    "node": "v24.19.0",
+    "typescript": "5.9.3",
+    "vite": "5.4.21",
+    "playwright": "1.62.1",
+    "chromium": "153.0.8010.0",
+    "playwrightModule": "/workspace/scratch/2e1965f14243/voltex-browser-qa-runtime/playwright-local.cjs",
+    "fontconfigPath": "/etc/fonts",
+    "fontSmoke": "Latin and Cyrillic glyph metrics and screenshots verified before passing runs",
+    "runtimeWrapperCheckedIn": false
+  },
+  "additionalValidation": {
+    "result": "PASS",
+    "tests": 72,
+    "suites": [
+      "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "frontend/src/lib/__tests__/futuresVisualPolish.test.ts"
+    ],
+    "command": "node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/lib/__tests__/futuresTickerHeader.test.ts frontend/src/lib/__tests__/futuresVisualPolish.test.ts",
+    "includedInBrowserCheckTotal": false
+  },
+  "runs": [
+    {
+      "id": "deposit-ui",
+      "result": "PASS",
+      "checkCount": 297,
+      "runnerExitCode": 0,
+      "runtime": "Vite component fixture",
+      "frontendRevision": "original",
+      "frontendSourceCommit": "51012a0901f066296e69934b520693d9b0d55687",
+      "frontendGitTree": "7e8b475e999bc7b0ee32725762582153b76b4e3c",
+      "harness": {
+        "path": "scripts/qa-deposit-ui.cjs",
+        "commit": "51012a0901f066296e69934b520693d9b0d55687",
+        "sha256": "ec059c96eb6def196fb23868c15ddfecdfa272d122da4ae4b415b321a87d0729"
+      },
+      "report": {
+        "path": "deposit-ui/browser-results.json",
+        "bytes": 25970,
+        "sha256": "5473f0dcde3d5d640832566958cb7bd70110ba7182a179e9c2726166e725e774",
+        "writtenAtUtc": "2026-09-29T14:58:13.862Z",
+        "hasExplicitResultField": true
+      },
+      "requests": {
+        "Header": {
+          "initialOpen": 1,
+          "interactions": 0,
+          "retry": 1,
+          "idle60s": 0
+        },
+        "Wallet": {
+          "initialOpen": 1,
+          "interactions": 0,
+          "retry": 1,
+          "idle60s": 0
+        }
+      },
+      "viewports": null,
+      "errorArraysEmpty": true,
+      "idleMeasuredMs": 60100
+    },
+    {
+      "id": "deposit-worker",
+      "result": "PASS",
+      "checkCount": 7,
+      "runnerExitCode": 0,
+      "runtime": "Built frontend and real local workerd catalogue Worker",
+      "frontendRevision": "original",
+      "frontendSourceCommit": "51012a0901f066296e69934b520693d9b0d55687",
+      "frontendGitTree": "7e8b475e999bc7b0ee32725762582153b76b4e3c",
+      "harness": {
+        "path": "scripts/qa-deposit-catalogue-edge.cjs",
+        "commit": "51012a0901f066296e69934b520693d9b0d55687",
+        "sha256": "f5484133d4e6e7e363379d321d71452b4082f56102dc5f47fe6a932324299360"
+      },
+      "report": {
+        "path": "deposit-edge/report.json",
+        "bytes": 1467,
+        "sha256": "a37732d20bdbffb2d55427e8138fa473b8535dd200e71b3cfbeb7e092ff8ab04",
+        "writtenAtUtc": "2026-09-29T14:57:58.685Z",
+        "hasExplicitResultField": true
+      },
+      "requests": {
+        "coldOpen": {
+          "edge": 1,
+          "renderCatalogue": 0
+        },
+        "overlappingOpens": {
+          "edge": 1,
+          "renderCatalogue": 0
+        },
+        "selectCopyQr": {
+          "edge": 0,
+          "render": []
+        },
+        "idle": {
+          "ms": 60100,
+          "edge": 0
+        },
+        "reopen": 1
+      },
+      "viewports": null,
+      "errorArraysEmpty": true
+    },
+    {
+      "id": "futures-tiny-price",
+      "result": "PASS",
+      "checkCount": 28,
+      "runnerExitCode": 0,
+      "runtime": "Rebuilt frontend and actual local native engine",
+      "frontendRevision": "updated",
+      "frontendSourceCommit": "b7e0e1a5dc8a7a468a30747f424dbb0c4cd0f3e6",
+      "frontendGitTree": "18b4cbe0b40d7890a933ed4d7e61479b5899369c",
+      "harness": {
+        "path": "scripts/qa-futures-tiny-price.cjs",
+        "commit": "b7e0e1a5dc8a7a468a30747f424dbb0c4cd0f3e6",
+        "sha256": "0f3d817bf19d25592c18cd40b44ea25f986823a64c2b868b3a5515197b9156bb"
+      },
+      "report": {
+        "path": "futures-tiny-price/report.json",
+        "bytes": 5559,
+        "sha256": "285777fe055f03169e55474096e3be39c806c9da56d494c8f2f285d8a6a2f391",
+        "writtenAtUtc": "2026-09-29T15:18:28.916Z",
+        "hasExplicitResultField": true
+      },
+      "requests": null,
+      "viewports": [
+        {
+          "width": 1440,
+          "accepted": true,
+          "headerPrice": "0.0000001",
+          "exactPrice": "0.0000001",
+          "exactQuantity": "100000000",
+          "commandCount": 1,
+          "overflow": 0
+        },
+        {
+          "width": 390,
+          "accepted": true,
+          "headerPrice": "0.0000001",
+          "exactPrice": "0.0000001",
+          "exactQuantity": "100000000",
+          "commandCount": 1,
+          "overflow": 0
+        }
+      ],
+      "errorArraysEmpty": true
+    },
+    {
+      "id": "admin-listings",
+      "result": "PASS",
+      "checkCount": 20,
+      "runnerExitCode": 0,
+      "runtime": "Built frontend, real local admin router and workerd Listings Worker",
+      "frontendRevision": "original",
+      "frontendSourceCommit": "51012a0901f066296e69934b520693d9b0d55687",
+      "frontendGitTree": "7e8b475e999bc7b0ee32725762582153b76b4e3c",
+      "harness": {
+        "path": "scripts/qa-admin-listings.cjs",
+        "commit": "0c016678fc0e20a43edc1234bee694df328b16eb",
+        "sha256": "0d62b24f25d6d61aa3fbda71642ba266830641ebf2feb0288092a1651b3ca365"
+      },
+      "report": {
+        "path": "admin-listings/report.json",
+        "bytes": 4182,
+        "sha256": "24b14ed4bcb87140b2e4aadfc222bb8144c958840dd96c96042d104f687da91f",
+        "writtenAtUtc": "2026-09-29T15:04:36.656Z",
+        "hasExplicitResultField": false
+      },
+      "requests": {
+        "futureCatalogueDiscovery": {
+          "elapsedMs": 55604,
+          "reloads": 0
+        },
+        "openTerminal30s": 30,
+        "byPath30s": {
+          "/market/listings": 12,
+          "/market/test-assets/QRB-USDT/candles": 12,
+          "/market/display/spot-book/QRB-USDT": 6
+        },
+        "renderCallsTotal": 290,
+        "renderCallsNonAdmin": 254
+      },
+      "viewports": null,
+      "errorArraysEmpty": true,
+      "completionEvidence": "Runner exited 0 after all 20 checks, including the final page/console-error assertion; raw report retained unchanged.",
+      "workerOutboundRequests": 0
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "deposit-ui/header-default-usdt-trc20.png",
+      "runId": "deposit-ui",
+      "frontendRevision": "original",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 84484,
+      "sha256": "bf660fe566a045f60db15b0db20df78749329f96bb44f86f32507e9f4a731b70",
+      "visuallyInspected": true
+    },
+    {
+      "path": "deposit-ui/header-asset-menu.png",
+      "runId": "deposit-ui",
+      "frontendRevision": "original",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 75405,
+      "sha256": "70cbaca08df1bb0ffc2d00a4c7fbe364d853edad4f63487517a2572c05a5ac57",
+      "visuallyInspected": true
+    },
+    {
+      "path": "deposit-ui/header-btc-usd-only.png",
+      "runId": "deposit-ui",
+      "frontendRevision": "original",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 75739,
+      "sha256": "270fa828309c132c95fa96db28091daae7f752037d6152987f65819f73b011a6",
+      "visuallyInspected": true
+    },
+    {
+      "path": "deposit-ui/wallet-btc-usd-only.png",
+      "runId": "deposit-ui",
+      "frontendRevision": "original",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 76046,
+      "sha256": "dbd2385aacf82017e111675d935a50348ba792350adaa1b6fd493d8207f0ef4d",
+      "visuallyInspected": true
+    },
+    {
+      "path": "deposit-ui/wallet-390x844.png",
+      "runId": "deposit-ui",
+      "frontendRevision": "original",
+      "width": 390,
+      "height": 844,
+      "bytes": 51152,
+      "sha256": "352d0f038e6f37bcc92e6f749e67b13862192da481829aed63755557ca985340",
+      "visuallyInspected": true
+    },
+    {
+      "path": "futures-tiny-price/tiny-price-1440.png",
+      "runId": "futures-tiny-price",
+      "frontendRevision": "updated",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 188286,
+      "sha256": "239ff60015f56adcf8ec4752b6134dd9e852b846044a225dcf5248683daf0b23",
+      "visuallyInspected": true
+    },
+    {
+      "path": "futures-tiny-price/tiny-price-390.png",
+      "runId": "futures-tiny-price",
+      "frontendRevision": "updated",
+      "width": 390,
+      "height": 844,
+      "bytes": 64098,
+      "sha256": "bb1ff96d56da3d3644e80478a2c7dc359ccb14a85983b8bf6b9ada907c41ffe2",
+      "visuallyInspected": true
+    },
+    {
+      "path": "admin-listings/dirty-draft-390.png",
+      "runId": "admin-listings",
+      "frontendRevision": "original",
+      "width": 390,
+      "height": 844,
+      "bytes": 66075,
+      "sha256": "d64c7d858bd0ebcccba44be3b61ff15df5592e2e2bc23c1845ff6e79cc45e861",
+      "visuallyInspected": true
+    },
+    {
+      "path": "admin-listings/publish-dialog-1440.png",
+      "runId": "admin-listings",
+      "frontendRevision": "original",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 173093,
+      "sha256": "3b846944da50cc9973fad8325f000fbbe7aed41af1f97812cdcc1540947503c3",
+      "visuallyInspected": true
+    },
+    {
+      "path": "admin-listings/markets-discovery-without-reload-1440.png",
+      "runId": "admin-listings",
+      "frontendRevision": "original",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 130413,
+      "sha256": "0359d5f433e0a691466852d8e19dcac9df747e5b3f4eb3824f1650dd6d0bd862",
+      "visuallyInspected": true
+    }
+  ],
+  "captureStatus": {
+    "originalFrontendRunsRetained": true,
+    "originalFrontendRunsRepeatedAfterFormatter": false,
+    "allChecksRunOnOneFinalBundle": false,
+    "supersededTinyRun": {
+      "checks": 26,
+      "includedInTotal": false,
+      "artifactsIncluded": false,
+      "reason": "Earlier ticket checks passed but the top header rounded the tiny price to zero. The updated 28-check run adds exact header assertions and replaces both tiny screenshots."
+    },
+    "environmentFailureArtifactsIncluded": false,
+    "notes": [
+      "The eight Deposit/Admin images belong to the original frontend tree; the two Futures images belong to the updated tree.",
+      "External provider/chart requests are blocked in the isolated Futures fixture, so full-page screenshots can include unavailable provider panels.",
+      "Admin raw report has no result field; PASS is based on the observed zero exit code, all 20 completed checks and empty error arrays."
+    ]
+  },
+  "documentation": {
+    "readme": "README.md",
+    "sha256": "df92c7a0be27830161b4cd4110b32d8f1ed8017a04b5d82b655f4b52e65aed5c"
+  }
+}
