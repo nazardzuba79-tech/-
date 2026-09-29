@@ -24,8 +24,10 @@ const KYC_LABEL: Record<string, { text: string; color: string; bg: string }> = {
 
 const PAGE_SIZE = 20;
 // Email · Событие · Регистрация · Посл. вход · Верификация · Баланс · Действие.
-// Blocked users get a badge next to their email, as the ADMIN badge does.
-const GRID = 'minmax(0,1.7fr) minmax(0,1.25fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.2fr) 150px';
+// ADMIN, НОВЫЙ and «Заблокирован» are badges next to the email; Событие
+// carries the deposit state only.
+const GRID = 'minmax(0,2.3fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,0.95fr) minmax(0,0.9fr) minmax(0,1.1fr) 150px';
+const SKELETON_COLUMNS = [2.3, 1, 0.8, 0.95, 0.9, 1.1];
 const TABLE_MIN_WIDTH = 1000;
 type Tab = 'all' | 'new' | 'deposits' | 'kyc';
 /** Rows with a deposit package: a faint gold wash. New registrations: a faint violet one. */
@@ -225,7 +227,6 @@ export function AdminUsersPage() {
     <div>
       {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={deletionDone} />}
       <h1 style={styles.title}>Пользователи</h1>
-      <button type="button" className="admin-btn" onClick={() => { loadUsers(); void refreshActivity(); }}>Обновить</button>
       <p style={styles.subtitle}>Управление и мониторинг всех зарегистрированных пользователей биржи.</p>
 
       {(users || activity) && (
@@ -281,9 +282,9 @@ export function AdminUsersPage() {
         </div>
         {users === null && (
           <>
-            <SkeletonRow columns={[1.7, 1.25, 0.8, 1, 0.9, 1.2]} />
-            <SkeletonRow columns={[1.7, 1.25, 0.8, 1, 0.9, 1.2]} />
-            <SkeletonRow columns={[1.7, 1.25, 0.8, 1, 0.9, 1.2]} />
+            <SkeletonRow columns={SKELETON_COLUMNS} />
+            <SkeletonRow columns={SKELETON_COLUMNS} />
+            <SkeletonRow columns={SKELETON_COLUMNS} />
           </>
         )}
         {paged.map((u) => (
@@ -362,11 +363,15 @@ function rowTint(e: UserEvents): string | undefined {
   return e.pending.length ? ROW_TINT.deposit : e.fresh ? ROW_TINT.fresh : undefined;
 }
 
+/** Next to the email, like the ADMIN badge: registered within the last 24 hours. */
+function NewBadge({ events }: { events: UserEvents }) {
+  return events.fresh ? <span className="admin-event admin-event-new" data-event="new">НОВЫЙ</span> : null;
+}
+
 function EventBadges({ user, events }: { user: User; events: UserEvents }) {
   const first = events.pending[0];
   return (
     <span className="admin-user-events" data-user-events={user.id}>
-      {events.fresh && <span className="admin-event admin-event-new" data-event="new">НОВЫЙ</span>}
       {first && (
         <span className="admin-event admin-event-deposit" data-event="deposit" data-package-state={first.state}
           title={`${first.transferCount} перевод(а) · ${first.latestAt ? relativeTime(first.latestAt) : ''}`}>
@@ -380,7 +385,7 @@ function EventBadges({ user, events }: { user: User; events: UserEvents }) {
           ЗАЧИСЛЕНО <b className="mono">+{events.credited.amount} {events.credited.asset}</b>
         </span>
       )}
-      {!events.fresh && !first && !events.credited && <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
+      {!first && !events.credited && <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
     </span>
   );
 }
@@ -425,6 +430,11 @@ function UserRow({
           {u.isAdmin && (
             <span style={{ marginLeft: 6 }}>
               <Badge text="ADMIN" color="var(--admin-brand)" bg="var(--admin-brand-dim)" />
+            </span>
+          )}
+          {events.fresh && (
+            <span style={{ marginLeft: 6, whiteSpace: 'nowrap' }}>
+              <NewBadge events={events} />
             </span>
           )}
           {u.isBlocked && (
@@ -482,6 +492,7 @@ function MobileUserCard({
         {u.isBlocked && <Badge text="Заблокирован" color="var(--sell)" bg="var(--sell-dim)" />}
         <Badge text={badge.text} color={badge.color} bg={badge.bg} />
         {u.isAdmin && <Badge text="ADMIN" color="var(--admin-brand)" bg="var(--admin-brand-dim)" />}
+        <NewBadge events={events} />
         <EventBadges user={u} events={events} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 12 }}>

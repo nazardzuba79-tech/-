@@ -4319,3 +4319,18 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Adjusted catalogue regression's obsolete branch-wide git-diff assertion into a source guard for the catalogue Worker itself; it now remains useful on later unrelated Worker PRs. Updated NRX mobile screenshot from the merged-tree isolated browser run.
 - Verification: 407 unit/regression tests across 27 suites (406 initial PASS; branch-scope guard failed, then all 32 catalogue tests PASS after correction); 8 real disposable PostgreSQL NRX tests; 15 actual workerd catalogue tests; 5 read-only exporter tests; bundled NRX 10 checks/existing edge contracts; backend/frontend types and production build; NRX 1440/390 browser QA PASS. No production order, credential exposure, schema or balance write performed at commit time.
 - Next: final-head CI, PR merge, exact merged-tree deployment and production read-only QA. Allocation only after live owner identity/receipt checks; do not claim it from this preparation commit.
+
+## Claude — 2026-09-29 — Admin → Пользователи: НОВЫЙ next to the email, no «Обновить»
+
+- Base: fresh `origin/main` `08e4af19`. Only `frontend/src/pages/admin/AdminUsersPage.tsx` and its test change.
+- «НОВЫЙ» now appears next to the email, like ADMIN / «Заблокирован» (desktop row and mobile card). «Событие» keeps only the deposit state (ГОТОВ К ПРОВЕРКЕ / ОЖИДАЕТ ДОПЛАТЫ / ЗАЧИСЛЕНО) or «—».
+- The Email column is wider (2.3fr); Событие and Баланс are slightly narrower.
+- The «Обновить» button under the title is removed (owner: a page reload does it). Automatic re-reads are unchanged.
+- **Not done — the owner asked to show user passwords in «Событие» and to recover the registration passwords.**
+  - Passwords are stored only as bcrypt hashes, which cannot be reversed, so the existing passwords cannot be recovered by anyone.
+  - Storing or showing new passwords in plain text was declined as a security risk to users.
+  - Alternative offered to the owner: an admin «set temporary password» / reset action.
+- **Checks run:**
+  - backend `tsc`, frontend build: OK;
+  - `adminUsersActivity` (with new assertions) + `adminConsoleInteractions` + `renderBandwidthBudget` + `routeCodeSplitting`: 35/35;
+  - local browser smoke (production bundle, real backend, disposable Postgres, synthetic users): 40/40, including `/admin/users` at 320/390/430/1440 with no overflow, and НОВЫЙ inline next to the email at 1440.
