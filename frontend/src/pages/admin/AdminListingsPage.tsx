@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { API_BASE, getToken } from '../../lib/api';
 import './adminListings.css';
 
@@ -78,7 +77,7 @@ export function AdminListingsPage() {
         <svg viewBox="0 0 600 160" role="img" aria-label="Предпросмотр графика"><polyline fill="none" stroke="#b79130" strokeWidth="2" points={(()=>{const values=preview.liveSample.candles.map(c=>c.close),min=Math.min(...values),span=Math.max(...values)-min||1;return values.map((v,i)=>`${10+i/Math.max(1,values.length-1)*580},${145-(v-min)/span*130}`).join(' ');})()}/></svg>
         {selected?.status==='draft'&&<button type="button" disabled={busy} onClick={()=>{if(window.confirm('Опубликовать эту revision? После публикации конфигурация и история неизменны.'))void publish();}}>Publish</button>}
       </section>}
-      {selected?.status==='published'&&<div className="listing-actions"><Link to={`/trade?pair=${encodeURIComponent(selected.pair)}`}>Открыть рынок ↗</Link>
+      {selected?.status==='published'&&<div className="listing-actions"><a href={`/trade?pair=${encodeURIComponent(selected.pair)}`}>Открыть рынок ↗</a>
         <button type="button" disabled={busy} onClick={()=>{if(window.confirm(`Начислить ${selected.ownerAllocation} ${selected.ticker} на ваш Spot-баланс? Это отдельная операция.`))void run(async()=>{
           const result=await listingRequest<{applied:boolean}>(`/${selected.id}/allocation`,'POST',{confirm:true},selected.revision,`managed-listing:${selected.id}:allocation:v1`);
           setNotice(result.applied?'Начисление выполнено.':'Это начисление уже выполнено. Повторного зачисления нет.');

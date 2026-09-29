@@ -53,6 +53,7 @@ jobs:
           src/services/__tests__/OrderService.test.ts
           src/services/__tests__/DemoTradingService.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/managedListings.test.ts
           frontend/src/lib/__tests__/spotPublicMarket.test.ts
           frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
       - run: npm test --prefix workers/managed-listings && npm run build:check --prefix workers/managed-listings

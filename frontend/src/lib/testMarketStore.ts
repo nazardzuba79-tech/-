@@ -54,7 +54,7 @@ export interface TestMarketsState {
 type Listener = (state: TestMarketsState) => void;
 
 class TestMarketStore {
-  constructor(private readonly endpoint = `${API_BASE}/market/test-assets`) {}
+  constructor(private readonly endpoint = `${API_BASE}/market/test-assets`, private readonly catalogue = false) {}
   private state: TestMarketsState = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
   private subscribers = new Map<symbol, { listener: Listener; intervalMs: number }>();
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -70,7 +70,7 @@ class TestMarketStore {
     this.subscribers.set(key, { listener, intervalMs });
     listener(this.state);
     if (this.subscribers.size === 1 && typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
-    if (!this.state.loaded || (this.anyLive() && Date.now() - this.fetchedAt >= intervalMs)) void this.refresh();
+    if (!this.state.loaded || (this.catalogue && this.subscribers.size === 1) || (this.anyLive() && Date.now() - this.fetchedAt >= intervalMs)) void this.refresh();
     else this.schedule();
     return () => {
       this.subscribers.delete(key);
@@ -135,6 +135,9 @@ class TestMarketStore {
       const serverNow = Date.now() + this.state.clockOffsetMs;
       const nextListing = Math.min(...armed.map((asset) => Date.parse(asset.listingAt)));
       delay = Math.max(1_000, nextListing - serverNow + 1_000);
+      // Unlike fixed VTA/NRX, this public catalogue can gain a new identity
+      // without a deploy. Discover it at the existing subscriber cadence.
+      if (this.catalogue) delay = Math.min(delay,cadence);
     }
     this.timer = setTimeout(() => void this.refresh(), Math.min(delay, MAX_TIMEOUT_MS));
   }
@@ -142,7 +145,7 @@ class TestMarketStore {
 
 export const testMarketStore = new TestMarketStore();
 export const nrxMarketStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`);
-export const managedMarketStore = new TestMarketStore(`${MANAGED_LISTINGS_BASE}/market/managed-listings`);
+export const managedMarketStore = new TestMarketStore(`${MANAGED_LISTINGS_BASE}/market/managed-listings`,true);
 export function refreshTestMarket(pair: string): Promise<void> {
   if (isManagedPair(pair)) return managedMarketStore.refresh();
   return (isNrxPair(pair) ? nrxMarketStore : testMarketStore).refresh();

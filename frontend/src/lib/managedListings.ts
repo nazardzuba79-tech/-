@@ -28,7 +28,9 @@ export async function fetchManagedPublic<T>(path: string, signal?:AbortSignal): 
 let bootstrap:Promise<void> | undefined;
 export function ensureManagedDirectory():Promise<void> {
   if (!MANAGED_LISTINGS_BASE) return Promise.resolve();
-  return bootstrap ??= fetchManagedPublic('/market/managed-listings').then(() => {}).catch(e => {bootstrap=undefined;throw e;});
+  // Deduplicate in-flight reads, not a whole browser session: a later route
+  // entry must discover assets published since the previous visit.
+  return bootstrap ??= fetchManagedPublic('/market/managed-listings').then(() => {}).finally(() => {bootstrap=undefined;});
 }
 export function managedPairFromPath(path: string) {
   const match = new URL(path,'https://path.invalid').pathname.match(/\/([A-Z0-9]+)-USDT(?:\/candles)?$/);

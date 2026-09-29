@@ -7,6 +7,10 @@ import { NEURIX } from '../../../../src/services/testMarkets/neurix';
 import { publicTestAsset } from '../../../../src/services/testMarkets/testMarketService';
 import { WalletPortfolioService } from '../../../../src/services/WalletPortfolioService';
 
+// Preserve the fixed NRX transport fixture with the optional factory disabled.
+// Factory-enabled transport is covered by managedListings and workerd browser QA.
+jest.mock('../managedListings', () => ({ isManagedPair: () => false, fetchManagedPublic: jest.fn() }));
+
 test('metadata parses, listing time states UTC and Moscow exactly', () => {
   expect(nrxListingTime(new Date(NEURIX.listingAt).toISOString())).toBe('03.10.2026 · 13:00 UTC / 16:00 МСК');
   expect(parseTestMarkets({ serverTime: NEURIX.listingAt, assets: [publicTestAsset(NEURIX, NEURIX.listingAt)] })!.assets[0].symbol).toBe('NRX');

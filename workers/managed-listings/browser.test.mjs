@@ -84,6 +84,8 @@ try{
     await page.screenshot({path:path.join(out,`admin-preview-${width}.png`),fullPage:true});
     page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Publish',exact:true}).click();await page.getByText('Листинг опубликован. Начисление выполняется отдельно.').waitFor();
     assert.equal((await store.call(`/admin/listings/${draft.id}`)).seed,draft.seed);
+    await page.getByRole('link',{name:'Открыть рынок ↗'}).click();
+    await page.locator('.vta-countdown').waitFor();
     await page.goto(origin+'/markets');const row=page.locator(`.test-market-row[data-pair="${symbol}/USDT"]`);await row.waitFor();
     await row.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,`markets-${width}.png`)});
     // Use the actual market row navigation, not a specially built preview terminal.
