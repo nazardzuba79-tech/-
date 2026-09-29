@@ -3,10 +3,11 @@
  * browser loopback-only, no database or real order writes. */
 const fs=require('node:fs');const path=require('node:path');const express=require('express');
 const{randomBytes}=require('node:crypto');const{chromium}=require(process.env.CFD_QA_PLAYWRIGHT||'playwright');
+const{waitForCfdBrowserReadiness}=require('./cfd-browser-readiness.cjs');
 process.env.JWT_SECRET||=randomBytes(48).toString('hex');process.env.API_KEY_ENCRYPTION_SECRET||=randomBytes(32).toString('hex');process.env.NODE_ENV='production';
 const{CfdMarketDataService}=require('../dist/services/CfdMarketDataService');const{cfdRouter}=require('../dist/api/routes/cfd');
 const OUT=path.resolve('docs/qa/cfd-display-browser');fs.mkdirSync(OUT,{recursive:true});
-const report={revision:process.env.GITHUB_SHA||null,environment:'disposable loopback CI; real public display providers; no DB writes',startedAt:new Date().toISOString(),scenarios:[],pageErrors:[],findings:[],blockedWrites:0,blockedExternalHosts:[]};
+const report={revision:process.env.GITHUB_SHA||null,environment:'disposable loopback CI; real public display providers; no DB writes',startedAt:new Date().toISOString(),readiness:[],scenarios:[],pageErrors:[],findings:[],blockedWrites:0,blockedExternalHosts:[]};
 const denied=new Set();let server,browser,activePage;
 const noDb=new Proxy({},{get(){throw new Error('Database access forbidden in CFD QA');}});
 function fixture(pathname){
@@ -20,9 +21,11 @@ function fixture(pathname){
  app.use((req,res,next)=>{if(!['127.0.0.1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress))return res.sendStatus(403);res.setHeader('Cache-Control','no-store');if(!['GET','HEAD'].includes(req.method)){report.blockedWrites++;return res.status(405).json({error:'QA write blocked'});}next();});
  app.use('/api/v1',(req,res,next)=>{if(req.path==='/me')return res.json({id:'local-cfd-qa',email:'qa@example.invalid',displayName:'LOCAL QA',phone:null,country:null,avatarUrl:null,isAdmin:false,kycStatus:'NOT_STARTED',twoFactorEnabled:false,createdAt:'2026-01-01T00:00:00.000Z'});if(req.path.startsWith('/cfd/'))return cfd(req,res,next);const x=fixture(req.path);return x?res.json(x):res.status(503).json({error:'Unavailable in isolated QA'});});
  app.use(express.static(path.resolve('frontend/dist')));app.get('*',(_req,res)=>res.sendFile(path.resolve('frontend/dist/index.html')));
- server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});const origin=`http://127.0.0.1:${server.address().port}`;browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});const origin=`http://127.0.0.1:${server.address().port}`;
+ await waitForCfdBrowserReadiness(origin,{record:result=>{report.readiness.push(result);console.log('CFD_READINESS '+JSON.stringify(result));}});
+ browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  for(const width of [1920,1280,768,390]){
-  const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});await context.addInitScript(()=>{localStorage.setItem('exchange_lang','ru');localStorage.setItem('exchange_token','local-cfd-qa');localStorage.removeItem('voltex_cfd_practice_v1');});
+  const context=await browser.newContext({viewport:{width,height:900},locale:'en-US',timezoneId:'UTC',serviceWorkers:'block'});await context.addInitScript(()=>{localStorage.setItem('exchange_lang','ru');localStorage.setItem('exchange_token','local-cfd-qa');localStorage.removeItem('voltex_cfd_practice_v1');});
   await context.route('**/*',route=>{const req=route.request(),u=new URL(req.url());if(!['GET','HEAD'].includes(req.method())){report.blockedWrites++;return route.abort();}if(u.origin===origin)return route.continue();denied.add(u.hostname);return route.abort();});
   const displayRequests=[];context.on('request',req=>{if(new URL(req.url()).pathname==='/api/v1/cfd/display/tickers')displayRequests.push(req.url());});
   const page=await context.newPage();page.setDefaultTimeout(45_000);activePage=page;page.on('pageerror',e=>report.pageErrors.push({width,error:e.message}));await page.goto(origin+'/trade?market=cfd&symbol=XAUUSD',{waitUntil:'domcontentloaded'});
@@ -53,7 +56,7 @@ function fixture(pathname){
   const close=page.locator('.cfd-closeBtn').first();await page.waitForFunction(()=>{const b=document.querySelector('.cfd-closeBtn');return b&&!b.disabled;},null,{timeout:10000});await close.click();await page.locator('.cfd-tab').nth(1).click();await page.locator('.cfd-position-content tbody tr').first().waitFor({state:'visible',timeout:5000});const historyText=await page.locator('.cfd-position-content').innerText();if(!historyText.includes(selectedSymbol))throw new Error(`History missing at ${width}px`);
   if(width<=900){await page.locator('#mobile-trade-chart').click();await page.waitForFunction(()=>document.querySelector('.terminal')?.getAttribute('data-mobile-tab')==='chart');await page.locator('.terminal-mobile-chart-tabs button').nth(1).click();await page.waitForFunction(()=>document.querySelector('.terminal')?.getAttribute('data-mobile-pane')==='markets');}
   const result=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,rows:document.querySelectorAll('.cfd-option').length,forms:document.querySelectorAll('.cfd-terminal form').length,submits:document.querySelectorAll('.cfd-terminal button[type=submit]').length,canvases:document.querySelectorAll('.cfd-owned-chart-canvas canvas').length,chartStatus:document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status')||null,technicalLabels:document.querySelectorAll('.cfd-practice-badge,.cfd-practice-mode,.cfd-disclaimer').length}));
-  report.scenarios.push({width,price,sampledDisplay:true,...result});if(result.overflow)report.findings.push(`Horizontal overflow ${width}px`);if(result.forms!==1||result.submits!==1)report.findings.push(`Order ticket incomplete ${width}px`);if(result.canvases<1||result.chartStatus!=='ready')report.findings.push(`Chart not ready ${width}px`);if(result.technicalLabels!==0)report.findings.push(`Technical labels visible ${width}px`);
+  report.scenarios.push({width,selectedSymbol,price,sampledDisplay:true,...result});if(result.overflow)report.findings.push(`Horizontal overflow ${width}px`);if(result.forms!==1||result.submits!==1)report.findings.push(`Order ticket incomplete ${width}px`);if(result.canvases<1||result.chartStatus!=='ready')report.findings.push(`Chart not ready ${width}px`);if(result.technicalLabels!==0)report.findings.push(`Technical labels visible ${width}px`);
   await page.screenshot({path:path.join(OUT,`cfd-working-${width}.png`),fullPage:true});
   // Let the initial request/cache write settle before measuring a hard reload.
   // Otherwise the first context can count its still-finishing cold request as

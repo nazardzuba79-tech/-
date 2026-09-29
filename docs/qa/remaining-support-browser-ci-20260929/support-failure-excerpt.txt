@@ -1,0 +1,11 @@
+2026-09-29T17:25:48.4931119Z AssertionError [ERR_ASSERTION]: bundle contains voltex.crypto@gmail.com
+2026-09-29T17:25:48.4932020Z     at /home/runner/work/-/-/scripts/qa-support-form.cjs:56:12
+2026-09-29T17:25:48.4933207Z     at Object.<anonymous> (/home/runner/work/-/-/scripts/qa-support-form.cjs:276:3)
+2026-09-29T17:25:48.4934450Z     at Module._compile (node:internal/modules/cjs/loader:1781:14)
+2026-09-29T17:25:48.4935529Z     at Object..js (node:internal/modules/cjs/loader:1913:10)
+2026-09-29T17:25:48.4936151Z     at Module.load (node:internal/modules/cjs/loader:1505:32)
+2026-09-29T17:25:48.4937154Z     at Function._load (node:internal/modules/cjs/loader:1309:12)
+2026-09-29T17:25:48.4937846Z     at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+2026-09-29T17:25:48.4938657Z     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+2026-09-29T17:25:48.4939383Z     at node:internal/main/run_main_module:36:49 {
+2026-09-29T17:25:48.4939825Z   generatedMessage: false,

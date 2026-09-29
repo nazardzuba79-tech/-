@@ -155,3 +155,28 @@ The Support workflow correction is different: changing its existing
 workflow file triggers its existing main-push verify/deploy path, which
 can reissue the unchanged Support Worker. The release owner verifies that
 normal pipeline separately from the frontend and Render release.
+
+## Initial remote CI and narrow follow-ups
+
+[ci-first-attempt.json](ci-first-attempt.json) preserves all 34 completed
+workflows on published head `b343c355` / merge `6424c347`, exact tree
+`89edcb0c`: 28 passed and six failed. This is a historical result, not a
+claim that the release gates had all passed.
+
+The six follow-ups change QA or CI only. Application and Worker source files
+remain byte-identical to the frozen application source above.
+
+| Gate | Concrete correction |
+|---|---|
+| Support | Keep five mail/token markers and the unchanged exact owner-identity source guard; remove the duplicate bundle false positive. Full local browser passed. |
+| Spot idle | Supply current public response contracts and await completed authoritative wake plus exactly one session read before the explicit cancellation. Both widths passed. |
+| App recovery | Parse the actual complete Vite hash alphabet and reject missing or equal entry names. Existing ten-group browser recovery checks and negative controls passed. |
+| Admin activity | Keep a real active tab active through its hourly poll; separately require no reads during sleep and retained data/global error on failed wake. |
+| VTA session switch | Assert new-account default state, empty draft and correct token, then deliberately select the new account views; await the old held 401. No financial assertion removed. |
+| CFD browser | Bounded readiness through real uncached loopback quote/OHLC routes, three attempts, strict actual data validation and failure diagnostics. All original UI/cache/order checks remain; helper tests 13/13 passed. |
+
+All six code follow-ups received independent source review. VTA's corrected
+full PostgreSQL/browser execution and CFD's corrected real-provider browser
+execution remain mandatory in the replacement-head CI; local syntax or
+helper tests are not substitutes. Exact final CI and deployment results are
+recorded in [PR #345](https://github.com/nazardzuba79-tech/-/pull/345).

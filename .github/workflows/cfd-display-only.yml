@@ -17,6 +17,8 @@ on:
       - 'frontend/src/pages/home/**'
       - 'frontend/src/pages/trade-terminal/CfdPractice.css'
       - 'scripts/qa-cfd-display-browser.cjs'
+      - 'scripts/cfd-browser-readiness.cjs'
+      - 'scripts/test-cfd-browser-readiness.cjs'
       - '.github/workflows/cfd-display-only.yml'
 permissions:
   contents: read
@@ -52,6 +54,8 @@ jobs:
         env:
           VITE_API_URL: /api/v1
         run: npm run build
+      - name: Bounded real-route readiness regression tests
+        run: node --test scripts/test-cfd-browser-readiness.cjs
       - name: Install disposable browser QA tooling
         run: |
           npm install --prefix /tmp/voltex-cfd-display-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0

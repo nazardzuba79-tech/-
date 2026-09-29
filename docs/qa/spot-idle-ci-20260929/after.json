@@ -1,0 +1,74 @@
+{
+  "environment": "production bundle with isolated fixture API; no production requests",
+  "widths": [
+    {
+      "width": 1440,
+      "counts": {
+        "open": 5,
+        "history": 2,
+        "chartTriggers": 4,
+        "sessions": 2,
+        "cancels": 1,
+        "otherWrites": 0
+      },
+      "orderQueries": [
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "FILLED,CANCELLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "FILLED,CANCELLED",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED"
+      ],
+      "pageErrors": [],
+      "hiddenWindowMs": 12500,
+      "hiddenOpenReads": 0,
+      "hiddenHistoryReads": 0,
+      "unchangedChartTriggerReads": 0,
+      "immediateReturn": true,
+      "wakeCompleted": true,
+      "wakeSessionReads": 1,
+      "cancels": 1,
+      "status": "PASS"
+    },
+    {
+      "width": 390,
+      "counts": {
+        "open": 5,
+        "history": 2,
+        "chartTriggers": 4,
+        "sessions": 2,
+        "cancels": 1,
+        "otherWrites": 0
+      },
+      "orderQueries": [
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "FILLED,CANCELLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "FILLED,CANCELLED",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED"
+      ],
+      "pageErrors": [],
+      "hiddenWindowMs": 12500,
+      "hiddenOpenReads": 0,
+      "hiddenHistoryReads": 0,
+      "unchangedChartTriggerReads": 0,
+      "immediateReturn": true,
+      "wakeCompleted": true,
+      "wakeSessionReads": 1,
+      "cancels": 1,
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}
