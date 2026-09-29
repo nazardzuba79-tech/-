@@ -34,3 +34,38 @@ export function depositMinimumEquivalent(config: DepositConfig, asset: string, l
   const equivalent = config.minDepositUsd / price;
   return Number.isFinite(price) && price > 0 && Number.isFinite(equivalent) && equivalent > 0 ? equivalent : null;
 }
+
+/**
+ * The production deposit rule, as the backend enforces it
+ * (`src/config/limits.ts`: MIN_DEPOSIT_USD, DEPOSIT_USD_PEGGED_ASSETS,
+ * DEPOSIT_PRICE_MAX_AGE_MS). The manual catalogue — read straight from
+ * Cloudflare — carries addresses only, so the deposit window states the rule
+ * from here; `depositMinimumRule.test.ts` fails the moment the two differ.
+ * Nothing here decides a credit: the server re-prices at credit time.
+ */
+export const DEPOSIT_MINIMUM_USD = 300;
+export const DEPOSIT_USD_PEGGED = ['USDT', 'USDC', 'USD', 'DAI'] as const;
+export const DEPOSIT_PRICE_MAX_AGE_MS = 2 * 60_000;
+
+export interface DepositMinimumView {
+  /** The rule itself, in USD. */
+  usd: number;
+  /** The same minimum in the asset: exact for a USD-pegged asset, an
+   *  estimate from a fresh price otherwise, null when there is no fresh price. */
+  equivalent: number | null;
+  pegged: boolean;
+}
+
+/**
+ * What the deposit window says about the minimum for one asset. A price is
+ * used only when it is a positive number no older than the backend's own
+ * freshness bound for pricing a deposit; without one the window shows the
+ * USD rule alone rather than a guessed amount.
+ */
+export function depositMinimumView(asset: string, quote: { price: unknown; fetchedAt: number } | null, now = Date.now()): DepositMinimumView {
+  const config: DepositConfig = { chains: [], minDepositUsd: DEPOSIT_MINIMUM_USD, usdPeggedAssets: [...DEPOSIT_USD_PEGGED] };
+  const pegged = config.usdPeggedAssets.includes(asset);
+  const fresh = quote !== null && Number.isFinite(quote.fetchedAt) && now - quote.fetchedAt >= 0 && now - quote.fetchedAt <= DEPOSIT_PRICE_MAX_AGE_MS;
+  const equivalent = pegged ? DEPOSIT_MINIMUM_USD : fresh ? depositMinimumEquivalent(config, asset, quote!.price) : null;
+  return { usd: DEPOSIT_MINIMUM_USD, equivalent, pegged };
+}

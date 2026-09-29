@@ -4681,3 +4681,42 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - VTA keeps the legacy generator before fixed `2026-10-01T00:00:00Z`; IMPULSE_TREND begins only at that aligned hour. New managed listings retain the four-profile round-robin from listing time.
 - No production market, balance, allocation, order or Worker was changed by preparation. Final-head CI and staged Render/frontend → market-edge release remain pending.
 
+
+## Claude — 2026-09-29 — Deposit: explicit «Актив» field, network radios, minimum 300 USD, USDT · TRC-20 first
+
+- Base: `main` `9c746c61`. Branch `claude/peaceful-volta-h5zw7g-deposit-asset` (separate PR, owner asked for one). Commit: the one carrying this entry.
+- **Owner asks:**
+  - «Bitcoin ›» was the only (hidden) way to change the asset;
+  - the 300 USD minimum was not visible;
+  - network must be its own control;
+  - follow-up: USDT on TRC-20 first, and a more obvious chevron.
+- **Changes**
+  - `DepositCatalogueDialog.tsx/.css`:
+    - **Актив** field (icon, ticker, name, gold 38 px chevron key). It opens a popover under the field on desktop and a bottom sheet on phones (≤600 px). The menu has search and the active row is marked ✓. A second press, an outside press or Esc closes it; Esc closes only the menu and returns focus to the field.
+    - **Сеть** as on-screen radios with arrow keys (USDT: TRC-20 and ERC-20 side by side); a single network shows a fixed field.
+    - **Минимальное пополнение** block before the address.
+    - The «assets»/«networks» sub-screens are gone.
+  - `lib/depositMinimum.ts`: `DEPOSIT_MINIMUM_USD` / `DEPOSIT_USD_PEGGED` / `DEPOSIT_PRICE_MAX_AGE_MS` and `depositMinimumView`:
+    - pegged assets show `= 300 USDT`;
+    - others show `≈ X` only from a positive price no older than 2 min;
+    - otherwise USD alone.
+  - `lib/depositOrder.ts`: USDT TRC-20 → USDT others → catalogue order. Order only; a Wallet `initialAsset` still wins.
+  - i18n: 5 `deposit.ui.*` keys in 7 locales.
+- **Price source:** `marketDataStore.getState()` read only (no subscribe, no fetch, no timer).
+- **Preserved:** catalogue contents, addresses, memo, Cloudflare direct read and ETag path, `getPublicCatalogue`, legacy (treasury) modal and `useDepositSelection`, deposit/minimum/credit logic on the server, the copy/QR/memo/retry/focus-trap behaviour.
+- **Tests and CI**
+  - New: `depositMinimumRule.test.ts` pins the constants to `src/config/limits.ts`; `depositOrder.test.ts`.
+  - `i18nLanguageChunks` deposit.ui key list extended.
+  - `copy-trading-card-regression.yml` and `deposit-catalogue.yml` cover `depositOrder.ts` and `depositMinimum.ts` and run the new tests.
+  - QA scripts updated for the new controls and default:
+    - `qa-deposit-ui.cjs` gains checks for the menu (open/close/outside/Esc), the USDT · TRC-20 default, «USDT first», the minimum for all 8 assets (above the address), a held-price estimate and a stale-price suppression, the sheet/popover geometry, and 60 px sheet rows. Widths: 1920/1440/430/390/360/320/1440×480.
+    - `qa-deposit-catalogue.cjs` and `-edge.cjs` updated.
+  - Preview harness gets `setPrices`.
+- **Checks actually run (local, synthetic data only):**
+  - frontend `tsc -b` and production build: PASS.
+  - `qa-deposit-ui.cjs`: PASS, 269 checks. Header and Wallet each: 1 catalogue GET on open, 0 on interactions, 1 on retry, 0 in 60 s idle.
+  - `qa-deposit-catalogue.cjs`: PASS.
+  - `qa-deposit-catalogue-edge.cjs` (real workerd Worker): PASS. 1 anonymous GET, 0 Render calls, no fallback.
+  - Full `npx jest frontend/src`: failing suites identical to `main` `9c746c61` run the same way (20).
+  - Before/after screenshots: `docs/qa/deposit-asset-picker/`.
+- **Not done:** no merge, no deploy, no production data or catalogue change. Minimum-in-asset appears in production only where the page already holds a fresh `ASSET/USDT` price (terminal/markets); on Wallet alone it shows the USD rule.

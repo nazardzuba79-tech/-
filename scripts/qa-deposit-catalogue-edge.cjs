@@ -92,10 +92,12 @@ async function main() {
     const shot = async name => { await page.waitForTimeout(300); await page.screenshot({ path: path.join(out, name) });
       const l = await page.evaluate(() => ({ width: innerWidth, documentWidth: document.documentElement.scrollWidth })); report.layouts.push({ name, ...l });
       assert.ok(l.documentWidth <= l.width, `${name} overflows`); };
+    // Asset: the «Актив» field opens the list; network: every network is an on-screen radio.
     const pick = async (kind, label) => {
-      await page.getByRole('button', { name: kind === 'asset' ? 'Изменить актив' : 'Изменить сеть', exact: true }).click();
-      await (kind === 'asset' ? page.getByRole('option').filter({ has: page.locator('small', { hasText: new RegExp('^' + label + '$') }) })
-        : page.getByRole('option', { name: new RegExp(label) })).click();
+      if (kind === 'asset') {
+        await page.getByRole('button', { name: /^Актив / }).click();
+        await page.getByRole('option').filter({ has: page.locator('strong', { hasText: new RegExp('^' + label + '$') }) }).click();
+      } else await page.getByRole('radio', { name: new RegExp(label) }).click();
     };
 
     /* 1. One Deposit open = one Cloudflare read, zero Render catalogue reads. */
@@ -103,7 +105,7 @@ async function main() {
     assert.equal(edgeCount(), 0, 'nothing is prefetched before Deposit opens');
     await page.goto(`${SITE}/wallet?action=deposit`);
     await page.getByTestId('deposit-address').waitFor();
-    await page.getByText(btc, { exact: true }).waitFor();
+    await page.getByText(tronAddr, { exact: true }).waitFor(); // opens on USDT · TRC-20
     report.requests.coldOpen = { edge: edgeCount(), renderCatalogue: renderCatalogue() };
     assert.deepEqual(report.requests.coldOpen, { edge: 1, renderCatalogue: 0 });
     const first = edge[0];
@@ -119,7 +121,7 @@ async function main() {
     await page.locator('.dc-close').click();
     await page.locator('.top-nav-fund-btn').click();
     await page.getByTestId('deposit-address').waitFor();
-    await page.getByText(btc, { exact: true }).waitFor();
+    await page.getByText(tronAddr, { exact: true }).waitFor(); // opens on USDT · TRC-20
     await page.unroute(`${EDGE}/public/deposit-catalogue`);
     report.requests.overlappingOpens = { edge: edgeCount() - sharedStart, renderCatalogue: renderCatalogue() };
     assert.deepEqual(report.requests.overlappingOpens, { edge: 1, renderCatalogue: 0 });
@@ -135,8 +137,8 @@ async function main() {
     await page.getByRole('button', { name: 'Копировать memo', exact: true }).click();
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '123456');
     await page.locator('.dc-qr-button').click(); await page.locator('svg.dc-qr').waitFor();
-    await page.getByRole('button', { name: 'Изменить актив', exact: true }).click();
-    const offered = await page.getByRole('option').locator('small').allTextContents();
+    await page.getByRole('button', { name: /^Актив / }).click();
+    const offered = await page.getByRole('option').locator('strong').allTextContents();
     assert.ok(!offered.includes('SOL'), 'a disabled destination is never offered'); await page.keyboard.press('Escape');
     report.requests.selectCopyQr = { edge: edgeCount() - before, render: render.slice(renderBefore) };
     assert.equal(report.requests.selectCopyQr.edge, 0);
@@ -155,8 +157,8 @@ async function main() {
     await privateStore('PUT', { ...doc, overrides: [entry('ripple', 'xrp', xrp, { enabled: false, memo: '123456' })] }, seeded.revision);
     const reopenStart = edgeCount();
     await page.reload(); await page.getByTestId('deposit-address').waitFor();
-    await page.getByRole('button', { name: 'Изменить актив', exact: true }).click();
-    assert.ok(!(await page.getByRole('option').locator('small').allTextContents()).includes('XRP')); await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: /^Актив / }).click();
+    assert.ok(!(await page.getByRole('option').locator('strong').allTextContents()).includes('XRP')); await page.keyboard.press('Escape');
     report.requests.reopen = edgeCount() - reopenStart;
     assert.equal(report.requests.reopen, 1);
     check('after the admin disables XRP, the next open reads once and XRP is gone');
