@@ -203,7 +203,9 @@ async function main() {
     state.activity = 'ok';
     const before = state.calls.activity;
     await s.page.click('[data-activity-retry]');
-    await s.page.waitForSelector('[data-user-row="u-ready"] [data-event="deposit"]');
+    // The desktop Event cell is now the owner-only password column; deposit
+    // badges remain on the mobile card, mounted at both viewport widths.
+    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
     record(`activity first read fails → unknown → retry${w}`, unknown && state.calls.activity === before + 1 && !(await s.page.locator('[data-activity-error]').count()), `activity-calls=${state.calls.activity}`);
     await s.context.close();
 
@@ -211,12 +213,12 @@ async function main() {
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
-    await s.page.waitForSelector('[data-user-row="u-ready"] [data-event="deposit"]');
+    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
     state.activity = '503';
     const reads = state.calls.activity;
     await s.page.clock.fastForward('01:00:30');
     await s.page.waitForSelector('[data-activity-error="stale"]', { timeout: 10_000 });
-    const kept = (await s.page.locator('[data-user-row="u-ready"] [data-event="deposit"]').count()) === 1;
+    const kept = (await s.page.locator('[data-user-card="u-ready"] [data-event="deposit"]').count()) === 1;
     await shot(s.page, `activity-stale-${width}`);
     record(`activity fails after success → data kept, marked stale${w}`, kept && state.calls.activity === reads + 1, `reads=${state.calls.activity - reads}`);
     await s.context.close();

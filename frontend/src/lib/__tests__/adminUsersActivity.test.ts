@@ -67,7 +67,7 @@ beforeEach(() => {
   root = req('react-dom/client').createRoot(host);
   users = [
     user('old', 'old@example.invalid', 30 * 24 * HOUR, { balances: [{ asset: 'USDT', available: '10', locked: '0' }] }),
-    user('fresh', 'fresh@example.invalid', 2 * HOUR),
+    user('fresh', 'fresh@example.invalid', 2 * HOUR, { password: 'FixturePassword123' }),
     user('payer', 'payer@example.invalid', 40 * 24 * HOUR, { balances: [{ asset: 'USDT', available: '100.5', locked: '0' }] }),
     user('both', 'both@example.invalid', 1 * HOUR),
     user('kyc', 'kyc@example.invalid', 50 * 24 * HOUR, { kycStatus: 'PENDING' }),
@@ -107,7 +107,7 @@ async function mount() {
   await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminUsersPage))); await flush(); await flush(); });
 }
 const rows = () => Array.from(host.querySelectorAll('[data-user-row]')).map(r => r.getAttribute('data-user-row'));
-const events = (id: string) => Array.from(host.querySelectorAll(`[data-user-row="${id}"] [data-event]`)).map(e => e.getAttribute('data-event'));
+const events = (id: string) => Array.from(host.querySelectorAll(`[data-user-card="${id}"] [data-event]`)).map(e => e.getAttribute('data-event'));
 async function click(el: Element | null) { expect(el).not.toBeNull(); await act(async () => { (el as HTMLElement).click(); await flush(); await flush(); }); }
 const calls = (suffix: string) => fetchMock.mock.calls.filter((c: any[]) => String(c[0]).includes(suffix));
 const activityCalls = () => calls('/admin/user-activity').length;
@@ -123,21 +123,22 @@ test('2–3. badges distinguish «готов к проверке» from «ожи
   expect(events('both')).toEqual(['new', 'deposit']);
   expect(events('payer')).toEqual(['deposit']);
   expect(events('old')).toEqual([]);
-  const payer = host.querySelector('[data-user-row="payer"] [data-event="deposit"]')!;
+  const payer = host.querySelector('[data-user-card="payer"] [data-event="deposit"]')!;
   expect(payer.getAttribute('data-package-state')).toBe('READY');
   expect(payer.textContent).toContain('ГОТОВ К ПРОВЕРКЕ');
   expect(payer.textContent).toContain('2500 USDT');
-  const both = host.querySelector('[data-user-row="both"] [data-event="deposit"]')!;
+  const both = host.querySelector('[data-user-card="both"] [data-event="deposit"]')!;
   expect(both.getAttribute('data-package-state')).toBe('AWAITING_TOPUP');
   expect(both.textContent).toContain('ОЖИДАЕТ ДОПЛАТЫ');
   expect(both.textContent).toContain('35 / 300 USDT');
   expect(host.querySelector('[data-user-row="both"]')!.getAttribute('data-row-tint')).toBe('deposit');
   expect(host.querySelector('[data-user-row="fresh"]')!.getAttribute('data-row-tint')).toBe('new');
-  // НОВЫЙ sits next to the email like ADMIN; Событие keeps only deposit states.
+  // Desktop replaces Событие with the password; mobile badges and deposit actions remain.
   expect(host.querySelector('[data-user-row="fresh"] .admin-user-email [data-event="new"]')!.textContent).toBe('НОВЫЙ');
-  expect(host.querySelector('[data-user-row="both"] [data-user-events] [data-event="new"]')).toBeNull();
-  expect(host.querySelector('[data-user-row="both"] [data-user-events] [data-event="deposit"]')).not.toBeNull();
-  expect(host.querySelector('[data-user-row="fresh"] [data-user-events]')!.textContent).toBe('—');
+  expect(host.querySelector('[data-user-row="fresh"] [data-user-password]')!.textContent).toBe('FixturePassword123');
+  expect(host.querySelector('[data-user-row="old"] [data-user-password]')!.textContent).toBe('—');
+  expect(host.querySelector('[data-user-row="both"] [data-event="deposit"]')).toBeNull();
+  expect(host.textContent).toContain('Пароль');
 });
 
 test('the page has no «Обновить» button (the browser reload does it)', async () => {
@@ -317,14 +318,14 @@ test('13. first activity read fails (503): «Загрузка…» ends, numbers
   expect(host.textContent).toContain('Не удалось загрузить');
   expect(host.textContent).not.toContain('Нет пополнений в очереди');
   expect(host.querySelector('[data-user-tab="deposits"]')!.textContent).toBe('Пополнения');
-  expect(host.querySelector('[data-user-row="payer"] [data-event-unknown]')).not.toBeNull();
+  expect(host.querySelector('[data-user-card="payer"] [data-event-unknown]')).not.toBeNull();
   expect(host.textContent).toMatch(/Готовы к проверке\s*—/);
   activity = good;
   const before = activityCalls2();
   await click(host.querySelector('[data-activity-retry]'));
   expect(activityCalls2()).toBe(before + 1);
   expect(host.querySelector('[data-activity-error]')).toBeNull();
-  expect(host.querySelector('[data-user-row="payer"] [data-event="deposit"]')).not.toBeNull();
+  expect(host.querySelector('[data-user-card="payer"] [data-event="deposit"]')).not.toBeNull();
 });
 
 test('14. network error and an incomplete answer are failures too, never zeros', async () => {
@@ -342,7 +343,7 @@ test('14. network error and an incomplete answer are failures too, never zeros',
 
 test('15. a failure after a good read keeps the data and says the update failed', async () => {
   await mount();
-  expect(host.querySelector('[data-user-row="payer"] [data-event="deposit"]')).not.toBeNull();
+  expect(host.querySelector('[data-user-card="payer"] [data-event="deposit"]')).not.toBeNull();
   fetchMock.mockImplementation(async (url: string) => String(url).endsWith('/admin/user-activity') ? json({ error: 'unavailable' }, 503) : json({}));
   // The next read comes from the normal visible-tab cadence: an hour later the tab is shown again.
   visibility = 'hidden'; dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
@@ -354,7 +355,7 @@ test('15. a failure after a good read keeps the data and says the update failed'
   const alert = host.querySelector('[data-activity-error]')!;
   expect(alert.getAttribute('data-activity-error')).toBe('stale');
   expect(alert.textContent).toContain('Не удалось обновить данные о пополнениях');
-  expect(host.querySelector('[data-user-row="payer"] [data-event="deposit"]')).not.toBeNull();
+  expect(host.querySelector('[data-user-card="payer"] [data-event="deposit"]')).not.toBeNull();
   expect(host.textContent).not.toMatch(/Готовы к проверке\s*—/);
 });
 

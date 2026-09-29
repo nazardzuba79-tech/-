@@ -4413,6 +4413,17 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - No release migration: Prisma schema, migration files and dependency manifests/locks are unchanged relative to `b3864580`. No production database or production account was accessed to make that comparison.
 - Browser QA remains the final-head CI gate because this workspace has no Chromium executable; no new browser run is claimed. This combined preparation performed no push, remote merge, deployment, production request or trade.
 
+## Codex — 2026-09-29 — Admin Users future-password column
+
+- Base: fresh `origin/main` `a7925e90` after its unrelated Futures/Copy/Home update. Implementation commit: `cb04f963` on `codex/admin-registration-passwords`.
+- New USER registration and password change save an AES-GCM encrypted, owner-readable copy alongside the existing bcrypt hash. The Admin Users desktop `Событие` column becomes `Пароль`; older accounts without a saved copy show `—`. Only the configured owner admin receives decrypted values; other admins receive null. The additive vault table cascades on account deletion.
+- Material files: `prisma/schema.prisma`, `prisma/migrations/20260929120000_admin_password_vault/migration.sql`, `src/services/AdminPasswordVault.ts`, `src/api/routes/{auth,account,adminUsers}.ts`, `frontend/src/{lib/api.ts,pages/admin/AdminUsersPage.tsx}`, and their focused tests plus `scripts/test-admin-password-postgres.cjs`.
+- Preserved: existing admin badges, deposit activity/filtering, registration notifications, all trading and financial logic, current-main work from other agents. No production data, deployment, or merge touched.
+- Verification: 117 backend tests, 12 frontend tests, 1 disposable PostgreSQL integration test; backend/frontend TypeScript, Prisma validate, and production frontend build passed. Existing Vite chunk-size warning only. Next: owner review of the recoverable-password security tradeoff and migration before any release.
+- Owner authorized publication. PR #325 CI exposed one stale `frontend/src/lib/api.ts` fingerprint in `frontend/src/lib/__tests__/futuresTickerHeader.test.ts` caused solely by the additive Admin Users DTO field. Follow-up `35411ed7` updates that test baseline; targeted 47/47 tests pass. No Futures runtime changed. Final-head CI and Render deploy must still be verified before claiming production success.
+- PR #325's updated head passed all 18 remote workflows. Before merge, main advanced via PR #326 (admin access and activity failures); reconciliation preserves both complete handoff sections, the new admin loading/error behavior, and the password column. Only four new activity-test selectors now target the retained mobile deposit badges instead of the replaced desktop Event cell. On this combined tree: 159 focused Jest tests, 1 disposable PostgreSQL test, backend TypeScript and frontend production build passed. Final-head CI/deployment still pending.
+- Reconciled-head admin-gate CI browser QA then found three selectors still targeting deposit badges in the removed desktop Event cell. `scripts/qa-admin-gate.cjs` now checks the retained mobile-card badges as attached at both viewports; no production UI or financial flow changed. Await new CI before merging.
+
 ## Claude — 2026-09-29 — PR 1: /admin access-check states and Users activity failures
 
 - **Base:** fresh `origin/main` `a7925e90` (release #324). Branch `claude/ecstatic-brahmagupta-cwkvt5`.

@@ -29,6 +29,7 @@ model User {
   id            String    @id @default(uuid())
   email         String    @unique
   passwordHash  String
+  adminPasswordVault AdminPasswordVault?
   /// Sole source of truth for admin access (see requireAdmin middleware) —
   /// never derive access from the email address in application code.
   /// Auto-assigned ADMIN at registration for exactly one email (see
@@ -145,6 +146,13 @@ model User {
   portfolioSnapshots PortfolioSnapshot[]
 
   @@index([email])
+}
+
+model AdminPasswordVault {
+  userId            String   @id
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  encryptedPassword String   @db.Text
+  updatedAt         DateTime @updatedAt
 }
 
 /// One outstanding email-verification attempt for one user.
