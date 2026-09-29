@@ -62,8 +62,8 @@ test('real workerd + SQLite DO: signed deposit/registration, private KYC binding
     const regResponses = await Promise.all(Array.from({ length: 12 }, () => mf.dispatchFetch('https://local/v1/registration', signed(registration, '/v1/registration')).then(r => r.json())));
     assert.equal(regResponses.filter(r => r.status === 'SENT').length, 1);
     assert.equal(calls.length, 3, 'registration uses separate event namespace, same deduplication');
-    assert.match(calls[2].text, /Нова реєстрація VOLTEX\n\nEmail: synthetic-registration@example.invalid\nUser ID: integration-1/);
-    assert.ok(calls[2].text.includes(new Date(registration.timestamp).toISOString()));
+    assert.match(calls[2].text, /^Нова реєстрація VOLTEX\n\nEmail: synthetic-registration@example.invalid\nДата і час: \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2} \(Київ\)$/);
+    assert.ok(!calls[2].text.includes('integration-1'), 'no user ID in the Telegram text');
     const wrongBinding = await kyc.fetch('https://local/', { method: 'POST', body: JSON.stringify(registration) });
     assert.equal((await wrongBinding.json()).status, 'INVALID_EVENT', 'KYC authority not broadened');
     await mf.dispose(); mf = new Miniflare(runtimeOptions);
