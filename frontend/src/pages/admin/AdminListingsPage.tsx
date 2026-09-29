@@ -46,6 +46,8 @@ function statusOf(listing: AdminListing): { text: string; tone: 'draft' | 'live'
 const errorText = (error: unknown) => {
   if (!(error instanceof ListingApiError)) return 'Не удалось выполнить запрос.';
   if (error.status === 409 && error.code === 'revision_conflict') return 'Черновик уже изменён в другом окне или другим администратором. Обновите список и повторите.';
+  if (error.code === 'STORE_NOT_CONFIGURED') return 'Листинги не подключены: хранилище Cloudflare не настроено на сервере. Создание и публикация недоступны, ничего не сохранено.';
+  if (error.code === 'STORE_AUTH_FAILED') return 'Листинги не подключены: ключ хранилища на сервере и в Cloudflare не совпадает. Создание и публикация недоступны, ничего не сохранено.';
   if (error.status === 503) return 'Хранилище листингов временно недоступно. Ничего не сохранено — повторите позже.';
   return error.message;
 };
@@ -62,6 +64,8 @@ function PreviewSpark({ candles }: { candles: ListingPreview['candles'] }) {
 export function AdminListingsPage() {
   const [listings, setListings] = useState<AdminListing[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // A configuration fault, not an outage: nothing can be created until the rollout is finished.
+  const [notConnected, setNotConnected] = useState(false);
   const [editing, setEditing] = useState<{ id: string | null; revision: number; locked: boolean } | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -79,8 +83,10 @@ export function AdminListingsPage() {
       const body = await adminListingsApi.list();
       setListings(body.listings);
       setLoadError(null);
+      setNotConnected(false);
     } catch (error) {
       setLoadError(errorText(error));
+      setNotConnected(error instanceof ListingApiError && (error.code === 'STORE_NOT_CONFIGURED' || error.code === 'STORE_AUTH_FAILED'));
     } finally { loading.current = false; }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -159,11 +165,12 @@ export function AdminListingsPage() {
       <h1 style={styles.title}>Листинги</h1>
       <p style={styles.subtitle}>Симуляции новых рынков: создание, приватный предпросмотр и публикация — без изменения кода и деплоя.</p>
       <div className="listing-toolbar">
-        <button type="button" className="listing-primary" data-create-listing onClick={openCreate}>+ Создать листинг</button>
+        <button type="button" className="listing-primary" data-create-listing onClick={openCreate} disabled={notConnected}
+          title={notConnected ? 'Листинги не подключены' : undefined}>+ Создать листинг</button>
       </div>
       {notice && <p style={styles.successBox} role="status" data-listing-notice>{notice}</p>}
       {loadError && (
-        <p role="alert" style={styles.errorBox} className="admin-inline-alert">
+        <p role="alert" style={styles.errorBox} className="admin-inline-alert" data-listings-state={notConnected ? 'not-connected' : 'error'}>
           <span>{loadError}</span>
           <button type="button" className="admin-inline-retry" onClick={() => void load()}>Повторить</button>
         </p>

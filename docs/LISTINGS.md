@@ -62,6 +62,8 @@ trades on the venue.
 
 ## Production steps (not done by this change)
 
+The ordered runbook, workflows and smoke checks are in `docs/CLOUDFLARE_ACTIVATION.md` §A.
+
 1. Choose a random token (≥ 32 characters). Set it on the Worker
    (`wrangler secret put LISTINGS_STORE_TOKEN`) and on Render
    (`LISTINGS_STORE_URL=https://market.voltextech.net`, `LISTINGS_STORE_TOKEN`).

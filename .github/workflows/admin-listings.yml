@@ -21,6 +21,8 @@ on:
       - 'frontend/src/components/CryptoIcon.tsx'
       - 'frontend/vite.config.ts'
       - 'scripts/qa-admin-listings.cjs'
+      - 'scripts/smoke-market-edge-listings.mjs'
+      - 'render.yaml'
       - 'scripts/allocate-listing-owner.cjs'
       - '.github/workflows/admin-listings.yml'
 permissions:
@@ -58,12 +60,15 @@ jobs:
           npx jest --runInBand --silent --runTestsByPath
           src/services/listings/__tests__/listingConfig.test.ts
           src/services/listings/__tests__/tradingGates.test.ts
+          src/services/listings/__tests__/storeConfig.test.ts
           src/services/listings/__tests__/ownerAllocation.pg.test.ts
           src/api/routes/__tests__/adminListings.test.ts
           frontend/src/lib/__tests__/managedListings.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
       - name: Durable Object store on real workerd (Miniflare)
         run: npm run test:listings --prefix workers/market-edge
+      - name: Post-deploy smoke script (configured / not configured / token mismatch) on real workerd
+        run: npm run test:smoke --prefix workers/market-edge
       - name: Existing Worker contract
         run: node --experimental-default-type=module workers/market-edge/test.mjs
       - run: npm run build

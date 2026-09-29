@@ -46,7 +46,8 @@ const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body)
 /** Backend-only: a Bearer secret compared in constant time; any browser Origin is refused. */
 export async function authorizeListingsAdmin(request: Request, env: ListingsEnv): Promise<Response | null> {
   const secret = env.LISTINGS_STORE_TOKEN;
-  if (typeof secret !== 'string' || secret.length < 32) return reply({ error: 'store_unavailable' }, 503);
+  // Not configured is not an outage: Render reports it as STORE_NOT_CONFIGURED.
+  if (typeof secret !== 'string' || secret.length < 32) return reply({ error: 'store_not_configured' }, 503);
   if (request.headers.has('Origin')) return reply({ error: 'forbidden' }, 403);
   const auth = request.headers.get('Authorization') || '';
   if (auth.length > 4096) return reply({ error: 'unauthorized' }, 401);

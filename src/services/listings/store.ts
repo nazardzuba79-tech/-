@@ -29,8 +29,14 @@ export interface ListingStore {
   publish(id: string, draftRevision: number, publishKey: string, actor: string): Promise<{ id: string; version: number; replayed: boolean; publishedAt: string }>;
 }
 
+/** Why Render has no listing store. Names only — never a value. */
+export type ListingStoreProblem = 'missing_url' | 'missing_token' | 'invalid_url' | 'invalid_token';
+
 export class UnconfiguredListingStore implements ListingStore {
-  private fail(): never { throw new ListingStoreError(503, 'STORE_NOT_CONFIGURED', 'Listing storage is not configured'); }
+  constructor(readonly problem: ListingStoreProblem | 'not_set' = 'not_set') {}
+  private fail(): never {
+    throw new ListingStoreError(503, 'STORE_NOT_CONFIGURED', 'Listing storage is not configured on the server (LISTINGS_STORE_URL / LISTINGS_STORE_TOKEN)', { problem: this.problem });
+  }
   async list(): Promise<never> { this.fail(); }
   async published(): Promise<never> { this.fail(); }
   async saveDraft(): Promise<never> { this.fail(); }
@@ -74,6 +80,13 @@ export class CloudflareListingStore implements ListingStore {
       const code = typeof body?.error === 'string' ? body.error : 'STORE_UNAVAILABLE';
       const message = typeof body?.message === 'string' ? body.message : code;
       if ([404, 409, 422].includes(response.status)) throw new ListingStoreError(response.status, code, message, body ?? {});
+      // Configuration faults are reported as such, so a half-finished rollout never reads as an outage or a success.
+      if (response.status === 503 && code === 'store_not_configured') {
+        throw new ListingStoreError(503, 'STORE_NOT_CONFIGURED', 'The market-edge Worker has no LISTINGS_STORE_TOKEN', { problem: 'worker_token_missing' });
+      }
+      if (response.status === 401 || response.status === 403) {
+        throw new ListingStoreError(503, 'STORE_AUTH_FAILED', 'LISTINGS_STORE_TOKEN differs between Render and the market-edge Worker');
+      }
       throw new ListingStoreError(503, 'STORE_UNAVAILABLE', 'Listing storage is unavailable');
     }
     const parsed = schema.safeParse(body);
@@ -93,8 +106,25 @@ export class CloudflareListingStore implements ListingStore {
   }
 }
 
-export function listingStoreFromEnvironment(env: NodeJS.ProcessEnv = process.env): ListingStore {
-  const base = env.LISTINGS_STORE_URL;
-  const token = env.LISTINGS_STORE_TOKEN;
-  return base && token ? new CloudflareListingStore(base, token) : new UnconfiguredListingStore();
+/**
+ * The store Render uses. Missing or invalid settings never stop the server:
+ * the store is "not configured" (every admin call answers 503
+ * STORE_NOT_CONFIGURED) and the reason is logged once, by name only.
+ */
+export function listingStoreFromEnvironment(env: NodeJS.ProcessEnv = process.env, log: (line: string) => void = console.warn): ListingStore {
+  const base = env.LISTINGS_STORE_URL?.trim();
+  const token = env.LISTINGS_STORE_TOKEN?.trim();
+  const unconfigured = (problem: ListingStoreProblem | 'not_set') => {
+    if (problem !== 'not_set') log(`[listings] store not configured: ${problem} (LISTINGS_STORE_URL / LISTINGS_STORE_TOKEN)`);
+    return new UnconfiguredListingStore(problem);
+  };
+  if (!base && !token) return unconfigured('not_set');
+  if (!base) return unconfigured('missing_url');
+  if (!token) return unconfigured('missing_token');
+  if (token.length < 32) return unconfigured('invalid_token');
+  try {
+    return new CloudflareListingStore(base, token, fetch, env.NODE_ENV === 'production');
+  } catch {
+    return unconfigured('invalid_url');
+  }
 }

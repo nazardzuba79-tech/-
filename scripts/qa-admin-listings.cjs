@@ -37,7 +37,7 @@ const edgeRequire = require('node:module').createRequire(path.join(root, 'worker
 const { build } = edgeRequire('esbuild');
 const { Miniflare, convertV4MiniflareOptions } = edgeRequire('miniflare');
 const { adminListingsRouter } = require('../src/api/routes/adminListings');
-const { CloudflareListingStore } = require('../src/services/listings/store');
+const { CloudflareListingStore, listingStoreFromEnvironment } = require('../src/services/listings/store');
 const { ManagedListingRegistry } = require('../src/services/listings/registry');
 const { isTestAssetPairOrSymbol } = require('../src/services/testMarkets/testAssetConfig');
 const { assertSpotListing } = require('../src/services/testMarkets/nrxSpot');
@@ -82,8 +82,16 @@ const prisma = {
   session: { findUnique: async () => null, update: async () => null },
 };
 const tokens = { admin: jwt.sign({ sub: 'qa-admin' }, process.env.JWT_SECRET), user: jwt.sign({ sub: 'qa-user' }, process.env.JWT_SECRET) };
-const store = new CloudflareListingStore(EDGE, STORE_TOKEN);
-const registry = new ManagedListingRegistry(store);
+const connected = new CloudflareListingStore(EDGE, STORE_TOKEN);
+// The rollout states Render can be in: settings missing, a token the Worker refuses, or connected.
+const stores = {
+  unset: listingStoreFromEnvironment({}, () => {}),
+  mismatch: new CloudflareListingStore(EDGE, 'another-synthetic-secret-of-32-chars-00'),
+  connected,
+};
+let storeState = 'connected';
+const store = new Proxy({}, { get: (_target, key) => { const s = stores[storeState]; const v = s[key]; return typeof v === 'function' ? v.bind(s) : v; } });
+const registry = new ManagedListingRegistry(connected);
 const renderCalls = [];
 const app = express();
 app.use(express.json({ limit: '300kb' }));
@@ -174,6 +182,25 @@ async function run() {
   };
 
   try {
+    /* 0. Before the rollout is finished the page says "not connected" — never a success — and Create is disabled. */
+    for (const [state, text] of [['unset', /хранилище Cloudflare не настроено/], ['mismatch', /ключ хранилища на сервере и в Cloudflare не совпадает/]]) {
+      storeState = state;
+      const page = await newPage('admin', 1440, `rollout-${state}`);
+      await page.goto(`${origin}/admin/listings`);
+      const alert = page.locator('[data-listings-state="not-connected"]');
+      await alert.waitFor({ timeout: 15000 });
+      assert.match(await alert.innerText(), text);
+      assert.equal(await page.locator('[data-create-listing]').isDisabled(), true);
+      assert.equal(await page.locator('[data-listing-notice]').count(), 0);
+      await shot(page, `not-connected-${state}-1440.png`);
+      await page.context().close();
+      const api = await render('/admin/listings');
+      assert.equal(api.status, 503);
+      assert.equal(api.body.error, state === 'unset' ? 'STORE_NOT_CONFIGURED' : 'STORE_AUTH_FAILED');
+    }
+    storeState = 'connected';
+    check('rollout states: without settings → "not connected" (STORE_NOT_CONFIGURED); token mismatch → "not connected" (STORE_AUTH_FAILED); Create disabled, no success shown');
+
     /* 1. Nothing listed; a regular user cannot reach the admin store in any way. */
     assert.deepEqual((await edgeJson('/market/listings')).body.assets, []);
     assert.equal((await render('/admin/listings', { token: tokens.user })).status, 403);

@@ -4517,3 +4517,27 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `LISTINGS_STORE_TOKEN` on the Worker and Render, plus `LISTINGS_STORE_URL` on Render.
   - A gated `market-edge` deploy that applies `listings-v1`, then Render + frontend deploys.
   - No allocation was run. Not merged, not deployed; nothing verified against production.
+
+## Claude — 2026-09-29 — Cloudflare activation prepared: Listings store + direct Deposit read (task 2)
+
+- Base: PR #333 head `8896d5eb` (Codex integration of #330 after #329). #331 (Codex's parallel Listings) was not touched or duplicated. The order-gate follow-up from the #333 review is out of scope and unchanged.
+- **Listings:**
+  - `store.ts`: Render never crashes on missing or invalid `LISTINGS_STORE_*`. It is "not configured", with the reason logged by name only. The Worker's missing secret maps to `STORE_NOT_CONFIGURED` and a refused token to `STORE_AUTH_FAILED`.
+  - Worker `listingsStore.ts`: a missing secret answers `store_not_configured`.
+  - Admin page: «Листинги не подключены» with Create disabled.
+  - `deploy-market-edge.yml`: puts `LISTINGS_STORE_TOKEN` from the GitHub secret after deploy (stdin, ≥32 chars), then runs `scripts/smoke-market-edge-listings.mjs` (v10, public catalogue, NRX, admin store CONNECTED/NOT CONFIGURED/TOKEN MISMATCH).
+  - `render.yaml`: `LISTINGS_STORE_URL`/`_TOKEN` added as `sync: false`.
+- **Deposit:**
+  - New manual-only `deploy-deposit-catalogue.yml` updates the existing production Worker (code only). It refuses if the Worker or its secret is absent, reads the real `workers.dev` origin from the Cloudflare API, runs `scripts/smoke-deposit-public.mjs` and prints `VITE_DEPOSIT_CATALOGUE_URL`.
+  - Vite fails the build on an invalid `VITE_DEPOSIT_CATALOGUE_URL`.
+  - The browser test adds overlapping opens sharing one request.
+- **Runbook:** `docs/CLOUDFLARE_ACTIVATION.md`.
+- **Checks actually run (local, not production):**
+  - Backend and frontend `tsc`.
+  - Jest: listings suites 55/55, including the new `storeConfig`.
+  - workerd: listings 12/12, market-edge smoke 4/4, deposit integration 18/18, deposit smoke 2/2; market-edge contract test.
+  - `wrangler deploy --dry-run`: market-edge and deposit `--env production` both PASS.
+  - Browser: `qa-admin-listings` 17/17 (new rollout states) and `qa-deposit-catalogue-edge` 7/7 with a real 60 s idle.
+  - Full Jest vs `8896d5eb`: 0 new failures.
+- **Read-only production observation:** `market.voltextech.net/health` = `public-display-edge-v9`, and `/market/listings` answers 404. No public deposit Worker hostname is known.
+- **Not done:** everything in `docs/CLOUDFLARE_ACTIVATION.md` (GitHub secret, deploy dispatches, Render env, Pages env, production QA). No merge, deploy, secret, balance, address or allocation change.
