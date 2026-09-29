@@ -4334,3 +4334,23 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - backend `tsc`, frontend build: OK;
   - `adminUsersActivity` (with new assertions) + `adminConsoleInteractions` + `renderBandwidthBudget` + `routeCodeSplitting`: 35/35;
   - local browser smoke (production bundle, real backend, disposable Postgres, synthetic users): 40/40, including `/admin/users` at 320/390/430/1440 with no overflow, and НОВЫЙ inline next to the email at 1440.
+
+## Claude — 2026-09-29 — Telegram «Нова реєстрація»: email + Kyiv time only
+
+- Base: fresh `origin/main` `48f9522c`. This changes Codex's notification Worker (#300/#301) text only; signing, dedupe, the payload and the KYC/deposit messages are unchanged.
+- `workers/notification-edge/src/core.js`: the registration message is now `Нова реєстрація VOLTEX` / `Email: …` / `Дата і час: 28.09.2026, 14:56 (Київ)`.
+  - The `User ID` line and the ISO UTC timestamp are gone at the owner's request.
+  - `userId` stays in the signed event, because it is the deduplication key.
+  - Time uses `Intl.DateTimeFormat('uk-UA', { timeZone: 'Europe/Kyiv' })`.
+- Tests updated:
+  - `test.mjs` checks the exact text, the absence of the user ID, and Kyiv summer/winter time;
+  - `integration.test.mjs` (real workerd) checks the new shape.
+  - `docs/TELEGRAM_NOTIFICATIONS.md` updated.
+- **KYC check (read-only):**
+  - `https://notify.voltextech.net/health` reports `CONFIGURED`, `notifications-v1`;
+  - `https://kyc.voltextech.net/health` reports `configured: true`;
+  - the last three Worker deploy runs (#297, #300, #301) are green;
+  - no KYC or notification code changed since.
+  - No real KYC was submitted (no credentials, and it would email the owner and post to Telegram).
+- **Checks run:** notification-edge `npm test` 17/17, including the real-workerd integration where KYC through the private binding reports `SENT`; kyc-edge Worker tests 28/28.
+- Deploy: merging to main runs `deploy-kyc-edge.yml` (paths include `workers/notification-edge/**`). No manual deploy.

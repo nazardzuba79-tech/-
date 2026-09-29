@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { acceptEvent, Delivery, handle, message, RETENTION_MS, validEvent } from './src/core.js';
+import { acceptEvent, Delivery, handle, kyivTime, message, RETENTION_MS, validEvent } from './src/core.js';
 
 const now = Date.now();
 const event = (extra = {}) => ({ eventId: 'synthetic-1', eventType: 'DEPOSIT_DISCOVERED', timestamp: now, amount: '15', asset: 'USDT', network: 'TRC20', ...extra });
@@ -92,8 +92,12 @@ test('public deposit endpoint verifies exact signed body; browser, tampering, st
 
 const registration = (extra = {}) => ({ eventId: 'synthetic-user', eventType: 'NEW_USER_REGISTERED',
   userId: 'synthetic-user', email: 'synthetic@example.invalid', role: 'USER', timestamp: now, ...extra });
-test('registration Telegram text always includes title, email, user ID and actual registration date/time', () => {
-  assert.equal(message(registration()), `Нова реєстрація VOLTEX\n\nEmail: synthetic@example.invalid\nUser ID: synthetic-user\nЧас реєстрації (UTC): ${new Date(now).toISOString()}`);
+test('registration Telegram text is the title, the email and the Kyiv date/time — no user ID', () => {
+  assert.equal(message(registration()), `Нова реєстрація VOLTEX\n\nEmail: synthetic@example.invalid\nДата і час: ${kyivTime(now)} (Київ)`);
+  assert.ok(!message(registration()).includes('synthetic-user'));
+  // 2026-09-28T11:56:27Z is 14:56 in Kyiv (summer time); 2026-12-01T10:05:00Z is 12:05 (winter time).
+  assert.equal(kyivTime(Date.UTC(2026, 8, 28, 11, 56, 27)), '28.09.2026, 14:56');
+  assert.equal(kyivTime(Date.UTC(2026, 11, 1, 10, 5, 0)), '01.12.2026, 12:05');
 });
 test('registration requires USER, email, matching user/event ID and a bounded timestamp', async () => {
   for (const extra of [{ role: 'ADMIN' }, { role: 'SERVICE' }, { role: undefined }, { email: undefined },
