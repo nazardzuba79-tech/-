@@ -129,6 +129,16 @@ test('2–3. badges distinguish «готов к проверке» from «ожи
   expect(both.textContent).toContain('35 / 300 USDT');
   expect(host.querySelector('[data-user-row="both"]')!.getAttribute('data-row-tint')).toBe('deposit');
   expect(host.querySelector('[data-user-row="fresh"]')!.getAttribute('data-row-tint')).toBe('new');
+  // НОВЫЙ sits next to the email like ADMIN; Событие keeps only deposit states.
+  expect(host.querySelector('[data-user-row="fresh"] .admin-user-email [data-event="new"]')!.textContent).toBe('НОВЫЙ');
+  expect(host.querySelector('[data-user-row="both"] [data-user-events] [data-event="new"]')).toBeNull();
+  expect(host.querySelector('[data-user-row="both"] [data-user-events] [data-event="deposit"]')).not.toBeNull();
+  expect(host.querySelector('[data-user-row="fresh"] [data-user-events]')!.textContent).toBe('—');
+});
+
+test('the page has no «Обновить» button (the browser reload does it)', async () => {
+  await mount();
+  expect(Array.from(host.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Обновить')).toBe(false);
 });
 
 test('4. only a READY package offers the action; tabs keep counts; cards show ready totals and unattributed count', async () => {
