@@ -58,14 +58,15 @@ test('factory discovers new listings before the earliest launch; fixed legacy li
       .replace('class TestMarketStore','export class TestMarketStore').replaceAll("import.meta.env.VITE_SIMULATION_PREVIEW",JSON.stringify('0')),
       {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
     const exports:any={};
-    new Function('require','exports',code)((name:string)=>{
+    const documentFixture={hidden:false,addEventListener:jest.fn(),removeEventListener:jest.fn()};
+    new Function('require','exports','document',code)((name:string)=>{
       if(name==='react')return {};
       if(name==='./api')return {API_BASE:'/api/v1'};
       if(name==='./managedListings')return {MANAGED_LISTINGS_BASE:'https://fixture.invalid',fetchManagedPublic:fetchPublic};
       if(name==='./nrxMarket')return {NRX_EDGE_BASE:'https://nrx.invalid'};
       if(name==='./testMarkets')return {parseTestMarkets:(body:unknown)=>body};
       throw Error(name);
-    },exports);
+    },exports,documentFixture);
     const dynamic=new exports.TestMarketStore('/market/managed-listings',true);
     const fixed=new exports.TestMarketStore('/market/managed-listings');
     const stopDynamic=dynamic.subscribe(()=>{},60000),stopFixed=fixed.subscribe(()=>{},60000);
@@ -73,5 +74,14 @@ test('factory discovers new listings before the earliest launch; fixed legacy li
     await jest.advanceTimersByTimeAsync(60001);expect(fetchPublic).toHaveBeenCalledTimes(3);
     stopDynamic();stopFixed();
     await jest.advanceTimersByTimeAsync(120000);expect(fetchPublic).toHaveBeenCalledTimes(3);
+    fetchPublic.mockResolvedValue({serverTime:Date.now(),assets:[]});
+    const empty=new exports.TestMarketStore('/market/managed-listings',true);
+    const stopEmpty=empty.subscribe(()=>{},60000);
+    await empty.refresh();expect(fetchPublic).toHaveBeenCalledTimes(4);
+    documentFixture.hidden=true;
+    await jest.advanceTimersByTimeAsync(60001);expect(fetchPublic).toHaveBeenCalledTimes(4);
+    documentFixture.hidden=false;
+    empty.onVisibility();await empty.refresh();expect(fetchPublic).toHaveBeenCalledTimes(5);
+    stopEmpty();
   } finally {jest.useRealTimers();}
 });

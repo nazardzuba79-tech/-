@@ -115,7 +115,7 @@ class TestMarketStore {
     if (document.hidden || !this.subscribers.size) return;
     // Preview-only listings are intentionally static: visibility changes
     // must not start a clock or create background traffic.
-    if (this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;
+    if (!this.catalogue && this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;
     // Live or armed pre-listing: a tab that slept through the listing moment must wake.
     const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
     if (Date.now() - this.fetchedAt >= cadence) void this.refresh();
