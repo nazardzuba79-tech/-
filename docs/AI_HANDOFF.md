@@ -4463,3 +4463,28 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved: order payload and `armedProtection` (TP/SL still travels on the order, only while ticked, never under Reduce Only, only where `entryProtection`); the standard (non-archive) ticket and its tests; the real engine's behaviour (no TP/SL at entry there, positions table remains the place); `onOpenTransfer` for the account panel; chart types, indicators and their computations.
 - Checks actually run: frontend `tsc -b` and production build PASS; `npx jest frontend/src` — 137 suites pass, 20 fail, and the failing set is identical to clean `main` built the same way (19 fail on unbuilt main; `registerWalletTailwindOwnership` fails on main too once `dist` exists, `isSelected`). Local fixture browser: interaction script 1440/390 PASS; `qa-order-panel-refinement.cjs` PASS 1920/1440/390/320; `qa-native-demo-browser.cjs` and `qa-limit-close.cjs` PASS. Evidence: `docs/qa/futures-compact-ticket/`.
 - Not done / next: TP/SL at entry for ordinary accounts needs the real engine to accept protection on `POST /futures/orders` (backend change, not in this task). Not merged, not deployed.
+
+## Claude — 2026-09-29 — Test-market candle realism and four simulation profiles
+
+- Base: `main` `e17aa533`. Branch `claude/ecstatic-brahmagupta-cwkvt5` (restarted from main after #326 merged).
+- **Material files:**
+  - `src/services/testMarkets/candleRealism.ts` (new): profiles, parameters, `shapeHour`, `profileForListingOrdinal`.
+  - `testMarketSimulation.ts`: the layer sits between an hour's twelve 5m returns and its ticks. A tick takes an optional shape (noise scale + one long shadow).
+  - `testAssetConfig.ts`: `simulationProfile` and `candleRealism` fields. VTA is `IMPULSE_TREND`.
+  - `neurix.ts`: NRX is `CALM_TREND`.
+  - Tests and evidence: `__tests__/candleRealism.test.ts` (new, 29 tests), `scripts/preview-candle-profiles.cjs`, `scripts/qa-vta-candle-realism.cjs`, `docs/qa/candle-realism/`.
+- **Mathematics unchanged:**
+  - Block returns, regimes, schedule, hourly anchors, P48, decay, and every closed hour/4h/day open and close are identical under all four profiles.
+  - With `candleRealism: false` the output is byte-for-byte main's; the test pins main's SHA-256 of VTA and NRX (7 days of candles + tape).
+  - Realism draws only from its own `realism` stream.
+- **What does change (disclosed):**
+  - The path *inside* each hour, so 5m open/close, the last price and 24h change at a moment inside an hour differ from before; at whole hours they are identical.
+  - 24h high/low now include the long shadows (still read off the drawn candles).
+- **Profile cycle:** `profileForListingOrdinal(n)` = CALM → IMPULSE → PULLBACK → COMPRESSION → CALM… (1-based). It is meant to be persisted as `simulationProfile` when a listing is created. The Listings factory (PR #330, unmerged) still has to store it.
+- **Checks actually run (local):**
+  - Jest: test markets 79/79 (29 new), Postgres `nrxSpot.pg` + `vtaNativeCoexistence.pg` + routes/Order/PriceWatcher/Wallet/frontend test-market suites 115/115, market-edge contract test PASS.
+  - Full Jest vs `main` `e17aa533`: identical failure set (122 = 122, environment-only), 0 new.
+  - Browser: preview harness (4 images) and a real-terminal before/after at 1440/390, no page errors.
+- **Not done / production dependencies:**
+  - Deploy Render and the market-edge Worker together. The Worker bundles the same simulation for NRX, so a partial deploy would draw NRX differently on the two sides inside an hour.
+  - Not merged, not deployed.

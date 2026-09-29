@@ -30,8 +30,15 @@
  * its own block of 12–13 impulse, 8–9 consolidation and 3 pullback hours.
  * The impulse target decays: R(day) = 0.30 for day ≤ 2, else
  * 0.30 × 0.80^(day − 2).
+ *
+ * CANDLE REALISM (candleRealism.ts) sits between an hour's twelve 5m
+ * returns and its ticks: the asset's profile reshapes how the hour's fixed
+ * move is travelled (quiet runs, impulses, counter-trend bars, long shadows)
+ * without changing any hour's open or close. Everything above stays the
+ * model; `candleRealism: false` gives the plain model byte-for-byte.
  */
 import type { TestAssetConfig } from './testAssetConfig';
+import { PLAIN_SHAPE, resolveCandleRealism, shapeHour, type CandleRealismConfig, type CandleShape } from './candleRealism';
 
 export const TICK_MS = 10_000;
 export const CANDLE_MS = 300_000;
@@ -225,10 +232,12 @@ const REGIME_VOLUME: Record<Regime, number> = { impulse: 1.7, consolidation: 0.5
 const BASE_QUOTE_VOLUME = 5200; // USDT per 5m candle at the listing price
 
 /** Thirty 10s ticks from `open` to `close`, with their own small ranges and volume. */
-function candleTicks(seed: string, hour: number, slot: number, regime: Regime, open: number, close: number, sigma: number, cluster: number, initialPrice: number): Tick[] {
+function candleTicks(seed: string, hour: number, slot: number, regime: Regime, open: number, close: number, sigma: number, cluster: number, initialPrice: number,
+  shape: Readonly<CandleShape> = PLAIN_SHAPE): Tick[] {
   const random = seededRandom(seed, 'ticks', hour, slot);
   const total = Math.log(close / open);
-  const tickSigma = (sigma / Math.sqrt(TICKS_PER_CANDLE)) * 1.2;
+  // `shape.noise` is 1 for the plain model, so the same draws give the same ticks.
+  const tickSigma = (sigma / Math.sqrt(TICKS_PER_CANDLE)) * 1.2 * shape.noise;
   const steps: number[] = [];
   for (let i = 0; i < TICKS_PER_CANDLE; i++) steps.push(total / TICKS_PER_CANDLE + tickSigma * normal(random));
   const drift = (steps.reduce((a, b) => a + b, 0) - total) / TICKS_PER_CANDLE;
@@ -242,11 +251,15 @@ function candleTicks(seed: string, hour: number, slot: number, regime: Regime, o
   for (let i = 0; i < TICKS_PER_CANDLE; i++) {
     logPrice += steps[i] - drift;
     const price = i === TICKS_PER_CANDLE - 1 ? close : Math.exp(logPrice);
-    const spike = random() < 0.03 ? 3 : 1;
-    const high = Math.max(previous, price) * Math.exp(Math.abs(normal(random)) * tickSigma * 0.35 * spike);
+    const burst = random() < 0.03 ? 3 : 1;
+    const high = Math.max(previous, price) * Math.exp(Math.abs(normal(random)) * tickSigma * 0.35 * burst);
     const low = Math.min(previous, price) * Math.exp(-Math.abs(normal(random)) * tickSigma * 0.35 * (random() < 0.03 ? 3 : 1));
     const quoteVolume = (quote * weights[i]) / weightSum;
-    ticks.push({ price, high, low, quoteVolume, volume: quoteVolume / ((previous + price) / 2) });
+    // A long shadow is one tick's extreme; the trade price itself stays on the path.
+    const spike = shape.spike && shape.spike.tick === i ? shape.spike : null;
+    ticks.push({ price, quoteVolume, volume: quoteVolume / ((previous + price) / 2),
+      high: spike?.side === 'up' ? high * Math.exp(spike.size) : high,
+      low: spike?.side === 'down' ? low * Math.exp(-spike.size) : low });
     previous = price;
   }
   return ticks;
@@ -283,6 +296,8 @@ interface HourPlan {
   cluster: number;
   /** 13 candle boundaries: open of each 5m candle, then the hour's close. */
   boundaries: number[];
+  /** How each 5m candle is drawn (the plain model: every shape is PLAIN_SHAPE). */
+  shapes: readonly Readonly<CandleShape>[];
 }
 
 /**
@@ -294,8 +309,11 @@ export class TestMarketSimulation {
   private blocks = new Map<number, Block>();
   private hourOpens: number[] = [];
   private closedCandles = new Map<number, SimCandle>();
+  private readonly realism: CandleRealismConfig | null;
 
-  constructor(readonly asset: TestAssetConfig) {}
+  constructor(readonly asset: TestAssetConfig) {
+    this.realism = resolveCandleRealism(asset.simulationProfile, asset.candleRealism);
+  }
 
   private block(index: number): Block {
     let block = this.blocks.get(index);
@@ -324,19 +342,25 @@ export class TestMarketSimulation {
     const cluster = clusterFactor(this.asset.seed, hour);
     const sigma = candleSigma(regime, logReturn, cluster);
     const open = this.hourOpen(hour);
-    const steps = hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+    const modelSteps = hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+    // Presentation only: the same hour total, travelled with the profile's character.
+    const shaped = this.realism
+      ? shapeHour(seededRandom(this.asset.seed, 'realism', this.realism.realismSeedOffset, hour), regime, modelSteps, sigma, this.realism, TICKS_PER_CANDLE)
+      : null;
+    const steps = shaped ? shaped.steps : modelSteps;
+    const shapes = shaped ? shaped.shapes : Array<Readonly<CandleShape>>(CANDLES_PER_HOUR).fill(PLAIN_SHAPE);
     const boundaries = [open];
     let logPrice = Math.log(open);
     for (let k = 0; k < CANDLES_PER_HOUR; k++) {
       logPrice += steps[k];
       boundaries.push(k === CANDLES_PER_HOUR - 1 ? this.hourOpen(hour + 1) : Math.exp(logPrice));
     }
-    return { hour, regime, open, logReturn, sigma, cluster, boundaries };
+    return { hour, regime, open, logReturn, sigma, cluster, boundaries, shapes };
   }
 
   private ticks(plan: HourPlan, slot: number): Tick[] {
     return candleTicks(this.asset.seed, plan.hour, slot, plan.regime, plan.boundaries[slot], plan.boundaries[slot + 1],
-      plan.sigma, plan.cluster, this.asset.initialPrice);
+      plan.sigma, plan.cluster, this.asset.initialPrice, plan.shapes[slot]);
   }
 
   /** Read-only tape of completed canonical ticks; never samples a future tick. */
