@@ -169,6 +169,14 @@ export class WalletPortfolioService {
       const { simulationFor } = await import('./testMarkets/testMarketSimulation');
       byBase.set('NRX', simulationFor(NEURIX).priceAt(Date.now()) ?? NEURIX.initialPrice);
     }
+    // Managed listings (Admin → Listings) the same way: their own canonical
+    // price, never a colliding venue symbol. Only held assets are looked up.
+    const { managedListingAssets } = await import('./listings/managedSnapshot');
+    const held = managedListingAssets().filter((asset) => wanted.has(asset.symbol));
+    if (held.length) {
+      const { simulationFor } = await import('./testMarkets/testMarketSimulation');
+      for (const asset of held) byBase.set(asset.symbol, simulationFor(asset).priceAt(Date.now()) ?? asset.initialPrice);
+    }
 
     let eurUsd: number | null = null;
     if (wanted.has('EUR') && this.cfdData.isConfigured()) {

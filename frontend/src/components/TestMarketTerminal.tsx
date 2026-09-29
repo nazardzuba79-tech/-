@@ -5,7 +5,7 @@ import { TerminalChart } from './TerminalChart';
 import { refreshTestMarket } from '../lib/testMarketStore';
 import { nrxListingTime } from '../lib/nrxMarket';
 import { testMarketCandleLoader } from '../lib/testMarketCandles';
-import { countdownParts, formatListingMoment, formatTestAxisPrice, formatTestPrice, type TestAsset } from '../lib/testMarkets';
+import { countdownParts, formatListingMoment, formatTestAxisPrice, formatTestPrice, managedListingTime, type TestAsset } from '../lib/testMarkets';
 import './TestMarketTerminal.css';
 
 /**
@@ -59,8 +59,10 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
   const cells: [number, string][] = [
     [parts.days, t('listing.days')], [parts.hours, t('listing.hours')], [parts.minutes, t('listing.minutes')], [parts.seconds, t('listing.seconds')],
   ];
-  const startsAt = asset ? (asset.symbol === 'NRX' ? nrxListingTime(asset.listingAt) : formatListingMoment(asset.listingAt, localeOf(lang))) : '';
-  const name = asset?.name ?? (pair === 'NRX/USDT' ? 'NEURIX' : 'VOLTORA');
+  const startsAt = asset ? (asset.symbol === 'NRX' ? nrxListingTime(asset.listingAt)
+    : asset.managed ? managedListingTime(asset.listingAt, asset.displayTimeZone ?? 'UTC', localeOf(lang))
+    : formatListingMoment(asset.listingAt, localeOf(lang))) : '';
+  const name = asset?.name ?? (pair === 'NRX/USDT' ? 'NEURIX' : pair === 'VTA/USDT' ? 'VOLTORA' : pair.split('/')[0]);
 
   return (
     <section className="vta-prelisting" aria-label={`${name} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}>

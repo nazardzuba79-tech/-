@@ -9,6 +9,7 @@
  */
 
 import { NEURIX } from './neurix';
+import { managedListingAssets } from '../listings/managedSnapshot';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -61,17 +62,17 @@ function normalizePair(pair: string): string {
 export function testAssetForPair(pair: string | null | undefined): TestAssetConfig | null {
   if (!pair) return null;
   const normalized = normalizePair(pair);
-  return [NEURIX, ...TEST_ASSETS].find((asset) => asset.pair === normalized) ?? null;
+  return [NEURIX, ...TEST_ASSETS, ...managedListingAssets()].find((asset) => asset.pair === normalized) ?? null;
 }
 
 /** The test asset behind a bare symbol (`VTA`), if any. */
 export function testAssetForSymbol(symbol: string | null | undefined): TestAssetConfig | null {
   if (!symbol) return null;
   const normalized = symbol.trim().toUpperCase();
-  return [NEURIX, ...TEST_ASSETS].find((asset) => asset.symbol === normalized) ?? null;
+  return [NEURIX, ...TEST_ASSETS, ...managedListingAssets()].find((asset) => asset.symbol === normalized) ?? null;
 }
 
-/** Restricted-asset guard. Only ordinary Spot explicitly admits listed NRX. */
+/** Restricted-asset guard (VTA, NRX and every published managed listing). Only ordinary Spot admits listed NRX and tradable managed listings. */
 export function isTestAssetPairOrSymbol(value: string | null | undefined): boolean {
   return testAssetForPair(value) !== null || testAssetForSymbol(value) !== null;
 }

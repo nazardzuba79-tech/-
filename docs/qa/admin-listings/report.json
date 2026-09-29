@@ -1,0 +1,65 @@
+{
+  "scope": "Local only. Real Worker (workerd), real Render admin router + auth middleware, production frontend bundle. Fixture accounts and empty fixture reads; no production, no Neon, no balances.",
+  "checks": [
+    "rollout states: without settings → \"not connected\" (STORE_NOT_CONFIGURED); token mismatch → \"not connected\" (STORE_AUTH_FAILED); Create disabled, no success shown",
+    "before: empty public catalogue; Render admin API 403 for a USER and 401 without a session; the Worker store refuses no-secret and browser-Origin calls",
+    "a USER opening /admin/listings is sent away; the Listings page never renders",
+    "admin created QRB/USDT from the form: Kyiv wall time stored as the UTC instant, logo kept, automatic seed qrb-20260929-fac03b9690, not published",
+    "draft invisible publicly: catalogue, pair path, ?draft/?preview/?include parameters, and the DO route all omit it",
+    "saving the draft again keeps the automatic seed",
+    "Preview (admin only): 25 candles, book and tape; the same instant gives identical candles; USER → 403",
+    "published v1 through the dialog; a second publish of the unchanged draft (another key) replays v1, no new version",
+    "public catalogue lists QRB/USDT pre-listing with no seed/owner allocation; Render learned the pair from the store and refuses Spot orders before the opening",
+    "Markets shows the new row with its Kyiv time; clicking opens /trade?pair=QRB/USDT with the countdown (1440 and 390, no horizontal overflow)",
+    "a second listing (QDL, +3 days, not tradable) publishes alongside; a ticker already on the venue (BTC) is refused",
+    "opening passed: catalogue phase live at 0.42; the terminal shows chart and book after reload; Render Spot gate open for QRB, closed for non-tradable QDL",
+    "one history from one config: public 5m candles equal the admin Preview at the same server instant (1 and 1 candles), repeat reads agree, and after a full Worker restart the catalogue, candles and a fixed-instant Preview (73 candles) are identical",
+    "after publish: price and seed edits refused (HISTORY_LOCKED); moving the date of an opened market is refused at publish (HISTORY_LOCKED)",
+    "open terminal (two tabs) made 30 Cloudflare edge requests in 30 s and no Render request about QRB/QDL; admin work used 31 Render calls",
+    "the Worker made zero outbound (venue) calls during the whole run",
+    "no page or console errors in the admin and exchange tabs"
+  ],
+  "requests": {
+    "openTerminal30s": 30,
+    "byPath30s": {
+      "/market/listings": 12,
+      "/market/test-assets/QRB-USDT/candles": 12,
+      "/market/display/spot-book/QRB-USDT": 6
+    },
+    "renderCallsTotal": 239,
+    "renderCallsNonAdmin": 208
+  },
+  "layouts": [
+    {
+      "name": "trade-prelisting-1440",
+      "width": 1440,
+      "documentWidth": 1440
+    },
+    {
+      "name": "trade-prelisting-390",
+      "width": 390,
+      "documentWidth": 390
+    },
+    {
+      "name": "trade-live-390",
+      "width": 390,
+      "documentWidth": 390
+    }
+  ],
+  "screenshots": [
+    "not-connected-unset-1440.png",
+    "not-connected-mismatch-1440.png",
+    "create-form-1440.png",
+    "preview-1440.png",
+    "publish-dialog-1440.png",
+    "published-list-1440.png",
+    "markets-prelisting-1440.png",
+    "trade-prelisting-1440.png",
+    "trade-prelisting-390.png",
+    "trade-live-1440.png",
+    "trade-live-390.png"
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "outbound": 0
+}

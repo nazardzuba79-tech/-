@@ -111,6 +111,20 @@ async function main() {
     assert.ok(!('authorization' in first.headers) && !('cookie' in first.headers), 'anonymous, cookie-less read');
     check('Deposit open: exactly one anonymous GET to the Cloudflare public catalogue, zero Render catalogue requests, nothing prefetched');
 
+    /* 1b. Opens that overlap a slow read share it: open, close, reopen while the first read is still in flight. */
+    await page.locator('.dc-close').click();
+    await page.route(`${EDGE}/public/deposit-catalogue`, async (route) => { await new Promise((r) => setTimeout(r, 1500)); await route.continue(); });
+    const sharedStart = edgeCount();
+    await page.locator('.top-nav-fund-btn').click();
+    await page.locator('.dc-close').click();
+    await page.locator('.top-nav-fund-btn').click();
+    await page.getByTestId('deposit-address').waitFor();
+    await page.getByText(btc, { exact: true }).waitFor();
+    await page.unroute(`${EDGE}/public/deposit-catalogue`);
+    report.requests.overlappingOpens = { edge: edgeCount() - sharedStart, renderCatalogue: renderCatalogue() };
+    assert.deepEqual(report.requests.overlappingOpens, { edge: 1, renderCatalogue: 0 });
+    check('two overlapping Deposit opens during a slow read share one Cloudflare request');
+
     /* 2. Asset / network / copy / QR: no further requests. */
     const before = edgeCount(), renderBefore = render.length;
     await pick('asset', 'USDT'); await pick('network', 'TRON'); await page.getByText(tronAddr, { exact: true }).waitFor();

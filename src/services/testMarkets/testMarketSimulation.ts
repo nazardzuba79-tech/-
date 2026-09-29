@@ -493,13 +493,23 @@ export function getCurrentTestMarketState(simulation: TestMarketSimulation, now:
 }
 
 const simulations = new Map<string, TestMarketSimulation>();
+/** Distinct configurations kept at once (built-ins, published listings, a few admin previews). */
+const MAX_SIMULATIONS = 64;
 
-/** The one shared simulation per test asset. */
+/**
+ * The one shared simulation per test-asset CONFIGURATION. The key is every
+ * input that shapes history — pair, seed, listing time, initial price — so a
+ * managed listing's draft preview and its published market never share (and
+ * never corrupt) each other's cached candles. VTA and NRX have one fixed
+ * configuration each, so they keep exactly one simulation as before.
+ */
 export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
-  let simulation = simulations.get(asset.pair);
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}`;
+  let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);
-    simulations.set(asset.pair, simulation);
+    simulations.set(key, simulation);
+    if (simulations.size > MAX_SIMULATIONS) simulations.delete(simulations.keys().next().value as string);
   }
   return simulation;
 }

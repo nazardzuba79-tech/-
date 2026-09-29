@@ -31,6 +31,7 @@ on:
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/nrxMarket.ts'
+      - 'frontend/src/lib/marketEdge.ts'
       - 'frontend/src/lib/displaySnapshotCache.ts'
       - 'frontend/src/lib/sampledDisplayCopy.ts'
       - 'src/api/middleware/auth.ts'
@@ -120,6 +121,7 @@ on:
       # change to it used to run no Copy Trading test at all.
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/nrxMarket.ts'
+      - 'frontend/src/lib/marketEdge.ts'
       - 'frontend/src/lib/displaySnapshotCache.ts'
       - 'frontend/src/lib/sampledDisplayCopy.ts'
       - 'src/api/middleware/auth.ts'

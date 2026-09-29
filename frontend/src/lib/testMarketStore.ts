@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
-import { fetchNrxPublic, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
-import { parseTestMarkets, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
+import { fetchNrxPublic, isEdgeMarketUrl, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
+import { isManagedListingPair, parseTestMarkets, registerManagedListings, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
 
 /**
  * TEST MARKETS — the network half. One store per tab, the same idea as
@@ -19,6 +19,8 @@ export const TEST_MARKET_LIST_INTERVAL_MS = 60_000;
 export const TEST_MARKET_TERMINAL_INTERVAL_MS = 5_000;
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 
+export { isEdgeMarketUrl };
+
 /**
  * The dev-only preview clock. Forwarded only by a build made with
  * VITE_SIMULATION_PREVIEW=1, and the server honours it only outside
@@ -33,7 +35,8 @@ function simulationPreviewTime(): string | null {
 
 /** A test-market GET: public, uncached, with the dev-only preview clock when allowed. */
 export async function fetchTestMarketJson(url: string, signal?: AbortSignal): Promise<unknown> {
-  if (url.toUpperCase().includes('NRX')) return fetchNrxPublic(url, signal);
+  // Edge-served markets never fall back to Render or a venue.
+  if (isEdgeMarketUrl(url)) return fetchNrxPublic(url, signal);
   const response = await fetch(withSimulationPreview(url, simulationPreviewTime()), {
     signal, credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json' },
   });
@@ -86,6 +89,7 @@ class TestMarketStore {
       .then((body) => {
         const snapshot = parseTestMarkets(body);
         if (!snapshot) throw new Error('test_market_shape');
+        registerManagedListings(snapshot.assets);
         this.state = { loaded: true, error: false, assets: snapshot.assets, clockOffsetMs: snapshot.serverTime - Date.now() };
       })
       .catch(() => {
@@ -140,8 +144,15 @@ class TestMarketStore {
 
 export const testMarketStore = new TestMarketStore();
 export const nrxMarketStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`);
+/** Published managed listings (Admin → Listings), straight from the market edge. */
+export const managedListingStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/listings`);
+/** A deep link to a pair the tab has never seen learns whether it is a listing; re-read rarely, and at each listing moment. */
+export const MANAGED_LISTING_DISCOVERY_INTERVAL_MS = 15 * 60_000;
+
+const storeForPair = (pair: string) => (isNrxPair(pair) ? nrxMarketStore : isManagedListingPair(pair) ? managedListingStore : testMarketStore);
+
 export function refreshTestMarket(pair: string): Promise<void> {
-  return (isNrxPair(pair) ? nrxMarketStore : testMarketStore).refresh();
+  return storeForPair(pair).refresh();
 }
 
 // Preview builds only (VITE_SIMULATION_PREVIEW=1): moving the preview clock
@@ -159,11 +170,21 @@ function useStore(store: TestMarketStore, intervalMs: number, enabled: boolean):
 }
 
 export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true, pair?: string): TestMarketsState {
-  const vta = useStore(testMarketStore, intervalMs, enabled && (!pair || !isNrxPair(pair)));
-  const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!pair || isNrxPair(pair)));
-  if (pair) return isNrxPair(pair) ? nrx : vta;
-  return { loaded: vta.loaded && nrx.loaded, error: vta.error || nrx.error,
-    assets: [...vta.assets, ...nrx.assets], clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : vta.clockOffsetMs };
+  const kind = pair ? (isNrxPair(pair) ? 'nrx' : isManagedListingPair(pair) ? 'managed' : 'vta') : null;
+  const vta = useStore(testMarketStore, intervalMs, enabled && (!kind || kind === 'vta'));
+  const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!kind || kind === 'nrx'));
+  const managed = useStore(managedListingStore, intervalMs, enabled && (!kind || kind === 'managed'));
+  // One array per store change, not per render: consumers memoise on it (useMarketTickers), and a
+  // fresh array each render kept the Markets page re-rendering and starved route transitions.
+  const assets = useMemo(() => [...vta.assets, ...nrx.assets, ...managed.assets], [vta.assets, nrx.assets, managed.assets]);
+  if (kind) return kind === 'nrx' ? nrx : kind === 'managed' ? managed : vta;
+  return { loaded: vta.loaded && nrx.loaded && managed.loaded, error: vta.error || nrx.error || managed.error,
+    assets, clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : managed.loaded ? managed.clockOffsetMs : vta.clockOffsetMs };
+}
+
+/** The Trade page asks the edge once whether its pair is a managed listing (the store re-reads only rarely). */
+export function useManagedListingDiscovery(enabled: boolean): TestMarketsState {
+  return useStore(managedListingStore, MANAGED_LISTING_DISCOVERY_INTERVAL_MS, enabled);
 }
 
 /** One test market, or nothing for an ordinary pair (which then costs no request). */
