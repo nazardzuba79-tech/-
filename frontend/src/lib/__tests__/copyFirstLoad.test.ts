@@ -1,10 +1,11 @@
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import { CopyMarketplaceStore } from '../copyMarketplaceStore';
 import { summarizeStrategy } from '../../../../src/services/copyTrading/marketplaceSummary';
 import { CopyPerformanceService } from '../../../../src/services/copyTrading/CopyPerformanceService';
+import { languageModule } from '../../../test-utils/languageStub';
 
 const frontend = resolve(__dirname, '../../..');
 // Optional pristine checkout for discrimination runs; dependencies and this
@@ -28,7 +29,9 @@ let payload: any;
 // are substituted. The marketplace validator/store/projections are real.
 const cache = new Map<string, any>();
 function load(file: string): any {
-  for (const suffix of ['', '.tsx', '.ts']) if (existsSync(file + suffix)) { file += suffix; break; }
+  // Files only, as the bundler resolves them: `lib/i18n` is both a module
+  // (`i18n.tsx`) and a directory of locales beside it.
+  for (const suffix of ['', '.tsx', '.ts']) if (existsSync(file + suffix) && statSync(file + suffix).isFile()) { file += suffix; break; }
   if (cache.has(file)) return cache.get(file);
   const exports: any = {}; cache.set(file, exports);
   const code = ts.transpileModule(readFileSync(file, 'utf8'), {compilerOptions:{
@@ -40,6 +43,9 @@ function load(file: string): any {
     if (name.endsWith('/Footer')) return {Footer:() => null};
     if (name === 'sonner') return {Toaster:() => null, toast:{success:jest.fn()}};
     if (name.endsWith('/api')) return {getToken:() => session, api:{getPortfolioHistory:async () => ({points:[]})}};
+    // The app mounts this page inside LanguageProvider; the harness reads
+    // the shipped Russian dictionary through the same substitution rules.
+    if (name.endsWith('/lib/i18n')) return languageModule('ru');
     if (name.endsWith('/useCopyMarketplace')) return {useCopyMarketplace:() => React.useSyncExternalStore(store.subscribe,store.getState,store.getState)};
     return name.startsWith('.') ? load(resolve(dirname(file),name)) : req(name);
   };

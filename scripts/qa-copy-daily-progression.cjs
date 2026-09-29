@@ -128,7 +128,7 @@ async function readProfile(page, strategy) {
   await page.click(`.trader-card[data-trader-id="${strategy.id}"]`);
   await page.waitForSelector('.trader-profile-page', { timeout: 20_000 });
   await page.waitForSelector('.profile-detail-loading', { state: 'detached', timeout: 25_000 }).catch(() => {});
-  await page.getByRole('button', { name: '7D', exact: true }).click({ timeout: 15_000 }).catch(() => {});
+  await page.locator('.profile-periods [data-period="7D"]').click({ timeout: 15_000 }).catch(() => {});
   await wait(1200);
   const statistics = await page.evaluate(profileFacts);
   await page.getByRole('button', { name: 'Сделки', exact: true }).click({ timeout: 15_000 }).catch(() => {});

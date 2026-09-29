@@ -1,0 +1,28 @@
+/* Scoped to the open-position unrealized cell; realized P&L is untouched. */
+:is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  line-height: 17px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+:is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized[data-tone=profit] { color: var(--buy); }
+:is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized[data-tone=loss] { color: var(--sell); }
+:is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized .futures-position-money {
+  grid-column: 1; grid-row: 1; font-weight: 600; white-space: nowrap;
+}
+:is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized .futures-position-roi {
+  grid-column: 1; grid-row: 2; font-size: 12px; font-weight: 400; opacity: .85; white-space: nowrap;
+}
+.futures-unrealized-unit { font-size: .9em; font-weight: 400; }
+:is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized .archive-pnl-open { grid-column: 2; grid-row: 1 / 3; }
+@media (max-width: 900px) {
+  #archive-terminal-preview .futures-position-row .futures-unrealized-cell { grid-column: 1 / -1; }
+  /* Existing mobile cards can wrap extreme values, never ellipsize them. */
+  :is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized { min-width: 0; max-width: 100%; }
+  :is(#archive-terminal-preview, .futures-positions-panel) .futures-unrealized :is(.futures-position-money, .futures-position-roi) {
+    white-space: normal; overflow-wrap: anywhere; min-width: 0;
+  }
+}

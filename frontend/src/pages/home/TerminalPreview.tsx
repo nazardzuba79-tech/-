@@ -75,7 +75,6 @@ export function PreviewCandles({ candles, label, livePrice }: { candles: HomeCan
         textAnchor={index === 0 ? 'start' : index === candles.length - 1 ? 'end' : 'middle'}>
         {timeLabel(candles[index].time)}
       </text>)}
-      <text className="vx-chart-time" x="598" y="235" textAnchor="end">UTC</text>
     </svg>
   );
 }
@@ -110,10 +109,10 @@ export function TerminalPreview({ market }: { market: HomeMarket }) {
         <div className="vx-terminal-nav">
           {MINI_NAV.map((item, index) => <span key={item} className={index === 1 ? 'vx-selected' : ''}>{t(item)}</span>)}
         </div>
-        <span className="vx-terminal-feed" title={feed?.streaming ? motionCopy.live : copy.refresh}>
-          <span className={`vx-feed-dot ${stale ? 'vx-feed-stale' : !feed?.updatedAt ? 'vx-feed-neutral' : ''}`} aria-hidden="true" />
-          {stale ? t('analytics.stale') : feed?.streaming ? motionCopy.live : copy.feed}
-        </span>
+        {(stale || feed?.streaming) && <span className="vx-terminal-feed" title={stale ? t('analytics.stale') : motionCopy.live}>
+          <span className={`vx-feed-dot ${stale ? 'vx-feed-stale' : ''}`} aria-hidden="true" />
+          {stale ? t('analytics.stale') : motionCopy.live}
+        </span>}
       </div>
       <div className="vx-terminal-instrument">
         <div className="vx-terminal-pair">
@@ -134,7 +133,6 @@ export function TerminalPreview({ market }: { market: HomeMarket }) {
         <section className="vx-terminal-center">
           <div className="vx-terminal-timeframe">
             <span className="vx-selected">15m</span><span>OHLC</span>
-            <span>{market.tickerSource ? market.tickerSource.toUpperCase() : copy.feed}</span>
           </div>
           <div className="vx-terminal-chart">
             {candles.length > 0
@@ -157,9 +155,9 @@ export function TerminalPreview({ market }: { market: HomeMarket }) {
           </> : <div className="vx-terminal-empty">
             {feed?.bookStatus === 'loading' ? t('home.markets.loading') : t('home.dataUnavailable')}
           </div>}
-          <div className="vx-terminal-book-note">
-            {feed?.bookStatus === 'error' && book ? t('analytics.stale') : feed?.streaming ? motionCopy.live : copy.refresh}
-          </div>
+          {((feed?.bookStatus === 'error' && !!book) || !!feed?.streaming) && <div className="vx-terminal-book-note">
+            {feed?.bookStatus === 'error' && book ? t('analytics.stale') : motionCopy.live}
+          </div>}
         </aside>
         <aside className="vx-terminal-order-entry" aria-label={t('nav.trade')}>
           <div className="vx-terminal-order-tabs">
@@ -198,7 +196,6 @@ export function TerminalPreview({ market }: { market: HomeMarket }) {
       </div>
       <div className="vx-terminal-status">
         <span>{pair} · {copy.candles}</span>
-        <span>{market.tickerUpdatedAt ? timeOf(market.tickerUpdatedAt) : '—'} · {copy.refresh}</span>
       </div>
     </div>
   );

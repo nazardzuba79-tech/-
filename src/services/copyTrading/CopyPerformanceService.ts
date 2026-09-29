@@ -83,6 +83,14 @@ function advance(strategy: PerformanceStrategy, state: CashflowReviewState, toda
   return state;
 }
 
+/**
+ * Let timers, sockets and other requests run between the heavy synchronous
+ * steps of a day's refresh (decode, append, encode, presentation). Each step
+ * is seconds of CPU on the production container; run back to back they held
+ * the whole API for the entire refresh. Scheduling only — no value changes.
+ */
+export const yieldToEventLoop = () => new Promise<void>(resolve => setImmediate(resolve));
+
 /** Normal backend read model for the globally disclosed pre-launch catalogue.
  * Only this isolated table is writable. Real copy execution, balances, orders,
  * User, and legacy admin simulation state are not capabilities of this class. */
@@ -100,7 +108,8 @@ export class CopyPerformanceService {
       await pending;
       return this.get(strategy); // Recheck UTC day if it changed while pending.
     }
-    const task = this.current(strategy, today).then(state => {
+    const task = this.current(strategy, today).then(async state => {
+      await yieldToEventLoop();
       const response = strategy === 'nazar' ? nazarPresentationResponse(state) : kseniaReviewResponse(state);
       this.cached.set(strategy, { date: utcDay(new Date(state.simulatedAt)), response });
       return response;
@@ -118,9 +127,12 @@ export class CopyPerformanceService {
       const row = await this.db.copyPerformanceScenario.findUnique({ where: { id } });
       if (!row) {
         const state = advance(strategy, bootstrap(strategy), today);
+        await yieldToEventLoop();
+        const stateText = encodePerformanceState(state);
+        await yieldToEventLoop();
         try {
           await this.db.copyPerformanceScenario.create({ data: {
-            id, stateText: encodePerformanceState(state), simulatedAt: new Date(state.simulatedAt),
+            id, stateText, simulatedAt: new Date(state.simulatedAt),
           } });
           return state;
         } catch (error) {
@@ -137,10 +149,14 @@ export class CopyPerformanceService {
       // Clock rollback may serve the already-persisted future snapshot; it must
       // NEVER regenerate an earlier state or remove previously appended trades.
       if (utcDay(new Date(stored.simulatedAt)) >= today) return stored;
+      await yieldToEventLoop();
       const next = advance(strategy, stored, today);
+      await yieldToEventLoop();
+      const stateText = encodePerformanceState(next);
+      await yieldToEventLoop();
       const updated = await this.db.copyPerformanceScenario.updateMany({
         where: { id, revision: row.revision },
-        data: { revision: { increment: 1 }, stateText: encodePerformanceState(next), simulatedAt: new Date(next.simulatedAt) },
+        data: { revision: { increment: 1 }, stateText, simulatedAt: new Date(next.simulatedAt) },
       });
       if (updated.count === 1) return next;
     }

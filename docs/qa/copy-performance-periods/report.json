@@ -1,0 +1,1797 @@
+{
+  "startedAt": "2026-09-29T03:34:31.689Z",
+  "days": {
+    "n": "2026-09-28",
+    "n1": "2026-09-29"
+  },
+  "slowAppendMs": 45000,
+  "environment": "LOCAL QA ONLY — real compiled router/service/snapshots, in-memory persistence",
+  "marketplace": {
+    "desktop": {
+      "hydratedMs": 2003,
+      "cards": {
+        "VX-001": {
+          "roi": "+882.1%",
+          "hydrated": true,
+          "skeletons": 0,
+          "unavailable": 0,
+          "loadingText": false,
+          "unavailableText": false,
+          "dash": false
+        },
+        "VX-KSENIA": {
+          "roi": "+481.3%",
+          "hydrated": true,
+          "skeletons": 0,
+          "unavailable": 0,
+          "loadingText": false,
+          "unavailableText": false,
+          "dash": false
+        }
+      }
+    },
+    "mobile": {
+      "hydratedMs": 232,
+      "cards": {
+        "VX-001": {
+          "roi": "+882.1%",
+          "hydrated": true,
+          "skeletons": 0,
+          "unavailable": 0,
+          "loadingText": false,
+          "unavailableText": false,
+          "dash": false
+        },
+        "VX-KSENIA": {
+          "roi": "+481.3%",
+          "hydrated": true,
+          "skeletons": 0,
+          "unavailable": 0,
+          "loadingText": false,
+          "unavailableText": false,
+          "dash": false
+        }
+      }
+    }
+  },
+  "profiles": {
+    "desktop/nazar": {
+      "7D": {
+        "period": "7D",
+        "heading": "Эффективность",
+        "window": "7 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+94.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+127 916 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+5 764 169 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "100,00%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "0,00%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+18 274 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "∞"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "7,0"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "9 ч 23 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "73,43%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "67,05"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "∞"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "7"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "7"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "0"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "7D · Скользящий период · 21.09.2026 — 28.09.2026 · 7 календарных дней"
+      },
+      "30D": {
+        "period": "30D",
+        "heading": "Эффективность",
+        "window": "30 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+367.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+495 111 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+22 074 518 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "89,47%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "1,34%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+12 695 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "50,24"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "9,1"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "10 ч 6 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "111,05%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "40,25"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "345,10"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "39"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "34"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "4"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "30D · Скользящий период · 29.08.2026 — 28.09.2026 · 30 календарных дней"
+      },
+      "90D": {
+        "period": "90D",
+        "heading": "Эффективность",
+        "window": "90 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+882.1%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+1 177 514 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+44 591 706 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "91,96%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "1,79%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+10 420 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "40,60"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,8"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "10 ч 51 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "119,42%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "29,96"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "238,60"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "113"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "103"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "9"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "90D · Скользящий период · 30.06.2026 — 28.09.2026 · 90 календарных дней"
+      },
+      "ALL": {
+        "period": "ALL",
+        "heading": "Эффективность",
+        "window": "Всё время · С момента запуска",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+3982.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+5 056 014 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+84 270 290 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "92,57%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "5,79%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+10 092 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "41,22"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,7"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "10 ч 28 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "128,21%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "28,13"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "227,11"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "501"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "461"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "37"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "ALL · С момента запуска · 21.08.2025 — 28.09.2026 · 403 календарных дней"
+      }
+    },
+    "desktop/ksenia": {
+      "7D": {
+        "period": "7D",
+        "heading": "Эффективность",
+        "window": "7 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+43.9%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+78 975 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+467 173 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "100,00%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "0,00%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+11 282 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "∞"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "7,0"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "13 ч 56 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "43,62%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "52,44"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "∞"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "7"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "7"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "0"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "7D · Скользящий период · 21.09.2026 — 28.09.2026 · 7 календарных дней"
+      },
+      "30D": {
+        "period": "30D",
+        "heading": "Эффективность",
+        "window": "30 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+204.0%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+354 879 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+2 087 223 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "89,47%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "0,00%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+9 339 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "42,07"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,9"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "—"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "68,56%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "36,20"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "∞"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "38"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "34"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "4"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "30D · Скользящий период · 29.08.2026 — 28.09.2026 · 30 календарных дней"
+      },
+      "90D": {
+        "period": "90D",
+        "heading": "Эффективность",
+        "window": "90 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+481.3%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+854 052 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+5 033 526 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "87,50%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "2,05%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+8 134 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "24,45"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,2"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "—"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "77,54%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "25,18"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "187,85"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "105"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "91"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "13"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "90D · Скользящий период · 30.06.2026 — 28.09.2026 · 90 календарных дней"
+      },
+      "ALL": {
+        "period": "ALL",
+        "heading": "Эффективность",
+        "window": "Всё время · С момента запуска",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+1896.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+3 399 695 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+12 938 384 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "89,62%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "8,10%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+7 172 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "24,48"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "7,9"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "—"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "64,34%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "25,74"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "152,51"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "474"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "423"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "49"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "ALL · С момента запуска · 06.08.2025 — 28.09.2026 · 418 календарных дней"
+      }
+    },
+    "mobile/nazar": {
+      "7D": {
+        "period": "7D",
+        "heading": "Эффективность",
+        "window": "7 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+94.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+127 916 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+5 764 169 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "100,00%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "0,00%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+18 274 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "∞"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "7,0"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "9 ч 23 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "73,43%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "67,05"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "∞"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "7"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "7"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "0"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "7D · Скользящий период · 21.09.2026 — 28.09.2026 · 7 календарных дней"
+      },
+      "30D": {
+        "period": "30D",
+        "heading": "Эффективность",
+        "window": "30 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+367.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+495 111 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+22 074 518 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "89,47%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "1,34%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+12 695 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "50,24"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "9,1"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "10 ч 6 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "111,05%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "40,25"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "345,10"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "39"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "34"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "4"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "30D · Скользящий период · 29.08.2026 — 28.09.2026 · 30 календарных дней"
+      },
+      "90D": {
+        "period": "90D",
+        "heading": "Эффективность",
+        "window": "90 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+882.1%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+1 177 514 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+44 591 706 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "91,96%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "1,79%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+10 420 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "40,60"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,8"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "10 ч 51 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "119,42%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "29,96"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "238,60"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "113"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "103"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "9"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "90D · Скользящий период · 30.06.2026 — 28.09.2026 · 90 календарных дней"
+      },
+      "ALL": {
+        "period": "ALL",
+        "heading": "Эффективность",
+        "window": "Всё время · С момента запуска",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+3982.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+5 056 014 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+84 270 290 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "92,57%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "5,79%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+10 092 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "41,22"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,7"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "10 ч 28 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "128,21%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "28,13"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "227,11"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "501"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "461"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "37"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "ALL · С момента запуска · 21.08.2025 — 28.09.2026 · 403 календарных дней"
+      }
+    },
+    "mobile/ksenia": {
+      "7D": {
+        "period": "7D",
+        "heading": "Эффективность",
+        "window": "7 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+43.9%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+78 975 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+467 173 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "100,00%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "0,00%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+11 282 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "∞"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "7,0"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "13 ч 56 мин"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "43,62%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "52,44"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "∞"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "7"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "7"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "0"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "7D · Скользящий период · 21.09.2026 — 28.09.2026 · 7 календарных дней"
+      },
+      "30D": {
+        "period": "30D",
+        "heading": "Эффективность",
+        "window": "30 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+204.0%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+354 879 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+2 087 223 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "89,47%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "0,00%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+9 339 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "42,07"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,9"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "—"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "68,56%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "36,20"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "∞"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "38"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "34"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "4"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "30D · Скользящий период · 29.08.2026 — 28.09.2026 · 30 календарных дней"
+      },
+      "90D": {
+        "period": "90D",
+        "heading": "Эффективность",
+        "window": "90 д. · скользящий период",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+481.3%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+854 052 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+5 033 526 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "87,50%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "2,05%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+8 134 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "24,45"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "8,2"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "—"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "77,54%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "25,18"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "187,85"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "105"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "91"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "13"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "90D · Скользящий период · 30.06.2026 — 28.09.2026 · 90 календарных дней"
+      },
+      "ALL": {
+        "period": "ALL",
+        "heading": "Эффективность",
+        "window": "Всё время · С момента запуска",
+        "units": "Единицы измерения: USDT",
+        "rows": [
+          {
+            "id": "roi",
+            "label": "ROI",
+            "value": "+1896.4%"
+          },
+          {
+            "id": "masterPnl",
+            "label": "P&L мастера",
+            "value": "+3 399 695 USDT"
+          },
+          {
+            "id": "followersPnl",
+            "label": "P&L подписчиков",
+            "value": "+12 938 384 USDT"
+          },
+          {
+            "id": "winRate",
+            "label": "% успешных сделок",
+            "value": "89,62%"
+          },
+          {
+            "id": "maxDrawdown",
+            "label": "Макс. просадка",
+            "value": "8,10%"
+          },
+          {
+            "id": "averagePnl",
+            "label": "Сред. P&L",
+            "value": "+7 172 USDT"
+          },
+          {
+            "id": "profitFactor",
+            "label": "Коэффициент P/L",
+            "value": "24,48"
+          },
+          {
+            "id": "tradesPerWeek",
+            "label": "Сред. сделок в неделю",
+            "value": "7,9"
+          },
+          {
+            "id": "holdingTime",
+            "label": "Сред. время удержания",
+            "value": "—"
+          },
+          {
+            "id": "volatility",
+            "label": "Волатильность ROI",
+            "value": "64,34%"
+          },
+          {
+            "id": "sharpe",
+            "label": "Коэффициент Шарпа",
+            "value": "25,74"
+          },
+          {
+            "id": "sortino",
+            "label": "Коэффициент Сортино",
+            "value": "152,51"
+          },
+          {
+            "id": "lastTrade",
+            "label": "Посл. сделка",
+            "value": "28.09.2026"
+          },
+          {
+            "id": "totalTrades",
+            "label": "Всего сделок",
+            "value": "474"
+          },
+          {
+            "id": "winningTrades",
+            "label": "С прибылью",
+            "value": "423"
+          },
+          {
+            "id": "losingTrades",
+            "label": "С убытком",
+            "value": "49"
+          }
+        ],
+        "skeletons": 0,
+        "buttons": [
+          "7 д.",
+          "30 д.",
+          "90 д.",
+          "Всё время"
+        ],
+        "range": "ALL · С момента запуска · 06.08.2025 — 28.09.2026 · 418 календарных дней"
+      }
+    }
+  },
+  "language": {
+    "english": [
+      [
+        "ROI",
+        "+367.4%"
+      ],
+      [
+        "Master P&L",
+        "+495 111 USDT"
+      ],
+      [
+        "Followers P&L",
+        "+22 074 518 USDT"
+      ],
+      [
+        "Win rate",
+        "89,47%"
+      ],
+      [
+        "Max. drawdown",
+        "1,34%"
+      ],
+      [
+        "Avg. P&L",
+        "+12 695 USDT"
+      ],
+      [
+        "P/L ratio",
+        "50,24"
+      ],
+      [
+        "Avg. trades per week",
+        "9,1"
+      ],
+      [
+        "Avg. holding time",
+        "10h 6m"
+      ],
+      [
+        "ROI volatility",
+        "111,05%"
+      ],
+      [
+        "Sharpe ratio",
+        "40,25"
+      ],
+      [
+        "Sortino ratio",
+        "345,10"
+      ],
+      [
+        "Last trade",
+        "28.09.2026"
+      ],
+      [
+        "Total trades",
+        "39"
+      ],
+      [
+        "Winning trades",
+        "34"
+      ],
+      [
+        "Losing trades",
+        "4"
+      ]
+    ],
+    "figuresIdentical": true,
+    "marketplaceRequests": 1
+  },
+  "slowDay": {
+    "firstPaint": {
+      "hydratedMs": 251,
+      "marketplaceRequestMs": [
+        20
+      ],
+      "cards": {
+        "VX-001": {
+          "roi": "+882.1%",
+          "hydrated": true,
+          "skeletons": 0,
+          "unavailable": 0,
+          "loadingText": false,
+          "unavailableText": false,
+          "dash": false
+        },
+        "VX-KSENIA": {
+          "roi": "+481.3%",
+          "hydrated": true,
+          "skeletons": 0,
+          "unavailable": 0,
+          "loadingText": false,
+          "unavailableText": false,
+          "dash": false
+        }
+      },
+      "pageLoadToHydratedMs": 387,
+      "nazarRange": "7D · Скользящий период · 21.09.2026 — 28.09.2026 · 7 календарных дней"
+    },
+    "afterRefresh": {
+      "nazarRange": "7D · Скользящий период · 22.09.2026 — 29.09.2026 · 7 календарных дней",
+      "cards": {
+        "VX-001": null,
+        "VX-KSENIA": null
+      }
+    }
+  },
+  "failure": {
+    "desktop": {
+      "VX-001": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 0,
+        "unavailable": 5,
+        "loadingText": false,
+        "unavailableText": true,
+        "dash": true
+      },
+      "VX-KSENIA": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 0,
+        "unavailable": 6,
+        "loadingText": false,
+        "unavailableText": true,
+        "dash": true
+      }
+    },
+    "mobile": {
+      "VX-001": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 0,
+        "unavailable": 5,
+        "loadingText": false,
+        "unavailableText": true,
+        "dash": true
+      },
+      "VX-KSENIA": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 0,
+        "unavailable": 6,
+        "loadingText": false,
+        "unavailableText": true,
+        "dash": true
+      }
+    }
+  },
+  "timeout": {
+    "inFlight": {
+      "VX-001": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 5,
+        "unavailable": 5,
+        "loadingText": true,
+        "unavailableText": false,
+        "dash": true
+      },
+      "VX-KSENIA": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 6,
+        "unavailable": 6,
+        "loadingText": true,
+        "unavailableText": false,
+        "dash": true
+      }
+    },
+    "afterAbort": {
+      "VX-001": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 0,
+        "unavailable": 5,
+        "loadingText": false,
+        "unavailableText": true,
+        "dash": true
+      },
+      "VX-KSENIA": {
+        "roi": "—",
+        "hydrated": false,
+        "skeletons": 0,
+        "unavailable": 6,
+        "loadingText": false,
+        "unavailableText": true,
+        "dash": true
+      }
+    }
+  },
+  "findings": [],
+  "status": "PASS",
+  "finishedAt": "2026-09-29T03:37:01.934Z"
+}

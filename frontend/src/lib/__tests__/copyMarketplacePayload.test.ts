@@ -249,9 +249,15 @@ describe('payload size', () => {
 describe('wiring', () => {
   const route = readFileSync(resolve(__dirname, '../../../../src/api/routes/copyPerformance.ts'), 'utf8');
   it('summarizes both the aggregate and the per-strategy endpoints', () => {
-    expect(route).toContain("service.get('nazar').then(summarizeStrategy)");
-    expect(route).toContain("service.get('ksenia').then(summarizeStrategy)");
-    expect(route).toContain('summarizeStrategy(await service.get(strategy))');
+    // One pipeline for both endpoints: the marketplace serves each
+    // strategy's published section, and the per-strategy link builds the
+    // same section from the same service response.
+    const snapshot = readFileSync(resolve(__dirname, '../../../../src/services/copyTrading/marketplaceSnapshot.ts'), 'utf8');
+    expect(snapshot).toContain('const summary = summarizeStrategy(response);');
+    expect(snapshot).toContain('const response = await this.service.get(strategy);');
+    expect(route).toContain("snapshots.section('nazar')");
+    expect(route).toContain("snapshots.section('ksenia')");
+    expect(route).toContain('marketplaceSection(strategy, await service.get(strategy))');
   });
 
   it('leaves the one-request marketplace bootstrap intact', () => {
