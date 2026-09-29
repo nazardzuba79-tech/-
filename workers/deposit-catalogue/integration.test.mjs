@@ -160,6 +160,49 @@ test('public read: active entries only, byte-identical to the Render answer, no 
   assert.equal((await mf.dispatchFetch(`${publicUrl}?all=1`)).status, 404);
   assert.equal((await current()).revision, String(BigInt(revision) + 1n));
 });
+test('public read revalidation: weak comparison (RFC 9110 §13.1.2) — same version strong or W/ → 304, anything else → 200', async () => {
+  const first = await mf.dispatchFetch(publicUrl, { headers: { Origin: 'https://voltextech.net' } });
+  const etag = first.headers.get('ETag'), version = (await first.json()).version;
+  assert.equal(etag, `"${version}"`);
+  for (const header of [etag, `W/${etag}`, `W/"${'0'.repeat(64)}", W/${etag}`, `  ${etag} , `, '*']) {
+    for (const method of ['GET', 'HEAD']) {
+      const r = await mf.dispatchFetch(publicUrl, { method, headers: { Origin: 'https://voltextech.net', 'If-None-Match': header } });
+      assert.equal(r.status, 304, `${method} ${header}`);
+      assert.equal(await r.text(), '', '304 has no body');
+      assert.equal(r.headers.get('ETag'), etag);
+      assert.equal(r.headers.get('Cache-Control'), 'no-cache');
+      assert.equal(r.headers.get('Access-Control-Allow-Origin'), 'https://voltextech.net');
+      assert.match(r.headers.get('Vary'), /Origin/);
+    }
+  }
+  for (const header of [`"${'0'.repeat(64)}"`, `W/"${'0'.repeat(64)}"`, `W/${etag.slice(0, -1)}`, `w/${etag}`, version, `${etag} ${etag}`, `*, ${etag}`]) {
+    const r = await mf.dispatchFetch(publicUrl, { headers: { Origin: 'https://voltextech.net', 'If-None-Match': header } });
+    assert.equal(r.status, 200, header);
+    assert.equal((await r.json()).version, version);
+  }
+});
+test('public read: a changed catalogue is never confirmed by the old ETag, weak or strong', async () => {
+  const before = await mf.dispatchFetch(publicUrl);
+  const oldTag = before.headers.get('ETag');
+  const revision = (await current()).revision;
+  const next = { schemaVersion: 1, baseline: [eth, tron], overrides: [] };
+  assert.equal((await request('PUT', next, revision)).status, 200);
+  for (const header of [oldTag, `W/${oldTag}`]) {
+    const r = await mf.dispatchFetch(publicUrl, { headers: { 'If-None-Match': header } });
+    assert.equal(r.status, 200, header);
+    const body = await r.json();
+    assert.notEqual(`"${body.version}"`, oldTag);
+    assert.deepEqual(body.entries.map(e => `${e.asset}/${e.networkId}`).sort(), ['ETH/ethereum', 'USDT/tron']);
+  }
+});
+test('private edits keep their strict If-Match CAS: weak or quoted revisions are refused without a write', async () => {
+  const before = await current();
+  for (const revision of [`W/"${before.revision}"`, `"${before.revision}"`, `W/${before.revision}`, '*']) {
+    assert.equal((await request('PUT', document(), revision)).status, 400, revision);
+  }
+  assert.deepEqual(await current(), before);
+  assert.equal((await mf.dispatchFetch(endpoint, { headers: { 'If-None-Match': '*' } })).status, 401, 'the private read still needs the secret');
+});
 test('public read CORS: allow-listed origins only; the private store stays secret-only and CORS-free', async () => {
   const allowed = await mf.dispatchFetch(publicUrl, { headers: { Origin: 'https://voltextech.net' } });
   assert.equal(allowed.status, 200);

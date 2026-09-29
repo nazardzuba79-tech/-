@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test integration.test.mjs",
+    "test": "node --test integration.test.mjs conditional.test.mjs",
     "build:check": "wrangler deploy --dry-run --env staging --outdir .output",
     "test:smoke": "node --test smoke.integration.test.mjs"
   },

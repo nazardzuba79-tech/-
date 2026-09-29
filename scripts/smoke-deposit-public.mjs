@@ -26,14 +26,28 @@ async function call(path, init = {}) {
 const read = await call('/public/deposit-catalogue', { headers: { Origin: site } });
 check('public catalogue answers the site', read.status === 200, String(read.status));
 check('CORS names the site exactly', read.headers.get('access-control-allow-origin') === site, read.headers.get('access-control-allow-origin') ?? 'none');
-check('revalidated on every open', read.headers.get('cache-control') === 'no-cache' && /^"[0-9a-f]{64}"$/.test(read.headers.get('etag') ?? ''));
+// Strong from the Worker, or weak (W/"…") once Cloudflare has compressed the response: both are valid.
+const etag = read.headers.get('etag') ?? '';
+const version = /^(?:W\/)?"([0-9a-f]{64})"$/.exec(etag)?.[1] ?? null;
+check('revalidated on every open', read.headers.get('cache-control') === 'no-cache' && version !== null, etag || 'no ETag');
 const entries = Array.isArray(read.json?.entries) ? read.json.entries : null;
 check('shape {version, entries}', typeof read.json?.version === 'string' && entries !== null);
 check('active destinations only', !!entries && entries.every((e) => e.enabled === true && typeof e.address === 'string' && e.address.length > 0));
 check('no private fields', !/"(baseline|overrides|status|revision)"/.test(read.text));
 
-const again = await call('/public/deposit-catalogue', { headers: { Origin: site, 'If-None-Match': read.headers.get('etag') ?? '' } });
-check('unchanged catalogue costs a 304', again.status === 304, String(again.status));
+check('ETag names the catalogue version', version !== null && version === read.json?.version);
+// Revalidate exactly as a browser does: the ETag as received, W/ included.
+const again = await call('/public/deposit-catalogue', { headers: { Origin: site, 'If-None-Match': etag } });
+check('unchanged catalogue costs a 304 (ETag sent back as received)', again.status === 304 && again.text === '', `${again.status}, sent ${etag.startsWith('W/') ? 'weak' : 'strong'}`);
+check('304 keeps CORS, ETag and no-cache', again.headers.get('access-control-allow-origin') === site
+  && again.headers.get('cache-control') === 'no-cache' && (again.headers.get('etag') ?? '').endsWith(`"${version}"`));
+const other = etag.startsWith('W/') ? `"${version}"` : `W/"${version}"`;
+const otherForm = await call('/public/deposit-catalogue', { headers: { Origin: site, 'If-None-Match': other } });
+check('the other strong/weak form of the same version also costs a 304', otherForm.status === 304, String(otherForm.status));
+const stale = await call('/public/deposit-catalogue', { headers: { Origin: site, 'If-None-Match': `W/"${'0'.repeat(64)}", "${'1'.repeat(64)}"` } });
+check('a different version gets the full catalogue', stale.status === 200 && stale.json?.version === version, String(stale.status));
+const broken = await call('/public/deposit-catalogue', { headers: { Origin: site, 'If-None-Match': `W/"${version}` } });
+check('a malformed If-None-Match never produces a 304', broken.status === 200, String(broken.status));
 const foreign = await call('/public/deposit-catalogue', { headers: { Origin: 'https://example.invalid' } });
 check('foreign origin refused without CORS', foreign.status === 403 && !foreign.headers.get('access-control-allow-origin'), String(foreign.status));
 for (const method of ['PUT', 'POST', 'DELETE']) {

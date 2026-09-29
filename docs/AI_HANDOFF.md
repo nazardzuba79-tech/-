@@ -4551,3 +4551,29 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Material files: `FuturesOrderForm.tsx`, `FuturesOrderPanelRefinement.css`, `useNativeFuturesExecution.ts`, `useNativeDemo.tsx`, `nativeEngineHint.ts` (new); tests `futuresCompactTicketOptions`, `futuresOrderCalculatorRegression` (regex), `nativeLiveHook` (stub), `futuresUiPolish` (form fingerprint re-taken with reason).
 - Preserved: order payload, `armedProtection`, Reduce Only exclusion, fail-closed engine binding, standard ticket behaviour, Codex's PR #328 integration.
 - Checks actually run: frontend `tsc -b` and production build PASS; `npx jest frontend/src` 137 pass / 20 fail, failing set identical to built `main`; affected suites 117/117; local fixture browser: interaction script 1440/390 PASS, `qa-order-panel-refinement.cjs` PASS 1920/1440/390/320, load-order recording (TP/SL now with the access verdict, not after the account). The hint's first-frame path is covered by unit tests only (fixture tokens are not JWTs).
+
+## Claude — 2026-09-29 — Deposit public read: weak ETag revalidation (If-None-Match)
+
+- Base: `main` `3bec9e0b`. Branch `claude/ecstatic-brahmagupta-cwkvt5-deposit-weak-etag`.
+- **Cause:** production smoke run 36546856123 returned 200 instead of 304. Cloudflare serves the Worker's ETag as `W/"…"` after compressing the body, and the Worker compared `If-None-Match` by strict string equality.
+- **Fix:**
+  - `workers/deposit-catalogue/src/conditional.js` (new) implements RFC 9110 §13.1.2 weak comparison for `If-None-Match`, public GET/HEAD only:
+    - the same opaque tag, weak or strong, gets 304;
+    - lists, whitespace and `*` are handled;
+    - a malformed value never matches.
+  - `index.js` uses it. A 304 keeps ETag, `Cache-Control: no-cache`, CORS and Vary, with no body.
+  - The private `If-Match` CAS is unchanged and still strict.
+  - `scripts/smoke-deposit-public.mjs` accepts a strong or weak ETag and sends it back exactly as received. It also checks the other form of the same version, a different version (200), a malformed value (200), and the 304 headers.
+- **Tests:**
+  - `conditional.test.mjs`: 4 new.
+  - `integration.test.mjs`: 3 new, covering the 304 matrix for GET/HEAD, a changed catalogue not confirmed by its old ETag, and weak or quoted If-Match refused without a write.
+  - `smoke.integration.test.mjs`: a Cloudflare-like proxy that weakens the ETag.
+  - With the old strict comparison restored, the new workerd test and the proxied smoke fail (`200, sent weak`); with the fix all pass.
+- **Checks actually run (local):**
+  - workerd 25/25, smoke 3/3.
+  - `wrangler deploy --dry-run --env production`.
+  - Backend and frontend `tsc`.
+  - Jest catalogue/deposit 58/58.
+  - Browser `qa-deposit-catalogue-edge` 7/7 (short idle).
+- **Preserved:** catalogue data and namespace, addresses/networks/memo, secrets, Listings, Pages settings, and the Render route (its own strict compare is untouched). No merge, deploy or production change.
+- **Next:** after merge, re-run the Deposit workflow (`confirm = deploy-production-public-read`). Pages settings only after its smoke passes.
