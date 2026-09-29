@@ -114,3 +114,19 @@
   .admin-deposit-row > :last-child { grid-column: 1 / -1; }
 }
 
+
+/* /admin before access is confirmed: checking or a retryable failure. Nothing private. */
+.admin-gate-screen { display: flex; align-items: center; justify-content: center; padding: 24px 16px; box-sizing: border-box; color: #101828; color-scheme: light; }
+.admin-gate-card { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 22px; border: 1px solid #e4e7ec; border-radius: 14px; background: #fff; box-shadow: 0 1px 2px rgba(16,24,40,.05); text-align: center; box-sizing: border-box; }
+.admin-gate-title { margin: 0; font-size: 15px; font-weight: 700; }
+.admin-gate-note { margin: 0; font-size: 13px; line-height: 1.45; color: #475467; }
+.admin-gate-spinner { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #e4e7ec; border-top-color: var(--admin-brand, #4f46e5); animation: admin-gate-spin .8s linear infinite; }
+@keyframes admin-gate-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .admin-gate-spinner { animation: none; } }
+.admin-gate-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }
+.admin-gate-retry { min-height: 38px; padding: 0 18px; border: none; border-radius: 8px; background: var(--admin-brand, #4f46e5); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+.admin-gate-home { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid #d0d5dd; border-radius: 8px; color: #344054; font-size: 13px; font-weight: 600; text-decoration: none; }
+.admin-gate-retry:focus-visible, .admin-gate-home:focus-visible { outline: 2px solid var(--admin-brand, #4f46e5); outline-offset: 2px; }
+.admin-inline-alert { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.admin-inline-alert > span { min-width: 0; flex: 1 1 220px; }
+.admin-inline-retry { flex: none; min-height: 32px; padding: 0 14px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font-weight: 700; font-size: 12px; cursor: pointer; }

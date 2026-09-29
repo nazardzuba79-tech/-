@@ -9,6 +9,9 @@ import { AdminPagination } from './AdminPagination';
 import { AdminToastContainer, useAdminToasts } from './AdminToast';
 import { UsersIcon, ActivityIcon, ClockIcon, MoreHorizontalIcon, EyeIcon } from './AdminIcons';
 import { useAdminUserActivity, type AdminDepositPackage } from './adminUserActivity';
+
+/** A users read that has not answered by now is abandoned and shown as failed. */
+export const ADMIN_USERS_TIMEOUT_MS = 20_000;
 import { CreditDepositDrawer, addDecimalStrings } from './CreditDepositDrawer';
 import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { formatLastLoginAt } from './lastLoginLabel';
@@ -100,13 +103,20 @@ export function AdminUsersPage() {
   const navigate = useNavigate();
   // The only recurring read on this page: counts + deposit packages, every
   // one hour while visible, nothing while hidden (see adminUserActivity.ts).
-  const { activity, refresh: refreshActivity } = useAdminUserActivity();
+  const { activity, failed: activityFailed, receivedAt: activityReceivedAt, refresh: refreshActivity } = useAdminUserActivity();
+  const usersInFlight = useRef(false);
 
   const loadUsers = useCallback(() => {
+    // One users read at a time: a signature change while one is running does not start a second.
+    if (usersInFlight.current) return;
+    usersInFlight.current = true;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ADMIN_USERS_TIMEOUT_MS);
     api
-      .getAdminUsers()
+      .getAdminUsers(undefined, controller.signal)
       .then((next) => { setUsers(next.filter((user) => user.role === 'USER' && !user.isAdmin && !deletedIds.current.has(user.id))); setLoadError(false); })
-      .catch(() => setLoadError(true));
+      .catch(() => setLoadError(true))
+      .finally(() => { clearTimeout(timer); usersInFlight.current = false; });
     // The server returns only the newest deposit per user from the last 24h.
     // Do not download the full admin deposit history just to paint badges.
     api
@@ -192,6 +202,13 @@ export function AdminUsersPage() {
   }, [customerPackages]);
   const readyCount = customerPackages.filter((p) => p.state === 'READY').length;
   const topUpCount = customerPackages.filter((p) => p.state !== 'READY').length;
+  // Deposit numbers exist only once the activity read has answered. Until then
+  // (or after it failed first time) they are unknown, shown as «—», never 0.
+  const activityKnown = activity !== null;
+  const readySub = activity === null
+    ? (activityFailed ? 'Не удалось загрузить' : 'Загрузка…')
+    : [readyByAsset, topUpCount ? `ожидают доплаты: ${topUpCount}` : '',
+      activity.counts.UNATTRIBUTED ? `непривязанных: ${activity.counts.UNATTRIBUTED}` : ''].filter(Boolean).join(' · ') || 'Нет пополнений в очереди';
 
   function deletionDone() {
     if (!deleting) return;
@@ -219,7 +236,7 @@ export function AdminUsersPage() {
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: 'all', label: 'Все' },
     { key: 'new', label: 'Новые', count: counts.new },
-    { key: 'deposits', label: 'Пополнения', count: counts.deposits },
+    { key: 'deposits', label: 'Пополнения', count: activityKnown ? counts.deposits : undefined },
     { key: 'kyc', label: 'KYC', count: counts.kyc },
   ];
 
@@ -235,9 +252,8 @@ export function AdminUsersPage() {
           <AdminStatCard label="Новые регистрации" value={(users ? counts.new : activity?.newUsers24h ?? 0).toLocaleString('ru-RU')} sub="За последние 24 часа" icon={ActivityIcon} accent="brand" />
           <AdminStatCard
             label="Готовы к проверке"
-            value={readyCount.toLocaleString('ru-RU')}
-            sub={activity === null ? 'Загрузка…' : [readyByAsset, topUpCount ? `ожидают доплаты: ${topUpCount}` : '',
-              activity.counts.UNATTRIBUTED ? `непривязанных: ${activity.counts.UNATTRIBUTED}` : ''].filter(Boolean).join(' · ') || 'Нет пополнений в очереди'}
+            value={activityKnown ? readyCount.toLocaleString('ru-RU') : '—'}
+            sub={readySub}
             icon={ClockIcon}
             accent="warning"
           />
@@ -269,7 +285,22 @@ export function AdminUsersPage() {
       </div>
 
       <div className="admin-toolbar"><input aria-label="Поиск пользователей" style={styles.input} placeholder="Email пользователя" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /><select aria-label="Фильтр пользователей" style={styles.input} value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}><option value="">Все пользователи</option><option value="PENDING">KYC на проверке</option><option value="lastLogin">По последнему входу</option></select></div>
-      {loadError && <p role="alert" style={styles.errorBox}>Не удалось загрузить пользователей. Обновите страницу.</p>}
+      {activityFailed && (
+        <p role="alert" style={styles.errorBox} className="admin-inline-alert" data-activity-error={activityKnown ? 'stale' : 'empty'}>
+          <span>
+            {activityKnown
+              ? `Не удалось обновить данные о пополнениях. Показаны данные на ${activityReceivedAt ? new Date(activityReceivedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—'}.`
+              : 'Не удалось загрузить данные о пополнениях и заявках. Суммы и очереди пока неизвестны.'}
+          </span>
+          <button type="button" className="admin-inline-retry" data-activity-retry onClick={() => { void refreshActivity(); }}>Повторить</button>
+        </p>
+      )}
+      {loadError && (
+        <p role="alert" style={styles.errorBox} className="admin-inline-alert" data-users-error={users ? 'stale' : 'empty'}>
+          <span>{users ? 'Не удалось обновить список пользователей. Показан последний загруженный список.' : 'Не удалось загрузить пользователей.'}</span>
+          <button type="button" className="admin-inline-retry" data-users-retry onClick={loadUsers}>Повторить</button>
+        </p>
+      )}
       <div style={styles.table} className="admin-table-desktop">
         <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: TABLE_MIN_WIDTH }}>
           <span>Email</span>
@@ -291,7 +322,7 @@ export function AdminUsersPage() {
           <UserRow
             key={u.id}
             user={u}
-            events={eventsFor(u, isNew(u), pendingByUser.get(u.id), recentDeposits.get(u.id))}
+            events={eventsFor(u, isNew(u), pendingByUser.get(u.id), recentDeposits.get(u.id), activityKnown)}
             onOpen={() => navigate(`/admin/users/${u.id}`)}
             onCredit={openCredit}
             onDelete={setDeleting}
@@ -305,7 +336,7 @@ export function AdminUsersPage() {
           <MobileUserCard
             key={u.id}
             user={u}
-            events={eventsFor(u, isNew(u), pendingByUser.get(u.id), recentDeposits.get(u.id))}
+            events={eventsFor(u, isNew(u), pendingByUser.get(u.id), recentDeposits.get(u.id), activityKnown)}
             onOpen={() => navigate(`/admin/users/${u.id}`)}
             onCredit={openCredit}
             onDelete={setDeleting}
@@ -346,17 +377,19 @@ type RecentDeposit = { amount: string; asset: string; createdAt: string } | unde
 /** What happened to this user, as the СОБЫТИЕ column shows it. */
 interface UserEvents {
   fresh: boolean;
+  /** False until the activity read has answered: deposit state is unknown, not empty. */
+  known: boolean;
   pending: AdminDepositPackage[];
   /** The newest deposit of the last 24h, when it is no longer waiting — i.e. credited. */
   credited: RecentDeposit;
 }
 
-function eventsFor(u: User, fresh: boolean, pending: AdminDepositPackage[] | undefined, recent: RecentDeposit): UserEvents {
+function eventsFor(u: User, fresh: boolean, pending: AdminDepositPackage[] | undefined, recent: RecentDeposit, known: boolean): UserEvents {
   const waiting = pending ?? [];
   // `recent` is the newest deposit of the last 24h in any state; it reads as
   // credited only when the user has no package still waiting.
   const credited = recent && waiting.length === 0 ? recent : undefined;
-  return { fresh, pending: waiting, credited };
+  return { fresh, known, pending: waiting, credited };
 }
 
 function rowTint(e: UserEvents): string | undefined {
@@ -385,7 +418,9 @@ function EventBadges({ user, events }: { user: User; events: UserEvents }) {
           ЗАЧИСЛЕНО <b className="mono">+{events.credited.amount} {events.credited.asset}</b>
         </span>
       )}
-      {!first && !events.credited && <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
+      {!first && !events.credited && (events.known
+        ? <span style={{ color: 'var(--text-tertiary)' }}>—</span>
+        : <span style={{ color: 'var(--text-tertiary)' }} data-event-unknown title="Данные о пополнениях не загружены">…</span>)}
     </span>
   );
 }

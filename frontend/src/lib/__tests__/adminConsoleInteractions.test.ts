@@ -9,6 +9,7 @@ const { JSDOM } = req('jsdom');
 const React = req('react');
 const { act } = React;
 let dom: any, root: any, host: HTMLElement, api: any, wallets: any[], token: string | null;
+const sessionListeners = new Set<() => void>();
 const flush = () => new Promise<void>(done => setImmediate(done));
 const modules = new Map<string, any>();
 function load(file: string): any {
@@ -19,7 +20,7 @@ function load(file: string): any {
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
     if (name.endsWith('/depositCatalogue')) return { MANUAL_DEPOSIT_CATALOGUE: false };
-    if (name.endsWith('/api')) return { api, getToken: () => token, ApiError: class extends Error {} };
+    if (name.endsWith('/api')) return { api, getToken: () => token, onSessionChange: (listener: () => void) => { sessionListeners.add(listener); return () => sessionListeners.delete(listener); }, ApiError: class extends Error {} };
     if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
   });
@@ -36,6 +37,7 @@ beforeEach(() => {
   token = 'test-only';
   api = { getAdminWallets: jest.fn(async () => wallets), setAdminWalletAddress: jest.fn(async (chain, address) => { wallets = wallets.map(w => w.chain === chain ? { ...w, address } : w); }), resetAdminWallet: jest.fn(async chain => { wallets = wallets.map(w => w.chain === chain ? { ...w, address: w.defaultAddress, isOverridden: false } : w); }), getMe: jest.fn(async () => ({ isAdmin: true, email: 'qa@example.invalid' })) };
   modules.clear();
+  sessionListeners.clear();
 });
 afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); });
 async function mountWallets() { const { AdminWalletsPage } = load(resolve(frontend, 'src/pages/admin/AdminWalletsPage')); await act(async () => { root.render(React.createElement(AdminWalletsPage)); await flush(); }); }
@@ -225,6 +227,108 @@ test.each([false, true])('real AdminLayout gate allows only administrator=%s', a
   expect(host.textContent!.includes('Private overview')).toBe(allowed);
   expect(host.textContent!.includes('Public home')).toBe(!allowed);
   expect(host.querySelector('[href="/admin/products"]')).toBeNull();
+});
+
+async function mountGate() {
+  const { AdminLayout } = load(resolve(frontend, 'src/pages/admin/AdminLayout'));
+  const { MemoryRouter, Routes, Route } = req('react-router-dom');
+  await act(async () => {
+    root.render(React.createElement(MemoryRouter, { initialEntries: ['/admin'] }, React.createElement(Routes, null,
+      React.createElement(Route, { path: '/', element: React.createElement('p', null, 'Public home') }),
+      React.createElement(Route, { path: '/admin', element: React.createElement(AdminLayout) }, React.createElement(Route, { index: true, element: React.createElement('p', null, 'Private overview') }))
+    ))); await flush();
+  });
+}
+const gateState = () => host.querySelector('[data-admin-gate]')?.getAttribute('data-admin-gate') ?? null;
+const statusError = (status: number) => Object.assign(new Error(`Request failed (${status})`), { status });
+
+test('checking: a clear loading state, no sidebar, identity or private page before /me answers', async () => {
+  let answer!: (value: any) => void;
+  api.getMe.mockImplementation(() => new Promise(done => { answer = done; }));
+  await mountGate();
+  expect(gateState()).toBe('checking');
+  expect(host.textContent).toContain('Проверяем доступ к админ-панели');
+  expect(host.textContent).not.toContain('Private overview');
+  expect(host.textContent).not.toContain('qa@example.invalid');
+  expect(host.querySelector('aside')).toBeNull();
+  await act(async () => { answer({ isAdmin: true, email: 'qa@example.invalid' }); await flush(); });
+  expect(host.textContent).toContain('Private overview');
+});
+
+test.each([[401, 'NO_SESSION'], [403, 'FORBIDDEN']])('%s from /me is a refusal: leaves /admin without a retry screen', async status => {
+  api.getMe.mockRejectedValue(statusError(status as number));
+  await mountGate();
+  expect(host.textContent).toContain('Public home');
+  expect(host.textContent).not.toContain('Private overview');
+  expect(gateState()).toBeNull();
+});
+
+test('no session token: refused without calling /me', async () => {
+  token = null;
+  await mountGate();
+  expect(api.getMe).not.toHaveBeenCalled();
+  expect(host.textContent).toContain('Public home');
+});
+
+test.each([
+  ['503', () => Promise.reject(statusError(503)), 'SERVER'],
+  ['network error', () => Promise.reject(new TypeError('Failed to fetch')), 'NETWORK'],
+  ['malformed answer', () => Promise.resolve({ email: 'qa@example.invalid' }), 'SERVER'],
+])('%s is a temporary failure: stays on /admin with a retry, never redirects or shows private data', async (_name, getMe, reason) => {
+  api.getMe.mockImplementation(getMe);
+  await mountGate();
+  expect(gateState()).toBe('error');
+  expect(host.querySelector('[data-admin-gate-reason]')!.getAttribute('data-admin-gate-reason')).toBe(reason);
+  expect(host.textContent).not.toContain('Public home');
+  expect(host.textContent).not.toContain('Private overview');
+  // Retry runs exactly one new check and succeeds.
+  api.getMe.mockResolvedValue({ isAdmin: true, email: 'qa@example.invalid' });
+  await act(async () => { (host.querySelector('[data-admin-gate-retry]') as HTMLButtonElement).click(); await flush(); });
+  expect(api.getMe).toHaveBeenCalledTimes(2);
+  expect(host.textContent).toContain('Private overview');
+});
+
+test('a hung /me is abandoned after the timeout (the request is aborted) and offers a retry', async () => {
+  jest.useFakeTimers({ doNotFake: ['setImmediate', 'queueMicrotask', 'nextTick'] });
+  try {
+    let signal: AbortSignal | undefined;
+    api.getMe.mockImplementation((s: AbortSignal) => { signal = s; return new Promise((_, fail) => s.addEventListener('abort', () => fail(Object.assign(new Error('aborted'), { name: 'AbortError' })))); });
+    await mountGate();
+    expect(gateState()).toBe('checking');
+    await act(async () => { jest.advanceTimersByTime(5_000); });
+    expect(host.querySelector('[data-admin-gate-slow]')).not.toBeNull();
+    await act(async () => { jest.advanceTimersByTime(10_000); await Promise.resolve(); await Promise.resolve(); });
+    expect(signal!.aborted).toBe(true);
+    expect(gateState()).toBe('error');
+    expect(host.querySelector('[data-admin-gate-reason]')!.getAttribute('data-admin-gate-reason')).toBe('TIMEOUT');
+    expect(host.textContent).not.toContain('Public home');
+  } finally { jest.useRealTimers(); }
+});
+
+test('double-clicking retry does not start a second concurrent /me', async () => {
+  api.getMe.mockRejectedValueOnce(statusError(503));
+  await mountGate();
+  let answer!: (value: any) => void;
+  api.getMe.mockImplementation(() => new Promise(done => { answer = done; }));
+  const retry = host.querySelector('[data-admin-gate-retry]') as HTMLButtonElement;
+  await act(async () => { retry.click(); retry.click(); await flush(); });
+  expect(api.getMe).toHaveBeenCalledTimes(2);
+  await act(async () => { answer({ isAdmin: true, email: 'qa@example.invalid' }); await flush(); });
+  expect(host.textContent).toContain('Private overview');
+});
+
+test('a session change re-checks: signing out leaves, another admin account is re-confirmed', async () => {
+  await mountGate();
+  expect(host.textContent).toContain('Private overview');
+  token = 'other-admin';
+  api.getMe.mockResolvedValue({ isAdmin: true, email: 'second@example.invalid' });
+  await act(async () => { for (const l of sessionListeners) l(); await flush(); });
+  expect(api.getMe).toHaveBeenCalledTimes(2);
+  expect(host.textContent).toContain('Private overview');
+  token = null;
+  await act(async () => { for (const l of sessionListeners) l(); await flush(); });
+  expect(host.textContent).toContain('Public home');
+  expect(host.textContent).not.toContain('Private overview');
 });
 
 /* The console has no overview page any more: /admin opens Пользователи
