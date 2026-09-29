@@ -105,12 +105,13 @@ it('the premium finishing layer keeps every primary action at least 50px (52px o
     expect(Number(px)).toBeGreaterThanOrEqual(50);
   }
   expect(layer).not.toContain('--preview-control-height');
-  // Every page that carries the marker imports the layer.
-  for (const page of ['src/pages/TradePage.tsx', 'src/pages/FuturesPage.tsx']) {
-    const source = read(page);
-    expect(source).toContain("import './trade-terminal/TerminalPreviewPolish.css'");
-    expect(source).toContain('data-premium-terminal-preview');
-  }
+  // The Spot/CFD shell carries the marker and imports the layer.
+  // Futures intentionally stays on its already released styling in this PR.
+  const source = read('src/pages/TradePage.tsx');
+  expect(source).toContain("import './trade-terminal/TerminalPreviewPolish.css'");
+  expect(source).toContain('data-premium-terminal-preview');
+  const futures = read('src/pages/FuturesPage.tsx');
+  expect(futures).not.toContain('data-premium-terminal-preview');
 });
 
 it('no Futures-only trading concept leaks into the Spot or CFD shells', () => {
