@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFetch as fetch, trackBrowserRead } from './browserActivity';
 import { useEffect, useMemo, useState } from 'react';
 import { API_BASE } from './api';
 import { fetchNrxPublic, isEdgeMarketUrl, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
@@ -60,6 +61,8 @@ class TestMarketStore {
   private subscribers = new Map<symbol, { listener: Listener; intervalMs: number }>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private inFlight: Promise<void> | null = null;
+  private controller: AbortController | null = null;
+  private refreshAfterFlight = false;
   private fetchedAt = 0;
 
   getState(): TestMarketsState {
@@ -70,7 +73,7 @@ class TestMarketStore {
     const key = Symbol('test-market-subscriber');
     this.subscribers.set(key, { listener, intervalMs });
     listener(this.state);
-    if (this.subscribers.size === 1 && typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
+    if (this.subscribers.size === 1 && typeof document !== 'undefined') addBrowserActivityListener(this.onVisibility);
     if (!this.state.loaded || (this.catalogue && this.subscribers.size === 1)
       || ((this.catalogue || this.anyLive()) && Date.now() - this.fetchedAt >= intervalMs)) void this.refresh();
     else this.schedule();
@@ -79,27 +82,38 @@ class TestMarketStore {
       if (this.subscribers.size > 0) return this.schedule();
       if (this.timer) clearTimeout(this.timer);
       this.timer = null;
-      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisibility);
+      this.controller?.abort();
+      if (typeof document !== 'undefined') removeBrowserActivityListener(this.onVisibility);
     };
   }
 
   refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
-    if (typeof document !== 'undefined' && document.hidden && this.state.loaded) return Promise.resolve();
-    this.inFlight = fetchTestMarketJson(this.endpoint)
+    if (typeof document !== 'undefined' && isBrowserInactive() && this.state.loaded) return Promise.resolve();
+    const controller = new AbortController();
+    this.controller = controller;
+    this.refreshAfterFlight = false;
+    this.inFlight = trackBrowserRead(fetchTestMarketJson(this.endpoint, controller.signal)
       .then((body) => {
+        if (controller.signal.aborted || this.refreshAfterFlight) return;
         const snapshot = parseTestMarkets(body);
         if (!snapshot) throw new Error('test_market_shape');
         registerManagedListings(snapshot.assets);
         this.state = { loaded: true, error: false, assets: snapshot.assets, clockOffsetMs: snapshot.serverTime - Date.now() };
-      })
+      }))
       .catch(() => {
+        if (controller.signal.aborted || this.refreshAfterFlight) return;
         // Last good stays: a failed refresh never empties a list.
         this.state = { ...this.state, loaded: true, error: true };
       })
       .finally(() => {
         this.inFlight = null;
-        this.fetchedAt = Date.now();
+        if (this.controller === controller) this.controller = null;
+        if (this.refreshAfterFlight && this.subscribers.size > 0 && !isBrowserInactive()) {
+          void this.refresh();
+          return;
+        }
+        if (!controller.signal.aborted) this.fetchedAt = Date.now();
         for (const { listener } of this.subscribers.values()) listener(this.state);
         this.schedule();
       });
@@ -114,14 +128,19 @@ class TestMarketStore {
     return this.state.assets.filter((asset) => asset.listingArmed);
   }
 
-  private readonly onVisibility = () => {
-    if (document.hidden || !this.subscribers.size) return;
+  private readonly onVisibility = (event?: Event) => {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    if (isBrowserInactive() || !this.subscribers.size) return;
     // Preview-only listings are intentionally static: visibility changes
     // must not start a clock or create background traffic.
     if (!this.catalogue && this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;
     // Live or armed pre-listing: a tab that slept through the listing moment must wake.
     const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
-    if (Date.now() - this.fetchedAt >= cadence) void this.refresh();
+    if (event?.type === 'voltex:browser-activity' || Date.now() - this.fetchedAt >= cadence) {
+      if (event?.type === 'voltex:browser-activity' && this.inFlight) this.refreshAfterFlight = true;
+      void this.refresh();
+    }
     else if (this.catalogue) this.schedule();
   };
 
@@ -129,7 +148,7 @@ class TestMarketStore {
   private schedule(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
-    if (!this.subscribers.size) return;
+    if (!this.subscribers.size || isBrowserInactive()) return;
     const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
     let delay = Math.max(0, cadence - (Date.now() - this.fetchedAt));
     if (this.state.loaded && !this.state.error && this.state.assets.length > 0 && !this.anyLive()) {

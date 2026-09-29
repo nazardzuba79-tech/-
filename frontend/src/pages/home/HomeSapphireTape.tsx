@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../../lib/browserActivity';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pause, Play } from 'lucide-react';
@@ -32,9 +33,10 @@ export function HomeSapphireTape({ market }: { market: HomeMarket }) {
     const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
     observer.observe(node);
     const move = (now: number) => {
+      if (isBrowserInactive()) { frame = 0; return; }
       const dt = previous ? Math.min((now - previous) / 1000, .05) : 0;
       previous = now;
-      if (!paused && !market.tickersStale && !document.hidden && visible
+      if (!paused && !market.tickersStale && !isBrowserInactive() && visible
         && !node.contains(document.activeElement) && now > hold.current && set.offsetWidth > 0) {
         // The identical second set makes the wrap visually continuous. The
         // owner requested motion by default; reduced motion uses a gentler speed.
@@ -43,8 +45,9 @@ export function HomeSapphireTape({ market }: { market: HomeMarket }) {
       } else position = node.scrollLeft;
       frame = requestAnimationFrame(move);
     };
-    frame = requestAnimationFrame(move);
-    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+    const activity = () => { cancelAnimationFrame(frame); frame = 0; previous = 0; if (!isBrowserInactive()) frame = requestAnimationFrame(move); };
+    addBrowserActivityListener(activity); activity();
+    return () => { removeBrowserActivityListener(activity); cancelAnimationFrame(frame); observer.disconnect(); };
   }, [paused, market.tickersStale]);
   const stop = () => { hold.current = performance.now() + 8000; };
   const renderRows = (duplicate: boolean) => rows.map(row => (

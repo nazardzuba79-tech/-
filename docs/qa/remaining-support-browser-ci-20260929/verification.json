@@ -1,0 +1,71 @@
+{
+  "sourceBase": "e92951c",
+  "publishedHead": "b343c355369677df65bdd77495ed8826c00e2479",
+  "publishedTree": "89edcb0caa4bebef2790bb7524f3532a4c767ff5",
+  "admin": {
+    "run": 36604258559,
+    "job": 109529122351,
+    "conclusion": "success",
+    "postgresVersion": "16.15",
+    "passedSuites": 8,
+    "passedTests": 142,
+    "receiptCases": {
+      "postgres": {
+        "direct": 7,
+        "parameterized": 7,
+        "total": 14,
+        "gitBlob": "b96ee2cc421bf9d00849d81133ebcc762963f799"
+      },
+      "unit": {
+        "direct": 4,
+        "parameterized": 10,
+        "total": 14,
+        "gitBlob": "df4a4148c53895bebf97f9593fb9e1fb3740fca8"
+      }
+    },
+    "browserChecks": 20,
+    "workerOutbound": 0,
+    "evidence": "admin-pg-excerpt.txt",
+    "countMethod": "Exact-head PG/unit suite PASS and no skipped aggregate; same-head source registrations expand to 14 each. The CI default reporter does not print a per-file case count."
+  },
+  "supportOriginal": {
+    "run": 36604258109,
+    "job": 109529120830,
+    "conclusion": "failure",
+    "reason": "Duplicate bundle scan rejected the intentional protected-owner identity before browser launch.",
+    "evidence": "support-failure-excerpt.txt"
+  },
+  "candidate": {
+    "harnessSha256": "4f41e7b763def5fcaca59e46afd55984bde1ccab5bbc52b47b62d9197e4777c2",
+    "allOtherHarnessBytesUnchanged": true,
+    "allProductionSourceUnchanged": true,
+    "secretMarkerProbes": {
+      "SMTP_PASS": "detected by the actual extracted harness assertion",
+      "SMTP_USER": "detected by the actual extracted harness assertion",
+      "SUPPORT_ADMIN_EMAIL": "detected by the actual extracted harness assertion",
+      "SUPPORT_FROM_EMAIL": "detected by the actual extracted harness assertion",
+      "CLOUDFLARE_API_TOKEN": "detected by the actual extracted harness assertion"
+    },
+    "build": "Frontend TypeScript and Vite QA build PASS; endpoint http://127.0.0.1:8799/v1/support",
+    "browser": {
+      "status": "PASS",
+      "groups": 6,
+      "widths": [
+        320,
+        360,
+        390,
+        430,
+        1440
+      ],
+      "totals": {
+        "workerPosts": 3,
+        "emails": 2,
+        "supportApiRequests": 0
+      },
+      "report": "support-browser-report.json",
+      "runtime": "Local supplied Chromium 153 with a separate uncommitted launcher; web security/CORS enabled. CI keeps ordinary Playwright Chromium.",
+      "environmentOnlyFirstFailure": "Shared local launcher used --disable-web-security and Worker correctly refused with 403. Removing that launcher flag made all unchanged browser assertions pass."
+    }
+  },
+  "remoteWrites": 0
+}

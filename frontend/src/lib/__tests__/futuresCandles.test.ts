@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
@@ -5,6 +6,7 @@ const output:any={};let klineCallback:any=null;const originalWindow=(globalThis 
 const source=fs.readFileSync(path.resolve(__dirname,'../futuresCandles.ts'),'utf8').replace('import.meta.env.VITE_API_URL',"'/api/v1'");
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
 new Function('exports','require',compiled)(output,(name:string)=>{
+  if(name==='./browserActivity')return browserActivity;
   if(name==='./futuresDepth')return {subscribeFuturesKline:(_pair:string,_interval:string,callback:any)=>{klineCallback=callback;return()=>{klineCallback=null;}}};
   throw new Error(`unexpected require ${name}`);
 });
@@ -14,7 +16,13 @@ const frame = (symbol='1000PEPEUSDT') => ({retCode:0,result:{category:'linear',s
   ['1700000900000','0.0034','0.0035','0.0033','0.00345','0'],
   ['1700000000000','0.0033','0.0035','0.0032','0.0034','123'],
 ]}});
-afterEach(()=>{jest.restoreAllMocks();klineCallback=null;if(originalWindow===undefined)Reflect.deleteProperty(globalThis,'window');else Object.defineProperty(globalThis,'window',{configurable:true,writable:true,value:originalWindow});});
+beforeEach(()=>jest.useFakeTimers());
+afterEach(()=>{
+  // Let the real stream idle-expiry path unsubscribe; do not leave its
+  // application timeout holding Jest open after this isolated loader exits.
+  jest.runOnlyPendingTimers();expect(klineCallback).toBeNull();jest.useRealTimers();
+  jest.restoreAllMocks();if(originalWindow===undefined)Reflect.deleteProperty(globalThis,'window');else Object.defineProperty(globalThis,'window',{configurable:true,writable:true,value:originalWindow});
+});
 test('preserves exact tiny OHLC, zero volume, and chronological order',()=>{
   const {candles}=parseFuturesCandles(frame(),'1000PEPEUSDT');
   expect(candles.map((c:any)=>c.time)).toEqual([1700000000,1700000900]);

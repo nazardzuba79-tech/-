@@ -1,4 +1,5 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { onBrowserPhase, isBrowserInactive } from '../lib/browserActivity';
 import { useLanguage } from '../lib/i18n';
 import './TradingViewAdvancedChart.css';
 
@@ -46,9 +47,10 @@ function TradingViewEmbed({ symbol, locale, backgroundColor }: {
   const hostRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const inactive = useSyncExternalStore(onBrowserPhase, isBrowserInactive);
   useEffect(() => {
     const host = hostRef.current;
-    if (!host) return;
+    if (!host || inactive) return;
     let active = true;
     setFailed(false);
     // Fresh ownership even during StrictMode effect replay. A late async script
@@ -84,7 +86,7 @@ function TradingViewEmbed({ symbol, locale, backgroundColor }: {
       owned.replaceChildren();
       owned.remove();
     };
-  }, [symbol, locale, backgroundColor, attempt]);
+  }, [symbol, locale, backgroundColor, attempt, inactive]);
   return <div className="voltex-tradingview-chart__plot">
     <div className="voltex-tradingview-chart__embed" ref={hostRef} />
     {failed && <ChartUnavailable retry={() => setAttempt(n => n + 1)} />}

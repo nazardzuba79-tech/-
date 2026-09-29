@@ -1,3 +1,4 @@
+import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../../lib/browserActivity';
 import { useCallback,useEffect,useRef,useState } from 'react';
 import { Link,useSearchParams } from 'react-router-dom';
 import { LockKeyhole,RefreshCw } from 'lucide-react';
@@ -32,11 +33,11 @@ export function PrivateTradingPage(){
   const[params]=useSearchParams(),cardId=params.get('card');
   const[access,setAccess]=useState<'loading'|'allowed'|'denied'>('loading');
   useEffect(()=>{let active=true;const controller=new AbortController();
-    async function check(){if(document.hidden)return;try{const result=await privateTradingApi.access(controller.signal);if(active)setAccess(result.allowed===true?'allowed':'denied');}catch{if(active)setAccess('denied');}}
-    void check();const timer=window.setInterval(()=>void check(),ACCESS_POLL_MS);
-    const visible=()=>{if(!document.hidden)void check();};document.addEventListener('visibilitychange',visible);
-    const unsubscribe=onSessionChange(()=>{active=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);setAccess('denied');});
-    return()=>{active=false;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',visible);unsubscribe();};
+    async function check(){if(isBrowserInactive())return;try{const result=await privateTradingApi.access(controller.signal);if(active)setAccess(result.allowed===true?'allowed':'denied');}catch{if(active)setAccess('denied');}}
+    void check();const timer=browserSetInterval(()=>void check(),ACCESS_POLL_MS);
+    const visible=()=>{if(!isBrowserInactive())void check();};addBrowserActivityListener(visible);
+    const unsubscribe=onSessionChange(()=>{active=false;controller.abort();browserClearInterval(timer);removeBrowserActivityListener(visible);setAccess('denied');});
+    return()=>{active=false;controller.abort();browserClearInterval(timer);removeBrowserActivityListener(visible);unsubscribe();};
   },[]);
   return <div className="trade-terminal futures-terminal futures-reference futures-studio terminal-studio private-trading-terminal" data-terminal-design="studio">
     <Nav active="/futures" hideTicker/>
@@ -61,17 +62,17 @@ function PrivateTradingWorkspace({onDenied}:{onDenied:()=>void}){
   useEffect(()=>{let cancelled=false;api.getFuturesUniverse().then(result=>{if(!cancelled)setSymbols(discoverFuturesSymbols(['BTC/USDT','ETH/USDT','SOL/USDT'],result));}).catch(()=>{});return()=>{cancelled=true;};},[]);
   const refresh=useCallback(async()=>{try{const next=await privateTradingApi.state();if(alive.current)setState(next);}catch(e){failRef.current(e);}},[]);
   useEffect(()=>{let cancelled=false,loading=false;const controller=new AbortController();setMarket(null);
-    const poll=async()=>{if(cancelled||loading||document.hidden)return;loading=true;
+    const poll=async()=>{if(cancelled||loading||isBrowserInactive())return;loading=true;
       const results=await Promise.allSettled([privateTradingApi.state(controller.signal),privateTradingApi.market(symbol,controller.signal)]);
       if(!cancelled){if(results[0].status==='fulfilled')setState(results[0].value);else failRef.current(results[0].reason);
         if(results[1].status==='fulfilled')setMarket(results[1].value);else{setMarket(null);if(results[1].reason instanceof PrivateTradingError&&[401,403].includes(results[1].reason.status))failRef.current(results[1].reason);}}
       loading=false;
-    };void poll();const timer=window.setInterval(()=>void poll(),2500);document.addEventListener('visibilitychange',poll);
-    return()=>{cancelled=true;controller.abort();clearInterval(timer);document.removeEventListener('visibilitychange',poll);};
+    };void poll();const timer=browserSetInterval(()=>void poll(),2500);addBrowserActivityListener(poll);
+    return()=>{cancelled=true;controller.abort();browserClearInterval(timer);removeBrowserActivityListener(poll);};
   },[symbol]);
   useEffect(()=>{if(preview?.status!=='RUNNING')return;let cancelled=false,loading=false;const controller=new AbortController();
-    const timer=window.setInterval(()=>{if(loading||document.hidden)return;loading=true;privateTradingApi.getPreview(preview.id,controller.signal).then(next=>{if(!cancelled)setPreview(next);}).catch(e=>{if(!cancelled)failRef.current(e);}).finally(()=>{loading=false;});},2500);
-    return()=>{cancelled=true;controller.abort();clearInterval(timer);};
+    const timer=browserSetInterval(()=>{if(loading||isBrowserInactive())return;loading=true;privateTradingApi.getPreview(preview.id,controller.signal).then(next=>{if(!cancelled)setPreview(next);}).catch(e=>{if(!cancelled)failRef.current(e);}).finally(()=>{loading=false;});},2500);
+    return()=>{cancelled=true;controller.abort();browserClearInterval(timer);};
   },[preview?.id,preview?.status]);
   useEffect(()=>{
     if(preview?.status!=='READY'||!preview.expiresAt)return;

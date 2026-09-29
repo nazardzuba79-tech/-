@@ -1,0 +1,11 @@
+2026-09-29T17:24:37.9436560Z ##[command]/usr/bin/docker pull postgres:16
+2026-09-29T17:24:50.2870791Z   VOLTEX_LISTING_TEST_URL: ***127.0.0.1:5432/voltex_listing_test
+2026-09-29T17:25:17.0210117Z All migrations have been successfully applied.
+2026-09-29T17:25:28.7784509Z PASS src/services/listings/__tests__/ownerAllocation.pg.test.ts
+2026-09-29T17:25:31.2338932Z PASS src/services/listings/__tests__/ownerAllocation.test.ts
+2026-09-29T17:25:31.5229163Z Test Suites: 8 passed, 8 total
+2026-09-29T17:25:31.5229676Z Tests:       142 passed, 142 total
+2026-09-29T17:30:35.8336653Z ✓ the Worker made zero outbound (venue) calls during the whole run
+2026-09-29T17:30:35.8845906Z 20 checks passed; report in ../../../../../tmp/listings-qa-report/report.json
+2026-09-29T17:30:37.1956183Z  waiting for server to start....2026-09-29 17:24:44.621 UTC [48] LOG:  starting PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2026-09-29T17:30:37.1968419Z  2026-09-29 17:24:44.929 UTC [1] LOG:  starting PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit

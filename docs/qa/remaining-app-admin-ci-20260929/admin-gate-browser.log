@@ -1,0 +1,25 @@
+PASS success@390 — privileged-before-ok=0 me=1 users=1 activity=1
+PASS 401 refused@390 — at=/
+PASS 403 refused@390 — at=/
+PASS 503 → error screen → retry@390 — reason=SERVER me-calls=2
+PASS network → error screen → retry@390 — reason=NETWORK me-calls=2
+PASS malformed → error screen → retry@390 — reason=SERVER me-calls=2
+PASS hung /me → timeout → retry@390 — timeout-after=15s open-hung-sockets=0
+PASS activity first read fails → unknown → retry@390 — activity-calls=2
+PASS activity fails after success → data kept, marked stale@390 — reads=1
+PASS idle defers hourly read → failed wake keeps last good data@390 — wake-me=1 wake-activity=1
+PASS session revoked mid-page → signed out, left /admin@390 — at=/
+PASS session switched to a customer → refused@390 — at=/
+PASS success@1440 — privileged-before-ok=0 me=1 users=1 activity=1
+PASS 401 refused@1440 — at=/
+PASS 403 refused@1440 — at=/
+PASS 503 → error screen → retry@1440 — reason=SERVER me-calls=2
+PASS network → error screen → retry@1440 — reason=NETWORK me-calls=2
+PASS malformed → error screen → retry@1440 — reason=SERVER me-calls=2
+PASS hung /me → timeout → retry@1440 — timeout-after=15s open-hung-sockets=0
+PASS activity first read fails → unknown → retry@1440 — activity-calls=2
+PASS activity fails after success → data kept, marked stale@1440 — reads=1
+PASS idle defers hourly read → failed wake keeps last good data@1440 — wake-me=1 wake-activity=1
+PASS session revoked mid-page → signed out, left /admin@1440 — at=/
+PASS session switched to a customer → refused@1440 — at=/
+ALL PASS (24)

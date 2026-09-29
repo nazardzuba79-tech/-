@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
+import { lazyPageImports } from '../../../test-utils/sourceContracts';
 
 /**
  * The homepage must OWN the Tailwind utilities it uses.
@@ -96,7 +97,7 @@ describe('the homepage does not borrow another route\'s stylesheet', () => {
 
     const app = read('src/App.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     for (const page of ['SettingsPage', 'CardPage']) {
-      expect(app).toMatch(new RegExp(`lazy\\(\\(\\) => import\\([^)]*${page}`));
+      expect(lazyPageImports(app, page)).toEqual([`./pages/${page}`]);
     }
   });
 
@@ -104,7 +105,7 @@ describe('the homepage does not borrow another route\'s stylesheet', () => {
     const app = read('src/App.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     expect(app).toContain("from './pages/home/HomePage'");
     for (const page of ['TradePage', 'FuturesPage', 'WalletPage', 'CopyTradingPage']) {
-      expect(app).toMatch(new RegExp(`lazy\\(\\(\\) => import\\([^)]*${page}`));
+      expect(lazyPageImports(app, page)).toEqual([`./pages/${page}`]);
     }
   });
 
@@ -165,15 +166,20 @@ describe('the homepage does not borrow another route\'s stylesheet', () => {
 describe('5. the built EAGER stylesheet carries the homepage utilities', () => {
   const distAssets = resolve(frontend, 'dist/assets');
   const built = existsSync(distAssets);
-  const indexCss = built
-    ? readdirSync(distAssets).filter((f) => /^index-.*\.css$/.test(f))
+  // Follow the actual cold-entry links. A copied or incremental build may
+  // leave an older index-*.css on disk; that unlinked file neither counts as
+  // another eager sheet nor supplies any utility to the current homepage.
+  const eagerCss = built
+    ? [...read('dist/index.html').replace(/<!--[\s\S]*?-->/g, '').matchAll(/<link\b[^>]*>/gi)]
+      .map(([tag]) => /\brel\s*=\s*['"]stylesheet['"]/i.test(tag)
+        ? tag.match(/\bhref\s*=\s*(['"])(.*?)\1/i)?.[2] : undefined)
+      .filter((href): href is string => !!href && /^\/assets\/[^/?#]+\.css$/.test(href))
     : [];
+  const eagerStyles = () => eagerCss.map((href) => read(`dist${href}`)).join('\n');
 
-  (built && indexCss.length ? it : it.skip)('index-*.css contains the utilities `/` needs', () => {
-    // One eager stylesheet is what a cold `/` downloads; every homepage
-    // utility has to be in it, because no other CSS is fetched.
-    expect(indexCss).toHaveLength(1);
-    const css = readFileSync(join(distAssets, indexCss[0]), 'utf8');
+  (built ? it : it.skip)('the stylesheets linked by index.html contain the utilities `/` needs', () => {
+    expect(eagerCss.length).toBeGreaterThan(0);
+    const css = eagerStyles();
     for (const utility of REQUIRED_UTILITIES) {
       expect(css).toContain(utility);
     }
@@ -181,8 +187,9 @@ describe('5. the built EAGER stylesheet carries the homepage utilities', () => {
     expect(css).toMatch(/@media[^{]*\{[^}]*\.md\\:/);
   });
 
-  (built && indexCss.length ? it : it.skip)('and still carries no Tailwind preflight reset', () => {
-    const css = readFileSync(join(distAssets, indexCss[0]), 'utf8');
+  (built ? it : it.skip)('and still carries no Tailwind preflight reset', () => {
+    expect(eagerCss.length).toBeGreaterThan(0);
+    const css = eagerStyles();
     // Signature preflight rules. Their absence is what keeps Trade,
     // Futures and Admin free of a global element reset.
     expect(css).not.toMatch(/\*,::before,::after\{box-sizing:border-box/);

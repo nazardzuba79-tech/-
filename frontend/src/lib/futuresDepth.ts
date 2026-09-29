@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFetch as fetch } from './browserActivity';
 import { subscribeFuturesDepth as subscribeSampledDepth, setFuturesDepthFallbackBase as setSampledBase, closeSampledDepth } from './sampledDepth';
 /** Public linear-perpetual depth, for presentation only. No account or order API.
  * Protocol: https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook
@@ -496,7 +497,7 @@ class FuturesDepthTransport {
   private async pollOnce(symbol: string, active: ActiveDepth) {
     if (this.subscriptions.get(symbol) !== active) return;
     if (active.source === 'socket' && active.status === 'live') return;
-    if (typeof document !== 'undefined' && document.hidden) return;
+    if (typeof document !== 'undefined' && isBrowserInactive()) return;
     if (active.listeners.size === 0) return;
     active.polling = true;
     try {
@@ -514,7 +515,7 @@ class FuturesDepthTransport {
       // Network failure. Same rule: change nothing about the book.
     } finally {
       active.polling = false;
-      if (this.subscriptions.get(symbol) === active && !(active.source === 'socket' && active.status === 'live')) {
+      if (!isBrowserInactive() && this.subscriptions.get(symbol) === active && !(active.source === 'socket' && active.status === 'live')) {
         if (active.poll !== null) clearTimeout(active.poll);
         active.poll = setTimeout(() => { active.poll = null; void this.pollOnce(symbol, active); }, FALLBACK_POLL_MS);
       }
@@ -523,19 +524,19 @@ class FuturesDepthTransport {
 
   private attachVisibility() {
     if (this.visibilityAttached || typeof document === 'undefined') return;
-    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    addBrowserActivityListener(this.onVisibilityChange);
     this.visibilityAttached = true;
   }
 
   private detachVisibility() {
     if (!this.visibilityAttached || typeof document === 'undefined') return;
-    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    removeBrowserActivityListener(this.onVisibilityChange);
     this.visibilityAttached = false;
   }
 
   private onVisibilityChange = () => {
     this.cancelReconnect();
-    if (document.hidden) {
+    if (isBrowserInactive()) {
       // Stop spending the visitor's battery and the venue's connection —
       // but keep the book, and do NOT label it.
       //
@@ -580,7 +581,7 @@ class FuturesDepthTransport {
   }
 
   private connect() {
-    if (!this.hasConsumers() || (typeof document !== 'undefined' && document.hidden) || this.socket || this.reconnectTimer !== null) return;
+    if (!this.hasConsumers() || (typeof document !== 'undefined' && isBrowserInactive()) || this.socket || this.reconnectTimer !== null) return;
     try {
       const ws = new WebSocket(WS_URL);
       this.socket = ws;
@@ -776,7 +777,7 @@ class FuturesDepthTransport {
   private reconnect() {
     this.clearSocket();
     this.markStale();
-    if (!this.hasConsumers() || (typeof document !== 'undefined' && document.hidden) || this.reconnectTimer !== null) return;
+    if (!this.hasConsumers() || (typeof document !== 'undefined' && isBrowserInactive()) || this.reconnectTimer !== null) return;
     // While the socket is down, our own backend is the second source. It
     // stops again the instant a socket frame lands.
     for (const [symbol, active] of this.subscriptions) this.scheduleFallback(active, symbol);

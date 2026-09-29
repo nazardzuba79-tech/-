@@ -1,0 +1,65 @@
+{
+  "capturedAt": "2026-09-29T17:09:36.126470+00:00",
+  "runtimeCommit": "2698a3e81cf91ec20c472df50d02dbfa8293b380",
+  "initialApprovedMain": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "includedMain": "9742375b96aff614b690042e13111c1df1178ec5",
+  "localMainMerge": "ccfe32850bd7ce4040d7793ff88e3f69a8c1c155",
+  "implementationCommits": [
+    "e479bfc3498b39ed263b1a9bdcf7ceb162511951",
+    "2698a3e81cf91ec20c472df50d02dbfa8293b380"
+  ],
+  "historicalInput": {
+    "head": "98a154a1482526ada31feb6bcf743acbdb6b35d7",
+    "base": "14120a82119a56b1604634cd17029ec17cd8aedb"
+  },
+  "frontendSourceTree": "82fb47a48dba3dc6249fe0680522479daa8a0df5",
+  "backendSourceTree": "6e85fe1a7a5c703757d402b40bc8785ca2f67f04",
+  "frontendRuntime": {
+    "algorithm": "SHA-256 over sorted relative path, NUL, file bytes, NUL",
+    "fileCount": 481,
+    "sha256": "2f5972695a2b7f28c89d088ca9f4011e542908b17932bb288654bb780f3d669c"
+  },
+  "frontendBundle": {
+    "algorithm": "SHA-256 over sorted relative path, NUL, file bytes, NUL",
+    "fileCount": 145,
+    "sha256": "fbc533639e5dc3a114ef52b1e66d9226b4d4adc331055ead9a90f7458e378aa4"
+  },
+  "playwright": "1.62.1",
+  "browser": "local headless Chromium via verified playwright-local wrapper",
+  "locale": "ru-RU",
+  "timezone": "UTC",
+  "browserMatrix": {
+    "scenarios": 16,
+    "sleepMinutesPerScenario": 30,
+    "hiddenMinutesPerScenario": 30,
+    "sleepHttpRequests": 0,
+    "hiddenHttpRequests": 0,
+    "sleepActiveProviderStreams": 0,
+    "wakeSessionReadsPerScenario": 1,
+    "unexpectedOrderReplay": 0,
+    "pageErrors": 0,
+    "horizontalOverflow": false
+  },
+  "nativeBrowser": {
+    "checks": 11,
+    "widths": [
+      1440,
+      390
+    ],
+    "pageErrors": 0,
+    "horizontalOverflow": false
+  },
+  "localPostgreSQL": "not run; no verified local binary/dependencies; required CI uses a disposable PostgreSQL instance",
+  "scope": "Actual local production bundle and native engine with synthetic loopback fixtures; third-party network blocked, no production accounts/trades/database. Main #343 included; root final full-suite/combined release evidence is separate.",
+  "artifacts": {
+    "browser-matrix.json": "bc40a2dc9cf6f8a5c2faefcab148fd4a07c75a7475e613db263b8026adbfc871",
+    "browser-matrix.log": "6ef582bf1b49329b69e89ce517c107595a505a22da898eb071e9d8b46cd29bc7",
+    "candles-cleanup.log": "610f01c63143ec43dff2d080c603a48adf9f25c46cf31ecf0e944b6f8594e073",
+    "lifecycle-tests.log": "b58ff3e7a276e7b97c5f8950caa5344816c5a0d3755d6b2dddda42dec85e09c6",
+    "native-browser.json": "882563667ec3d0a33ca69d5c4083a8c670b2026703409b5b41d7b83249d3603e",
+    "native-browser.log": "3d58418e938519014adf78c6b6db53355a8367dbf3dc2af1df9d99f217e1a252",
+    "restored-mobile.png": "017500d66273947481bc383881298e4b19679311d8f6b56427cf193e810c4bb0",
+    "sleep-desktop.png": "904e8081057b716a7068d69ab7e599047c3d0b5c46458752f51b6759fcf32c9e",
+    "sleep-mobile.png": "ff02fffa6696c86074e46f1d257591722c76413935ee1cde748b7caf8c807a1c"
+  }
+}

@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
 import { DISPLAY_REFRESH_MS, readDisplayJson } from './displaySnapshotCache';
 import type { FuturesDepthSnapshot, FuturesDepthLevel, FuturesTrade } from './futuresDepth';
 
@@ -53,11 +54,11 @@ export function subscribeFuturesDepth(pair: string, listener: Listener, onTrades
     const emit = () => { for (const cb of state.listeners) cb({ ...state.value, bids: state.value.bids.map(x => ({ ...x })), asks: state.value.asks.map(x => ({ ...x })) }); };
     const schedule = (delay: number) => {
       if (state.timer) clearTimeout(state.timer); state.timer = null;
-      if (subscriptions.get(key) !== state || !state.listeners.size || (typeof document !== 'undefined' && document.hidden)) return;
+      if (subscriptions.get(key) !== state || !state.listeners.size || (typeof document !== 'undefined' && isBrowserInactive())) return;
       state.timer = setTimeout(() => { state.timer = null; void load(); }, delay);
     };
     const load = async () => {
-      if (state.controller || subscriptions.get(key) !== state || !state.listeners.size || (typeof document !== 'undefined' && document.hidden)) return;
+      if (state.controller || subscriptions.get(key) !== state || !state.listeners.size || (typeof document !== 'undefined' && isBrowserInactive())) return;
       const controller = new AbortController(); state.controller = controller;
       const book = readDisplayJson(`${base}/market/display/futures-book/${symbol}`, DISPLAY_REFRESH_MS, controller.signal)
         .then(body => {
@@ -78,14 +79,14 @@ export function subscribeFuturesDepth(pair: string, listener: Listener, onTrades
         }).catch(() => {}) : Promise.resolve();
       await Promise.all([book, tape]);
       if (state.controller === controller) state.controller = null;
-      schedule(controller.signal.aborted && !(typeof document !== 'undefined' && document.hidden) ? 0 : DISPLAY_REFRESH_MS);
+      schedule(controller.signal.aborted && !(typeof document !== 'undefined' && isBrowserInactive()) ? 0 : DISPLAY_REFRESH_MS);
     };
     state.visibility = () => {
-      if (document.hidden) { if (state.timer) clearTimeout(state.timer); state.timer = null; state.controller?.abort(); }
+      if (isBrowserInactive()) { if (state.timer) clearTimeout(state.timer); state.timer = null; state.controller?.abort(); }
       else schedule(0); // readDisplayJson enforces the remaining snapshot TTL across tab changes.
     };
     active = state; subscriptions.set(key, state);
-    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', state.visibility);
+    if (typeof document !== 'undefined') addBrowserActivityListener(state.visibility);
     // Microtask lets the first listeners attach before the initial public read.
     void Promise.resolve().then(load);
   }
@@ -97,7 +98,7 @@ export function subscribeFuturesDepth(pair: string, listener: Listener, onTrades
     state.listeners.delete(listener); if (onTrades) state.tapes.delete(onTrades);
     if (state.listeners.size) return;
     subscriptions.delete(key); if (state.timer) clearTimeout(state.timer); state.controller?.abort();
-    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', state.visibility);
+    if (typeof document !== 'undefined') removeBrowserActivityListener(state.visibility);
   };
 }
 export type { FuturesTrade, FuturesDepthStatus } from './futuresDepth';
@@ -106,7 +107,7 @@ export function closeSampledDepth(): void {
   for (const state of subscriptions.values()) {
     if (state.timer) clearTimeout(state.timer);
     state.controller?.abort();
-    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', state.visibility);
+    if (typeof document !== 'undefined') removeBrowserActivityListener(state.visibility);
   }
   subscriptions.clear();
 }

@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, WalletCards } from 'lucide-react';
@@ -59,10 +60,10 @@ export function WalletBalanceControl() {
         .catch(() => {});
     }
     load();
-    const id = setInterval(load, 30000);
+    const id = browserSetInterval(load, 30000);
     return () => {
       cancelled = true;
-      clearInterval(id);
+      browserClearInterval(id);
     };
   }, []);
 

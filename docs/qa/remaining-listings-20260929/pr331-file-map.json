@@ -1,0 +1,609 @@
+{
+  "reviewDateUtc": "2026-09-29",
+  "oldPr": 331,
+  "oldHead": "6403981d2a8bc9071d76f8e63d78b99b9f757175",
+  "commonBase": "0fd62abfe8fb1a329367078d4688d8dddadfa634",
+  "reviewedMain": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "counts": {
+    "historical-documentation": 11,
+    "runtime": 25,
+    "validation": 9,
+    "worker-configuration": 4,
+    "workflow": 2
+  },
+  "files": [
+    {
+      "oldPath": ".github/workflows/copy-trading-card-regression.yml",
+      "oldBlob": "0928b7569623961b8d481ae68039c5d668ef6881",
+      "category": "workflow",
+      "decision": "superseded by current workflow/import graph",
+      "currentSources": [
+        {
+          "path": ".github/workflows/copy-trading-card-regression.yml",
+          "blob": "c62f122239553904d9a768ba6d59a9bec6e17526"
+        }
+      ]
+    },
+    {
+      "oldPath": ".github/workflows/managed-listings-review.yml",
+      "oldBlob": "741cf47b0545745c4dd2a3e71170960ca6cdefe1",
+      "category": "workflow",
+      "decision": "superseded by current workflow/import graph",
+      "currentSources": [
+        {
+          "path": ".github/workflows/admin-listings.yml",
+          "blob": "ad68ace565f861ee4390e3639b86f6c2300c2837"
+        },
+        {
+          "path": ".github/workflows/deploy-market-edge.yml",
+          "blob": "ebda041a111a318f7b2e869efd7e18f04f45f6b3"
+        }
+      ]
+    },
+    {
+      "oldPath": "docs/AI_HANDOFF.md",
+      "oldBlob": "c0f89db5a14d2bd96d9f8758f397a8179dc28eef",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/README.md",
+      "oldBlob": "63017400a5a5c599e9ef6b48eac661b4cdc6fe2c",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/admin-preview-1440.png",
+      "oldBlob": "93d14c6257db73908600d4534bc8fa472ef37788",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/admin-preview-390.png",
+      "oldBlob": "29e4566156260ad4e4d62323c3bd42cdba0f1af8",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/browser-results.json",
+      "oldBlob": "dd1c2160290132569818580f3af6da786dc33823",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/countdown-1440.png",
+      "oldBlob": "cc076320f88e48b4c281739e579a9b48197ca23a",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/countdown-390.png",
+      "oldBlob": "a5a7c29bae298cf095ede8312fea8ef228b5af21",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/live-1440.png",
+      "oldBlob": "dffc10ebf4a32aac65e1af75747814b6aa0c551f",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/live-390.png",
+      "oldBlob": "2ace806870ce49e585ae2da4e8c34c611155860e",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/markets-1440.png",
+      "oldBlob": "95e2f057c51a1373b7276bf03f641de802092c38",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "docs/qa/managed-listings/markets-390.png",
+      "oldBlob": "eb4c6c9773394bdccc40b7a0e89bdcbfd3b67384",
+      "category": "historical-documentation",
+      "decision": "preserve historical branch evidence; current documentation is authoritative",
+      "currentSources": []
+    },
+    {
+      "oldPath": "frontend/src/App.tsx",
+      "oldBlob": "4890aced04f2a896c436df045c0d86ee98aaeddc",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/App.tsx",
+          "blob": "85045e24e864e1667676f99865152131e9638e76"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/components/CryptoIcon.tsx",
+      "oldBlob": "8b9e799cc34efc4569d22e8f0f1cf78ae76619ab",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/components/CryptoIcon.tsx",
+          "blob": "893e0b99000da82ba5a2869dabaf9bea87c546cb"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/components/ManagedListingsGate.tsx",
+      "oldBlob": "779cd50d27849f749db5e26668e998b0eaa2a485",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/pages/TradePage.tsx",
+          "blob": "ece52c83c1816ff560b809b9b09e03d408885c8e"
+        },
+        {
+          "path": "frontend/src/lib/testMarketStore.ts",
+          "blob": "ce34eb6eddd3b08007214cb72f7fe34a65dbf846"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/components/NrxBookTabs.tsx",
+      "oldBlob": "64519d336736b5e93b9ecf42ef1fee2896daae4a",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/components/NrxBookTabs.tsx",
+          "blob": "fa1ef831854c4f55f4d521b0a84648073f3e614d"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/components/TestMarketTerminal.tsx",
+      "oldBlob": "6fe7aedc9ca58cde54bcef860816318d0c6afbbc",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/components/TestMarketTerminal.tsx",
+          "blob": "b9a764ca5672aca803bccd9b3092dee25a237abf"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "oldBlob": "5eb12cd15e0541b497edffd6dc63694f0b72d764",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+          "blob": "21ecbf4ab60dc9e0cacaf867cfd2c99078c5a0b7"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/__tests__/managedListings.test.ts",
+      "oldBlob": "f85667a0b6dd6f11eda05f5b934d609ee4950ed5",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/__tests__/managedListings.test.ts",
+          "blob": "7f61538bae9d0b5c820f4cde56a99f9f2b242e3f"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/__tests__/nrxMarket.test.ts",
+      "oldBlob": "89cb7d60fd0fbd5810f2f4cde325c8cdbd4f5066",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/__tests__/nrxMarket.test.ts",
+          "blob": "d276e8a54c2f8988d86d469d2b43657bd0f19c7d"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/__tests__/spotPublicMarket.test.ts",
+      "oldBlob": "64d1cb02da9cb0cc042d5f189f6f3615153a08e6",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/__tests__/spotPublicMarket.test.ts",
+          "blob": "80951796611ad555bfd3154e37a60151702622c4"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/api.ts",
+      "oldBlob": "602917b28136545063838430f9b169ec9b2da8a6",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/api.ts",
+          "blob": "3e73ecf92731a7d83c29d30bdb37aa8c0200a2d1"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/managedListingRegistry.ts",
+      "oldBlob": "b1400adb58947ee7d35d325fe2ee64558456dd91",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/testMarkets.ts",
+          "blob": "0f40b7aad11008f051b13f78faab3088374c5417"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/managedListings.ts",
+      "oldBlob": "71792d21adaee539a824b9cae16bfb8c5a367cd9",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/nrxMarket.ts",
+          "blob": "c036e8e95c49e133f06ddd3915754ee85668deeb"
+        },
+        {
+          "path": "frontend/src/lib/testMarketStore.ts",
+          "blob": "ce34eb6eddd3b08007214cb72f7fe34a65dbf846"
+        },
+        {
+          "path": "frontend/src/lib/testMarkets.ts",
+          "blob": "0f40b7aad11008f051b13f78faab3088374c5417"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/spotPublicMarket.ts",
+      "oldBlob": "bad3a4601f6415502aa4439e406629a43770f73e",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/spotPublicMarket.ts",
+          "blob": "a9f85f7ef130d7b4a2a6bf4fec48a843ab8d2999"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/testMarketStore.ts",
+      "oldBlob": "957afab50b42d25fc9932b2a7cc65975eee04982",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/testMarketStore.ts",
+          "blob": "ce34eb6eddd3b08007214cb72f7fe34a65dbf846"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/lib/testMarkets.ts",
+      "oldBlob": "a0eb76e3b01017bbcd9257d18e8b1ec0466cfe65",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/lib/testMarkets.ts",
+          "blob": "0f40b7aad11008f051b13f78faab3088374c5417"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/pages/TradePage.tsx",
+      "oldBlob": "066005e36c2282787c14e53d1c368f779db10098",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/pages/TradePage.tsx",
+          "blob": "ece52c83c1816ff560b809b9b09e03d408885c8e"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/pages/admin/AdminLayout.tsx",
+      "oldBlob": "85273c0740747e0fbf781661f5733697169ba66c",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/pages/admin/AdminLayout.tsx",
+          "blob": "56a1cb22b5b415797ed5fae88fbc0bce2c5b8a01"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/pages/admin/AdminListingsPage.tsx",
+      "oldBlob": "09b7420fc41c6afeba38045d1433d6142d5c2a7a",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/pages/admin/AdminListingsPage.tsx",
+          "blob": "90717e47df2510c3280f1edf26fe47720621607a"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/pages/admin/adminListings.css",
+      "oldBlob": "4ff4f94c90594862402844aaa57757813b37d6c3",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/pages/admin/adminListings.css",
+          "blob": "7e0e728d0a7c2b8904e87c0409860cded576fc5e"
+        }
+      ]
+    },
+    {
+      "oldPath": "frontend/src/pages/markets-bolt/TestMarketsStrip.tsx",
+      "oldBlob": "ab5cf63da1cb74313ab9ea33f023c86c2c5f183d",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "frontend/src/pages/markets-bolt/TestMarketsStrip.tsx",
+          "blob": "573725368b414bc299fa1bb59abc6c7357f57aa6"
+        }
+      ]
+    },
+    {
+      "oldPath": "scripts/test-managed-listings-postgres.cjs",
+      "oldBlob": "32e79e748e1566b5edc98963261f0c58ee9f5f32",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": ".github/workflows/admin-listings.yml",
+          "blob": "ad68ace565f861ee4390e3639b86f6c2300c2837"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/api/routes/__tests__/adminListings.test.ts",
+      "oldBlob": "bfbdd22733305cd377bbf1ac405790e2ea182764",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "src/api/routes/__tests__/adminListings.test.ts",
+          "blob": "18a324c75a395204cf1e61944fea66c61d0d87ce"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/api/routes/adminListings.ts",
+      "oldBlob": "fafdad53e36fcffc9319b6ebd76e73c9406c771f",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "src/api/routes/adminListings.ts",
+          "blob": "86cbbdbdb1dc13e743d015e1b0bd14b9f165d5df"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/index.ts",
+      "oldBlob": "d58ab3c8c37cb0f3f5ac8731128154f296e2e253",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "src/index.ts",
+          "blob": "4fa801f8c25941b521dc6d5fd54779648064b097"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/services/DemoTradingService.ts",
+      "oldBlob": "6db948594f5a39b17e80c1dc161a30caf640b0fa",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "src/services/DemoTradingService.ts",
+          "blob": "8dd60abe8cd8e983fe4e9f198f0fe130f56747da"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/services/OrderService.ts",
+      "oldBlob": "b64d514e854702ec2bc15506542def22bd5321b6",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "src/services/OrderService.ts",
+          "blob": "93922cb775f21591cea468ee312034195c5fcb11"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/services/managedListings/__tests__/allocation.pg.test.ts",
+      "oldBlob": "61d96d818ae1575ff28df01319fd46b94a51eab4",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "src/services/listings/__tests__/ownerAllocation.pg.test.ts",
+          "blob": "0703390878d11f1bc939920dec7271cba06799b0"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/services/managedListings/allocation.ts",
+      "oldBlob": "c2a4a28f4f4a498c52df794218d9d6a83118ca48",
+      "category": "runtime",
+      "decision": "superseded; carry existing-receipt metadata validation into current CLI helper only",
+      "currentSources": [
+        {
+          "path": "src/services/listings/ownerAllocation.ts",
+          "blob": "1334f329de4bd7ce06bf415362357951efb1a2ac"
+        },
+        {
+          "path": "scripts/allocate-listing-owner.cjs",
+          "blob": "7fda514710c85d04c954b70c454130bebe510f9d"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/services/managedListings/public.ts",
+      "oldBlob": "2796fcdfef18b7049ce5fb3f2f74c6d37f8173be",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "src/services/listings/listingPublic.ts",
+          "blob": "6aca97c43cedc955e2e8f97df6b2c7939f66045e"
+        },
+        {
+          "path": "src/services/testMarkets/testMarketService.ts",
+          "blob": "05c15563506c63fa502f42c50b2e1ca8f3b1e67e"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/services/managedListings/schema.ts",
+      "oldBlob": "f41b005b0cc2d3f8c41ab33ec8afe1b5bf14bed1",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "src/services/listings/listingConfig.ts",
+          "blob": "cba941d96de5ec36e4e231bce3a167a9de73c8d5"
+        }
+      ]
+    },
+    {
+      "oldPath": "src/services/managedListings/store.ts",
+      "oldBlob": "15710611b897ddc585d1abdf29bb643eda871ab6",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "src/services/listings/store.ts",
+          "blob": "b1634b335a77f678a3ef929f593ff7604b9ee3fa"
+        },
+        {
+          "path": "src/services/listings/registry.ts",
+          "blob": "c73d4faa259ff858af6b2d140ceadff34bd0259c"
+        },
+        {
+          "path": "src/services/listings/managedSnapshot.ts",
+          "blob": "5c053a7d54ccab3d62db3a6d59a2cae6d8f70250"
+        }
+      ]
+    },
+    {
+      "oldPath": "workers/managed-listings/.gitignore",
+      "oldBlob": "4679aa4b1d86b900c461702de06c6714d5b0bc10",
+      "category": "worker-configuration",
+      "decision": "retain current market-edge namespace and package; no new worker",
+      "currentSources": [
+        {
+          "path": ".gitignore",
+          "blob": "2f844129f822c0202b864711687937038d03a4d3"
+        }
+      ]
+    },
+    {
+      "oldPath": "workers/managed-listings/browser.test.mjs",
+      "oldBlob": "c9bfc5f0153a2660e86305c7d705d09b0ca22fbb",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "scripts/qa-admin-listings.cjs",
+          "blob": "d3ddbe62e669a03e1dbdb740f8165749eaeb49f7"
+        }
+      ]
+    },
+    {
+      "oldPath": "workers/managed-listings/integration.test.mjs",
+      "oldBlob": "644fa42b27ec59074734a2b8809d71a1330b1440",
+      "category": "validation",
+      "decision": "superseded by current scoped tests and CI",
+      "currentSources": [
+        {
+          "path": "workers/market-edge/listings.integration.test.mjs",
+          "blob": "1d5f941cf18ba7a8711f8aca624c0f875a5666cd"
+        }
+      ]
+    },
+    {
+      "oldPath": "workers/managed-listings/package-lock.json",
+      "oldBlob": "b39cfeb8d639432b2624598d474362aedbf8538e",
+      "category": "worker-configuration",
+      "decision": "retain current market-edge namespace and package; no new worker",
+      "currentSources": [
+        {
+          "path": "workers/market-edge/package-lock.json",
+          "blob": "4a09e59fb837105cfff30172f9a90b5274bcde58"
+        }
+      ]
+    },
+    {
+      "oldPath": "workers/managed-listings/package.json",
+      "oldBlob": "5ddb83e11e47f4da81d20c40494e99eb157d9751",
+      "category": "worker-configuration",
+      "decision": "retain current market-edge namespace and package; no new worker",
+      "currentSources": [
+        {
+          "path": "workers/market-edge/package.json",
+          "blob": "4cdc3690bdacb5b67ca84ab4c8c82986917a2e11"
+        }
+      ]
+    },
+    {
+      "oldPath": "workers/managed-listings/src/index.js",
+      "oldBlob": "4769368da43a08c55c257a94e3a0f37e2108a544",
+      "category": "runtime",
+      "decision": "superseded; see capability map in README",
+      "currentSources": [
+        {
+          "path": "workers/market-edge/src/listingsStore.ts",
+          "blob": "e4dd1abb37a1c6cd74bfe6fda26dd3e93b6f6d3c"
+        },
+        {
+          "path": "workers/market-edge/src/worker.ts",
+          "blob": "e31e73f5b586903f459d8876cabb68465e9dcb9b"
+        }
+      ]
+    },
+    {
+      "oldPath": "workers/managed-listings/wrangler.toml",
+      "oldBlob": "dfc51e762e1d337a5aaa1d3212dffe3cd17e41e5",
+      "category": "worker-configuration",
+      "decision": "retain current market-edge namespace and package; no new worker",
+      "currentSources": [
+        {
+          "path": "workers/market-edge/wrangler.toml",
+          "blob": "424f6c7267ef5deff7f7c85b68760f3ffd239ddc"
+        }
+      ]
+    }
+  ]
+}

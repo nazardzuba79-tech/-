@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import { API_BASE, api, clearToken, getToken } from './api';
 
 export type AdminGateMe = Awaited<ReturnType<typeof api.getMe>>;

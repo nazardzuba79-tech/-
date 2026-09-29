@@ -1,0 +1,63 @@
+name: Browser idle sleep
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/**'
+      - 'frontend/index.html'
+      - 'frontend/package*.json'
+      - 'frontend/tsconfig*.json'
+      - 'frontend/vite*.ts'
+      - 'scripts/*browser-sleep*'
+      - 'scripts/test-browser-activity.cjs'
+      - 'scripts/test-idle-read-budget.cjs'
+      - 'scripts/qa-browser-read-budget-fixture.js'
+      - 'scripts/qa-futures-account-harness.cjs'
+      - 'scripts/serve-native-demo-review.cjs'
+      - 'scripts/native-demo-review-repository.cjs'
+      - 'src/private-trading/**'
+      - 'src/services/copyTrading/**'
+      - 'prisma/**'
+      - 'package*.json'
+      - 'tsconfig*.json'
+      - 'jest.config.js'
+      - 'jest.setup.ts'
+      - '.github/workflows/browser-idle-sleep.yml'
+permissions:
+  contents: read
+jobs:
+  idle-sleep:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - run: npm run build
+      - run: npm run build --prefix frontend
+      - name: Lifecycle and existing visible-read invariants
+        run: node --test scripts/test-browser-activity.cjs scripts/test-idle-read-budget.cjs
+      - name: Isolated PostgreSQL and browser tools
+        run: npm install --prefix node_modules/.cache/browser-sleep-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - name: Persistence, browser request budget and native cold restart
+        shell: pwsh
+        run: |
+          $env:BROWSER_SLEEP_QA_DEPS = Join-Path $pwd 'node_modules/.cache/browser-sleep-qa/package.json'
+          $env:PLAYWRIGHT_MODULE = Join-Path $pwd 'node_modules/.cache/browser-sleep-qa/node_modules/playwright'
+          $env:QA_LABEL = 'candidate'
+          node scripts/qa-browser-sleep-postgres.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/qa-browser-sleep.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/qa-browser-sleep-native.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-idle-sleep
+          path: output/browser-sleep*

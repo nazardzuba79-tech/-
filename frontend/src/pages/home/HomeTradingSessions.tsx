@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../../lib/browserActivity';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, Clock3, Pause, Play } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
@@ -61,7 +62,7 @@ export function HomeTradingSessions({ now: clockOverride }: { now?: Date } = {})
     let timer: number | undefined;
     const sync = () => {
       window.clearTimeout(timer);
-      if (!visible || document.hidden) return;
+      if (!visible || isBrowserInactive()) return;
       const current = Date.now();
       setClock(current);
       // One local, minute-aligned clock. No market requests or polling.
@@ -73,8 +74,8 @@ export function HomeTradingSessions({ now: clockOverride }: { now?: Date } = {})
     });
     if (observer && section.current) observer.observe(section.current);
     if (!observer) { visible = true; sync(); }
-    document.addEventListener('visibilitychange', sync);
-    return () => { observer?.disconnect(); window.clearTimeout(timer); document.removeEventListener('visibilitychange', sync); };
+    addBrowserActivityListener(sync);
+    return () => { observer?.disconnect(); window.clearTimeout(timer); removeBrowserActivityListener(sync); };
   }, [clockOverride]);
 
   return <section id="trading-sessions" ref={section} className="vx-sessions" data-motion-paused={paused} aria-labelledby={`${id}-title`}>

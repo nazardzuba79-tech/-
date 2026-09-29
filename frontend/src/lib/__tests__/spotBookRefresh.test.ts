@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import ts from 'typescript';
+import { isBrowserInactive } from '../browserActivity';
 
 // Execute the real parent callback in isolation, not a second implementation
 // of its race guards. No network, production API or financial payload mock.
@@ -34,8 +35,8 @@ function setup() {
     bookRequestRef: { current: 0 }, bookWsVersionRef: { current: 0 },
     bookPendingRef: { current: null as null | { generation: number; request: number } } };
   const setBook = jest.fn();
-  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'api', 'setBook', 'pair', 'marketType', 'isTestMarketPair', 'document', 'readSpotPublicBook', ...Object.keys(refs),
-    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api, setBook, pair, 'spot', () => false, { hidden: false }, api.getExternalOrderBook, ...Object.values(refs)) as () => void;
+  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'api', 'setBook', 'pair', 'marketType', 'isTestMarketPair', 'isBrowserInactive', 'readSpotPublicBook', ...Object.keys(refs),
+    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api, setBook, pair, 'spot', () => false, isBrowserInactive, api.getExternalOrderBook, ...Object.values(refs)) as () => void;
   return { requests, api, refs, setBook, callback };
 }
 const settle = async () => { for (let tick = 0; tick < 5; tick++) await Promise.resolve(); };
@@ -43,6 +44,26 @@ const book = { bids: [], asks: [] };
 
 test('ticker state resets with the selected pair instead of briefly showing the old instrument price', () => {
   expect(source).toContain('<TickerBar key={pair} pair={pair}');
+});
+
+test('the actual lifecycle guard suppresses hidden reads without clearing the last book', async () => {
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const documentState = { hidden: true };
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: documentState });
+  try {
+    const ctx = setup(), refresh = ctx.callback();
+    refresh();
+    expect(ctx.api.getExternalOrderBook).not.toHaveBeenCalled();
+    expect(ctx.setBook).not.toHaveBeenCalled();
+    documentState.hidden = false;
+    refresh();
+    expect(ctx.api.getExternalOrderBook).toHaveBeenCalledTimes(1);
+    ctx.requests[0].resolve(book); await settle();
+    expect(ctx.setBook).toHaveBeenCalledWith({ pair: 'BTC/USDT', ...book, asOf: undefined });
+  } finally {
+    if (previous) Object.defineProperty(globalThis, 'document', previous);
+    else Reflect.deleteProperty(globalThis, 'document');
+  }
 });
 
 test('slow REST remains single-flight and can complete across repeated polling ticks', async () => {

@@ -1,3 +1,4 @@
+import { isBrowserInactive, browserSetInterval, browserClearInterval } from './browserActivity';
 import { API_BASE } from './api';
 import { readDisplayJson, DISPLAY_REFRESH_MS } from './displaySnapshotCache';
 import type { MarketTicker, GlobalMarketSnapshot } from './api';
@@ -118,7 +119,7 @@ class MarketDataStore {
   private lastLoadedAt = 0;
   private lastWarmCacheWriteAt = 0;
   private listeners = new Map<symbol, { listener: Listener; intervalMs: number }>();
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: number | null = null;
   private currentIntervalMs = DEFAULT_INTERVAL_MS;
   private inFlight: Promise<void> | null = null;
 
@@ -171,7 +172,7 @@ class MarketDataStore {
    * server's request coalescing.
    */
   refresh(): Promise<void> {
-    if (typeof document !== 'undefined' && document.hidden) return Promise.resolve();
+    if (typeof document !== 'undefined' && isBrowserInactive()) return Promise.resolve();
     if (this.inFlight) return this.inFlight;
     this.inFlight = readDisplayJson<MarketSnapshotResponse>(
       `${API_BASE}/market/display/spot-snapshot`,
@@ -254,12 +255,12 @@ class MarketDataStore {
     if (this.timer !== null && next === this.currentIntervalMs) return;
     this.currentIntervalMs = next;
     this.stop();
-    this.timer = setInterval(() => void this.refresh(), next);
+    this.timer = browserSetInterval(() => void this.refresh(), next);
   }
 
   private stop(): void {
     if (this.timer !== null) {
-      clearInterval(this.timer);
+      browserClearInterval(this.timer);
       this.timer = null;
     }
   }

@@ -1,0 +1,32 @@
+{
+  "entries": [
+    "index-gAizF_5B.js",
+    "index-ClWgg_OL.js"
+  ],
+  "oldWorkflowCaptures": [
+    "",
+    ""
+  ],
+  "oldComparisonPassed": false,
+  "guardSha256": "1bc5199e85f5102b6b0402ec7642924ce010aaaf349801dd093d92d623236373",
+  "runs": [
+    {
+      "name": "different-real-builds",
+      "expectedExitCode": 0,
+      "actualExitCode": 0,
+      "output": "Verified different entry assets: index-gAizF_5B.js \u2192 index-ClWgg_OL.js\n"
+    },
+    {
+      "name": "identical-builds",
+      "expectedExitCode": 1,
+      "actualExitCode": 1,
+      "output": "node:assert:152\n  throw new AssertionError(obj);\n  ^\n\nAssertionError [ERR_ASSERTION]: both builds emitted the same entry hash; nothing would be stale\n    at Object.<anonymous> (/workspace/scratch/2e1965f14243/voltex-remaining-app-admin-ci-20260929/output/ci-app-admin/entry-guard.cjs:11:8)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: 'index-gAizF_5B.js',\n  expected: 'index-gAizF_5B.js',\n  operator: 'notStrictEqual',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+    },
+    {
+      "name": "missing-module-entry",
+      "expectedExitCode": 1,
+      "actualExitCode": 1,
+      "output": "node:internal/assert/utils:77\n    throw err;\n    ^\n\nAssertionError [ERR_ASSERTION]: Missing module entry in output/ci-app-admin/build-no-entry/index.html\n    at /workspace/scratch/2e1965f14243/voltex-remaining-app-admin-ci-20260929/output/ci-app-admin/entry-guard.cjs:8:10\n    at Array.map (<anonymous>)\n    at Object.<anonymous> (/workspace/scratch/2e1965f14243/voltex-remaining-app-admin-ci-20260929/output/ci-app-admin/entry-guard.cjs:4:39)\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: undefined,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n\nNode.js v24.19.0\n"
+    }
+  ]
+}

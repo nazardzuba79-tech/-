@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFallbackFetch as fetch, trackBrowserRead } from './browserActivity';
 import type { LiveQuote } from './liveMarketTypes';
 import { subscribeFuturesTickerFeed, type FuturesTickerUpdate } from './futuresDepth';
 
@@ -167,7 +168,7 @@ class DirectFuturesReferenceStore {
   private schedule(delay: number): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
-    if (!this.listeners.size || (typeof document !== 'undefined' && document.hidden)) return;
+    if (!this.listeners.size || (typeof document !== 'undefined' && isBrowserInactive())) return;
     this.timer = setTimeout(() => {
       this.timer = null;
       void this.load();
@@ -175,10 +176,11 @@ class DirectFuturesReferenceStore {
   }
 
   private async load(): Promise<void> {
-    if (!this.listeners.size || this.controller || (typeof document !== 'undefined' && document.hidden)) return;
+    if (!this.listeners.size || this.controller || (typeof document !== 'undefined' && isBrowserInactive())) return;
     const controller = new AbortController();
     this.controller = controller;
     try {
+      await trackBrowserRead((async () => {
       let payload: any = null;
       if (!productionSite()) {
         // CI/local/preview stays deterministic and uses the existing fixture-backed app API.
@@ -203,6 +205,7 @@ class DirectFuturesReferenceStore {
       }
       if (!controller.signal.aborted) this.emit();
       this.schedule(REFRESH_MS);
+      })());
     } catch {
       if (!controller.signal.aborted) this.schedule(RETRY_MS);
     } finally {
@@ -218,12 +221,12 @@ class DirectFuturesReferenceStore {
       active.abort();
       if (this.controller === active) this.controller = null;
     }
-    if (!document.hidden) this.schedule(0);
+    if (!isBrowserInactive()) this.schedule(0);
   };
 
   private attachVisibility(): void {
     if (this.visibilityAttached || typeof document === 'undefined') return;
-    document.addEventListener('visibilitychange', this.onVisibility);
+    addBrowserActivityListener(this.onVisibility);
     this.visibilityAttached = true;
   }
 
@@ -235,7 +238,7 @@ class DirectFuturesReferenceStore {
     this.tickerStop?.();
     this.tickerStop = null;
     if (this.visibilityAttached && typeof document !== 'undefined') {
-      document.removeEventListener('visibilitychange', this.onVisibility);
+      removeBrowserActivityListener(this.onVisibility);
       this.visibilityAttached = false;
     }
   }

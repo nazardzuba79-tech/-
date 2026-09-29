@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, getToken } from '../../lib/api';
+import { isBrowserInactive } from '../../lib/browserActivity';
 import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
 import { createVisibleRead } from '../../lib/visibleRead';
 import { CoinRanking } from '../../lib/pairList';
@@ -152,7 +153,9 @@ export function useWalletData() {
   });
   const loadUnified = useVisibleAccountRead({
     load: () => nativeDemoApi.wallet(), staleMs: WALLET_STALE_MS,
-    accept: setUnified,
+    // An optional engine denial settles the probe, but does not recategorize
+    // an established Cross account or replace its last confirmed transcript.
+    accept: next => setUnified(prev => next ?? prev ?? null),
     fail: () => setUnified(prev => prev ? prev : null),
     reset: () => setUnified(undefined),
   });
@@ -238,7 +241,7 @@ export function useWalletData() {
    * half-loaded page can never record a zero.
    */
   useEffect(() => {
-    if (snapshotRecorded.current || unified === undefined) return;
+    if (snapshotRecorded.current || unified === undefined || isBrowserInactive()) return;
     const total = account?.walletEquityUsd ?? null;
     if (total === null || total <= 0) return;
     snapshotRecorded.current = true;

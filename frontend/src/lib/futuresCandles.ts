@@ -1,3 +1,4 @@
+import { browserFallbackFetch as fetch, trackBrowserRead } from './browserActivity';
 import type { Candle } from './indicators';
 import { subscribeFuturesKline, type FuturesKlineUpdate } from './futuresDepth';
 
@@ -60,7 +61,11 @@ async function fetchPublicJson(url:string, signal?:AbortSignal):Promise<any> {
   return response.json();
 }
 
-export async function getFuturesCandles(pair:string, interval:string, limit:number, signal?:AbortSignal, endTime?:number):Promise<{candles:Candle[]}> {
+export function getFuturesCandles(pair:string, interval:string, limit:number, signal?:AbortSignal, endTime?:number):Promise<{candles:Candle[]}> {
+  return trackBrowserRead(loadFuturesCandles(pair, interval, limit, signal, endTime));
+}
+
+async function loadFuturesCandles(pair:string, interval:string, limit:number, signal?:AbortSignal, endTime?:number):Promise<{candles:Candle[]}> {
   if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair) || !intervals[interval] ||
       (endTime !== undefined && (!Number.isSafeInteger(endTime) || endTime <= 0))) throw new Error('Unsupported candle instrument');
   if(signal?.aborted)throw new DOMException('Aborted','AbortError');

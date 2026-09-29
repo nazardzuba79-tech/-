@@ -1,0 +1,22 @@
+✔ visible cadence is still 4s; one hidden hour owns zero timers and makes zero scheduled reads (116.457237ms)
+✔ hidden mount defers first network read until visible (39.200711ms)
+✔ duplicate visibility notifications cannot create duplicate clocks or bursts (31.462898ms)
+✔ unmount and remount clean up listeners and polling without resurrection (22.925697ms)
+✔ slow read is single-flight; visibility return invalidates old result and queues one fresh read (21.472823ms)
+✔ mutation refresh remains immediate even hidden and completion after disposal cannot poll (22.890535ms)
+✔ failed read recovers on return without replacing last-known data or adding timers (20.309197ms)
+✔ OpenOrdersPanel uses the shared visible clock and retains manual fresh reads (0.326063ms)
+✔ OrderHistoryPanel uses the shared visible clock and retains manual fresh reads (0.164093ms)
+✔ AssetsPanel uses the shared visible clock and retains manual fresh reads (0.275048ms)
+✔ Futures assets keep their existing shared store and no additional mount timer (0.2231ms)
+✔ session authorization transfers only four used fields, and rechecks on every request (7.814448ms)
+✔ revocation, deletion and mismatched session owner remain immediately rejected (4.713229ms)
+✔ lastSeenAt retains its five-minute threshold and returns only id after a touch (4.49109ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 528.575428

@@ -65,23 +65,36 @@ test('card/profile share one Avatar and identity, ignoring owner photo for ficti
   }
 });
 
-test('actual onError removes broken image, retains geometry and retries changed owner URL', () => {
-  let failed: string | null = null;
+test('actual onError removes broken photo, retains initials and geometry, and retries a changed owner URL', () => {
   let photo = '/account-fixture/owner.webp';
-  const TestAvatar = component(() => [failed, (value: string) => { failed = value; }], () => photo);
-  let element = TestAvatar({ trader: nazarTrader });
-  expect(element.type).toBe('img');
-  element.props.onError();
-  element = TestAvatar({ trader: nazarTrader });
-  expect(element.type).toBe('div');
-  expect(element.props.children).toBe('N');
-  expect(element.props.className).toContain('avatar avatar-gold');
+  const states: unknown[] = [];
+  let cursor = 0;
+  const TestAvatar = component((initial: unknown) => {
+    const slot = cursor++;
+    if (!(slot in states)) states[slot] = initial;
+    return [states[slot], (next: unknown) => { states[slot] = next; }];
+  }, () => photo);
+  const render = (trader = nazarTrader) => { cursor = 0; return TestAvatar({ trader }); };
+  const photoNode = (node: any) => React.Children.toArray(node.props.children).find((child: any) => child.type === 'img') as any;
+  const original = render();
+  expect(original.type).toBe('div');
+  expect(original.props.className).toContain('avatar-stack');
+  expect(photoNode(original).props.style.opacity).toBe(0);
+  expect(renderToStaticMarkup(original)).toContain('>N</span>');
+  photoNode(original).props.onError();
+  const failed = render();
+  expect(failed.props.className).toBe(original.props.className);
+  expect(photoNode(failed)).toBeUndefined();
+  expect(renderToStaticMarkup(failed)).toContain('>N</span>');
   photo = '/account-fixture/new-owner.webp';
-  expect(TestAvatar({ trader: nazarTrader }).props.src).toBe(photo);
+  expect(photoNode(render()).props.src).toBe(photo);
+  expect(photoNode(render()).props.style.opacity).toBe(0);
   for (const trader of marketplaceTraders.filter(t => getTraderVisual(t.id).avatarSrc)) {
-    failed = null;
-    TestAvatar({ trader }).props.onError();
-    const fallback = TestAvatar({ trader });
+    states.length = 0;
+    const image = render(trader);
+    expect(image.type).toBe('img');
+    image.props.onError();
+    const fallback = render(trader);
     expect(fallback.type).toBe('div');
     expect(fallback.props.className).toContain('avatar-art');
     expect(renderToStaticMarkup(fallback)).toContain('<svg');
@@ -89,43 +102,38 @@ test('actual onError removes broken image, retains geometry and retries changed 
   }
 });
 
-test('approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring', () => {
-  const digest = (s: string) => createHash('sha256').update(s).digest('hex');
-  // Marketplace/Profile now accept a second canonical ledger. Keep strict
-  // fingerprints of the unchanged renderers instead of freezing all wiring.
-  for (const [name, hash] of Object.entries({
-    ProfilePerformanceChart: '68921d09f3d5a0e24c53e553c89487462f7b0b51a2c1453ce9fc1dd6d19091fe',
-    DailyReturnChart: '7460b3ad35cc7191ef47e99cb633c212d01afc6ad68b67b06fdd6eac17fef9a1',
-    MetricsPanel: '584b60a9d224f8194e0450717490a62a80c3732ec5790852e55ff3b9980a7053',
-    TradingProfilePanel: 'c076b5505d930e2802a6aed17b836b505f6ee5c7a96b1935d905472d6417dcd8',
-    TradesPanel: 'f239e1748cbaefdca7c7bf693fee2150565bf5422d0df00dcb0e1c2e49bc5f49',
-    MarketplaceHero: '6711f0146a0a1456b34a21fc6db3d3310c5a9344ab9b4295371455dc60db3258',
-  })) {
-    const node = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)!;
-    // Review-only duplicate-copy wrapper changes no approved chart rendering.
-    let renderer = node.getText(ast).replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
-    if (name === 'MarketplaceHero') {
-      // Only the source label is new; original aggregate calculations, values
-      // and card/hero geometry remain covered by the unchanged fingerprint.
-      const label = "<ModeledDataLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) || isModeledTraderData(trader, synthetic) : isModeledResponse(synthetic))} />";
-      expect(renderer.split(label)).toHaveLength(1);
-      renderer = renderer.replace(label, '');
+test('owner-photo rendering preserves every trader figure and excludes catalogue media for real strategies', () => {
+  for (const trader of [nazarTrader, ...marketplaceTraders]) {
+    const snapshot = Object.fromEntries(Object.entries(trader));
+    for (const photo of [null, '/account-fixture/first.webp', '/account-fixture/second.webp']) {
+      render(trader, photo);
+      render(trader, photo, true);
+      // toEqual keeps NaN as NaN; JSON would silently turn it into null.
+      expect(trader).toEqual(snapshot);
     }
-    expect(digest(renderer)).toBe(hash);
   }
-  for (const [file, hash] of Object.entries({
-    // Owner-requested marketplace polish; profile/chart rules remain frozen below.
-    'src/pages/copy-trading-bolt/CopyTradingRefinement.css': '4a23c8b6f80086e232b747846fb32b92741eebd3261ad1cc5764f7869626f869',
-    'src/pages/copy-trading-bolt/traders.ts': '90e35a2b9d37ee079b94ebf37bcc10cdf211028f134d30ca59d53c304ad31aba',
-    'src/pages/copy-trading-bolt/demoPerformance.ts': '1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead',
-  })) {
-    const contents = readFileSync(resolve(frontend, file), 'utf8').replace(/\r\n/g, '\n');
-    // Only optional TypeScript owner-media/identity fields were added to Trader;
-    // every runtime business value and fictional avatar mapping stays exact.
-    expect(digest(contents
-      .replace('  /** Sanitized strategy-owner profile media; never catalogue art. */\n  ownerAvatarUrl?: string | null;\n', '')
-      .replace('  /** Bound backend owner verification, distinct from legacy catalogue flags. */\n  identityVerified?: boolean;\n', ''))).toBe(hash);
-  }
+  // A cold strategy must not inherit fictional catalogue figures while its
+  // own ledger is loading. Avatar and identity wiring cannot fill them in.
+  for (const field of ['roi7', 'roi30', 'roi90', 'roiAll', 'winRate', 'drawdown', 'copiers', 'aum', 'volume', 'performanceFee'])
+    expect(Number.isNaN((nazarTrader as any)[field])).toBe(true);
+  const reads = new Set<string>();
+  const visit = (node: ts.Node) => {
+    if (ts.isPropertyAccessExpression(node) && node.expression.getText(ast) === 'trader') reads.add(node.name.text);
+    ts.forEachChild(node, visit);
+  };
+  visit(avatarNode);
+  expect([...reads].sort()).toEqual(['id', 'initials', 'ownerAvatarUrl', 'tone']);
+});
+
+test('unchanged marketplace hero and demo performance retain their original fingerprints', () => {
+  // Keep the byte guards that still represent unchanged code. The approved
+  // period panel, loading contexts and hidden trade history are covered by
+  // behavioral presentation suites, not obsolete pre-feature hashes.
+  const digest = (value: string) => createHash('sha256').update(value).digest('hex');
+  const hero = ast.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'MarketplaceHero')!;
+  expect(digest(hero.getText(ast))).toBe('6711f0146a0a1456b34a21fc6db3d3310c5a9344ab9b4295371455dc60db3258');
+  const demo = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/demoPerformance.ts'), 'utf8').replace(/\r\n/g, '\n');
+  expect(digest(demo)).toBe('1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead');
 });
 
 test.each([

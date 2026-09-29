@@ -1,0 +1,237 @@
+{
+  "sourceCommit": "0ea014afa54fc311d4e1c9f3f1d5871d55210804",
+  "sourceTree": "afa869a96d1dfd9779b9d308e3970fcfca9dabac",
+  "baselineCommit": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "originalReviewHead": "d0428bbc73b8ea77f45c89b976e7502559beb009",
+  "sourceFingerprint": "c757af13a3e0b93e8ff921c321baa6e98e08adfbdb148c9d717ae503677ac5d3",
+  "sources": [
+    {
+      "path": ".github/workflows/mobile-clients-review.yml",
+      "gitBlob": "237a315083dfab48c9c51d0abdb350d7486c0327",
+      "sha256": "825449b3e31cad44252b2486a6049aad2572a74a44e837b181a77fcb44df66c2",
+      "bytes": 2723
+    },
+    {
+      "path": "docs/MOBILE_CLIENTS_REVIEW.md",
+      "gitBlob": "bf6a526b12f9465f47f1090ed5b8e07ccf9a15cf",
+      "sha256": "08aded8ac2ed43e524bc07e8ed5e19920171c20348f19efd14714ab988e4462b",
+      "bytes": 14047
+    },
+    {
+      "path": "frontend/mobile-review.html",
+      "gitBlob": "2849292ad160df3cbfd663cc205f2205208b6600",
+      "sha256": "47f2e308b2900b534889bb182d1f7207265ad00913bb117cb0cf3e2f36d3d69d",
+      "bytes": 881
+    },
+    {
+      "path": "frontend/mobile-review/public/mobile/brand.svg",
+      "gitBlob": "c2c1ac32ec26417d3e46b2ab1fce4fd8efeea6d2",
+      "sha256": "dd747a390147f2feb819cfe478c9783bef5187dc4a660064b6af09b6745bd177",
+      "bytes": 425
+    },
+    {
+      "path": "frontend/mobile-review/public/mobile/icon-180.png",
+      "gitBlob": "5d8608ee5a681303fb048c3ecd18690bb5f9b8ed",
+      "sha256": "839ceee23d60fff9e22ba9c80a29ba1368232f5fbdb88d134c32229681c0b525",
+      "bytes": 4342
+    },
+    {
+      "path": "frontend/mobile-review/public/mobile/icon-192.png",
+      "gitBlob": "9046388ce4bce0a530596ec8145e6edae12133a8",
+      "sha256": "516f3f73ce8012115d3e4759b4d2b32903381188379a9f0527a9db56dcb4f61b",
+      "bytes": 4709
+    },
+    {
+      "path": "frontend/mobile-review/public/mobile/icon-512.png",
+      "gitBlob": "05b05824c65446402e7e18be51ed933e031a0b9e",
+      "sha256": "56378a262df2b85a1604000dba30cd8b79c1d61fa91dcf6ee350204b79ecd081",
+      "bytes": 14784
+    },
+    {
+      "path": "frontend/mobile-review/public/mobile/icon-maskable-512.png",
+      "gitBlob": "04a84f31a910ceaf1d6fa2f0de3aaf11e44b0072",
+      "sha256": "93b7bbb6ff75ccca738cf9c1c93e09e567add8c952872bf11c3139496f159f6c",
+      "bytes": 11319
+    },
+    {
+      "path": "frontend/mobile-review/public/mobile/manifest.webmanifest",
+      "gitBlob": "b03ab0ef15028a03f2ab4fcdc7fd77a2cb957f44",
+      "sha256": "9f3c13bd539d52f056ba03b0f6a6e9d6fec6b585e5c727e8f058e5df43274bbf",
+      "bytes": 610
+    },
+    {
+      "path": "frontend/mobile-review/public/mobile/offline.html",
+      "gitBlob": "7f6aa18298460f8dc0dc5d92838c069cd4e89bad",
+      "sha256": "c5e31e033f01fd5f6270afe336c6996bb1a7470132cda0e78296131b543d9600",
+      "bytes": 727
+    },
+    {
+      "path": "frontend/mobile-review/sw.template.js",
+      "gitBlob": "705c6686d64f95475d88ae6d5e6c8db27a4c4f68",
+      "sha256": "a1354005dda0b72fbab50926152a77bc718ed23996938d10d25a7452fb16d90d",
+      "bytes": 1723
+    },
+    {
+      "path": "frontend/src/mobile-review/ReviewApp.tsx",
+      "gitBlob": "79a2387bf80d4338e67d24c767a34a87eac57d95",
+      "sha256": "6fa1020f2f240f686dc94c51100ebfc405ff37581969bfac0447a71603cad5bd",
+      "bytes": 12370
+    },
+    {
+      "path": "frontend/src/mobile-review/__tests__/safety.test.ts",
+      "gitBlob": "6647b8068b855ffa1c081bdfd683b36144faef1c",
+      "sha256": "10587b4b500992bf14f98493b78ccc7ef2cdaea703b58dadfded44759b7cfbb0",
+      "bytes": 7537
+    },
+    {
+      "path": "frontend/src/mobile-review/deployment.ts",
+      "gitBlob": "85092856ea103b142cbf0fbc06753f7b6c7772b1",
+      "sha256": "690f257954a5406b49349704ceb66578c7f4761bdfe4929aeb4dbf9c0e32880e",
+      "bytes": 850
+    },
+    {
+      "path": "frontend/src/mobile-review/fixtures.ts",
+      "gitBlob": "fdc91eecca36429aa54d4eeb4d652ac76cf97d0b",
+      "sha256": "8252b3308a18462ccf6bf4b781c3748d141cc111f8f0f189d23604af9dd1a478",
+      "bytes": 1718
+    },
+    {
+      "path": "frontend/src/mobile-review/lifecycle.ts",
+      "gitBlob": "f101290e182572e944a1927cbea011029f7ed054",
+      "sha256": "082152d8c678c42c24eb6a83a43ba6cd2914a0dc8f72fddfde7cccd78131e0a9",
+      "bytes": 1646
+    },
+    {
+      "path": "frontend/src/mobile-review/main.tsx",
+      "gitBlob": "cc1599f5b2530cad2187c581b3d3f0c3bb9c4925",
+      "sha256": "887d8f23f65b6c20c1ede6b28b89b898e23becae27438f970ac37a97fe90b927",
+      "bytes": 513
+    },
+    {
+      "path": "frontend/src/mobile-review/mount.tsx",
+      "gitBlob": "f53bae9a0166ff942ad3586646c4373a738fa0aa",
+      "sha256": "da4d1fcdff4c7d9efefde414add9fca831840f72e09f7595abce028a30de9b25",
+      "bytes": 373
+    },
+    {
+      "path": "frontend/src/mobile-review/policy.ts",
+      "gitBlob": "f4a0bdadf0f6ee409e2a76ee002446839943cca5",
+      "sha256": "a993c2fa35fb1b4162c4779b4743baf76d8050b2b90b856b68ca86917e797123",
+      "bytes": 1434
+    },
+    {
+      "path": "frontend/src/mobile-review/pwa.ts",
+      "gitBlob": "aad417db264d507adb04b3acaaacba93bfa19598",
+      "sha256": "6ba3954a685e5214d85d184f1fa41411660eef777bd992fd16b329a3866687a2",
+      "bytes": 2248
+    },
+    {
+      "path": "frontend/src/mobile-review/review.css",
+      "gitBlob": "ce1be12731e275a5f65a6b256d7f69624452fbb1",
+      "sha256": "fd72aa429f3efe4fb278c678192d888e9f7161d1beda67a1b816500563d20284",
+      "bytes": 14707
+    },
+    {
+      "path": "frontend/src/mobile-review/telegram.ts",
+      "gitBlob": "67593e317a4fc19943152387cecf441b96cd090d",
+      "sha256": "6fc77d3b0ed8d63dd16095cd20ef1b9c201d35464245ec4b839719df17f20dd5",
+      "bytes": 3859
+    },
+    {
+      "path": "frontend/vite.mobile-review.config.ts",
+      "gitBlob": "b0e513fbde6ec417ac5a1127abbe6438454cc10e",
+      "sha256": "2a0d0638f6d1a7f8284bc09c4a92b8635158e645bca47429fff3b15e62f7d06a",
+      "bytes": 3045
+    },
+    {
+      "path": "scripts/mobile-review-checks.cjs",
+      "gitBlob": "abf966006d5b76abe0ba95a34827985d5664e665",
+      "sha256": "ec107ed63e55df4a99cffef3a036cd85fb2085e990f8c1a2d6fe4be839bb37e0",
+      "bytes": 1126
+    },
+    {
+      "path": "scripts/mobile-review-ci-safety.cjs",
+      "gitBlob": "a23ca9f0f63f51c311e296bd74d896bdf75e4cf5",
+      "sha256": "bd70b0da49142a2383170928bf96eb2453ca7161d583add3493585ee73554707",
+      "bytes": 2771
+    },
+    {
+      "path": "scripts/mobile-review-icons.cjs",
+      "gitBlob": "7e523161e8f0e202c62fd85abede8c3a3da36749",
+      "sha256": "3ef21ac5db0585877342dfd756c94efa3d3facfec78f3ffb795602070ee26d40",
+      "bytes": 1219
+    },
+    {
+      "path": "scripts/mobile-test-network.cjs",
+      "gitBlob": "621a6d6d5356c2191a56dc6070726d34ab6385c3",
+      "sha256": "e08ff8f39be573db61da7b3b077a0f0f67c646657b9449a626ede563c3c0a2b3",
+      "bytes": 844
+    },
+    {
+      "path": "scripts/qa-mobile-review.cjs",
+      "gitBlob": "e40dd4782ab7abbafe842c568b180ede4cc2b2e1",
+      "sha256": "617b0a3c52e6f745a9cf90c8674671e14d0111c7bc6ff2366c46a648b7a5c4c6",
+      "bytes": 15893
+    },
+    {
+      "path": "scripts/serve-mobile-review.cjs",
+      "gitBlob": "c1ecd5dc17bd9357e5a970c302c5f34d5363184a",
+      "sha256": "94db6f0a50d563e8f024cf935c2bbe26ebb6f84da8f892b184ce9d53502754a8",
+      "bytes": 2762
+    },
+    {
+      "path": "src/auth/__tests__/telegramInitData.test.ts",
+      "gitBlob": "b7adaa9e0aadfcb27aa5345a8f9a8985d4cf0003",
+      "sha256": "052a05a4ed44ef2ee29e7d45eb2419f467e9d7aacc326e9d5ba72b3c37fd9418",
+      "bytes": 2783
+    },
+    {
+      "path": "src/auth/telegramInitData.ts",
+      "gitBlob": "12509f1353734b0894256fed33ee3b76b32ab2be",
+      "sha256": "9ff41b8f8c34242a7acd691c417b18bfc18494290f9669bab27b8abfbab858e5",
+      "bytes": 2211
+    }
+  ],
+  "evidence": [
+    {
+      "path": "report.json",
+      "sha256": "767d9426c99d375389832e7854dd6790df91b0a64c728b9fed33c2cfc4810c48"
+    },
+    {
+      "path": "pwa-390-markets.png",
+      "sha256": "aa23854b60d6136d1f185916e809d5f4e49392abf517e88d7156fec53d3051f2"
+    },
+    {
+      "path": "pwa-390-chart.png",
+      "sha256": "cae18f4a2d401828f201ec7bfe49a98043ec0a54cd8afc03813d924ce261796b"
+    },
+    {
+      "path": "pwa-390-order.png",
+      "sha256": "5d75327af9d3061007ccaba191b8f2e9b70eb6790aee2506286216b2b871e811"
+    },
+    {
+      "path": "telegram-390-chart.png",
+      "sha256": "a437b0786a20a9555f2daa83d94056d5c04552c5f62ae46f8d0490117c52c97d"
+    },
+    {
+      "path": "telegram-390-light-safe-area.png",
+      "sha256": "a7ec0c93bd43a7c94de172ac8cddbe29ceda1650bc43f0fda33c0551559c6d6e"
+    },
+    {
+      "path": "pwa-offline-shell.png",
+      "sha256": "c84473c8b3eb6ee65e5548ea68f264e5cb27c4878964af41a2e8cab4a893f7d6"
+    }
+  ],
+  "checks": {
+    "unitTests": 191,
+    "unitSuites": 8,
+    "unitSource": "af8ee894b0463eebf06819ee1ecf1ae14457b19b",
+    "browserScenarioGroups": 9,
+    "paintedPlots": 8,
+    "apiRequests": 0,
+    "externalRequests": 0,
+    "browserErrors": 0,
+    "physicalDevices": false,
+    "realTelegramLaunch": false
+  }
+}

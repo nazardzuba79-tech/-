@@ -122,6 +122,12 @@ const executor=new NativeLimitPass(service,async()=>[...sessions.values()].map(s
 executor.start();
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
 app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,...(tinyPriceQa?{tinyPriceFixture:true}:{}),commit:process.env.RENDER_GIT_COMMIT??null}));
+if (fixture) {
+  // Optional public catalogues mounted by the current header. No account/API
+  // forwarding: these fixture-only reads describe an empty public catalogue.
+  app.get('/api/v1/market/test-assets',(_req,res)=>res.json({serverTime:now(),assets:[]}));
+  app.get(['/__qa/public-edge/market/nrx','/__qa/public-edge/market/listings'],(_req,res)=>res.json({serverTime:now(),assets:[]}));
+}
 app.use('/api/v1/private-trading',(req,res,next)=>{const token=req.headers.authorization?.replace(/^Bearer /,''),s=session(token);if(!s)return res.status(401).json({error:'Preview session required'});res.locals.actor={userId:s.userId,sessionId:token,expiresAt:now()+3600000};next();});
 // The preview mirrors the production contract: this session is a
 // simulation-only account, so the terminal renders with no mode switch.
@@ -176,6 +182,15 @@ app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();co
   leverageTiers:(i.riskTiers??[]).map((t,idx,all)=>({notionalCap:idx===all.length-1?null:Number(t.riskLimitValue),maxLeverage:Number(t.maxLeverage),maintenanceMarginRate:Number(t.maintenanceMarginRate),maintenanceAmount:Number(t.maintenanceDeduction??0)}))});}));
 app.get('/api/v1/futures/mark-price/:pair',asyncRoute(async(req,res)=>{const symbol=req.params.pair.replace('-',''),q=await market.freshQuote(symbol);res.json({symbol,markPrice:q.markPrice,indexPrice:null});}));
 app.get('/api/v1/market/external/tickers',asyncRoute(async(_req,res)=>res.json(await tickers())));
+// Mounted terminal display reads must have explicit fixture responses during wake.
+// Keep every unlisted account endpoint blocked by the preview's deny-all below.
+if(fixture){
+  app.get('/api/v1/market/display/spot-snapshot',(_req,res)=>res.json(sampledDisplay({tickers:{available:false,reason:'ISOLATED_FIXTURE'},overview:{available:false,reason:'ISOLATED_FIXTURE'},sentiment:{available:false,reason:'ISOLATED_FIXTURE'}})));
+  app.get('/api/v1/market/assets/icons',(_req,res)=>res.json({assets:{}}));
+  app.get('/api/v1/futures/funding-rate/:pair',(req,res)=>res.json({symbol:req.params.pair.replace('-','/'),history:[]}));
+  app.get('/api/v1/market/derivatives/:baseAsset',(_req,res)=>res.json({available:false,reason:'ISOLATED_FIXTURE'}));
+  app.get('/api/v1/market/external/rankings',(_req,res)=>res.json({source:'isolated-fixture',rankings:[]}));
+}
 app.get('/api/v1/me',(_req,res)=>res.json({id:'preview-only',email:'preview.invalid',displayName:'Demo Preview',phone:null,country:null,avatarUrl:null,isAdmin:true,kycStatus:'NOT_STARTED',twoFactorEnabled:false,createdAt:new Date(started).toISOString()}));
 app.get('/api/v1/copy-trading/marketplace',asyncRoute(async(req,res)=>{
   if(!requestSession(req))return res.status(401).json({error:'Preview session required'});

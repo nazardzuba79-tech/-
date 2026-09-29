@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -41,7 +42,7 @@ function drawingLayer() {
   new Function('require', 'exports', compiled)((name: string) => {
     if (name === '../lib/chartDrawings') return drawings;
     if (name === '../lib/drawingGeometry') return drawingGeometry;
-    return req(name);
+    return (name.endsWith('/browserActivity') ? browserActivity : req(name));
   }, layer);
   return layer;
 }
@@ -113,7 +114,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
-    return req(name);
+    return (name.endsWith('/browserActivity') ? browserActivity : req(name));
   }, output, windowStub());
 
   const Component = output.PriceChart;
@@ -344,12 +345,12 @@ beforeEach(() => {
     savedGlobals[key] = (globalThis as any)[key];
   }
   (globalThis as any).ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
-  (globalThis as any).document = {
-    addEventListener: () => {}, removeEventListener: () => {},
+  (globalThis as any).document = Object.assign(new EventTarget(), {
+    hidden: false,
     createElement: () => containerStub(),
     body: containerStub(),
     documentElement: containerStub(),
-  };
+  });
   const store = new Map<string, string>();
   (globalThis as any).localStorage = {
     getItem: (k: string) => store.get(k) ?? null,
@@ -457,7 +458,7 @@ describe('futures never touches the spot conditional-order endpoint', () => {
     expect(chart.updateOrderTrigger).not.toHaveBeenCalled();
     const source2 = source;
     // The guard is the first statement of startDrag, before preventDefault.
-    expect(source2).toContain('if (!spotConditionalOrders) return;\n      e.preventDefault();');
+    expect(source2).toContain('if (!spotConditionalOrders || isBrowserInactive()) return;\n      cancelOrderDragRef.current?.();\n      e.preventDefault();');
   });
 });
 
@@ -561,6 +562,25 @@ describe('spot behaviour is unchanged', () => {
     await flush();
 
     expect(chart.getMyOrders).toHaveBeenCalledWith('PENDING_TRIGGER');
+  });
+
+  test.each(['sleep', 'unmount', 'pair-change'])('an unfinished conditional-order drag is cancelled on %s without a later PATCH', async boundary => {
+    const chart = mount(SPOT);
+    chart.render(); await flush();
+    const draggable = nodes(chart.render()).find(n => n.type === 'g' && typeof n.props?.onMouseDown === 'function');
+    draggable.props.onMouseDown({ preventDefault: jest.fn() });
+    const oldRelease = handlers.get('mouseup')!;
+    expect(oldRelease).toBeDefined();
+    if (boundary === 'sleep') {
+      (document as any).hidden = true; document.dispatchEvent(new Event('visibilitychange'));
+      expect(handlers.has('mouseup')).toBe(false);
+      (document as any).hidden = false; document.dispatchEvent(new Event('visibilitychange'));
+    } else if (boundary === 'unmount') chart.unmount();
+    else chart.render({ pair: 'ETH/USDT' });
+    // Even a release already queued by the browser cannot commit the cancelled drag.
+    await oldRelease({ clientY: 120 }); await flush();
+    expect(chart.updateOrderTrigger).not.toHaveBeenCalled();
+    chart.unmount();
   });
 
   test('spot still renders lines for a real order', async () => {

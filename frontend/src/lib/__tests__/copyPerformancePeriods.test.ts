@@ -3,6 +3,7 @@ import { resolve, dirname } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import { CopyMarketplaceStore } from '../copyMarketplaceStore';
+import * as activity from '../browserActivity';
 import { CopyPerformanceService } from '../../../../src/services/copyTrading/CopyPerformanceService';
 import { marketplaceSection } from '../../../../src/services/copyTrading/marketplaceSnapshot';
 import { selectSyntheticPeriod, type SyntheticCopyTradingResponse } from '../syntheticCopyTrading';
@@ -32,6 +33,9 @@ let store: CopyMarketplaceStore;
 let session: string | null = 'viewer';
 const fetchSpy = jest.fn();
 const cache = new Map<string, any>();
+const globalKeys = ['window', 'document', 'localStorage', 'IS_REACT_ACT_ENVIRONMENT', 'fetch'] as const;
+const originalGlobals = new Map(globalKeys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+let stopActivity: (() => void) | undefined;
 function load(file: string): any {
   for (const suffix of ['', '.tsx', '.ts']) if (existsSync(file + suffix) && statSync(file + suffix).isFile()) { file += suffix; break; }
   if (cache.has(file)) return cache.get(file);
@@ -41,6 +45,7 @@ function load(file: string): any {
   } }).outputText;
   const requireFrom = (name: string) => {
     if (name.endsWith('.css')) return {};
+    if (name.endsWith('/browserActivity')) return activity;
     if (name.endsWith('/Nav')) return { Nav: () => null };
     if (name.endsWith('/Footer')) return { Footer: () => null };
     if (name === 'sonner') return { Toaster: () => null, toast: { success: jest.fn() } };
@@ -76,11 +81,12 @@ beforeAll(async () => {
 }, 120_000);
 
 beforeEach(() => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/copy-trading' });
+  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/copy-trading', pretendToBeVisual: true });
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, localStorage: dom.window.localStorage,
     IS_REACT_ACT_ENVIRONMENT: true, fetch: fetchSpy });
   dom.window.scrollTo = jest.fn();
   session = 'viewer'; language = 'ru'; fetchSpy.mockClear();
+  stopActivity = activity.startBrowserActivity({ validate: async () => {}, identity: () => session });
   store = new CopyMarketplaceStore((signal: AbortSignal) => new Promise((resolveIt, reject) => {
     resolvePayload = resolveIt;
     signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
@@ -88,8 +94,16 @@ beforeEach(() => {
   host = dom.window.document.getElementById('root')!; root = createRoot(host);
 });
 afterEach(async () => {
-  await act(async () => { root.unmount(); session = null; store.getState(); });
-  dom.window.close();
+  try {
+    await act(async () => { root.unmount(); session = null; store.getState(); });
+  } finally {
+    stopActivity?.(); stopActivity = undefined;
+    dom.window.close();
+    for (const key of globalKeys) {
+      const descriptor = originalGlobals.get(key);
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete (globalThis as any)[key];
+    }
+  }
 });
 
 const mount = () => act(async () => { root.render(React.createElement(Page)); await flush(); });

@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval, isBrowserInactive } from '../lib/browserActivity';
 import { cloneElement, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { fetchNrxPublic } from '../lib/nrxMarket';
 import { formatSpotBookNumber } from '../lib/spotOrderBook';
@@ -19,7 +20,7 @@ export function NrxBookTabs({ enabled, live, children, pair = 'NRX/USDT' }: { en
     const controller = new AbortController();
     let pending = false;
     const refresh = async () => {
-      if (pending || document.hidden) return;
+      if (pending || isBrowserInactive()) return;
       pending = true;
       try {
         const body = await fetchNrxPublic<{ pair: string; trades: Trade[] }>(`/market/external/trades/${pair.replace('/', '-')}`, controller.signal);
@@ -29,9 +30,8 @@ export function NrxBookTabs({ enabled, live, children, pair = 'NRX/USDT' }: { en
       finally { pending = false; }
     };
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 10_000);
-    document.addEventListener('visibilitychange', refresh);
-    return () => { controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
+    const timer = browserSetInterval(() => void refresh(), 10_000);
+    return () => { controller.abort(); browserClearInterval(timer); };
   }, [enabled, live, tab, pair]);
   if (!enabled) return <>{children}</>;
   const tabs = <div className="nrx-book-tabs-bar" role="tablist" aria-label={t('trade.marketTrades')}>

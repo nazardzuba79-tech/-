@@ -30,7 +30,17 @@ export async function allocateListingOwner(db: PrismaClient, listing: PublishedL
     const prior = await tx.auditLog.findUnique({ where: { id: receipt } });
     if (prior) {
       if (prior.userId !== ownerId) throw new Error('Allocation belongs to another owner; manual review required');
-      return { applied: false, userId: ownerId, asset, quantity: quantity.toFixed() };
+      const metadata = prior.metadata && typeof prior.metadata === 'object' && !Array.isArray(prior.metadata) ? prior.metadata : null;
+      const recordedQuantity = typeof metadata?.quantity === 'string' && /^(0|[1-9]\d*)(\.\d+)?$/.test(metadata.quantity)
+        ? new BigNumber(metadata.quantity) : null;
+      // A later published version may change display fields, but it cannot
+      // reinterpret a receipt as a different asset or quantity. Compare exact
+      // decimals: Number would erase small differences in large allocations.
+      if (prior.action !== 'LISTING_OWNER_ALLOCATION' || metadata?.listingId !== listing.id || metadata?.asset !== asset
+        || !recordedQuantity?.isFinite() || !recordedQuantity.gt(0) || !recordedQuantity.eq(quantity)) {
+        throw new Error('Allocation receipt conflicts with the published listing; manual review required');
+      }
+      return { applied: false, userId: prior.userId, asset: metadata.asset, quantity: recordedQuantity.toFixed() };
     }
     const balance = await tx.balance.findUnique({ where: { userId_asset: { userId: ownerId, asset } } });
     if (balance && (!balance.available.isZero() || !balance.locked.isZero())) {

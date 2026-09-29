@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { resolve, join } from 'path';
 import { readAllLocales } from '../../../test-utils/i18nSource';
+import { functionDeclaration } from '../../../test-utils/sourceContracts';
 
 /**
  * The VOLTEX product surface names no upstream provider or outside venue.
@@ -70,15 +71,20 @@ describe('customer-facing components render no provider branding', () => {
    * Walking the tree rather than listing files is deliberate: a NEW page
    * must be covered by this rule without anyone remembering to add it.
    */
-  // The live contract and pure identity join also carry provenance, just
-  // like api.ts. They produce data, never DOM; checked explicitly below.
-  const EXCLUDED = new Set(['api.ts', 'liveMarketTypes.ts', 'referenceAssets.ts'].map(file => join('src', 'lib', file)));
+  // These exact modules carry provider identities or public transport URLs,
+  // not rendered labels. Their no-rendering boundary is checked below; do
+  // not exclude all lib files because formatters can contain customer copy.
+  const DATA_MODULES = ['api.ts', 'liveMarketTypes.ts', 'referenceAssets.ts',
+    'directFuturesReference.ts', 'futuresCandles.ts', 'futuresDepth.ts', 'spotPublicMarket.ts', 'terminalPresentation.ts'];
+  const EXCLUDED = new Set(DATA_MODULES.map(file => join('src', 'lib', file)));
 
   function sources(dir: string, out: string[] = []): string[] {
     for (const entry of readdirSync(resolve(frontend, dir))) {
       const rel = join(dir, entry);
       if (statSync(resolve(frontend, rel)).isDirectory()) {
-        if (entry !== '__tests__' && entry !== 'node_modules') sources(rel, out);
+        // Staff attribution (for example the catalogue's CoinGecko source)
+        // is outside the customer presentation policy.
+        if (entry !== '__tests__' && entry !== 'node_modules' && rel !== join('src', 'pages', 'admin')) sources(rel, out);
       } else if (/\.(tsx?|css)$/.test(entry) && !EXCLUDED.has(rel)) {
         out.push(rel);
       }
@@ -93,10 +99,25 @@ describe('customer-facing components render no provider branding', () => {
     expect(files.length).toBeGreaterThan(50);
   });
 
-  it('has no provider name in any executable line', () => {
+  it('keeps the excluded provenance and transport modules free of rendering APIs', () => {
+    for (const name of DATA_MODULES) {
+      expect(code(read(`src/lib/${name}`))).not.toMatch(/createElement|jsx\s*\(|innerHTML|textContent|insertAdjacentHTML/);
+    }
+  });
+
+  it('has no provider name in customer presentation code', () => {
     const offenders: string[] = [];
     for (const file of files) {
-      for (const [n, line] of code(read(file)).split('\n').entries()) {
+      let source = code(read(file));
+      if (file === 'src/components/TradingViewAdvancedChart.tsx') {
+        // This pure mapper produces the third-party widget's instrument ID;
+        // the rest of the component (including every JSX label) is scanned.
+        const mapper = functionDeclaration(source, 'toTradingViewSymbol');
+        expect(mapper).toContain('return `BYBIT:${compact}');
+        expect(mapper).not.toMatch(/<\w|createElement|jsx\s*\(|innerHTML|textContent/);
+        source = source.replace(mapper, mapper.replace(/[^\n]/g, ' '));
+      }
+      for (const [n, line] of source.split('\n').entries()) {
         // The Kraken WebSocket URL is the data path itself, not a label.
         // It is a real leak — visible in devtools — and is recorded as
         // such in §17; closing it needs a server-side fan-out, not a copy

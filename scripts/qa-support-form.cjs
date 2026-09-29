@@ -52,11 +52,14 @@ function walk(dir, files = []) {
   // ── 0. The bundle: the Worker endpoint is in it, no mail secret is ─────────
   const bundle = walk(dist).filter((f) => /\.(js|html|css)$/.test(f)).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
   assert.ok(bundle.includes(`127.0.0.1:${WORKER_PORT}/v1/support`), 'bundle was not built with the QA Worker endpoint');
-  for (const secret of ['SMTP_PASS', 'SMTP_USER', 'SUPPORT_ADMIN_EMAIL', 'SUPPORT_FROM_EMAIL', RECIPIENT, 'CLOUDFLARE_API_TOKEN']) {
+  // The protected-owner identity in DeleteUserDialog.tsx is intentional.
+  // supportForm.test.ts requires its exact source guard and rejects that
+  // address elsewhere; this bundle scan still forbids every mail/token marker.
+  for (const secret of ['SMTP_PASS', 'SMTP_USER', 'SUPPORT_ADMIN_EMAIL', 'SUPPORT_FROM_EMAIL', 'CLOUDFLARE_API_TOKEN']) {
     assert.ok(!bundle.includes(secret), `bundle contains ${secret}`);
   }
   assert.ok(!/\/support\/conversations/.test(bundle), 'bundle still calls the old chat API');
-  step('bundle: Worker endpoint present; no SMTP settings, recipient address or tokens; no chat API');
+  step('bundle: Worker endpoint present; no mail configuration or tokens; no chat API');
 
   // ── The Worker, as shipped, behind a Node adapter ─────────────────────────
   const workerModule = await import(pathToFileURL(path.join(root, 'workers/support-edge/src/index.js')).href);

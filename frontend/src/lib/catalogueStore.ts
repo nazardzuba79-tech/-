@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval, isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from './browserActivity';
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import type { AssetCatalogueResponse, CanonicalAsset } from './api';
@@ -77,7 +78,7 @@ type Listener = (state: CatalogueState) => void;
 class CatalogueStore {
   private state: CatalogueState = EMPTY;
   private listeners = new Map<symbol, Listener>();
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: number | null = null;
   private inFlight: Promise<void> | null = null;
 
   getState(): CatalogueState {
@@ -92,8 +93,8 @@ class CatalogueStore {
     if (this.state.loaded) listener(this.state);
 
     if (this.timer === null) {
-      this.timer = setInterval(() => void this.refresh(), REFRESH_INTERVAL_MS);
-      if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
+      this.timer = browserSetInterval(() => void this.refresh(), REFRESH_INTERVAL_MS);
+      if (typeof document !== 'undefined') addBrowserActivityListener(this.onVisibility);
     }
     if (!this.state.loaded) void this.refresh();
 
@@ -107,7 +108,7 @@ class CatalogueStore {
   /** Fetch once, shared. Concurrent callers join the in-flight promise. */
   refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
-    if (typeof document !== 'undefined' && document.hidden) return Promise.resolve();
+    if (typeof document !== 'undefined' && isBrowserInactive()) return Promise.resolve();
     this.inFlight = api
       // No search/sort/filter: the WHOLE catalogue, once. Every subsequent
       // interaction is client-side, which is what makes the search instant
@@ -155,13 +156,13 @@ class CatalogueStore {
   }
 
   private onVisibility = () => {
-    if (!document.hidden && this.listeners.size > 0) void this.refresh();
+    if (!isBrowserInactive() && this.listeners.size > 0) void this.refresh();
   };
 
   private stop(): void {
-    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisibility);
+    if (typeof document !== 'undefined') removeBrowserActivityListener(this.onVisibility);
     if (this.timer !== null) {
-      clearInterval(this.timer);
+      browserClearInterval(this.timer);
       this.timer = null;
     }
   }

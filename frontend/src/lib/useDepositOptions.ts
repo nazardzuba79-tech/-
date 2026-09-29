@@ -1,3 +1,4 @@
+import { browserFetch as fetch, browserFallbackFetch, browserSetInterval, browserClearInterval, isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, trackBrowserRead } from './browserActivity';
 import { useEffect, useMemo, useState } from 'react';
 import { api, clearToken, getToken } from './api';
 import { depositMinimumEquivalent, validDepositConfig, type DepositConfig } from './depositMinimum';
@@ -64,7 +65,7 @@ function writeStoredConfig(value: StoredConfig | null) {
 }
 
 async function getDepositConfigVersion(): Promise<string | null> {
-  const res = await fetch(`${API_BASE}/deposit-config-version`, { cache: 'no-store' });
+  const res = await browserFallbackFetch(`${API_BASE}/deposit-config-version`, { cache: 'no-store' });
   if (!res.ok) return null;
   const body = await res.json().catch(() => null);
   return body && typeof body.version === 'string' ? body.version : null;
@@ -85,7 +86,7 @@ let inflight: { at: number; promise: Promise<DepositConfig> } | null = null;
  * moment ago (a hover), otherwise checks the fingerprint afresh. */
 export function loadDepositConfig(): Promise<DepositConfig> {
   if (inflight && Date.now() - inflight.at < JOIN_MS) return inflight.promise;
-  const entry = { at: Date.now(), promise: syncDepositConfig() };
+  const entry = { at: Date.now(), promise: trackBrowserRead(syncDepositConfig()) };
   inflight = entry;
   entry.promise.catch(() => { if (inflight === entry) inflight = null; });
   return entry.promise;
@@ -110,7 +111,7 @@ export interface DepositWallet {
 }
 
 /**
- * Every configured deposit wallet, read once.
+ * Every configured deposit wallet, checked on open and after browser sleep.
  *
  * This is the ONE place deposit destinations come from. The nav screen
  * lists them all; the Wallet screen narrows them by asset and network. Both
@@ -137,20 +138,17 @@ export function useDepositWallets(active: boolean, retry = 0) {
   useEffect(() => {
     if (!active) { setState(empty); return; }
     let cancelled = false;
-    // Nothing is drawn from the device copy before the server's fingerprint
-    // confirms it: a rotated address must never be shown, even briefly.
-    setState(empty);
-    if (MANUAL_DEPOSIT_CATALOGUE) {
-      getPublicCatalogue().then(value => {
-        if (cancelled) return;
-        setState({ loaded: true, wallets: value.entries.map(e => ({ chain: `${e.assetId}:${e.networkId}`,
+    let generation = 0;
+    let dirty = false;
+    let running: Promise<void> | null = null;
+    const readWallets = async (): Promise<typeof empty> => {
+      if (MANUAL_DEPOSIT_CATALOGUE) {
+        const value = await getPublicCatalogue();
+        return { loaded: true, wallets: value.entries.map(e => ({ chain: `${e.assetId}:${e.networkId}`,
           assets: [e.asset], address: e.address, networkName: e.networkName, standard: e.standard, memo: e.memo, memoLabel: e.memoLabel })),
-          minDepositUsd: null, usdPeggedAssets: [], error: null });
-      }).catch(() => { if (!cancelled) setState({ ...empty, loaded: true, error: 'chains' }); });
-      return () => { cancelled = true; };
-    }
-    loadDepositConfig().then(async value => {
-      if (cancelled) return;
+          minDepositUsd: null, usdPeggedAssets: [], error: null };
+      }
+      const value = await loadDepositConfig();
       if (!validDepositConfig(value)) throw new Error('Invalid deposit configuration');
       const resolved = await Promise.all(value.chains.map(async (chain): Promise<DepositWallet | null> => {
         if (chain.address) return { chain: chain.chain, address: chain.address, assets: chain.supportedAssets };
@@ -163,14 +161,37 @@ export function useDepositWallets(active: boolean, retry = 0) {
           return { chain: chain.chain, address: destination.address, assets: destination.supportedAssets };
         } catch { return null; }
       }));
-      if (cancelled) return;
       const wallets = resolved.filter((wallet): wallet is DepositWallet => wallet !== null);
-      setState({ loaded: true, wallets, minDepositUsd: value.minDepositUsd, usdPeggedAssets: value.usdPeggedAssets,
-        error: wallets.length < value.chains.length ? 'address' : null });
-    }).catch(() => {
-      if (!cancelled) setState({ loaded: true, wallets: [], minDepositUsd: null, usdPeggedAssets: [], error: 'chains' });
-    });
-    return () => { cancelled = true; };
+      return { loaded: true, wallets, minDepositUsd: value.minDepositUsd, usdPeggedAssets: value.usdPeggedAssets,
+        error: wallets.length < value.chains.length ? 'address' : null };
+    };
+    const refresh = (): Promise<void> => {
+      if (cancelled) return Promise.resolve();
+      if (running) { dirty = true; return running; }
+      if (isBrowserInactive()) { dirty = true; return Promise.resolve(); }
+      dirty = false;
+      const epoch = generation;
+      // A destination is actionable only after this open/wake confirms it.
+      setState(empty);
+      running = trackBrowserRead(readWallets().then(value => {
+        if (!cancelled && epoch === generation && !isBrowserInactive()) setState(value);
+      })).catch(() => {
+        if (!cancelled && epoch === generation && !isBrowserInactive()) setState({ ...empty, loaded: true, error: 'chains' });
+      }).finally(() => {
+        running = null;
+        if (!cancelled && dirty && !isBrowserInactive()) void refresh();
+      });
+      return running;
+    };
+    const activity = () => {
+      if (isBrowserInactive()) {
+        generation++; dirty = true; inflight = null;
+        setState(empty);
+      } else void refresh();
+    };
+    addBrowserActivityListener(activity);
+    void refresh();
+    return () => { cancelled = true; removeBrowserActivityListener(activity); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, retry]);
 
@@ -208,8 +229,8 @@ export function useMinimumEquivalent(
       }).catch(() => { if (!cancelled) setQuote(null); });
     };
     setQuote(null); refresh();
-    const timer = setInterval(refresh, 30_000);
-    return () => { cancelled = true; clearInterval(timer); };
+    const timer = browserSetInterval(refresh, 30_000);
+    return () => { cancelled = true; browserClearInterval(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, minDepositUsd, asset, stable]);
 

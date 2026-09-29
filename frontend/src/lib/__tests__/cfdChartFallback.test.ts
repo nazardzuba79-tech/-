@@ -10,7 +10,7 @@ const req = createRequire(resolve(frontend, 'package.json'));
 const { JSDOM } = req('jsdom');
 const React = req('react');
 const { act } = React;
-let dom:any, root:any, host:HTMLElement, Chart:any, CfdChart:any, lang:string;
+let dom:any, root:any, host:HTMLElement, Chart:any, lang:string;
 const modules = new Map<string,any>();
 function load(file:string):any {
   for(const suffix of ['', '.tsx', '.ts']) if(existsSync(file+suffix)){ file+=suffix;break; }
@@ -24,11 +24,10 @@ function load(file:string):any {
   });return output;
 }
 beforeEach(()=>{
-  dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/trade'});
+  dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/trade',pretendToBeVisual:true});
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement,IS_REACT_ACT_ENVIRONMENT:true});
   host=document.getElementById('root')!;root=req('react-dom/client').createRoot(host);lang='en';modules.clear();
   Chart=load(resolve(frontend,'src/components/TradingViewAdvancedChart')).TradingViewAdvancedChart;
-  CfdChart=load(resolve(frontend,'src/components/CfdChart')).CfdChart;
 });
 afterEach(async()=>{await act(async()=>root.unmount());dom.window.close();});
 const script=()=>host.querySelector('script') as HTMLScriptElement;
@@ -43,18 +42,23 @@ test.each(['spot','futures','cfd'])('one chart across ten rapid switches, detach
     old=script().parentElement;oldFrame=materialize();expect(host.querySelectorAll('iframe')).toHaveLength(1);expect(host.querySelectorAll('script')).toHaveLength(1);
   }
 });
-test('timeframe label is driven by the exact interval sent to the chart; controls cannot drift',async()=>{
-  await render();expect(config().interval).toBe('15');expect(host.textContent).toContain('BTC/USDT · 15m');const old=materialize();
-  await click('1h');expect(config().interval).toBe('60');expect(host.textContent).toContain('BTC/USDT · 1h');expect(old.isConnected).toBe(false);
-  await render('ETH/USDT');expect(config().interval).toBe('60');expect(host.textContent).toContain('ETH/USDT · 1h');
-  await click('1D');expect(config().interval).toBe('D');expect(host.textContent).toContain('ETH/USDT · 1D');
+test('the widget owns timeframe controls without a misleading parent timeframe label',async()=>{
+  await render();expect(config().interval).toBe('60');const old=materialize();
+  expect(host.querySelector('.terminal-chart-controls')).toBeNull();
+  expect(host.textContent).not.toMatch(/ · (15m|1h|1D)/);
+  await render('ETH/USDT');expect(config().interval).toBe('60');expect(old.isConnected).toBe(false);
+  expect(host.textContent).toContain('ETH/USDT');
   expect(config()).toMatchObject({hide_top_toolbar:false,withdateranges:true,hide_legend:true,hide_side_toolbar:false,allow_symbol_change:false});
 });
-test('native TradingView indicators toolbar is enabled and volume remains controllable',async()=>{await render();expect(config().hide_top_toolbar).toBe(false);expect(config().studies).toEqual([]);expect(host.querySelector('select[aria-label="Chart indicator"]')).toBeNull();await click('VOL');expect(config().hide_volume).toBe(true);expect(host.querySelectorAll('script')).toHaveLength(1);});
-test('script failure shows honest fallback, preserves CFD disclaimer and retry recovers',async()=>{
-  await act(async()=>root.render(React.createElement(CfdChart,{symbol:'XAUUSD'})));const first=script();await act(async()=>first.dispatchEvent(new dom.window.Event('error')));
-  expect(host.textContent).toContain('trade.cfdChartUnavailable');expect(host.textContent).toContain('trade.cfdPriceDisclaimer');
+test('native TradingView indicators and volume controls remain available without duplicate parent controls',async()=>{await render();expect(config().hide_top_toolbar).toBe(false);expect(config().studies).toEqual([]);expect(config().hide_volume).toBe(false);expect(host.querySelector('select[aria-label="Chart indicator"]')).toBeNull();expect(host.querySelectorAll('button')).toHaveLength(0);expect(host.querySelectorAll('script')).toHaveLength(1);});
+test('external widget script failure shows fallback and retry recovers the same instrument',async()=>{
+  // The production CFD route now uses its own sampled OHLC renderer, covered
+  // by cfdTerminal/cfdDisplayOnly. This test exercises the external widget's
+  // mapped-instrument fallback, whose script lifecycle is still supported.
+  await render('XAUUSD','cfd');const first=script();await act(async()=>first.dispatchEvent(new dom.window.Event('error')));
+  expect(host.textContent).toContain('trade.cfdChartUnavailable');expect(host.textContent).toContain('trade.cfdChartUnavailableHint');
   await click('trade.cfdChartRetry');expect(script()).not.toBe(first);expect(first.isConnected).toBe(false);expect(host.querySelector('[role=status]')).toBeNull();materialize();expect(host.querySelectorAll('iframe')).toHaveLength(1);
+  expect(config().symbol).toBe('OANDA:XAUUSD');
 });
 test('loaded script without a widget times out and can retry, no poisoned global promise',async()=>{
   const callbacks:Function[]=[];jest.spyOn(dom.window,'setTimeout').mockImplementation((callback:any)=>{callbacks.push(callback);return 1;});
@@ -63,7 +67,15 @@ test('loaded script without a widget times out and can retry, no poisoned global
 test('unmount pending script cancels callbacks and removes all owned nodes',async()=>{await render();const oldScript=script(),owned=oldScript.parentElement!;await act(async()=>root.render(null));expect(oldScript.onerror).toBeNull();owned.append(document.createElement('iframe'));expect(host.childElementCount).toBe(0);expect(owned.isConnected).toBe(false);});
 test.each([['ru','ru'],['en','en'],['zh','zh_CN'],['es','es'],['ja','ja']])('locale switch remounts cleanly: %s',async(selected,expected)=>{await render();const old=materialize();lang=selected;await render('EUR/USD');expect(config().locale).toBe(expected);expect(old.isConnected).toBe(false);});
 test('unknown CFD mapping and malformed symbols never substitute another instrument',async()=>{await render('UNKNOWN','cfd');expect(script()).toBeNull();expect(host.textContent).toContain('trade.cfdChartUnavailable');await render('BTC<script>');expect(script()).toBeNull();});
-test('verified CFD mapping and compact visible attribution are preserved',async()=>{await render('XAUUSD','cfd');expect(config().symbol).toBe('OANDA:XAUUSD');expect(host.textContent).toContain('XAU/USD · 15m');expect(host.textContent).toContain('by TradingView');expect(host.querySelector('.terminal-chart-controls')!.textContent).not.toMatch(/OANDA|BYBIT|Perpetual Contract/);expect(host.querySelector('.terminal-chart-controls a')).toBeNull();expect(host.querySelector('.voltex-tradingview-chart__copyright a')).not.toBeNull();});
+test('verified CFD mapping and compact visible attribution are preserved',async()=>{
+  await render('XAUUSD','cfd');expect(config().symbol).toBe('OANDA:XAUUSD');
+  const visible = host.cloneNode(true) as HTMLElement;
+  visible.querySelectorAll('script,style').forEach(node=>node.remove());
+  expect(visible.textContent).toContain('XAU/USD chart');expect(visible.textContent).toContain('by TradingView');
+  expect(visible.textContent).not.toMatch(/OANDA|BYBIT|Perpetual Contract/);
+  expect(host.querySelector('.terminal-chart-controls')).toBeNull();
+  expect(host.querySelector('.voltex-tradingview-chart__copyright a')).not.toBeNull();
+});
 test('fallback translations remain available in all seven locales',()=>{for(const key of ['trade.cfdChartUnavailable','trade.cfdChartUnavailableHint','trade.cfdChartRetry'])expect(readAllLocales().split('\n').filter(line=>line.includes(`'${key}':`))).toHaveLength(7);});
 
 test.each([

@@ -7,6 +7,7 @@ import { defaultTradingPath } from './lib/tradingMode';
 import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
 import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
+import { isBrowserInactive } from './lib/browserActivity';
 
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
@@ -48,6 +49,7 @@ function usePrefetchLikelyRoutes() {
   useEffect(() => {
     if (!getToken()) return;
     const warm = () => {
+      if (isBrowserInactive()) return;
       const terminal = defaultTradingPath();
       void (terminal === '/futures' ? import('./pages/FuturesPage') : import('./pages/TradePage')).catch(() => {});
       void import('./pages/WalletPage').catch(() => {});

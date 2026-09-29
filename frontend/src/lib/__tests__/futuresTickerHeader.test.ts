@@ -102,8 +102,13 @@ test('market-data reads use perpetual references and preserve financial inputs',
   // Retaken only for shared mark reads and visibility-aware read scheduling.
   expect(hash(reads)).toBe('45ca07c99985789e9f7c301b41ad1cd8bee6721a2897e5d3d5c282452e9eee3c');
 });
-test('funding countdown implementation is unchanged', () => {
-  expect(hash(source.slice(source.indexOf('const NextFundingCountdown'))))
+test('funding countdown arithmetic is unchanged and only its scheduler gains browser sleep', () => {
+  const countdown = source.slice(source.indexOf('const NextFundingCountdown'));
+  expect(countdown.match(/browserSetInterval\(/g)).toHaveLength(1);
+  expect(countdown.match(/browserClearInterval\(/g)).toHaveLength(1);
+  // Normalize exactly the two scheduler names; keep the established arithmetic
+  // fingerprint, including UTC settlement boundaries and invalid intervals.
+  expect(hash(countdown.replace('browserSetInterval(', 'setInterval(').replace('browserClearInterval(', 'clearInterval(')))
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
@@ -280,6 +285,11 @@ test.each([
     // fingerprinting every pre-existing Futures/Spot method unchanged.
     .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')
     .replace("  getVtaDemo: () => request<VtaDemoSnapshot>('/demo/vta'),\n  sellVtaDemo: (requestId: string, quantity: string) => request<VtaSaleReceipt>('/demo/vta/sell', {\n    method: 'POST', body: JSON.stringify({ requestId, quantity }),\n  }),\n", '')
+    // Idle sleep adds transport scheduling and session isolation only. Remove
+    // these exact additions to retain the existing financial API fingerprint.
+    .replace("import { browserFetch as fetch } from './browserActivity';\n", '')
+    .replace("if (typeof window !== 'undefined') window.addEventListener('storage', event => {\n  if (event.key === TOKEN_KEY || event.key === null) notifySessionChange();\n});\n", '')
+    .replace("  if (getToken() !== token) throw new DOMException('Session changed', 'AbortError');\n", '')
     .replace('        userId: string | null;\n        userEmail: string | null;', '        userId: string;\n        userEmail: string;')
     .replace("  getAdminIncomingDepositFeed: () =>\n    request<{ transfers: { chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null; status: string }[];\n      failedChains: string[]; configuredChains: string[] }>('/admin/deposits/incoming?includeStatus=true'),\n\n", '').replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
@@ -300,7 +310,7 @@ test.each([
   expect(hash(source)).toBe(expected);
 });
 
-function mount(overrides: Record<string, any> = {}, countdown = false) {
+function mount(overrides: Record<string, any> = {}, countdown = false, doc?: any) {
   let cursor = 0;
   const hooks: any[] = [], effects: (() => void)[] = [];
   // The 24h reference figures moved from this component's own
@@ -367,7 +377,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     },
   };
   const output: any = {};
-  const readModules = browserReadModules(react, api);
+  const readModules = browserReadModules(react, api, doc);
   const compiled = ts.transpileModule(source + '\nexport { NextFundingCountdown };', {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
@@ -377,6 +387,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
       const childCode = ts.transpileModule(readFileSync(resolve(root, 'frontend/src/components/FuturesTurnover.tsx'), 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
       new Function('require','exports','window',childCode)((dependency: string) => {
         if (dependency === 'react') return react;
+        if (dependency === '../lib/browserActivity') return readModules.activity;
         if (dependency.endsWith('/useLiveMarket')) return { useLiveMarket: () => ({status:'disabled',rows:new Map(),revision:0}) };
         if (dependency.endsWith('/terminalPresentation')) return require('../terminalPresentation');
         if (dependency.endsWith('/formatNumber')) return numbers;
@@ -390,6 +401,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     // order and text assertions still see the real child count.
     if (name === './CryptoIcon') return { CryptoIcon: ({ symbol }: { symbol: string }) => react.createElement('img', { alt: symbol }) };
     if (name === 'react') return react;
+    if (name === '../lib/browserActivity') return readModules.activity;
     if (name === '../lib/api') return { api };
     if (name === '../lib/useFuturesMark') return readModules.mark;
     if (name === '../lib/visibleRead') return readModules.visible;
@@ -633,6 +645,20 @@ test('countdown uses actual clock, ticks and rolls over at the existing UTC boun
   jest.setSystemTime(new Date('2026-09-08T07:59:59Z'));
   jest.advanceTimersByTime(1000);
   expect(text(component.render({ intervalHours: 8 }))).toBe('08:00:00');
+});
+test('countdown stops its timer while hidden and resumes from the current clock once', () => {
+  const doc = Object.assign(new EventTarget(), { hidden: false });
+  const component = mount({}, true, doc);
+  expect(text(component.render({ intervalHours: 8 }))).toBe('04:37:17');
+  doc.hidden = true; doc.dispatchEvent(new Event('visibilitychange'));
+  expect(jest.getTimerCount()).toBe(0);
+  jest.advanceTimersByTime(60_000);
+  expect(text(component.render({ intervalHours: 8 }))).toBe('04:37:17');
+  doc.hidden = false; doc.dispatchEvent(new Event('visibilitychange'));
+  expect(text(component.render({ intervalHours: 8 }))).toBe('04:36:17');
+  expect(jest.getTimerCount()).toBe(1);
+  doc.dispatchEvent(new Event('visibilitychange'));
+  expect(jest.getTimerCount()).toBe(1);
 });
 test.each([null, 0, -1])('invalid funding interval %s has no invented countdown', intervalHours => {
   expect(text(mount({}, true).render({ intervalHours }))).toBe('—');

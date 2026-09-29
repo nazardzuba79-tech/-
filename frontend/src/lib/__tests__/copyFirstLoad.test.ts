@@ -3,6 +3,7 @@ import { resolve, dirname } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import { CopyMarketplaceStore } from '../copyMarketplaceStore';
+import * as activity from '../browserActivity';
 import { summarizeStrategy } from '../../../../src/services/copyTrading/marketplaceSummary';
 import { CopyPerformanceService } from '../../../../src/services/copyTrading/CopyPerformanceService';
 import { languageModule } from '../../../test-utils/languageStub';
@@ -17,6 +18,9 @@ const React = req('react');
 const { act } = React;
 const { createRoot } = req('react-dom/client');
 let dom: any, root: any, host: HTMLElement, store: CopyMarketplaceStore;
+let stopActivity: (() => void) | undefined;
+const globalKeys = ['window', 'document', 'localStorage', 'IS_REACT_ACT_ENVIRONMENT'] as const;
+const originalGlobals = new Map(globalKeys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
 let resolvePayload: (value: unknown) => void;
 let rejectPayload: (reason: Error) => void;
 let request: jest.Mock;
@@ -39,6 +43,7 @@ function load(file: string): any {
   }}).outputText;
   const requireFrom = (name: string) => {
     if (name.endsWith('.css')) return {};
+    if (name.endsWith('/browserActivity')) return activity;
     if (name.endsWith('/Nav')) return {Nav:() => null};
     if (name.endsWith('/Footer')) return {Footer:() => null};
     if (name === 'sonner') return {Toaster:() => null, toast:{success:jest.fn()}};
@@ -71,10 +76,13 @@ beforeAll(async () => {
   Page = load(resolve(sourceRoot,'src/pages/CopyTradingPage.tsx')).CopyTradingPage;
 },30000);
 beforeEach(() => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/copy-trading'});
+  // These cases describe a foreground route. A default JSDOM document is
+  // hidden, which correctly prevents the real marketplace from starting a read.
+  dom = new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/copy-trading',pretendToBeVisual:true});
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,localStorage:dom.window.localStorage,IS_REACT_ACT_ENVIRONMENT:true});
   dom.window.scrollTo = jest.fn();
   session='viewer-a'; clock=Date.parse('2026-09-11T12:00:00Z');
+  stopActivity = activity.startBrowserActivity({validate:async () => {},identity:() => session});
   request=jest.fn((signal:AbortSignal) => new Promise((resolve,reject) => {
     resolvePayload=resolve;rejectPayload=reject;
     signal.addEventListener('abort',() => reject(new Error('aborted')),{once:true});
@@ -84,8 +92,16 @@ beforeEach(() => {
   host=document.getElementById('root')!; root=createRoot(host);
 });
 afterEach(async () => {
-  await act(async () => {root.unmount();session=null;store.getState();});
-  dom.window.close();
+  try {
+    await act(async () => {root.unmount();session=null;store.getState();});
+  } finally {
+    stopActivity?.(); stopActivity=undefined;
+    dom.window.close();
+    for (const key of globalKeys) {
+      const descriptor=originalGlobals.get(key);
+      if (descriptor) Object.defineProperty(globalThis,key,descriptor); else delete (globalThis as any)[key];
+    }
+  }
 });
 
 test('first commit contains both shells, reserved positions and honest skeleton metrics',async () => {
@@ -101,6 +117,32 @@ test('first commit contains both shells, reserved positions and honest skeleton 
     expect(node.textContent).not.toMatch(/NaN|\b0(?:[.,]0+)?%|\$0\b/);
     expect(node.querySelector('.copy-chart-skeleton')).not.toBeNull();
   }
+});
+test('a hidden route defers its initial read and hydrates once when the real lifecycle wakes',async () => {
+  let hidden=true;
+  Object.defineProperties(document,{
+    hidden:{configurable:true,get:() => hidden},
+    visibilityState:{configurable:true,get:() => hidden?'hidden':'visible'},
+  });
+  document.dispatchEvent(new dom.window.Event('visibilitychange'));
+  await mount();
+  expect(activity.getBrowserPhase()).toBe('sleeping');
+  expect(request).not.toHaveBeenCalled();
+  expect(order()).toHaveLength(16);
+  expect(card('VX-001').querySelector('.copy-chart-skeleton')).not.toBeNull();
+
+  await act(async () => {
+    hidden=false;
+    document.dispatchEvent(new dom.window.Event('visibilitychange'));
+    await flush();
+  });
+  expect(request).toHaveBeenCalledTimes(1);
+  await settle();
+  await act(async () => {await activity.resumeBrowser();});
+  expect(activity.getBrowserPhase()).toBe('active');
+  expect(order()).toHaveLength(16);
+  expect(card('VX-001').querySelector('.mini-chart-line')).not.toBeNull();
+  expect(request).toHaveBeenCalledTimes(1);
 });
 test('response hydrates the existing sixteen cards without duplicates or ordering changes',async () => {
   await mount();
@@ -121,15 +163,26 @@ test.each(['VX-001','VX-KSENIA'])('%s profile opens before API response and hydr
   const profile=host.querySelector('.trader-profile-page');
   expect(profile).not.toBeNull();
   expect(profile!.querySelector('h1')!.textContent).toBe(id==='VX-001'?'Nazar':'Ksenia');
+  // The approved first paint mounts identity and hero metrics before analytics.
+  expect(profile!.querySelectorAll('.trader-hero-metrics [data-unavailable]')).toHaveLength(3);
+  expect(profile!.querySelector('.profile-detail-loading')?.textContent).toBe('Загрузка аналитики…');
+  expect(profile!.querySelector('.profile-metrics-grid')).toBeNull();
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 40)); });
+  expect(profile!.querySelector('.profile-detail-loading')).toBeNull();
   expect(profile!.querySelectorAll('[data-unavailable]').length).toBeGreaterThan(10);
   expect(profile!.textContent).not.toContain('NaN');
-  const rows=profile!.querySelectorAll('.profile-metrics-grid > div').length;
+  const metricIds=Array.from(profile!.querySelectorAll('[data-metric]')).map(row => row.getAttribute('data-metric'));
+  expect(metricIds).toEqual(['roi','masterPnl','followersPnl','winRate','maxDrawdown','averagePnl','profitFactor',
+    'tradesPerWeek','holdingTime','volatility','sharpe','sortino','totalTrades','winningTrades','losingTrades']);
   const header=profile!.querySelector('.trader-profile-hero');
   expect(dom.window.scrollTo).toHaveBeenCalledTimes(1);
   await settle();
   expect(host.querySelector('.trader-profile-page')).toBe(profile);
   expect(profile!.querySelector('.trader-profile-hero')).toBe(header);
-  expect(profile!.querySelectorAll('.profile-metrics-grid > div')).toHaveLength(rows);
+  const hydratedIds=Array.from(profile!.querySelectorAll('[data-metric]')).map(row => row.getAttribute('data-metric'));
+  expect(hydratedIds.filter(id => id !== 'lastTrade')).toEqual(metricIds);
+  expect(hydratedIds).toContain('lastTrade');
+  expect(profile!.querySelector('[data-metric="roi"] [data-unavailable]')).toBeNull();
   expect(profile!.querySelector('.profile-chart-line')).not.toBeNull();
   expect(dom.window.scrollTo).toHaveBeenCalledTimes(1);
 });
@@ -176,7 +229,7 @@ test('direct entry, lazy route and both nav surfaces start the shared prefetch',
   const app=readFileSync(resolve(frontend,'src/App.tsx'),'utf8');
   expect(app).toMatch(/const CopyTradingPage = lazy\(\(\) => \{[\s\S]*?prefetchCopyMarketplace\(\);[\s\S]*?return import\('\.\/pages\/CopyTradingPage'\)/);
   const nav=readFileSync(resolve(frontend,'src/components/Nav.tsx'),'utf8');
-  for(const event of ['onMouseEnter','onFocus','onPointerDown']) expect(nav.match(new RegExp(event+"=\\{l.to === '/copy-trading'",'g'))).toHaveLength(2);
+  for(const event of ['onMouseEnter','onFocus','onPointerDown']) expect(nav.match(new RegExp(event+"=\\{l\\.to\\s*===\\s*'/copy-trading'\\s*\\?\\s*prefetchCopyMarketplace\\s*:\\s*undefined\\}",'g'))).toHaveLength(2);
 });
 test('owner image overlays initials only after successful decode',async () => {
   await mount();

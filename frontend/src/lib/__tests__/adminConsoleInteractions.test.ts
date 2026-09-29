@@ -31,7 +31,7 @@ function load(file: string): any {
   return exports;
 }
 beforeEach(() => {
-  dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/admin' });
+  dom = new JSDOM('<!doctype html><div id="root"></div>', { pretendToBeVisual: true, url: 'http://localhost/admin' });
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
@@ -128,6 +128,7 @@ test('opening the page reads the stored queue and asks the server for the day\'s
   jest.useFakeTimers({ doNotFake: ['setImmediate'] });
   let visibility = 'visible';
   Object.defineProperty(dom.window.document, 'visibilityState', { configurable: true, get: () => visibility });
+  Object.defineProperty(dom.window.document, 'hidden', { configurable: true, get: () => visibility !== 'visible' });
   try {
     await mountDeposits();
     expect(fetched('/admin/deposit-queue')).toHaveLength(1);

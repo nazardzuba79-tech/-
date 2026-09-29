@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { resolve, join } from 'path';
 import { createRequire } from 'module';
@@ -28,7 +29,7 @@ function evaluate(file: string, imports: Record<string, unknown> = {}) {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const output: Record<string, any> = {};
-  new Function('exports', 'require', code)(output, (name: string) => (name.endsWith('.css') ? {} : imports[name] ?? req(name)));
+  new Function('exports', 'require', code)(output, (name: string) => (name.endsWith('.css') ? {} : imports[name] ?? (name.endsWith('/browserActivity') ? browserActivity : req(name))));
   return output;
 }
 
@@ -352,6 +353,19 @@ describe('4. no account balance is written into the source', () => {
 });
 
 describe('5. the page does not poll per asset', () => {
+  it('an optional native absence after a confirmed Cross account preserves that transcript', async () => {
+    let wallet: unknown = OWNER_WALLET;
+    const hook = runHook({ wallet: async () => wallet });
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+    const before = hook.render();
+    expect(before.account.mode).toBe('CROSS');
+    wallet = null;
+    await before.refresh();
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+    const after = hook.render();
+    expect(after.account).toEqual(before.account); expect(after.rows).toEqual(before.rows);
+    expect(hook.calls.filter(call => call === 'native-wallet')).toHaveLength(2);
+  });
   it('reads the authoritative account once per load, never on an interval', async () => {
     const hook = runHook({ wallet: () => Promise.resolve(OWNER_WALLET) });
     await Promise.resolve(); await Promise.resolve();

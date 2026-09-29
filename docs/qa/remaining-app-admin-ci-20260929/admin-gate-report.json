@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "name": "success@390",
+      "ok": true,
+      "detail": "privileged-before-ok=0 me=1 users=1 activity=1"
+    },
+    {
+      "name": "401 refused@390",
+      "ok": true,
+      "detail": "at=/"
+    },
+    {
+      "name": "403 refused@390",
+      "ok": true,
+      "detail": "at=/"
+    },
+    {
+      "name": "503 → error screen → retry@390",
+      "ok": true,
+      "detail": "reason=SERVER me-calls=2"
+    },
+    {
+      "name": "network → error screen → retry@390",
+      "ok": true,
+      "detail": "reason=NETWORK me-calls=2"
+    },
+    {
+      "name": "malformed → error screen → retry@390",
+      "ok": true,
+      "detail": "reason=SERVER me-calls=2"
+    },
+    {
+      "name": "hung /me → timeout → retry@390",
+      "ok": true,
+      "detail": "timeout-after=15s open-hung-sockets=0"
+    },
+    {
+      "name": "activity first read fails → unknown → retry@390",
+      "ok": true,
+      "detail": "activity-calls=2"
+    },
+    {
+      "name": "activity fails after success → data kept, marked stale@390",
+      "ok": true,
+      "detail": "reads=1"
+    },
+    {
+      "name": "idle defers hourly read → failed wake keeps last good data@390",
+      "ok": true,
+      "detail": "wake-me=1 wake-activity=1"
+    },
+    {
+      "name": "session revoked mid-page → signed out, left /admin@390",
+      "ok": true,
+      "detail": "at=/"
+    },
+    {
+      "name": "session switched to a customer → refused@390",
+      "ok": true,
+      "detail": "at=/"
+    },
+    {
+      "name": "success@1440",
+      "ok": true,
+      "detail": "privileged-before-ok=0 me=1 users=1 activity=1"
+    },
+    {
+      "name": "401 refused@1440",
+      "ok": true,
+      "detail": "at=/"
+    },
+    {
+      "name": "403 refused@1440",
+      "ok": true,
+      "detail": "at=/"
+    },
+    {
+      "name": "503 → error screen → retry@1440",
+      "ok": true,
+      "detail": "reason=SERVER me-calls=2"
+    },
+    {
+      "name": "network → error screen → retry@1440",
+      "ok": true,
+      "detail": "reason=NETWORK me-calls=2"
+    },
+    {
+      "name": "malformed → error screen → retry@1440",
+      "ok": true,
+      "detail": "reason=SERVER me-calls=2"
+    },
+    {
+      "name": "hung /me → timeout → retry@1440",
+      "ok": true,
+      "detail": "timeout-after=15s open-hung-sockets=0"
+    },
+    {
+      "name": "activity first read fails → unknown → retry@1440",
+      "ok": true,
+      "detail": "activity-calls=2"
+    },
+    {
+      "name": "activity fails after success → data kept, marked stale@1440",
+      "ok": true,
+      "detail": "reads=1"
+    },
+    {
+      "name": "idle defers hourly read → failed wake keeps last good data@1440",
+      "ok": true,
+      "detail": "wake-me=1 wake-activity=1"
+    },
+    {
+      "name": "session revoked mid-page → signed out, left /admin@1440",
+      "ok": true,
+      "detail": "at=/"
+    },
+    {
+      "name": "session switched to a customer → refused@1440",
+      "ok": true,
+      "detail": "at=/"
+    }
+  ]
+}

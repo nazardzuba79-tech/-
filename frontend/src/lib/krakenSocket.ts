@@ -9,6 +9,7 @@
 // trade tape can both be live for the same pair at once) rather than one
 // socket per component.
 
+import { isBrowserInactive, addBrowserActivityListener } from './browserActivity';
 export interface BookLevel {
   price: string;
   quantity: string;
@@ -55,6 +56,18 @@ const BOOK_DEPTH = 100;
 const EMIT_INTERVAL_MS = 300;
 
 class KrakenSocket {
+  constructor() { addBrowserActivityListener(() => {
+    if (isBrowserInactive()) this.pause();
+    else if (this.bookListeners.size || this.tradeListeners.size) this.ensureConnected();
+  }); }
+  private pause() {
+    const socket = this.ws; this.ws = null; this.connecting = false;
+    if (socket) { socket.onopen = null; socket.onmessage = null; socket.onclose = null; socket.onerror = null; socket.close(); }
+    if (this.reconnectTimer !== null) window.clearTimeout(this.reconnectTimer);
+    if (this.flushTimer !== null) window.clearTimeout(this.flushTimer);
+    this.reconnectTimer = null; this.flushTimer = null;
+    this.bookState.clear(); this.dirtyPairs.clear(); this.setStatus('disconnected');
+  }
   private ws: WebSocket | null = null;
   private connecting = false;
   private reconnectDelay = 1000;
@@ -132,6 +145,7 @@ class KrakenSocket {
   }
 
   private ensureConnected() {
+    if (isBrowserInactive()) return;
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
     if (this.connecting) return;
     this.connecting = true;
@@ -177,6 +191,7 @@ class KrakenSocket {
   }
 
   private scheduleReconnect() {
+    if (isBrowserInactive()) return;
     if (this.bookListeners.size === 0 && this.tradeListeners.size === 0) return;
     if (this.reconnectTimer !== null) return;
     // Full jitter, same reasoning as the backend's provider backoff: every
