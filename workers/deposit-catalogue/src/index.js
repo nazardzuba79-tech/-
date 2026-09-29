@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { documentSchema } from '../../../src/services/depositCatalogue/schema.ts';
 import { publicCatalogueBody, publicEntries } from '../../../src/services/depositCatalogue/publicView.ts';
+import { ifNoneMatchHits } from './conditional.js';
 
 const OBJECT_NAME = 'voltex-receiving-addresses-v1';
 const MAX_BYTES = 256 * 1024;
@@ -111,7 +112,9 @@ async function publicCatalogue(request, env) {
   const version = [...digest].map(b => b.toString(16).padStart(2, '0')).join('');
   // Revalidate on every open (addresses can change at any time); an unchanged catalogue costs a 304.
   const headers = { ...cors, 'Cache-Control': 'no-cache', ETag: `"${version}"`, 'X-Content-Type-Options': 'nosniff' };
-  if (request.headers.get('If-None-Match') === `"${version}"`) return new Response(null, { status: 304, headers });
+  // Weak comparison (RFC 9110 §13.1.2): Cloudflare serves this ETag as W/"…" once it compresses the body,
+  // and the browser revalidates with exactly that. A 304 carries the same headers and no body.
+  if (ifNoneMatchHits(request.headers.get('If-None-Match'), headers.ETag)) return new Response(null, { status: 304, headers });
   return new Response(request.method === 'HEAD' ? null : `{"version":"${version}","entries":${body}}`,
     { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } });
 }

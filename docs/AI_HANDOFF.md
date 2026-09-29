@@ -4541,6 +4541,33 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Full Jest vs `8896d5eb`: 0 new failures.
 - **Read-only production observation:** `market.voltextech.net/health` = `public-display-edge-v9`, and `/market/listings` answers 404. No public deposit Worker hostname is known.
 - **Not done:** everything in `docs/CLOUDFLARE_ACTIVATION.md` (GitHub secret, deploy dispatches, Render env, Pages env, production QA). No merge, deploy, secret, balance, address or allocation change.
+
+## Claude — 2026-09-29 — Deposit public read: weak ETag revalidation (If-None-Match)
+
+- Base: `main` `3bec9e0b`. Branch `claude/ecstatic-brahmagupta-cwkvt5-deposit-weak-etag`.
+- **Cause:** production smoke run 36546856123 returned 200 instead of 304. Cloudflare serves the Worker's ETag as `W/"…"` after compressing the body, and the Worker compared `If-None-Match` by strict string equality.
+- **Fix:**
+  - `workers/deposit-catalogue/src/conditional.js` (new) implements RFC 9110 §13.1.2 weak comparison for `If-None-Match`, public GET/HEAD only:
+    - the same opaque tag, weak or strong, gets 304;
+    - lists, whitespace and `*` are handled;
+    - a malformed value never matches.
+  - `index.js` uses it. A 304 keeps ETag, `Cache-Control: no-cache`, CORS and Vary, with no body.
+  - The private `If-Match` CAS is unchanged and still strict.
+  - `scripts/smoke-deposit-public.mjs` accepts a strong or weak ETag and sends it back exactly as received. It also checks the other form of the same version, a different version (200), a malformed value (200), and the 304 headers.
+- **Tests:**
+  - `conditional.test.mjs`: 4 new.
+  - `integration.test.mjs`: 3 new, covering the 304 matrix for GET/HEAD, a changed catalogue not confirmed by its old ETag, and weak or quoted If-Match refused without a write.
+  - `smoke.integration.test.mjs`: a Cloudflare-like proxy that weakens the ETag.
+  - With the old strict comparison restored, the new workerd test and the proxied smoke fail (`200, sent weak`); with the fix all pass.
+- **Checks actually run (local):**
+  - workerd 25/25, smoke 3/3.
+  - `wrangler deploy --dry-run --env production`.
+  - Backend and frontend `tsc`.
+  - Jest catalogue/deposit 58/58.
+  - Browser `qa-deposit-catalogue-edge` 7/7 (short idle).
+- **Preserved:** catalogue data and namespace, addresses/networks/memo, secrets, Listings, Pages settings, and the Render route (its own strict compare is untouched). No merge, deploy or production change.
+- **Next:** after merge, re-run the Deposit workflow (`confirm = deploy-production-public-read`). Pages settings only after its smoke passes.
+
 ## Claude — 2026-09-29 — Port #306 premium terminal layer and #280 Spot/CFD identity onto main
 
 - Base: main `e17aa533` (after #328). Branch `claude/ecstatic-brahmagupta-cwkvt5-terminal-polish`. Commit: this one (local, not pushed). Sources: Codex #306 `069d29ff` (owner-reviewed preview) and ChatGPT #280 `8673dd04`, reconciled hunk by hunk.
