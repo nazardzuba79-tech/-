@@ -27,11 +27,17 @@ trades on the venue.
   as the UTC instant, the zone kept for display), owner allocation quantity,
   seed (automatic or manual), Spot trading on/off.
 - An automatic seed is generated once and kept across draft saves.
-- History is a pure function of `(pair, seed, initialPrice, listingAt)` and the
-  server clock (`src/services/testMarkets/testMarketSimulation.ts`). Reload,
-  reopen, Preview, a Worker restart or another Render instance produce the same
-  candles.
-- After publish, ticker, seed and initial price are locked (`HISTORY_LOCKED`).
+- A simulation profile (candle character only) is assigned by the store when
+  the listing is created, in rotation #1 CALM_TREND, #2 IMPULSE_TREND,
+  #3 PULLBACK_TREND, #4 COMPRESSION_BREAKOUT, #5 CALM_TREND…, and never changes
+  afterwards; a request cannot choose it. Listings created before profiles
+  existed keep the original candles. See `docs/SIMULATION_REALISM.md`.
+- History is a pure function of `(pair, seed, initialPrice, listingAt,
+  simulationProfile)` and the server clock
+  (`src/services/testMarkets/testMarketSimulation.ts`). Reload, reopen,
+  Preview, a Worker restart or another Render instance produce the same
+  candles. The profile never moves the hour anchors or the final price.
+- After publish, ticker, seed, initial price and profile are locked (`HISTORY_LOCKED`).
   The date can move only while the market has not opened. Name, logo, time
   zone, allocation parameter and the trading switch can change and publish a new
   version; past prices never change.

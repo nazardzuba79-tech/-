@@ -14,10 +14,12 @@ export interface ListingConfig {
   seedMode: 'auto' | 'manual';
   seed: string;
   tradable: boolean;
+  /** Candle character, assigned by the store at creation (by creation order) and never changed. Absent on older listings. */
+  simulationProfile?: 'CALM_TREND' | 'IMPULSE_TREND' | 'PULLBACK_TREND' | 'COMPRESSION_BREAKOUT';
 }
 
-/** What the form sends. The server fills schemaVersion and an automatic seed. */
-export type ListingForm = Omit<ListingConfig, 'schemaVersion' | 'seed'> & { seed?: string };
+/** What the form sends. The server fills schemaVersion and an automatic seed; the store assigns the profile. */
+export type ListingForm = Omit<ListingConfig, 'schemaVersion' | 'seed' | 'simulationProfile'> & { seed?: string };
 
 export interface AdminListing {
   id: string;

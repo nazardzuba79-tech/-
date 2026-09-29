@@ -13,7 +13,7 @@
  * bundle still builds for the edge-isolation tests.
  */
 import {
-  ListingValidationError, LISTING_ID_PATTERN, MIN_LEAD_FLOOR_MS, MIN_LEAD_MS, checkPublishable, parseListingConfig, withStableSeed,
+  ListingValidationError, LISTING_ID_PATTERN, MIN_LEAD_FLOOR_MS, MIN_LEAD_MS, checkPublishable, parseListingConfig, withStableProfile, withStableSeed,
   type ListingConfig, type PublishedListing,
 } from '../../../src/services/listings/listingConfig';
 
@@ -102,6 +102,11 @@ export class ManagedListingsDO {
     return String(this.sql.exec("SELECT v FROM meta WHERE k = 'catalogue_revision'").toArray()[0]?.v ?? '0');
   }
 
+  /** How many listings have been created with a simulation profile: the next one's ordinal. */
+  private profileOrdinal(): number {
+    return Number(this.sql.exec("SELECT v FROM meta WHERE k = 'simulation_profile_ordinal'").toArray()[0]?.v ?? '0');
+  }
+
   private version(id: string, version: number) {
     return this.sql.exec('SELECT version, config, published_at, published_by FROM listing_version WHERE listing_id = ? AND version = ?', id, version).toArray()[0];
   }
@@ -147,7 +152,9 @@ export class ManagedListingsDO {
       if (current !== ifMatch) return reply({ error: 'revision_conflict', draftRevision: Number(current) }, 409);
       const previous = row ? JSON.parse(String(row.draft)) as ListingConfig : null;
       const active = row && row.active_version !== null ? JSON.parse(String(this.version(id, Number(row.active_version))!.config)) as ListingConfig : null;
-      const next = withStableSeed(config, previous);
+      // A new listing takes the next profile in the rotation; an existing one keeps what it has.
+      const ordinal = row ? null : this.profileOrdinal();
+      const next = withStableProfile(withStableSeed(config, previous), previous, ordinal);
       if (active && (next.symbol !== active.symbol || next.seed !== active.seed || next.initialPrice !== active.initialPrice)) {
         return reply({ error: 'HISTORY_LOCKED', message: 'The ticker, seed and initial price of a published listing cannot change' }, 422);
       }
@@ -160,6 +167,8 @@ export class ManagedListingsDO {
       } else {
         this.sql.exec('INSERT INTO listing (id, symbol, draft, draft_revision, draft_updated_at, draft_updated_by, active_version, created_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?)',
           id, next.symbol, JSON.stringify(next), revision, now, actor, now);
+        // Same transaction as the insert: an ordinal is spent only by a listing that exists.
+        this.sql.exec("INSERT INTO meta (k, v) VALUES ('simulation_profile_ordinal', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v", String((ordinal as number) + 1));
       }
       return reply({ id, draftRevision: revision, draft: next });
     });

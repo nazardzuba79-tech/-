@@ -1,0 +1,60 @@
+PASS  VTA-USDT 1m: 1000 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT 5m: 757 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT 15m: 253 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT 1h: 64 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT ticker: last 17.50977, 24h 744.20%, max 18.778053, min 1.9477033
+PASS  VTA-USDT 24h max ≥ last/open ≥ … ≥ min (window of 289 5m candles, max 18.778053, min 1.9477033)
+PASS  VTA-USDT reload: closed 5m candles identical on a second request
+PASS  VTA-USDT 1m→5m: 199 closed 5m candles rebuilt from 1m, mismatches=0
+PASS  QCA-USDT 1m: 1000 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCA-USDT 5m: 685 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCA-USDT 15m: 229 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCA-USDT 1h: 58 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCA-USDT ticker: last 431.34012, 24h 3096.99%, max 431.43207, min 13.150484
+PASS  QCA-USDT 24h max ≥ last/open ≥ … ≥ min (window of 289 5m candles, max 431.43207, min 13.150484)
+PASS  QCA-USDT reload: closed 5m candles identical on a second request
+PASS  QCA-USDT 1m→5m: 199 closed 5m candles rebuilt from 1m, mismatches=0
+PASS  QIM-USDT 1m: 1000 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QIM-USDT 5m: 685 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QIM-USDT 15m: 229 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QIM-USDT 1h: 58 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QIM-USDT ticker: last 430.87962, 24h 3090.23%, max 436.22594, min 12.779704
+PASS  QIM-USDT 24h max ≥ last/open ≥ … ≥ min (window of 289 5m candles, max 436.22594, min 12.779704)
+PASS  QIM-USDT reload: closed 5m candles identical on a second request
+PASS  QIM-USDT 1m→5m: 199 closed 5m candles rebuilt from 1m, mismatches=0
+PASS  QPB-USDT 1m: 1000 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QPB-USDT 5m: 685 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QPB-USDT 15m: 229 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QPB-USDT 1h: 58 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QPB-USDT ticker: last 431.06464, 24h 3093.79%, max 443.25588, min 12.5434
+PASS  QPB-USDT 24h max ≥ last/open ≥ … ≥ min (window of 289 5m candles, max 443.25588, min 12.5434)
+PASS  QPB-USDT reload: closed 5m candles identical on a second request
+PASS  QPB-USDT 1m→5m: 199 closed 5m candles rebuilt from 1m, mismatches=0
+PASS  QCB-USDT 1m: 1000 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCB-USDT 5m: 685 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCB-USDT 15m: 229 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCB-USDT 1h: 58 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  QCB-USDT ticker: last 431.04463, 24h 3091.94%, max 437.60843, min 13.310516
+PASS  QCB-USDT 24h max ≥ last/open ≥ … ≥ min (window of 289 5m candles, max 437.60843, min 13.310516)
+PASS  QCB-USDT reload: closed 5m candles identical on a second request
+PASS  QCB-USDT 1m→5m: 199 closed 5m candles rebuilt from 1m, mismatches=0
+PASS  VTA-USDT (before) 1m: 1000 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT (before) 5m: 757 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT (before) 15m: 253 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT (before) 1h: 64 candles, impossible=0, open≠prev close=0, missing slots=0
+PASS  VTA-USDT (before) ticker: last 17.499283, 24h 743.70%, max 18.228282, min 1.9477033
+PASS  VTA-USDT (before) 24h max ≥ last/open ≥ … ≥ min (window of 289 5m candles, max 18.228282, min 1.9477033)
+PASS  VTA-USDT (before) reload: closed 5m candles identical on a second request
+PASS  VTA-USDT (before) 1m→5m: 199 closed 5m candles rebuilt from 1m, mismatches=0
+PASS  QCA/QIM/QPB/QCB: all 57 closed 1h candles have identical open/close (same anchors)
+PASS  QCA/QIM/QPB/QCB: the 5m candles differ between profiles
+PASS  VTA before/after: all 63 closed 1h candles open/close identical
+PASS  VTA 1m: all 639 candles before the boundary identical to the original generator
+PASS  VTA 1m: 361 candles from the boundary follow IMPULSE_TREND (differ from the original)
+PASS  VTA 1m: seamless join at the boundary (open 14.975124 = previous close)
+PASS  VTA 5m: all 684 candles before the boundary identical to the original generator
+PASS  VTA 5m: 73 candles from the boundary follow IMPULSE_TREND (differ from the original)
+PASS  VTA 5m: seamless join at the boundary (open 14.975124 = previous close)
+PASS  VTA after: largest 1h close-to-close move 35.8% (base impulse hours ≈ +30%)
+
+ALL PASS (58 checks) at 2026-09-29T12:02:39.144Z

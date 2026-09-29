@@ -46,7 +46,7 @@ describe('the test-asset list and state', () => {
 
   test('candles never reach past the server clock, and a refresh returns the same history', async () => {
     const now = L + 30 * HOUR + 12_345;
-    for (const interval of ['5m', '15m', '1h', '4h', '1d', '1w']) {
+    for (const interval of ['1m', '5m', '15m', '1h', '4h', '1d', '1w']) {
       const first = await request(app(now)).get(`/api/v1/market/external/candles/VTA-USDT?interval=${interval}&limit=1000`);
       const second = await request(app(now)).get(`/api/v1/market/external/candles/VTA-USDT?interval=${interval}&limit=1000`);
       expect(first.status).toBe(200);
@@ -54,8 +54,15 @@ describe('the test-asset list and state', () => {
       expect(first.body.candles.length).toBeGreaterThan(0);
       expect(first.body.candles.every((c: { time: number }) => c.time * 1000 <= now)).toBe(true);
     }
-    const bad = await request(app(now)).get('/api/v1/market/external/candles/VTA-USDT?interval=1m');
+    const bad = await request(app(now)).get('/api/v1/market/external/candles/VTA-USDT?interval=3m');
     expect(bad.status).toBe(400);
+    // 1m is cut from the same ticks: its last close is the 5m close and the ticker price.
+    const oneMinute = (await request(app(now)).get('/api/v1/market/external/candles/VTA-USDT?interval=1m&limit=20')).body.candles;
+    const fiveMinute = (await request(app(now)).get('/api/v1/market/external/candles/VTA-USDT?interval=5m&limit=5')).body.candles;
+    const state = (await request(app(now)).get('/api/v1/market/test-assets/VTA-USDT')).body.state;
+    expect(oneMinute).toHaveLength(20);
+    expect(oneMinute[19].close).toBe(fiveMinute[4].close);
+    expect(oneMinute[19].close).toBe(state.lastPrice);
   });
 
   test('limit is respected and the last candle is the forming one', async () => {
