@@ -1471,22 +1471,6 @@ export const api = {
   // the server on every request (see requireAdmin middleware); nothing
   // here is trusted client-side. ---
 
-  /** Bounded /me read used only by the Admin access gate. Kept inside the
-   * admin client surface so ordinary account/Spot/Futures API contracts stay unchanged. */
-  getAdminGateMe: (signal?: AbortSignal) =>
-    request<{
-      id: string;
-      email: string;
-      displayName: string | null;
-      phone: string | null;
-      country: string | null;
-      avatarUrl: string | null;
-      isAdmin: boolean;
-      kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
-      twoFactorEnabled: boolean;
-      createdAt: string;
-    }>('/me', signal ? { signal } : {}),
-
   getAdminOverview: () => request<{
     totalUsers: number; pendingKyc: number; pendingWithdrawals: number; creditedDepositsToday: number;
     unmatchedIncoming: null; unmatchedIncomingReason: 'live_provider_feed'; dayStart: string; asOf: string;
@@ -1516,7 +1500,7 @@ export const api = {
 
   resetAdminWallet: (chain: string) => request<{ ok: boolean }>(`/admin/wallets/${chain}`, { method: 'DELETE' }),
 
-  getAdminUsers: (search?: string, signal?: AbortSignal) =>
+  getAdminUsers: (search?: string) =>
     request<
       {
         id: string;
@@ -1532,7 +1516,7 @@ export const api = {
         blockedReason: string | null;
         balances: { asset: string; available: string; locked: string }[];
       }[]
-    >(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`, signal ? { signal } : {}),
+    >(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`),
 
   getAdminUserDetail: (id: string) =>
     request<{
