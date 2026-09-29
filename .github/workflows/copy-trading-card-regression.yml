@@ -34,6 +34,7 @@ on:
       - 'frontend/src/lib/displaySnapshotCache.ts'
       - 'frontend/src/lib/sampledDisplayCopy.ts'
       - 'src/api/middleware/auth.ts'
+      - 'src/buildCommit.ts'
       - 'frontend/src/lib/copyTradingMoney.ts'
       - 'frontend/src/lib/modeledCopyData.ts'
       - 'frontend/src/lib/dailyReturnChart.ts'
@@ -77,6 +78,8 @@ on:
       - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
       - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
       - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
+      - 'frontend/src/lib/__tests__/copyPerformancePeriods.test.ts'
+      - 'frontend/test-utils/languageStub.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
   push:
     branches: [main]
@@ -112,6 +115,7 @@ on:
       - 'frontend/src/lib/displaySnapshotCache.ts'
       - 'frontend/src/lib/sampledDisplayCopy.ts'
       - 'src/api/middleware/auth.ts'
+      - 'src/buildCommit.ts'
       - 'frontend/src/lib/copyTradingMoney.ts'
       - 'frontend/src/lib/modeledCopyData.ts'
       - 'frontend/src/lib/dailyReturnChart.ts'
@@ -155,6 +159,8 @@ on:
       - 'frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts'
       - 'frontend/src/lib/__tests__/copyCustomerFacingWording.test.ts'
       - 'frontend/src/lib/__tests__/copyMonthlyPerformance*.test.ts'
+      - 'frontend/src/lib/__tests__/copyPerformancePeriods.test.ts'
+      - 'frontend/test-utils/languageStub.ts'
       - '.github/workflows/copy-trading-card-regression.yml'
 
 permissions:
@@ -217,6 +223,24 @@ jobs:
           frontend/src/lib/__tests__/copyMonthlyPerformance.test.ts
           frontend/src/lib/__tests__/copyMonthlyPerformanceModal.test.ts
           src/services/copyTrading/__tests__/monthlyCopyPerformanceContract.test.ts
+      # The marketplace never waits for the day's append: a stale day is
+      # answered at once with its last confirmed section, a restarted process
+      # serves the published section without replaying history, and the
+      # refresh yields to other requests. Then one ledger across a real day
+      # boundary: every period re-derived, every surface in agreement.
+      - name: Marketplace first paint and period progression (Nazar + Ksenia)
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          src/services/copyTrading/__tests__/marketplaceSnapshot.test.ts
+          src/services/copyTrading/__tests__/copyPeriodProgression.test.ts
+      # «Эффективность»: the selected period's own figures, Russian labels
+      # with ROI / P&L / USDT kept, numbers unchanged by language, and a
+      # skeleton only while a request is really in flight.
+      - name: Performance block periods and language
+        run: >-
+          npm test -- --runInBand --runTestsByPath
+          frontend/src/lib/__tests__/copyPerformancePeriods.test.ts
+          frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
       - name: Copy privacy, retry and period regressions
         run: >-
           npm test -- --runInBand --runTestsByPath
@@ -274,6 +298,15 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
         run: node scripts/qa-copy-monthly-performance.cjs
+      # First paint on a new UTC day whose append is slower than the client's
+      # 15 s budget (production logged 42.29 s), «Эффективность» per period in
+      # Russian at 1440 and 390, and no skeleton once a 503 or a 15 s abort
+      # has ended the attempt.
+      - name: Browser QA - slow new day, period performance block, honest failure
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-copy-qa/node_modules/playwright
+          QA_SLOW_APPEND_MS: '20000'
+        run: node scripts/qa-copy-performance-periods.cjs
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
@@ -286,4 +319,5 @@ jobs:
             docs/qa/copy-never-loading/
             docs/qa/copy-daily-progression/
             docs/qa/copy-monthly-performance/
+            docs/qa/copy-performance-periods/
           retention-days: 7

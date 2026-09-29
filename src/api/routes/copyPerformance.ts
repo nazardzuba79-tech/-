@@ -3,10 +3,7 @@ import type { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
 import { CopyPerformanceService } from '../../services/copyTrading/CopyPerformanceService';
 import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrading/strategyOwner';
-import { summarizeStrategy } from '../../services/copyTrading/marketplaceSummary';
-import { withKseniaReportedTrade } from '../../services/copyTrading/kseniaReportedTrade';
-import { redactTradeHistory } from '../../services/copyTrading/tradeHistoryVisibility';
-import { withKseniaReportedWeek } from '../../services/copyTrading/kseniaReportedWeek';
+import { MarketplaceSnapshots, marketplaceSection } from '../../services/copyTrading/marketplaceSnapshot';
 import { randomUUID } from 'crypto';
 
 const SECTIONS = ['nazar', 'ksenia', 'identities'] as const;
@@ -56,7 +53,8 @@ function logSections(requestId: string, results: PromiseSettledResult<unknown>[]
 /** Modeled strategy read endpoints; existing production session auth preserved.
  * The normal production backend owns persistence and same-environment identity.
  * The existing legacy synthetic/admin and real account routes remain separate. */
-export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPerformanceService(prisma)) {
+export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPerformanceService(prisma),
+  snapshots = new MarketplaceSnapshots(prisma, service, { dailyRefresh: process.env.NODE_ENV !== 'test' })) {
   const router = Router();
   // One authenticated bootstrap; a failed section must not discard its peers.
   // PerformanceService already coalesces and caches each UTC-day projection.
@@ -65,23 +63,19 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     res.setHeader('Cache-Control', 'no-store');
     const requestId = randomUUID();
     const startedAt = Date.now();
-    // Statistics from the COMPLETE history; the wire carries the latest ten
-    // trade rows for the history table and nothing more. `summarizeStrategy`
-    // reads every trade to build `tradeStats`, so no figure is derived from
-    // the ten. See services/copyTrading/marketplaceSummary.ts.
-    // `redactTradeHistory` is LAST on both strategies, after the Ksenia
-    // overlay has folded its reported trade into the aggregates — otherwise
-    // that overlay would reinsert a row into a response already cleaned.
-    // Executions never leave this function. See tradeHistoryVisibility.ts.
-    // Nazar, THEN Ksenia — never both at once. The first request of a UTC day
-    // appends that day to each stored history, and doing the two appends
-    // concurrently needs a third more live heap (128 MB instead of < 96 MB,
-    // measured) inside a container whose memory is shared with the market
-    // collector. Identities are a small read and still run alongside.
-    const nazarSection = service.get('nazar').then(summarizeStrategy).then(redactTradeHistory);
-    const kseniaSection = nazarSection.catch(() => undefined)
-      .then(() => service.get('ksenia').then(summarizeStrategy).then(withKseniaReportedTrade)
-        .then(withKseniaReportedWeek).then(redactTradeHistory));
+    // Each section is the strategy's PUBLISHED marketplace section: built
+    // from the COMPLETE history (`summarizeStrategy` reads every trade for
+    // `tradeStats`), Ksenia's overlays folded in, and `redactTradeHistory`
+    // LAST, so executions never leave this function. The day's heavy append
+    // no longer runs inside this request when a confirmed section already
+    // exists — see services/copyTrading/marketplaceSnapshot.ts for why the
+    // cards hung and how this keeps them from hanging.
+    // Nazar, THEN Ksenia — never both at once: two concurrent appends need a
+    // third more live heap (128 MB instead of < 96 MB, measured) inside a
+    // container whose memory is shared with the market collector.
+    // Identities are a small read and still run alongside.
+    const nazarSection = snapshots.section('nazar');
+    const kseniaSection = nazarSection.catch(() => undefined).then(() => snapshots.section('ksenia'));
     const results = await Promise.allSettled([
       nazarSection,
       kseniaSection,
@@ -105,11 +99,9 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     router.get(`/copy-trading/${strategy}`, requireAuth(prisma), async (_req, res) => {
       res.setHeader('Cache-Control', 'no-store');
       try {
-        const summary = summarizeStrategy(await service.get(strategy));
         // The per-strategy endpoint is a direct link to the same data, so it
-        // redacts on exactly the same terms — and last, for the same reason.
-        res.json(redactTradeHistory(strategy === 'ksenia'
-          ? withKseniaReportedWeek(withKseniaReportedTrade(summary)) : summary));
+        // is built by the same pipeline and redacts on exactly the same terms.
+        res.json(marketplaceSection(strategy, await service.get(strategy)));
       }
       catch (error) {
         console.error(`[copy-trading] strategy "${strategy}" unavailable: `

@@ -14,7 +14,7 @@ do with Copy Trading.
 
 | # | Rule | Enforced by |
 |---|------|-------------|
-| 1 | **Loading can never be eternal.** «Загрузка…» is allowed only while a real request is in flight. The moment an attempt ends — for any reason, including reasons that are not a response — the viewer is owed real figures, last-good figures flagged stale, or an honest «Данные недоступны». | `copyTradingCriticalPath.test.ts` → `noEternalLoading`, applied at every step of every case, with the clock held still. `scripts/qa-copy-never-loading.cjs` in a browser. |
+| 1 | **Loading can never be eternal.** «Загрузка…» is allowed only while a real request is in flight. The moment an attempt ends — for any reason, including reasons that are not a response — the viewer is owed real figures, last-good figures flagged stale, or an honest «Данные недоступны». That includes the metrics themselves: a skeleton bar only while the request is in flight, a visible «—» once it is over (`MetricPendingContext` in `LiveMetric.tsx`). | `copyTradingCriticalPath.test.ts` → `noEternalLoading`, applied at every step of every case, with the clock held still. `copyPerformancePeriods.test.ts` (skeleton only in flight). `scripts/qa-copy-never-loading.cjs` and `qa-copy-performance-periods.cjs` (503 and 15 s abort) in a browser. |
 | 2 | **The session state machine is complete**: cold load, late token, mid-flight session change, logout, another login, StrictMode double mount, route return, focus. | `copyTradingCriticalPath.test.ts` cases 5–13, `copyMarketplaceSettles.test.ts`, `copyFirstLoad.test.ts`. |
 | 3 | **A failed prefetch never blocks a visit.** A success may be reused for 30s; a failure may not be reused at all. | Critical path case 7, `copyMarketplaceRetry.test.ts`, browser scenario 06. |
 | 4 | **Last-good data survives a later failure.** Session-scoped, re-validated on read, cleared on logout. | Critical path cases 11 and 13, `copyMarketplaceCache.test.ts`, `qa-copy-last-good-browser.cjs`. |
@@ -29,6 +29,9 @@ do with Copy Trading.
 | 13 | **One new closed trade per strategy per UTC calendar day**, from `DAILY_PROGRESSION_EFFECTIVE_FROM`. Never 0, never 2. A repeat request on the same day adds none; an N-day gap adds exactly N, one per missed day; no day before that date is rewritten. Every ROI, PnL, win rate, Sharpe, Sortino, chart and daily result is read off that same ledger. | `dailyProgression.test.ts`, `qa-copy-daily-progression.cjs`. |
 | 14 | **Nazar's and Ksenia's executions reach nobody.** Not a subscriber, not a copier, not a favourite, not a large deposit — the server sends none and the «Сделки» tab is a locked state keyed on the strategy, never on the viewer or on a loaded payload. No public route may serve a trade row. | `tradeHistoryVisibility.test.ts` (including a sweep of every public GET enumerated off both routers), `copyHiddenTradeHistory.test.ts`, `qa-copy-cards-trades-avatar.cjs`, `qa-copy-daily-progression.cjs`. |
 | 15 | **No service vocabulary on a customer-facing surface.** «по данным управляющего», «за отчётную неделю», `OWNER_REPORTED`, "synthetic", "modeled" and the like never reach a rendered string. | `copyCustomerFacingWording.test.ts` (TypeScript AST over every Copy Trading UI file). |
+| 16 | **The marketplace never waits for a day's append.** Each strategy's finished wire section is published beside its ledger row (`<ledger id>:marketplace`). A restarted process serves it without replaying history; a new UTC day answers at once with the last confirmed day while the append runs after the response, one strategy at a time; a process that did the day's work in ≤ 10 s may wait for it, never longer. The refresh yields the event loop between its heavy steps. | `marketplaceSnapshot.test.ts` (append held forever → 200 in < 2 s over real HTTP; yields mutation-checked), `qa-copy-performance-periods.cjs` scenario B (45 s append → cards in 233 ms). |
+| 17 | **«Эффективность» is the selected period's own.** Every figure is that period's slice of the one ledger; card, profile, chart, economics and the monthly table agree; a new trade reaches 7D, 30D, 90D and ALL, each re-derived from its own window. `∞` only for a real zero denominator (no losing trade / no losing day), never a made-up finite number. | `copyPeriodProgression.test.ts` (day N → N+1 through the real service path), `copyPerformancePeriods.test.ts`, `qa-copy-performance-periods.cjs` scenario A. |
+| 18 | **Language changes words, never figures.** The block's labels are `copyPerformance.*` keys in all seven dictionaries; ROI, P&L and USDT are the same in every language; switching language sends no request and changes no number. | `copyPerformancePeriods.test.ts`, `i18nLanguageChunks.test.ts`. |
 
 ---
 
@@ -42,6 +45,13 @@ Taken on this repository, cold process, in-memory scenario table:
 | Ksenia `service.get` | ~1207 ms | ~0 ms |
 | Post-processing (summarise + overlays + redact) | ~1.4 / ~7.8 ms | ~1.1 / ~5.4 ms |
 | Payload on the wire | ~196 KB / ~194 KB | same |
+
+**Production is not this machine.** The first marketplace request of
+2026-09-28 took **42.29 s** on production (PR #307's log): the API shares a
+free 0.1-CPU container with the collector. Per phase on one core: Nazar
+decode 107 ms, append 657 ms, re-encode 252 ms, presentation replay 1 459 ms;
+Ksenia decode 175, append 727, re-encode 361, response 182 ms. That is why
+invariant 16 moved the day's work off the request path.
 
 The generation is synchronous CPU work, so `Promise.allSettled` does not
 overlap it and worker threads would be the only thing that could.
@@ -108,13 +118,18 @@ in as a real account.
    closed-trade total is on the Statistics tab, where «hidden is not
    zero» is proven instead.
 9. The profile's 7D range ends on **today**, and the newest closed trade
-   in the ledger is today's — exactly one per strategy per UTC day.
+   in the ledger is today's — exactly one per strategy per UTC day. On the
+   first visit after 00:00 UTC it may end on yesterday for as long as the
+   day's append takes; a refresh a minute later must show today.
+10. In each profile, press 7 д., 30 д., 90 д. and Всё время: ROI, P&L
+    мастера, P&L подписчиков and «Всего сделок» change with every press, and
+    every label in «Эффективность» is Russian except ROI, P&L and USDT.
 
 If 2, 3 or 4 fails while 6 and 7 show a healthy response, the payload is
 being refused by the client: capture the response body and run it through
 `validStrategy` before changing anything.
 
-**A deploy is not verified until all nine have been done by hand.** "CI is
+**A deploy is not verified until all ten have been done by hand.** "CI is
 green" is not a substitute, and has been wrong about this page before.
 
 ---

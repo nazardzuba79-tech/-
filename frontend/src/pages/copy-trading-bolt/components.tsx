@@ -46,7 +46,7 @@ import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../
 import { VISIBLE_TRADE_ROWS } from '../../lib/copyMarketplaceStore';
 import { HIDDEN_TRADE_HISTORY_MESSAGE, tradeHistoryIsHidden } from '../../lib/copyMarketplacePrivacy';
 import { useCopyMarketplace } from '../../lib/useCopyMarketplace';
-import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
+import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, periodRatioFacts, type PeriodRatioFacts, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
 import { dailyReturnChart } from '../../lib/dailyReturnChart';
 import { publicSignedUsdt, publicUsdtNumber } from '../../lib/copyTradingMoney';
 import { demoChartData, selectDemoPerformance } from './demoPerformance';
@@ -58,7 +58,8 @@ import { CopyDepositDialog } from './CopyDepositDialog';
 import { MonthlyPerformanceLauncher } from './CopyMonthlyPerformanceModal';
 import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
 import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
-import { LiveMetric } from './LiveMetric';
+import { LiveMetric, MetricPendingContext } from './LiveMetric';
+import { useLanguage, type Key } from '../../lib/i18n';
 import './LockedTraderList.css';
 import { lockedCatalogueTraders } from './lockedCatalogue';
 
@@ -153,6 +154,20 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
   }
   if (visual.mark) return <div className={`${className} avatar-art`}><TraderAvatarArt traderId={trader.id} /></div>;
   return <div className={className} style={visual.category === 'initials' ? { background: visual.background, color: visual.accent } : undefined}>{trader.initials}</div>;
+}
+
+/**
+ * «Загрузка…» is allowed only while a real request is in flight.
+ *
+ * For Nazar and Ksenia that is exactly: this visit has asked, has not been
+ * answered, and has nothing confirmed to show meanwhile. Once the attempt is
+ * over — real figures, last-good figures, or nothing — a missing figure is an
+ * honest «—», never a skeleton. Other traders need no request at all.
+ */
+function useFiguresPending(traderId: string): boolean | undefined {
+  const marketplace = useCopyMarketplace();
+  if (traderId !== nazarTrader.id && traderId !== 'VX-KSENIA') return undefined;
+  return !marketplace.settled && !marketplace[traderId === nazarTrader.id ? 'nazar' : 'ksenia'];
 }
 
 /** Explain the unchanged deposit requirement only after an explicit Copy
@@ -273,7 +288,9 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
   const sharpe = selectedMetrics?.sharpe;
   const drawdown = selectedMetrics?.maximumDrawdown;
   const winRate = selectedMetrics && 'winRate' in selectedMetrics ? selectedMetrics.winRate : undefined;
+  const pending = useFiguresPending(trader.id);
   return (
+    <MetricPendingContext.Provider value={pending}>
     <article className={`trader-card ${isNazara ? 'trader-card-nazara' : ''} ${trader.vip ? 'trader-card-vip' : ''} ${visual.highlight ? `trader-card-highlight-${visual.highlight}` : ''}`} data-trader-id={trader.id} onClick={() => onOpen(trader)}>
       <div className="card-topline">
         <div className="card-identity">
@@ -322,6 +339,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <CopyButton trader={trader} compact />
       </div>
     </article>
+    </MetricPendingContext.Provider>
   );
 }
 
@@ -513,29 +531,61 @@ function DailyReturnChart({ data }: { data?: SyntheticPeriodAnalytics }) {
   );
 }
 
-function MetricsPanel({ metrics, period, compact = false }: { metrics: ProfileMetrics; period: Period; compact?: boolean }) {
-  const all = period === 'ALL';
-  const rows: [string, string, string?][] = [
-    [all ? 'All-Time ROI' : 'ROI', formatPercent(metrics.roi), roiClass(metrics.roi)],
-    [all ? 'All-Time PnL' : 'Trader PnL', signedUsd(metrics.pnl), roiClass(metrics.pnl)],
-    ['Win Rate', compact ? `${numberLabel(metrics.winRate, 1)}%` : unsignedPercent(metrics.winRate)],
-    ['Max Drawdown', unsignedPercent(metrics.maximumDrawdown)],
-    ['Average P/L', signedUsd(metrics.averagePnl), roiClass(metrics.averagePnl)],
-    ['Profit Factor', numberLabel(metrics.profitFactor)],
-    ['Weekly Trades', numberLabel(metrics.averageTradesPerWeek, 1)],
-    ['Average Holding', durationLabel(metrics.averageHoldingTimeMinutes)],
-    ['Volatility', unsignedPercent(metrics.annualizedVolatility)],
-    ['Sharpe Ratio', numberLabel(metrics.sharpe)],
-    ['Sortino Ratio', numberLabel(metrics.sortino)],
-    ['Total Trades', numberLabel(metrics.totalTrades, 0)],
-    ['Winning Trades', numberLabel(metrics.winningTrades, 0), 'positive'],
-    ['Losing Trades', numberLabel(metrics.losingTrades, 0), 'negative'],
-    [all ? 'Total Trading Days' : 'Trading Days', numberLabel(metrics.tradingDays, 0)],
+/** Holding time in the viewer's language. The figure itself is unchanged. */
+function localizedDuration(minutes: number, t: ReturnType<typeof useLanguage>['t']): string {
+  if (!Number.isFinite(minutes)) return '—';
+  if (minutes >= 1_440) return t('copyPerformance.duration.days', { d: Math.floor(minutes / 1_440), h: Math.round(minutes % 1_440 / 60) });
+  if (minutes >= 60) return t('copyPerformance.duration.hours', { h: Math.floor(minutes / 60), m: Math.round(minutes % 60) });
+  return t('copyPerformance.duration.minutes', { m: Math.round(minutes) });
+}
+
+export function periodLabelKey(period: Period): Key {
+  return `copyPerformance.period.${period}` as Key;
+}
+
+/**
+ * «Эффективность» — every figure is the SELECTED period's own.
+ *
+ * It used to be fed the ALL-time slice for Nazar and Ksenia whatever period
+ * was selected, so pressing 7Д/30Д/90Д changed the chart and nothing here.
+ * Now the caller passes the period's slice of the one ledger, and this only
+ * formats it. Labels come from the dictionary: switching language changes
+ * words, never a number. ROI, P&L and USDT are the same in every language.
+ */
+function MetricsPanel({ metrics, period, facts }: { metrics: ProfileMetrics; period: Period; facts?: PeriodRatioFacts }) {
+  const { t } = useLanguage();
+  const rows: { id: string; label: string; value: string; className?: string; title?: string }[] = [
+    { id: 'roi', label: t('copyPerformance.roi'), value: formatPercent(metrics.roi), className: roiClass(metrics.roi) },
+    { id: 'masterPnl', label: t('copyPerformance.masterPnl'), value: signedUsd(metrics.pnl), className: roiClass(metrics.pnl) },
+    { id: 'followersPnl', label: t('copyPerformance.followersPnl'), value: signedUsd(metrics.followerPnl), className: roiClass(metrics.followerPnl) },
+    { id: 'winRate', label: t('copyPerformance.winRate'), value: unsignedPercent(metrics.winRate),
+      title: facts?.breakevenExcluded ? t('copyPerformance.winRateNote') : undefined },
+    { id: 'maxDrawdown', label: t('copyPerformance.maxDrawdown'), value: unsignedPercent(metrics.maximumDrawdown) },
+    { id: 'averagePnl', label: t('copyPerformance.averagePnl'), value: signedUsd(metrics.averagePnl), className: roiClass(metrics.averagePnl) },
+    { id: 'profitFactor', label: t('copyPerformance.profitFactor'),
+      value: facts?.profitFactorUnbounded ? '∞' : numberLabel(metrics.profitFactor),
+      title: facts?.profitFactorUnbounded ? t('copyPerformance.noLosingTrades') : undefined },
+    { id: 'tradesPerWeek', label: t('copyPerformance.tradesPerWeek'), value: numberLabel(metrics.averageTradesPerWeek, 1) },
+    { id: 'holdingTime', label: t('copyPerformance.holdingTime'), value: localizedDuration(metrics.averageHoldingTimeMinutes, t) },
+    { id: 'volatility', label: t('copyPerformance.volatility'), value: unsignedPercent(metrics.annualizedVolatility) },
+    { id: 'sharpe', label: t('copyPerformance.sharpe'), value: numberLabel(metrics.sharpe) },
+    { id: 'sortino', label: t('copyPerformance.sortino'),
+      value: facts?.sortinoUnbounded ? '∞' : numberLabel(metrics.sortino),
+      title: facts?.sortinoUnbounded ? t('copyPerformance.noLosingDays') : undefined },
+    ...(facts ? [{ id: 'lastTrade', label: t('copyPerformance.lastTrade'),
+      value: facts.lastTradeDate ? formatSyntheticHistoryDate(facts.lastTradeDate) : '—' }] : []),
+    { id: 'totalTrades', label: t('copyPerformance.totalTrades'), value: numberLabel(metrics.totalTrades, 0) },
+    { id: 'winningTrades', label: t('copyPerformance.winningTrades'), value: numberLabel(metrics.winningTrades, 0), className: 'positive' },
+    { id: 'losingTrades', label: t('copyPerformance.losingTrades'), value: numberLabel(metrics.losingTrades, 0), className: 'negative' },
   ];
+  const windowLabel = period === 'ALL'
+    ? `${t('copyPerformance.period.ALL')} · ${t('copyPerformance.windowAll')}`
+    : t('copyPerformance.windowRolling', { period: t(periodLabelKey(period)) });
   return (
-    <section className="profile-panel profile-metrics-panel">
-      <div className="profile-panel-heading"><div><span>{period === 'ALL' ? 'ALL · SINCE INCEPTION' : `${period} · ROLLING WINDOW`}</span><h2>Performance</h2></div><BarChart3 size={20} /></div>
-      <div className="profile-metrics-grid">{rows.filter(([label]) => !compact || !['Winning Trades', 'Losing Trades', 'Total Trading Days', 'Trading Days', 'Weekly Trades'].includes(label)).map(([label, value, className]) => <div key={label}><span>{label}</span><strong className={className}><LiveMetric value={value} /></strong></div>)}</div>
+    <section className="profile-panel profile-metrics-panel" data-period={period}>
+      <div className="profile-panel-heading"><div><span>{windowLabel}</span><h2>{t('copyPerformance.title')}</h2></div><BarChart3 size={20} /></div>
+      <div className="profile-metrics-grid">{rows.map(row => <div key={row.id} data-metric={row.id} title={row.title}><span>{row.label}</span><strong className={row.className}><LiveMetric value={row.value} /></strong></div>)}</div>
+      <p className="profile-metrics-units">{t('copyPerformance.units')}</p>
     </section>
   );
 }
@@ -728,11 +778,14 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const periodData = useMemo(() => detailsReady && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [detailsReady, liveSynthetic, period]);
   const strategyData = useMemo(() => detailsReady && simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [detailsReady, simpleReturn, liveSynthetic]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
+  const facts = useMemo(() => periodData ? periodRatioFacts(periodData) : undefined, [periodData]);
   const demoAll = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? null : selectDemoPerformance(trader, 'ALL');
   const allTradingDays = liveSynthetic?.economics?.periods.ALL.activeTradingDays ?? liveSynthetic?.analytics.allTime.tradingDays ?? demoAll?.tradingDays ?? trader.activeMonths * 30;
   const heroDrawdown = liveSynthetic?.economics?.periods.ALL.maximumDrawdown ?? liveSynthetic?.analytics.allTime.maximumDrawdown ?? demoAll?.maximumDrawdown ?? trader.drawdown;
   const heroAum = liveSynthetic ? liveSynthetic.followers.filter(follower => follower.active).reduce((sum, follower) => sum + follower.allocatedCapital, 0) : trader.aum;
   const heroFollowers = liveSynthetic ? liveSynthetic.followers.filter(follower => follower.active).length : trader.copiers;
+  const pending = useFiguresPending(trader.id);
+  const { t } = useLanguage();
 
   useEffect(() => {
     setDetailsReady(false);
@@ -745,6 +798,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   }, [trader.id]);
 
   return (
+    <MetricPendingContext.Provider value={pending}>
     <main className="page-shell profile-page trader-profile-page">
       <button className="back-button" onClick={onBack}><ArrowLeft size={16} /> Назад к копитрейдингу</button>
       <section className="trader-profile-hero">
@@ -763,17 +817,18 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
 
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
-        <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{item}</button>)}</div>
+        <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} data-period={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{t(periodLabelKey(item))}</button>)}</div>
       </nav>
 
       {!detailsReady ? <div className="profile-detail-loading" role="status" aria-live="polite"><span>Загрузка аналитики…</span></div> : activeTab === 'statistics' ? <>
         <div className="profile-analytics-workspace">
-          <aside><MetricsPanel metrics={strategyData ?? metrics} period={strategyData ? 'ALL' : period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} strategyMainMarkets={liveSynthetic?.mainMarkets} /></aside>
+          <aside><MetricsPanel metrics={metrics} period={period} facts={facts} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} strategyMainMarkets={liveSynthetic?.mainMarkets} /></aside>
           <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyReturnChart data={periodData} /><MonthlyPerformanceLauncher synthetic={liveSynthetic} /></div>
         </div>
         <FollowersPanel trader={trader} metrics={metrics} synthetic={liveSynthetic} period={period} />
       </> : <TradesPanel trader={trader} periodData={periodData} />}
     </main>
+    </MetricPendingContext.Provider>
   );
 }
 

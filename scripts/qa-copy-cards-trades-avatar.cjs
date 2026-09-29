@@ -254,7 +254,9 @@ let server, browser;
         chartDrawn: !!root?.querySelector('.profile-chart-line'),
         dailyBars: root?.querySelectorAll('.daily-gain, .daily-loss').length ?? 0,
         metrics: [...(root?.querySelectorAll('.profile-metrics-grid > div') ?? [])]
-          .map(d => [d.querySelector('span')?.textContent?.trim(), d.querySelector('strong')?.textContent?.trim()]),
+          // Keyed by the metric, not by its label: the labels follow the
+          // viewer's language («Всего сделок», «% успешных сделок»).
+          .map(d => [d.getAttribute('data-metric'), d.querySelector('strong')?.textContent?.trim(), d.querySelector('span')?.textContent?.trim()]),
       };
     });
     await page.screenshot({ path: path.join(OUT, `w${width}-06-profile-statistics.png`) });
@@ -444,9 +446,9 @@ let server, browser;
       // trade-derived metrics, computed server-side from the full history.
       if (!stats.chartDrawn) finding(`${tag}: the performance chart is missing, so aggregates did not survive`);
       if (!stats.dailyBars) finding(`${tag}: the daily series is empty`);
-      const total = stats.metrics.find(([label]) => label === 'Total Trades');
+      const total = stats.metrics.find(([metric]) => metric === 'totalTrades');
       if (!total || !/[1-9]/.test(total[1] ?? '')) finding(`${tag}: Total Trades reads ${JSON.stringify(total)} — hidden must not be zero`);
-      const win = stats.metrics.find(([label]) => label === 'Win Rate');
+      const win = stats.metrics.find(([metric]) => metric === 'winRate');
       if (!win || !/[1-9]/.test(win[1] ?? '')) finding(`${tag}: Win Rate reads ${JSON.stringify(win)}`);
       if (p.hasHeading || p.headingCount) finding(`${tag}: the locked tab still has a heading/count — ${JSON.stringify(p.headingCount)}`);
       if (p.panelText !== 'Торговая информация этого трейдера скрыта') finding(`${tag}: the locked tab shows more than the one sentence — ${JSON.stringify(p.panelText)}`);
