@@ -71,6 +71,8 @@ export const listingConfigSchema = z.object({
    * created before profiles existed: they keep the original candles.
    */
   simulationProfile: z.enum(SIMULATION_PROFILES).optional(),
+  /** Persisted range model assigned on new INSERT; absent means the original shadows. */
+  wickModel: z.literal('NATURAL_V1').optional(),
 }).strict();
 
 export type ListingConfig = z.infer<typeof listingConfigSchema>;
@@ -129,13 +131,16 @@ export function withStableSeed(next: ListingConfig, previous: ListingConfig | nu
  * Profile stability. A new listing takes the profile of its creation
  * ordinal (#1 CALM_TREND, #2 IMPULSE_TREND, #3 PULLBACK_TREND,
  * #4 COMPRESSION_BREAKOUT, #5 CALM_TREND…); every later save keeps the
- * stored one, whatever the request carried. A listing stored without a
- * profile stays without one, so its candles never change.
+ * stored profile and wick model, whatever the request carried. A listing
+ * stored without either field keeps that absence and its original candles.
  */
 export function withStableProfile(next: ListingConfig, previous: ListingConfig | null, creationOrdinal: number | null): ListingConfig {
-  const { simulationProfile: _requested, ...rest } = next;
-  if (previous) return previous.simulationProfile ? { ...rest, simulationProfile: previous.simulationProfile } : rest;
-  return creationOrdinal === null ? rest : { ...rest, simulationProfile: profileForOrdinal(creationOrdinal) };
+  const { simulationProfile: _requested, wickModel: _requestedWicks, ...rest } = next;
+  if (previous) return { ...rest,
+    ...(previous.simulationProfile ? { simulationProfile: previous.simulationProfile } : {}),
+    ...(previous.wickModel ? { wickModel: previous.wickModel } : {}),
+  };
+  return creationOrdinal === null ? rest : { ...rest, simulationProfile: profileForOrdinal(creationOrdinal), wickModel: 'NATURAL_V1' };
 }
 
 /**
@@ -154,6 +159,7 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
   if (next.seed !== active.seed) throw new ListingValidationError('HISTORY_LOCKED', 'The seed of a published listing cannot change');
   if (next.initialPrice !== active.initialPrice) throw new ListingValidationError('HISTORY_LOCKED', 'The initial price of a published listing cannot change');
   if (next.simulationProfile !== active.simulationProfile) throw new ListingValidationError('HISTORY_LOCKED', 'The simulation profile of a published listing cannot change');
+  if (next.wickModel !== active.wickModel) throw new ListingValidationError('HISTORY_LOCKED', 'The wick model of a published listing cannot change');
   if (next.listingAt !== active.listingAt) {
     const activeAt = Date.parse(active.listingAt);
     // Moving the date is a postponement or an earlier opening of a market that has not opened yet.
@@ -177,6 +183,8 @@ export function listingSimulationConfig(config: ListingConfig): TestAssetConfig 
     initialPrice: Number(config.initialPrice),
     seed: config.seed,
     ...(config.simulationProfile ? { simulationProfile: config.simulationProfile } : {}),
+    ...(config.simulationProfile && config.wickModel === 'NATURAL_V1'
+      ? { naturalWicks: { futureFrom: Date.parse(config.listingAt) } } : {}),
   };
 }
 

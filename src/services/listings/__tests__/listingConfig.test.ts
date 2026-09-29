@@ -125,7 +125,7 @@ describe('public market of a published listing (computed on read)', () => {
   });
 });
 
-describe('simulation profile of a managed listing', () => {
+describe('simulation profile and wick policy of a managed listing', () => {
   const listingAt = Date.parse(config().listingAt);
   test('optional in the schema; only the four profiles are accepted', () => {
     expect(parseListingConfig(config()).simulationProfile).toBeUndefined();
@@ -134,17 +134,45 @@ describe('simulation profile of a managed listing', () => {
     }
     expect(code(() => parseListingConfig({ ...config(), simulationProfile: 'RANDOM' }))).toBe('INVALID_CONFIG');
   });
+  test('the wick model is optional; only NATURAL_V1 is accepted', () => {
+    expect(parseListingConfig(config())).not.toHaveProperty('wickModel');
+    const natural = config({ simulationProfile: 'IMPULSE_TREND', wickModel: 'NATURAL_V1' });
+    expect(parseListingConfig(natural)).toStrictEqual(natural);
+    expect(code(() => parseListingConfig({ ...config(), wickModel: 'NATURAL_V2' }))).toBe('INVALID_CONFIG');
+    expect(code(() => parseListingConfig({ ...config(), wickModel: null }))).toBe('INVALID_CONFIG');
+  });
   test('assigned once at creation by ordinal, then kept whatever a later request carries', () => {
-    expect([0, 1, 2, 3, 4, 5].map((n) => withStableProfile(config(), null, n).simulationProfile)).toEqual([
+    const listings = [0, 1, 2, 3, 4, 5].map((n) => withStableProfile(config(), null, n));
+    expect(listings.map((listing) => listing.simulationProfile)).toEqual([
       'CALM_TREND', 'IMPULSE_TREND', 'PULLBACK_TREND', 'COMPRESSION_BREAKOUT', 'CALM_TREND', 'IMPULSE_TREND',
     ]);
+    expect(listings.map((listing) => listing.wickModel)).toEqual(Array(6).fill('NATURAL_V1'));
     // A request cannot choose its own profile at creation…
-    expect(withStableProfile(config({ simulationProfile: 'COMPRESSION_BREAKOUT' }), null, 0).simulationProfile).toBe('CALM_TREND');
+    expect(withStableProfile(config({ simulationProfile: 'COMPRESSION_BREAKOUT' }), null, 0)).toMatchObject({
+      simulationProfile: 'CALM_TREND', wickModel: 'NATURAL_V1',
+    });
     // …nor change it on a later save.
     const created = withStableProfile(config(), null, 1);
     expect(withStableProfile(config({ name: 'Renamed', simulationProfile: 'CALM_TREND' }), created, null).simulationProfile).toBe('IMPULSE_TREND');
     // A listing stored before profiles existed keeps the original candles.
     expect('simulationProfile' in withStableProfile(config({ simulationProfile: 'PULLBACK_TREND' }), config(), null)).toBe(false);
+  });
+  test('without a creation ordinal, a request cannot opt a new config into either model field', () => {
+    expect(withStableProfile(config({ simulationProfile: 'CALM_TREND', wickModel: 'NATURAL_V1' }), null, null))
+      .toStrictEqual(config());
+  });
+  test.each([
+    { fields: 'neither field', previous: config() },
+    { fields: 'only the existing profile', previous: config({ simulationProfile: 'PULLBACK_TREND' }) },
+    { fields: 'only the stored wick model', previous: config({ wickModel: 'NATURAL_V1' }) },
+    { fields: 'both stored fields', previous: config({ simulationProfile: 'IMPULSE_TREND', wickModel: 'NATURAL_V1' }) },
+  ])('edits preserve $fields, including absence, regardless of the request or a supplied ordinal', ({ previous }) => {
+    for (const next of [
+      config({ name: 'Renamed' }),
+      config({ name: 'Renamed', simulationProfile: 'COMPRESSION_BREAKOUT', wickModel: 'NATURAL_V1' }),
+    ]) {
+      expect(withStableProfile(next, previous, 0)).toStrictEqual({ ...previous, name: 'Renamed' });
+    }
   });
   test('locked with the history after publish', () => {
     const active = config({ simulationProfile: 'IMPULSE_TREND' });
@@ -152,6 +180,26 @@ describe('simulation profile of a managed listing', () => {
     expect(code(() => checkPublishable(config(), active, NOW))).toBe('HISTORY_LOCKED');
     expect(code(() => checkPublishable(config({ simulationProfile: 'IMPULSE_TREND' }), config(), NOW))).toBe('HISTORY_LOCKED');
     expect(code(() => checkPublishable(config({ simulationProfile: 'IMPULSE_TREND', name: 'Renamed' }), active, NOW))).toBeNull();
+  });
+  test.each([NOW, listingAt + HOUR])('the published wick model cannot be added or removed at server time %s', (now) => {
+    const legacy = config({ simulationProfile: 'IMPULSE_TREND' });
+    const natural = config({ simulationProfile: 'IMPULSE_TREND', wickModel: 'NATURAL_V1' });
+    expect(code(() => checkPublishable(natural, legacy, now))).toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable(legacy, natural, now))).toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable({ ...natural, name: 'Renamed' }, natural, now))).toBeNull();
+    expect(code(() => checkPublishable({ ...legacy, name: 'Renamed' }, legacy, now))).toBeNull();
+  });
+  test('only a stored NATURAL_V1 model with a profile opts into natural wicks from listing time', () => {
+    for (const legacy of [config(), config({ simulationProfile: 'CALM_TREND' }), config({ wickModel: 'NATURAL_V1' })]) {
+      expect(listingSimulationConfig(legacy)).not.toHaveProperty('naturalWicks');
+    }
+    const natural = listingSimulationConfig(config({ simulationProfile: 'CALM_TREND', wickModel: 'NATURAL_V1' }));
+    expect(natural.simulationProfile).toBe('CALM_TREND');
+    expect(natural.naturalWicks).toStrictEqual({ futureFrom: listingAt });
+    const postponed = listingSimulationConfig(config({
+      simulationProfile: 'CALM_TREND', wickModel: 'NATURAL_V1', listingAt: '2026-10-03T09:30:00Z',
+    }));
+    expect(postponed.naturalWicks).toStrictEqual({ futureFrom: Date.parse('2026-10-03T09:30:00Z') });
   });
   test('the profile reaches the simulation: other candles, the same hour anchors', async () => {
     const plain = listingSimulationConfig(config());

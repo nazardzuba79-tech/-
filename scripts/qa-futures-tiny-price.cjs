@@ -96,6 +96,16 @@ async function viewport(width) {
     const buy = page.locator('.fo-submitPair .buy');
     await page.waitForFunction((expected) => document.querySelector('.fo-priceInputRow input')?.value === expected, PRICE);
     check(`${width}: automatic price is full decimal 0.0000001`, await price.inputValue() === PRICE);
+    const header = page.locator('.futures-ticker-bar .futures-primary-price > .price');
+    await header.waitFor({ state: 'visible' });
+    await page.waitForFunction((expected) => {
+      const header = document.querySelector('.futures-ticker-bar .futures-primary-price > .price');
+      return Array.from(header?.childNodes ?? []).filter(node => node.nodeType === Node.TEXT_NODE)
+        .map(node => node.textContent).join('').trim() === expected;
+    }, PRICE);
+    const headerPrice = await header.evaluate(element => Array.from(element.childNodes)
+      .filter(node => node.nodeType === Node.TEXT_NODE).map(node => node.textContent).join('').trim());
+    check(`${width}: positive header price is exactly 0.0000001`, headerPrice === PRICE && Number(headerPrice) > 0, { headerPrice });
     await quantity.fill(QUANTITY);
     await page.waitForFunction(() => !document.querySelector('.fo-submitPair .buy')?.disabled);
 
@@ -141,7 +151,7 @@ async function viewport(width) {
     check(`${width}: no horizontal overflow after tiny-price submission`, overflow <= 0);
     await price.scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(output, `tiny-price-${width}.png`) });
-    report.viewports.push({ width, accepted: true, exactPrice: draft.price, exactQuantity: draft.quantity, commandCount: commands.length, overflow });
+    report.viewports.push({ width, accepted: true, headerPrice, exactPrice: draft.price, exactQuantity: draft.quantity, commandCount: commands.length, overflow });
   } catch (error) {
     if (activePage && !activePage.isClosed()) await activePage.screenshot({ path: path.join(output, `failure-${width}.png`), fullPage: true }).catch(() => {});
     throw error;
