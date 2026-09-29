@@ -1,0 +1,90 @@
+name: Admin Listings (managed simulated markets)
+on:
+  pull_request:
+    paths:
+      - 'src/services/listings/**'
+      - 'src/services/testMarkets/**'
+      - 'src/services/OrderService.ts'
+      - 'src/services/WalletPortfolioService.ts'
+      - 'src/api/routes/adminListings.ts'
+      - 'src/index.ts'
+      - 'workers/market-edge/**'
+      - 'frontend/src/lib/marketEdge.ts'
+      - 'frontend/src/lib/nrxMarket.ts'
+      - 'frontend/src/lib/testMarket*.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/pages/TradePage.tsx'
+      - 'frontend/src/pages/markets-bolt/**'
+      - 'frontend/src/pages/admin/**'
+      - 'frontend/src/components/TestMarketTerminal.tsx'
+      - 'frontend/src/components/OrderForm.tsx'
+      - 'frontend/src/components/CryptoIcon.tsx'
+      - 'frontend/vite.config.ts'
+      - 'scripts/qa-admin-listings.cjs'
+      - 'scripts/allocate-listing-owner.cjs'
+      - '.github/workflows/admin-listings.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: voltex_listing_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_listing_test
+      DIRECT_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_listing_test
+      VOLTEX_LISTING_TEST_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_listing_test
+      JWT_SECRET: ci-only-listing-tests-not-a-secret
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix workers/market-edge --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - name: Config core, admin routes, trading gates, owner allocation (disposable PostgreSQL)
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/services/listings/__tests__/listingConfig.test.ts
+          src/services/listings/__tests__/tradingGates.test.ts
+          src/services/listings/__tests__/ownerAllocation.pg.test.ts
+          src/api/routes/__tests__/adminListings.test.ts
+          frontend/src/lib/__tests__/managedListings.test.ts
+          frontend/src/lib/__tests__/testMarkets.test.ts
+      - name: Durable Object store on real workerd (Miniflare)
+        run: npm run test:listings --prefix workers/market-edge
+      - name: Existing Worker contract
+        run: node --experimental-default-type=module workers/market-edge/test.mjs
+      - run: npm run build
+      - run: cd frontend && npx tsc -b
+      - name: Production bundle pointed at the local Worker
+        run: cd frontend && npx vite build --outDir ../.listings-qa-dist --emptyOutDir
+        env:
+          VITE_MARKET_EDGE_URL: http://127.0.0.1:8787
+      - name: Install browser
+        run: |
+          npm install --prefix /tmp/listings-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/listings-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Create → Preview → Publish → open from Markets, no redeploy
+        run: node scripts/qa-admin-listings.cjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-qa/node_modules/playwright
+          QA_FRONTEND_DIST: .listings-qa-dist
+          QA_OUTPUT: /tmp/listings-qa-report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-listings-qa
+          path: /tmp/listings-qa-report
+          if-no-files-found: ignore
