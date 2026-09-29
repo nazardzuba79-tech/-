@@ -241,7 +241,7 @@ test.each([
     // Follow-up: TP/SL uses the round plus, and decimal text drafts are fail-closed:
     // comma decimals normalize to a dot, unsupported syntax is preserved as invalid
     // instead of being silently rewritten into another executable number.
-    "2545d373aa9acfaf24a7ade254d64f15bd883c0a5c3943aae74917c001d86a87"
+    "0fa57c8e5477c4c1675db3bdb90d723155a09718caef853a1f439fa1d5085774"
   ],
   [
     "components/FuturesAccountSummary.tsx",
