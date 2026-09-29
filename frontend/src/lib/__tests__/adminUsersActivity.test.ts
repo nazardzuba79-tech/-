@@ -30,6 +30,10 @@ function load(file: string): any {
   const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
+    if (name.endsWith('/adminReadApi')) return {
+      getAdminGateMe: (signal?: AbortSignal) => api.getMe?.(signal),
+      getAdminUsersAbortable: (signal?: AbortSignal) => api.getAdminUsers(undefined, signal),
+    };
     if (name.endsWith('/lib/api') || name === './api') return { api, getToken: () => 'test-only', onSessionChange: () => () => {}, ApiError, API_BASE: '/api/v1' };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
   });
