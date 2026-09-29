@@ -1,26 +1,26 @@
 {
-  "startedAt": "2026-09-21T16:50:48.905Z",
+  "startedAt": "2026-09-29T07:59:50.886Z",
   "widths": {
     "1920x1080": {
       "futures": {
         "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "6px 16px"
         },
         "stripClipped": false,
@@ -28,28 +28,183 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
-        "smallTargets": 23,
+        "smallTargetDetails": [
+          {
+            "text": "5m",
+            "cls": "chart-tab ",
+            "width": 29,
+            "height": 25
+          },
+          {
+            "text": "15m",
+            "cls": "chart-tab ",
+            "width": 36,
+            "height": 25
+          },
+          {
+            "text": "1h",
+            "cls": "chart-tab active",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "4h",
+            "cls": "chart-tab ",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "1d",
+            "cls": "chart-tab ",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "1w",
+            "cls": "chart-tab ",
+            "width": 28,
+            "height": 25
+          },
+          {
+            "text": "Тип графика: Свечи",
+            "cls": "chart-tool-btn chart-menu-trigger chart-type-trigger",
+            "width": 44,
+            "height": 25
+          },
+          {
+            "text": "Индикаторы1",
+            "cls": "chart-tool-btn chart-menu-trigger chart-indicators-trigger",
+            "width": 141,
+            "height": 25
+          },
+          {
+            "text": "Курсоры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты линий тренда",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты Фибоначчи",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Паттерны",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Прогнозирование и измерения",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Геометрические фигуры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Текст и заметки",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Купить / Продать",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Купить",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Продать",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Перевести",
+            "cls": "fo-availTransfer",
+            "width": 18,
+            "height": 18
+          },
+          {
+            "text": "0%",
+            "cls": "",
+            "width": 24,
+            "height": 20
+          },
+          {
+            "text": "25%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "50%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "75%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "100%",
+            "cls": "",
+            "width": 32,
+            "height": 20
+          },
+          {
+            "text": "Скрыть баланс",
+            "cls": "",
+            "width": 24,
+            "height": 24
+          }
+        ],
+        "smallTargets": 25,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
         "pageErrors": []
       },
       "spot": {
         "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "6px 16px"
         },
         "stripClipped": false,
@@ -57,28 +212,206 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
-        "smallTargets": 23,
-        "pageErrors": []
+        "smallTargetDetails": [
+          {
+            "text": "Цена ⇅",
+            "cls": "",
+            "width": 76,
+            "height": 16
+          },
+          {
+            "text": "24ч % ⇅",
+            "cls": "",
+            "width": 66,
+            "height": 16
+          },
+          {
+            "text": "5m",
+            "cls": "chart-tab ",
+            "width": 37,
+            "height": 22
+          },
+          {
+            "text": "15m",
+            "cls": "chart-tab ",
+            "width": 42,
+            "height": 22
+          },
+          {
+            "text": "1h",
+            "cls": "chart-tab active",
+            "width": 32,
+            "height": 22
+          },
+          {
+            "text": "4h",
+            "cls": "chart-tab ",
+            "width": 34,
+            "height": 22
+          },
+          {
+            "text": "1d",
+            "cls": "chart-tab ",
+            "width": 32,
+            "height": 22
+          },
+          {
+            "text": "1w",
+            "cls": "chart-tab ",
+            "width": 34,
+            "height": 22
+          },
+          {
+            "text": "Свечи",
+            "cls": "chart-tool-btn active",
+            "width": 50,
+            "height": 22
+          },
+          {
+            "text": "Линия",
+            "cls": "chart-tool-btn ",
+            "width": 52,
+            "height": 22
+          },
+          {
+            "text": "Область",
+            "cls": "chart-tool-btn ",
+            "width": 61,
+            "height": 22
+          },
+          {
+            "text": "MA200",
+            "cls": "chart-tool-btn active",
+            "width": 54,
+            "height": 22
+          },
+          {
+            "text": "Bollinger",
+            "cls": "chart-tool-btn ",
+            "width": 62,
+            "height": 22
+          },
+          {
+            "text": "RSI",
+            "cls": "chart-tool-btn ",
+            "width": 31,
+            "height": 22
+          },
+          {
+            "text": "MACD",
+            "cls": "chart-tool-btn ",
+            "width": 48,
+            "height": 22
+          },
+          {
+            "text": "Курсоры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты линий тренда",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты Фибоначчи",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Паттерны",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Прогнозирование и измерения",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Геометрические фигуры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Текст и заметки",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Скрыть инструменты",
+            "cls": "drawing-rail-toggle",
+            "width": 43,
+            "height": 24
+          },
+          {
+            "text": "0%",
+            "cls": "slider-step active buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "25%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "50%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "75%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "100%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          }
+        ],
+        "smallTargets": 28,
+        "mobileTabs": [],
+        "visibleSpotStats": 6,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "desktopCta": {
+          "height": 50,
+          "bottom": 656,
+          "visible": true
+        }
       },
       "cfd": {
         "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "6px 16px"
         },
         "stripClipped": false,
@@ -86,119 +419,82 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
+        "smallTargetDetails": [
+          {
+            "text": "Цена ⇅",
+            "cls": "cfd-align-right",
+            "width": 75,
+            "height": 14
+          },
+          {
+            "text": "24ч % ⇅",
+            "cls": "cfd-align-right",
+            "width": 60,
+            "height": 14
+          },
+          {
+            "text": "5m",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "15m",
+            "cls": "",
+            "width": 40,
+            "height": 26
+          },
+          {
+            "text": "1h",
+            "cls": "active",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "4h",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "1d",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          }
+        ],
         "smallTargets": 7,
-        "pageErrors": []
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": true,
+        "pageErrors": [],
+        "desktopCta": {
+          "height": 50,
+          "bottom": 878,
+          "visible": true
+        }
       }
     },
     "1440x900": {
       "futures": {
         "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
-          "pad": "6px 16px"
-        },
-        "stripClipped": false,
-        "overflowX": 0,
-        "overlaps": [],
-        "hasNaN": false,
-        "hasUndefined": false,
-        "smallTargets": 23,
-        "pageErrors": []
-      },
-      "spot": {
-        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
-        "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
-          "--color-buy": "#0ecb81",
-          "--color-sell": "#f6465d",
-          "--panel": "#10141e",
-          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
-        },
-        "strip": {
-          "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
-          "pad": "6px 16px"
-        },
-        "stripClipped": false,
-        "overflowX": 0,
-        "overlaps": [],
-        "hasNaN": false,
-        "hasUndefined": false,
-        "smallTargets": 23,
-        "pageErrors": []
-      },
-      "cfd": {
-        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
-        "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
-          "--color-buy": "#0ecb81",
-          "--color-sell": "#f6465d",
-          "--panel": "#10141e",
-          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
-        },
-        "strip": {
-          "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
-          "pad": "6px 16px"
-        },
-        "stripClipped": false,
-        "overflowX": 0,
-        "overlaps": [],
-        "hasNaN": false,
-        "hasUndefined": false,
-        "smallTargets": 7,
-        "pageErrors": []
-      }
-    },
-    "1366x768": {
-      "futures": {
-        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
-        "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
-          "--color-buy": "#0ecb81",
-          "--color-sell": "#f6465d",
-          "--panel": "#10141e",
-          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
-        },
-        "strip": {
-          "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "6px 12px"
         },
         "stripClipped": false,
@@ -206,28 +502,183 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
-        "smallTargets": 23,
+        "smallTargetDetails": [
+          {
+            "text": "5m",
+            "cls": "chart-tab ",
+            "width": 29,
+            "height": 25
+          },
+          {
+            "text": "15m",
+            "cls": "chart-tab ",
+            "width": 36,
+            "height": 25
+          },
+          {
+            "text": "1h",
+            "cls": "chart-tab active",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "4h",
+            "cls": "chart-tab ",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "1d",
+            "cls": "chart-tab ",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "1w",
+            "cls": "chart-tab ",
+            "width": 28,
+            "height": 25
+          },
+          {
+            "text": "Тип графика: Свечи",
+            "cls": "chart-tool-btn chart-menu-trigger chart-type-trigger",
+            "width": 44,
+            "height": 25
+          },
+          {
+            "text": "Индикаторы1",
+            "cls": "chart-tool-btn chart-menu-trigger chart-indicators-trigger",
+            "width": 141,
+            "height": 25
+          },
+          {
+            "text": "Курсоры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты линий тренда",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты Фибоначчи",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Паттерны",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Прогнозирование и измерения",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Геометрические фигуры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Текст и заметки",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Купить / Продать",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Купить",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Продать",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Перевести",
+            "cls": "fo-availTransfer",
+            "width": 18,
+            "height": 18
+          },
+          {
+            "text": "0%",
+            "cls": "",
+            "width": 24,
+            "height": 20
+          },
+          {
+            "text": "25%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "50%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "75%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "100%",
+            "cls": "",
+            "width": 32,
+            "height": 20
+          },
+          {
+            "text": "Скрыть баланс",
+            "cls": "",
+            "width": 24,
+            "height": 24
+          }
+        ],
+        "smallTargets": 25,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
         "pageErrors": []
       },
       "spot": {
         "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "6px 16px"
         },
         "stripClipped": false,
@@ -235,28 +686,206 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
-        "smallTargets": 23,
-        "pageErrors": []
+        "smallTargetDetails": [
+          {
+            "text": "Цена ⇅",
+            "cls": "",
+            "width": 76,
+            "height": 16
+          },
+          {
+            "text": "24ч % ⇅",
+            "cls": "",
+            "width": 66,
+            "height": 16
+          },
+          {
+            "text": "5m",
+            "cls": "chart-tab ",
+            "width": 37,
+            "height": 22
+          },
+          {
+            "text": "15m",
+            "cls": "chart-tab ",
+            "width": 42,
+            "height": 22
+          },
+          {
+            "text": "1h",
+            "cls": "chart-tab active",
+            "width": 32,
+            "height": 22
+          },
+          {
+            "text": "4h",
+            "cls": "chart-tab ",
+            "width": 34,
+            "height": 22
+          },
+          {
+            "text": "1d",
+            "cls": "chart-tab ",
+            "width": 32,
+            "height": 22
+          },
+          {
+            "text": "1w",
+            "cls": "chart-tab ",
+            "width": 34,
+            "height": 22
+          },
+          {
+            "text": "Свечи",
+            "cls": "chart-tool-btn active",
+            "width": 50,
+            "height": 22
+          },
+          {
+            "text": "Линия",
+            "cls": "chart-tool-btn ",
+            "width": 52,
+            "height": 22
+          },
+          {
+            "text": "Область",
+            "cls": "chart-tool-btn ",
+            "width": 61,
+            "height": 22
+          },
+          {
+            "text": "MA200",
+            "cls": "chart-tool-btn active",
+            "width": 54,
+            "height": 22
+          },
+          {
+            "text": "Bollinger",
+            "cls": "chart-tool-btn ",
+            "width": 62,
+            "height": 22
+          },
+          {
+            "text": "RSI",
+            "cls": "chart-tool-btn ",
+            "width": 31,
+            "height": 22
+          },
+          {
+            "text": "MACD",
+            "cls": "chart-tool-btn ",
+            "width": 48,
+            "height": 22
+          },
+          {
+            "text": "Курсоры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты линий тренда",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты Фибоначчи",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Паттерны",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Прогнозирование и измерения",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Геометрические фигуры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Текст и заметки",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Скрыть инструменты",
+            "cls": "drawing-rail-toggle",
+            "width": 43,
+            "height": 24
+          },
+          {
+            "text": "0%",
+            "cls": "slider-step active buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "25%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "50%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "75%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "100%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          }
+        ],
+        "smallTargets": 28,
+        "mobileTabs": [],
+        "visibleSpotStats": 6,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "desktopCta": {
+          "height": 50,
+          "bottom": 656,
+          "visible": true
+        }
       },
       "cfd": {
         "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "6px 16px"
         },
         "stripClipped": false,
@@ -264,30 +893,874 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
+        "smallTargetDetails": [
+          {
+            "text": "Цена ⇅",
+            "cls": "cfd-align-right",
+            "width": 75,
+            "height": 14
+          },
+          {
+            "text": "24ч % ⇅",
+            "cls": "cfd-align-right",
+            "width": 60,
+            "height": 14
+          },
+          {
+            "text": "5m",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "15m",
+            "cls": "",
+            "width": 40,
+            "height": 26
+          },
+          {
+            "text": "1h",
+            "cls": "active",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "4h",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "1d",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          }
+        ],
         "smallTargets": 7,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": true,
+        "pageErrors": [],
+        "desktopCta": {
+          "height": 50,
+          "bottom": 698,
+          "visible": true
+        }
+      }
+    },
+    "1366x768": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [
+          {
+            "text": "5m",
+            "cls": "chart-tab ",
+            "width": 29,
+            "height": 25
+          },
+          {
+            "text": "15m",
+            "cls": "chart-tab ",
+            "width": 36,
+            "height": 25
+          },
+          {
+            "text": "1h",
+            "cls": "chart-tab active",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "4h",
+            "cls": "chart-tab ",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "1d",
+            "cls": "chart-tab ",
+            "width": 26,
+            "height": 25
+          },
+          {
+            "text": "1w",
+            "cls": "chart-tab ",
+            "width": 28,
+            "height": 25
+          },
+          {
+            "text": "Тип графика: Свечи",
+            "cls": "chart-tool-btn chart-menu-trigger chart-type-trigger",
+            "width": 44,
+            "height": 25
+          },
+          {
+            "text": "Индикаторы1",
+            "cls": "chart-tool-btn chart-menu-trigger chart-indicators-trigger",
+            "width": 141,
+            "height": 25
+          },
+          {
+            "text": "Курсоры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты линий тренда",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты Фибоначчи",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Паттерны",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Прогнозирование и измерения",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Геометрические фигуры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Текст и заметки",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Купить / Продать",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Купить",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Продать",
+            "cls": "",
+            "width": 22,
+            "height": 22
+          },
+          {
+            "text": "Перевести",
+            "cls": "fo-availTransfer",
+            "width": 18,
+            "height": 18
+          },
+          {
+            "text": "0%",
+            "cls": "",
+            "width": 24,
+            "height": 20
+          },
+          {
+            "text": "25%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "50%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "75%",
+            "cls": "",
+            "width": 25,
+            "height": 20
+          },
+          {
+            "text": "100%",
+            "cls": "",
+            "width": 32,
+            "height": 20
+          },
+          {
+            "text": "Скрыть баланс",
+            "cls": "",
+            "width": 24,
+            "height": 24
+          }
+        ],
+        "smallTargets": 25,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
         "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [
+          {
+            "text": "Цена ⇅",
+            "cls": "",
+            "width": 76,
+            "height": 16
+          },
+          {
+            "text": "24ч % ⇅",
+            "cls": "",
+            "width": 66,
+            "height": 16
+          },
+          {
+            "text": "5m",
+            "cls": "chart-tab ",
+            "width": 37,
+            "height": 22
+          },
+          {
+            "text": "15m",
+            "cls": "chart-tab ",
+            "width": 42,
+            "height": 22
+          },
+          {
+            "text": "1h",
+            "cls": "chart-tab active",
+            "width": 32,
+            "height": 22
+          },
+          {
+            "text": "4h",
+            "cls": "chart-tab ",
+            "width": 34,
+            "height": 22
+          },
+          {
+            "text": "1d",
+            "cls": "chart-tab ",
+            "width": 32,
+            "height": 22
+          },
+          {
+            "text": "1w",
+            "cls": "chart-tab ",
+            "width": 34,
+            "height": 22
+          },
+          {
+            "text": "Свечи",
+            "cls": "chart-tool-btn active",
+            "width": 50,
+            "height": 22
+          },
+          {
+            "text": "Линия",
+            "cls": "chart-tool-btn ",
+            "width": 52,
+            "height": 22
+          },
+          {
+            "text": "Область",
+            "cls": "chart-tool-btn ",
+            "width": 61,
+            "height": 22
+          },
+          {
+            "text": "MA200",
+            "cls": "chart-tool-btn active",
+            "width": 50,
+            "height": 22
+          },
+          {
+            "text": "Bollinger",
+            "cls": "chart-tool-btn ",
+            "width": 58,
+            "height": 22
+          },
+          {
+            "text": "RSI",
+            "cls": "chart-tool-btn ",
+            "width": 27,
+            "height": 22
+          },
+          {
+            "text": "MACD",
+            "cls": "chart-tool-btn ",
+            "width": 44,
+            "height": 22
+          },
+          {
+            "text": "Курсоры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты линий тренда",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Инструменты Фибоначчи",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Паттерны",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Прогнозирование и измерения",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Геометрические фигуры",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Текст и заметки",
+            "cls": "tool-group-chevron",
+            "width": 12,
+            "height": 14
+          },
+          {
+            "text": "Скрыть инструменты",
+            "cls": "drawing-rail-toggle",
+            "width": 43,
+            "height": 24
+          },
+          {
+            "text": "0%",
+            "cls": "slider-step active buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "25%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "50%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "75%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          },
+          {
+            "text": "100%",
+            "cls": "slider-step  buy",
+            "width": 46,
+            "height": 20
+          }
+        ],
+        "smallTargets": 28,
+        "mobileTabs": [],
+        "visibleSpotStats": 6,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "desktopCta": {
+          "height": 50,
+          "bottom": 656,
+          "visible": true
+        }
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 56,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 16px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [
+          {
+            "text": "Цена ⇅",
+            "cls": "cfd-align-right",
+            "width": 75,
+            "height": 14
+          },
+          {
+            "text": "24ч % ⇅",
+            "cls": "cfd-align-right",
+            "width": 60,
+            "height": 14
+          },
+          {
+            "text": "5m",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "15m",
+            "cls": "",
+            "width": 40,
+            "height": 26
+          },
+          {
+            "text": "1h",
+            "cls": "active",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "4h",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          },
+          {
+            "text": "1d",
+            "cls": "",
+            "width": 35,
+            "height": 26
+          }
+        ],
+        "smallTargets": 7,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": true,
+        "pageErrors": [],
+        "desktopCta": {
+          "height": 50,
+          "bottom": 566,
+          "visible": true
+        }
+      }
+    },
+    "320x740": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 80,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "12px 8px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
+        "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 101
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 101
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 101
+          }
+        ],
+        "visibleSpotStats": 2,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 320,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 320,
+          "rightOverflow": 0
+        }
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 101
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 101
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 101
+          }
+        ],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 320,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 320,
+          "rightOverflow": 0
+        }
+      }
+    },
+    "360x800": {
+      "futures": {
+        "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 80,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
+        "pageErrors": []
+      },
+      "spot": {
+        "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 115
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 115
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 115
+          }
+        ],
+        "visibleSpotStats": 2,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 360,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 360,
+          "rightOverflow": 0
+        }
+      },
+      "cfd": {
+        "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
+        "tokens": {
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
+          "--color-buy": "#0ecb81",
+          "--color-sell": "#f6465d",
+          "--panel": "#181a20",
+          "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
+        },
+        "strip": {
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
+        },
+        "stripClipped": false,
+        "overflowX": 0,
+        "overlaps": [],
+        "hasNaN": false,
+        "hasUndefined": false,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 115
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 115
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 115
+          }
+        ],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 360,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 360,
+          "rightOverflow": 0
+        }
       }
     },
     "390x844": {
       "futures": {
         "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 80,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "12px"
         },
         "stripClipped": false,
@@ -295,88 +1768,158 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
-        "smallTargets": 1,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
         "pageErrors": []
       },
       "spot": {
         "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
-          "h": 57,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
-          "pad": "8px 12px"
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
         },
         "stripClipped": false,
         "overflowX": 0,
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
+        "smallTargetDetails": [],
         "smallTargets": 0,
-        "pageErrors": []
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 125
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 125
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 125
+          }
+        ],
+        "visibleSpotStats": 2,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 390,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 390,
+          "rightOverflow": 0
+        }
       },
       "cfd": {
         "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
-          "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
-          "pad": "6px 16px"
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
         },
         "stripClipped": false,
         "overflowX": 0,
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
+        "smallTargetDetails": [],
         "smallTargets": 0,
-        "pageErrors": []
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 125
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 125
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 125
+          }
+        ],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 390,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 390,
+          "rightOverflow": 0
+        }
       }
     },
     "430x932": {
       "futures": {
         "classes": "trade-terminal futures-terminal futures-reference terminal-studio futures-studio",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
           "h": 80,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
           "pad": "12px"
         },
         "stripClipped": false,
@@ -384,75 +1927,140 @@
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
-        "smallTargets": 1,
+        "smallTargetDetails": [],
+        "smallTargets": 0,
+        "mobileTabs": [],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
         "pageErrors": []
       },
       "spot": {
         "classes": "trade-terminal spot-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
-          "h": 57,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
-          "pad": "8px 12px"
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
         },
         "stripClipped": false,
         "overflowX": 0,
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
+        "smallTargetDetails": [],
         "smallTargets": 0,
-        "pageErrors": []
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 138
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 138
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 138
+          }
+        ],
+        "visibleSpotStats": 2,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 430,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 430,
+          "rightOverflow": 0
+        }
       },
       "cfd": {
         "classes": "trade-terminal cfd-terminal market-reference terminal-studio vx-terminal",
         "tokens": {
-          "--bg-primary": "#080a0f",
-          "--bg-secondary": "#10141e",
-          "--bg-tertiary": "#161c2b",
-          "--border-color": "#232b40",
-          "--text-primary": "#e2e8f0",
-          "--text-secondary": "#a6b2c8",
-          "--accent-yellow": "#f0b90b",
+          "--bg-primary": "#0b0e11",
+          "--bg-secondary": "#181a20",
+          "--bg-tertiary": "#1e2329",
+          "--border-color": "#2b3139",
+          "--text-primary": "#eef0f4",
+          "--text-secondary": "#b4bdca",
+          "--accent-yellow": "#edc76a",
           "--color-buy": "#0ecb81",
           "--color-sell": "#f6465d",
-          "--panel": "#10141e",
+          "--panel": "#181a20",
           "--font-family": "\"Inter Terminal\",Inter,system-ui,sans-serif"
         },
         "strip": {
-          "h": 56,
-          "bg": "rgb(16, 20, 30)",
-          "border": "rgb(35, 43, 64)",
-          "pad": "6px 16px"
+          "h": 95,
+          "bg": "rgba(0, 0, 0, 0)",
+          "border": "rgb(48, 54, 64)",
+          "pad": "6px 12px"
         },
         "stripClipped": false,
         "overflowX": 0,
         "overlaps": [],
         "hasNaN": false,
         "hasUndefined": false,
+        "smallTargetDetails": [],
         "smallTargets": 0,
-        "pageErrors": []
+        "mobileTabs": [
+          {
+            "text": "График",
+            "h": 48,
+            "w": 138
+          },
+          {
+            "text": "Торговля",
+            "h": 48,
+            "w": 138
+          },
+          {
+            "text": "Открытые ордера",
+            "h": 48,
+            "w": 138
+          }
+        ],
+        "visibleSpotStats": 0,
+        "cfdMarketStateVisible": false,
+        "pageErrors": [],
+        "tradeWorkspace": {
+          "visible": true,
+          "chartVisible": false,
+          "width": 430,
+          "rightOverflow": 0,
+          "ctaHeight": 52,
+          "ctaRightOverflow": 0
+        },
+        "accountWorkspace": {
+          "visible": true,
+          "width": 430,
+          "rightOverflow": 0
+        }
       }
     }
   },
   "findings": [],
   "environment": "LOCAL QA ONLY - production bundle, stubbed read-only API",
-  "preExisting": [
-    "futures @390x844: 1 tap target(s) under 28px tall (pre-existing on main, out of scope)",
-    "futures @430x932: 1 tap target(s) under 28px tall (pre-existing on main, out of scope)"
-  ],
-  "futuresDrift": [],
   "status": "PASS"
 }
