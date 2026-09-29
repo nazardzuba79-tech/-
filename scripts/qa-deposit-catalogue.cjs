@@ -81,18 +81,18 @@ async function main() {
     before = snap(); await page.waitForTimeout(idleMs); report.requests.adminIdle60s = delta(before);
     assert.equal(report.requests.adminIdle60s.featureRequests, 0); assert.equal(report.requests.adminIdle60s.storeReads, 0);
     // Server TTL has expired; this open proves a single cold public read.
-    before = snap(); await page.goto(origin + '/wallet?action=deposit'); await page.locator('#deposit-network').waitFor();
+    before = snap(); await page.goto(origin + '/wallet?action=deposit'); await page.getByTestId('deposit-address').waitFor();
     await page.getByText(baseline[0].address, { exact: true }).waitFor(); report.requests.customerColdOpen = delta(before);
     assert.equal(report.requests.customerColdOpen.featureRequests, 1); assert.equal(report.requests.customerColdOpen.storeReads, idleMs > 30000 ? 1 : 0);
-    const pick = async (id, label) => { await page.locator('#' + id).click(); await page.locator('#' + id + '-listbox').getByRole('option', { name: label, exact: true }).click(); };
+    const pick = async (id, label) => { await page.getByRole('button', { name: id === 'deposit-asset' ? 'Изменить актив' : 'Изменить сеть', exact: true }).click(); const option = id === 'deposit-asset' ? page.getByRole('option').filter({ has: page.locator('small', { hasText: new RegExp('^' + label + '$') }) }) : page.getByRole('option', { name: new RegExp(label.split(' · ')[0]) }); await option.click(); };
     before = snap(); await pick('deposit-asset', 'USDT'); await pick('deposit-network', 'TRON · TRC-20'); await page.getByText(baseline[3].address, { exact: true }).waitFor();
     await pick('deposit-network', 'Ethereum · ERC-20'); await page.getByText(eth, { exact: true }).waitFor(); report.checks.push('existing USDT networks');
     await pick('deposit-asset', 'ETH'); await page.getByText(eth, { exact: true }).waitFor(); report.checks.push('existing ETH native');
     await pick('deposit-asset', 'XRP'); await page.getByText('123456', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Копировать', exact: true }).first().click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), xrp);
-    await page.getByRole('button', { name: 'Копировать', exact: true }).click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '123456');
+    await page.getByRole('button', { name: 'Копировать адрес', exact: true }).click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), xrp);
+    await page.getByRole('button', { name: 'Копировать memo', exact: true }).click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '123456');
     report.requests.selectAndCopy = delta(before); assert.equal(report.requests.selectAndCopy.featureRequests, 0); assert.equal(report.requests.selectAndCopy.storeWrites, 0);
-    await page.locator('#deposit-asset').click(); const offered = await page.locator('#deposit-asset-listbox').getByRole('option').allTextContents();
+    await page.getByRole('button', { name: 'Изменить актив', exact: true }).click(); const offered = await page.getByRole('option').locator('small').allTextContents();
     assert.ok(!offered.includes('SOL')); assert.ok(!offered.includes('USDC')); await page.keyboard.press('Escape'); report.checks.push('disabled/unconfigured excluded; address + memo copy');
     await screenshot('customer-mobile.png'); await page.setViewportSize({ width: 1440, height: 1000 }); await screenshot('customer-desktop.png');
     before = snap(); await page.waitForTimeout(idleMs); report.requests.customerIdle60s = delta(before);
@@ -100,8 +100,8 @@ async function main() {
     // An address disabled by Admin must vanish on the next open/reload.
     const current = await catalogue.adminCatalogue();
     await catalogue.save({ ...entry('ripple', 'xrp', xrp), enabled: false }, current.revision);
-    await page.reload(); await page.locator('#deposit-asset').click();
-    assert.ok(!(await page.locator('#deposit-asset-listbox').getByRole('option').allTextContents()).includes('XRP'));
+    await page.reload(); await page.getByRole('button', { name: 'Изменить актив', exact: true }).click();
+    assert.ok(!(await page.getByRole('option').locator('small').allTextContents()).includes('XRP'));
     await page.keyboard.press('Escape'); report.checks.push('reopen revalidates changed catalogue');
     await page.goto(origin + '/admin/wallets'); await page.getByRole('button', { name: /^USDT / }).click();
     await page.locator('.catalogue-network').filter({ hasText: 'Ethereum' }).getByRole('button', { name: 'Изменить', exact: true }).click();

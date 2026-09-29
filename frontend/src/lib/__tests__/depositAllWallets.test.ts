@@ -56,6 +56,9 @@ const WALLETS = [
 
 function renderModal(state: Record<string, unknown>, lang: (typeof LOCALES)[number] = 'ru') {
   const mod = evaluate('frontend/src/components/DepositModal.tsx', {
+    // This suite renders the flag-OFF legacy UI. New flag-ON mounted behavior
+    // is exercised by qa-deposit-ui.cjs for both real entrypoint components.
+    './DepositCatalogueDialog': { DepositCatalogueDialog: () => { throw new Error('Legacy flow entered catalogue UI'); } },
     '../lib/useDepositOptions': { useDepositWallets: () => state, useDepositSelection: () => ({ wallet: null }) },
     '../lib/i18n': { useLanguage: () => language(lang) },
   });
@@ -220,7 +223,7 @@ describe('what this change deliberately leaves alone', () => {
   it('keeps one deposit data path, not two', () => {
     // Both screens read the same wallets, so they cannot disagree about
     // which address belongs to which chain.
-    expect(hook).toContain('export function useDepositWallets(active: boolean)');
+    expect(hook).toContain('export function useDepositWallets(active: boolean, retry = 0)');
     expect(hook).not.toMatch(/export function useDepositOptions\b/);
     expect(read('frontend/src/pages/wallet-v3/DepositModal.tsx')).toContain('useDepositWallets');
     expect(read('frontend/src/components/DepositModal.tsx')).toContain('useDepositWallets');

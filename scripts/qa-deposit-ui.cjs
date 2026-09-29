@@ -1,0 +1,171 @@
+/** Mounted Header + Wallet deposit QA with local synthetic fixtures only.
+ * Run Vite with VITE_MANUAL_DEPOSIT_CATALOGUE=true, then node this file.
+ * QR is decoded independently with jsQR, not by reading component props. */
+const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
+const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
+const jsQR = require(process.env.QA_JSQR_MODULE || 'jsqr');
+const { PNG } = require(process.env.QA_PNGJS_MODULE || 'pngjs');
+const origin = process.env.QA_ORIGIN || 'http://127.0.0.1:4262';
+const out = path.resolve(process.env.QA_OUT || 'docs/qa/deposit-ui');
+fs.mkdirSync(out, { recursive: true });
+const report = { fixtureOnly: true, checks: [], errors: [], requests: {}, layouts: [], idleMs: 60100 };
+const check = (label, condition = true) => { assert.ok(condition, label); report.checks.push(label); };
+const exact = name => ({ name, exact: true });
+const evm = '0x' + '1'.repeat(40), tron = 'T' + 'A'.repeat(33);
+let browser;
+async function setup(width = 1440, height = 1000, touch = false) {
+  const context = await browser.newContext({ viewport: { width, height }, hasTouch: touch });
+  await context.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : (report.errors.push('External request: ' + route.request().url()), route.abort()));
+  const page = await context.newPage(); page.setDefaultTimeout(10000);
+  page.on('pageerror', e => report.errors.push(e.message));
+  page.on('console', m => { if (m.type() === 'error') report.errors.push(m.text()); });
+  await page.addInitScript(() => {
+    window.__copies = []; window.__copyMode = 'success';
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: text => {
+      window.__copies.push(text);
+      return window.__copyMode === 'failure' ? Promise.reject(new Error('Denied')) : window.__copyMode === 'pending' ? new Promise(resolve => { window.__resolveCopy = resolve; }) : Promise.resolve();
+    } } });
+  });
+  await page.goto(origin + '/qa/deposit-preview.html');
+  return { context, page };
+}
+const requests = page => page.evaluate(() => window.__depositFixture.requests.length);
+const pickAsset = async (page, symbol, method = 'click') => {
+  await page.getByRole('button', exact('Изменить актив')).click();
+  await page.getByRole('option').filter({ has: page.locator('small', { hasText: new RegExp('^' + symbol + '$') }) })[method]();
+  await page.getByRole('heading', exact('Ваш адрес ' + symbol)).waitFor();
+};
+const address = page => page.getByTestId('deposit-address').innerText();
+const open = async (page, entry) => { await page.getByRole('button', exact(entry + ' Deposit')).click(); await page.getByTestId('deposit-address').waitFor(); };
+const close = page => page.getByRole('button', exact('Закрыть')).click();
+async function screenshot(page, name) {
+  const layout = await page.evaluate(() => {
+    const dialog = document.querySelector('.dc-dialog'), content = document.querySelector('.dc-content');
+    const r = dialog.getBoundingClientRect();
+    return { width: innerWidth, height: innerHeight, documentWidth: document.documentElement.scrollWidth, dialogWidth: r.width, left: r.left, right: r.right, top: r.top, bottom: r.bottom, contentWidth: content.clientWidth, contentScrollWidth: content.scrollWidth };
+  });
+  check(name + ': fits viewport', layout.documentWidth <= layout.width && layout.left >= 0 && layout.right <= layout.width && layout.top >= 0 && layout.bottom <= layout.height && layout.contentScrollWidth <= layout.contentWidth);
+  report.layouts.push({ name, ...layout });
+  await page.screenshot({ path: path.join(out, name + '.png') });
+}
+async function decode(page) {
+  const png = PNG.sync.read(await page.locator('.dc-qr').screenshot());
+  const decoded = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
+  assert.ok(decoded, 'QR must decode'); return decoded.data;
+}
+async function entryChecks(entry) {
+  const { context, page } = await setup();
+  try {
+    await open(page, entry); check(entry + ': one catalogue GET on open', await requests(page) === 1);
+    await page.getByRole('button', exact('Изменить актив')).click();
+    const initialUsdt = page.getByRole('option').filter({ hasText: 'Tether' });
+    await initialUsdt.focus(); await page.evaluate(() => dispatchEvent(new Event('qa-parent-render'))); await page.waitForTimeout(80);
+    await page.keyboard.press('Enter'); await page.getByRole('heading', exact('Ваш адрес USDT')).waitFor();
+    check(entry + ': BTC→USDT keyboard selection survives parent render');
+    await pickAsset(page, 'BTC');
+    await pickAsset(page, 'USDT'); check(entry + ': single BTC→USDT click changes address', await address(page) === evm);
+    await page.getByRole('button', exact('Изменить актив')).click();
+    const selected = page.getByRole('option', { selected: true });
+    check(entry + ': USDT selected, BTC unselected', (await selected.innerText()).includes('USDT') && await page.getByRole('option').filter({ hasText: 'Bitcoin' }).getAttribute('aria-selected') === 'false');
+    check(entry + ': selected checkmark', await selected.locator('svg.lucide-check').count() === 1);
+    const usdtIcon = await page.getByRole('option').filter({ hasText: 'Tether' }).locator('img').getAttribute('src');
+    const usdcIcon = await page.getByRole('option').filter({ hasText: 'USD Coin' }).locator('img').getAttribute('src');
+    check(entry + ': distinct local USDT/USDC icons', usdtIcon.startsWith('data:') && usdcIcon.startsWith('data:') && usdtIcon !== usdcIcon);
+    await screenshot(page, entry.toLowerCase() + '-assets-usdt-selected');
+    const option = page.getByRole('option').filter({ hasText: 'Tether' });
+    await option.focus(); await page.evaluate(() => dispatchEvent(new Event('qa-parent-render')));
+    await page.waitForTimeout(80); check(entry + ': render preserves focused option', await option.evaluate(el => document.activeElement === el));
+    await page.keyboard.press('Enter'); check(entry + ': Enter after rerender retains USDT', await address(page) === evm);
+    await page.getByRole('button', exact('Изменить сеть')).click(); await screenshot(page, entry.toLowerCase() + '-networks');
+    await page.getByRole('option', { name: /TRON/ }).click();
+    check(entry + ': network/address/warning atomic TRC-20', await address(page) === tron && (await page.locator('.dc-network').innerText()).includes('TRC-20') && (await page.locator('.dc-warning').innerText()).includes('USDT в сети TRON · TRC-20'));
+    await page.getByRole('button', exact('Копировать адрес')).click();
+    await page.getByRole('button', exact('Адрес скопирован')).waitFor();
+    check(entry + ': exact clipboard address', await page.evaluate(() => window.__copies.at(-1)) === tron);
+    await screenshot(page, entry.toLowerCase() + '-address-copy');
+    await page.getByRole('button', exact('Показать QR-код')).click(); check(entry + ': TRON QR independently decoded', await decode(page) === tron);
+    await page.getByRole('button', exact('Изменить сеть')).click(); await page.getByRole('option', { name: /Ethereum/ }).click();
+    await page.getByRole('button', exact('Показать QR-код')).click(); check(entry + ': Ethereum QR updates', await decode(page) === evm);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => { window.__copyMode = 'failure'; });
+    await page.getByRole('button', exact('Копировать адрес')).click(); await page.getByRole('alert').waitFor();
+    check(entry + ': clipboard failure no false success', await page.getByRole('button', exact('Адрес скопирован')).count() === 0 && await page.getByTestId('deposit-address').evaluate(el => getComputedStyle(el).userSelect) === 'text');
+    await page.evaluate(() => { window.__copyMode = 'pending'; });
+    await page.getByRole('button', exact('Копировать адрес')).click(); await pickAsset(page, 'USDC');
+    await page.evaluate(() => window.__resolveCopy()); await page.waitForTimeout(50);
+    check(entry + ': old clipboard completion cannot mark new address', await page.getByRole('button', exact('Адрес скопирован')).count() === 0);
+    for (const symbol of ['SOL', 'TON', 'POL', 'BTC']) {
+      await pickAsset(page, symbol); check(entry + ': switch ' + symbol, await page.getByRole('heading', exact('Ваш адрес ' + symbol)).count() === 1);
+      if (symbol === 'TON') { check(entry + ': empty TON memo absent', await page.locator('.dc-memo').count() === 0); await screenshot(page, entry.toLowerCase() + '-ton'); }
+      if (symbol === 'POL') check(entry + ': POL is Polygon', (await page.locator('.dc-network').innerText()).includes('Polygon') && !(await page.locator('.dc-network').innerText()).includes('Ethereum'));
+    }
+    await page.getByRole('button', exact('Изменить актив')).click();
+    await page.getByRole('textbox').fill('tether'); check(entry + ': local search by name', await page.getByRole('option').count() === 1);
+    await page.getByRole('textbox').fill('USDC'); check(entry + ': local search by ticker', await page.getByRole('option').count() === 1);
+    await page.getByRole('option').focus(); await page.keyboard.press('Space'); await page.getByRole('heading', exact('Ваш адрес USDC')).waitFor();
+    check(entry + ': Space selection');
+    check(entry + ': all selection/search/copy/QR actions add zero requests', await requests(page) === 1);
+    await close(page); check(entry + ': focus returns to opener', await page.getByRole('button', exact(entry + ' Deposit')).evaluate(el => document.activeElement === el));
+    await page.evaluate(() => {
+      const f = window.__depositFixture;
+      f.entries.find(e => e.asset === 'BTC').address = 'bc1q' + 'b'.repeat(38);
+      f.entries.find(e => e.asset === 'SOL').enabled = false;
+      f.entries.find(e => e.asset === 'USDC').address = '';
+      f.entries.find(e => e.asset === 'TON').memo = '123456';
+      f.entries.push({ ...f.entries[0], assetId: 'test', asset: 'TEST', networkId: 'test', networkName: 'Fixture network', address: 'fixture-test-address' });
+      window.__copyMode = 'success';
+    });
+    await open(page, entry); check(entry + ': reopen revalidates changed address', await address(page) === 'bc1q' + 'b'.repeat(38));
+    await page.getByRole('button', exact('Изменить актив')).click();
+    const options = await page.getByRole('option').allTextContents();
+    check(entry + ': disabled/unconfigured excluded', !options.some(x => x.includes('Solana') || x.includes('USD Coin')));
+    check(entry + ': unknown ticker fallback', (await page.locator('.dc-fallback').innerText()) === 'TEST');
+    await page.getByRole('option').filter({ hasText: 'Toncoin' }).click(); await page.getByRole('button', exact('Копировать memo')).click();
+    check(entry + ': future memo separate exact clipboard', await page.evaluate(() => window.__copies.at(-1)) === '123456');
+    await close(page); await page.evaluate(() => { window.__depositFixture.fail = true; });
+    await page.getByRole('button', exact(entry + ' Deposit')).click(); await page.getByRole('alert').waitFor();
+    check(entry + ': failure hides address', await page.getByTestId('deposit-address').count() === 0);
+    const beforeRetry = await requests(page); await page.evaluate(() => { window.__depositFixture.fail = false; window.__depositFixture.delayMs = 400; });
+    await page.getByRole('button', exact('Повторить')).click(); await page.getByRole('status').waitFor();
+    check(entry + ': loading never shows old address', await page.getByTestId('deposit-address').count() === 0);
+    await page.getByTestId('deposit-address').waitFor(); check(entry + ': manual retry exactly one GET', await requests(page) === beforeRetry + 1);
+    await close(page); await page.evaluate(() => { window.__depositFixture.entries = []; window.__depositFixture.delayMs = 0; });
+    await page.getByRole('button', exact(entry + ' Deposit')).click(); await page.locator('.dc-state').waitFor();
+    await page.waitForTimeout(100); check(entry + ': empty catalogue no fabricated address', await page.getByTestId('deposit-address').count() === 0 && await page.locator('.dc-primary').count() === 0);
+    report.requests[entry] = { initialOpen: 1, interactions: 0, retry: 1 };
+  } catch (e) { await page.screenshot({ path: path.join(out, 'failure-' + entry + '.png') }); throw e; }
+  finally { await context.close(); }
+}
+async function responsive(entry, width, height) {
+  const { context, page } = await setup(width, height, width < 500);
+  try {
+    await open(page, entry); await pickAsset(page, 'USDT', width < 500 ? 'tap' : 'click');
+    await screenshot(page, `${entry.toLowerCase()}-${width}x${height}`);
+    check(`${entry} ${width}: copy target 48px`, (await page.locator('.dc-primary').boundingBox()).height >= 48);
+    await page.getByRole('button', exact('Изменить актив')).click(); await page.getByRole('option').filter({ hasText: 'Toncoin' }).scrollIntoViewIfNeeded();
+    await screenshot(page, `${entry.toLowerCase()}-list-${width}x${height}`);
+    check(`${entry} ${width}: close stays visible`, await page.getByRole('button', exact('Закрыть')).isVisible());
+    await page.keyboard.press('Escape'); check(`${entry} ${width}: Escape returns from list`, await page.getByRole('heading', exact('Ваш адрес USDT')).count() === 1);
+    await page.keyboard.press('Tab'); const first = await page.evaluate(() => document.activeElement.outerHTML);
+    await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Tab');
+    check(`${entry} ${width}: focus trap wraps`, await page.evaluate(() => document.activeElement.outerHTML) === first);
+    await page.keyboard.press('Escape'); check(`${entry} ${width}: Escape closes`, await page.getByRole('dialog').count() === 0);
+  } finally { await context.close(); }
+}
+async function idle() {
+  const runs = await Promise.all(['Header','Wallet'].map(async entry => {
+    const {context,page} = await setup(); await open(page,entry); return {entry,context,page,before:await requests(page)};
+  }));
+  await new Promise(resolve => setTimeout(resolve, report.idleMs));
+  for (const {entry,context,page,before} of runs) { const delta = await requests(page) - before; report.requests[entry].idle60s = delta; check(entry + ': 60 seconds idle zero requests', delta === 0); await context.close(); }
+}
+(async () => {
+  browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? {channel:'msedge'} : {}) });
+  try {
+    for (const entry of ['Header','Wallet']) await entryChecks(entry);
+    for (const entry of ['Header','Wallet']) for (const [w,h] of [[1440,1000],[390,844],[320,568],[1440,480]]) await responsive(entry,w,h);
+    console.log('Interaction + responsive checks passed; measuring 60 seconds idle.');
+    await idle(); check('No console/page errors or external requests', report.errors.length === 0); report.result = 'PASS';
+  } catch (e) { report.result = 'FAIL'; report.failure = e.stack; throw e; }
+  finally { fs.writeFileSync(path.join(out,'browser-results.json'),JSON.stringify(report,null,2)); await browser.close(); console.log(JSON.stringify({result:report.result,checks:report.checks.length,errors:report.errors,requests:report.requests})); }
+})().catch(e => { console.error(e); process.exitCode=1; });

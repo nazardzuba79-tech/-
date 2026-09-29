@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDepositWallets, useDepositSelection } from '../lib/useDepositOptions';
 import { MANUAL_DEPOSIT_CATALOGUE } from '../lib/depositCatalogue';
 import { useLanguage } from '../lib/i18n';
+import { DepositCatalogueDialog } from './DepositCatalogueDialog';
 
 /**
  * Deposit is now purely "here's the address" — no tx-hash entry. An admin
@@ -15,6 +16,10 @@ import { useLanguage } from '../lib/i18n';
  * that chain will credit, because the address alone does not say that.
  */
 export function DepositModal({ onClose }: { onClose: () => void }) {
+  return MANUAL_DEPOSIT_CATALOGUE ? <DepositCatalogueDialog onClose={onClose}/> : <LegacyDepositModal onClose={onClose}/>;
+}
+
+function LegacyDepositModal({ onClose }: { onClose: () => void }) {
   const { t } = useLanguage();
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
