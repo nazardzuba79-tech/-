@@ -220,6 +220,10 @@ test.each([
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    // Factory public reads add only this transport branch. Strip its exact
+    // prefix, retaining the original hash for every existing API/write path.
+    .replace("import { fetchManagedPublic, isManagedPair } from './managedListings';\n", '')
+    .replace(/isManagedPair\(pair\) \? fetchManagedPublic : /g, '')
     // NRX public reads alone use Cloudflare; byte-pin all existing transports,
     // especially index/funding/internal OI and every account write, as before.
     .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')

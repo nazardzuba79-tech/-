@@ -17,7 +17,7 @@ Owner allocation is a separate explicit command, default disabled. It targets on
 ## Local evidence
 
 - Backend and frontend TypeScript: PASS.
-- Targeted Jest: 136 PASS / 10 suites (admin auth/routing/transport/execution refusal, OrderService, DemoTrading, legacy VTA/NRX simulation/depth/public API, Spot public reads and Copy CI coverage).
+- Targeted Jest: 203 PASS / 12 suites (admin auth/routing/transport/execution refusal, OrderService, DemoTrading, legacy VTA/NRX simulation/depth/public API, Spot public reads, Copy CI coverage, CFD mounted terminal and unchanged Futures API fingerprint).
 - Actual disposable PostgreSQL: 3 PASS (concurrent exact credit once, unchanged USDT/other accounts, refusals, atomic receipt rollback).
 - Actual workerd + persistent SQLite: 8 PASS (validation, private drafts, stable seed, concurrent edit, idempotent atomic publish, restart, multiple listings and server-time live transition).
 - Mounted production-build browser acceptance: PASS at **1440×1000 and 390×844** in headless Edge. `QATHIRD` and `QAFOURTH` are supplied through Admin, never added to runtime code. No rebuild occurs between Create/Publish and market entry. Checks cover preview, draft privacy, Markets entry, countdown, automatic chart/book/tape, reload and an independent USER browser. Zero financial writes and zero worker outbound I/O. See `browser-results.json` and screenshots.

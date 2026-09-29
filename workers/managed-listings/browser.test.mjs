@@ -103,6 +103,9 @@ try{
     await page.reload();await page.locator('.chart-area canvas').first().waitFor();
     const other=await contextFor(width,'user');await other.page.goto(origin+`/trade?pair=${symbol}%2FUSDT`);await other.page.locator('.chart-area canvas').first().waitFor();
     const candlesAfter=await(await mf.dispatchFetch(`https://listings.qa.invalid/market/test-assets/${symbol}-USDT/candles?interval=5m`)).json();
+    assert.ok(candlesBefore.candles.length && candlesAfter.candles.length);
+    assert.equal(candlesBefore.candles[0].time,candlesAfter.candles[0].time);
+    assert.equal(candlesBefore.candles[0].open,candlesAfter.candles[0].open);
     assert.deepEqual(candlesAfter.candles.slice(0,-1),candlesBefore.candles.slice(0,-1));
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));assert.deepEqual(errors,[]);assert.deepEqual(other.errors,[]);
     assert.equal(requests.filter(r=>r.host!=='listings.qa.invalid'&&r.path.includes(symbol)&&r.path.startsWith('/api/v1/market')).length,0);
