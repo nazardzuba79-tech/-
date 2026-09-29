@@ -7,6 +7,7 @@ import ts from 'typescript';
 import * as futuresMath from '../futuresMath';
 import * as orderPresentation from '../../components/spotOrderPresentation';
 import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
+import * as decimalInput from '../decimalInput';
 
 /**
  * UNKNOWN is not EMPTY — asserted against the real components.
@@ -172,6 +173,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/formatNumber') return { formatPrice: String, formatAmount: String };
+    if (name === '../lib/decimalInput') return decimalInput;
     if (name === '../lib/futuresMath') return futuresMath;
     if (name === './spotOrderPresentation') return orderPresentation;
     if (name === './FuturesPositionProtection') return { FuturesPositionProtectionCell: () => null };

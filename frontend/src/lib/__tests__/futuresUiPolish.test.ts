@@ -242,7 +242,14 @@ test.each([
     // checkbox stays underneath), and price/size/TP/SL are text fields that
     // keep a dot — `type="number"` printed «12,91» under <html lang="ru"> and
     // «270,5» reached parseFloat as 270. Same state, gates and payload.
-    "2545d373aa9acfaf24a7ade254d64f15bd883c0a5c3943aae74917c001d86a87"
+    // Owner review of #332 (HOLD): the dot-keeping reader deleted what it did
+    // not expect («1e-8» → 18, «-1» → 1). The fields now keep exactly what
+    // was typed; lib/decimalInput reads it, a refusal is shown under the
+    // field (aria-invalid) and blocks the order, and only the reading's
+    // digits are sent. Leaving a field only rewrites a number as itself.
+    // A level that is not a number is not also called a level on the wrong
+    // side. Same state, same ready/Reduce Only gates, same payload keys.
+    "c0d0f4c0a8f8fa5b842dddce3c8291a392b7eb7b78c0358ba10d5e6cc769de7f"
   ],
   [
     "components/FuturesAccountSummary.tsx",

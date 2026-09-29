@@ -126,3 +126,10 @@
   #archive-terminal-preview .fo-optionsRow :is(.fo-tpslToggle,.fo-reduceOnlyRow) { min-height:44px; }
   #archive-terminal-preview .fo-availTransfer { width:28px; height:28px; }
 }
+/* A number field whose text is not a number (lib/decimalInput): the text
+   stays as typed, the field is outlined in the sell red and the reason sits
+   under it. The outline holds while focused — it is the thing to fix. */
+.fo-panel .fo-inputRefusal { display:block; margin-top:4px; font-size:11px; line-height:15px; font-weight:500; color:var(--sell, #f6465d); text-align:left; }
+.trade-terminal.trade-terminal.trade-terminal .fo-panel .fo-input[aria-invalid="true"] { border-color:var(--sell, #f6465d); }
+#archive-terminal-preview :is(.fo-priceInputRow, .fo-qtyInputRow):has(.fo-input[aria-invalid="true"]),
+#archive-terminal-preview .archive-order-protection .archive-protection-fields input[aria-invalid="true"] { border-color:var(--sell, #f6465d) !important; }

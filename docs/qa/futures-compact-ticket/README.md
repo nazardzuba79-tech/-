@@ -52,5 +52,31 @@ Screenshots: `before-1440.png`, `before-1440-form.png`, `after-1440.png`,
   What differed from the rest of the terminal was «12,91»: a `type="number"`
   field is drawn in the page language (`<html lang="ru">`), so it printed a
   comma beside a book printing 12.91 — and a level typed as «270,5» reached
-  `parseFloat` as 270. Price, size, TP and SL are now text fields that accept
-  either separator and keep a dot.
+  `parseFloat` as 270. Price, size, TP and SL are now text fields.
+
+## Owner review HOLD, same day: numbers are read, never rewritten
+
+The first version of those text fields (`decimalText`) deleted every
+character it did not expect: «1e-8» became 18, «1e3» 13, «-1» 1, «1.2.3»
+1.23, «12abc34» 1234. Replaced by `lib/decimalInput`:
+
+* The field keeps exactly what was typed or pasted.
+* Digits with one dot or comma are a number; its value is the same digits
+  with a dot, as a string (leading zeros dropped, trailing zeros kept), so
+  `123456789.123456789` is sent digit for digit.
+* A sign, an exponent, a letter, a space inside or a second separator is
+  refused: the field is outlined red (`aria-invalid`), the reason is under it
+  in the trader's language, and Long, Short and Enter send nothing. A refused
+  level is never replaced by the one typed before it.
+* Empty or half-typed («.») is not an error and not an order.
+* Leaving a field rewrites only a number, as the same number («12,50» → 12.50,
+  «007» → 7). Anything else stays as typed.
+* Prices the terminal fills in (last price, a chart bar) are written in plain
+  digits (`String(1e-7)` is «1e-7»), so they are never refused.
+
+Browser run on the local fixture at 1440 and 390 (typed character by character,
+plus one real Ctrl+V paste): `1e-8` in price, `1.2.3` in size, `12abc34` in TP,
+`-1` in SL, pasted `1e3` in price. Each stayed as typed, was refused with its
+reason, and no order request left the page. With `49360,7` and `0,012` the
+same watcher saw the order go out as `49360.7` / `0.012`.
+`review-refused-{price,stopLoss}-{1440,390}.png`, `review-valid-{1440,390}.png`.

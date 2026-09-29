@@ -4648,3 +4648,33 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Three suites, `homepageTailwindUtilities`, `marketUniverseScale` and `sharedHeaderStylesheetOwnership`, also fail on clean main 1e6d61db. They are not caused by this PR.
   - `qa-native-demo-browser` at 0535f973: 3 local runs, 44/44 each. The CI `account-summary-1440` timeout on that head did not reproduce; the failed job was re-run once on GitHub.
 - **Unresolved:** the CFD desktop ticket scroll/pinned CTA and the terminal-only «Доход» Nav item (both above) are still open for owner review.
+
+## Claude — 2026-09-29 — #332 review HOLD: order-ticket numbers read without rewriting
+
+- Base: `main` `2c36ae31` (#334 Spot/CFD merged in first; both sides' `futuresUiPolish` edits and all handoff entries kept, no conflicts). Commit: the one carrying this entry on `claude/peaceful-volta-h5zw7g`.
+- **Owner review (HOLD):** `decimalText` deleted unexpected characters: «1e-8» → 18, «1e3» → 13, «-1» → 1, «1.2.3» → 1.23, «12abc34» → 1234.
+- **Fix:**
+  - New pure `frontend/src/lib/decimalInput.ts`. `readDecimalInput` returns one of: empty, incomplete («.»), valid (canonical digit string: dot, leading zeros dropped, trailing kept), or invalid with a reason (`exponent`/`sign`/`separator`/`character`). `plainDecimal`/`decimalFromNumber` write terminal-supplied numbers without an exponent («1e-7» → 0.0000001).
+  - `FuturesOrderForm.tsx`:
+    - Price, size, TP and SL keep exactly what was typed or pasted.
+    - Only a valid reading is sent: `price`, `quantity` and `protection` carry its digit string, so large values are not passed through a float.
+    - `unreadableInput` joins `canSubmit`, and `submitOrder` re-checks before the wire. A refused field gets `aria-invalid`, a note (`futures.number*`, all 7 locales) and a red outline.
+    - Blur only rewrites a valid number as itself.
+    - An unreadable level no longer also shows the wrong-side TP/SL note.
+    - Last price, chart-bar price and close-ticket size are written in plain digits.
+- **Preserved:** ready / Reduce Only / fail-closed engine gates, server authority (contract and margin checks unchanged), the TP/SL «+» and engine-hint work, payload keys.
+- **Tests:**
+  - `decimalInput.test.ts`: 49 tests (new; added to `native-demo-qa.yml`).
+  - `futuresCompactTicketOptions`: mounted typed/pasted cases for all four fields, including the review's five; comma, leading/trailing zeros, small, large-precise, empty/half-typed; a refused level never replaced by the previous one; standard ticket too. With the old sanitizer put back on price, 13 of these fail.
+  - Harness stubs for `decimalInput` in `terminalMount`, `futuresOrderPanel`, `futuresFinalPolish` and `futuresAccountUnknownState`.
+  - Source guards in `futuresOrderCalculatorRegression` updated.
+  - `futuresUiPolish` form fingerprint re-taken with its reason.
+  - New locale keys listed in `i18nLanguageChunks`' added-since-digest list.
+- **Checks actually run (local):**
+  - Frontend `tsc -b` and production build: PASS.
+  - Full `npx jest frontend/src`: 140 pass / 20 fail. The failing suites and the 108 individual failing tests match `main` `2c36ae31` run the same way with the same build.
+  - Browser, local fixture only (`serve-native-demo-review.cjs`), 1440 and 390:
+    - typed `1e-8`/`1.2.3`/`12abc34`/`-1` and a real Ctrl+V paste of `1e3` stayed as typed and were refused, with no order request;
+    - `49360,7`/`0,012` went out as `49360.7`/`0.012`.
+  - `qa-order-panel-refinement.cjs`, `qa-native-demo-browser.cjs` and `qa-limit-close.cjs` (1440,390): PASS; their rewritten evidence was restored.
+- **Not done:** no merge, no deploy, no production orders.

@@ -212,7 +212,10 @@ describe('translation integrity', () => {
           'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.
-          'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed'];
+          'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed',
+          // Futures ticket (2026-09-29, owner review of #332): why a number
+          // field's text is not a number; the field keeps it as typed.
+          'futures.numberExponent', 'futures.numberSign', 'futures.numberSeparator', 'futures.numberCharacter'];
         return !key || (!depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');

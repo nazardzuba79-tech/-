@@ -24,20 +24,15 @@ import {
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { formatAmount, formatPrice } from '../lib/formatNumber';
 import { OrderFamilyTabs, type OrderFamily } from './OrderFamilyPresentation';
+import { decimalFromNumber, decimalUnreadable, plainDecimal, readDecimalInput, type DecimalInput, type DecimalRefusal } from '../lib/decimalInput';
 
-/**
- * A decimal as this terminal prints it: with a dot.
- *
- * A `type="number"` field is drawn by the browser in the page's language, so
- * under `<html lang="ru">` it showed «12,91» beside a book printing 12.91,
- * and a level typed with a comma («270,5») reached `parseFloat` as 270. Both
- * separators are accepted as typed; the field keeps one.
- */
-function decimalText(raw: string): string {
-  const s = raw.replace(/,/g, '.').replace(/[^\d.]/g, '');
-  const dot = s.indexOf('.');
-  return dot === -1 ? s : s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, '');
-}
+/** Why a number field's text is not a number, in the trader's language. */
+const DECIMAL_REFUSAL_KEY = {
+  exponent: 'futures.numberExponent',
+  sign: 'futures.numberSign',
+  separator: 'futures.numberSeparator',
+  character: 'futures.numberCharacter',
+} as const satisfies Record<DecimalRefusal, string>;
 
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
@@ -107,6 +102,10 @@ export function FuturesOrderForm({
   const { t, lang } = useLanguage();
   const [protectionEnabled, setBracketExpanded] = useState(false);
   const protectionPanelId = useId();
+  const priceRefusalId = useId();
+  const quantityRefusalId = useId();
+  const takeProfitRefusalId = useId();
+  const stopLossRefusalId = useId();
   const toast = useToast();
   const [baseAsset, quoteAsset] = symbol.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -133,7 +132,7 @@ export function FuturesOrderForm({
   useEffect(() => {
     if (family !== 'LIMIT' || priceEdited || price !== '') return;
     if (lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0) {
-      setPrice(String(lastPrice));
+      setPrice(decimalFromNumber(lastPrice));
     }
   }, [family, lastPrice, price, priceEdited]);
   const [quantity, setQuantity] = useState('');
@@ -151,7 +150,7 @@ export function FuturesOrderForm({
     setReduceOnly(true);
     setSide(closeTicket.side === 'LONG' ? 'SELL' : 'BUY');
     setMarginType(closeTicket.marginType);
-    setQuantity(closeTicket.size);
+    setQuantity(plainDecimal(closeTicket.size));
     setPercent(0);
     setError(null);
   }, [closeTicket?.seq, symbol]);
@@ -246,7 +245,9 @@ export function FuturesOrderForm({
    */
   const candlePriceRef = useRef<string | null>(null);
   useEffect(() => {
-    const next = execution.candle ? execution.candlePrice ?? null : null;
+    // In plain digits: `String(close)` of a sub-micro price is «1e-7», which
+    // the price field would refuse as typed text.
+    const next = execution.candle && execution.candlePrice ? plainDecimal(execution.candlePrice) : null;
     if (next !== candlePriceRef.current) {
       candlePriceRef.current = next;
       if (next) { setPrice(next); setPriceEdited(true); }
@@ -322,9 +323,18 @@ export function FuturesOrderForm({
   const historicalEntryPrice = historicalEntry && execution.candlePrice && Number(execution.candlePrice) > 0
     ? Number(execution.candlePrice)
     : null;
-  const effectivePrice = historicalEntryPrice !== null ? historicalEntryPrice : !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : referencePrice ?? 0;
-  const quantityNumber = parseFloat(quantity);
-  const notional = effectivePrice && quantity ? effectivePrice * quantityNumber : 0;
+  /**
+   * What the four number fields hold, read without changing it (see
+   * lib/decimalInput). The fields keep exactly what was typed; only a
+   * `valid` reading is a number, and only its `value` is ever sent.
+   */
+  const priceInput = readDecimalInput(price);
+  const quantityInput = readDecimalInput(quantity);
+  const takeProfitInput = readDecimalInput(entryTakeProfit);
+  const stopLossInput = readDecimalInput(entryStopLoss);
+  const effectivePrice = historicalEntryPrice !== null ? historicalEntryPrice : !connectedFamily ? 0 : type === 'LIMIT' ? (priceInput.value !== null ? Number(priceInput.value) : NaN) : referencePrice ?? 0;
+  const quantityNumber = quantityInput.value !== null ? Number(quantityInput.value) : NaN;
+  const notional = effectivePrice && quantityInput.value !== null ? effectivePrice * quantityNumber : 0;
   /**
    * Whether Order Value and Required Margin describe a real order.
    *
@@ -335,7 +345,7 @@ export function FuturesOrderForm({
    * than an unknown one.
    */
   const orderSizeKnown = Number.isFinite(effectivePrice) && effectivePrice > 0
-    && quantity !== '' && Number.isFinite(quantityNumber) && quantityNumber > 0;
+    && quantityInput.value !== null && Number.isFinite(quantityNumber) && quantityNumber > 0;
 
   // Live liquidation-price preview — same formula the backend uses
   // (src/futures/marginMath.ts) to actually set it at fill time. Purely
@@ -413,7 +423,7 @@ export function FuturesOrderForm({
       ? projectFuturesExposureNotional({
           position: exposurePosition,
           activeOrders: pendingExposureOrders,
-          candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
+          candidate: { side, remainingQuantity: quantityNumber, price: effectivePrice },
         })
       : null;
 
@@ -522,9 +532,11 @@ export function FuturesOrderForm({
   function protectionBreachFor(orderSide: 'BUY' | 'SELL'): boolean {
     if (!entryProtectionAvailable || (archive && !protectionEnabled) || !orderSizeKnown) return false;
     const positionSide = orderSide === 'BUY' ? 'LONG' : 'SHORT';
-    for (const [kind, raw] of [['TP', entryTakeProfit], ['SL', entryStopLoss]] as const) {
-      if (raw === '') continue;
-      const level = parseFloat(raw);
+    for (const [kind, input] of [['TP', takeProfitInput], ['SL', stopLossInput]] as const) {
+      // A level that is not a number yet is not a level on the wrong side:
+      // `unreadableInput` stops the order and the field says why.
+      if (input.value === null) continue;
+      const level = Number(input.value);
       if (!Number.isFinite(level) || level <= 0) return true;
       const mustBeAbove = positionSide === 'LONG' ? kind === 'TP' : kind === 'SL';
       if (mustBeAbove ? level <= effectivePrice : level >= effectivePrice) return true;
@@ -534,10 +546,19 @@ export function FuturesOrderForm({
   /** Both sides breached means no button can be pressed; the form says so. */
   const protectionBreach = protectionBreachFor('BUY') && protectionBreachFor('SELL');
   /** The levels as the engine wants them, or null when nothing is armed. */
-  const armedProtection = entryProtectionAvailable && (!archive || protectionEnabled) && (entryTakeProfit !== '' || entryStopLoss !== '')
-    ? { takeProfit: entryTakeProfit === '' ? null : entryTakeProfit,
-        stopLoss: entryStopLoss === '' ? null : entryStopLoss }
+  const protectionInPlay = entryProtectionAvailable && (!archive || protectionEnabled);
+  const armedProtection = protectionInPlay && (takeProfitInput.value !== null || stopLossInput.value !== null)
+    ? { takeProfit: takeProfitInput.value, stopLoss: stopLossInput.value }
     : null;
+  /**
+   * A field showing something that is not a number stops the order — it is
+   * never replaced by an earlier value or sent without the level the trader
+   * can see. The price counts only where it is the order's price (a limit
+   * not taken from a chart bar); TP and SL only while they ride on it.
+   */
+  const unreadableInput = (type === 'LIMIT' && connectedFamily && !historicalEntry && decimalUnreadable(priceInput))
+    || decimalUnreadable(quantityInput)
+    || (protectionInPlay && (decimalUnreadable(takeProfitInput) || decimalUnreadable(stopLossInput)));
   const feeRatePublished = Number(execution.contract?.takerFeeRate ?? 0) > 0;
   /**
    * The largest position this account could open right now, in quote
@@ -663,6 +684,15 @@ export function FuturesOrderForm({
    *  it as a parameter is what makes "the direction is the button" true
    *  rather than one render out of date. */
   async function submitOrder(orderSide: 'BUY' | 'SELL') {
+    const orderQuantity = quantityInput.value;
+    // A chart bar's entry is filled at the bar whatever the field says; its
+    // digits stand in for a field the form has only just emptied.
+    const orderPrice = type !== 'LIMIT' ? undefined
+      : historicalEntryPrice !== null ? priceInput.value ?? decimalFromNumber(historicalEntryPrice)
+      : priceInput.value;
+    // `canSubmit` already says no to both; this is the last word before the
+    // wire, so no path reaches the engine with a field it cannot read.
+    if (unreadableInput || orderQuantity === null || orderPrice === null) return;
     setError(null);
     setSubmitting(true);
     setSide(orderSide);
@@ -671,8 +701,8 @@ export function FuturesOrderForm({
         symbol,
         side: orderSide,
         type,
-        price: type === 'LIMIT' ? price : undefined,
-        quantity,
+        price: orderPrice,
+        quantity: orderQuantity,
         leverage,
         marginType,
         reduceOnly,
@@ -752,6 +782,7 @@ export function FuturesOrderForm({
     && !marginShortfall
     && !contractBreach
     && !protectionBreach
+    && !unreadableInput
     && !submitting;
 
   /** Same guard, same confirmation, same order of checks as before — only
@@ -808,9 +839,9 @@ export function FuturesOrderForm({
    * the magnitude is the same for a long and a short. Fees are not in it,
    * hence «≈».
    */
-  const protectionHint = (raw: string, kind: 'TP' | 'SL') => {
-    const level = parseFloat(raw);
-    if (raw === '' || !Number.isFinite(level) || level <= 0 || !(effectivePrice > 0)) return null;
+  const protectionHint = (input: DecimalInput, kind: 'TP' | 'SL') => {
+    const level = input.value !== null ? Number(input.value) : NaN;
+    if (!Number.isFinite(level) || level <= 0 || !(effectivePrice > 0)) return null;
     const pct = (level / effectivePrice - 1) * 100;
     const pnl = orderSizeKnown ? Math.abs(level - effectivePrice) * quantityNumber : null;
     return (
@@ -819,6 +850,23 @@ export function FuturesOrderForm({
         {pnl !== null && Number.isFinite(pnl) && ` · ≈ ${kind === 'TP' ? '+' : '−'}${formatAmount(pnl)} ${quoteAsset}`}
       </small>
     );
+  };
+  /**
+   * A number field whose text is not a number says why, under the field, and
+   * is marked invalid for assistive technology. The text itself is left as
+   * typed: the trader corrects it, the form never guesses.
+   */
+  const refusalNote = (input: DecimalInput, id: string) => input.status === 'invalid'
+    ? <small className="fo-inputRefusal" id={id} data-input-refusal={input.reason}>{t(DECIMAL_REFUSAL_KEY[input.reason])}</small>
+    : null;
+  const refusalProps = (input: DecimalInput, id: string) => input.status === 'invalid'
+    ? { 'aria-invalid': true as const, 'aria-describedby': id }
+    : {};
+  /** Leaving a field that holds a number writes it the way the terminal
+   *  prints one — «12,50» → 12.50, «007» → 7, «12.» → 12. Same value; any
+   *  other text is left exactly as typed. */
+  const tidyOnBlur = (input: DecimalInput, raw: string, set: (next: string) => void) => () => {
+    if (input.status === 'valid' && input.value !== raw) set(input.value);
   };
   /** The same figure the % slider and the margin check size with. */
   const availableKnown = availableMargin !== null && Number.isFinite(availableMargin);
@@ -899,23 +947,26 @@ export function FuturesOrderForm({
                 value={price}
                 readOnly={historicalEntry}
                 aria-readonly={historicalEntry || undefined}
+                {...(historicalEntry ? {} : refusalProps(priceInput, priceRefusalId))}
                 onChange={(e) => {
                   setPriceEdited(true);
-                  setPrice(decimalText(e.target.value));
+                  setPrice(e.target.value);
                 }}
+                onBlur={historicalEntry ? undefined : tidyOnBlur(priceInput, price, setPrice)}
                 placeholder="0.00"
               />
               <span className="fo-fieldTrailing">
                 {!historicalEntry && lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 && (
                   <button type="button" onClick={() => {
                     setPriceEdited(true);
-                    setPrice(String(lastPrice));
+                    setPrice(decimalFromNumber(lastPrice));
                   }} className="fo-lastPriceBtn">
                     {t('trade.lastPriceBtn')}
                   </button>
                 )}
               </span>
             </div>
+            {!historicalEntry && refusalNote(priceInput, priceRefusalId)}
           </label>
         ) : family === 'MARKET' ? (
           <label className="fo-label fo-field fo-priceField">
@@ -943,14 +994,17 @@ export function FuturesOrderForm({
               autoComplete="off"
               required
               value={quantity}
+              {...refusalProps(quantityInput, quantityRefusalId)}
               onChange={(e) => {
-                setQuantity(decimalText(e.target.value));
+                setQuantity(e.target.value);
                 setPercent(0);
               }}
+              onBlur={tidyOnBlur(quantityInput, quantity, setQuantity)}
               placeholder={archive && baseAsset === 'BTC' ? '0.000' : '0.00000'}
             />
             <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span></span>
           </div>
+          {refusalNote(quantityInput, quantityRefusalId)}
         </label>
 
         {/* The ONLY persistent slider in this panel. */}
@@ -970,8 +1024,8 @@ export function FuturesOrderForm({
         </div> : reduceOnlyControl}
         {archiveProtection && !reduceOnly && <div className="archive-order-protection" id={protectionPanelId} hidden={!protectionEnabled}>
           <div className="archive-protection-fields">
-            <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(decimalText(e.target.value))} />{protectionHint(entryTakeProfit, 'TP')}</label>
-            <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(decimalText(e.target.value))} />{protectionHint(entryStopLoss, 'SL')}</label>
+            <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" autoComplete="off" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} {...refusalProps(takeProfitInput, takeProfitRefusalId)} onChange={e => setEntryTakeProfit(e.target.value)} onBlur={tidyOnBlur(takeProfitInput, entryTakeProfit, setEntryTakeProfit)} />{protectionHint(takeProfitInput, 'TP')}{refusalNote(takeProfitInput, takeProfitRefusalId)}</label>
+            <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" autoComplete="off" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} {...refusalProps(stopLossInput, stopLossRefusalId)} onChange={e => setEntryStopLoss(e.target.value)} onBlur={tidyOnBlur(stopLossInput, entryStopLoss, setEntryStopLoss)} />{protectionHint(stopLossInput, 'SL')}{refusalNote(stopLossInput, stopLossRefusalId)}</label>
           </div>
         </div>}
 
@@ -1001,10 +1055,13 @@ export function FuturesOrderForm({
                     inputMode="decimal"
                     placeholder="—"
                     value={entryTakeProfit}
-                    onChange={(e) => setEntryTakeProfit(decimalText(e.target.value))}
+                    {...refusalProps(takeProfitInput, takeProfitRefusalId)}
+                    onChange={(e) => setEntryTakeProfit(e.target.value)}
+                    onBlur={tidyOnBlur(takeProfitInput, entryTakeProfit, setEntryTakeProfit)}
                     aria-label={t('futures.takeProfitLabel')}
                     data-entry-take-profit="true"
                   />
+                  {refusalNote(takeProfitInput, takeProfitRefusalId)}
                 </label>
                 <label className="fo-tpslField">
                   <span className="fo-tpslLabel">{t('futures.stopLossLabel')}</span>
@@ -1013,10 +1070,13 @@ export function FuturesOrderForm({
                     inputMode="decimal"
                     placeholder="—"
                     value={entryStopLoss}
-                    onChange={(e) => setEntryStopLoss(decimalText(e.target.value))}
+                    {...refusalProps(stopLossInput, stopLossRefusalId)}
+                    onChange={(e) => setEntryStopLoss(e.target.value)}
+                    onBlur={tidyOnBlur(stopLossInput, entryStopLoss, setEntryStopLoss)}
                     aria-label={t('futures.stopLossLabel')}
                     data-entry-stop-loss="true"
                   />
+                  {refusalNote(stopLossInput, stopLossRefusalId)}
                 </label>
               </div>
             )}

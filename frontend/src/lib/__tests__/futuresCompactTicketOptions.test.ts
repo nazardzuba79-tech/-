@@ -37,29 +37,35 @@ const contractRules = {
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
 
-async function compactTicket(opts: { entryProtection?: boolean; onTransfer?: () => void } = {}) {
+async function compactTicket(opts: {
+  entryProtection?: boolean; onTransfer?: () => void; archive?: boolean;
+  contract?: typeof contractRules | null; lastPrice?: number; price?: string; quantity?: string;
+} = {}) {
   const placed = jest.fn().mockResolvedValue({});
   const form = mountComponent(FORM, {
     account,
-    execution: { placeOrder: placed, entryProtection: opts.entryProtection ?? true, contract: contractRules },
+    execution: { placeOrder: placed, entryProtection: opts.entryProtection ?? true, contract: opts.contract === undefined ? contractRules : opts.contract },
     api: {
       getFuturesConfig: () => Promise.resolve(tierConfig),
       getFuturesMarkPrice: () => Promise.resolve({ markPrice: '80000' }),
     },
   });
-  const props = { symbol: 'BTC/USDT', onPlaced: jest.fn(), executionEnabled: true, archive: true, onTransfer: opts.onTransfer };
+  const props = {
+    symbol: 'BTC/USDT', onPlaced: jest.fn(), executionEnabled: true, archive: opts.archive ?? true,
+    onTransfer: opts.onTransfer, ...(opts.lastPrice !== undefined ? { lastPrice: opts.lastPrice } : {}),
+  };
   form.render(props);
   await tick();
   const render = () => form.render(props);
   const input = (tree: any, placeholder: string) => nodes(tree).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder);
-  let tree = render();
-  input(tree, '0.00').props.onChange({ target: { value: '80000' } });
-  input(render(), '0.000').props.onChange({ target: { value: '0.5' } });
+  if (opts.price !== '') input(render(), '0.00').props.onChange({ target: { value: opts.price ?? '80000' } });
+  // The size placeholder follows the ticket: 0.000 BTC on the compact one.
+  if (opts.quantity !== '') input(render(), props.archive ? '0.000' : '0.00000').props.onChange({ target: { value: opts.quantity ?? '0.5' } });
   await tick();
   const tpslBox = (t: any) => byClass(t, 'fo-tpslToggle')[0]?.props.children[0];
   const reduceBox = (t: any) => byClass(t, 'fo-reduceOnlyRow')[0].props.children[0];
   const text = (n: any): string => (n == null || typeof n === 'boolean' ? '' : typeof n !== 'object' ? String(n) : Array.isArray(n) ? n.map(text).join('') : text(n.props?.children));
-  return { placed, render, tpslBox, reduceBox, text };
+  return { placed, render, tpslBox, reduceBox, text, input };
 }
 
 describe('«Доступно» above the price', () => {
@@ -135,18 +141,179 @@ describe('«TP / SL» beside «Только уменьшение»', () => {
   });
 });
 
-describe('numbers in the ticket are printed with a dot', () => {
-  it('turns a typed comma into the dot the book and header use, in price, size and levels', async () => {
-    const t = await compactTicket();
-    const input = (placeholder: string) => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder);
-    input('0.00').props.onChange({ target: { value: '12,91' } });
-    expect(input('0.00').props.value).toBe('12.91');
-    expect(input('0.00').props.type).toBe('text');
-    input('0.000').props.onChange({ target: { value: '1,5,0' } });
-    expect(input('0.000').props.value).toBe('1.50');
+/**
+ * Owner review of #332 (HOLD): the reader deleted what it did not expect, so
+ * «1e-8» became a price of 18. The fields now keep what was typed; text that
+ * is not a number is refused beside the field and never reaches an order.
+ */
+describe('number fields keep what was typed and never send what they cannot read', () => {
+  type Field = 'price' | 'quantity' | 'takeProfit' | 'stopLoss';
+  const FIELDS: Field[] = ['price', 'quantity', 'takeProfit', 'stopLoss'];
+  const ATTR = { takeProfit: 'data-entry-take-profit', stopLoss: 'data-entry-stop-loss' } as const;
+  function fieldOf(t: Awaited<ReturnType<typeof compactTicket>>, tree: any, field: Field) {
+    if (field === 'price') return t.input(tree, '0.00');
+    if (field === 'quantity') return t.input(tree, '0.000');
+    return byData(tree, ATTR[field])[0];
+  }
+  async function typed(field: Field, value: string, opts: Parameters<typeof compactTicket>[0] = {}) {
+    const t = await compactTicket(opts);
+    if (field === 'takeProfit' || field === 'stopLoss') t.tpslBox(t.render())?.props.onChange({ target: { checked: true } });
+    fieldOf(t, t.render(), field).props.onChange({ target: { value } });
+    await tick();
+    return t;
+  }
+  /** Both buttons, Enter on the form, and blur first: nothing is sent. */
+  async function sendsNothing(t: Awaited<ReturnType<typeof compactTicket>>) {
+    const tree = t.render();
+    expect(byClass(tree, 'buy')[0].props.disabled).toBe(true);
+    expect(byClass(tree, 'sell')[0].props.disabled).toBe(true);
+    byClass(tree, 'buy')[0].props.onClick();
+    byClass(t.render(), 'sell')[0].props.onClick();
+    nodes(t.render()).find((n: any) => n.type === 'form').props.onSubmit({ preventDefault() {} });
+    await tick();
+    expect(t.placed).not.toHaveBeenCalled();
+  }
+
+  // The review's cases first, then more of the same kind a paste can bring.
+  const REFUSED: [string, string][] = [
+    ['1e-8', 'exponent'], ['1e3', 'exponent'], ['-1', 'sign'], ['1.2.3', 'separator'], ['12abc34', 'character'],
+    ['−5', 'sign'], ['+5', 'sign'], ['1,234.5', 'separator'], ['1 000', 'character'], ['Infinity', 'character'], ['１２', 'character'],
+  ];
+  for (const field of FIELDS) {
+    it.each(REFUSED)(`${field}: «%s» stays as typed, is refused (%s), and sends no order`, async (value, reason) => {
+      const t = await typed(field, value);
+      // Leaving the field does not repair it either.
+      fieldOf(t, t.render(), field).props.onBlur?.();
+      const tree = t.render();
+      const el = fieldOf(t, tree, field);
+      expect(el.props.value).toBe(value);
+      expect(el.props['aria-invalid']).toBe(true);
+      const note = byData(tree, 'data-input-refusal').find((n: any) => n.props.id === el.props['aria-describedby']);
+      expect(note.props['data-input-refusal']).toBe(reason);
+      expect(t.text(note)).toBe(`futures.number${reason[0].toUpperCase()}${reason.slice(1)}`);
+      await sendsNothing(t);
+    });
+  }
+
+  it('a pasted value is read the same way as a typed one — whole, and refused whole', async () => {
+    // A paste arrives as one change carrying the field's new text.
+    const t = await typed('price', '80 000,50 USDT');
+    expect(t.input(t.render(), '0.00').props.value).toBe('80 000,50 USDT');
+    await sendsNothing(t);
+    t.input(t.render(), '0.00').props.onChange({ target: { value: '  80000,50  ' } });
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0].price).toBe('80000.50');
+  });
+
+  it('comma decimals, leading zeros and trailing zeros reach the order as the same numbers', async () => {
+    const t = await compactTicket({ price: '0080000,5', quantity: '000,500' });
     t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
-    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '270,5' } });
-    expect(byData(t.render(), 'data-entry-take-profit')[0].props.value).toBe('270.5');
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '90000,25' } });
+    byData(t.render(), 'data-entry-stop-loss')[0].props.onChange({ target: { value: '070000,75' } });
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    const order = t.placed.mock.calls[0][0];
+    expect(order.price).toBe('80000.5');
+    expect(order.quantity).toBe('0.500');
+    expect(order.protection).toEqual({ takeProfit: '90000.25', stopLoss: '70000.75' });
+  });
+
+  it('small values are sent digit for digit', async () => {
+    const t = await compactTicket({ contract: null, price: '0.00001234', quantity: '1000000' });
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '0,00001500' } });
+    byData(t.render(), 'data-entry-stop-loss')[0].props.onChange({ target: { value: '0.00000999' } });
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    const order = t.placed.mock.calls[0][0];
+    expect(order.price).toBe('0.00001234');
+    expect(order.quantity).toBe('1000000');
+    expect(order.protection).toEqual({ takeProfit: '0.00001500', stopLoss: '0.00000999' });
+  });
+
+  it('large precise values are sent digit for digit, not through a float', async () => {
+    const t = await compactTicket({ contract: null, price: '123456789.123456789', quantity: '0.0001' });
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '123456790.000000001' } });
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    const order = t.placed.mock.calls[0][0];
+    expect(order.price).toBe('123456789.123456789');
+    expect(order.quantity).toBe('0.0001');
+    expect(order.protection).toEqual({ takeProfit: '123456790.000000001', stopLoss: null });
+  });
+
+  it('an empty or half-typed field is not an error, and is not an order either', async () => {
+    for (const [field, value] of [['quantity', ''], ['quantity', '.'], ['price', ','], ['takeProfit', '.']] as [Field, string][]) {
+      const t = await typed(field, value);
+      const tree = t.render();
+      expect(fieldOf(t, tree, field).props['aria-invalid']).toBeUndefined();
+      expect(byData(tree, 'data-input-refusal')).toHaveLength(0);
+      await sendsNothing(t);
+    }
+    // Finishing the number is all it takes: «12.» and «,5» are numbers.
+    const t = await compactTicket({ price: '80000.', quantity: ',5' });
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0]).toMatchObject({ price: '80000', quantity: '0.5' });
+  });
+
+  it('a refused level stops the order only while TP/SL rides on it', async () => {
+    const t = await typed('takeProfit', '1e3');
+    await sendsNothing(t);
+    // Unticked: the level is off the order, so it cannot block or be sent.
+    t.tpslBox(t.render()).props.onChange({ target: { checked: false } });
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed).toHaveBeenCalledTimes(1);
+    expect(t.placed.mock.calls[0][0]).not.toHaveProperty('protection');
+  });
+
+  it('a refused level is explained by its own note, not as a level on the wrong side', async () => {
+    const t = await typed('stopLoss', '-1');
+    const said = t.text(t.render());
+    expect(said).toContain('futures.numberSign');
+    expect(said).not.toContain('futures.orderError.triggerPrice');
+    // A readable level wrong for both sides (at the price itself) still gets
+    // the side note.
+    byData(t.render(), 'data-entry-stop-loss')[0].props.onChange({ target: { value: '80000' } });
+    expect(t.text(t.render())).toContain('futures.orderError.triggerPrice');
+  });
+
+  it('a refused level is never swapped for the one typed before it', async () => {
+    const t = await typed('takeProfit', '90000');
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '9e4' } });
+    await sendsNothing(t);
+  });
+
+  it('leaving a field writes a number the terminal way and leaves anything else as typed', async () => {
+    const t = await compactTicket({ price: '80000,50', quantity: '007' });
+    t.input(t.render(), '0.00').props.onBlur();
+    t.input(t.render(), '0.000').props.onBlur();
+    expect(t.input(t.render(), '0.00').props.value).toBe('80000.50');
+    expect(t.input(t.render(), '0.000').props.value).toBe('7');
+    t.input(t.render(), '0.00').props.onChange({ target: { value: '8e4' } });
+    t.input(t.render(), '0.00').props.onBlur();
+    expect(t.input(t.render(), '0.00').props.value).toBe('8e4');
+  });
+
+  it('a price the terminal fills in is plain digits, never refused', async () => {
+    const t = await compactTicket({ lastPrice: 1e-7, price: '', quantity: '' });
+    const price = t.input(t.render(), '0.00');
+    expect(price.props.value).toBe('0.0000001');
+    expect(price.props['aria-invalid']).toBeUndefined();
+  });
+
+  it('the standard ticket refuses the same way', async () => {
+    const t = await compactTicket({ archive: false });
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '1e-8' } });
+    const tree = t.render();
+    const tp = byData(tree, 'data-entry-take-profit')[0];
+    expect(tp.props.value).toBe('1e-8');
+    expect(tp.props['aria-invalid']).toBe(true);
+    expect(byData(tree, 'data-input-refusal')[0].props['data-input-refusal']).toBe('exponent');
+    await sendsNothing(t);
   });
 });
 
