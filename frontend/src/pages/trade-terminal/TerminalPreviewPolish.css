@@ -17,8 +17,8 @@
   --preview-cta-height: 50px;
   --preview-buy: #16825f;
   --preview-sell: #b83e50;
-  --text-primary: #e2e8f0;
-  --text-secondary: #a6b2c8;
+  --text-primary: #ffffff;
+  --text-secondary: #b7bdc6;
   --text-tertiary: #909baa;
   --accent: #f0b90b;
   --accent-yellow: #f0b90b;
@@ -291,6 +291,6 @@ body:has([data-premium-terminal-preview]) .support-launcher {
  * terminals, so restore that token here without changing any geometry. */
 @media (max-width:900px) {
   .trade-terminal.vx-terminal[data-premium-terminal-preview] {
-    --text-primary: #e2e8f0 !important;
+    --text-primary: #ffffff !important;
   }
 }
