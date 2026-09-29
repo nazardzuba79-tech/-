@@ -1047,8 +1047,7 @@ export const api = {
     }>(`/market/external/trades/${pairToSlug(pair)}?limit=${limit}`),
 
   // Account
-  /** `signal` lets a caller abandon a /me that never answers (the admin gate does). */
-  getMe: (signal?: AbortSignal) =>
+  getMe: () =>
     request<{
       id: string;
       email: string;
@@ -1060,7 +1059,7 @@ export const api = {
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
       twoFactorEnabled: boolean;
       createdAt: string;
-    }>('/me', signal ? { signal } : {}),
+    }>('/me'),
 
   getSyntheticCopyTrading: () => request<SyntheticCopyTradingResponse>('/copy-trading/synthetic'),
 
@@ -1501,7 +1500,7 @@ export const api = {
 
   resetAdminWallet: (chain: string) => request<{ ok: boolean }>(`/admin/wallets/${chain}`, { method: 'DELETE' }),
 
-  getAdminUsers: (search?: string, signal?: AbortSignal) =>
+  getAdminUsers: (search?: string) =>
     request<
       {
         id: string;
@@ -1517,7 +1516,7 @@ export const api = {
         blockedReason: string | null;
         balances: { asset: string; available: string; locked: string }[];
       }[]
-    >(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`, signal ? { signal } : {}),
+    >(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`),
 
   getAdminUserDetail: (id: string) =>
     request<{
