@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, getToken, onSessionChange } from './api';
 
-type Me = Awaited<ReturnType<typeof api.getMe>>;
+type Me = Awaited<ReturnType<typeof api.getAdminGateMe>>;
 
 /** Why access is refused. Only these two ever lead away from /admin. */
 export type AdminDeniedReason = 'NO_SESSION' | 'FORBIDDEN';
@@ -83,7 +83,7 @@ export function useAdminGate(timeoutMs = ADMIN_GATE_TIMEOUT_MS): AdminGate {
       if (generation.current !== epoch || getToken() !== token) return;
       setOutcome(next);
     };
-    api.getMe(controller.signal)
+    api.getAdminGateMe(controller.signal)
       .then((data) => {
         if (!data || typeof data !== 'object' || typeof data.isAdmin !== 'boolean') settle({ status: 'error', reason: 'SERVER' });
         else settle(data.isAdmin ? { status: 'ok', me: data } : { status: 'denied', reason: 'FORBIDDEN' });
