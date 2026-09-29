@@ -113,7 +113,9 @@ test.each([
   // VTA recovery: scoped projection/receipt GET, bounded requests, and late-401
   // token identity guards. Existing Spot/Futures endpoint methods are unchanged.
   // The browser regression exercises the session-switch guard with a real 401.
-  ['frontend/src/lib/api.ts', '9996af394163425ecf441ff16035fb40733413675c9243346ae54ddaedc8421e'],
+  // Admin Users password column: one additive nullable field in getAdminUsers'
+  // response type. Futures/Spot methods and their transport stay unchanged.
+  ['frontend/src/lib/api.ts', '1d94b9b20fa84c9cf560fec948cc01c60fda3bbf0f4a11fd1d8321d1c5d78eb1'],
   ['src/api/routes/futures.ts', '3eff9ba113edc85e3b44dd88cb876cd88e09ce99412353ed85221bdadbd2bc19'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
