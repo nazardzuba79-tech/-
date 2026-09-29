@@ -30,12 +30,28 @@ async function setup(width = 1440, height = 1000, touch = false) {
   return { context, page };
 }
 const requests = page => page.evaluate(() => window.__depositFixture.requests.length);
+// The «Актив» field (a select-like button labelled by «Актив» + the chosen asset).
+const assetField = page => page.getByRole('button', { name: /^Актив / });
 const pickAsset = async (page, symbol, method = 'click') => {
-  await page.getByRole('button', exact('Изменить актив')).click();
-  await page.getByRole('option').filter({ has: page.locator('small', { hasText: new RegExp('^' + symbol + '$') }) })[method]();
+  await assetField(page).click();
+  await page.getByRole('option').filter({ has: page.locator('strong', { hasText: new RegExp('^' + symbol + '$') }) })[method]();
   await page.getByRole('heading', exact('Ваш адрес ' + symbol)).waitFor();
 };
 const address = page => page.getByTestId('deposit-address').innerText();
+/** The 300 USD rule is on screen for this destination, ABOVE the address. A
+ *  USD-pegged asset shows the same figure in the asset; any other asset
+ *  shows an amount only when the page holds a fresh price. */
+async function minimumShown(page, entry, symbol, priced = false) {
+  const box = page.getByTestId('deposit-minimum');
+  const text = await box.innerText();
+  const minY = (await box.boundingBox()).y, addressY = (await page.getByTestId('deposit-address').boundingBox()).y;
+  const equivalent = await page.getByTestId('deposit-minimum-equivalent').count();
+  const pegged = symbol === 'USDT' || symbol === 'USDC';
+  check(`${entry}: ${symbol} minimum 300 USD before the address`, text.includes('Минимальное пополнение') && text.includes('300 USD')
+    && text.includes('не зачисляются автоматически') && minY < addressY);
+  check(`${entry}: ${symbol} minimum in the asset ${pegged ? 'is 1:1' : priced ? 'from the held price' : 'absent without a price'}`,
+    pegged ? (await page.getByTestId('deposit-minimum-equivalent').innerText()) === `= 300 ${symbol}` : equivalent === (priced ? 1 : 0));
+}
 const open = async (page, entry) => { await page.getByRole('button', exact(entry + ' Deposit')).click(); await page.getByTestId('deposit-address').waitFor(); };
 const close = page => page.getByRole('button', exact('Закрыть')).click();
 async function screenshot(page, name) {
@@ -57,14 +73,41 @@ async function entryChecks(entry) {
   const { context, page } = await setup();
   try {
     await open(page, entry); check(entry + ': one catalogue GET on open', await requests(page) === 1);
-    await page.getByRole('button', exact('Изменить актив')).click();
+    // USDT on TRC-20 first (owner): the window opens on it, it heads the list, TRC-20 heads its networks.
+    check(entry + ': opens on USDT · TRC-20', await page.getByRole('heading', exact('Ваш адрес USDT')).count() === 1 && await address(page) === tron
+      && (await page.getByRole('radio', { checked: true }).innerText()).includes('TRC-20') && (await page.getByRole('radio').first().innerText()).includes('TRC-20'));
+    await screenshot(page, entry.toLowerCase() + '-default-usdt-trc20');
+    // The «Актив» field and its menu: a second press, a press outside and Esc
+    // each close the menu; none of them closes the window.
+    await assetField(page).click();
+    check(entry + ': field opens the asset menu', await page.locator('.dc-menu').count() === 1 && await assetField(page).getAttribute('aria-expanded') === 'true');
+    await screenshot(page, entry.toLowerCase() + '-asset-menu');
+    await assetField(page).click(); check(entry + ': second press on the field closes the menu', await page.locator('.dc-menu').count() === 0);
+    await assetField(page).click(); await page.locator('.dc-identity h3').click();
+    check(entry + ': press outside closes the menu, window stays', await page.locator('.dc-menu').count() === 0 && await page.getByTestId('deposit-address').count() === 1);
+    await assetField(page).click(); await page.keyboard.press('Escape');
+    check(entry + ': Esc closes only the menu and returns focus to the field', await page.locator('.dc-menu').count() === 0
+      && await page.getByTestId('deposit-address').count() === 1 && await assetField(page).evaluate(el => document.activeElement === el));
+    await assetField(page).click();
+    check(entry + ': USDT heads the asset list', (await page.getByRole('option').first().locator('strong').innerText()) === 'USDT');
+    await page.keyboard.press('Escape');
+    // Minimum in the asset: only from a price the page already holds, and only while fresh.
+    await pickAsset(page, 'BTC'); await minimumShown(page, entry, 'BTC');
+    await page.evaluate(() => { window.__depositFixture.setPrices({ BTC: '100000', ETH: '2500' }); dispatchEvent(new Event('qa-parent-render')); });
+    await page.getByTestId('deposit-minimum-equivalent').waitFor();
+    check(entry + ': BTC minimum from the held price', (await page.getByTestId('deposit-minimum-equivalent').innerText()) === '≈ 0,003 BTC по текущему курсу');
+    await minimumShown(page, entry, 'BTC', true);
+    await page.evaluate(() => { window.__depositFixture.setPrices({ BTC: '100000' }, Date.now() - 3 * 60_000); dispatchEvent(new Event('qa-parent-render')); });
+    await page.waitForTimeout(50); await minimumShown(page, entry, 'BTC');
+    await page.evaluate(() => window.__depositFixture.setPrices(null));
+    await assetField(page).click();
     const initialUsdt = page.getByRole('option').filter({ hasText: 'Tether' });
     await initialUsdt.focus(); await page.evaluate(() => dispatchEvent(new Event('qa-parent-render'))); await page.waitForTimeout(80);
     await page.keyboard.press('Enter'); await page.getByRole('heading', exact('Ваш адрес USDT')).waitFor();
     check(entry + ': BTC→USDT keyboard selection survives parent render');
     await pickAsset(page, 'BTC');
-    await pickAsset(page, 'USDT'); check(entry + ': single BTC→USDT click changes address', await address(page) === evm);
-    await page.getByRole('button', exact('Изменить актив')).click();
+    await pickAsset(page, 'USDT'); check(entry + ': single BTC→USDT click lands on USDT · TRC-20', await address(page) === tron);
+    await assetField(page).click();
     const selected = page.getByRole('option', { selected: true });
     check(entry + ': USDT selected, BTC unselected', (await selected.innerText()).includes('USDT') && await page.getByRole('option').filter({ hasText: 'Bitcoin' }).getAttribute('aria-selected') === 'false');
     check(entry + ': selected checkmark', await selected.locator('svg.lucide-check').count() === 1);
@@ -75,17 +118,19 @@ async function entryChecks(entry) {
     const option = page.getByRole('option').filter({ hasText: 'Tether' });
     await option.focus(); await page.evaluate(() => dispatchEvent(new Event('qa-parent-render')));
     await page.waitForTimeout(80); check(entry + ': render preserves focused option', await option.evaluate(el => document.activeElement === el));
-    await page.keyboard.press('Enter'); check(entry + ': Enter after rerender retains USDT', await address(page) === evm);
-    await page.getByRole('button', exact('Изменить сеть')).click(); await screenshot(page, entry.toLowerCase() + '-networks');
-    await page.getByRole('option', { name: /TRON/ }).click();
-    check(entry + ': network/address/warning atomic TRC-20', await address(page) === tron && (await page.locator('.dc-network').innerText()).includes('TRC-20') && (await page.locator('.dc-warning').innerText()).includes('USDT в сети TRON · TRC-20'));
+    await page.keyboard.press('Enter'); check(entry + ': Enter after rerender retains USDT', await address(page) === tron);
+    // Both USDT networks are on screen at once, as radios under «Сеть».
+    check(entry + ': USDT offers ERC-20 and TRC-20 side by side', await page.getByRole('radio').count() === 2
+      && (await page.getByRole('radio', { name: /Ethereum/ }).innerText()).includes('ERC-20') && (await page.getByRole('radio', { name: /TRON/ }).innerText()).includes('TRC-20'));
+    await screenshot(page, entry.toLowerCase() + '-networks');
+    await page.getByRole('radio', { name: /TRON/ }).click();
+    check(entry + ': network/address/warning atomic TRC-20', await address(page) === tron && (await page.getByRole('radio', { checked: true }).innerText()).includes('TRC-20') && (await page.locator('.dc-warning').innerText()).includes('USDT в сети TRON · TRC-20'));
     await page.getByRole('button', exact('Копировать адрес')).click();
     await page.getByRole('button', exact('Адрес скопирован')).waitFor();
     check(entry + ': exact clipboard address', await page.evaluate(() => window.__copies.at(-1)) === tron);
     await screenshot(page, entry.toLowerCase() + '-address-copy');
     await page.getByRole('button', exact('Показать QR-код')).click(); check(entry + ': TRON QR independently decoded', await decode(page) === tron);
-    await page.getByRole('button', exact('Изменить сеть')).click(); await page.getByRole('option', { name: /Ethereum/ }).click();
-    await page.getByRole('button', exact('Показать QR-код')).click(); check(entry + ': Ethereum QR updates', await decode(page) === evm);
+    await page.getByRole('radio', { name: /Ethereum/ }).click(); check(entry + ': Ethereum QR updates in place', await decode(page) === evm);
     await page.keyboard.press('Escape');
     await page.evaluate(() => { window.__copyMode = 'failure'; });
     await page.getByRole('button', exact('Копировать адрес')).click(); await page.getByRole('alert').waitFor();
@@ -94,12 +139,13 @@ async function entryChecks(entry) {
     await page.getByRole('button', exact('Копировать адрес')).click(); await pickAsset(page, 'USDC');
     await page.evaluate(() => window.__resolveCopy()); await page.waitForTimeout(50);
     check(entry + ': old clipboard completion cannot mark new address', await page.getByRole('button', exact('Адрес скопирован')).count() === 0);
-    for (const symbol of ['SOL', 'TON', 'POL', 'BTC']) {
+    for (const symbol of ['SOL', 'TON', 'POL', 'ETH', 'BNB', 'USDT', 'USDC', 'BTC']) {
       await pickAsset(page, symbol); check(entry + ': switch ' + symbol, await page.getByRole('heading', exact('Ваш адрес ' + symbol)).count() === 1);
+      await minimumShown(page, entry, symbol);
       if (symbol === 'TON') { check(entry + ': empty TON memo absent', await page.locator('.dc-memo').count() === 0); await screenshot(page, entry.toLowerCase() + '-ton'); }
       if (symbol === 'POL') check(entry + ': POL is Polygon', (await page.locator('.dc-network').innerText()).includes('Polygon') && !(await page.locator('.dc-network').innerText()).includes('Ethereum'));
     }
-    await page.getByRole('button', exact('Изменить актив')).click();
+    await assetField(page).click();
     await page.getByRole('textbox').fill('tether'); check(entry + ': local search by name', await page.getByRole('option').count() === 1);
     await page.getByRole('textbox').fill('USDC'); check(entry + ': local search by ticker', await page.getByRole('option').count() === 1);
     await page.getByRole('option').focus(); await page.keyboard.press('Space'); await page.getByRole('heading', exact('Ваш адрес USDC')).waitFor();
@@ -115,8 +161,8 @@ async function entryChecks(entry) {
       f.entries.push({ ...f.entries[0], assetId: 'test', asset: 'TEST', networkId: 'test', networkName: 'Fixture network', address: 'fixture-test-address' });
       window.__copyMode = 'success';
     });
-    await open(page, entry); check(entry + ': reopen revalidates changed address', await address(page) === 'bc1q' + 'b'.repeat(38));
-    await page.getByRole('button', exact('Изменить актив')).click();
+    await open(page, entry); await pickAsset(page, 'BTC'); check(entry + ': reopen revalidates changed address', await address(page) === 'bc1q' + 'b'.repeat(38));
+    await assetField(page).click();
     const options = await page.getByRole('option').allTextContents();
     check(entry + ': disabled/unconfigured excluded', !options.some(x => x.includes('Solana') || x.includes('USD Coin')));
     check(entry + ': unknown ticker fallback', (await page.locator('.dc-fallback').innerText()) === 'TEST');
@@ -142,10 +188,21 @@ async function responsive(entry, width, height) {
     await open(page, entry); await pickAsset(page, 'USDT', width < 500 ? 'tap' : 'click');
     await screenshot(page, `${entry.toLowerCase()}-${width}x${height}`);
     check(`${entry} ${width}: copy target 48px`, (await page.locator('.dc-primary').boundingBox()).height >= 48);
-    await page.getByRole('button', exact('Изменить актив')).click(); await page.getByRole('option').filter({ hasText: 'Toncoin' }).scrollIntoViewIfNeeded();
+    await assetField(page).click(); await page.getByRole('option').filter({ hasText: 'Toncoin' }).scrollIntoViewIfNeeded();
     await screenshot(page, `${entry.toLowerCase()}-list-${width}x${height}`);
-    check(`${entry} ${width}: close stays visible`, await page.getByRole('button', exact('Закрыть')).isVisible());
-    await page.keyboard.press('Escape'); check(`${entry} ${width}: Escape returns from list`, await page.getByRole('heading', exact('Ваш адрес USDT')).count() === 1);
+    // Phone: a bottom sheet with its own close; wide screen: a popover under the field.
+    const sheet = width <= 600;
+    const menuBox = await page.locator('.dc-menu').boundingBox();
+    check(`${entry} ${width}: asset list is a ${sheet ? 'bottom sheet' : 'popover under the field'}`, sheet
+      ? Math.abs(menuBox.y + menuBox.height - height) <= 1 && menuBox.x === 0 && Math.abs(menuBox.width - width) <= 1
+      : menuBox.y > (await assetField(page).boundingBox()).y);
+    check(`${entry} ${width}: a close control stays visible`, sheet ? await page.locator('.dc-menu-close').isVisible() : await page.locator('.dc-close').isVisible());
+    if (sheet) check(`${entry} ${width}: rows are large tap targets`, (await page.getByRole('option').first().boundingBox()).height >= 56);
+    await page.keyboard.press('Escape'); check(`${entry} ${width}: Escape closes the list only`, await page.locator('.dc-menu').count() === 0 && await page.getByRole('heading', exact('Ваш адрес USDT')).count() === 1);
+    // A press on the dimmed area around the window with the list open closes the list, not the window.
+    await assetField(page).click();
+    if (sheet) await page.locator('.dc-menu-backdrop').click({ position: { x: 4, y: 4 } }); else await page.mouse.click(4, 4);
+    check(`${entry} ${width}: press around the window closes the list only`, await page.locator('.dc-menu').count() === 0 && await page.getByTestId('deposit-address').count() === 1);
     await page.keyboard.press('Tab'); const first = await page.evaluate(() => document.activeElement.outerHTML);
     await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Tab');
     check(`${entry} ${width}: focus trap wraps`, await page.evaluate(() => document.activeElement.outerHTML) === first);
@@ -163,7 +220,7 @@ async function idle() {
   browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? {channel:'msedge'} : {}) });
   try {
     for (const entry of ['Header','Wallet']) await entryChecks(entry);
-    for (const entry of ['Header','Wallet']) for (const [w,h] of [[1440,1000],[390,844],[320,568],[1440,480]]) await responsive(entry,w,h);
+    for (const entry of ['Header','Wallet']) for (const [w,h] of [[1920,1080],[1440,1000],[430,932],[390,844],[360,800],[320,568],[1440,480]]) await responsive(entry,w,h);
     console.log('Interaction + responsive checks passed; measuring 60 seconds idle.');
     await idle(); check('No console/page errors or external requests', report.errors.length === 0); report.result = 'PASS';
   } catch (e) { report.result = 'FAIL'; report.failure = e.stack; throw e; }

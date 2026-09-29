@@ -42,7 +42,9 @@ const restoredEcosystemKeys = [
 ].map(key => `home.ecosystem.${key}`);
 const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search', 'noResults', 'networkHint',
   'yourAddress', 'changeAsset', 'changeNetwork', 'sendOnly', 'inNetwork', 'lossWarning', 'copyAddress',
-  'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo'].map(key => `deposit.ui.${key}`);
+  'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo',
+  // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
+  'asset', 'minimumTitle', 'minimumEquivalent', 'minimumPegged', 'minimumNote'].map(key => `deposit.ui.${key}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
