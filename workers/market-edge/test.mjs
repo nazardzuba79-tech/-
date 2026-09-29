@@ -25,7 +25,7 @@ async function run(){
     };
 
     const health=await worker.fetch(new Request("https://market.voltextech.net/health"));
-    assert.deepEqual(await health.json(),{ok:true,service:"voltex-market-edge",version:"public-display-edge-v9"});
+    assert.deepEqual(await health.json(),{ok:true,service:"voltex-market-edge",version:"public-display-edge-v10"});
 
     const book=await worker.fetch(new Request("https://market.voltextech.net/market/display/futures-book/BTCUSDT",{headers:{authorization:"Bearer must-not-forward",cookie:"session=must-not-forward"}}));
     const bookBody=await book.json();assert.equal(book.status,200);assert.equal(bookBody.source,"bybit");assert.equal(bookBody.bids.length,25);assert.equal(bookBody.asks.length,25);

@@ -162,7 +162,8 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
     expect(page).not.toMatch(/TestMarketTickerBar|TestMarketBook|TestMarketOrderPanel/);
     expect(page).toContain("marketType !== 'spot' || document.hidden) return;");
     expect(page).toContain("const bookLive = !testPair || testMarket.asset?.state.phase === 'live';");
-    expect(page).toContain("if (marketType !== 'spot' || !bookLive) return;");
+    // A deep link to an unresolved pair also waits (managed listings never read venue depth).
+    expect(page).toContain("if (marketType !== 'spot' || !bookLive || pairResolving) return;");
     expect(page).toContain('testPair ? 10_000 : 60_000');
     expect(panels).toContain('tradingView={false}');
     expect(panels).not.toMatch(/api\.|placeOrder|fetch\(/);
@@ -170,7 +171,9 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
   test('prelisting and non-admin orders remain blocked; only the private live sale is admitted', () => {
     const submit = form.slice(form.indexOf('async function handleSubmit'), form.indexOf('api.placeOcoOrder'));
     expect(submit.replace(/\r\n/g, '\n')).toContain("if (notTradingYet) {\n      const message = t('trade.assetNotTradingYet');\n      setError(message);\n      toast.error(message);\n      return;\n    }");
-    expect(form).toContain("const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;");
+    // VTA is still gated exactly as before; NRX and a TRADABLE managed listing
+    // (Admin → Listings) use the ordinary Spot path, refused server-side before listing.
+    expect(form).toContain("const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;");
     expect(form).toContain('await withVtaSaleLock(accountId, async () => {');
     expect(form).toContain('const pending = prepareVtaIntent(accountId, quantity);');
     expect(form).toContain('await api.sellVtaDemo(pending.requestId, pending.quantity)');

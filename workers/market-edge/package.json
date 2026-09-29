@@ -1,0 +1,13 @@
+{
+  "name": "voltex-market-edge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:listings": "node --test listings.integration.test.mjs",
+    "test:smoke": "node --test smoke.integration.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "miniflare": "5.20260925.0-alpha"
+  }
+}

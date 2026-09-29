@@ -44,6 +44,10 @@ services:
         value: "USDT:0xdAC17F958D2ee523a2206206994597C13D831ec7:6"
       - key: ETHEREUM_API_KEY
         sync: false # optional — free key from https://etherscan.io/apis, powers the admin's incoming-transfers feed
+      - key: LISTINGS_STORE_URL
+        sync: false # Admin → Listings (docs/CLOUDFLARE_ACTIVATION.md): https://market.voltextech.net — set only after the market-edge Worker reports public-display-edge-v10
+      - key: LISTINGS_STORE_TOKEN
+        sync: false # set manually in the Render dashboard; the SAME value as the GitHub secret LISTINGS_STORE_TOKEN (Worker secret). Never in git, chat or logs.
 
 # The frontend ("voltex-exchange" in the Render dashboard, live at
 # exchange-frontend-3qd1.onrender.com) is intentionally NOT declared here.

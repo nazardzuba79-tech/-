@@ -14,6 +14,7 @@ import {
   MenuIcon,
   XIcon,
   ChevronRightIcon,
+  BoxesIcon,
 } from './AdminIcons';
 
 const SECTIONS = [
@@ -23,6 +24,7 @@ const SECTIONS = [
   { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon, group: 'Средства' },
   { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon, group: 'Средства' },
   { to: '/admin/kyc', label: 'Верификация · KYC', icon: ShieldCheckIcon, group: 'Комплаенс' },
+  { to: '/admin/listings', label: 'Листинги', icon: BoxesIcon, group: 'Рынки' },
 ];
 
 const CHECK_ERROR_TEXT: Record<'TIMEOUT' | 'NETWORK' | 'SERVER', string> = {

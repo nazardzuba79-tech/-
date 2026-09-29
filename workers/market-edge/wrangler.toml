@@ -1,5 +1,5 @@
 # VOLTEX public market data edge (Cloudflare Workers Free).
-# Isolated from Pages (frontend/), Render and Neon. No KV / DO / R2 yet.
+# Isolated from Pages (frontend/), Render and Neon. One Durable Object: managed listings.
 name = "voltex-market-edge"
 main = "src/worker.ts"
 compatibility_date = "2026-09-01"
@@ -10,3 +10,15 @@ preview_urls = false
 routes = [
   { pattern = "market.voltextech.net", custom_domain = true }
 ]
+
+# Managed listings (Admin → Listings): one SQLite Durable Object, its own
+# namespace, its own secret. Public reads of PUBLISHED listings only; drafts
+# and the admin API (/internal/listings) need LISTINGS_STORE_TOKEN, set with
+# `wrangler secret put LISTINGS_STORE_TOKEN` in an authorized deploy step.
+[[durable_objects.bindings]]
+name = "LISTINGS"
+class_name = "ManagedListingsDO"
+
+[[migrations]]
+tag = "listings-v1"
+new_sqlite_classes = ["ManagedListingsDO"]

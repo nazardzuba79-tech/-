@@ -9,11 +9,13 @@ on:
     paths:
       - 'workers/market-edge/**'
       - 'src/services/testMarkets/**'
+      - 'src/services/listings/**'
       - '.github/workflows/deploy-market-edge.yml'
   pull_request:
     paths:
       - 'workers/market-edge/**'
       - 'src/services/testMarkets/**'
+      - 'src/services/listings/**'
       - 'frontend/src/lib/sampledDepth.ts'
       - 'frontend/src/lib/futuresDepth.ts'
       - 'frontend/src/lib/__tests__/futuresCandles.test.ts'
@@ -30,6 +32,7 @@ on:
       - 'frontend/src/pages/home/useHomeMarket.ts'
       - 'src/services/marketData/cfd/BiquoteCfdQuoteSource.ts'
       - 'scripts/qa-cfd-display-browser.cjs'
+      - 'scripts/smoke-market-edge-listings.mjs'
       - '.github/workflows/deploy-market-edge.yml'
   workflow_dispatch:
 
@@ -55,6 +58,10 @@ jobs:
         run: node --experimental-default-type=module test.mjs
       - name: Install shared simulation dependency
         run: npm ci --prefix ../.. --ignore-scripts --no-audit --no-fund
+      - name: Managed listings Durable Object on real workerd
+        run: npm ci --ignore-scripts --no-audit --no-fund && npm run test:listings
+      - name: Post-deploy smoke script against the real bundle (configured, not configured, token mismatch)
+        run: npm run test:smoke
       - name: Wrangler dry-run
         run: npx --yes wrangler@4 deploy --dry-run
 
@@ -74,8 +81,26 @@ jobs:
         run: npm ci --prefix ../.. --ignore-scripts --no-audit --no-fund
       - name: Deploy Worker
         # Still gated by the existing explicit deploy condition, never a PR.
+        # Applies the listings-v1 Durable Object migration (a new, empty SQLite namespace).
         run: npx --yes wrangler@4 deploy
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
+      - name: Listings store secret (GitHub secret LISTINGS_STORE_TOKEN → Worker secret; never printed)
+        # The same value must be set on Render as LISTINGS_STORE_TOKEN. Without it the
+        # public edge still works and Admin → Listings reports "not connected".
+        run: |
+          if [ -z "${LISTINGS_STORE_TOKEN}" ]; then
+            echo "::notice::GitHub secret LISTINGS_STORE_TOKEN is not set: the listings admin store stays NOT CONFIGURED."
+            exit 0
+          fi
+          if [ "${#LISTINGS_STORE_TOKEN}" -lt 32 ]; then
+            echo "::error::LISTINGS_STORE_TOKEN must be at least 32 characters; the Worker secret was not changed."
+            exit 1
+          fi
+          printf '%s' "${LISTINGS_STORE_TOKEN}" | npx --yes wrangler@4 secret put LISTINGS_STORE_TOKEN
+        env:
+          LISTINGS_STORE_TOKEN: ${{ secrets.LISTINGS_STORE_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
       - name: Production deployment identity and isolation smoke
@@ -83,11 +108,11 @@ jobs:
           health_ok=0
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if health="$(curl --connect-timeout 5 --max-time 10 -fsS https://market.voltextech.net/health)" \
-              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v9')process.exit(1)})"; then
+              && printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||j.version!=='public-display-edge-v10')process.exit(1)})"; then
               health_ok=1
               break
             fi
-            echo "waiting_for_v9 attempt=$attempt"
+            echo "waiting_for_v10 attempt=$attempt"
             sleep 5
           done
           test "$health_ok" = "1"
@@ -95,6 +120,16 @@ jobs:
           private_status="$(curl --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)"
           echo "private_route_status=$private_status"
           test "$private_status" = "404"
+      - name: Listings edge smoke (read-only; proves the admin store answers the secret when it is set)
+        run: |
+          if [ -n "${LISTINGS_STORE_TOKEN}" ]; then extra=--require-admin; else extra=; fi
+          for attempt in 1 2 3 4 5 6; do
+            if node ../../scripts/smoke-market-edge-listings.mjs https://market.voltextech.net --expect-version public-display-edge-v10 $extra; then exit 0; fi
+            echo "listings_smoke_retry attempt=$attempt"; sleep 10
+          done
+          exit 1
+        env:
+          LISTINGS_STORE_TOKEN: ${{ secrets.LISTINGS_STORE_TOKEN }}
 
 
   live-smoke:
@@ -105,7 +140,7 @@ jobs:
       - name: Confirm deployed Worker version and private-route isolation
         run: |
           health="$(curl --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 -fsS https://market.voltextech.net/health)"
-          printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||!['futures-edge-direct-v6','public-display-edge-v7','public-display-edge-v8','public-display-edge-v9'].includes(j.version))process.exit(1)})"
+          printf '%s' "$health" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);console.log('health_service='+String(j.service));console.log('health_version='+String(j.version));if(j.ok!==true||j.service!=='voltex-market-edge'||!['futures-edge-direct-v6','public-display-edge-v7','public-display-edge-v8','public-display-edge-v9','public-display-edge-v10'].includes(j.version))process.exit(1)})"
           echo "health_identity=ok"
           private_status="$(curl --retry 4 --retry-all-errors --retry-delay 2 --connect-timeout 5 --max-time 20 -sS -o /dev/null -w '%{http_code}' https://market.voltextech.net/private/orders)"
           echo "private_route_status=$private_status"

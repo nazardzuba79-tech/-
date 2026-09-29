@@ -2,6 +2,7 @@
   "scope": "Local only: real Worker in workerd + production bundle; Render reads are fixtures; synthetic addresses",
   "checks": [
     "Deposit open: exactly one anonymous GET to the Cloudflare public catalogue, zero Render catalogue requests, nothing prefetched",
+    "two overlapping Deposit opens during a slow read share one Cloudflare request",
     "asset, network, address copy, memo copy and QR made zero requests; disabled SOL not offered; 1440 and 390 fit",
     "open dialog idle 60 s: zero catalogue requests",
     "after the admin disables XRP, the next open reads once and XRP is gone",
@@ -10,6 +11,10 @@
   ],
   "requests": {
     "coldOpen": {
+      "edge": 1,
+      "renderCatalogue": 0
+    },
+    "overlappingOpens": {
       "edge": 1,
       "renderCatalogue": 0
     },
