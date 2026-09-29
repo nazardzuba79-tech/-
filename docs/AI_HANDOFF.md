@@ -4463,3 +4463,61 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved: order payload and `armedProtection` (TP/SL still travels on the order, only while ticked, never under Reduce Only, only where `entryProtection`); the standard (non-archive) ticket and its tests; the real engine's behaviour (no TP/SL at entry there, positions table remains the place); `onOpenTransfer` for the account panel; chart types, indicators and their computations.
 - Checks actually run: frontend `tsc -b` and production build PASS; `npx jest frontend/src` — 137 suites pass, 20 fail, and the failing set is identical to clean `main` built the same way (19 fail on unbuilt main; `registerWalletTailwindOwnership` fails on main too once `dist` exists, `isSelected`). Local fixture browser: interaction script 1440/390 PASS; `qa-order-panel-refinement.cjs` PASS 1920/1440/390/320; `qa-native-demo-browser.cjs` and `qa-limit-close.cjs` PASS. Evidence: `docs/qa/futures-compact-ticket/`.
 - Not done / next: TP/SL at entry for ordinary accounts needs the real engine to accept protection on `POST /futures/orders` (backend change, not in this task). Not merged, not deployed.
+
+## Claude — 2026-09-29 — Port #306 premium terminal layer and #280 Spot/CFD identity onto main
+
+- Base: main `e17aa533` (after #328). Branch `claude/ecstatic-brahmagupta-cwkvt5-terminal-polish`. Commit: this one (local, not pushed). Sources: Codex #306 `069d29ff` (owner-reviewed preview) and ChatGPT #280 `8673dd04`, reconciled hunk by hunk.
+- **Ported from #306:**
+  - `TerminalPreviewPolish.css`, imported by Spot/CFD (`TradePage.tsx`) and Futures (`FuturesPage.tsx`), and the `data-premium-terminal-preview` marker on all three roots.
+  - `TERMINAL_NAV_COPY` in `Nav.tsx`.
+  - The `data-initial-loading`/`aria-busy` flag on the Spot `order-summary` (`OrderForm.tsx`).
+  - The `cfd-form-fields` wrapper (`CfdOrderForm.tsx`).
+  - The `futuresUiPolish` ignore of the marker attribute.
+  - `scripts/qa-premium-terminal-preview.cjs`.
+- **Changed from #306:**
+  - Primary actions are 50px desktop / 52px phone (`--preview-cta-height`); #306 had 44/48, below qa-order-panel-refinement's ≥50 and Spot/CFD phone parity.
+  - `.archive-protection-toggle` rules dropped: #328 replaced that card with `.fo-tpslToggle`.
+  - The label rule also covers Spot's real `.form-label`/`.order-family-label`.
+  - The `PairListSidebar` `.pairs-list` loading flag and its CSS selector are not ported: that module is sha-pinned by `cryptoCatalogue.test.ts`, which is left untouched.
+  - QA script: no hard-coded Windows Playwright path. It starts the disposable native fixture itself, sets `locale:'en-US'`, and drives #328's TP/SL checkbox and Reduce Only. It fails on failed interactions, page errors or overflow.
+- **Ported from #280:**
+  - `TickerBar.tsx` identity: markets button, `CryptoIcon`, pair/asset-name stack.
+  - `CfdTickerBar.tsx` identity: `CfdInstrumentIcon` plus symbol/name.
+  - In `VoltexTerminalSystem.css`:
+    - the INSTRUMENT IDENTITY block and its mobile sizes;
+    - `flex-direction:row` for the CFD cluster;
+    - `.pair-cluster` added to main's #313 desktop Spot strip rule;
+    - `.pair-asset:empty` hidden;
+    - the transparent `.orderbook-spread`.
+  - The `futuresTickerHeader` normalization and the `terminalDesignSystem` identity test.
+  - The stricter small-target check with details in `qa-spot-cfd-terminal.cjs`; Futures is now included and measured 0.
+  - `futures-visual-polish.yml`: artifact path plus trigger paths.
+- **Not ported from #280:**
+  - `--text-primary:#ffffff` in the shared token block (it would move Futures; #306 sets the token for all three terminals).
+  - The ticket field/summary/CTA typography (#306's later layer owns these at ID weight; mixing the two produced 0-radius boxed summaries).
+  - The 13px order-type tabs (they cut off the fifth family, OCO, in the 1440 ticket).
+  - The MOBILE widths hunk (already on main).
+- **Tests and QA scripts:**
+  - `spotPairTransition` TickerBar harness: stubs for the two new presentational imports.
+  - New Jest assertion: the premium layer keeps CTAs ≥50/52.
+  - `qa-spot-cfd-terminal.cjs` now measures the primary action (desktop ≥50, phone ≥52 on the Trade tab reached by tapping `#mobile-trade-trade`) and saves `*-trade.png`. Clean main fails this check (Spot 44px; CFD 44px desktop / 40px phone); the branch passes it.
+- **Preserved:** every data/API path, P&L/ROI math, precision, order types, chart trading, VTA/NRX, the #328 compact ticket geometry, and main's newer mobile tab QA.
+- **Checks run:**
+  - Frontend `tsc -b` and `vite build` passed (existing chunk warning); backend `tsc` passed.
+  - Full Jest: branch 5778 tests, 5553 passed / 121 failed. Clean main (pr1/wt, built): 5776 tests, 5551 passed / 121 failed. New failing names: 0.
+  - Focused suites: 181 passed. The 2 failing tests in `spotPairTransition` fail identically on main.
+  - Browser, final build: `qa-spot-cfd-terminal` PASS; `qa-premium-terminal-preview` PASS (18 screens, 29/29 interactions, 0 errors/overflow); `qa-order-panel-refinement` PASS with `LANG=en_US.UTF-8`. Without LANG it fails on both branch and main with only `Invalid language tag: en-US@posix`.
+  - Browser, earlier build, before the PairListSidebar revert: PASS for:
+    - `qa-futures-visual-polish --label local`, and the sampled 1440/390 run;
+    - `qa-native-demo-browser`, `qa-limit-close`, `qa-pnl-card`, `qa-large-numbers-browser`;
+    - `qa-futures-pair-persistence`, `qa-futures-header-turnover`, `qa-futures-bottom-panel`, `qa-futures-pair-labels`;
+    - `qa-futures-cold-open` (local build A/B);
+    - `qa-voltora-listing`, `qa-home-laptop-first-load`, `qa-home-snapshot-reload`;
+    - `qa-vta-demo` and `qa-nrx-market` (disposable local Postgres DB `voltex_pr4_qa`).
+  - Not run: `qa-private-card-browser`, `qa-kyc-edge`.
+- **Evidence:** `docs/qa/spot-cfd-terminal/` and `docs/qa/premium-terminals-preview/` (trimmed to the 1440/390 shots).
+- **Unresolved:**
+  - #306 restyles Futures (graphite fields, 8px CTA radius, deep buy/sell, disabled grey). This is the owner-reviewed intent but visibly changes the released Futures ticket; owner sign-off is needed.
+  - The desktop CFD ticket now scrolls its fields above a pinned CTA; at 1440×900 the summary box is partly below the fold.
+  - The Nav shows «Доход» only on terminal pages, as in #306.
+  - Remote CI not run.

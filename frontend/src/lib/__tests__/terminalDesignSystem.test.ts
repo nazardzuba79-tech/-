@@ -71,6 +71,48 @@ it('the shared rules carry enough weight to actually apply', () => {
   }
 });
 
+it('Spot and CFD carry the final Futures instrument identity hierarchy', () => {
+  const spot = read('src/components/TickerBar.tsx');
+  expect(spot).toContain('className="pair-cluster"');
+  expect(spot).toContain('className="pair-markets-btn"');
+  expect(spot).toContain('<CryptoIcon symbol={baseAsset} size={24} />');
+  expect(spot).toContain('className="pair-identity"');
+  expect(spot).toContain('className="pair-asset"');
+
+  const cfd = read('src/components/CfdTickerBar.tsx');
+  expect(cfd).toContain('<CfdInstrumentIcon symbol={symbol} compact />');
+  expect(cfd).toContain('cfd-pair-cluster');
+  expect(cfd).toContain('cfd-instrument-identity');
+
+  const css = read(SYSTEM);
+  expect(css).toContain('INSTRUMENT IDENTITY PARITY');
+  expect(css).toContain('ORDER-TICKET PARITY');
+  // The Spot strip lays its first item out as a content-sized flex column;
+  // that item is now the identity cluster, not the bare selector.
+  expect(css).toContain('.spot-terminal .ticker-bar > :is(.pair-cluster,.pair-selector,.ticker-item)');
+});
+
+it('the premium finishing layer keeps every primary action at least 50px (52px on phones)', () => {
+  // #306 drew the terminals' primary actions at 44px desktop / 48px phone —
+  // below the released Futures ticket (50/52, qa-order-panel-refinement.cjs)
+  // and Spot/CFD phone parity (52, TerminalMobileParity.css). The layer
+  // carries ID weight, so a shorter minimum here would win everywhere.
+  const layer = read('src/pages/trade-terminal/TerminalPreviewPolish.css');
+  expect(layer).toContain('--preview-cta-height: 50px;');
+  expect(layer).toMatch(/:is\(\.submit-btn, \.cfd-submit\) \{\s*min-height: var\(--preview-cta-height\);/);
+  expect(layer).toContain(':is(.fo-submitPair .submit-btn, .cfd-submit, .submit-btn) { min-height: 52px; }');
+  for (const [, px] of layer.matchAll(/(?:submit|cta)[^{]*\{[^}]*min-height:\s*(\d+)px/g)) {
+    expect(Number(px)).toBeGreaterThanOrEqual(50);
+  }
+  expect(layer).not.toContain('--preview-control-height');
+  // Every page that carries the marker imports the layer.
+  for (const page of ['src/pages/TradePage.tsx', 'src/pages/FuturesPage.tsx']) {
+    const source = read(page);
+    expect(source).toContain("import './trade-terminal/TerminalPreviewPolish.css'");
+    expect(source).toContain('data-premium-terminal-preview');
+  }
+});
+
 it('no Futures-only trading concept leaks into the Spot or CFD shells', () => {
   // Design consistency was the ask; business-logic mixing explicitly was not.
   // Spot has no leverage, no liquidation price and no funding, so the shell
