@@ -51,10 +51,12 @@ export function useMarketTicker(pair: string, intervalMs?: number): TickerView {
   // the row stays null (a dash) rather than a zero price.
   const testPair = isTestMarketPair(pair);
   const test = useTestMarkets(TEST_MARKET_TERMINAL_INTERVAL_MS, testPair, pair);
+  const asset = testPair ? test.assets.find((row) => row.pair === pair.toUpperCase()) : undefined;
+  // Consumers derive state from this ticker in effects. Keep its identity
+  // until the source asset changes, just like ordinary venue tickers.
+  const testTicker = useMemo(() => asset ? testAssetTicker(asset) : null, [asset]);
   if (testPair) {
-    const asset = test.assets.find((row) => row.pair === pair.toUpperCase());
-    const row = asset ? testAssetTicker(asset) : null;
-    return { ticker: row && row.lastPrice !== '' ? row : null, loading: !test.loaded, error: test.error, stale: false };
+    return { ticker: testTicker && testTicker.lastPrice !== '' ? testTicker : null, loading: !test.loaded, error: test.error, stale: false };
   }
   return {
     ticker: state.tickers.get(pair.toUpperCase()) ?? null,

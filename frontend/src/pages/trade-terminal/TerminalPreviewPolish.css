@@ -199,7 +199,7 @@
   min-width: 64px;
 }
 :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
-  .spot-orders-empty[aria-busy=true]::after {
+  .spot-orders-empty[data-initial-loading]::after {
   content: '';
   display: block;
   height: 80px;

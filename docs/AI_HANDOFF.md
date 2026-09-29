@@ -4766,3 +4766,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved Claude/Codex work through #340, including VTA cycles, managed listings and sale protections. Paused #331 and its branch/evidence remain untouched.
 - Local checks: 67 tests / 4 suites PASS (testMarkets, futuresChartBlank, priceChartMarketOrders, terminalMobileParity); backend/frontend TypeScript and frontend production build PASS (existing chunk-size warning). Existing NRX browser harness PASS at 1440/390 with listing transition, chart interval switching, standard form and external requests blocked. Additional VTA 1h fixture views PASS at both widths, no page errors/overflow. The first VTA check used an incomplete private-account fixture; corrected to a 403 unavailable-account response, no product change needed. All account submissions were local fixtures; zero production writes.
 - Evidence and full logs: ignored output/linear-scale. PR CI and production release verification follow; this entry does not claim deployment.
+
+## Codex — 2026-09-29 — VTA terminal background-refresh stability
+
+- Owner requested the entire VTA terminal stop jumping vertically and explicitly authorized immediate site publication. Base main: c237649ccd93e74c68013c861ab9cbd38af56726; branch codex/vta-chart-stability; implementation SHA is the commit containing this entry.
+- Material changes: SpotOrdersView.tsx and TerminalPreviewPolish.css separate initial skeletons from background aria-busy; useMarketData.ts stabilizes the VTA ticker identity to stop the OrderForm effect render loop. Added targeted unit/browser regression coverage and wired Test markets CI.
+- Preserved prior Claude/Codex listing data, ordinary/Auto scale, chart/UI design, polling intervals, trading/accounting, existing infrastructure and paused PR #331.
+- Local validation: 97 focused tests / 6 suites PASS; frontend types/build PASS; production-bundle fixture QA VTA 390/1440/2552 and BTC 1440 shows zero geometry changes across background polls. Additional unchanged spotPairTransition suite retains 3 stale-harness/assertion failures (2 pass); see docs/qa/vta-layout-stability.md.
+- Next: verify PR CI and the authorized existing Pages production deployment. No production trades, credits, backend or hosting-config changes.

@@ -82,6 +82,16 @@ describe('Spot orders truthful dense presentation', () => {
     expect(failed).toContain('trade.retry');
     expect(failed).not.toContain('trade.noOrdersForPair');
   });
+  it.each([renderOrders, renderAssets])('keeps initial skeletons out of background refresh and error retry', render => {
+    expect(render({ loading: true })).toContain('data-initial-loading="true"');
+    const refreshed = render({ refreshing: true });
+    expect(refreshed).toContain('aria-busy="true"');
+    expect(refreshed).not.toContain('data-initial-loading');
+    const retry = render({ refreshing: true, error: 'unavailable' });
+    expect(retry).toContain('role="alert"');
+    expect(retry).toContain('disabled=""');
+    expect(retry).not.toContain('data-initial-loading');
+  });
   it('retains last known rows on transient failure and blocks repeat cancel while pending', () => {
     const html = renderOrders({ orders: [order], error: 'temporary read failure', cancelling: true, cancellingId: order.id });
     expect(html).toContain('data-order-id="local-order-1"');
