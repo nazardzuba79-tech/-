@@ -1,0 +1,58 @@
+/* Admin → Listings. Light admin theme tokens (see adminStyles). */
+.admin-listings { display: grid; gap: 14px; min-width: 0; }
+.listing-toolbar { display: flex; justify-content: flex-start; }
+.listing-primary { min-height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: var(--admin-brand); color: var(--admin-brand-on); font-weight: 700; font-size: 13px; cursor: pointer; }
+.admin-listings button:not(.listing-primary):not(.admin-inline-retry) { min-height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text-primary); font-weight: 600; font-size: 13px; cursor: pointer; }
+.listing-muted { color: var(--text-tertiary); font-size: 13px; margin: 0; }
+.listing-hint { color: var(--text-secondary); font-size: 12px; margin: 0; }
+.listing-table { display: grid; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); overflow: hidden; }
+.listing-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1.1fr) auto; gap: 10px 14px; align-items: center; padding: 12px 14px; border-top: 1px solid var(--border); font-size: 13px; }
+.listing-row:first-child { border-top: none; }
+.listing-ident { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.listing-ident img { border-radius: 50%; object-fit: cover; flex: none; }
+.listing-ident span:last-child { display: grid; min-width: 0; }
+.listing-ident small { color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.listing-letter { width: 28px; height: 28px; border-radius: 50%; display: inline-grid; place-items: center; background: var(--admin-brand-dim); color: var(--admin-brand); font-weight: 800; flex: none; }
+.listing-when { color: var(--text-secondary); overflow-wrap: anywhere; }
+.listing-status { font-weight: 700; font-size: 12px; }
+.listing-status-draft { color: var(--text-tertiary); }
+.listing-status-live { color: var(--buy); }
+.listing-status-changed { color: var(--accent); }
+.listing-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.listing-actions a { display: inline-flex; align-items: center; min-height: 34px; padding: 0 12px; border-radius: 8px; color: var(--admin-brand); font-weight: 700; font-size: 13px; text-decoration: none; }
+.listing-form { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); min-width: 0; }
+.listing-form h2 { margin: 0; font-size: 16px; }
+.listing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.listing-grid label, .listing-logo, .listing-seed { display: grid; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); min-width: 0; }
+.listing-grid input:not([type=checkbox]):not([type=radio]):not([type=file]), .listing-grid select, .listing-preview-controls input { min-height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text-primary); font-size: 13px; min-width: 0; width: 100%; box-sizing: border-box; }
+.listing-grid small, .listing-preview-controls small { font-weight: 500; color: var(--text-tertiary); overflow-wrap: anywhere; }
+.listing-seed { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 0; }
+.listing-seed label { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; margin-right: 10px; }
+.listing-seed code { font-size: 11px; overflow-wrap: anywhere; }
+.listing-logo > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.listing-logo img { border-radius: 50%; object-fit: cover; }
+.listing-logo input[type=file] { max-width: 100%; font-size: 12px; }
+.listing-check { display: grid !important; grid-template-columns: auto 1fr; align-items: start; column-gap: 8px; }
+.listing-check small { grid-column: 2; }
+.listing-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.listing-preview-controls { display: grid; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); max-width: 360px; }
+.listing-preview { display: grid; gap: 10px; padding: 12px; border: 1px dashed var(--admin-brand); border-radius: 10px; background: var(--admin-brand-dim); }
+.listing-preview header { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+.listing-spark { width: 100%; height: 70px; background: #fff; border-radius: 8px; }
+.listing-spark polyline { fill: none; stroke: var(--admin-brand); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.listing-spark-empty { font-size: 12px; color: var(--text-tertiary); }
+.listing-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.listing-preview-grid h3, .listing-versions h3 { margin: 0 0 4px; font-size: 12px; }
+.listing-preview-grid div > div { display: flex; justify-content: space-between; gap: 8px; }
+.listing-preview-grid .bid span:first-child { color: var(--buy); }
+.listing-preview-grid .ask span:first-child { color: var(--sell); }
+.listing-versions { font-size: 12px; color: var(--text-secondary); display: grid; gap: 2px; }
+.listing-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 17, 21, 0.45); }
+.listing-dialog { width: 100%; max-width: 440px; display: grid; gap: 8px; padding: 18px; border-radius: 12px; background: #fff; color: #101828; box-sizing: border-box; }
+.listing-dialog h2 { margin: 0; font-size: 16px; }
+.listing-dialog p { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+  .listing-row { grid-template-columns: minmax(0, 1fr); }
+  .listing-actions { justify-content: flex-start; }
+  .listing-grid, .listing-preview-grid { grid-template-columns: minmax(0, 1fr); }
+}

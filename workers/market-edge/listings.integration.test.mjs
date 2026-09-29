@@ -89,7 +89,7 @@ test('a draft is invisible publicly: not in the catalogue, not on any pair path'
   }
 });
 
-test('publish: stale revision refused, past time refused, then atomic version 1; same key is idempotent', async () => {
+test('publish: stale revision refused, past time refused, then atomic version 1; same key or an unchanged draft is idempotent', async () => {
   const listing = (await (await admin('/internal/listings')).json()).listings.find((l) => l.id === 'qax');
   assert.equal((await publish('qax', listing.draftRevision - 1, 'publish-key-000000001')).status, 409);
   // Past listing time: save, then the publish is refused at server time.
@@ -106,6 +106,9 @@ test('publish: stale revision refused, past time refused, then atomic version 1;
   // Double click / lost response: the same key returns the same version, nothing appended.
   const again = await (await publish('qax', goodRev, 'publish-key-000000003')).json();
   assert.deepEqual([again.version, again.replayed], [1, true]);
+  // Another tab publishing the unchanged draft with its own key: still version 1, not a duplicate.
+  const other = await (await publish('qax', goodRev, 'publish-key-000000004')).json();
+  assert.deepEqual([other.version, other.replayed], [1, true]);
   const list = await (await admin('/internal/listings')).json();
   assert.equal(list.listings.find((l) => l.id === 'qax').versions.length, 1);
 });

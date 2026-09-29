@@ -176,6 +176,11 @@ export class ManagedListingsDO {
       try {
         config = parseListingConfig(JSON.parse(String(row.draft)));
         const active = row.active_version === null ? null : JSON.parse(String(this.version(id, Number(row.active_version))!.config)) as ListingConfig;
+        // Publishing what is already live (a second confirmation, another admin's tab) is a replay, not a new version.
+        if (active && JSON.stringify(config) === JSON.stringify(active)) {
+          const current = this.version(id, Number(row.active_version))!;
+          return reply({ id, version: Number(row.active_version), replayed: true, publishedAt: new Date(Number(current.published_at)).toISOString() });
+        }
         checkPublishable(config, active, now, envMs(this.env.LISTINGS_MIN_LEAD_MS, MIN_LEAD_MS, MIN_LEAD_FLOOR_MS));
       } catch (error) { return validationReply(error); }
       const version = (row.active_version === null ? 0 : Number(this.sql.exec('SELECT MAX(version) AS v FROM listing_version WHERE listing_id = ?', id).toArray()[0].v)) + 1;

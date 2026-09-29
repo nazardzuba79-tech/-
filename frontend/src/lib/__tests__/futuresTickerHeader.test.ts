@@ -222,6 +222,10 @@ test.each([
     // especially index/funding/internal OI and every account write, as before.
     .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')
     .replace(/\(isNrxPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
+    // Managed listings (Admin → Listings) are edge-served like NRX: the same four
+    // public reads, routed by isEdgeMarketPair (NRX or a published listing).
+    .replace("import { fetchNrxPublic, isEdgeMarketPair } from './nrxMarket';\n", '')
+    .replace(/\(isEdgeMarketPair\(pair\) \? fetchNrxPublic : request\)</g, 'request<')
     // Private VTA adds only these two methods and response types. Continue
     // fingerprinting every pre-existing Futures/Spot method unchanged.
     .replace("export interface VtaSaleReceipt { id: string; price: string; quantity: string; proceeds: string }\nexport interface VtaDemoSnapshot {\n  balances: { asset: string; available: string; locked: string }[];\n  sales: (VtaSaleReceipt & { createdAt: string })[];\n}\n\n", '')

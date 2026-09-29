@@ -40,8 +40,9 @@ import './trade-terminal/TerminalPremium.css';
 import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
-import { isTestMarketPair } from '../lib/testMarkets';
-import { useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
+import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
+import { isEdgeMarketPair } from '../lib/nrxMarket';
+import { useManagedListingDiscovery, useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
 import { TestMarketChart } from '../components/TestMarketTerminal';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
@@ -88,7 +89,11 @@ export function TradePage() {
   // order form — with the listing card and countdown in the chart area. Its
   // book has no depth to fetch, and the order form declines to submit until
   // trading opens. An ordinary pair subscribes to nothing here.
-  const testPair = isTestMarketPair(pair);
+  // A pair not built into the code may be a managed listing (Admin → Listings):
+  // one catalogue read from the market edge tells this tab. Built-in test
+  // pairs and a loaded catalogue need nothing more.
+  const managedCatalogue = useManagedListingDiscovery(searchParams.get('market') !== 'cfd' && !isTestMarketPair(pair));
+  const testPair = isTestMarketPair(pair) || (managedCatalogue.loaded && isManagedListingPair(pair));
   const testMarket = useTestMarket(testPair ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
@@ -359,7 +364,7 @@ export function TradePage() {
 
           <div className="orderbook-area" data-sampled-book="true">
             <SampledDataNote asOf={book.pair === pair ? book.asOf : null} />
-            <NrxBookTabs enabled={pair === 'NRX/USDT'} live={bookLive}>
+            <NrxBookTabs enabled={isEdgeMarketPair(pair)} pair={pair} live={bookLive}>
                 <OrderBookPanel
               bids={visibleBook.bids}
               asks={visibleBook.asks}

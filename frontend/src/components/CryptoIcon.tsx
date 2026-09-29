@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { assetMetadataStore } from '../lib/assetMetadataStore';
+import { managedListingLogo } from '../lib/testMarkets';
 // A local file, never a registry lookup by ticker: another coin may own
 // the same ticker there. PLACEHOLDER until the owner supplies the approved
 // VOLTORA logo — replacing this one file swaps it everywhere.
@@ -150,10 +151,14 @@ export function CryptoIcon({
   /** Canonical reference rows must not guess identity by symbol. */
   metadataOnly?: boolean;
 }) {
-  const testIcon = metadataOnly ? null : TEST_ASSET_ICONS[symbol.toUpperCase()] ?? null;
+  // A published managed listing (Admin → Listings) carries its own logo; without
+  // one it gets the letter avatar — never a registry or icon-set lookup by
+  // ticker, where another coin may own the same ticker.
+  const managedLogo = metadataOnly ? undefined : managedListingLogo(symbol);
+  const testIcon = metadataOnly ? null : TEST_ASSET_ICONS[symbol.toUpperCase()] ?? managedLogo ?? null;
   // Only consult the registry when the caller has not already supplied a
   // logo — no point spending a lookup on a question already answered.
-  const registryLogo = useRegistryLogo(symbol, !testIcon && !imageUrl && !metadataOnly);
+  const registryLogo = useRegistryLogo(symbol, !testIcon && !imageUrl && !metadataOnly && managedLogo === undefined);
   const preferredUrl = testIcon ?? imageUrl ?? registryLogo;
 
   const [preferredFailed, setPreferredFailed] = useState(false);
@@ -169,7 +174,7 @@ export function CryptoIcon({
 
   const usingFallback = !preferredUrl || preferredFailed;
 
-  if (usingFallback && (fallbackFailed || metadataOnly)) {
+  if (usingFallback && (fallbackFailed || metadataOnly || managedLogo !== undefined)) {
     return (
       <div
         style={{
