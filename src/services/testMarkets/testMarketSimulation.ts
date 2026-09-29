@@ -275,10 +275,13 @@ export class TestMarketSimulation {
   /** The profile's parameters, or null for the legacy intra-hour path. */
   private readonly realism: RealismParams | null;
   private readonly realismOffset: number;
+  /** The first hour the profile shapes; every earlier hour takes the legacy path. */
+  private readonly realismFromHour: number;
 
   constructor(readonly asset: TestAssetConfig) {
     this.realism = isSimulationProfile(asset.simulationProfile) ? REALISM_PROFILES[asset.simulationProfile] : null;
     this.realismOffset = asset.realismSeedOffset ?? 0;
+    this.realismFromHour = asset.realismFrom === undefined ? 0 : Math.max(0, Math.ceil((asset.realismFrom - asset.listingAt) / HOUR_MS));
   }
 
   private block(index: number): Block {
@@ -313,7 +316,8 @@ export class TestMarketSimulation {
     const cluster = clusterFactor(this.asset.seed, hour);
     const sigma = candleSigma(regime, logReturn, cluster);
     const open = this.hourOpen(hour);
-    const realistic = this.realism ? realisticHour({
+    // Both paths start and end the hour on the same anchors, so switching at an hour is seamless.
+    const realistic = this.realism && hour >= this.realismFromHour ? realisticHour({
       seed: this.asset.seed, offset: this.realismOffset, hour, regime, logReturn, sigma, params: this.realism,
       trendStep: Math.log(1 + impulseRate(Math.floor(hour / 24) + 1)) / CANDLES_PER_HOUR,
       previousRegime: hour > 0 ? this.regimeOf(hour - 1) : null, nextRegime: this.regimeOf(hour + 1),
@@ -529,13 +533,13 @@ const MAX_SIMULATIONS = 64;
 /**
  * The one shared simulation per test-asset CONFIGURATION. The key is every
  * input that shapes history — pair, seed, listing time, initial price,
- * realism profile and offset — so a managed listing's draft preview and its
- * published market never share (and never corrupt) each other's cached
- * candles. VTA and NRX have one fixed configuration each, so they keep
+ * realism profile, offset and activation — so a managed listing's draft
+ * preview and its published market never share (and never corrupt) each
+ * other's cached candles. VTA and NRX have one fixed configuration each, so they keep
  * exactly one simulation as before.
  */
 export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}`;
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);

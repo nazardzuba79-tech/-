@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { VOLTORA, type TestAssetConfig } from '../testAssetConfig';
 import { NEURIX } from '../neurix';
 import { testMarketCandles } from '../testMarketService';
+import { testMarketDepth } from '../testMarketDepth';
 import {
   TestMarketSimulation, aggregateCandles, getCurrentTestMarketState, impulseRate, simulationFor,
   CANDLE_MS, DAY_MS, HOUR_MS, MINUTE_MS, TICK_MS, type SimCandle,
@@ -12,7 +13,7 @@ import {
 
 const L = VOLTORA.listingAt;
 /** VTA's base scenario — same pair, seed, listing time and price — with the original intra-hour path. */
-const { simulationProfile: _vtaProfile, ...BASE } = VOLTORA;
+const { simulationProfile: _vtaProfile, realismFrom: _vtaFrom, ...BASE } = VOLTORA;
 const withProfile = (profile: SimulationProfile, extra: Partial<TestAssetConfig> = {}): TestAssetConfig => ({ ...BASE, simulationProfile: profile, ...extra });
 const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const anchors = (asset: TestAssetConfig, hours: number) =>
@@ -39,10 +40,58 @@ const MAIN = {
 };
 
 describe('VTA keeps its identity; only its candle character is new', () => {
-  test('pair, seed, listing time and initial price are unchanged; the profile is IMPULSE_TREND', () => {
+  test('pair, seed, listing time and initial price are unchanged; IMPULSE_TREND from 2026-10-01 00:00 UTC', () => {
     expect(VOLTORA).toMatchObject({ pair: 'VTA/USDT', seed: 'voltora-2026-09-27', initialPrice: 0.01, simulationProfile: 'IMPULSE_TREND' });
     expect(new Date(VOLTORA.listingAt).toISOString()).toBe('2026-09-28T15:00:00.000Z');
+    expect(new Date(VOLTORA.realismFrom as number).toISOString()).toBe('2026-10-01T00:00:00.000Z');
     expect(NEURIX.simulationProfile).toBeUndefined();
+  });
+});
+
+describe('VTA activation boundary: nothing already shown or sold at ever changes', () => {
+  const B = VOLTORA.realismFrom as number;
+  const legacy = () => new TestMarketSimulation(BASE);
+  const vta = () => new TestMarketSimulation(VOLTORA);
+  const fullProfile = () => new TestMarketSimulation(withProfile('IMPULSE_TREND'));
+
+  test('the boundary is an hour anchor of the base simulation (listing + 57h)', () => {
+    expect((B - L) / HOUR_MS).toBe(57);
+    expect(vta().priceAt(B)).toBe(legacy().priceAt(B));
+  });
+
+  test('before it: every 5m and 1m candle, the tape, the book, the ticker state and the executable price are main\'s', () => {
+    expect(vta().candles5m(B - 1)).toEqual(legacy().candles5m(B - 1));
+    expect(vta().candles1m(B - 1, B - 6 * HOUR_MS)).toEqual(legacy().candles1m(B - 1, B - 6 * HOUR_MS));
+    const a = vta(), b = legacy();
+    // Every 37 s from the listing to the boundary: the price a private sale executes at (state.lastPrice).
+    for (let t = L; t < B; t += 37_000) expect(a.priceAt(t)).toBe(b.priceAt(t));
+    for (const t of [L + 3_600_123, L + 26 * HOUR_MS + 37_000, B - 1]) {
+      expect(a.recentTrades(t, 200)).toEqual(b.recentTrades(t, 200));
+      expect(testMarketDepth(a, t)).toEqual(testMarketDepth(b, t));
+      expect(getCurrentTestMarketState(a, t)).toEqual(getCurrentTestMarketState(b, t));
+    }
+  });
+
+  test('from it: the IMPULSE_TREND candles, with a seamless join', () => {
+    const now = B + 9 * HOUR_MS + 123_456;
+    expect(vta().candles5m(now, B)).toEqual(fullProfile().candles5m(now, B));
+    expect(vta().candles5m(now, B)).not.toEqual(legacy().candles5m(now, B));
+    const around = vta().candles5m(B + CANDLE_MS, B - CANDLE_MS);
+    expect(around[0].close).toBe(around[1].open);
+    expect(around[1].open).toBe(legacy().priceAt(B));
+    // A 24h window across the boundary: its reference price is still main's.
+    const state = getCurrentTestMarketState(vta(), B + 6 * HOUR_MS);
+    expect(state.openPrice24h).toBe(legacy().priceAt(B - 18 * HOUR_MS));
+    expect(state.high24h).toBeGreaterThanOrEqual(Math.max(state.lastPrice as number, state.openPrice24h as number));
+  });
+
+  test('a boundary inside an hour starts at the next hour; one before the listing means from the listing', () => {
+    const mid = new TestMarketSimulation(withProfile('PULLBACK_TREND', { realismFrom: L + 10.5 * HOUR_MS }));
+    const from = new TestMarketSimulation(withProfile('PULLBACK_TREND'));
+    expect(mid.candles5m(L + 11 * HOUR_MS - 1, L + 10 * HOUR_MS)).toEqual(legacy().candles5m(L + 11 * HOUR_MS - 1, L + 10 * HOUR_MS));
+    expect(mid.candles5m(L + 12 * HOUR_MS - 1, L + 11 * HOUR_MS)).toEqual(from.candles5m(L + 12 * HOUR_MS - 1, L + 11 * HOUR_MS));
+    const early = new TestMarketSimulation(withProfile('PULLBACK_TREND', { realismFrom: L - DAY_MS }));
+    expect(early.candles5m(L + 3 * HOUR_MS)).toEqual(from.candles5m(L + 3 * HOUR_MS));
   });
 });
 
@@ -130,7 +179,7 @@ describe('determinism: pair + seed + profile + time → the same candles, always
   });
 
   test('a restarted process (fresh module state) gives the same history', () => {
-    const now = L + 20 * HOUR_MS + 55_000;
+    const now = (VOLTORA.realismFrom as number) + 5 * HOUR_MS + 55_000;
     const here = new TestMarketSimulation(VOLTORA).candles5m(now);
     let restarted: SimCandle[] = [];
     jest.isolateModules(() => {
@@ -142,12 +191,13 @@ describe('determinism: pair + seed + profile + time → the same candles, always
   });
 
   test('history already shown never changes as time passes, and the forming candle never knows its future', () => {
-    const sim = new TestMarketSimulation(VOLTORA);
+    const asset = withProfile('IMPULSE_TREND');
+    const sim = new TestMarketSimulation(asset);
     const early = sim.candles5m(L + 5 * HOUR_MS + 7_000);
-    const later = new TestMarketSimulation(VOLTORA).candles5m(L + 9 * HOUR_MS);
+    const later = new TestMarketSimulation(asset).candles5m(L + 9 * HOUR_MS);
     expect(later.slice(0, early.length - 1)).toEqual(early.slice(0, -1));
     const open = L + 7 * HOUR_MS + 4 * CANDLE_MS;
-    const final = new TestMarketSimulation(VOLTORA).candles5m(open + CANDLE_MS, open)[0];
+    const final = new TestMarketSimulation(asset).candles5m(open + CANDLE_MS, open)[0];
     for (let t = open; t < open + CANDLE_MS; t += 9_000) {
       const forming = sim.candles5m(t, open)[0];
       expect(forming.high).toBeLessThanOrEqual(final.high);
@@ -282,8 +332,8 @@ describe('each profile has its own character (same base scenario, three seeds)',
     expect(compression.impulses).toBeGreaterThan(0.75);
   });
 
-  test('VTA (IMPULSE_TREND) against its own original candles: more impulses, more long wicks, more short pullbacks', () => {
-    const before = character(BASE), after = character(VOLTORA);
+  test('VTA\'s profile on VTA\'s base scenario against the original candles: more impulses, more long wicks, more short pullbacks', () => {
+    const before = character(BASE), after = character(withProfile('IMPULSE_TREND'));
     expect(after.impulses).toBeGreaterThan(2 * before.impulses);
     expect(after.longWicks).toBeGreaterThan(1.5 * before.longWicks);
     expect(after.pullbacks).toBeGreaterThan(before.pullbacks);

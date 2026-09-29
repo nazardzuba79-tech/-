@@ -17,18 +17,36 @@ before profiles existed).
 
 ## What a profile can and cannot change
 
-| Unchanged by any profile (tested) | Changed by the profile |
+| Invariant under any profile (tested) | Intentionally different where the profile applies |
 |---|---|
 | `initialPrice`, `seed`, `listingAt`, listing schedule | 5m/1m candle bodies inside an hour |
 | Regime of every hour and its return | Wicks: length, side, frequency (capped per profile) |
 | Price at every hour boundary → every 1h/4h/1d open and close for an hour-aligned listing | Where inside an hour the move happens (impulse, pullback, compression → breakout) |
-| P48 = 5.5234599, P168 = 35171.298 for VTA, every day anchor | Volume distribution inside an hour |
-| 24h change measured on an hour boundary | 24h high/low (wicks), the price between hour boundaries |
+| P48 = 5.5234599, P168 = 35171.298 for VTA, every day anchor | Tick tape, display book and last price **between** hour boundaries (so an execution at such an instant prices differently) |
+| 24h change measured on an hour boundary | 24h high/low when the window holds profiled hours; 24h change between hour boundaries; volume inside an hour |
 
 Why the anchors cannot move: the twelve 5m steps of an hour sum to the hour's
 return and the last boundary is set to the next hour's open by the base
 simulation; a wick excursion is zero at the candle's first and last tick, so it
 moves high/low but never open/close.
+
+## Activation boundary (`realismFrom`)
+
+A market that is already live must not rewrite what it has shown or sold at.
+`realismFrom` (epoch ms, rounded up to the next hour after the listing) makes
+every earlier hour take the original path — candles, ticks, tape, book, state
+and the executable price — and every later hour the profile. Both paths start
+and end each hour on the same anchor, so the join is seamless. It is a fixed
+constant in the config, never a wall-clock default.
+
+**VTA:** `realismFrom = 2026-10-01T00:00:00Z` (listing + 57h). Before it,
+every VTA value is byte-identical to `main` (tested every 37 s from the
+listing, plus tape, book and ticker state), so the chart always agrees with
+private sales already recorded. The deploy must happen **before** this instant;
+if it slips, move the constant to a later hour before deploying.
+
+New managed listings have no `realismFrom`: their profile applies from the
+listing, as they have no history to preserve.
 
 ## Profiles
 
@@ -43,7 +61,7 @@ code has no per-profile branches. Main knobs: pattern weights per regime
 asset re-rolls the look without touching the anchors.
 
 - **CALM_TREND** — smooth trend, small/medium candles, short shadows (≤ 6%), rare impulses, short pauses.
-- **IMPULSE_TREND** — a few ordinary bars, then an impulse candle; consolidation → breakout; occasional big wicks (≤ 11%). **VTA uses this profile.**
+- **IMPULSE_TREND** — a few ordinary bars, then an impulse candle; consolidation → breakout; occasional big wicks (≤ 11%). **VTA uses this profile from 2026-10-01 00:00 UTC.**
 - **PULLBACK_TREND** — the trend holds through short counter-trend runs, false breakouts, rejections and the longest shadows (≤ 13%).
 - **COMPRESSION_BREAKOUT** — narrow ranges with small bodies and wick sweeps, then a strong breakout and a short settle.
 
@@ -76,7 +94,10 @@ exactly their 5m candle. The Spot chart's interval bar still offers 5m…1w
 
 ## Deployment notes (nothing deployed by this change)
 
-- VTA is served by Render: its new candles appear after a Render deploy.
+- VTA is served by Render. Deploy it before VTA's `realismFrom`
+  (2026-10-01 00:00 UTC). A later deploy would redraw the hours between the
+  boundary and the deploy, so if it slips, move the constant to a later hour
+  first.
 - Managed listings and NRX are computed on the market-edge Worker, which
   bundles this code. Order: **Render (and frontend) first, then the Worker**,
   from the same commit.
@@ -86,7 +107,6 @@ exactly their 5m candle. The Spot chart's interval bar still offers 5m…1w
     Render's strict schema rejects the store's answer
     (`STORE_INVALID_RESPONSE`) for Admin → Listings and the trading registry.
 - NRX has no profile and is byte-identical to `main`.
-- VTA's hour anchors are unchanged, but its intra-hour path is new: after
-  deploy, the chart at the moment of an already-recorded private VTA sale can
-  show a slightly different price than that sale's stored fill (stored fills
-  are not touched).
+- Recorded VTA sales happened before the boundary, where every price is
+  unchanged, so the chart keeps agreeing with them. Stored fills, balances and
+  allocations are not touched by this change.

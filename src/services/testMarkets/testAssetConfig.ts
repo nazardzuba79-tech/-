@@ -37,6 +37,13 @@ export interface TestAssetConfig {
   simulationProfile?: SimulationProfile;
   /** Re-rolls the realism layer's look without touching the anchors. Default 0. */
   realismSeedOffset?: number;
+  /**
+   * First instant the profile applies (epoch ms, rounded up to the next hour
+   * after the listing). Earlier hours keep the original candles, ticks and
+   * prices, so a market that is already live never rewrites what it has
+   * shown or sold at. Absent: the profile applies from the listing.
+   */
+  realismFrom?: number;
 }
 
 export const VOLTORA: TestAssetConfig = {
@@ -58,6 +65,11 @@ export const VOLTORA: TestAssetConfig = {
   // consolidation, pullbacks and long wicks. Every hour anchor, P48 and the
   // listing schedule are unchanged; see simulationRealism.ts.
   simulationProfile: 'IMPULSE_TREND',
+  // Activation boundary (owner, 2026-09-29): everything before it — candles,
+  // tape, book and the executable price of past sales — stays exactly as the
+  // original generator produced it. A fixed hour anchor, never a wall-clock
+  // default; it must still be in the future when this is deployed.
+  realismFrom: Date.parse('2026-10-01T00:00:00Z'),
 };
 
 // Render's existing public listing. NRX metadata is owned exclusively by the edge.
