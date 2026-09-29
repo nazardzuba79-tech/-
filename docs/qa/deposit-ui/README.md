@@ -70,3 +70,6 @@ CI starts the local preview, executes these checks with external requests blocke
 Equivalent Header screenshots are also included.
 
 Merged: **NO**. Deployed: **NO**. Production addresses changed: **NO**. Balances changed: **NO**. Neon catalogue access added: **NO**. Blockchain monitoring added: **NO**. New Deposit polling added: **NO**.
+
+### CI follow-up
+VOLTORA listing CI on the first review head failed because its browser assertion hard-coded September while the fixture now schedules October 1 (current time + 48h). The same assertion exists on clean main. Corrected only the harness to compare the actual fixture UTC day/month/hour/minute; no VOLTORA runtime or listing change. Re-ran its isolated browser QA at 1440/430/390/360/320: PASS, zero writes/errors/overflow. Deposit runtime and its screenshot evidence are unchanged by this follow-up.

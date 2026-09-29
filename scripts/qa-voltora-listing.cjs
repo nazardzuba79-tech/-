@@ -13,7 +13,7 @@ const express = require('express');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
 
 const root = path.resolve(__dirname, '..');
-const dist = path.join(root, 'frontend/dist');
+const dist = path.resolve(process.env.QA_FRONTEND_DIST || path.join(root, 'frontend/dist'));
 const out = path.resolve(process.env.QA_OUT || path.join(root, 'docs/qa/voltora-listing'));
 const REFUSAL = 'Этот актив пока не торгуется';
 const TECHNICAL = /TEST · NOT TRADABLE|NOT TRADABLE|Simulated|Preview|preview|simulation|тестов|Тестов|симуляц/;
@@ -58,6 +58,7 @@ function testAssets(now) {
       const page = await context.newPage();
       const pageErrors = [];
       let writes = 0;
+      let fixtureListingAt;
       page.on('pageerror', error => pageErrors.push(String(error)));
 
       await page.route('**/*', async route => {
@@ -72,7 +73,11 @@ function testAssets(now) {
         }
         const json = body => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 
-        if (p === '/api/v1/market/test-assets') return json(testAssets(Date.now()));
+        if (p === '/api/v1/market/test-assets') {
+          const payload = testAssets(Date.now());
+          fixtureListingAt = payload.assets[0].listingAt;
+          return json(payload);
+        }
         if (p === '/api/v1/me') return json({ id: 'qa', email: 'qa@example.invalid', displayName: 'QA', kycStatus: 'NOT_STARTED', role: 'USER', isAdmin: false });
         if (p === '/api/v1/market/external/tickers') return json({ tickers: [{ pair: 'BTC/USDT', lastPrice: '65000', bidPrice: '64999', askPrice: '65001', high24h: '66000', low24h: '64000', volume24h: '100', quoteVolume24h: '6500000', changePercent24h: '1.2' }] });
         if (p === '/api/v1/market/external/symbols') return json({ symbols: ['BTC/USDT'] });
@@ -137,7 +142,12 @@ function testAssets(now) {
       await page.goto(origin + '/markets', { waitUntil: 'domcontentloaded' });
       const row = page.locator('.test-market-row[data-pair="VTA/USDT"]');
       await row.waitFor({ state: 'visible', timeout: 15000 });
-      assert.match(await row.innerText(), /Начало торгов: \d+ сентября в \d\d:\d\d UTC/, `markets row start time @${width}`);
+      // The fixture is 48h ahead and can cross a month/year boundary.
+      // Validate its actual UTC day/month/time, not a hard-coded September.
+      const date = new Date(fixtureListingAt);
+      const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+      const expectedStart = `Начало торгов: ${date.getUTCDate()} ${months[date.getUTCMonth()]} в ${String(date.getUTCHours()).padStart(2,'0')}:${String(date.getUTCMinutes()).padStart(2,'0')} UTC`;
+      assert.ok((await row.innerText()).includes(expectedStart), `markets row start time @${width}: expected ${expectedStart}`);
       assert.doesNotMatch(await row.innerText(), TECHNICAL, `technical wording on the markets row @${width}`);
       // The row itself stays inside the viewport (the rest of the Markets
       // page is not what this script checks).
