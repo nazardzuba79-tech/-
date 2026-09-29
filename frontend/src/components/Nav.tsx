@@ -14,14 +14,16 @@ import type { LiveQuote } from '../lib/liveMarketTypes';
 import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
 
 export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference,quoteAsset}:{active:string;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>;quoteAsset?:string}) {
-  const navigate=useNavigate(),location=useLocation(),{t}=useLanguage();
+  const navigate=useNavigate(),location=useLocation(),{t,lang}=useLanguage();
   const[mobileOpen,setMobileOpen]=useState(false),[isAdmin,setIsAdmin]=useState(false),[avatarUrl,setAvatarUrl]=useState<string|null>(null),[showDeposit,setShowDeposit]=useState(false),[tradeMenuOpen,setTradeMenuOpen]=useState(false),[profileMenuOpen,setProfileMenuOpen]=useState(false);
   const tradeMenuCloseTimer=useRef<number|null>(null),profileMenuRef=useRef<HTMLDivElement>(null);
+  const terminalCopy = active === '/trade' || active === '/futures';
+  const terminalLabels = terminalNavCopy(lang);
   const LINKS=[
     {to:'/markets',label:t('nav.markets')},
     {to:'/trade',label:t('nav.trade')},
     {to:'/futures',label:t('nav.futures')},
-    {to:'/banking',label:'Banking & Earn'},
+    {to:'/banking',label:terminalCopy?terminalLabels.earn:'Banking & Earn'},
     {to:'/wallet',label:t('nav.wallet')},
     {to:'/copy-trading',label:t('nav.copyTrading')},
     {to:'/arbitrage',label:t('nav.arbitrage')},
@@ -50,9 +52,9 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
             <Link to={l.to} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`} aria-haspopup="menu" aria-expanded={tradeMenuOpen}>{l.label}<ChevronDown size={12} className={`nav-chevron${tradeMenuOpen?' nav-chevron-open':''}`}/></Link>
             {tradeMenuOpen&&<div className="nav-dropdown" role="menu"><Link to="/trade" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span></Link><Link to="/trade?market=cfd" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.cfdTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeCfdDesc')}</span></Link></div>}
           </div>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}
-          <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{t('nav.card')}</Link>
+          <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
           <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active==='/otc'?' nav-active is-active':''}`}>{t('nav.otc')}</Link>
-          <Link to="/trading-bots" className={`nav-item top-nav-link${active==='/trading-bots'?' nav-active is-active':''}`}><TradingBotIcon/>Торговые боты</Link>
+          <Link to="/trading-bots" className={`nav-item top-nav-link${active==='/trading-bots'?' nav-active is-active':''}`}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
           {/* Админка is NOT a product section. It used to sit here, after
               OTC, reading as one more place to trade and getting lost
               between Crypto Card and the wallet. It now renders once, in
@@ -73,9 +75,9 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
       <div className={`nav-mobile-menu${mobileOpen?' open':''}`}>
         <button className="deposit-button" onPointerDown={prefetchDepositConfig} onClick={()=>{setShowDeposit(true);setMobileOpen(false);}} style={{justifyContent:'center',marginBottom:4}}>{t('wallet.deposit')}</button>
         {LINKS.map(l=><Fragment key={l.to}><Link to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} style={{...styles.mobileLink,...(active===l.to?styles.linkActive:{})}}>{l.label}</Link>{l.to==='/trade'&&<Link to="/trade?market=cfd" style={{...styles.mobileLink,paddingLeft:20,fontSize:13}}>{t('trade.cfdTab')}</Link>}</Fragment>)}
-        <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{t('nav.card')}</Link>
+        <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
         <Link to="/otc" style={{...styles.mobileLink,...(active==='/otc'?styles.linkActive:{})}}>{t('nav.otc')}</Link>
-        <Link to="/trading-bots" style={{...styles.mobileLink,...styles.cardLink,...(active==='/trading-bots'?styles.linkActive:{})}}><TradingBotIcon/>Торговые боты</Link>
+        <Link to="/trading-bots" style={{...styles.mobileLink,...styles.cardLink,...(active==='/trading-bots'?styles.linkActive:{})}}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
         {isAdmin&&<Link to="/admin" style={{...styles.mobileLink,...styles.adminBadge,...(active==='/admin'?styles.adminBadgeActive:{})}}><Landmark size={14}/>{t('nav.admin')}</Link>}
         <div style={styles.mobileDivider}/><Link to="/settings" style={{...styles.mobileLink,...styles.cardLink,...(active==='/settings'?styles.linkActive:{})}}><UserRound size={15}/>{t('nav.profile')}</Link>
         {rightExtra&&<div style={styles.mobileRightExtra}>{rightExtra}</div>}<div style={styles.mobileLangRow}><LanguageSwitcher/></div><button onClick={handleLogout} style={{...styles.logoutBtn,width:'100%'}}><LogOut size={14}/>{t('nav.logout')}</button>
@@ -90,3 +92,48 @@ const styles:Record<string,React.CSSProperties>={
   tradeMenuItem:{display:'flex',flexDirection:'column',gap:2,padding:'7px 8px',borderRadius:5},tradeMenuItemTitle:{fontSize:13,fontWeight:600,color:'#e8ecf3'},tradeMenuItemDesc:{fontSize:12,color:'var(--h-text-3)'},
   mobileLink:{display:'flex',alignItems:'center',fontSize:13.5,fontWeight:500,color:'#d8dce6',padding:'11px 12px',borderRadius:6},mobileDivider:{height:1,background:'var(--border)',margin:'4px 0'},mobileRightExtra:{padding:'8px 0'},mobileLangRow:{padding:'10px 6px'},linkActive:{color:'#ffffff',background:'rgba(240,196,63,0.06)'},cardLink:{display:'flex',alignItems:'center',gap:8},adminBadge:{display:'flex',alignItems:'center',gap:8,background:'linear-gradient(180deg,#22203a,#1a1930)',border:'1px solid #3a3868',borderRadius:6,padding:'11px 12px',fontSize:13.5,fontWeight:500,color:'#c3c1ff'},adminBadgeActive:{background:'linear-gradient(180deg,#2b2849,#201e3b)',borderColor:'#4b4886',color:'#dcdbff'},logoutBtn:{display:'flex',alignItems:'center',justifyContent:'center',gap:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-secondary)',borderRadius:8,padding:'8px 16px',fontSize:12},
 };
+
+
+// Terminal copy uses the shared active locale, like cfdDisplayCopy.
+// Keep the existing asynchronously loaded dictionary bodies intact.
+const TERMINAL_NAV_COPY: Record<string, readonly [string, string, string]> = {
+  "ru": [
+    "Доход",
+    "Криптокарта",
+    "Торговые боты"
+  ],
+  "en": [
+    "Earn",
+    "Crypto Card",
+    "Trading bots"
+  ],
+  "es": [
+    "Rendimientos",
+    "Tarjeta cripto",
+    "Bots de trading"
+  ],
+  "zh": [
+    "理财",
+    "加密卡",
+    "交易机器人"
+  ],
+  "ja": [
+    "資産運用",
+    "暗号資産カード",
+    "取引ボット"
+  ],
+  "ko": [
+    "자산 운용",
+    "암호화폐 카드",
+    "트레이딩 봇"
+  ],
+  "hi": [
+    "कमाई",
+    "क्रिप्टो कार्ड",
+    "ट्रेडिंग बॉट"
+  ]
+};
+function terminalNavCopy(lang: string) {
+  const [earn, card, bots] = TERMINAL_NAV_COPY[lang] || TERMINAL_NAV_COPY.en;
+  return { earn, card, bots };
+}

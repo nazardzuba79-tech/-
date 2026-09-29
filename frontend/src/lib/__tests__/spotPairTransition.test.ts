@@ -103,6 +103,10 @@ function renderTicker(spotPrecision: boolean) {
     if (name === '../lib/useMarketData') {
       return { useMarketTicker: () => ({ ticker, loading: false, error: false, stale: false }) };
     }
+    // Header identity (#280): artwork and the asset-name read are
+    // presentation only; stubbed so the price assertions below run unchanged.
+    if (name === './CryptoIcon') return { CryptoIcon: () => null };
+    if (name === '../lib/assetMetadataStore') return { useAssetMetadata: () => ({}) };
     return requireFrontend(name);
   }, output);
   return requireFrontend('react-dom/server').renderToStaticMarkup(React.createElement(output.TickerBar, { pair: 'MOG/USDT', spotPrecision }));

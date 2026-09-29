@@ -28,7 +28,7 @@ function semantic(source){
  const sf=ts.createSourceFile('component.tsx',source.replace(/\r\n/g,'\n'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const transformed=ts.transform(sf,[context=>root=>{
   const visit=node=>{
-   if(ts.isJsxAttribute(node)&&['className','style','aria-pressed'].includes(node.name.getText(sf)))return undefined;
+   if(ts.isJsxAttribute(node)&&['className','style','aria-pressed','data-premium-terminal-preview'].includes(node.name.getText(sf)))return undefined;
    if(ts.isVariableStatement(node)&&node.declarationList.declarations.some(d=>d.name.getText(sf)==='styles'))return undefined;
    if(ts.isImportDeclaration(node)&&node.moduleSpecifier.text.endsWith('.css'))return undefined;
    return ts.visitEachChild(node,visit,context);
