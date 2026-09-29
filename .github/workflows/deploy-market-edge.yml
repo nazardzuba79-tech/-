@@ -10,6 +10,7 @@ on:
       - 'workers/market-edge/**'
       - 'src/services/testMarkets/**'
       - 'src/services/listings/**'
+      - 'scripts/smoke-vta-natural-wicks.mjs'
       - '.github/workflows/deploy-market-edge.yml'
   pull_request:
     paths:
@@ -33,8 +34,19 @@ on:
       - 'src/services/marketData/cfd/BiquoteCfdQuoteSource.ts'
       - 'scripts/qa-cfd-display-browser.cjs'
       - 'scripts/smoke-market-edge-listings.mjs'
+      - 'scripts/smoke-vta-natural-wicks.mjs'
       - '.github/workflows/deploy-market-edge.yml'
   workflow_dispatch:
+    inputs:
+      verify_vta_wicks:
+        description: 'Verify the fixed Sep 29 VTA history before this Worker release'
+        required: false
+        type: boolean
+        default: false
+      expected_api_commit:
+        description: 'Optional full Render commit SHA (main dispatch defaults to the selected commit)'
+        required: false
+        type: string
 
 concurrency:
   group: market-edge-${{ github.event.pull_request.number || github.ref }}
@@ -79,6 +91,24 @@ jobs:
           node-version: 22
       - name: Install shared simulation dependency
         run: npm ci --prefix ../.. --ignore-scripts --no-audit --no-fund
+      - name: Compatible Render and fixed VTA history (public GET only)
+        if: (github.event_name == 'push' && contains(github.event.head_commit.message, '[verify-vta-wicks]')) || (github.event_name == 'workflow_dispatch' && inputs.verify_vta_wicks)
+        # This NATURAL_V1 rollout must wait for the compatible API. Enable only
+        # for this release with [verify-vta-wicks] or the explicit dispatch flag.
+        # Release-branch commits may have the same tree but a different SHA from main.
+        # The API's last-1000 window contains all 95 bars until 2026-10-09T01:00Z;
+        # unrelated future Worker releases do not run this fixed-history proof.
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if node ../../scripts/smoke-vta-natural-wicks.mjs; then exit 0; fi
+            if [ "$attempt" -lt 6 ]; then
+              echo "waiting_for_compatible_render attempt=$attempt"
+              sleep 10
+            fi
+          done
+          exit 1
+        env:
+          EXPECTED_API_COMMIT: ${{ inputs.expected_api_commit || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.sha) || '' }}
       - name: Deploy Worker
         # Still gated by the existing explicit deploy condition, never a PR.
         # Applies the listings-v1 Durable Object migration (a new, empty SQLite namespace).
