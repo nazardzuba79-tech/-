@@ -43,6 +43,7 @@ import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
 import { useManagedListingDiscovery, useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
+import { useMarketData } from '../lib/useMarketData';
 import { TestMarketChart } from '../components/TestMarketTerminal';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
@@ -94,6 +95,11 @@ export function TradePage() {
   // pairs and a loaded catalogue need nothing more.
   const managedCatalogue = useManagedListingDiscovery(searchParams.get('market') !== 'cfd' && !isTestMarketPair(pair));
   const testPair = isTestMarketPair(pair) || (managedCatalogue.loaded && isManagedListingPair(pair));
+  // A deep link to a pair this tab cannot place yet (neither in the venue snapshot nor a built-in test
+  // market) waits for whichever answers first — the shared venue snapshot (same store and cadence as the
+  // ticker bar) or the listings catalogue — so a managed listing never fetches venue candles or depth.
+  const venueSnapshot = useMarketData(3000);
+  const pairResolving = !isTestMarketPair(pair) && !managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase());
   const testMarket = useTestMarket(testPair ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
@@ -196,13 +202,13 @@ export function TradePage() {
     if (bookShownPairRef.current !== pair) {
       setBook({ pair, bids: [], asks: [], asOf: null });setPickedPrice(null);bookShownPairRef.current=pair;
     }
-    if (marketType !== 'spot' || !bookLive) return;
+    if (marketType !== 'spot' || !bookLive || pairResolving) return;
     refreshBook();
     const timer=window.setInterval(()=>{if(!document.hidden)refreshBook();},testPair ? 10_000 : 60_000);
     const visible=()=>{if(!document.hidden)refreshBook();};
     document.addEventListener('visibilitychange',visible);
     return()=>{bookGenerationRef.current+=1;clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
-  }, [pair,marketType,refreshBook,bookLive,testPair]);
+  }, [pair,marketType,refreshBook,bookLive,testPair,pairResolving]);
 
   function handleOrderPlaced() {
     setAccountOpenOrderCount(null);
@@ -359,7 +365,9 @@ export function TradePage() {
           <div className="chart-area" data-test-market={testPair || undefined}>
             {testPair
               ? <TestMarketChart pair={pair} asset={testMarket.asset} loaded={testMarket.loaded} clockOffsetMs={testMarket.clockOffsetMs} />
-              : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />}
+              : pairResolving
+                ? <div className="chart-resolving" style={{ width: "100%", height: "100%" }} aria-busy="true" data-pair-resolving />
+                : <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />}
           </div>
 
           <div className="orderbook-area" data-sampled-book="true">
