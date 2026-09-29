@@ -75,7 +75,12 @@ try{
     await page.getByRole('button',{name:'Создать листинг',exact:true}).click();
     await page.getByLabel('Название',{exact:true}).fill(`Orbit ${width}`);await page.getByLabel('Тикер',{exact:true}).fill(symbol);
     await page.getByLabel('Начальная цена').fill('0.025');await page.getByLabel('Owner allocation').fill('12000');
-    await page.getByLabel('Дата и время').fill(new Date(Date.now()+35_000).toISOString().slice(0,19));
+    // Chromium normalizes zero seconds away; Playwright fill compares the
+    // serialized value, so supply its canonical datetime-local spelling.
+    const listingInput=page.getByLabel('Дата и время');
+    await listingInput.fill('2030-01-01T00:00');
+    assert.equal(await listingInput.inputValue(),'2030-01-01T00:00');
+    await listingInput.fill(new Date(Date.now()+35_000).toISOString().slice(0,19).replace(/:00$/,''));
     await page.locator('input[type=file]').setInputFiles({name:'orbit.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
     await page.getByRole('button',{name:'Создать черновик',exact:true}).click();await page.getByText('Черновик сохранён. Баланс не изменён.').waitFor();
     const rows=await store.call('/admin/listings'),draft=rows.find(r=>r.ticker===symbol);assert.equal(draft.status,'draft');assert.ok(draft.seed);
