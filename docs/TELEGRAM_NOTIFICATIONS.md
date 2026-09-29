@@ -23,8 +23,10 @@ claimed on the basis of synthetic tests.
   (historically named `DEPOSIT_SIGNING_PUBLIC_KEY`) and exact body/path signature
   as deposits, without rotating keys. Browsers and unsigned callers are denied;
   the private KYC entrypoint still accepts only KYC. Telegram includes the title
-  `Нова реєстрація VOLTEX`, email, User ID and registration date/time explicitly
-  in UTC, derived from createdAt, not the notification dispatch time.
+  `Нова реєстрація VOLTEX`, the email and the registration date/time in Kyiv
+  time (`Дата і час: 28.09.2026, 14:56 (Київ)`), derived from createdAt, not
+  the notification dispatch time. The user ID stays in the signed event (it is
+  the deduplication key) but is not shown in the Telegram text.
   Passwords, JWTs, sessions and API keys are never serialized. Failure is logged
   with fixed status codes only and cannot block or undo registration.
 

@@ -27,10 +27,17 @@ export function validEvent(e, type, now = Date.now()) {
     && (e.remaining === undefined || amount(e.remaining));
 }
 
+// The owner reads these in Kyiv: «28.09.2026, 14:56».
+const KYIV_TIME = new Intl.DateTimeFormat('uk-UA', {
+  timeZone: 'Europe/Kyiv', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+});
+export const kyivTime = timestamp => KYIV_TIME.format(new Date(timestamp));
+
 export function message(e) {
+  // Email and the registration time only: the internal user ID is noise in Telegram.
   if (e.eventType === 'NEW_USER_REGISTERED') return [
-    'Нова реєстрація VOLTEX', '', `Email: ${e.email}`, `User ID: ${e.userId}`,
-    `Час реєстрації (UTC): ${new Date(e.timestamp).toISOString()}`,
+    'Нова реєстрація VOLTEX', '', `Email: ${e.email}`,
+    `Дата і час: ${kyivTime(e.timestamp)} (Київ)`,
   ].join('\n');
   if (e.eventType === 'KYC_SUBMITTED') return [
     '🔔 Новая KYC заявка', '', e.email && `Email: ${e.email}`,
