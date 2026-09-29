@@ -12,9 +12,14 @@ import {
 } from '../simulationRealism';
 
 const L = VOLTORA.listingAt;
-/** VTA's base scenario — same pair, seed, listing time and price — with the original intra-hour path. */
-const { simulationProfile: _vtaProfile, realismFrom: _vtaFrom, ...BASE } = VOLTORA;
+/** VTA's original scenario, without the later profile, cycle or wick overlays. */
+const {
+  simulationProfile: _vtaProfile, realismFrom: _vtaFrom,
+  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, ...BASE
+} = VOLTORA;
 const withProfile = (profile: SimulationProfile, extra: Partial<TestAssetConfig> = {}): TestAssetConfig => ({ ...BASE, simulationProfile: profile, ...extra });
+/** Preserve the original Oct 1 profile-only activation contract independently of live VTA's new cycles. */
+const ORIGINAL_PROFILE_VTA = withProfile('IMPULSE_TREND', { realismFrom: Date.parse('2026-10-01T00:00:00Z') });
 const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const anchors = (asset: TestAssetConfig, hours: number) =>
   Array.from({ length: hours + 1 }, (_, h) => new TestMarketSimulation(asset).priceAt(asset.listingAt + h * HOUR_MS) as number);
@@ -39,19 +44,32 @@ const MAIN = {
   },
 };
 
-describe('VTA keeps its identity; only its candle character is new', () => {
-  test('pair, seed, listing time and initial price are unchanged; IMPULSE_TREND from 2026-10-01 00:00 UTC', () => {
+describe('live VTA keeps its identity and opts into the owner\'s new cycle and wick behavior', () => {
+  test('pair, seed, listing time and initial price are unchanged; the new controls are explicit', () => {
     expect(VOLTORA).toMatchObject({ pair: 'VTA/USDT', seed: 'voltora-2026-09-27', initialPrice: 0.01, simulationProfile: 'IMPULSE_TREND' });
     expect(new Date(VOLTORA.listingAt).toISOString()).toBe('2026-09-28T15:00:00.000Z');
-    expect(new Date(VOLTORA.realismFrom as number).toISOString()).toBe('2026-10-01T00:00:00.000Z');
+    expect(VOLTORA.cyclicImpulse).toBeDefined();
+    const cycle = VOLTORA.cyclicImpulse!;
+    expect(cycle).toMatchObject({ anchorAt: Date.parse('2026-09-29T13:00:00Z'), periodHours: 6 });
+    expect(Number.isFinite(cycle.notBefore)).toBe(true);
+    expect(cycle.notBefore).toBeGreaterThanOrEqual(cycle.anchorAt);
+    expect(cycle.notBefore).toBeLessThan(cycle.anchorAt + HOUR_MS);
+    expect((cycle.notBefore - L) % TICK_MS).toBe(0);
+    expect(Number.isFinite(VOLTORA.wickBoostFrom)).toBe(true);
+    expect(Number.isFinite(VOLTORA.realismFrom)).toBe(true);
+    expect(VOLTORA.wickBoostFrom).toBe(cycle.notBefore);
+    expect(VOLTORA.realismFrom as number).toBeGreaterThanOrEqual(VOLTORA.wickBoostFrom as number);
+    expect(((VOLTORA.realismFrom as number) - L) % HOUR_MS).toBe(0);
     expect(NEURIX.simulationProfile).toBeUndefined();
+    expect(NEURIX.cyclicImpulse).toBeUndefined();
+    expect(NEURIX.wickBoostFrom).toBeUndefined();
   });
 });
 
-describe('VTA activation boundary: nothing already shown or sold at ever changes', () => {
-  const B = VOLTORA.realismFrom as number;
+describe('the original profile-only activation contract remains unchanged', () => {
+  const B = ORIGINAL_PROFILE_VTA.realismFrom as number;
   const legacy = () => new TestMarketSimulation(BASE);
-  const vta = () => new TestMarketSimulation(VOLTORA);
+  const vta = () => new TestMarketSimulation(ORIGINAL_PROFILE_VTA);
   const fullProfile = () => new TestMarketSimulation(withProfile('IMPULSE_TREND'));
 
   test('the boundary is an hour anchor of the base simulation (listing + 57h)', () => {
@@ -104,13 +122,13 @@ describe('without a profile the simulation is byte-identical to main', () => {
   });
 });
 
-describe('a profile never moves the base trajectory', () => {
+describe('an isolated profile never moves the base trajectory', () => {
   test.each(SIMULATION_PROFILES)('%s: every hour anchor for 7 days is main\'s, bit for bit', (profile) => {
     expect(sha(anchors(withProfile(profile), 168))).toBe(MAIN.VTA.anchors);
   });
 
-  test('P48 = 5.5234599 and P168 = 35171.298 under every profile and without one', () => {
-    for (const asset of [BASE, ...SIMULATION_PROFILES.map((p) => withProfile(p))]) {
+  test('P48 = 5.5234599 and P168 = 35171.298 for live VTA, every isolated profile and the original baseline', () => {
+    for (const asset of [VOLTORA, BASE, ...SIMULATION_PROFILES.map((p) => withProfile(p))]) {
       const sim = new TestMarketSimulation(asset);
       expect(sim.priceAt(L + 48 * HOUR_MS)).toBe(5.5234599);
       expect(sim.priceAt(L + 168 * HOUR_MS)).toBe(35171.298);

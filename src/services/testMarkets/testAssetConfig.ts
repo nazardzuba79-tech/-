@@ -11,6 +11,7 @@
 import { NEURIX } from './neurix';
 import { managedListingAssets } from '../listings/managedSnapshot';
 import type { SimulationProfile } from './simulationRealism';
+import type { CyclicImpulseConfig } from './simulationCycles';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -44,6 +45,10 @@ export interface TestAssetConfig {
    * shown or sold at. Absent: the profile applies from the listing.
    */
   realismFrom?: number;
+  /** Forward-only, deterministic six-hour shock/recovery episodes for this test asset. */
+  cyclicImpulse?: CyclicImpulseConfig;
+  /** Fixed instant after which canonical tick ranges receive a modest wick boost. */
+  wickBoostFrom?: number;
 }
 
 export const VOLTORA: TestAssetConfig = {
@@ -61,15 +66,23 @@ export const VOLTORA: TestAssetConfig = {
   listingAt: Date.parse('2026-09-28T15:00:00Z'),
   initialPrice: 0.01,
   seed: 'voltora-2026-09-27',
-  // Candle character only (owner, 2026-09-29): impulses, breakouts out of
-  // consolidation, pullbacks and long wicks. Every hour anchor, P48 and the
-  // listing schedule are unchanged; see simulationRealism.ts.
+  // Intra-hour candle character (owner, 2026-09-29): impulses, breakouts out
+  // of consolidation, pullbacks and longer wicks; see simulationRealism.ts.
+  // Cyclic episodes below override selected hourly closes, then rejoin the
+  // original two-hour endpoint. Daily anchors and the listing stay unchanged.
   simulationProfile: 'IMPULSE_TREND',
-  // Activation boundary (owner, 2026-09-29): everything before it — candles,
-  // tape, book and the executable price of past sales — stays exactly as the
-  // original generator produced it. A fixed hour anchor, never a wall-clock
-  // default; it must still be in the future when this is deployed.
-  realismFrom: Date.parse('2026-10-01T00:00:00Z'),
+  // Owner follow-up (2026-09-29): varied six-hour downside/recovery/upside
+  // episodes, beginning in the current UTC hour. The first episode preserves
+  // every already-shown tick through the fixed 13:55 cutoff. The next full
+  // hour also enables the existing intra-hour realism profile.
+  // Release MUST finish before notBefore; never backdate this cutoff.
+  realismFrom: Date.parse('2026-09-29T14:00:00Z'),
+  cyclicImpulse: {
+    anchorAt: Date.parse('2026-09-29T13:00:00Z'),
+    notBefore: Date.parse('2026-09-29T13:55:00Z'),
+    periodHours: 6,
+  },
+  wickBoostFrom: Date.parse('2026-09-29T13:55:00Z'),
 };
 
 // Render's existing public listing. NRX metadata is owned exclusively by the edge.
