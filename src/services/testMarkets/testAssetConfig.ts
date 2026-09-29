@@ -12,6 +12,7 @@ import { NEURIX } from './neurix';
 import { managedListingAssets } from '../listings/managedSnapshot';
 import type { SimulationProfile } from './simulationRealism';
 import type { CyclicImpulseConfig } from './simulationCycles';
+import type { NaturalWickConfig } from './simulationNaturalWicks';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -49,6 +50,8 @@ export interface TestAssetConfig {
   cyclicImpulse?: CyclicImpulseConfig;
   /** Fixed instant after which canonical tick ranges receive a modest wick boost. */
   wickBoostFrom?: number;
+  /** Versioned tick-range enrichment; never changes tick prices, bodies or volume. */
+  naturalWicks?: NaturalWickConfig;
 }
 
 export const VOLTORA: TestAssetConfig = {
@@ -83,6 +86,13 @@ export const VOLTORA: TestAssetConfig = {
     periodHours: 6,
   },
   wickBoostFrom: Date.parse('2026-09-29T13:55:00Z'),
+  // Owner's BTC 15m reference (2026-09-29): revise half of the completed
+  // ordinary windows, then keep the same varied-shadow model going forward.
+  // Only high/low changes; existing executable prices and receipts stay fixed.
+  naturalWicks: {
+    historicalUntil: Date.parse('2026-09-29T14:45:00Z'),
+    futureFrom: Date.parse('2026-09-29T14:45:00Z'),
+  },
 };
 
 // Render's existing public listing. NRX metadata is owned exclusively by the edge.

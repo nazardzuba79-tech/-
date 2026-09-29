@@ -1,0 +1,209 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "price": "0.0000001",
+  "quantity": "100000000",
+  "checks": [
+    {
+      "name": "1440: real engine contract accepts the tiny fixture tick",
+      "evidence": {
+        "symbol": "AKEUSDT",
+        "tickSize": "0.00000001",
+        "minPrice": "0.00000001",
+        "maxPrice": "1",
+        "qtyStep": "1",
+        "minOrderQty": "1",
+        "maxOrderQty": "1000000000000",
+        "maxMarketOrderQty": "1000000000000",
+        "minNotionalValue": "5",
+        "minLeverage": "1",
+        "maxLeverage": "100",
+        "leverageStep": "1",
+        "riskTiers": [
+          {
+            "maxNotional": "1000000000",
+            "maintenanceRate": "0.005",
+            "deduction": "0",
+            "maxLeverage": "100"
+          }
+        ],
+        "takerFeeRate": "0.00055",
+        "makerFeeRate": "0.0002"
+      }
+    },
+    {
+      "name": "1440: automatic price is full decimal 0.0000001"
+    },
+    {
+      "name": "1440: positive header price is exactly 0.0000001",
+      "evidence": {
+        "headerPrice": "0.0000001"
+      }
+    },
+    {
+      "name": "1440: typed scientific notation stays raw and blocks both sides"
+    },
+    {
+      "name": "1440: typed letters stay raw and block both sides"
+    },
+    {
+      "name": "1440: unfinished dot is unflagged and non-executable"
+    },
+    {
+      "name": "1440: last-price button restores full decimal and removes refusal"
+    },
+    {
+      "name": "1440: typed exponent quantity cannot send an order"
+    },
+    {
+      "name": "1440: armed TP exponent blocks both sides with explanation"
+    },
+    {
+      "name": "1440: corrected TP/SL remove invalid state"
+    },
+    {
+      "name": "1440: invalid drafts sent zero commands"
+    },
+    {
+      "name": "1440: actual local native engine accepts the tiny-price order",
+      "evidence": {
+        "status": 200,
+        "draft": {
+          "kind": "OPEN",
+          "symbol": "AKEUSDT",
+          "side": "LONG",
+          "type": "LIMIT",
+          "quantity": "100000000",
+          "leverage": "10",
+          "marginType": "CROSS",
+          "price": "0.0000001",
+          "idempotencyKey": "1432e8a1-89a6-462c-8e46-f4f6680973e2"
+        }
+      }
+    },
+    {
+      "name": "1440: authoritative order keeps the exact price and quantity",
+      "evidence": {
+        "id": "native-196c1d70-2598-4bbf-a2d1-8399e0f20c50",
+        "status": "OPEN",
+        "price": "0.0000001",
+        "quantity": "100000000"
+      }
+    },
+    {
+      "name": "1440: no horizontal overflow after tiny-price submission"
+    },
+    {
+      "name": "390: real engine contract accepts the tiny fixture tick",
+      "evidence": {
+        "symbol": "AKEUSDT",
+        "tickSize": "0.00000001",
+        "minPrice": "0.00000001",
+        "maxPrice": "1",
+        "qtyStep": "1",
+        "minOrderQty": "1",
+        "maxOrderQty": "1000000000000",
+        "maxMarketOrderQty": "1000000000000",
+        "minNotionalValue": "5",
+        "minLeverage": "1",
+        "maxLeverage": "100",
+        "leverageStep": "1",
+        "riskTiers": [
+          {
+            "maxNotional": "1000000000",
+            "maintenanceRate": "0.005",
+            "deduction": "0",
+            "maxLeverage": "100"
+          }
+        ],
+        "takerFeeRate": "0.00055",
+        "makerFeeRate": "0.0002"
+      }
+    },
+    {
+      "name": "390: automatic price is full decimal 0.0000001"
+    },
+    {
+      "name": "390: positive header price is exactly 0.0000001",
+      "evidence": {
+        "headerPrice": "0.0000001"
+      }
+    },
+    {
+      "name": "390: typed scientific notation stays raw and blocks both sides"
+    },
+    {
+      "name": "390: typed letters stay raw and block both sides"
+    },
+    {
+      "name": "390: unfinished dot is unflagged and non-executable"
+    },
+    {
+      "name": "390: last-price button restores full decimal and removes refusal"
+    },
+    {
+      "name": "390: typed exponent quantity cannot send an order"
+    },
+    {
+      "name": "390: armed TP exponent blocks both sides with explanation"
+    },
+    {
+      "name": "390: corrected TP/SL remove invalid state"
+    },
+    {
+      "name": "390: invalid drafts sent zero commands"
+    },
+    {
+      "name": "390: actual local native engine accepts the tiny-price order",
+      "evidence": {
+        "status": 200,
+        "draft": {
+          "kind": "OPEN",
+          "symbol": "AKEUSDT",
+          "side": "LONG",
+          "type": "LIMIT",
+          "quantity": "100000000",
+          "leverage": "10",
+          "marginType": "CROSS",
+          "price": "0.0000001",
+          "idempotencyKey": "6dcebdd0-848b-41ef-a08c-80003b3a6bd3"
+        }
+      }
+    },
+    {
+      "name": "390: authoritative order keeps the exact price and quantity",
+      "evidence": {
+        "id": "native-72f69a12-9021-4aff-8ce5-53d07f446f11",
+        "status": "OPEN",
+        "price": "0.0000001",
+        "quantity": "100000000"
+      }
+    },
+    {
+      "name": "390: no horizontal overflow after tiny-price submission"
+    }
+  ],
+  "pageErrors": [],
+  "realAccountRequests": [],
+  "viewports": [
+    {
+      "width": 1440,
+      "accepted": true,
+      "headerPrice": "0.0000001",
+      "exactPrice": "0.0000001",
+      "exactQuantity": "100000000",
+      "commandCount": 1,
+      "overflow": 0
+    },
+    {
+      "width": 390,
+      "accepted": true,
+      "headerPrice": "0.0000001",
+      "exactPrice": "0.0000001",
+      "exactQuantity": "100000000",
+      "commandCount": 1,
+      "overflow": 0
+    }
+  ],
+  "result": "PASS"
+}

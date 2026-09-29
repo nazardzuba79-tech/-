@@ -13,6 +13,10 @@ const{CopyPerformanceService}=require('../dist/services/copyTrading/CopyPerforma
 const root=path.resolve(__dirname,'..'),dist=path.join(root,'frontend/dist');
 const fixture=process.env.NATIVE_PREVIEW_FIXTURE==='1';
 const thinContractQa=fixture&&process.env.NATIVE_PREVIEW_THIN_CONTRACT_QA==='1';
+// Opt-in regression fixture only: a genuine tiny decimal on every market
+// surface, so browser autofill and the real local engine use the same contract.
+// Ordinary preview/QA behavior remains unchanged when this flag is absent.
+const tinyPriceQa=fixture&&process.env.NATIVE_PREVIEW_TINY_PRICE_QA==='1';
 const dataDir=path.join(os.tmpdir(),'voltex-native-demo-review');fs.mkdirSync(dataDir,{recursive:true});
 const app=express();app.disable('x-powered-by');app.use(express.json({limit:'50kb'}));
 app.use((_req,res,next)=>{res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','same-origin');next();});
@@ -54,14 +58,16 @@ function akePrice(t){
    terminal's «Рыночная цена» and the engine's near-live price must be the
    same figure, or a limit typed a tick away from one is a different
    distance from the other. */
-function fixtureSpot(symbol,at=now()){return symbol==='AKEUSDT'&&AKE_DRIFT_PER_MINUTE?akePrice(at).toFixed(4):fixtureCandle(Math.floor(at/60000)*60000,60000,symbol).close;}
+function fixtureSpot(symbol,at=now()){return tinyPriceQa&&symbol==='AKEUSDT'?'0.0000001':symbol==='AKEUSDT'&&AKE_DRIFT_PER_MINUTE?akePrice(at).toFixed(4):fixtureCandle(Math.floor(at/60000)*60000,60000,symbol).close;}
 function fixtureCandle(t,interval=60000,symbol='BTCUSDT'){
+  if(tinyPriceQa&&symbol==='AKEUSDT')return{timestamp:t,open:'0.0000001',high:'0.00000011',low:'0.00000009',close:'0.0000001',volume:'100000000'};
   if(thinContractQa&&symbol==='QNTUSDT'){const p=t<started-6*3600000?'61.08':'264.51';return{timestamp:t,open:p,high:(Number(p)+0.5).toFixed(2),low:(Number(p)-0.5).toFixed(2),close:p,volume:'100'};}
   if(thinContractQa&&symbol==='AKEUSDT'){const p=akePrice(t);return{timestamp:t,open:p.toFixed(4),high:(p+0.0001).toFixed(4),low:(p-0.0001).toFixed(4),close:p.toFixed(4),volume:'125000'};}
   if(symbol==='AKEUSDT'){const o=akePrice(t),c=akePrice(t+interval);return{timestamp:t,open:o.toFixed(4),high:Math.max(o,c).toFixed(4),low:Math.min(o,c).toFixed(4),close:c.toFixed(4),volume:'125000'};}
   const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}
 const sizes={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
 function fixtureInstrument(symbol){const base={provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};
+  if(tinyPriceQa&&symbol==='AKEUSDT')return{...base,filters:{tickSize:'0.00000001',minPrice:'0.00000001',maxPrice:'1',qtyStep:'1',minOrderQty:'1',maxOrderQty:'1000000000000',maxMarketOrderQty:'1000000000000',minNotionalValue:'5'}};
   if(thinContractQa&&symbol==='QNTUSDT')return{...base,filters:{...base.filters,tickSize:'0.01',minPrice:'0.01',qtyStep:'0.01',minOrderQty:'0.01'}};
   // AKE: whole-contract steps, a 1 000 000 venue ceiling and a 2x top tier — the owner's 1 500 000 at 3x breaks both live rules on purpose.
   if(symbol==='AKEUSDT')return{...base,filters:{tickSize:'0.0001',minPrice:'0.0001',maxPrice:'1000',qtyStep:'1',minOrderQty:'1',maxOrderQty:'1000000',maxMarketOrderQty:'1000000',minNotionalValue:'5'},riskTiers:[{riskLimitValue:'2000',maintenanceMarginRate:'0.01',initialMarginRate:'0.02',maintenanceDeduction:'0',maxLeverage:'50'},{riskLimitValue:'1000000000',maintenanceMarginRate:'0.02',initialMarginRate:'0.5',maintenanceDeduction:'20',maxLeverage:'2'}]};
@@ -81,7 +87,7 @@ async function transport(url,options={}){
   const[kind,symbol]=m.slice(1),q=u.searchParams;let result;
   if(fixture){
     if(kind==='instruments')result=fixtureInstrument(symbol);
-    else if(kind==='quote'){const spot=fixtureSpot(symbol),price=Number(spot),ake=symbol==='AKEUSDT';result={provider:'bybit',symbol,bids:ake?[{price:'0.0001',quantity:'1'}]:[{price:(price-.1).toFixed(1),quantity:'10'}],asks:ake?[{price:'1.0000',quantity:'1'}]:[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:ake?spot:price.toFixed(1),lastPrice:ake?spot:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
+    else if(kind==='quote'){const spot=fixtureSpot(symbol),price=Number(spot),ake=symbol==='AKEUSDT',tiny=tinyPriceQa&&ake;result={provider:'bybit',symbol,bids:tiny?[{price:'0.00000009',quantity:'1000000000000'}]:ake?[{price:'0.0001',quantity:'1'}]:[{price:(price-.1).toFixed(1),quantity:'10'}],asks:tiny?[{price:'0.00000011',quantity:'1000000000000'}]:ake?[{price:'1.0000',quantity:'1'}]:[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:ake?spot:price.toFixed(1),lastPrice:ake?spot:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
     else if(kind==='ticker'){const spot=fixtureSpot(symbol),at=now();result={symbol,markPrice:spot,lastPrice:spot,markProviderTimestamp:at,receivedAt:at,fetchedAt:at};}
     else if(kind==='chart-candles'){const step=sizes[q.get('interval')],end=Number(q.get('endTime')||now()),limit=Number(q.get('limit')||520);const last=Math.floor(end/step)*step;result={source:'BYBIT_LINEAR',symbol,interval:q.get('interval'),candles:Array.from({length:limit},(_,i)=>fixtureCandle(last-(limit-i-1)*step,step,symbol)),fetchedAt:now(),providerTimestamp:now()};}
     else if(kind==='candles'){const start=Number(q.get('startTime')),end=Number(q.get('endTime')),step=Number(q.get('intervalMinutes'))*60000;result={symbol,candles:Array.from({length:Math.floor((end-start)/step)+1},(_,i)=>fixtureCandle(start+i*step,step,symbol)),fetchedAt:now()};}
@@ -115,7 +121,7 @@ const service=new NativeDemoService(new ReviewRepository({session,save,now,walle
 const executor=new NativeLimitPass(service,async()=>[...sessions.values()].map(s=>reviewExecutionActor(s,now())).filter(Boolean));
 executor.start();
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
-app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,commit:process.env.RENDER_GIT_COMMIT??null}));
+app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,...(tinyPriceQa?{tinyPriceFixture:true}:{}),commit:process.env.RENDER_GIT_COMMIT??null}));
 app.use('/api/v1/private-trading',(req,res,next)=>{const token=req.headers.authorization?.replace(/^Bearer /,''),s=session(token);if(!s)return res.status(401).json({error:'Preview session required'});res.locals.actor={userId:s.userId,sessionId:token,expiresAt:now()+3600000};next();});
 // The preview mirrors the production contract: this session is a
 // simulation-only account, so the terminal renders with no mode switch.
@@ -136,7 +142,7 @@ app.get('/api/v1/market/futures/candles/:pair',asyncRoute(async(req,res)=>{
 }));
 let tickCache=null;
 async function tickers(){if(tickCache&&now()-tickCache.at<5000)return tickCache.rows;let list,time=now();
-  if(fixture)list=symbols.map(symbol=>{const spot=fixtureSpot(symbol),ake=symbol==='AKEUSDT';return{symbol,lastPrice:spot,bid1Price:ake?spot:'50000',ask1Price:ake?spot:'50001',highPrice24h:ake?'0.0538':'51000',lowPrice24h:ake?'0.0040':'49000',volume24h:'1000',turnover24h:'50000000',price24hPcnt:'0.01',markPrice:spot,indexPrice:ake?spot:'50000',fundingRate:'0.0001',openInterest:'10000',openInterestValue:'500000000'};});
+  if(fixture)list=symbols.map(symbol=>{const spot=fixtureSpot(symbol),ake=symbol==='AKEUSDT',tiny=tinyPriceQa&&ake;return{symbol,lastPrice:spot,bid1Price:tiny?'0.00000009':ake?spot:'50000',ask1Price:tiny?'0.00000011':ake?spot:'50001',highPrice24h:tiny?'0.00000011':ake?'0.0538':'51000',lowPrice24h:tiny?'0.00000009':ake?'0.0040':'49000',volume24h:'1000',turnover24h:'50000000',price24hPcnt:'0.01',markPrice:spot,indexPrice:ake?spot:'50000',fundingRate:'0.0001',openInterest:'10000',openInterestValue:'500000000'};});
   else{const r=await fetch('https://api.bybit.com/v5/market/tickers?category=linear',{signal:AbortSignal.timeout(8000)});const j=await r.json();if(!r.ok||j.retCode!==0)throw new Error('Public tickers unavailable');list=j.result.list;time=Number(j.time);}
   const number=x=>x===undefined||x===null||x===''?null:Number.isFinite(Number(x))?Number(x):null;
   // USDT linear perpetuals only: dated futures carry a delivery suffix and

@@ -37,29 +37,35 @@ const contractRules = {
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
 
-async function compactTicket(opts: { entryProtection?: boolean; onTransfer?: () => void } = {}) {
+async function compactTicket(opts: {
+  entryProtection?: boolean; onTransfer?: () => void; archive?: boolean;
+  contract?: typeof contractRules | null; lastPrice?: number; price?: string; quantity?: string;
+  pickedPrice?: string; execution?: Record<string, unknown>;
+} = {}) {
   const placed = jest.fn().mockResolvedValue({});
   const form = mountComponent(FORM, {
     account,
-    execution: { placeOrder: placed, entryProtection: opts.entryProtection ?? true, contract: contractRules },
+    execution: { placeOrder: placed, entryProtection: opts.entryProtection ?? true,
+      contract: opts.contract === undefined ? contractRules : opts.contract, ...opts.execution },
     api: {
       getFuturesConfig: () => Promise.resolve(tierConfig),
       getFuturesMarkPrice: () => Promise.resolve({ markPrice: '80000' }),
     },
   });
-  const props = { symbol: 'BTC/USDT', onPlaced: jest.fn(), executionEnabled: true, archive: true, onTransfer: opts.onTransfer };
+  const props = { symbol: 'BTC/USDT', onPlaced: jest.fn(), executionEnabled: true,
+    archive: opts.archive ?? true, onTransfer: opts.onTransfer, lastPrice: opts.lastPrice, pickedPrice: opts.pickedPrice };
   form.render(props);
   await tick();
   const render = () => form.render(props);
   const input = (tree: any, placeholder: string) => nodes(tree).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder);
   let tree = render();
-  input(tree, '0.00').props.onChange({ target: { value: '80000' } });
-  input(render(), '0.000').props.onChange({ target: { value: '0.5' } });
+  if (opts.price !== '') input(tree, '0.00').props.onChange({ target: { value: opts.price ?? '80000' } });
+  if (opts.quantity !== '') input(render(), props.archive ? '0.000' : '0.00000').props.onChange({ target: { value: opts.quantity ?? '0.5' } });
   await tick();
   const tpslBox = (t: any) => byClass(t, 'fo-tpslToggle')[0]?.props.children[0];
   const reduceBox = (t: any) => byClass(t, 'fo-reduceOnlyRow')[0].props.children[0];
   const text = (n: any): string => (n == null || typeof n === 'boolean' ? '' : typeof n !== 'object' ? String(n) : Array.isArray(n) ? n.map(text).join('') : text(n.props?.children));
-  return { placed, render, tpslBox, reduceBox, text };
+  return { placed, render, tpslBox, reduceBox, text, input: (placeholder: string) => input(render(), placeholder) };
 }
 
 describe('«Доступно» above the price', () => {
@@ -200,6 +206,187 @@ describe('invalid decimal drafts fail closed', () => {
     expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
     expect(byClass(t.render(), 'sell')[0].props.disabled).toBe(true);
     expect(t.placed).not.toHaveBeenCalled();
+  });
+});
+
+describe('decimal refusal explains the field without changing its draft', () => {
+  const reasons = [
+    ['1e-8', 'exponent', 'futures.numberExponent'],
+    ['1e3', 'exponent', 'futures.numberExponent'],
+    ['-1', 'sign', 'futures.numberSign'],
+    ['1.2.3', 'separator', 'futures.numberSeparator'],
+    ['12abc34', 'character', 'futures.numberCharacter'],
+    ['1,2\n', 'character', 'futures.numberCharacter'],
+  ] as const;
+
+  describe.each(['price', 'quantity', 'TP', 'SL'] as const)('%s', field => {
+    it.each(reasons)('keeps %s visible, links its %s refusal and blocks both buttons and Enter', async (raw, reason, key) => {
+      const t = await compactTicket();
+      t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+      const input = () => field === 'price' ? t.input('0.00')
+        : field === 'quantity' ? t.input('0.000')
+        : byData(t.render(), field === 'TP' ? 'data-entry-take-profit' : 'data-entry-stop-loss')[0];
+      input().props.onChange({ target: { value: raw } });
+      const tree = t.render();
+      expect(input().props.value).toBe(raw);
+      expect(input().props['aria-invalid']).toBe(true);
+      const notes = byData(tree, 'data-input-refusal');
+      expect(notes).toHaveLength(1);
+      expect(notes[0].props['data-input-refusal']).toBe(reason);
+      expect(notes[0].props.id).toBe(input().props['aria-describedby']);
+      expect(t.text(notes[0])).toBe(key);
+      for (const cls of ['buy', 'sell']) {
+        const button = byClass(tree, cls)[0];
+        expect(button.props.disabled).toBe(true);
+        button.props.onClick();
+      }
+      nodes(tree).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() });
+      await tick();
+      expect(t.placed).not.toHaveBeenCalled();
+      expect(t.text(tree)).not.toContain('futures.orderError.triggerPrice');
+    });
+  });
+
+  it('uses the same per-field refusal and submission guard on the standard ticket', async () => {
+    const t = await compactTicket({ archive: false });
+    for (const input of [t.input('0.00'), t.input('0.00000'),
+      byData(t.render(), 'data-entry-take-profit')[0], byData(t.render(), 'data-entry-stop-loss')[0]]) {
+      input.props.onChange({ target: { value: '1e-8' } });
+    }
+    const notes = byData(t.render(), 'data-input-refusal');
+    expect(notes).toHaveLength(4);
+    expect(new Set(notes.map(note => note.props.id)).size).toBe(4);
+    for (const note of notes) expect(t.text(note)).toBe('futures.numberExponent');
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed).not.toHaveBeenCalled();
+  });
+
+  it('tidies only valid drafts on blur, preserving fractional precision and incomplete inputs', async () => {
+    const t = await compactTicket();
+    for (const raw of ['1e-7', '-1', '1.2.3', '12abc34', '.', '1.', '']) {
+      t.input('0.00').props.onChange({ target: { value: raw } });
+      t.input('0.00').props.onBlur();
+      expect(t.input('0.00').props.value).toBe(raw);
+      expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    }
+    t.input('0.00').props.onChange({ target: { value: '0001,25000000000000001' } });
+    expect(t.input('0.00').props.value).toBe('0001.25000000000000001');
+    t.input('0.00').props.onBlur();
+    expect(t.input('0.00').props.value).toBe('1.25000000000000001');
+    expect(t.input('0.00').props['aria-invalid']).toBeUndefined();
+    expect(t.input('0.00').props['aria-describedby']).toBeUndefined();
+    expect(byData(t.render(), 'data-input-refusal')).toHaveLength(0);
+  });
+
+  it('keeps incomplete armed levels non-executable, while empty levels remain optional', async () => {
+    const t = await compactTicket();
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    for (const raw of ['.', '1.']) {
+      byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: raw } });
+      expect(byData(t.render(), 'data-input-refusal')).toHaveLength(0);
+      expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    }
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '' } });
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0]).not.toHaveProperty('protection');
+  });
+
+  it('ignores an invalid TP/SL draft once unticked, and refuses it again when re-armed', async () => {
+    const t = await compactTicket();
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '9e4' } });
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    t.tpslBox(t.render()).props.onChange({ target: { checked: false } });
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    expect(byData(t.render(), 'data-entry-take-profit')[0].props.value).toBe('9e4');
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    t.tpslBox(t.render()).props.onChange({ target: { checked: false } });
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0]).not.toHaveProperty('protection');
+  });
+
+  it('keeps numeric and direction validation for readable protection levels', async () => {
+    const t = await compactTicket();
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    for (const raw of ['0', '80000', '9'.repeat(400)]) {
+      byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: raw } });
+      expect(byData(t.render(), 'data-input-refusal')).toHaveLength(0);
+      expect(t.text(t.render())).toContain('futures.orderError.triggerPrice');
+      expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+      expect(byClass(t.render(), 'sell')[0].props.disabled).toBe(true);
+    }
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '90000' } });
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    expect(byClass(t.render(), 'sell')[0].props.disabled).toBe(true);
+  });
+});
+
+describe('programmatic prices can execute at their full decimal precision', () => {
+  it('auto-seeds a tiny last price as plain digits and submits that exact LIMIT price', async () => {
+    const t = await compactTicket({ lastPrice: 1e-7, price: '', quantity: '100000000', contract: null });
+    expect(t.input('0.00').props.value).toBe('0.0000001');
+    expect(t.input('0.00').props['aria-invalid']).toBeUndefined();
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed).toHaveBeenCalledTimes(1);
+    expect(t.placed.mock.calls[0][0]).toMatchObject({ type: 'LIMIT', price: '0.0000001', quantity: '100000000' });
+  });
+
+  it('Last Price replaces a refused manual exponent with the actual plain-decimal quote', async () => {
+    const t = await compactTicket({ lastPrice: 1.5e-7, quantity: '100000000', contract: null });
+    t.input('0.00').props.onChange({ target: { value: '1.5e-7' } });
+    expect(t.input('0.00').props.value).toBe('1.5e-7');
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    byClass(t.render(), 'fo-lastPriceBtn')[0].props.onClick();
+    expect(t.input('0.00').props.value).toBe('0.00000015');
+    expect(byData(t.render(), 'data-input-refusal')).toHaveLength(0);
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0]).toMatchObject({ type: 'LIMIT', price: '0.00000015', quantity: '100000000' });
+  });
+
+  it('keeps every digit of a programmatic order-book level', async () => {
+    const t = await compactTicket({ pickedPrice: '1.23456789123456789e-7', price: '', quantity: '100000000', contract: null });
+    expect(t.input('0.00').props.value).toBe('0.000000123456789123456789');
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0]).toMatchObject({ price: '0.000000123456789123456789', quantity: '100000000' });
+  });
+
+  it('submits exact typed price, quantity and protection strings without float rounding', async () => {
+    const t = await compactTicket({ price: '0001,23456789123456789', quantity: '0,123456789123456789', contract: null });
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '0002,34567891234567891' } });
+    byData(t.render(), 'data-entry-stop-loss')[0].props.onChange({ target: { value: '0,987654321987654321' } });
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0]).toMatchObject({
+      price: '1.23456789123456789', quantity: '0.123456789123456789',
+      protection: { takeProfit: '2.34567891234567891', stopLoss: '0.987654321987654321' },
+    });
+  });
+
+  it('writes a selected historical candle as plain digits and retains its authoritative payload', async () => {
+    const candle = { symbol: 'BTC/USDT', interval: '1m', openTime: 123000 };
+    const t = await compactTicket({ price: '', quantity: '100000000', execution: {
+      engine: 'NATIVE', candle, candlePrice: '1.23456789123456789e-7',
+    } });
+    expect(t.input('0.00').props.value).toBe('0.000000123456789123456789');
+    expect(t.input('0.00').props.readOnly).toBe(true);
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(false);
+    byClass(t.render(), 'buy')[0].props.onClick();
+    await tick();
+    expect(t.placed.mock.calls[0][0]).toMatchObject({ price: '0.000000123456789123456789', quantity: '100000000', candle });
   });
 });
 

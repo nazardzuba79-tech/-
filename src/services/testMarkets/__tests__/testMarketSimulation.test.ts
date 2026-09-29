@@ -10,7 +10,7 @@ const fresh = () => new TestMarketSimulation(VOLTORA);
 /** Only the original regime/volume contract uses the unmodified baseline. All other tests exercise live VTA. */
 const {
   simulationProfile: _vtaProfile, realismFrom: _vtaFrom,
-  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, ...BASE
+  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, naturalWicks: _vtaNaturalWicks, ...BASE
 } = VOLTORA;
 const baseline = () => new TestMarketSimulation(BASE);
 

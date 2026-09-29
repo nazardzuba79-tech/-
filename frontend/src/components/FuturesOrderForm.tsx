@@ -24,6 +24,10 @@ import {
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { formatAmount, formatPrice } from '../lib/formatNumber';
 import { OrderFamilyTabs, type OrderFamily } from './OrderFamilyPresentation';
+import {
+  decimalFromNumber, decimalUnreadable, plainDecimal, readDecimalInput,
+  type DecimalInput, type DecimalRefusal,
+} from '../lib/decimalInput';
 
 /**
  * A decimal as this terminal prints it: with a dot.
@@ -37,13 +41,14 @@ function decimalText(raw: string): string {
   // Normalize only a syntactically valid decimal draft. Unsupported input is
   // kept verbatim so the UI can mark/refuse it instead of silently turning it
   // into a different tradable number (e.g. 1e-8 -> 18 or -1 -> 1).
-  return /^\d*(?:[.,]\d*)?$/.test(raw) ? raw.replace(',', '.') : raw;
+  return readDecimalInput(raw).status === 'invalid' ? raw : raw.replace(',', '.');
 }
 
 function decimalNumber(raw: string): number | null {
   // Empty/trailing-dot drafts are editing states, not executable numbers.
-  if (!/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(raw)) return null;
-  const value = Number(raw);
+  const input = readDecimalInput(raw);
+  if (input.status !== 'valid') return null;
+  const value = Number(input.value);
   return Number.isFinite(value) ? value : null;
 }
 
@@ -57,6 +62,13 @@ const CONTRACT_LIMIT_LABEL = {
   minNotionalValue: 'futures.limitMinNotional',
   qtyStep: 'futures.limitQtyStep',
 } as const;
+
+const DECIMAL_REFUSAL_KEY = {
+  exponent: 'futures.numberExponent',
+  sign: 'futures.numberSign',
+  separator: 'futures.numberSeparator',
+  character: 'futures.numberCharacter',
+} as const satisfies Record<DecimalRefusal, string>;
 
 export function FuturesOrderForm({
   symbol,
@@ -125,7 +137,7 @@ export function FuturesOrderForm({
   const [priceEdited, setPriceEdited] = useState(false);
   useEffect(() => {
     if (pickedPrice) {
-      setPrice(pickedPrice);
+      setPrice(plainDecimal(pickedPrice));
       setPriceEdited(true);
       setType('LIMIT');
       setFamily('LIMIT');
@@ -141,7 +153,7 @@ export function FuturesOrderForm({
   useEffect(() => {
     if (family !== 'LIMIT' || priceEdited || price !== '') return;
     if (lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0) {
-      setPrice(String(lastPrice));
+      setPrice(decimalFromNumber(lastPrice));
     }
   }, [family, lastPrice, price, priceEdited]);
   const [quantity, setQuantity] = useState('');
@@ -191,7 +203,7 @@ export function FuturesOrderForm({
     setCloseTarget(null);
     setReduceOnly(false);
     setSide(calculatorDraft.side === 'LONG' ? 'BUY' : 'SELL');
-    if (calculatorDraft.price) { setPrice(calculatorDraft.price); setPriceEdited(true); setType('LIMIT'); setFamily('LIMIT'); }
+    if (calculatorDraft.price) { setPrice(plainDecimal(calculatorDraft.price)); setPriceEdited(true); setType('LIMIT'); setFamily('LIMIT'); }
     if (calculatorDraft.quantity) setQuantity(calculatorDraft.quantity);
     if (calculatorDraft.leverage) setRequestedLeverage(Number(calculatorDraft.leverage));
     setPercent(0);
@@ -254,7 +266,7 @@ export function FuturesOrderForm({
    */
   const candlePriceRef = useRef<string | null>(null);
   useEffect(() => {
-    const next = execution.candle ? execution.candlePrice ?? null : null;
+    const next = execution.candle && execution.candlePrice ? plainDecimal(execution.candlePrice) : null;
     if (next !== candlePriceRef.current) {
       candlePriceRef.current = next;
       if (next) { setPrice(next); setPriceEdited(true); }
@@ -330,6 +342,10 @@ export function FuturesOrderForm({
   const historicalEntryPrice = historicalEntry && execution.candlePrice && Number(execution.candlePrice) > 0
     ? Number(execution.candlePrice)
     : null;
+  const priceInput = readDecimalInput(price);
+  const quantityInput = readDecimalInput(quantity);
+  const takeProfitInput = readDecimalInput(entryTakeProfit);
+  const stopLossInput = readDecimalInput(entryStopLoss);
   const effectivePrice = historicalEntryPrice !== null ? historicalEntryPrice : !connectedFamily ? 0 : type === 'LIMIT' ? (decimalNumber(price) ?? 0) : referencePrice ?? 0;
   const quantityNumber = decimalNumber(quantity) ?? Number.NaN;
   const notional = effectivePrice && quantity ? effectivePrice * quantityNumber : 0;
@@ -514,6 +530,10 @@ export function FuturesOrderForm({
    * Reduce Only, they are replaced by the sentence that says where to go.
    */
   const entryProtectionAvailable = execution.entryProtection && !reduceOnly;
+  const protectionInPlay = entryProtectionAvailable && (!archive || protectionEnabled);
+  const unreadableInput = (type === 'LIMIT' && connectedFamily && !historicalEntry && decimalUnreadable(priceInput))
+    || decimalUnreadable(quantityInput)
+    || (protectionInPlay && (decimalUnreadable(takeProfitInput) || decimalUnreadable(stopLossInput)));
   /**
    * The engine's own direction rule, mirrored one round trip early.
    *
@@ -530,9 +550,11 @@ export function FuturesOrderForm({
   function protectionBreachFor(orderSide: 'BUY' | 'SELL'): boolean {
     if (!entryProtectionAvailable || (archive && !protectionEnabled) || !orderSizeKnown) return false;
     const positionSide = orderSide === 'BUY' ? 'LONG' : 'SHORT';
-    for (const [kind, raw] of [['TP', entryTakeProfit], ['SL', entryStopLoss]] as const) {
-      if (raw === '') continue;
-      const level = decimalNumber(raw);
+    for (const [kind, input] of [['TP', takeProfitInput], ['SL', stopLossInput]] as const) {
+      // Syntax errors have their own field-level explanation and submission
+      // guard. A readable level still follows every existing numeric/side rule.
+      if (input.status !== 'valid') continue;
+      const level = decimalNumber(input.value);
       if (level === null || level <= 0) return true;
       const mustBeAbove = positionSide === 'LONG' ? kind === 'TP' : kind === 'SL';
       if (mustBeAbove ? level <= effectivePrice : level >= effectivePrice) return true;
@@ -542,9 +564,9 @@ export function FuturesOrderForm({
   /** Both sides breached means no button can be pressed; the form says so. */
   const protectionBreach = protectionBreachFor('BUY') && protectionBreachFor('SELL');
   /** The levels as the engine wants them, or null when nothing is armed. */
-  const armedProtection = entryProtectionAvailable && (!archive || protectionEnabled) && (entryTakeProfit !== '' || entryStopLoss !== '')
-    ? { takeProfit: entryTakeProfit === '' ? null : entryTakeProfit,
-        stopLoss: entryStopLoss === '' ? null : entryStopLoss }
+  const armedProtection = protectionInPlay && (entryTakeProfit !== '' || entryStopLoss !== '')
+    ? { takeProfit: takeProfitInput.value,
+        stopLoss: stopLossInput.value }
     : null;
   const feeRatePublished = Number(execution.contract?.takerFeeRate ?? 0) > 0;
   /**
@@ -671,6 +693,13 @@ export function FuturesOrderForm({
    *  it as a parameter is what makes "the direction is the button" true
    *  rather than one render out of date. */
   async function submitOrder(orderSide: 'BUY' | 'SELL') {
+    const orderQuantity = quantityInput.value;
+    // The selected candle is authoritative even before the read-only field's
+    // effect has repainted it. Keep its decimal source digits intact.
+    const orderPrice = type !== 'LIMIT' ? undefined
+      : historicalEntryPrice !== null ? plainDecimal(execution.candlePrice!)
+      : priceInput.value;
+    if (unreadableInput || orderQuantity === null || orderPrice === null) return;
     setError(null);
     setSubmitting(true);
     setSide(orderSide);
@@ -679,8 +708,8 @@ export function FuturesOrderForm({
         symbol,
         side: orderSide,
         type,
-        price: type === 'LIMIT' ? price : undefined,
-        quantity,
+        price: orderPrice,
+        quantity: orderQuantity,
         leverage,
         marginType,
         reduceOnly,
@@ -755,6 +784,7 @@ export function FuturesOrderForm({
     && execution.ready
     && executionEnabled
     && connectedFamily
+    && !unreadableInput
     && orderSizeKnown
     && effectiveMaxLeverage !== null
     && !marginShortfall
@@ -828,6 +858,19 @@ export function FuturesOrderForm({
       </small>
     );
   };
+  const refusalNote = (input: DecimalInput, id: string) => input.status === 'invalid'
+    ? <small className="fo-inputRefusal" id={id} data-input-refusal={input.reason}>{t(DECIMAL_REFUSAL_KEY[input.reason])}</small>
+    : null;
+  const refusalProps = (input: DecimalInput, id: string) => input.status === 'invalid'
+    ? { 'aria-invalid': true as const, 'aria-describedby': id }
+    : {};
+  const tidyOnBlur = (input: DecimalInput, raw: string, set: (value: string) => void) => () => {
+    if (input.status === 'valid' && input.value !== raw) set(input.value);
+  };
+  const priceRefusalId = `${protectionPanelId}-price-refusal`;
+  const quantityRefusalId = `${protectionPanelId}-quantity-refusal`;
+  const takeProfitRefusalId = `${protectionPanelId}-tp-refusal`;
+  const stopLossRefusalId = `${protectionPanelId}-sl-refusal`;
   /** The same figure the % slider and the margin check size with. */
   const availableKnown = availableMargin !== null && Number.isFinite(availableMargin);
 
@@ -905,6 +948,8 @@ export function FuturesOrderForm({
                 autoComplete="off"
                 required
                 value={price}
+                {...refusalProps(priceInput, priceRefusalId)}
+                onBlur={tidyOnBlur(priceInput, price, setPrice)}
                 readOnly={historicalEntry}
                 aria-readonly={historicalEntry || undefined}
                 onChange={(e) => {
@@ -917,13 +962,14 @@ export function FuturesOrderForm({
                 {!historicalEntry && lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 && (
                   <button type="button" onClick={() => {
                     setPriceEdited(true);
-                    setPrice(String(lastPrice));
+                    setPrice(decimalFromNumber(lastPrice));
                   }} className="fo-lastPriceBtn">
                     {t('trade.lastPriceBtn')}
                   </button>
                 )}
               </span>
             </div>
+            {refusalNote(priceInput, priceRefusalId)}
           </label>
         ) : family === 'MARKET' ? (
           <label className="fo-label fo-field fo-priceField">
@@ -951,6 +997,8 @@ export function FuturesOrderForm({
               autoComplete="off"
               required
               value={quantity}
+              {...refusalProps(quantityInput, quantityRefusalId)}
+              onBlur={tidyOnBlur(quantityInput, quantity, setQuantity)}
               onChange={(e) => {
                 setQuantity(decimalText(e.target.value));
                 setPercent(0);
@@ -959,6 +1007,7 @@ export function FuturesOrderForm({
             />
             <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span></span>
           </div>
+          {refusalNote(quantityInput, quantityRefusalId)}
         </label>
 
         {/* The ONLY persistent slider in this panel. */}
@@ -978,8 +1027,8 @@ export function FuturesOrderForm({
         </div> : reduceOnlyControl}
         {archiveProtection && !reduceOnly && <div className="archive-order-protection" id={protectionPanelId} hidden={!protectionEnabled}>
           <div className="archive-protection-fields">
-            <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(decimalText(e.target.value))} />{protectionHint(entryTakeProfit, 'TP')}</label>
-            <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(decimalText(e.target.value))} />{protectionHint(entryStopLoss, 'SL')}</label>
+            <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(decimalText(e.target.value))} {...refusalProps(takeProfitInput, takeProfitRefusalId)} onBlur={tidyOnBlur(takeProfitInput, entryTakeProfit, setEntryTakeProfit)} />{refusalNote(takeProfitInput, takeProfitRefusalId)}{protectionHint(entryTakeProfit, 'TP')}</label>
+            <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(decimalText(e.target.value))} {...refusalProps(stopLossInput, stopLossRefusalId)} onBlur={tidyOnBlur(stopLossInput, entryStopLoss, setEntryStopLoss)} />{refusalNote(stopLossInput, stopLossRefusalId)}{protectionHint(entryStopLoss, 'SL')}</label>
           </div>
         </div>}
 
@@ -1009,10 +1058,13 @@ export function FuturesOrderForm({
                     inputMode="decimal"
                     placeholder="—"
                     value={entryTakeProfit}
+                    {...refusalProps(takeProfitInput, takeProfitRefusalId)}
+                    onBlur={tidyOnBlur(takeProfitInput, entryTakeProfit, setEntryTakeProfit)}
                     onChange={(e) => setEntryTakeProfit(decimalText(e.target.value))}
                     aria-label={t('futures.takeProfitLabel')}
                     data-entry-take-profit="true"
                   />
+                  {refusalNote(takeProfitInput, takeProfitRefusalId)}
                 </label>
                 <label className="fo-tpslField">
                   <span className="fo-tpslLabel">{t('futures.stopLossLabel')}</span>
@@ -1021,10 +1073,13 @@ export function FuturesOrderForm({
                     inputMode="decimal"
                     placeholder="—"
                     value={entryStopLoss}
+                    {...refusalProps(stopLossInput, stopLossRefusalId)}
+                    onBlur={tidyOnBlur(stopLossInput, entryStopLoss, setEntryStopLoss)}
                     onChange={(e) => setEntryStopLoss(decimalText(e.target.value))}
                     aria-label={t('futures.stopLossLabel')}
                     data-entry-stop-loss="true"
                   />
+                  {refusalNote(stopLossInput, stopLossRefusalId)}
                 </label>
               </div>
             )}

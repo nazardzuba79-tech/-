@@ -15,7 +15,7 @@ const L = VOLTORA.listingAt;
 /** VTA's original scenario, without the later profile, cycle or wick overlays. */
 const {
   simulationProfile: _vtaProfile, realismFrom: _vtaFrom,
-  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, ...BASE
+  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, naturalWicks: _vtaNaturalWicks, ...BASE
 } = VOLTORA;
 const withProfile = (profile: SimulationProfile, extra: Partial<TestAssetConfig> = {}): TestAssetConfig => ({ ...BASE, simulationProfile: profile, ...extra });
 /** Preserve the original Oct 1 profile-only activation contract independently of live VTA's new cycles. */

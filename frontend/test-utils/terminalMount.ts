@@ -56,7 +56,7 @@ const never = () => new Promise<never>(() => {});
  * CommonJS — so a module joins this list only when it is pure arithmetic
  * with no transport in it.
  */
-const REAL_LIB = new Set(['../lib/futuresMath', '../lib/terminalPresentation', '../lib/formatNumber', '../lib/futuresPositionActions']);
+const REAL_LIB = new Set(['../lib/futuresMath', '../lib/terminalPresentation', '../lib/formatNumber', '../lib/futuresPositionActions', '../lib/decimalInput']);
 
 /** Six microtask turns — enough for the promise chains these components use. */
 export const tick = async () => { for (let i = 0; i < 6; i += 1) await Promise.resolve(); };

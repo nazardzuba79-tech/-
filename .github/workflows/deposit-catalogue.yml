@@ -14,6 +14,9 @@ on:
       - 'frontend/src/components/DepositModal.tsx'
       - 'frontend/src/components/DepositCatalogueDialog*'
       - 'frontend/src/lib/depositAssetMetadata.ts'
+      - 'frontend/src/lib/depositMinimum.ts'
+      - 'frontend/src/lib/depositOrder.ts'
+      - 'src/config/limits.ts'
       - 'frontend/qa/deposit-preview*'
       - 'frontend/package*.json'
       - 'scripts/qa-deposit-ui.cjs'
@@ -51,6 +54,8 @@ jobs:
           src/api/routes/__tests__/deposits.test.ts
           src/services/__tests__/TreasuryWalletService.test.ts
           frontend/src/lib/__tests__/depositAllWallets.test.ts
+          frontend/src/lib/__tests__/depositMinimumRule.test.ts
+          frontend/src/lib/__tests__/depositOrder.test.ts
           frontend/src/lib/__tests__/depositCatalogueEdge.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
           frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
