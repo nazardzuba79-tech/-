@@ -39,6 +39,7 @@ import './trade-terminal/TerminalPremium.css';
 // sheets this page has carried, which is exactly the drift it exists to end.
 import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
+import './trade-terminal/TerminalPreviewPolish.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
@@ -292,7 +293,7 @@ export function TradePage() {
   // CFD uses the same shell, with three columns and deliberately no order book.
   if (marketType === 'cfd') {
     return (
-      <div className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal">
+      <div className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner />
         <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="cfd">
@@ -324,7 +325,7 @@ export function TradePage() {
 
   const spotOrderForm = <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />;
   return (
-    <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal">
+    <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
