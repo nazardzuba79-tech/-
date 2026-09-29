@@ -4714,9 +4714,9 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Preview harness gets `setPrices`.
 - **Checks actually run (local, synthetic data only):**
   - frontend `tsc -b` and production build: PASS.
-  - `qa-deposit-ui.cjs`: PASS, 269 checks. Header and Wallet each: 1 catalogue GET on open, 0 on interactions, 1 on retry, 0 in 60 s idle.
+  - `qa-deposit-ui.cjs`: PASS, 283 checks (including a press on the dimmed area closing only the list). Header and Wallet each: 1 catalogue GET on open, 0 on interactions, 1 on retry, 0 in 60 s idle.
   - `qa-deposit-catalogue.cjs`: PASS.
   - `qa-deposit-catalogue-edge.cjs` (real workerd Worker): PASS. 1 anonymous GET, 0 Render calls, no fallback.
-  - Full `npx jest frontend/src`: failing suites identical to `main` `9c746c61` run the same way (20).
+  - Full `npx jest frontend/src`: 141 pass / 20 fail; the failing suites are identical to `main` `9c746c61` run the same way.
   - Before/after screenshots: `docs/qa/deposit-asset-picker/`.
 - **Not done:** no merge, no deploy, no production data or catalogue change. Minimum-in-asset appears in production only where the page already holds a fresh `ASSET/USDT` price (terminal/markets); on Wallet alone it shows the USD rule.
