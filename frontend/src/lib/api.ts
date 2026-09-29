@@ -1047,8 +1047,7 @@ export const api = {
     }>(`/market/external/trades/${pairToSlug(pair)}?limit=${limit}`),
 
   // Account
-  /** `signal` lets a caller abandon a /me that never answers (the admin gate does). */
-  getMe: (signal?: AbortSignal) =>
+  getMe: () =>
     request<{
       id: string;
       email: string;
@@ -1060,7 +1059,7 @@ export const api = {
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
       twoFactorEnabled: boolean;
       createdAt: string;
-    }>('/me', signal ? { signal } : {}),
+    }>('/me'),
 
   getSyntheticCopyTrading: () => request<SyntheticCopyTradingResponse>('/copy-trading/synthetic'),
 
@@ -1471,6 +1470,22 @@ export const api = {
   // --- Admin panel (/admin) — every call below is re-checked for role on
   // the server on every request (see requireAdmin middleware); nothing
   // here is trusted client-side. ---
+
+  /** Bounded /me read used only by the Admin access gate. Kept inside the
+   * admin client surface so ordinary account/Spot/Futures API contracts stay unchanged. */
+  getAdminGateMe: (signal?: AbortSignal) =>
+    request<{
+      id: string;
+      email: string;
+      displayName: string | null;
+      phone: string | null;
+      country: string | null;
+      avatarUrl: string | null;
+      isAdmin: boolean;
+      kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+      twoFactorEnabled: boolean;
+      createdAt: string;
+    }>('/me', signal ? { signal } : {}),
 
   getAdminOverview: () => request<{
     totalUsers: number; pendingKyc: number; pendingWithdrawals: number; creditedDepositsToday: number;
