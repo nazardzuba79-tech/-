@@ -180,3 +180,18 @@ full PostgreSQL/browser execution and CFD's corrected real-provider browser
 execution remain mandatory in the replacement-head CI; local syntax or
 helper tests are not substitutes. Exact final CI and deployment results are
 recorded in [PR #345](https://github.com/nazardzuba79-tech/-/pull/345).
+
+
+## Concurrent main reconciliation after the follow-ups
+
+PR #344 merged into main as 9d8a537 on 2026-09-29 at 18:11:56 UTC, three
+seconds after the documentation head was published. The resulting conflict
+prevented that head's PR workflows from starting. The combined source was
+reconciled in e2c9d91, preserving both the approved Deposit minimum/Wallet
+presentation update and all idle behavior, notices and economic-equity fixes.
+
+[main344-integration.json](main344-integration.json) records the exact source
+and every application-file delta from the preceding candidate. The earlier
+frozen-runtime and test records above remain historical evidence for their
+stated source; fresh combined verification is required after this merge.
+Final exact-head CI and release outcomes are recorded in PR #345.

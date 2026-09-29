@@ -4960,3 +4960,40 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Actual validation: real A/B builds emitted the exact CI entry names; guard passes different builds and rejects equal/missing entries. Unchanged full shell recovery harness PASS 10 groups with no findings. Complete Admin harness PASS all 24 mobile/desktop cases, including original 401/403/network/timeout/session-replacement checks and four new/updated activity cases. Both browser processes exit 0. Focused Jest 66/66 in four suites, 0 skipped/todo, natural exit 0; syntax/diff checks PASS. Reports, source/bundle fingerprints and three inspected screenshots: `docs/qa/remaining-app-admin-ci-20260929/`.
 - Local Admin attempts initially mixed build B HTML with A assets in generated dist. The final full run uses a temporary exact script copy whose only changes resolve root absolutely and point dist to the complete frozen A bundle; all server, network, clock and assertion code is unchanged. No browser-cache defect is claimed. Local runtime is Node 24 / Playwright 1.62 / Chromium 153; exact updated PR CI on Node 22 / Playwright 1.56 / Chromium 141 remains required.
 - Preserved all current Claude/Codex source, approved main #343, real browser idle/session barriers, financial paths and Admin authorization. No remote write, CI rerun, merge, deployment, production account/API/DB action by this lane. Root owns integration and final exact-head gates; concurrent #344 is untouched.
+
+## Claude — 2026-09-29 — Deposit minimum in two plain lines; Wallet «V» removed
+
+- Base: `main` `9742375b`. Branch `claude/peaceful-volta-h5zw7g-deposit-minimum-line`. Commit: the one carrying this entry.
+- **Owner ask:** Codex's note («Для зачисления сумма подтверждённых пополнений в одном активе и одной сети…») is hard for newcomers.
+  - Approved per-asset line: «Минимальное пополнение — 300 USDT» (pegged: USDT/USDC/USD/DAI show their own ticker), otherwise «— 300 USDT или эквивалент в BTC (≈ 0,003 BTC)».
+  - Second line: «Несколько переводов в одном активе и сети суммируются.» (owner: «активе», not «монете»).
+  - Remove the big «V» on the Wallet overview.
+- **Changes**
+  - `DepositCatalogueDialog.tsx/.css`: two-line `dc-minimum`.
+  - `depositMinimum.ts`:
+    - `depositMinimumView(asset, quote?, now?)` adds `estimate` / `estimateExpiresAt`.
+    - `DEPOSIT_PRICE_MAX_AGE_MS` restored and pinned to `src/config/limits.ts`.
+  - Locales (7): `minimumTitle` / `minimumEquivalent` / `minimumPegged` replaced by `minimumPeggedLine` / `minimumOtherLine` / `minimumApprox`; `minimumNote` reworded.
+  - `WalletOverview.tsx` / `wallet.css`: `.wallet-overview-mark` removed.
+- **Reconciled with Codex (`e292d965`), which had removed the ≈ estimate after the #339 review.** The owner explicitly approved «(≈ 0,003 BTC)», so it returns with both review gaps closed:
+  - only a live quote (`tickersMeta.stale === false`), younger than the server's 2-min bound;
+  - a one-shot timeout removes a shown estimate at expiry without any parent render;
+  - still `getState()` only: no request, subscription or polling.
+  - Codex's stale and expired QA cases are kept; its «fresh quote cannot add an estimate» case is now «live quote shows (≈ 0,003 BTC)», plus a new expiry-without-re-render check.
+- **Checks actually run (local, synthetic data):**
+  - frontend `tsc -b` and production build: PASS.
+  - `depositMinimumRule` / `i18nLanguageChunks` / `depositOrder` / `depositAllWallets` / `copyTradingCiCoverage`: PASS.
+  - `walletOverview.test.ts`: 4 failures, identical on unmodified `main`.
+  - `qa-deposit-ui.cjs`: PASS, 303 checks. 1 GET on open, 0 on interactions, 0 in 60 s idle.
+  - Full `npx jest frontend/src`: 143 pass / 20 fail; the same 20 suites as the earlier `main` baseline.
+  - Wallet page on the local fixture at 1440/390: no `.wallet-overview-mark`.
+  - Screenshots: `docs/qa/deposit-asset-picker/minimum-*`, `wallet-no-v-*`.
+- **Not done:** no merge, no deploy.
+
+
+## Codex — 2026-09-29 18:16 UTC — Reconcile concurrent approved main PR #344
+
+- Main advanced to 9d8a537c5e57beafec347554aa1d456d9ede1049 at 18:11:56 UTC, three seconds after final documentation head 23af3ed was published. GitHub marked that PR head conflicted and did not schedule its pull-request workflows. Its successful Pages preview is not a substitute for those absent checks. Root fetched the actual main ref and reconciled it without discarding either approved change.
+- Merge commit is the commit containing this entry. Seven locale conflicts preserve exactly the new main Deposit minimum text/keys plus the four unchanged idle notices. The auto-merged language contract retains new Deposit keys and idle normalization. Wallet removes the decorative mark from #344 while keeping the reviewed economic-equity/BTC calculation. Deposit destination wake revalidation is intact; the new amount display reads already-held prices and adds no network subscription or polling. Independent source review found no new idle/security conflict.
+- Existing root handoff bytes and all previous main entries were verified and retained; only main's new append-only section and this entry were added. No branch, original historical report, financial guard, production account/order/allocation or database data was overwritten.
+- The earlier frozen ea17fdc runtime and 90-file fingerprint describe the pre-#344 checkpoint. The merged candidate additionally includes the approved Deposit/Wallet presentation changes from #344; it requires a fresh frontend build/full regression and exact merged-main CI. No updated full-suite or deployment result is claimed at this checkpoint. Intermediate 56a4586 already passed corrected real-provider CFD, real-PG VTA and Spot browser gates, but is diagnostic evidence rather than final release clearance.
