@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
+import { getAdminUsersAbortable } from '../../lib/adminReadApi';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { SkeletonRow } from '../../components/Skeleton';
@@ -112,8 +113,7 @@ export function AdminUsersPage() {
     usersInFlight.current = true;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ADMIN_USERS_TIMEOUT_MS);
-    api
-      .getAdminUsers(undefined, controller.signal)
+    getAdminUsersAbortable(controller.signal)
       .then((next) => { setUsers(next.filter((user) => user.role === 'USER' && !user.isAdmin && !deletedIds.current.has(user.id))); setLoadError(false); })
       .catch(() => setLoadError(true))
       .finally(() => { clearTimeout(timer); usersInFlight.current = false; });
