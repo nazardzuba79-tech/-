@@ -32,3 +32,7 @@ name = "RECEIVING_ADDRESS_CATALOGUE"
 class_name = "ReceivingAddressCatalogueDO"
 
 # Set DEPOSIT_CATALOGUE_STORE_TOKEN separately in each authorized environment.
+# Public read-only view (GET /public/deposit-catalogue): active destinations only.
+# PUBLIC_CATALOGUE_ORIGINS (comma-separated, https only) replaces the default
+# browser allow-list https://voltextech.net, https://www.voltextech.net. It is
+# not a secret; set it per environment with `[env.<name>.vars]` when needed.

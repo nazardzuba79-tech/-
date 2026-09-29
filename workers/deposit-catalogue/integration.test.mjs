@@ -134,6 +134,56 @@ test('missing Worker secret fails closed before using the Durable Object binding
     durableObjects: { RECEIVING_ADDRESS_CATALOGUE: { className: 'ReceivingAddressCatalogueDO', useSQLite: true } } }), telemetry: { enabled: false } });
   try { assert.equal((await m.dispatchFetch(endpoint)).status, 503); } finally { await m.dispose(); }
 });
+const publicUrl = 'https://local/public/deposit-catalogue';
+const tron = { assetId: 'tether', networkId: 'tron', address: 'T' + 'A'.repeat(33), enabled: true, memo: '', memoLabel: '' };
+const btcOff = { assetId: 'bitcoin', networkId: 'bitcoin', address: 'bc1q' + 'a'.repeat(38), enabled: false, memo: '', memoLabel: '' };
+test('public read: active entries only, byte-identical to the Render answer, no secret, no write path', async () => {
+  const revision = (await current()).revision;
+  const doc = { schemaVersion: 1, baseline: [eth, tron, btcOff], overrides: [{ ...tron, enabled: false, address: '' }] };
+  assert.equal((await request('PUT', doc, revision)).status, 200);
+  const r = await mf.dispatchFetch(publicUrl);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('Cache-Control'), 'no-cache');
+  const text = await r.text(), body = JSON.parse(text);
+  assert.deepEqual(body.entries.map(e => `${e.asset}/${e.networkId}`), ['ETH/ethereum']);
+  const render = await new DepositCatalogue(new CloudflareCatalogueStore(endpoint, token, transport), async () => []).publicCatalogue();
+  assert.deepEqual(body, render);
+  assert.equal(r.headers.get('ETag'), `"${render.version}"`);
+  for (const secret of [token, 'baseline', 'overrides', 'status', 'bc1q', 'revision']) assert.ok(!text.includes(secret), secret);
+  // Conditional re-open: unchanged catalogue costs a 304.
+  assert.equal((await mf.dispatchFetch(publicUrl, { headers: { 'If-None-Match': `"${render.version}"` } })).status, 304);
+  // Nothing on the public path writes, even with the store secret.
+  for (const method of ['PUT', 'POST', 'DELETE', 'PATCH']) {
+    const w = await mf.dispatchFetch(publicUrl, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'If-Match': revision }, body: JSON.stringify(doc) });
+    assert.equal(w.status, 405, method);
+  }
+  assert.equal((await mf.dispatchFetch(`${publicUrl}?all=1`)).status, 404);
+  assert.equal((await current()).revision, String(BigInt(revision) + 1n));
+});
+test('public read CORS: allow-listed origins only; the private store stays secret-only and CORS-free', async () => {
+  const allowed = await mf.dispatchFetch(publicUrl, { headers: { Origin: 'https://voltextech.net' } });
+  assert.equal(allowed.status, 200);
+  assert.equal(allowed.headers.get('Access-Control-Allow-Origin'), 'https://voltextech.net');
+  assert.match(allowed.headers.get('Vary'), /Origin/);
+  for (const origin of ['https://evil.example', 'null', 'https://voltextech.net.evil.example', 'http://voltextech.net']) {
+    const denied = await mf.dispatchFetch(publicUrl, { headers: { Origin: origin } });
+    assert.equal(denied.status, 403, origin); assert.equal(denied.headers.get('Access-Control-Allow-Origin'), null);
+  }
+  const preflight = await mf.dispatchFetch(publicUrl, { method: 'OPTIONS', headers: { Origin: 'https://www.voltextech.net', 'Access-Control-Request-Method': 'GET' } });
+  assert.equal(preflight.status, 204); assert.equal(preflight.headers.get('Access-Control-Allow-Methods'), 'GET');
+  const privateRead = await mf.dispatchFetch(endpoint, { headers: { Origin: 'https://voltextech.net' } });
+  assert.equal(privateRead.status, 403); assert.equal(privateRead.headers.get('Access-Control-Allow-Origin'), null);
+  assert.equal((await mf.dispatchFetch(endpoint)).status, 401);
+});
+test('public read: configured origin list replaces the defaults; missing secret fails closed', async () => {
+  const m = new Miniflare({ ...convertV4MiniflareOptions({ modules: true, script: bundle.outputFiles[0].text, compatibilityDate: '2026-09-01',
+    bindings: { PUBLIC_CATALOGUE_ORIGINS: 'http://127.0.0.1:4173, https://staging.voltextech.net' },
+    durableObjects: { RECEIVING_ADDRESS_CATALOGUE: { className: 'ReceivingAddressCatalogueDO', useSQLite: true } } }), telemetry: { enabled: false } });
+  try {
+    assert.equal((await m.dispatchFetch(publicUrl, { headers: { Origin: 'https://voltextech.net' } })).status, 403);
+    assert.equal((await m.dispatchFetch(publicUrl, { headers: { Origin: 'http://127.0.0.1:4173' } })).status, 503);
+  } finally { await m.dispose(); }
+});
 test('no egress, idle triggers, financial/Prisma dependency or secret in frontend', async () => {
   assert.equal(outbound, 0);
   const source = await readFile(new URL('./src/index.js', import.meta.url), 'utf8');
