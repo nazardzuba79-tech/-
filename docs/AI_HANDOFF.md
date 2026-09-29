@@ -4334,3 +4334,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - backend `tsc`, frontend build: OK;
   - `adminUsersActivity` (with new assertions) + `adminConsoleInteractions` + `renderBandwidthBudget` + `routeCodeSplitting`: 35/35;
   - local browser smoke (production bundle, real backend, disposable Postgres, synthetic users): 40/40, including `/admin/users` at 320/390/430/1440 with no overflow, and НОВЫЙ inline next to the email at 1440.
+
+## Codex — 2026-09-29 — Common Deposit UI and picker review
+- Owner scope: UI only, separate review branch, NO MERGE / DEPLOY / production addresses or balances. Started at fresh main 08e4af19594d16421ad9814608916dd0e1c368a5, rebased onto 48f9522ccb717439bc1d22cdf5cabd97fb774b7f (Admin Users #321). Branch: codex/deposit-picker-ui.
+- Header and Wallet manual catalogue now use one scoped DepositCatalogueDialog: local named coin icons/search, explicit network, complete address, neutral asset/network warning, race-safe clipboard, local QR, optional memo, loading/error/retry and accessible focus. Existing shared Select/Modal and flag-OFF legacy deposit rules unchanged.
+- Diagnosis: original single-click BTC→USDT worked locally; exact mouse symptom remains unconfirmed. Reproduced original mounted Wallet focus loss on parent render before Enter (BTC persists); new mounted regression passes for both entrypoints. Do not overstate this as a proven cause of the owner's mouse report.
+- Validation: 149 tests/9 suites PASS; 133 mounted browser assertions PASS (1440/390/320 and 480px height), 9 real-router/synthetic-store integration scenarios PASS; TypeScript/backend/frontend build PASS. Both entrypoints: 1 existing catalogue GET/open, 0 additional interaction or 60.1s idle requests; no public auth/Neon/financial writes. Full Wallet background traffic separately reported.
+- Evidence and reproducible commands: docs/qa/deposit-ui/README.md. Local interactive fixture: http://127.0.0.1:4262/qa/deposit-preview.html. Synthetic addresses only. New scripts wired into existing dedicated catalogue CI; Copy CI import-graph triggers expanded without changing Copy logic.
+- No production access, merge, deploy, schema, balance or address changes. Unrelated untracked docs/qa/voltora-listing preserved. Stop at review PR and preview.
