@@ -37,6 +37,9 @@ import { kycRouter } from './api/routes/kyc';
 import { notificationPublicKey } from './services/TelegramNotifications';
 import { adminRouter } from './api/routes/admin';
 import { adminUsersRouter } from './api/routes/adminUsers';
+import { adminListingsRouter } from './api/routes/adminListings';
+import { listingStoreFromEnvironment } from './services/listings/store';
+import { managedListingRegistry } from './services/listings/registry';
 import { adminAuditLogRouter } from './api/routes/adminAuditLog';
 import { cardRouter } from './api/routes/card';
 import { apiKeysRouter } from './api/routes/apiKeys';
@@ -261,6 +264,14 @@ const depositWatchScheduler = new DepositWatchScheduler(depositWatch);
 app.use('/api/v1', depositWatchInternalRouter(depositWatch));
 app.use('/api/v1', adminDepositsRouter(prisma, marketDataService, { watch: depositWatch }));
 app.use('/api/v1', adminWalletsRouter(prisma));
+// Admin → Listings: configs live in Cloudflare (market-edge Durable Object); Render validates,
+// forwards with the server secret and computes the private Preview. No Neon writes.
+app.use('/api/v1', adminListingsRouter(prisma, listingStoreFromEnvironment(), {
+  hasSpotPair: (pair) => marketUniverse.spot().some((instrument) => `${instrument.baseAsset}/${instrument.quoteAsset}` === pair),
+}));
+// One read at boot so the restricted-asset guards know published listings; afterwards
+// only on demand (orders, valuations), at most once a minute. Unconfigured = no request.
+void managedListingRegistry.ensureFresh(0);
 app.use('/api/v1', depositCatalogueRouter(prisma, new DepositCatalogue(catalogueStoreFromEnvironment(), () => coinGeckoService.getRankings())));
 app.use('/api/v1', withdrawalsRouter(prisma));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));

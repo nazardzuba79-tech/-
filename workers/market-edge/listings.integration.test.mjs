@@ -168,3 +168,10 @@ test('the existing NRX edge is untouched and calls out to nothing', async () => 
   assert.equal(nrx.assets[0].pair, 'NRX/USDT');
   assert.equal(outbound, before);
 });
+
+test('Render registry route returns published configs with the seed only behind the Bearer secret', async () => {
+  const internal = await (await admin('/internal/listings/published')).json();
+  assert.ok(internal.listings.every((l) => typeof l.config.seed === 'string'));
+  assert.equal((await admin('/internal/listings/published', { headers: { Authorization: '' } })).status, 401);
+  assert.ok(!JSON.stringify(await catalogue()).includes('qax-20261001-synthetic'));
+});

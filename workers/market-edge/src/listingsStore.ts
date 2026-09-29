@@ -197,6 +197,8 @@ export class ManagedListingsDO {
       if (denied) return denied;
       const actor = request.headers.get('X-Voltex-Admin-Id') ?? '';
       if (url.pathname === '/internal/listings' && request.method === 'GET') return reply(this.adminList());
+      // Render's trading registry: published configurations INCLUDING the seed (never served publicly).
+      if (url.pathname === '/internal/listings/published' && request.method === 'GET') return reply(this.published());
       const match = /^\/internal\/listings\/([^/]+)\/(draft|publish)$/.exec(url.pathname);
       if (!match || !LISTING_ID_PATTERN.test(match[1])) return reply({ error: 'not_found' }, 404);
       if (!ACTOR.test(actor)) return reply({ error: 'actor_required' }, 400);
