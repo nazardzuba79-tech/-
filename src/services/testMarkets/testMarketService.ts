@@ -7,7 +7,7 @@
  */
 import type { TestAssetConfig } from './testAssetConfig';
 import {
-  SIM_INTERVALS, SIM_INTERVAL_OFFSETS, aggregateCandles, getCurrentTestMarketState, simulationFor,
+  MINUTE_MS, SIM_INTERVALS, SIM_INTERVAL_OFFSETS, aggregateCandles, getCurrentTestMarketState, simulationFor,
   type TestMarketState,
 } from './testMarketSimulation';
 
@@ -65,8 +65,11 @@ export function testMarketCandles(asset: TestAssetConfig, interval: string, now:
   const count = Math.max(1, Math.min(Math.floor(limit) || 300, 1000));
   const currentBucket = Math.floor((marketNow - offset) / size) * size + offset;
   const from = Math.max(asset.listingAt, currentBucket - (count - 1) * size);
-  const fiveMinute = simulationFor(asset).candles5m(marketNow, from);
-  return aggregateCandles(fiveMinute, size, offset)
+  const simulation = simulationFor(asset);
+  // 1m comes straight from the ticks; every coarser timeframe from the canonical 5m series.
+  const candles = size === MINUTE_MS ? simulation.candles1m(marketNow, from)
+    : aggregateCandles(simulation.candles5m(marketNow, from), size, offset);
+  return candles
     .filter((candle) => candle.openTime >= currentBucket - (count - 1) * size)
     .slice(-count)
     .map((candle) => ({

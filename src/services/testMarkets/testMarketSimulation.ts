@@ -30,14 +30,25 @@
  * its own block of 12–13 impulse, 8–9 consolidation and 3 pullback hours.
  * The impulse target decays: R(day) = 0.30 for day ≤ 2, else
  * 0.30 × 0.80^(day − 2).
+ *
+ * REALISM. An asset with a `simulationProfile` keeps every hour anchor above
+ * and hands the INSIDE of each hour — how its fixed return is spread over
+ * twelve candles, and each candle's wicks — to `simulationRealism.ts`. An
+ * asset without one is generated exactly as before.
  */
 import type { TestAssetConfig } from './testAssetConfig';
+import { normal, seededRandom } from './simulationRandom';
+import { REALISM_PROFILES, isSimulationProfile, realisticHour, realisticTicks, type CandleShape, type RealismParams } from './simulationRealism';
+
+export { seededRandom };
 
 export const TICK_MS = 10_000;
+export const MINUTE_MS = 60_000;
 export const CANDLE_MS = 300_000;
 export const HOUR_MS = 3_600_000;
 export const DAY_MS = 86_400_000;
 const TICKS_PER_CANDLE = CANDLE_MS / TICK_MS; // 30
+const TICKS_PER_MINUTE = MINUTE_MS / TICK_MS; // 6
 const CANDLES_PER_HOUR = HOUR_MS / CANDLE_MS; // 12
 
 export type Regime = 'impulse' | 'consolidation' | 'pullback';
@@ -51,41 +62,6 @@ export interface SimCandle {
   close: number;
   volume: number;
   quoteVolume: number;
-}
-
-// ── Seeded randomness ───────────────────────────────────────────────
-
-function fnv1a(text: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
-
-/** mulberry32: small, fast and well distributed for this purpose. */
-function mulberry32(state: number): () => number {
-  let a = state >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** A generator for one labelled stream, e.g. rng(seed, 'hour', 37). */
-export function seededRandom(seed: string, ...labels: (string | number)[]): () => number {
-  return mulberry32(fnv1a([seed, ...labels].join('|')));
-}
-
-/** Standard normal, clamped to ±3.2 so a single draw can never produce an absurd candle. */
-function normal(random: () => number): number {
-  let u = random();
-  while (u <= Number.EPSILON) u = random();
-  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * random());
-  return Math.max(-3.2, Math.min(3.2, z));
 }
 
 /** Eight significant figures. Monotonic, so OHLC ordering survives rounding. */
@@ -283,6 +259,8 @@ interface HourPlan {
   cluster: number;
   /** 13 candle boundaries: open of each 5m candle, then the hour's close. */
   boundaries: number[];
+  /** Realism only: the shape of each of the twelve candles. */
+  shapes?: CandleShape[];
 }
 
 /**
@@ -294,8 +272,17 @@ export class TestMarketSimulation {
   private blocks = new Map<number, Block>();
   private hourOpens: number[] = [];
   private closedCandles = new Map<number, SimCandle>();
+  /** The profile's parameters, or null for the legacy intra-hour path. */
+  private readonly realism: RealismParams | null;
+  private readonly realismOffset: number;
+  /** The first hour the profile shapes; every earlier hour takes the legacy path. */
+  private readonly realismFromHour: number;
 
-  constructor(readonly asset: TestAssetConfig) {}
+  constructor(readonly asset: TestAssetConfig) {
+    this.realism = isSimulationProfile(asset.simulationProfile) ? REALISM_PROFILES[asset.simulationProfile] : null;
+    this.realismOffset = asset.realismSeedOffset ?? 0;
+    this.realismFromHour = asset.realismFrom === undefined ? 0 : Math.max(0, Math.ceil((asset.realismFrom - asset.listingAt) / HOUR_MS));
+  }
 
   private block(index: number): Block {
     let block = this.blocks.get(index);
@@ -317,6 +304,11 @@ export class TestMarketSimulation {
     return this.hourOpens[hour];
   }
 
+  private regimeOf(hour: number): Regime {
+    const block = this.block(blockIndexOfHour(hour));
+    return block.regimes[hour - block.startHour];
+  }
+
   hourPlan(hour: number): HourPlan {
     const block = this.block(blockIndexOfHour(hour));
     const regime = block.regimes[hour - block.startHour];
@@ -324,19 +316,31 @@ export class TestMarketSimulation {
     const cluster = clusterFactor(this.asset.seed, hour);
     const sigma = candleSigma(regime, logReturn, cluster);
     const open = this.hourOpen(hour);
-    const steps = hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+    // Both paths start and end the hour on the same anchors, so switching at an hour is seamless.
+    const realistic = this.realism && hour >= this.realismFromHour ? realisticHour({
+      seed: this.asset.seed, offset: this.realismOffset, hour, regime, logReturn, sigma, params: this.realism,
+      trendStep: Math.log(1 + impulseRate(Math.floor(hour / 24) + 1)) / CANDLES_PER_HOUR,
+      previousRegime: hour > 0 ? this.regimeOf(hour - 1) : null, nextRegime: this.regimeOf(hour + 1),
+    }) : null;
+    const steps = realistic ? realistic.steps : hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
     const boundaries = [open];
     let logPrice = Math.log(open);
     for (let k = 0; k < CANDLES_PER_HOUR; k++) {
       logPrice += steps[k];
+      // The hour always closes on the base simulation's anchor, whatever happened inside it.
       boundaries.push(k === CANDLES_PER_HOUR - 1 ? this.hourOpen(hour + 1) : Math.exp(logPrice));
     }
-    return { hour, regime, open, logReturn, sigma, cluster, boundaries };
+    return { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}) };
   }
 
   private ticks(plan: HourPlan, slot: number): Tick[] {
-    return candleTicks(this.asset.seed, plan.hour, slot, plan.regime, plan.boundaries[slot], plan.boundaries[slot + 1],
-      plan.sigma, plan.cluster, this.asset.initialPrice);
+    const open = plan.boundaries[slot], close = plan.boundaries[slot + 1];
+    if (plan.shapes && this.realism) {
+      const volumeBase = BASE_QUOTE_VOLUME * Math.pow(open / this.asset.initialPrice, 0.3) * REGIME_VOLUME[plan.regime];
+      return realisticTicks(this.asset.seed, this.realismOffset, plan.hour, slot, open, close, plan.shapes[slot],
+        plan.cluster, volumeBase, this.realism);
+    }
+    return candleTicks(this.asset.seed, plan.hour, slot, plan.regime, open, close, plan.sigma, plan.cluster, this.asset.initialPrice);
   }
 
   /** Read-only tape of completed canonical ticks; never samples a future tick. */
@@ -390,6 +394,35 @@ export class TestMarketSimulation {
     return out;
   }
 
+  /**
+   * 1m candles from the same ticks as the canonical 5m series (six ticks
+   * each), so five of them always aggregate to exactly their 5m candle. The
+   * last one is forming at `now`, from completed ticks only.
+   */
+  candles1m(now: number, from = this.asset.listingAt): SimCandle[] {
+    const listing = this.asset.listingAt;
+    if (now < listing) return [];
+    const start = Math.max(listing, listing + Math.floor((from - listing) / MINUTE_MS) * MINUTE_MS);
+    const out: SimCandle[] = [];
+    let plan: HourPlan | null = null;
+    let cachedIndex = -1, ticks: Tick[] = [];
+    for (let openTime = start; openTime <= now; openTime += MINUTE_MS) {
+      const index = Math.floor((openTime - listing) / CANDLE_MS);
+      const hour = Math.floor(index / CANDLES_PER_HOUR);
+      const slot = index % CANDLES_PER_HOUR;
+      if (cachedIndex !== index) {
+        if (!plan || plan.hour !== hour) plan = this.hourPlan(hour);
+        ticks = this.ticks(plan, slot);
+        cachedIndex = index;
+      }
+      const first = ((openTime - listing - index * CANDLE_MS) / MINUTE_MS) * TICKS_PER_MINUTE;
+      const done = Math.min(TICKS_PER_MINUTE, Math.max(0, Math.floor((now - openTime) / TICK_MS)));
+      const open = first === 0 ? plan!.boundaries[slot] : ticks[first - 1].price;
+      out.push(candleFromTicks(openTime, open, ticks.slice(first, first + done)));
+    }
+    return out;
+  }
+
   /** The last traded price at `now`, or null before the listing. */
   priceAt(now: number): number | null {
     if (now < this.asset.listingAt) return null;
@@ -401,6 +434,7 @@ export class TestMarketSimulation {
 // ── Aggregation and statistics ──────────────────────────────────────
 
 export const SIM_INTERVALS: Record<string, number> = {
+  '1m': MINUTE_MS,
   '5m': 5 * 60_000,
   '15m': 15 * 60_000,
   '1h': HOUR_MS,
@@ -498,13 +532,14 @@ const MAX_SIMULATIONS = 64;
 
 /**
  * The one shared simulation per test-asset CONFIGURATION. The key is every
- * input that shapes history — pair, seed, listing time, initial price — so a
- * managed listing's draft preview and its published market never share (and
- * never corrupt) each other's cached candles. VTA and NRX have one fixed
- * configuration each, so they keep exactly one simulation as before.
+ * input that shapes history — pair, seed, listing time, initial price,
+ * realism profile, offset and activation — so a managed listing's draft
+ * preview and its published market never share (and never corrupt) each
+ * other's cached candles. VTA and NRX have one fixed configuration each, so they keep
+ * exactly one simulation as before.
  */
 export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}`;
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);

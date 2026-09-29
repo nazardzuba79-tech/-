@@ -70,6 +70,19 @@ describe('Admin → Listings routes', () => {
     expect(store.calls[0]).toMatch(/^save:qax-[a-f0-9]{8}:0:admin-1$/);
   });
 
+  test('a request never chooses the simulation profile: Render drops it and the store assigns one by creation order', async () => {
+    const { server, store } = app();
+    const created = await request(server).post('/api/v1/admin/listings').set('Authorization', auth('admin-1'))
+      .send({ config: form({ simulationProfile: 'COMPRESSION_BREAKOUT' }) });
+    expect(created.status).toBe(201);
+    const saved = [...store.drafts.values()][0].draft;
+    expect('simulationProfile' in saved).toBe(false);
+    const edited = await request(server).put(`/api/v1/admin/listings/${created.body.id}/draft`).set('Authorization', auth('admin-1')).set('If-Match', '1')
+      .send({ config: form({ simulationProfile: 'NOT_A_PROFILE' }) });
+    expect(edited.status).toBe(200);
+    expect('simulationProfile' in edited.body.draft).toBe(false);
+  });
+
   test.each([
     [{ symbol: 'VTA' }, 'RESERVED_TICKER'], [{ symbol: 'SOLX' }, 'TICKER_ON_MARKET'], [{ initialPrice: 'abc' }, 'INVALID_CONFIG'],
     [{ seedMode: 'manual', seed: 'x' }, 'INVALID_CONFIG'],
