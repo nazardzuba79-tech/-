@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType, OrderBookSnapshot } from '../matching-engine/types';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
+import { assertNotManagedExecution } from './managedListings/store';
 
 type TxClient = Prisma.TransactionClient;
 
@@ -64,6 +65,7 @@ export class DemoTradingService {
     quantity: BigNumber;
   }) {
     if (isTestAssetPairOrSymbol(params.pair)) throw new DemoTradingError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    await assertNotManagedExecution(params.pair);
     const [base, quote] = params.pair.split('/');
     if (!base || !quote) throw new DemoTradingError(`Invalid pair: ${params.pair}`);
     if (params.type === 'LIMIT' && (!params.price || !params.price.isFinite() || params.price.lte(0))) {

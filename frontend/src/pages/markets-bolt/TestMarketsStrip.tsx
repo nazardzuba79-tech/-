@@ -37,7 +37,13 @@ export function TestMarketsStrip({ search, favoritesOnly, favorites, onToggleFav
               aria-label={`Избранное: ${asset.pair}`} onClick={() => onToggleFavorite(asset.pair)}>
               <Star size={15} fill={starred ? 'currentColor' : 'none'} />
             </button>
-            <button type="button" className="test-market-open" onClick={() => onOpen(asset.pair)} aria-label={`${asset.name} ${asset.pair}`}>
+            <button type="button" className="test-market-open" onClick={() => {
+              // New published identities must bootstrap before the terminal or
+              // venue subscriptions mount. A document entry also discards an
+              // older in-memory directory after an administrator publishes.
+              if (asset.isManagedListing) window.location.assign(`/trade?pair=${encodeURIComponent(asset.pair)}`);
+              else onOpen(asset.pair);
+            }} aria-label={`${asset.name} ${asset.pair}`}>
               <span className="test-market-identity">
                 <CryptoIcon symbol={asset.symbol} size={30} />
                 <span>

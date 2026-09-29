@@ -5,6 +5,7 @@ import { assetMetadataStore } from '../lib/assetMetadataStore';
 // VOLTORA logo — replacing this one file swaps it everywhere.
 import voltoraLogo from '../assets/voltora-logo.svg';
 import neurixLogo from '../assets/neurix-logo.svg';
+import { managedLogo } from '../lib/managedListingRegistry';
 
 const TEST_ASSET_ICONS: Readonly<Record<string, string>> = { VTA: voltoraLogo, NRX: neurixLogo };
 
@@ -150,7 +151,7 @@ export function CryptoIcon({
   /** Canonical reference rows must not guess identity by symbol. */
   metadataOnly?: boolean;
 }) {
-  const testIcon = metadataOnly ? null : TEST_ASSET_ICONS[symbol.toUpperCase()] ?? null;
+  const testIcon = metadataOnly ? null : TEST_ASSET_ICONS[symbol.toUpperCase()] ?? managedLogo(symbol) ?? null;
   // Only consult the registry when the caller has not already supplied a
   // logo — no point spending a lookup on a question already answered.
   const registryLogo = useRegistryLogo(symbol, !testIcon && !imageUrl && !metadataOnly);

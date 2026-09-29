@@ -1,0 +1,29 @@
+name = "voltex-managed-listings-local"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = false
+preview_urls = false
+
+[[durable_objects.bindings]]
+name = "MANAGED_LISTINGS"
+class_name = "ManagedListingsDO"
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ManagedListingsDO"]
+
+[env.staging]
+name = "voltex-managed-listings-staging"
+workers_dev = true
+[[env.staging.durable_objects.bindings]]
+name = "MANAGED_LISTINGS"
+class_name = "ManagedListingsDO"
+
+[env.production]
+name = "voltex-managed-listings-production"
+workers_dev = true
+[[env.production.durable_objects.bindings]]
+name = "MANAGED_LISTINGS"
+class_name = "ManagedListingsDO"
+
+# LISTINGS_STORE_TOKEN: separate secret in each environment, backend only.
+# No Deposit Catalogue bindings, existing market-edge routes, or deploy automation.

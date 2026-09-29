@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_BASE } from './api';
+import { fetchManagedPublic, isManagedPair, managedPairFromPath, MANAGED_LISTINGS_BASE } from './managedListings';
 import { fetchNrxPublic, isNrxPair, NRX_EDGE_BASE } from './nrxMarket';
 import { parseTestMarkets, SIMULATION_PREVIEW_PARAM, withSimulationPreview, type TestAsset } from './testMarkets';
 
@@ -33,6 +34,7 @@ function simulationPreviewTime(): string | null {
 
 /** A test-market GET: public, uncached, with the dev-only preview clock when allowed. */
 export async function fetchTestMarketJson(url: string, signal?: AbortSignal): Promise<unknown> {
+  if (url.includes('/market/managed-listings') || managedPairFromPath(url)) return fetchManagedPublic(url,signal);
   if (url.toUpperCase().includes('NRX')) return fetchNrxPublic(url, signal);
   const response = await fetch(withSimulationPreview(url, simulationPreviewTime()), {
     signal, credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json' },
@@ -140,7 +142,9 @@ class TestMarketStore {
 
 export const testMarketStore = new TestMarketStore();
 export const nrxMarketStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`);
+export const managedMarketStore = new TestMarketStore(`${MANAGED_LISTINGS_BASE}/market/managed-listings`);
 export function refreshTestMarket(pair: string): Promise<void> {
+  if (isManagedPair(pair)) return managedMarketStore.refresh();
   return (isNrxPair(pair) ? nrxMarketStore : testMarketStore).refresh();
 }
 
@@ -159,11 +163,12 @@ function useStore(store: TestMarketStore, intervalMs: number, enabled: boolean):
 }
 
 export function useTestMarkets(intervalMs = TEST_MARKET_LIST_INTERVAL_MS, enabled = true, pair?: string): TestMarketsState {
-  const vta = useStore(testMarketStore, intervalMs, enabled && (!pair || !isNrxPair(pair)));
+  const managed = useStore(managedMarketStore, intervalMs, enabled && Boolean(MANAGED_LISTINGS_BASE) && (!pair || isManagedPair(pair)));
+  const vta = useStore(testMarketStore, intervalMs, enabled && (!pair || (!isNrxPair(pair) && !isManagedPair(pair))));
   const nrx = useStore(nrxMarketStore, intervalMs, enabled && (!pair || isNrxPair(pair)));
-  if (pair) return isNrxPair(pair) ? nrx : vta;
+  if (pair) return isManagedPair(pair) ? managed : isNrxPair(pair) ? nrx : vta;
   return { loaded: vta.loaded && nrx.loaded, error: vta.error || nrx.error,
-    assets: [...vta.assets, ...nrx.assets], clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : vta.clockOffsetMs };
+    assets: [...vta.assets, ...nrx.assets, ...managed.assets], clockOffsetMs: nrx.loaded ? nrx.clockOffsetMs : vta.clockOffsetMs };
 }
 
 /** One test market, or nothing for an ordinary pair (which then costs no request). */

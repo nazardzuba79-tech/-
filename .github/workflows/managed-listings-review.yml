@@ -1,0 +1,75 @@
+name: Managed Listings review
+on:
+  pull_request:
+    paths:
+      - 'src/services/managedListings/**'
+      - 'src/api/routes/adminListings.ts'
+      - 'src/api/routes/__tests__/adminListings.test.ts'
+      - 'src/services/testMarkets/**'
+      - 'src/services/OrderService.ts'
+      - 'src/services/DemoTradingService.ts'
+      - 'frontend/src/**'
+      - 'workers/managed-listings/**'
+      - 'scripts/test-managed-listings-postgres.cjs'
+      - '.github/workflows/managed-listings-review.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: voltex_listings_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_listings_test
+      DIRECT_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_listings_test
+      VOLTEX_LISTINGS_TEST_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/voltex_listings_test
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix workers/managed-listings --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npx prisma migrate deploy
+      - run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/api/routes/__tests__/adminListings.test.ts
+          src/services/managedListings/__tests__/allocation.pg.test.ts
+          src/services/testMarkets/__tests__/nrxPublic.test.ts
+          src/services/testMarkets/__tests__/testMarketSimulation.test.ts
+          src/services/testMarkets/__tests__/testMarketDepth.test.ts
+          src/api/routes/__tests__/testMarkets.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/services/__tests__/DemoTradingService.test.ts
+          frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/spotPublicMarket.test.ts
+          frontend/src/lib/__tests__/copyTradingCiCoverage.test.ts
+      - run: npm test --prefix workers/managed-listings && npm run build:check --prefix workers/managed-listings
+      - run: npm run build && npm run build --prefix frontend
+      - name: Build isolated factory-enabled browser fixture
+        working-directory: frontend
+        run: npx vite build --outDir ../output/managed-listings/dist --emptyOutDir
+        env:
+          VITE_MANAGED_LISTINGS_URL: https://listings.qa.invalid
+          VITE_API_URL: /api/v1
+      - run: npm install --prefix /tmp/listings-browser-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+      - run: node /tmp/listings-browser-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - run: node workers/managed-listings/browser.test.mjs
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/listings-browser-qa/node_modules/playwright
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: managed-listings-review
+          path: docs/qa/managed-listings

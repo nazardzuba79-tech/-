@@ -1,0 +1,38 @@
+[
+  {
+    "width": 1440,
+    "symbol": "QATHIRD",
+    "create": true,
+    "preview": true,
+    "publish": true,
+    "draftPrivate": true,
+    "stableSeed": true,
+    "marketsNavigation": true,
+    "automaticLive": true,
+    "chart": true,
+    "tape": true,
+    "reload": true,
+    "otherBrowser": true,
+    "errors": [],
+    "financialWrites": 0,
+    "forbiddenIO": 0
+  },
+  {
+    "width": 390,
+    "symbol": "QAFOURTH",
+    "create": true,
+    "preview": true,
+    "publish": true,
+    "draftPrivate": true,
+    "stableSeed": true,
+    "marketsNavigation": true,
+    "automaticLive": true,
+    "chart": true,
+    "tape": true,
+    "reload": true,
+    "otherBrowser": true,
+    "errors": [],
+    "financialWrites": 0,
+    "forbiddenIO": 0
+  }
+]

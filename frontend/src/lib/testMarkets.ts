@@ -1,4 +1,5 @@
 import type { MarketTicker } from './api';
+import { isManagedPair } from './managedListingRegistry';
 
 /**
  * TEST MARKETS — the pure half (no network, no React).
@@ -31,6 +32,8 @@ export interface TestMarketState {
 }
 
 export interface TestAsset {
+  isManagedListing?: true;
+  logo?: string;
   pair: string;
   symbol: string;
   name: string;
@@ -50,7 +53,7 @@ export interface TestMarketsSnapshot {
 }
 
 export function isTestMarketPair(pair: string | null | undefined): boolean {
-  return typeof pair === 'string' && TEST_MARKET_PAIRS.includes(pair.toUpperCase());
+  return typeof pair === 'string' && (TEST_MARKET_PAIRS.includes(pair.toUpperCase()) || isManagedPair(pair));
 }
 
 const finiteOrNull = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
@@ -68,6 +71,7 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
     if (!Number.isFinite(listingAt) || (state.phase !== 'pre-listing' && state.phase !== 'live')) continue;
     assets.push({
       pair: raw.pair.toUpperCase(),
+      ...(isManagedPair(raw.pair) ? { isManagedListing: true as const, logo: raw.logo } : {}),
       symbol: String(raw.symbol ?? raw.pair.split('/')[0]),
       name: String(raw.name ?? raw.symbol),
       quote: String(raw.quote ?? raw.pair.split('/')[1]),

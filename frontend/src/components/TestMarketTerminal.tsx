@@ -60,7 +60,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
     [parts.days, t('listing.days')], [parts.hours, t('listing.hours')], [parts.minutes, t('listing.minutes')], [parts.seconds, t('listing.seconds')],
   ];
   const startsAt = asset ? (asset.symbol === 'NRX' ? nrxListingTime(asset.listingAt) : formatListingMoment(asset.listingAt, localeOf(lang))) : '';
-  const name = asset?.name ?? (pair === 'NRX/USDT' ? 'NEURIX' : 'VOLTORA');
+  const name = asset?.name ?? (pair === 'NRX/USDT' ? 'NEURIX' : pair === 'VTA/USDT' ? 'VOLTORA' : pair.split('/')[0]);
 
   return (
     <section className="vta-prelisting" aria-label={`${name} ${pair}`} data-state={asset ? 'pre-listing' : 'loading'}>

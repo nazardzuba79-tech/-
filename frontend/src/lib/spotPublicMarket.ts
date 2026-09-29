@@ -2,6 +2,7 @@ import type { Candle } from './indicators';
 import type { FuturesDepthSnapshot } from './futuresDepth';
 import { isTestMarketPair } from './testMarkets';
 import { fetchNrxPublic, isNrxPair } from './nrxMarket';
+import { fetchManagedPublic, isManagedPair } from './managedListings';
 
 const APP_API_BASE = '/api/v1';
 const DIRECT_KRAKEN_BASE = 'https://api.kraken.com';
@@ -151,6 +152,7 @@ function parseEdgeSpotCandles(payload: any, pair: string, interval: string): Can
 }
 
 export async function getSpotPublicCandles(pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number): Promise<{ candles: Candle[] }> {
+  if (isManagedPair(pair)) return fetchManagedPublic(`/market/test-assets/${pair.replace('/','-')}/candles?interval=${encodeURIComponent(interval)}&limit=${limit}`,signal);
   if (isNrxPair(pair)) {
     return fetchNrxPublic(`/market/test-assets/NRX-USDT/candles?interval=${encodeURIComponent(interval)}&limit=${Math.min(1000, limit)}`, signal);
   }

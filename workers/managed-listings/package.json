@@ -1,0 +1,1 @@
+{"name":"voltex-managed-listings","private":true,"type":"module","scripts":{"test":"node --test integration.test.mjs","build:check":"wrangler deploy --dry-run --env staging --outdir .output"},"devDependencies":{"wrangler":"4.141.0","esbuild":"0.28.1","miniflare":"5.20260925.0-alpha"}}

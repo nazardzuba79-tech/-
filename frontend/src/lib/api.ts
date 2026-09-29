@@ -1,5 +1,6 @@
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
 import { fetchNrxPublic, isNrxPair } from './nrxMarket';
+import { fetchManagedPublic, isManagedPair } from './managedListings';
 import type { CardApplicationSnapshot, CardProduct } from '../pages/crypto-card-final/cardApplicationState';
 
 const TOKEN_KEY = 'exchange_token';
@@ -1010,7 +1011,7 @@ export const api = {
   closeCfdPosition: (positionId: string) => request<{ position: CfdPosition }>(`/cfd/positions/${positionId}/close`, { method: 'POST' }),
 
   getExternalTicker: (pair: string) =>
-    (isNrxPair(pair) ? fetchNrxPublic : request)<{
+    (isManagedPair(pair) ? fetchManagedPublic : isNrxPair(pair) ? fetchNrxPublic : request)<{
       source: string;
       ticker: {
         pair: string;
@@ -1026,7 +1027,7 @@ export const api = {
     }>(`/market/external/tickers/${pairToSlug(pair)}`),
 
   getExternalOrderBook: (pair: string, limit = 100) =>
-    (isNrxPair(pair) ? fetchNrxPublic : request)<{
+    (isManagedPair(pair) ? fetchManagedPublic : isNrxPair(pair) ? fetchNrxPublic : request)<{
       pair: string;
       bids: { price: string; quantity: string }[];
       asks: { price: string; quantity: string }[];
@@ -1034,14 +1035,14 @@ export const api = {
     }>(`/market/external/orderbook/${pairToSlug(pair)}?limit=${limit}`),
 
   getExternalCandles: (pair: string, interval: string, limit = 300) =>
-    (isNrxPair(pair) ? fetchNrxPublic : request)<{
+    (isManagedPair(pair) ? fetchManagedPublic : isNrxPair(pair) ? fetchNrxPublic : request)<{
       pair: string;
       interval: string;
       candles: { time: number; open: number; high: number; low: number; close: number; volume: number }[];
     }>(`/market/external/candles/${pairToSlug(pair)}?interval=${interval}&limit=${limit}`),
 
   getExternalTrades: (pair: string, limit = 60) =>
-    (isNrxPair(pair) ? fetchNrxPublic : request)<{
+    (isManagedPair(pair) ? fetchManagedPublic : isNrxPair(pair) ? fetchNrxPublic : request)<{
       pair: string;
       trades: { id: string; price: string; quantity: string; side: 'BUY' | 'SELL'; time: number }[];
     }>(`/market/external/trades/${pairToSlug(pair)}?limit=${limit}`),

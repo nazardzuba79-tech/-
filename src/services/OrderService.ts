@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListing, spotPriceSource } from './testMarkets/nrxSpot';
+import { assertNotManagedExecution } from './managedListings/store';
 
 export type ExtendedOrderType = OrderType | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET';
 
@@ -71,6 +72,7 @@ export class OrderService {
   }) {
     // A test asset is shown, never traded: it never reaches the engine.
     assertSpotListing(params.pair);
+    await assertNotManagedExecution(params.pair);
     const [base, quote] = params.pair.split('/'); // e.g. BTC/USDT
     const conditional = isConditionalType(params.type);
     const effType = effectiveOrderType(params.type);
@@ -193,6 +195,7 @@ export class OrderService {
     stopLimitPrice: BigNumber;
   }) {
     assertSpotListing(params.pair);
+    await assertNotManagedExecution(params.pair);
     const [base, quote] = params.pair.split('/');
     const ticker = await spotPriceSource(this.priceSource).getTicker(params.pair);
     if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger prices');

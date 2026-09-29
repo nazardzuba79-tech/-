@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } 
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/home/HomePage';
 import { RouteShell } from './RouteShell';
+import { ManagedListingsGate } from './components/ManagedListingsGate';
 import { defaultTradingPath } from './lib/tradingMode';
 import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
@@ -28,6 +29,7 @@ const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default:
 const ReferralRedirectPage = lazy(() => import('./pages/ReferralRedirectPage').then((m) => ({ default: m.ReferralRedirectPage })));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
 const AdminWalletsPage = lazy(() => import('./pages/admin/AdminWalletsPage').then((m) => ({ default: m.AdminWalletsPage })));
+const AdminListingsPage = lazy(() => import('./pages/admin/AdminListingsPage').then((m) => ({ default: m.AdminListingsPage })));
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })));
 const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })));
 const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) => ({ default: m.AdminKycPage })));
@@ -91,9 +93,9 @@ export function App() {
         <Route path="/" element={<RootEntry />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
-        <Route path="/trade" element={<RequireAuth><TradePage /></RequireAuth>} />
+        <Route path="/trade" element={<RequireAuth><ManagedListingsGate><TradePage /></ManagedListingsGate></RequireAuth>} />
         <Route path="/futures" element={<RequireAuth><FuturesEntry /></RequireAuth>} />
-        <Route path="/markets" element={<RequireAuth><MarketsPage /></RequireAuth>} />
+        <Route path="/markets" element={<RequireAuth><ManagedListingsGate><MarketsPage /></ManagedListingsGate></RequireAuth>} />
         <Route path="/banking" element={<RequireAuth><BankingPage /></RequireAuth>} />
         <Route path="/earn" element={<Navigate to="/banking" replace />} />
         <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
@@ -112,6 +114,7 @@ export function App() {
               actually works from. */}
           <Route index element={<Navigate to="users" replace />} />
           <Route path="wallets" element={<AdminWalletsPage />} />
+          <Route path="listings" element={<AdminListingsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="kyc" element={<AdminKycPage />} />

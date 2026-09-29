@@ -1,6 +1,9 @@
 import { parseDirectSpotBook, parseDirectSpotCandles, readSpotPublicBook } from '../spotPublicMarket';
 jest.mock('../api', () => ({ API_BASE: 'https://voltex-api.invalid/api/v1' }));
 jest.mock('../testMarketStore', () => ({ fetchTestMarketJson: jest.fn() }));
+// This suite covers existing venue/VTA transport with the optional factory OFF.
+// Enabled factory routing is exercised against workerd by qa-managed-listings.
+jest.mock('../managedListings', () => ({ isManagedPair: () => false, fetchManagedPublic: jest.fn() }));
 
 test('VTA book uses only VOLTEX API, including errors and pre-listing; no external fallback', async () => {
   const { fetchTestMarketJson } = require('../testMarketStore');

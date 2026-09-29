@@ -41,6 +41,7 @@ import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isTestMarketPair } from '../lib/testMarkets';
+import { isManagedPair } from '../lib/managedListings';
 import { useTestMarket, TEST_MARKET_TERMINAL_INTERVAL_MS } from '../lib/testMarketStore';
 import { TestMarketChart } from '../components/TestMarketTerminal';
 
@@ -359,7 +360,7 @@ export function TradePage() {
 
           <div className="orderbook-area" data-sampled-book="true">
             <SampledDataNote asOf={book.pair === pair ? book.asOf : null} />
-            <NrxBookTabs enabled={pair === 'NRX/USDT'} live={bookLive}>
+            <NrxBookTabs enabled={pair === 'NRX/USDT' || isManagedPair(pair)} pair={pair} live={bookLive}>
                 <OrderBookPanel
               bids={visibleBook.bids}
               asks={visibleBook.asks}
