@@ -1,0 +1,45 @@
+{
+  "scope": "Local only: real Worker in workerd + production bundle; Render reads are fixtures; synthetic addresses",
+  "checks": [
+    "Deposit open: exactly one anonymous GET to the Cloudflare public catalogue, zero Render catalogue requests, nothing prefetched",
+    "asset, network, address copy, memo copy and QR made zero requests; disabled SOL not offered; 1440 and 390 fit",
+    "open dialog idle 60 s: zero catalogue requests",
+    "after the admin disables XRP, the next open reads once and XRP is gone",
+    "Worker down: the dialog shows an error with retry and never falls back to Render; retry recovers after restart (SQLite persisted)",
+    "zero Render catalogue calls in the whole run; no page errors"
+  ],
+  "requests": {
+    "coldOpen": {
+      "edge": 1,
+      "renderCatalogue": 0
+    },
+    "selectCopyQr": {
+      "edge": 0,
+      "render": []
+    },
+    "idle": {
+      "ms": 60100,
+      "edge": 0
+    },
+    "reopen": 1
+  },
+  "layouts": [
+    {
+      "name": "customer-1440.png",
+      "width": 1440,
+      "documentWidth": 1440
+    },
+    {
+      "name": "customer-390.png",
+      "width": 390,
+      "documentWidth": 390
+    },
+    {
+      "name": "edge-unavailable-390.png",
+      "width": 390,
+      "documentWidth": 390
+    }
+  ],
+  "pageErrors": [],
+  "result": "PASS"
+}
