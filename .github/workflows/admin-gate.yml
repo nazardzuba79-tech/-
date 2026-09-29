@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'frontend/src/lib/useAdminGate.ts'
+      - 'frontend/src/lib/adminReadApi.ts'
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/useVisibleAccountRead.ts'
       - 'frontend/src/lib/visibleRead.ts'

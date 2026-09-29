@@ -4418,12 +4418,13 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - **Base:** fresh `origin/main` `a7925e90` (release #324). Branch `claude/ecstatic-brahmagupta-cwkvt5`.
 - **Files:**
   - `frontend/src/lib/useAdminGate.ts`
+  - `frontend/src/lib/adminReadApi.ts` (added in follow-up commits pushed to this branch by the owner's other agent)
   - `frontend/src/pages/admin/AdminLayout.tsx`
   - `adminUserActivity.ts`
   - `AdminUsersPage.tsx`
   - `adminStyles.ts`, `adminConsole.css`
-  - `frontend/src/lib/api.ts` (optional `signal` for `getMe` / `getAdminUsers`)
-  - tests: `adminConsoleInteractions`, `adminUsersActivity`, and the `futuresTickerHeader` api fingerprint normalisation
+  - `frontend/src/lib/api.ts` is back to byte-identical with main: the abortable `/me` and `/admin/users` reads live in `adminReadApi.ts`, so the api fingerprint needs no normalisation
+  - tests: `adminConsoleInteractions`, `adminUsersActivity`
   - `scripts/qa-admin-gate.cjs`, `.github/workflows/admin-gate.yml`, `docs/qa/admin-gate/`
 - **Gate:**
   - States: checking / ok / denied (no token, 401, 403, non-admin) / error (5xx, network, malformed, or a 15 s timeout that aborts the request).
@@ -4438,7 +4439,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - **Preserved:** Codex's customer-only list (#306 era) and last-login sort; НОВЫЙ next to the email; the deposit/credit flows; the alert poll (now started only on ok).
 - **Checks:**
   - Frontend `tsc -b` + build.
-  - Jest: `adminConsoleInteractions` 19/19, `adminUsersActivity` 17/17, `futuresTickerHeader` 35/35, plus `renderBandwidthBudget`, `adminDepositRails`, `routeCodeSplitting`.
-  - Full Jest branch vs clean main: the only difference was the api fingerprint (now normalised) and `registerWalletTailwindOwnership` "build output", which fails identically on a clean-main build (pre-existing, skipped when `dist` is absent).
+  - Jest after the merge: `adminConsoleInteractions` 19/19, `adminUsersActivity` 17/17, `futuresTickerHeader` 35/35, plus `renderBandwidthBudget`, `adminDepositRails`, `routeCodeSplitting`.
+  - Full Jest before the refactor, branch vs clean main: only the api fingerprint (resolved by `adminReadApi.ts`) and `registerWalletTailwindOwnership` "build output" differed. The latter fails identically on a clean-main build (pre-existing, skipped when `dist` is absent).
   - Browser: `qa-admin-gate.cjs` 22/22, three consecutive runs.
 - **Unresolved:** the production slowdown is not measured or claimed fixed; the admin gate CI workflow has not yet run remotely.
