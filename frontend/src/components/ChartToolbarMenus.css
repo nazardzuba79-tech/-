@@ -1,0 +1,56 @@
+/* Futures chart: chart-type and indicator menus (ChartToolbarMenus.tsx).
+   The triggers keep `.chart-tool-btn`, so every terminal design sizes and
+   colours them like the toolbar's other buttons; only their inner layout is
+   set here. The menus are portals outside the terminal root, so they carry
+   their own palette — the drawing rail flyouts' one, which they sit beside. */
+.chart-menus { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+.chart-menus .chart-menu-trigger { display: inline-flex; align-items: center; gap: 6px; }
+.chart-menus .chart-menu-trigger .chart-menu-icon { width: 16px; height: 16px; flex: none; }
+.chart-menus .chart-menu-chev { width: 10px; height: 10px; flex: none; opacity: .7; transition: transform .15s ease; }
+.chart-menus .chart-menu-trigger[aria-expanded=true] { color: #f0c964; }
+.chart-menus .chart-menu-trigger[aria-expanded=true] .chart-menu-chev { transform: rotate(180deg); opacity: 1; }
+.chart-menus .chart-menu-count {
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; display: inline-grid; place-items: center;
+  background: rgba(240, 201, 100, .16); color: #f0c964; font-size: 10.5px; font-weight: 600; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-menu {
+  position: fixed; z-index: 1000; max-width: calc(100vw - 16px); padding: 5px;
+  background: #17202c; border: 1px solid #354559; border-radius: 8px;
+  box-shadow: 0 12px 28px #0008; color: #d7e1ee;
+  font-family: var(--font-ui, Inter, "Segoe UI", system-ui, sans-serif);
+}
+.chart-menu-title {
+  padding: 6px 10px 5px; font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: #8494a8;
+}
+.chart-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 6px 10px;
+  border: 0; border-radius: 5px; background: transparent; color: #c1ccda;
+  font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
+}
+.chart-menu-item:hover, .chart-menu-item:focus { background: #253246; color: #fff; outline: none; }
+.chart-menu-item:focus-visible { outline: 2px solid #a6c6eb; outline-offset: -2px; }
+.chart-menu-item[role=menuitemradio][aria-checked=true] { color: #f0c964; }
+.chart-menu-item .chart-menu-icon { width: 18px; height: 18px; flex: none; }
+.chart-menu-label { flex: 1; min-width: 0; }
+.chart-menu-params { color: #8494a8; font-size: 11.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chart-menu-tick { width: 14px; height: 14px; flex: none; color: #f0c964; }
+.chart-menu-tick svg, .chart-menu-box svg { width: 100%; height: 100%; display: block; }
+.chart-menu-swatch { width: 14px; height: 3px; border-radius: 2px; flex: none; }
+.chart-menu-box {
+  width: 16px; height: 16px; padding: 2px; flex: none; border-radius: 4px;
+  border: 1px solid #4a5a70; color: #17120a;
+}
+.chart-menu-item[aria-checked=true] .chart-menu-box { background: #f0c964; border-color: #f0c964; }
+@media (max-width: 767px) {
+  .chart-menu-item { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-menus .chart-menu-chev { transition: none; }
+}
+/* On a wide toolbar the two menus are their own group after the timeframes. */
+@media (min-width: 768px) {
+  .chart-tools.has-menus .chart-menus { margin-left: 2px; padding-left: 8px; border-left: 1px solid rgba(255, 255, 255, .08); }
+}

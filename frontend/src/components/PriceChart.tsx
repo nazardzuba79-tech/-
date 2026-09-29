@@ -41,6 +41,7 @@ import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
 import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction, type ChartPositionLine } from '../lib/chartTrading';
 import './DrawingTools.css';
 import { PrivatePositionLines } from './PrivatePositionLines';
+import { ChartToolbarMenus } from './ChartToolbarMenus';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -1345,6 +1346,15 @@ export function PriceChart({
     </button>
   ));
 
+  /** Line and Area hide the candles a trade selection is picking from. */
+  const selectChartType = (ct: ChartType) => {
+    if (tradingRef.current?.selecting && ct !== 'candles') tradingRef.current.onCancelSelection();
+    setChartType(ct);
+  };
+  /** Futures reaches the same types and indicators through two menus
+   *  (ChartToolbarMenus); Spot and CFD keep the flat buttons below. */
+  const chartMenus = terminal && market === 'futures';
+
   const typeButtons = (
     [
       ['candles', t('chart.type.candles')],
@@ -1356,7 +1366,7 @@ export function PriceChart({
       key={ct}
       type="button"
       aria-pressed={chartType === ct}
-      onClick={() => { if (tradingRef.current?.selecting && ct !== 'candles') tradingRef.current.onCancelSelection(); setChartType(ct); }}
+      onClick={() => selectChartType(ct)}
       className={terminal ? `chart-tool-btn ${chartType === ct ? 'active' : ''}` : undefined}
       style={terminal ? undefined : { ...styles.intervalBtn, ...(chartType === ct ? styles.intervalBtnActive : {}) }}
     >
@@ -1400,9 +1410,23 @@ export function PriceChart({
           <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}{privateTrading?.enabled && <button type="button" className="chart-history-now" onClick={() => void privateHistoryRef.current?.(0)}>{lang === 'ru' ? 'Сейчас' : 'Now'}</button>}</div>
           {market === 'futures' && <button type="button" className="futures-mobile-tools-toggle" aria-label={t('chart.group.indicators')}
             aria-expanded={mobileToolsOpen} onClick={() => setMobileToolsOpen(open => !open)}>•••</button>}
-          <div className="chart-tools">
-            <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
-            <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
+          <div className={`chart-tools${chartMenus ? ' has-menus' : ''}`}>
+            {chartMenus ? <ChartToolbarMenus
+              chartType={chartType}
+              onChartType={selectChartType}
+              typeLabels={{ candles: t('chart.type.candles'), line: t('chart.type.line'), area: t('chart.type.area') }}
+              typeGroupLabel={t('chart.group.type')}
+              indicatorsLabel={t('chart.group.indicators')}
+              indicators={[
+                { key: 'ma', label: t('chart.indicator.ma'), params: 'SMA', color: INDICATOR_COLORS.ma, active: showMA, onToggle: () => setShowMA(!showMA) },
+                { key: 'bollinger', label: t('chart.indicator.bollinger'), params: '20 · 2', color: INDICATOR_COLORS.bollinger, active: showBollinger, onToggle: () => setShowBollinger(!showBollinger) },
+                { key: 'rsi', label: t('chart.indicator.rsi'), params: '14', color: INDICATOR_COLORS.rsi, active: showRSI, onToggle: () => setShowRSI(!showRSI) },
+                { key: 'macd', label: t('chart.indicator.macd'), params: '12 · 26 · 9', color: INDICATOR_COLORS.macd, active: showMACD, onToggle: () => setShowMACD(!showMACD) },
+              ]}
+            /> : <>
+              <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
+              <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
+            </>}
           </div>
         </div>
       ) : (
