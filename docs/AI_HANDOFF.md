@@ -4681,3 +4681,14 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - VTA keeps the legacy generator before fixed `2026-10-01T00:00:00Z`; IMPULSE_TREND begins only at that aligned hour. New managed listings retain the four-profile round-robin from listing time.
 - No production market, balance, allocation, order or Worker was changed by preparation. Final-head CI and staged Render/frontend → market-edge release remain pending.
 
+
+
+## Codex — 2026-09-29 13:46 UTC — VTA varied six-hour impulses and ordinary wicks
+
+- Request: ten different six-hour downside/partial-buyback/upside episodes beginning in the current 13:00 UTC hour, plus modestly larger ordinary candle shadows.
+- Implementation commit SHA: 8742147d750df025d94c372b175065a0b9ae9071; fresh base main 9c746c61370db741db07f45ebc86660b11e86e52. Short-lived branch: codex/vta-six-hour-shock-recovery-20260929.
+- Material files: testAssetConfig.ts, testMarketSimulation.ts, new simulationCycles.ts, new simulationCycles.test.ts, existing realism/simulation regression tests, .github/workflows/test-markets.yml; reproducible scripts/qa-vta-cycles.{mjs,py} and docs/qa/vta-cycles evidence.
+- Behavior: first low 0.60 of hourly open and close 0.80; ten differing drop/buyback/timing/upper-shadow presets every six hours. Recovery rejoins the original end-of-second-hour baseline. All candle intervals, tape and priceAt share canonical ticks. Ordinary tick shadows expand only after the fixed cutoff.
+- Preserved: original completed ticks through 2026-09-29 13:55 UTC, seed/listing, daily anchors including P48/P168, original VTA and NRX golden digests, NRX/managed-listing defaults, private-sale protections, balances, allocations, orders, trades and all unrelated Claude/Codex work. Original October 1 profile contract remains tested in an explicit fixture; live VTA retains aggregate/continuity/no-future/daily-anchor coverage.
+- Evidence actually run: real Jest 98 tests / 4 suites PASS (52.477s); new cycle suite independently 14/14 PASS; separate reviewer 77/77 existing regressions PASS. Actual-generator offline PNG/JSON preview inspected: first low -40%, close -20%, recovery +65.6673%, upper shadow 11%; all ten baseline rejoin differences zero. Mean ordinary 5m shadow length in the 192-candle preview increases 7.67975%; bodies unchanged. This is simulated preview, not browser or production evidence.
+- Release gate / next step: PR final-head CI and Render deployment must finish BEFORE fixed notBefore 2026-09-29 13:55 UTC; retime forward before merge if missed, never backdate. Verify Render /health exact merged SHA and public VTA endpoints. Worker imports shared code for NRX regression but does not directly serve VTA; no Worker configuration change. No production deployment claimed by this entry.
