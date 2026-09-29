@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import * as helpers from '../spotOrderBook';
 import * as numberFormat from '../formatNumber';
+import * as terminalPresentation from '../terminalPresentation';
 
 const frontend = resolve(__dirname, '../../..');
 const requireFrontend = createRequire(resolve(frontend, 'package.json'));
@@ -33,8 +34,10 @@ test('actual parent synchronously withholds mismatched depth before any new-pair
   expect(selectVisible(btc, 'BTC/USDT')).toBe(btc);
   expect(selectVisible(btc, 'MOG/USDT')).toEqual({ bids: [], asks: [] });
   expect(selectVisible(mog, 'BTC/USDT')).toEqual({ bids: [], asks: [] });
-  expect(pageSource).toContain('setBook({ pair, bids: res.bids, asks: res.asks })');
-  expect(pageSource).toContain('setBook({ pair, bids: snapshot.bids, asks: snapshot.asks })');
+  // The current public display response also carries its observation time.
+  // Assert every installed book carries the selected pair and the actual
+  // response levels instead of requiring the removed socket adapter.
+  expect(pageSource).toMatch(/setBook\(\{\s*pair,\s*bids:\s*res\.bids,\s*asks:\s*res\.asks,\s*asOf:\s*res\.asOf\s*\}\)/);
   expect(pageSource).toContain('bids={visibleBook.bids}'); expect(pageSource).toContain('asks={visibleBook.asks}');
 });
 
@@ -51,6 +54,7 @@ test('actual stateful BTC → MOG → BTC book initializes grouping before paint
         return [state[at], (value: any) => { state[at] = typeof value === 'function' ? value(state[at]) : value; }]; } };
     if (name === '../lib/spotOrderBook') return helpers;
     if (name === '../lib/formatNumber') return numberFormat;
+    if (name === '../lib/terminalPresentation') return terminalPresentation;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     return requireFrontend(name);
   }, output);
@@ -62,8 +66,12 @@ test('actual stateful BTC → MOG → BTC book initializes grouping before paint
   const flush = () => effects.splice(0).forEach(effect => effect());
   const btc = book('BTC/USDT', '80000', '80010'), mog = book('MOG/USDT', '0.0000001090', '0.0000001091');
   let view = render(btc); flush();
-  view.select.props.onChange({ target: { value: '10' } });
-  expect(render(btc).select.props.value).toBe(10);
+  const btcSteps = helpers.spotGroupSteps(80005);
+  const btcManual = btcSteps[btcSteps.length - 1];
+  view.select.props.onChange({ target: { value: String(btcManual) } });
+  expect(render(btc).select.props.value).toBe(btcManual);
+  view.select.props.onChange({ target: { value: '1234567' } });
+  expect(render(btc).select.props.value).toBe(btcManual);
   expect(render(btc, 'MOG/USDT').rows).toEqual([]); flush();
   view = render(mog); // Intentionally assert BEFORE effects run.
   expect(view.select.props.value).toBe(helpers.defaultSpotGroupStep(0.00000010905));
@@ -76,7 +84,7 @@ test('actual stateful BTC → MOG → BTC book initializes grouping before paint
   expect(render(book('MOG/USDT', '0.0000001190', '0.0000001191')).select.props.value).toBe(manual); flush();
   expect(render(mog, 'BTC/USDT').rows).toEqual([]); flush();
   view = render(btc);
-  expect(view.select.props.value).toBe(10);
+  expect(view.select.props.value).toBe(helpers.defaultSpotGroupStep(80005));
   expect(view.rows).toHaveLength(2);
   expect(view.rows.every(row => row.props.level.price > 70000)).toBe(true);
 });
@@ -118,8 +126,12 @@ test('Spot ticker displays real sub-six-decimal last/high/low prices instead of 
   expect(html).not.toContain('>0</span>');
 });
 
-test('default ticker formatter stays unchanged; only Spot header and Spot market-info opt in', () => {
-  expect(renderTicker(false)).toContain('>0</span>');
+test('default and Spot ticker formatters retain real nonzero tiny prices', () => {
+  // Release #341 extends the shared formatter below 1e-6. Both modes must
+  // preserve the actual quote; the original expectation of zero was the bug.
+  const html = renderTicker(false);
+  for (const price of ['0.0000001091', '0.0000001191', '0.0000000991']) expect(html).toContain(price);
+  expect(html).not.toContain('>0</span>');
   expect(pageSource).toContain('<TickerBar key={pair} pair={pair} spotPrecision');
   const source = readFileSync(resolve(frontend, 'src/components/OrderForm.tsx'), 'utf8');
   expect(source).toContain('formatSpotBookNumber(marketPrice)');

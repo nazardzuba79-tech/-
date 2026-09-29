@@ -1,0 +1,27 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> crypto-exchange-backend@0.1.0 test
+> jest --runInBand --detectOpenHandles --testPathPattern=futuresCandles\.test\.ts$
+
+PASS frontend/src/lib/__tests__/futuresCandles.test.ts
+  ✓ preserves exact tiny OHLC, zero volume, and chronological order (5 ms)
+  ✓ rejects a different contract PEPEUSDT (7 ms)
+  ✓ rejects a different contract BTCUSDT (3 ms)
+  ✓ rejects Spot/category mismatch and provider error (3 ms)
+  ✓ rejects malformed price 0 (2 ms)
+  ✓ rejects malformed price -1 (2 ms)
+  ✓ rejects malformed price NaN (2 ms)
+  ✓ rejects malformed price Infinity (1 ms)
+  ✓ rejects malformed price  (1 ms)
+  ✓ rejects inconsistent OHLC and duplicate times (2 ms)
+  ✓ requests Bybit candles directly with provider interval and no credentials (3 ms)
+  ✓ falls back only to Cloudflare edge when direct public Bybit hosts fail (2 ms)
+  ✓ unsupported input does not make a network request (2 ms)
+  ✓ Futures terminal display candles are not coupled to private execution auth (1 ms)
+  ✓ reuses REST history while shared WebSocket updates the live candle (1 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       15 passed, 15 total
+Snapshots:   0 total
+Time:        3.048 s
+Ran all test suites matching /futuresCandles\.test\.ts$/i.

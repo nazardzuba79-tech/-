@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 import { useEffect, useRef, useState } from 'react';
 import { krakenSocket, SocketStatus } from '../lib/krakenSocket';
 import { RECONNECT_GRACE_MS } from '../lib/bookFreshness';
@@ -36,7 +37,7 @@ export function ConnectionBanner({connected}:{connected?:boolean}={}) {
       }
     };
     const arm = () => {
-      if (timer === null) timer = window.setTimeout(() => setShow(true), SHOW_AFTER_MS);
+      if (timer === null && !isBrowserInactive()) timer = window.setTimeout(() => setShow(true), SHOW_AFTER_MS);
     };
     const update = (s:SocketStatus) => {
       setStatus(s);
@@ -60,18 +61,18 @@ export function ConnectionBanner({connected}:{connected?:boolean}={}) {
     // whole grace exists to stop. If the feed really is still down, the
     // re-armed timer says so in its own time.
     const onVisibility = () => {
-      if (document.hidden) return;
       setShow(false);
       clear();
+      if (isBrowserInactive()) return;
       if (statusRef.current !== 'connected') arm();
     };
     const hasDocument = typeof document !== 'undefined';
-    if (hasDocument) document.addEventListener('visibilitychange', onVisibility);
+    if (hasDocument) addBrowserActivityListener(onVisibility);
 
     return () => {
       unsubscribe();
       clear();
-      if (hasDocument) document.removeEventListener('visibilitychange', onVisibility);
+      if (hasDocument) removeBrowserActivityListener(onVisibility);
     };
   }, [connected]);
 

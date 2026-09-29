@@ -98,7 +98,7 @@ const period = (available: boolean, absolutePnl: number | null = null, percent: 
 const noHistory = { periods: Object.fromEntries(PERIODS.map((p) => [p, period(false)])), ageDays: 0, startedOn: null };
 
 const CROSS = {
-  mode: 'CROSS', collateralUsd: 1000000, totalEquityUsd: 1000250.5, availableUsd: 900000, unrealizedPnlUsd: 250.5,
+  mode: 'CROSS', collateralUsd: 1000000, walletEquityUsd: 1000250.5, totalEquityUsd: 800250.5, availableUsd: 900000, unrealizedPnlUsd: 250.5,
   initialMarginUsd: 356.89, maintenanceMarginUsd: 66.81, orderReserveUsd: 0, initialMarginRatio: 0.0005,
   maintenanceMarginRatio: 0.00006, spotUsd: null, futuresUsd: null, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
 };
@@ -185,7 +185,28 @@ describe('4. two accounts, two ledgers', () => {
     expect(out).toContain('$1 000 250,50');
     expect(headline(out)).toBe('1 230 951,50');
     // The BTC mark is the one the hook divided the equity by, so the
-    // Overview cannot disagree with the Unified section: 1 000 250,5 / 10,002505 = 100 000.
+    // Overview uses the hook's economic equity: 1 000 250,5 / 10,002505 = 100 000.
+    // Its economic wallet value still includes collateral-disabled assets.
+    expect(out).toContain('≈ 12,309515 BTC');
+    expect(out).toContain('≈ 10,002505 BTC');
+    expect(out).toContain('≈ 2,30701 BTC');
+  });
+
+  it.each([null, 0, -1, NaN, Infinity])('an invalid BTC equivalent %s cannot invent a conversion rate', btcEquivalent => {
+    const out = html({ account: CROSS, overview: { ...overview, btcPriceUsd: null }, performance: noHistory, btcEquivalent });
+    expect(headline(out)).toBe('1 230 951,50');
+    expect(out.match(/≈ — BTC/g)).toHaveLength(3);
+    expect(out).not.toMatch(/NaN|Infinity/);
+  });
+
+  it.each([null, 0, -1, NaN, Infinity])('an invalid economic equity %s is never used to infer a BTC rate', walletEquityUsd => {
+    const out = html({ account: { ...CROSS, walletEquityUsd }, overview: { ...overview, btcPriceUsd: null },
+      performance: noHistory, btcEquivalent: 10.002505 });
+    expect(out.match(/≈ — BTC/g)).toHaveLength(3);
+  });
+
+  it('uses only an explicit valid server BTC mark when no economic equivalent is available', () => {
+    const out = html({ account: CROSS, overview, performance: noHistory, btcEquivalent: null });
     expect(out).toContain('≈ 12,309515 BTC');
     expect(out).toContain('≈ 10,002505 BTC');
     expect(out).toContain('≈ 2,30701 BTC');
@@ -314,14 +335,45 @@ describe('6. the labels exist in every locale', () => {
 });
 
 describe('7. the funding view', () => {
-  function fundingHtml(props: Record<string, unknown>) {
+  function fundingHtml(props: Record<string, unknown>, scope: 'real' | 'simulation' | null = 'real',
+    vta: Record<string, unknown> = { snapshot: null, loading: false, failed: false }) {
     const { FundingView } = evaluate(wallet + 'FundingView.tsx', {
-      '../../lib/useVtaSpotAccount': { useVtaSpotAccount: () => ({ snapshot: null }) },
+      // This synchronous presentation fixture is the settled real-funding scope.
+      // Pending and simulation transitions are covered below without forcing zeros.
+      react: { ...React, useState: () => [scope, noop], useEffect: noop },
+      '../../lib/api': { onSessionChange: () => noop },
+      '../../lib/useVtaSpotAccount': { useVtaSpotAccount: () => vta },
       'lucide-react': icons, '../../lib/i18n': i18n, './format': fmt,
       './ui': { EmptyState: stub('EmptyState') }, '../../components/CryptoIcon': { CryptoIcon: () => React.createElement('i') },
     });
     return plain(renderToStaticMarkup(FundingView({ hidden: false, unavailable: false, loading: false, onDeposit: noop, onWithdraw: noop, onTransfer: noop, ...props } as any)));
   }
+
+  it('keeps the account scope unavailable while the simulation-account answer is pending', () => {
+    const out = fundingHtml({ overview: EMPTY_OVERVIEW }, null, { snapshot: null, loading: true, failed: false });
+    expect(out).toContain('data-account-scope="UNAVAILABLE"');
+    expect(out).toContain('wallet.loading');
+    expect(out).not.toMatch(/\$[0-9]/);
+    expect(out).not.toContain('<table');
+    expect(out).not.toContain('<button');
+  });
+
+  it('keeps simulation funding separate from real balances and money-movement actions', () => {
+    const overview = { ...EMPTY_OVERVIEW, real: { ...EMPTY_OVERVIEW.real, spotValueUsd: 230701,
+      spot: [{ asset: 'BTC', available: '2', locked: '0', priceUsd: 100000, valueUsd: 200000 }] } };
+    const out = fundingHtml({ overview }, 'simulation', { loading: false, failed: false, snapshot: {
+      account: { active: true, scope: 'VTA_SPOT_SIMULATION' }, totalValueUsd: 25,
+      balances: [{ asset: 'USDT', available: '5', locked: '0', valueUsd: 5 },
+        { asset: 'VTA', available: '10', locked: '0', valueUsd: 20 }],
+    } });
+    expect(out).toContain('data-account-scope="VTA_SPOT_SIMULATION"');
+    expect(out).toContain('data-asset="VTA"');
+    expect(out).toContain('data-asset="USDT"');
+    expect(out).not.toContain('data-asset="BTC"');
+    expect(out).toContain('$25,00');
+    expect(out).not.toContain('$230 701,00');
+    expect(out).not.toContain('<button');
+  });
 
   it('is empty — a deposit action and nothing else — for an account with nothing', () => {
     const out = fundingHtml({ overview: EMPTY_OVERVIEW });

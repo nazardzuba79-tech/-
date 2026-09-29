@@ -1,0 +1,65 @@
+{
+  "checks": [
+    {
+      "width": 1440,
+      "name": "30m sleep, cold server restart, balance/position/order and draft preserved",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "restored visible mark and unrealized P&L match native authority",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "failed session refresh preserves balance/draft, no retry storm; explicit retry recovers",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "external close is not resurrected; F5 retains resting order",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "focused cross-origin owned chart survives ten minutes of parent-input silence",
+      "pass": true,
+      "focus": {
+        "frame": "IFRAME",
+        "owned": true,
+        "documentFocused": true
+      }
+    },
+    {
+      "width": 1440,
+      "name": "leaving the owned chart restores the exact five-minute idle deadline",
+      "pass": true
+    },
+    {
+      "width": 1440,
+      "name": "hidden overrides focused TradingView; iframe detached and freshly mounted on wake",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "30m sleep, cold server restart, balance/position/order and draft preserved",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "restored visible mark and unrealized P&L match native authority",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "failed session refresh preserves balance/draft, no retry storm; explicit retry recovers",
+      "pass": true
+    },
+    {
+      "width": 390,
+      "name": "external close is not resurrected; F5 retains resting order",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

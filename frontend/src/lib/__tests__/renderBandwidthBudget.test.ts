@@ -40,7 +40,7 @@ describe('Render free-tier bandwidth guardrails', () => {
     const mount = deposits.slice(mountStart, mountEnd);
     expect(mount).not.toContain('getAdminIncomingDepositFeed');
     expect(mount).not.toContain('runWatcher');
-    expect(mount).toContain("document.visibilityState === 'visible'");
+    expect(mount).toContain('!isBrowserInactive()');
     expect(deposits).not.toContain('setInterval');
   });
 

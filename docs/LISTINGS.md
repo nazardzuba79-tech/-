@@ -94,6 +94,13 @@ Credits exactly the configured quantity of the listed asset to that ADMIN's
 Spot balance, once per listing (audit receipt + advisory lock), creates or
 debits no USDT, and refuses when unexplained inventory already exists.
 
+A retry validates the existing receipt's owner, action, listing ID, asset and
+exact decimal quantity before reporting that it was already applied. A later
+display-only version or equivalent decimal formatting does not invalidate the
+receipt. Changing the allocation quantity after crediting it requires manual
+review: a retry refuses the mismatch and never reports the new quantity as the
+old credit. It never tops up an existing allocation.
+
 ## Display is not liquidity
 
 The order book and tape shown for a managed pair are display data. Spot orders

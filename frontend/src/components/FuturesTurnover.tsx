@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useEffect, useState } from 'react';
 import { useLiveMarket } from '../lib/useLiveMarket';
 import { livePerpetualTurnover } from '../lib/terminalPresentation';
@@ -7,7 +8,7 @@ import { formatCompact } from '../lib/formatNumber';
 export function FuturesTurnover({ pair, aggregate, stale, fullPrecision = false, reference = null }: { pair: string; aggregate: number | null; stale: boolean; fullPrecision?: boolean; reference?: number | null }) {
   const live = useLiveMarket();
   const [now, setNow] = useState(Date.now);
-  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => { const timer = browserSetInterval(() => setNow(Date.now()), 5000); return () => browserClearInterval(timer); }, []);
   const fallback = livePerpetualTurnover(live, pair, now);
   const validAggregate = aggregate !== null && Number.isFinite(aggregate) && aggregate >= 0;
   // Fresh cross-venue figure first; then this pair's Bybit perpetual turnover

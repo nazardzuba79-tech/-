@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval, isBrowserInactive } from './browserActivity';
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
 import { privateStrategyView } from './copyMarketplacePrivacy';
 
@@ -281,7 +282,7 @@ export class CopyMarketplaceStore {
   private pending: Promise<void> | null = null;
   private controller: AbortController | null = null;
   private generation = 0;
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: number | null = null;
   private lastAttempt = -Infinity;
   /**
    * WHETHER THE LAST ATTEMPT ACTUALLY DELIVERED.
@@ -450,7 +451,7 @@ export class CopyMarketplaceStore {
     this.checkSession();
     this.listeners.add(listener);
     if (this.listeners.size === 1) {
-      this.timer = setInterval(() => {
+      this.timer = browserSetInterval(() => {
         if (typeof document === 'undefined' || document.visibilityState === 'visible') void this.refresh();
       }, 60_000);
       if (typeof window !== 'undefined') window.addEventListener('focus', this.onFocus);
@@ -461,7 +462,7 @@ export class CopyMarketplaceStore {
     return () => {
       this.listeners.delete(listener);
       if (!this.listeners.size) {
-        if (this.timer !== null) clearInterval(this.timer);
+        if (this.timer !== null) browserClearInterval(this.timer);
         this.timer = null;
         if (typeof window !== 'undefined') window.removeEventListener('focus', this.onFocus);
       }
@@ -479,6 +480,7 @@ export class CopyMarketplaceStore {
     return this.refresh();
   };
   refresh = (): Promise<void> => {
+    if (isBrowserInactive()) return Promise.resolve();
     this.checkSession();
     // No session to ask with. There is nothing in flight and nothing will
     // start on its own, so say so rather than leaving a skeleton up.

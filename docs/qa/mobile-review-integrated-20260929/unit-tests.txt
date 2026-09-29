@@ -1,0 +1,14 @@
+PASS frontend/src/lib/__tests__/futuresOrderPanel.test.ts (9.145 s)
+PASS frontend/src/lib/__tests__/futuresUiPolish.test.ts
+PASS frontend/src/lib/__tests__/spotOrdersPresentation.test.ts
+PASS frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts
+PASS frontend/src/mobile-review/__tests__/safety.test.ts
+PASS frontend/src/lib/__tests__/chartTrading.test.ts
+PASS frontend/src/lib/__tests__/terminalMobileParity.test.ts
+PASS src/auth/__tests__/telegramInitData.test.ts
+
+Test Suites: 8 passed, 8 total
+Tests:       198 passed, 198 total
+Snapshots:   0 total
+Time:        11.627 s
+Ran all test suites within paths "src/auth/__tests__/telegramInitData.test.ts", "frontend/src/mobile-review/__tests__/safety.test.ts", "frontend/src/lib/__tests__/terminalMobileParity.test.ts", "frontend/src/lib/__tests__/futuresOrderPanel.test.ts", "frontend/src/lib/__tests__/futuresUiPolish.test.ts", "frontend/src/lib/__tests__/spotOrdersPresentation.test.ts", "frontend/src/lib/__tests__/chartTrading.test.ts", "frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts".

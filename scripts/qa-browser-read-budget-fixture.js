@@ -3,13 +3,15 @@
  * All account mutations remain the existing harness's in-memory fixtures.
  */
 (() => {
+  if (window !== window.top) return; // Owned third-party iframes do not receive the app fixture.
   if (location.hostname !== '127.0.0.1') throw new Error('Fixture requires loopback');
-  localStorage.setItem('exchange_token', location.pathname.startsWith('/admin') ? 'qa-user-admin' : 'qa-user-a');
+  localStorage.setItem('exchange_token', window.__browserSleepToken || (location.pathname.startsWith('/admin') ? 'qa-user-admin' : 'qa-user-a'));
   localStorage.setItem('exchange_language', 'ru');
   const nativeTimeout = window.setTimeout.bind(window);
   const nativeClear = window.clearTimeout.bind(window);
   let clock = Date.now(), id = 1000000, hidden = false, advancing = false;
-  const timers = new Map(), hits = {}, errors = [], requests = new Set();
+  const timers = new Map(), hits = {}, errors = [], requests = new Set(), responses = [];
+  const transports = { opens: 0, closes: 0, sent: 0, received: 0, active: 0 };
   Date.now = () => clock;
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => hidden ? 'hidden' : 'visible' });
@@ -28,14 +30,23 @@
   };
   window.fetch = (input, options) => {
     const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
+    if (window.__browserSleepQa && url.origin === 'https://market.voltextech.net'
+      && /^\/market\/(?:nrx|listings|test-assets|display\/spot-book|external\/trades)(?:\/|$)/.test(url.pathname)) {
+      const proxy = new URL(`/__qa/public-edge${url.pathname}${url.search}`, location.origin);
+      const key = `${options?.method || 'GET'} ${proxy.pathname}`; hits[key] = (hits[key] || 0) + 1;
+      return track(fetchOriginal(proxy, options));
+    }
     if (url.origin !== location.origin) {
+      if (window.__browserSleepQa && url.pathname.startsWith('/market/display/futures-book/')) return Promise.resolve(new Response(JSON.stringify({symbol:url.pathname.split('/').pop(),pair:'BTC/USDT',timestamp:clock,asOf:clock,bids:[{price:'104234',quantity:'1'}],asks:[{price:'104236',quantity:'1'}]}),{headers:{'content-type':'application/json'}}));
       if (url.pathname === '/v5/market/tickers') return Promise.resolve(new Response(JSON.stringify({ retCode: 0, time: clock, result: { category: 'linear', list: ['BTC','ETH','SOL','XRP','DOGE'].map((base, i) => ({ symbol: base+'USDT', lastPrice: String([104235,3980,214,2.43,0.38][i]), markPrice: String([104235,3980,214,2.43,0.38][i]), indexPrice: '104230', price24hPcnt: '0.012', highPrice24h: '106000', lowPrice24h: '102000', volume24h: '1000', turnover24h: '104235000', fundingRate: '0.00004', openInterest: '0' })) } }), { headers: { 'content-type':'application/json' } }));
+      responses.push({path:url.origin+url.pathname,status:'fixture-blocked'});
       return Promise.reject(new Error('Fixture blocks external fetch'));
     }
     if (url.pathname.startsWith('/api/')) {
       const key = `${options?.method || 'GET'} ${url.pathname}`; hits[key] = (hits[key] || 0) + 1;
     }
     return track(fetchOriginal(input, options).then(response => {
+      responses.push({path:url.pathname,status:response.status});
       for (const method of ['json', 'text', 'arrayBuffer']) {
         const read = response[method].bind(response);
         response[method] = (...args) => track(read(...args));
@@ -45,6 +56,18 @@
   };
   // The fixture uses HTTP snapshots; never contact a live exchange stream.
   window.WebSocket = class { static OPEN=1; static CLOSED=3; readyState=3; addEventListener(){} removeEventListener(){} send(){} close(){} };
+  if (window.__browserSleepQa) window.WebSocket = class {
+    static CONNECTING=0; static OPEN=1; static CLOSING=2; static CLOSED=3;
+    readyState=0; listeners=new Map(); onopen=null; onclose=null; onmessage=null;
+    constructor(url) { this.url=String(url); transports.opens++; transports.active++; nativeTimeout(()=>{if(this.readyState===0){this.readyState=1;this.emit('open',new Event('open'));}},0); }
+    addEventListener(type,fn) { if(!this.listeners.has(type))this.listeners.set(type,new Set());this.listeners.get(type).add(fn); }
+    removeEventListener(type,fn) { this.listeners.get(type)?.delete(fn); }
+    emit(type,event) { this['on'+type]?.(event);for(const fn of this.listeners.get(type)||[])fn(event); }
+    send(data) { transports.sent++; const request=JSON.parse(data); for(const topic of request.args||[])if(topic.startsWith('orderbook.'))nativeTimeout(()=>{
+      if(this.readyState!==1)return;transports.received++;this.emit('message',new MessageEvent('message',{data:JSON.stringify({topic,type:'snapshot',ts:clock,data:{s:topic.split('.').at(-1),b:[['104234','1']],a:[['104236','1']],u:1,seq:1}})}));
+    },0); }
+    close() { if(this.readyState===3)return;this.readyState=3;transports.closes++;transports.active--;this.emit('close',new Event('close')); }
+  };
   window.addEventListener('error', event => errors.push(event.message));
   window.addEventListener('unhandledrejection', event => errors.push(String(event.reason)));
   // MessageChannel lets React commit without background-tab timeout throttling.
@@ -71,6 +94,12 @@
     clock = end; await settle(); advancing = false; render();
   }
   let report;
+  // Read-only instrumentation for automated production-bundle regression.
+  window.__readBudget = {
+    advance, settle,
+    hidden(value) { hidden=value; document.dispatchEvent(new Event('visibilitychange')); },
+    snapshot() { return { hits: {...hits}, transports: {...transports}, errors: [...errors], responses: responses.slice(-80), hidden, scheduledTimers: timers.size, now: clock }; },
+  };
   function render() { if (report) report.textContent = JSON.stringify({ hits, errors, hidden, advancing, scheduledTimers: timers.size, viewport: innerWidth, width: document.documentElement.scrollWidth }); }
   window.addEventListener('DOMContentLoaded', () => {
     const panel = document.createElement('aside'); panel.id = 'budget-qa';

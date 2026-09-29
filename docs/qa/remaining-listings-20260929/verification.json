@@ -1,0 +1,199 @@
+{
+  "baselineMain": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "runtimePath": "src/services/listings/ownerAllocation.ts",
+  "baselineRuntimeBlob": "1334f329de4bd7ce06bf415362357951efb1a2ac",
+  "candidateRuntimeBlob": "36711609324a1e9a0110f3e89d6f2f255cfdaa72",
+  "backendBuild": "PASS",
+  "productionAccess": false,
+  "before": {
+    "numTotalTests": 14,
+    "numPassedTests": 2,
+    "numFailedTests": 12,
+    "numPendingTests": 0,
+    "numPassedTestSuites": 0,
+    "numFailedTestSuites": 1,
+    "numPendingTestSuites": 0,
+    "cases": [
+      {
+        "name": "replays a receipt emitted by main exactly, including after a display-only version change",
+        "status": "passed"
+      },
+      {
+        "name": "an exact decimal allocation change cannot replay as the previously credited quantity",
+        "status": "failed"
+      },
+      {
+        "name": "a different asset cannot reuse another asset receipt for the same listing id",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a foreign action receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a foreign listing receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a foreign asset receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a missing metadata receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a array metadata receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a missing quantity receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a numeric quantity receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a non-finite quantity receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a zero quantity receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "refuses a negative quantity receipt without any balance or audit write",
+        "status": "failed"
+      },
+      {
+        "name": "another owner remains a conflict before checking the receipt contents",
+        "status": "passed"
+      }
+    ]
+  },
+  "after": {
+    "numTotalTests": 28,
+    "numPassedTests": 14,
+    "numFailedTests": 0,
+    "numPendingTests": 14,
+    "numPassedTestSuites": 1,
+    "numFailedTestSuites": 0,
+    "numPendingTestSuites": 1,
+    "cases": [
+      {
+        "name": "replays a receipt emitted by main exactly, including after a display-only version change",
+        "status": "passed"
+      },
+      {
+        "name": "an exact decimal allocation change cannot replay as the previously credited quantity",
+        "status": "passed"
+      },
+      {
+        "name": "a different asset cannot reuse another asset receipt for the same listing id",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a foreign action receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a foreign listing receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a foreign asset receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a missing metadata receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a array metadata receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a missing quantity receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a numeric quantity receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a non-finite quantity receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a zero quantity receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "refuses a negative quantity receipt without any balance or audit write",
+        "status": "passed"
+      },
+      {
+        "name": "another owner remains a conflict before checking the receipt contents",
+        "status": "passed"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL exact configured quantity to the verified ADMIN, no USDT created or debited, audited once",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL concurrent and repeated calls credit once, even after trading changed the inventory",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a receipt emitted before the safeguard remains valid after display-only republish and equivalent decimal formatting",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL changed exact quantity or asset cannot reinterpret a prior allocation receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a foreign action receipt fails closed without changing any balance or receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a foreign listing receipt fails closed without changing any balance or receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a foreign asset receipt fails closed without changing any balance or receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a numeric quantity receipt fails closed without changing any balance or receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a malformed quantity receipt fails closed without changing any balance or receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a null metadata receipt fails closed without changing any balance or receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL a array metadata receipt fails closed without changing any balance or receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL another verified ADMIN cannot reuse the owner receipt",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL an audit write failure rolls the credit back in the actual database transaction",
+        "status": "pending"
+      },
+      {
+        "name": "managed listing owner allocation on disposable PostgreSQL non-admin or unknown owner, another owner after the first, unexplained inventory, zero quantity: fail closed",
+        "status": "pending"
+      }
+    ]
+  },
+  "postgres": "14 cases compiled and skipped locally; no PostgreSQL executable available. Existing Admin Listings CI runs this file against a disposable service."
+}

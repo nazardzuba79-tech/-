@@ -1,0 +1,248 @@
+{
+  "sourceHead": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "sourceTree": "56980d2cbefc169cc504596b25061c1ca9b41b3b",
+  "environment": "local isolated checkout; no DATABASE_URL or DIRECT_URL; normal frontend built first",
+  "build": {
+    "passed": true,
+    "seconds": 24.22
+  },
+  "command": "node node_modules/jest/bin/jest.js frontend/src --runInBand --json --outputFile=frontend-full.json",
+  "fullReportSha256": "7208419f5d21913ddd2d77e75c79d349613bf0dd65bbe962d1ad3de8e10f5e58",
+  "counts": {
+    "numPassedTests": 2680,
+    "numFailedTests": 108,
+    "numPendingTests": 0,
+    "numPassedTestSuites": 142,
+    "numFailedTestSuites": 20
+  },
+  "failedSuites": [
+    {
+      "path": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "failedTests": 24,
+      "tests": [
+        "desktop ledger has exactly the six approved columns and original quantity/USD meaning",
+        "the collateral column states the server-decided fact and is not a control",
+        "all ru columns/actions are localized and quantities preserve units",
+        "all en columns/actions are localized and quantities preserve units",
+        "all zh columns/actions are localized and quantities preserve units",
+        "all es columns/actions are localized and quantities preserve units",
+        "all hi columns/actions are localized and quantities preserve units",
+        "all ja columns/actions are localized and quantities preserve units",
+        "all ko columns/actions are localized and quantities preserve units",
+        "committed balance is its own column, on every row, with zero shown as the real answer it is",
+        "an asset with no price is reported unknown, never as a holding worth nothing",
+        "valueUsd is authoritative, not recomputed from quantity or a decorative price",
+        "mobile primary quantity has its symbol and secondary estimated USD; expansion preserves available and locked",
+        "hidden balances mask quantity/available/locked/value on desktop and mobile while retaining market change",
+        "actual search, hide-small and sort handlers preserve original filtering and value order without row mutation",
+        "loading/error/empty state remains honest without invented balances ({\"unavailable\":true})",
+        "loading/error/empty state remains honest without invented balances ({\"loading\":true})",
+        "loading/error/empty state remains honest without invented balances ({\"rows\":[]})",
+        "row actions invoke existing callbacks, generic Trade route and menu keyboard lifecycle without financial calls",
+        "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/useWalletData.ts exactly",
+        "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly",
+        "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly",
+        "preserves existing financial/data/format/modal source src/services/WalletPortfolioService.ts exactly",
+        "preserves existing financial/data/format/modal source src/api/middleware/auth.ts exactly"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/walletOverview.test.ts",
+      "failedTests": 4,
+      "tests": [
+        "4. two accounts, two ledgers lists each account with the server’s own figure and sums them once, in the headline",
+        "4. two accounts, two ledgers adds nothing else: the account rows and the ring get the server figures unchanged",
+        "7. the funding view is empty — a deposit action and nothing else — for an account with nothing",
+        "7. the funding view lists the spot ledger rows with the server valuation, dash for an unpriced one"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+      "failedTests": 3,
+      "tests": [
+        "selective Card promotion preserves the exact approved page, composition, copy and state machine",
+        "Copy preserves its approved source except exact labels and click-only deposit requirement UX",
+        "Card remains an authenticated standalone route, independent of Spot terminal changes"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "failedTests": 3,
+      "tests": [
+        "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships",
+        "the shared authenticated header does not depend on a lazy stylesheet the layout the production defect destroyed is declared there, eagerly",
+        "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/orderBookCalmMotion.test.ts",
+      "failedTests": 1,
+      "tests": [
+        "depth bars are muted and settle between publishes keeps the bar on a transform, so a bar change never re-lays-out the row"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/supportForm.test.ts",
+      "failedTests": 1,
+      "tests": [
+        "no mail secret, SMTP setting or recipient address lives anywhere in the frontend source"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/marketDataStore.test.ts",
+      "failedTests": 11,
+      "tests": [
+        "marketDataStore serves 100 concurrent subscribers from ONE request and ONE timer",
+        "marketDataStore still runs exactly one timer after a full poll cycle with many subscribers",
+        "marketDataStore joins an in-flight request rather than issuing a second",
+        "marketDataStore polls at the fastest cadence any live subscriber asked for",
+        "marketDataStore never polls faster than the backend ticker TTL, however low the request",
+        "marketDataStore exposes source and freshness rather than hiding them",
+        "marketDataStore marks stale data as stale instead of presenting it as live",
+        "marketDataStore keeps a REAL zero as zero",
+        "marketDataStore turns an unavailable section into an absence, never a zero",
+        "marketDataStore keeps the last known good data when a poll fails, and flags the error",
+        "marketDataStore gives a late subscriber the current snapshot immediately"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+      "failedTests": 3,
+      "tests": [
+        "VX-001 profile opens before API response and hydrates without remount/scroll reset",
+        "VX-KSENIA profile opens before API response and hydrates without remount/scroll reset",
+        "direct entry, lazy route and both nav surfaces start the shared prefetch"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+      "failedTests": 1,
+      "tests": [
+        "build output: a cold /wallet downloads every utility it uses every one of them is in the CSS that route fetches"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "failedTests": 16,
+      "tests": [
+        "Nazara marketplace presentation only 7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "Nazara marketplace presentation only 30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "Nazara marketplace presentation only 90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "Nazara marketplace presentation only ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "Nazara marketplace presentation only VIP remains independent and identity verification never inherits the static catalogue flag",
+        "Nazara marketplace presentation only the real card renders identityVerified=true beside the name, never over the avatar",
+        "Nazara marketplace presentation only the real card renders identityVerified=false beside the name, never over the avatar",
+        "Nazara marketplace presentation only the real card renders identityVerified=undefined beside the name, never over the avatar",
+        "Nazara marketplace presentation only ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names",
+        "Nazara marketplace presentation only Nazar VIP and the real verified badge share the name row, without a second status line",
+        "Nazara marketplace presentation only ordinary card content is preserved; absent Nazara metrics do not become fake constants",
+        "CopyButton remains byte-equivalent to approved V8",
+        "MetricsPanel remains byte-equivalent to approved V8",
+        "ProfilePerformanceChart remains byte-equivalent to approved V8",
+        "MiniPerformanceChart remains byte-equivalent to approved V8",
+        "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/orderBookFreshnessAndExecution.test.ts",
+      "failedTests": 2,
+      "tests": [
+        "3. the last real snapshot stays on screen empties the Spot ladder only when the market itself changed",
+        "4. coming back to the tab is quiet re-reads the Spot book on return without clearing it"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/marketUniverseScale.test.ts",
+      "failedTests": 2,
+      "tests": [
+        "the frontend never calls a venue directly contains no direct upstream market API host",
+        "the futures market list scales takes its symbols from the backend listing, never from a local list"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "failedTests": 1,
+      "tests": [
+        "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "failedTests": 2,
+      "tests": [
+        "actual onError removes broken image, retains geometry and retries changed owner URL",
+        "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+      "failedTests": 20,
+      "tests": [
+        "one chart across ten rapid switches, detached late work cannot stack: spot",
+        "one chart across ten rapid switches, detached late work cannot stack: futures",
+        "one chart across ten rapid switches, detached late work cannot stack: cfd",
+        "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+        "native TradingView indicators toolbar is enabled and volume remains controllable",
+        "script failure shows honest fallback, preserves CFD disclaimer and retry recovers",
+        "loaded script without a widget times out and can retry, no poisoned global promise",
+        "unmount pending script cancels callbacks and removes all owned nodes",
+        "locale switch remounts cleanly: ru",
+        "locale switch remounts cleanly: en",
+        "locale switch remounts cleanly: zh",
+        "locale switch remounts cleanly: es",
+        "locale switch remounts cleanly: ja",
+        "unknown CFD mapping and malformed symbols never substitute another instrument",
+        "verified CFD mapping and compact visible attribution are preserved",
+        "fallback translations remain available in all seven locales",
+        "market palette preserves official symbol and native controls: spot",
+        "market palette preserves official symbol and native controls: futures",
+        "market palette preserves official symbol and native controls: cfd",
+        "switching Spot to Futures replaces the owned chart with the new palette and contract"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+      "failedTests": 3,
+      "tests": [
+        "actual parent synchronously withholds mismatched depth before any new-pair effect",
+        "actual stateful BTC → MOG → BTC book initializes grouping before paint and retains manual same-pair steps",
+        "default ticker formatter stays unchanged; only Spot header and Spot market-info opt in"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "failedTests": 8,
+      "tests": [
+        "7D keeps lifetime statistics separate from the selected chart period",
+        "30D keeps lifetime statistics separate from the selected chart period",
+        "90D keeps lifetime statistics separate from the selected chart period",
+        "ALL keeps lifetime statistics separate from the selected chart period",
+        "actual profile shows identityVerified=true only inline with its heading",
+        "actual profile shows identityVerified=false only inline with its heading",
+        "actual profile shows identityVerified=undefined only inline with its heading",
+        "actual histogram markup uses the same uncapped signed geometry and canonical tooltips"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/plainLanguage.test.ts",
+      "failedTests": 1,
+      "tests": [
+        "hardcoded component copy speaks about the product, not about the plumbing"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+      "failedTests": 1,
+      "tests": [
+        "customer-facing components render no provider branding has no provider name in any executable line"
+      ]
+    },
+    {
+      "path": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+      "failedTests": 1,
+      "tests": [
+        "normal API paths replace review-only sources without altering token or request behavior"
+      ]
+    }
+  ]
+}

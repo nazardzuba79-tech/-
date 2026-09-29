@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
 import { LOCALES, readLocale } from '../../../test-utils/i18nSource';
 
 /**
@@ -128,8 +128,14 @@ function visibleStrings(source: string): string[] {
 test('hardcoded component copy speaks about the product, not about the plumbing', () => {
   const offenders: string[] = [];
   for (const path of uiFiles(resolve(root, 'frontend/src'))) {
-    // The admin console keeps its honest "Тестовый баланс" wording; see above.
-    if (path.endsWith('admin/AdminUserDetailPage.tsx')) continue;
+    // This is the customer presentation contract. The ADMIN-only console
+    // must identify simulated data, destructive deletion scope and deployment
+    // controls honestly; it is not part of customer product copy.
+    if (path.includes('/pages/admin/')) continue;
+    // The separate, loopback-only mobile review must label its fixtures and
+    // unavailable auth honestly. Its entry and build are isolated from the
+    // production app; only this exact directory is outside customer copy.
+    if (path.startsWith(resolve(root, 'frontend/src/mobile-review') + sep)) continue;
     // lib/customerError.ts holds no copy at all. Its string literals are
     // the SERVER's own sentences, listed so that each can be answered in
     // the customer's language instead — reading them as product copy would

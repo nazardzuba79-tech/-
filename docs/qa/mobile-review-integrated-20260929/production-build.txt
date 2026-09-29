@@ -1,0 +1,104 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> exchange-frontend@0.1.0 build
+> tsc -b && vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 5985 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 11.84 kB │ gzip:   4.52 kB
+dist/assets/AdminWalletsPage-iKy0mVMP.css        2.46 kB │ gzip:   0.81 kB
+dist/assets/useCfdTickers-DUeCozDt.css           3.10 kB │ gzip:   0.99 kB
+dist/assets/AdminListingsPage-BrLCCFbV.css       5.28 kB │ gzip:   1.40 kB
+dist/assets/Nav-PlDi0Dxw.css                     9.63 kB │ gzip:   2.61 kB
+dist/assets/AdminLayout-BRVI8K24.css            11.50 kB │ gzip:   2.77 kB
+dist/assets/TradingBotsPage-OXlVDMYc.css        11.85 kB │ gzip:   2.82 kB
+dist/assets/BankingPage-Bs98edQu.css            14.75 kB │ gzip:   3.53 kB
+dist/assets/WalletPage-D8hdvqNU.css             20.20 kB │ gzip:   4.18 kB
+dist/assets/PrivateTradingPage-CwemXRqM.css     27.25 kB │ gzip:   5.21 kB
+dist/assets/CardPage-CJSsjKut.css               30.59 kB │ gzip:   5.67 kB
+dist/assets/SettingsPage-Ctz0eoQR.css           36.64 kB │ gzip:   7.38 kB
+dist/assets/MarketsPage-DqSrL-SP.css            52.96 kB │ gzip:   9.04 kB
+dist/assets/TradePage-9K8sCQB6.css              57.83 kB │ gzip:  10.13 kB
+dist/assets/FuturesStudio-DLzsRUMT.css          68.08 kB │ gzip:   9.78 kB
+dist/assets/VoltexTerminalSystem-ChbuLmjS.css   71.20 kB │ gzip:   8.65 kB
+dist/assets/TerminalPremium-BnFLU9J0.css       106.23 kB │ gzip:  15.80 kB
+dist/assets/CopyTradingPage-GaUmsuYe.css       117.67 kB │ gzip:  18.50 kB
+dist/assets/FuturesPage-xtwL9BC3.css           118.20 kB │ gzip:  18.75 kB
+dist/assets/index-CTU4KcnO.css                 210.11 kB │ gzip:  41.91 kB
+dist/assets/Badge-BRhDU5T5.js                    0.17 kB │ gzip:   0.16 kB
+dist/assets/check-CNlcEiC4.js                    0.29 kB │ gzip:   0.24 kB
+dist/assets/ReferralRedirectPage-CGWDOF-z.js     0.30 kB │ gzip:   0.25 kB
+dist/assets/arrow-left-h5vf883X.js               0.34 kB │ gzip:   0.27 kB
+dist/assets/arrow-down-right-CbO7VJpV.js         0.34 kB │ gzip:   0.27 kB
+dist/assets/search-D16uCjpe.js                   0.34 kB │ gzip:   0.27 kB
+dist/assets/Skeleton-X7h9BYM2.js                 0.43 kB │ gzip:   0.31 kB
+dist/assets/LiveMetric-ThU42L2e.js               0.46 kB │ gzip:   0.37 kB
+dist/assets/users-BwzWtG1h.js                    0.48 kB │ gzip:   0.33 kB
+dist/assets/shield-check-Bk1mQ0ZG.js             0.49 kB │ gzip:   0.35 kB
+dist/assets/refresh-cw-B20KDF3t.js               0.49 kB │ gzip:   0.33 kB
+dist/assets/crown-3aAvdVu4.js                    0.53 kB │ gzip:   0.36 kB
+dist/assets/privateTradingError-uUcmISMq.js      0.56 kB │ gzip:   0.38 kB
+dist/assets/arrow-up-Bxh6ZPwz.js                 0.62 kB │ gzip:   0.32 kB
+dist/assets/star-Dbnyux40.js                     0.64 kB │ gzip:   0.40 kB
+dist/assets/chevron-right-B1ULbhgX.js            0.68 kB │ gzip:   0.34 kB
+dist/assets/visibleRead-D1-XwLcd.js              0.76 kB │ gzip:   0.46 kB
+dist/assets/useVisibleAccountRead-BMk5Xn5R.js    0.84 kB │ gzip:   0.46 kB
+dist/assets/useVtaSpotAccount-CFLRTgSj.js        1.12 kB │ gzip:   0.64 kB
+dist/assets/OtcPage-BRvLycxK.js                  1.27 kB │ gzip:   0.64 kB
+dist/assets/AdminPrimitives-DK8Jq4VN.js          1.61 kB │ gzip:   0.95 kB
+dist/assets/depositRails-BrauXpDQ.js             2.10 kB │ gzip:   1.26 kB
+dist/assets/Footer-Ddipd_ZJ.js                   2.65 kB │ gzip:   1.14 kB
+dist/assets/AdminKycPage-jGt5D9Aj.js             2.72 kB │ gzip:   1.52 kB
+dist/assets/AdminAuditLogPage-RiCzKyVO.js        3.10 kB │ gzip:   1.28 kB
+dist/assets/lastLoginLabel-CWTrzTfB.js           3.11 kB │ gzip:   1.75 kB
+dist/assets/nativeDemoApi-D5jW93O4.js            3.12 kB │ gzip:   1.66 kB
+dist/assets/AdminIcons-u7Dng2qK.js               3.62 kB │ gzip:   1.14 kB
+dist/assets/RegisterPage-CZpN0Ekg.js             4.25 kB │ gzip:   1.83 kB
+dist/assets/useLiveMarket-CM-UJ4Q7.js            4.29 kB │ gzip:   1.81 kB
+dist/assets/ArbitragePage-DSk6JLTh.js            4.71 kB │ gzip:   1.61 kB
+dist/assets/useCfdTickers-CEvdu4CR.js            4.73 kB │ gzip:   2.05 kB
+dist/assets/KycSubmissionReview-C_FZNxyN.js      4.77 kB │ gzip:   2.42 kB
+dist/assets/catalogueStore-DcBXZzT5.js           5.14 kB │ gzip:   2.01 kB
+dist/assets/AdminWithdrawalsPage-BytXTkrw.js     5.55 kB │ gzip:   2.06 kB
+dist/assets/AdminWalletsPage-BGOrEcSW.js         6.34 kB │ gzip:   2.63 kB
+dist/assets/useFuturesAccount-CEfFSnyI.js        6.42 kB │ gzip:   2.31 kB
+dist/assets/adminStyles-DRZOGP6M.js              7.49 kB │ gzip:   1.85 kB
+dist/assets/CreditDepositDrawer-D8Z9n238.js      8.20 kB │ gzip:   3.83 kB
+dist/assets/AdminUserDetailPage-mZR7PhPP.js      8.49 kB │ gzip:   3.01 kB
+dist/assets/AdminLayout-BQ5eT39W.js              8.75 kB │ gzip:   3.65 kB
+dist/assets/countries-BKCkpbVZ.js               10.40 kB │ gzip:   5.40 kB
+dist/assets/TradingBotsPage-DIcUxYSy.js         15.66 kB │ gzip:   6.46 kB
+dist/assets/BankingPage-B2d2igxG.js             15.69 kB │ gzip:   5.39 kB
+dist/assets/VoltexTerminalSystem-i1d3Hzxw.js    17.82 kB │ gzip:   6.16 kB
+dist/assets/AdminListingsPage-DNC8psMa.js       18.10 kB │ gzip:   7.13 kB
+dist/assets/AdminUsersPage-BjZUxJZv.js          20.82 kB │ gzip:   7.72 kB
+dist/assets/AdminDepositsPage-hGDJpuDR.js       22.85 kB │ gzip:   8.01 kB
+dist/assets/index-BNwq8P8C.js                   35.81 kB │ gzip:  10.16 kB
+dist/assets/LegalPage-CMZmrG1Y.js               46.60 kB │ gzip:  26.05 kB
+dist/assets/PrivateTradingPage-Duq9EtWG.js      49.86 kB │ gzip:  14.96 kB
+dist/assets/zh-D3rFNWYc.js                      53.77 kB │ gzip:  24.46 kB
+dist/assets/ja-Cv1jWUyd.js                      59.81 kB │ gzip:  26.33 kB
+dist/assets/ko-DavpHxh7.js                      59.95 kB │ gzip:  25.23 kB
+dist/assets/Nav-DbGsGcc5.js                     63.36 kB │ gzip:  22.90 kB
+dist/assets/SettingsPage-BzZenzhN.js            68.84 kB │ gzip:  16.34 kB
+dist/assets/MarketsPage-BNRG0Gdq.js             71.51 kB │ gzip:  19.65 kB
+dist/assets/en-KT8yfAMY.js                      76.94 kB │ gzip:  22.65 kB
+dist/assets/hi-DdF1_0eg.js                      77.06 kB │ gzip:  28.86 kB
+dist/assets/TradePage-pHh17Wql.js               78.95 kB │ gzip:  24.05 kB
+dist/assets/es-CPVnLpxY.js                      82.58 kB │ gzip:  24.53 kB
+dist/assets/WalletPage-BHmgCym7.js              92.42 kB │ gzip:  24.31 kB
+dist/assets/FuturesStudio-lox7UOcT.js           97.27 kB │ gzip:  60.29 kB
+dist/assets/CopyTradingPage-C_Y8bBdk.js        103.08 kB │ gzip:  33.36 kB
+dist/assets/FuturesPage-BPd99Rlc.js            143.09 kB │ gzip:  42.99 kB
+dist/assets/CardPage-C6B0snH9.js               176.73 kB │ gzip:  55.51 kB
+dist/assets/TerminalPremium-DhzcoqR2.js        320.53 kB │ gzip: 104.23 kB
+dist/assets/index-gAizF_5B.js                  516.26 kB │ gzip: 181.87 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 11.25s

@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import { API_BASE, getToken } from './api';
 
 export interface AdminAlertSummary {

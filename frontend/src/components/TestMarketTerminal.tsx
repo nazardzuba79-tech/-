@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useEffect, useRef, useState } from 'react';
 import { localeOf, useLanguage } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
@@ -22,8 +23,8 @@ function useServerNow(clockOffsetMs: number, active: boolean): number {
   useEffect(() => {
     if (!active) return;
     setNow(Date.now() + clockOffsetMs);
-    const timer = window.setInterval(() => setNow(Date.now() + clockOffsetMs), 1000);
-    return () => window.clearInterval(timer);
+    const timer = browserSetInterval(() => setNow(Date.now() + clockOffsetMs), 1000);
+    return () => browserClearInterval(timer);
   }, [clockOffsetMs, active]);
   return now;
 }

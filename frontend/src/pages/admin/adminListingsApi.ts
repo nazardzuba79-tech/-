@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from '../../lib/browserActivity';
 import { API_BASE, getToken } from '../../lib/api';
 
 /** Admin → Listings calls (Render, ADMIN only; Render forwards to the Cloudflare store). */

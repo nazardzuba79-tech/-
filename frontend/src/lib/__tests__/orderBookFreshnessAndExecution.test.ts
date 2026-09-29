@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import ts from 'typescript';
 import {
   BOOK_REFRESH_MS, BOOK_STALE_AFTER_MS, BOOK_UNAVAILABLE_AFTER_MS, RECONNECT_GRACE_MS, bookFreshness,
 } from '../bookFreshness';
@@ -12,6 +13,30 @@ const strip = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replac
 const tradePage = strip(read('frontend/src/pages/TradePage.tsx'));
 const depth = strip(read('frontend/src/lib/futuresDepth.ts'));
 const banner = strip(read('frontend/src/components/ConnectionBanner.tsx'));
+const parse = (source: string) => ts.createSourceFile('current.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+function nodes(source: ts.Node): ts.Node[] {
+  const result: ts.Node[] = [];
+  const visit = (node: ts.Node) => { result.push(node); ts.forEachChild(node, visit); };
+  visit(source); return result;
+}
+function visibilityHandler(source: string): string {
+  const tree = parse(source), all = nodes(tree);
+  const listeners = all.filter((node): node is ts.CallExpression => ts.isCallExpression(node)
+    && ((node.expression.getText(tree) === 'addBrowserActivityListener' && node.arguments.length === 1)
+      || (/\.addEventListener$/.test(node.expression.getText(tree)) && node.arguments.length >= 2
+        && ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === 'visibilitychange')));
+  expect(listeners).toHaveLength(1);
+  // The shared lifecycle takes the handler as its sole argument; native
+  // visibility registration takes it after the event name.
+  const callback = listeners[0].arguments[listeners[0].expression.getText(tree) === 'addBrowserActivityListener' ? 0 : 1];
+  if (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback)) return callback.body.getText(tree);
+  const declaration = all.find((node): node is ts.VariableDeclaration => ts.isVariableDeclaration(node)
+    && node.name.getText(tree) === callback.getText(tree));
+  expect(declaration?.initializer).toBeDefined();
+  const initializer = declaration!.initializer!;
+  expect(ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)).toBe(true);
+  return (initializer as ts.ArrowFunction).body.getText(tree);
+}
 
 /**
  * What the order book is allowed to do to the person reading it.
@@ -82,7 +107,7 @@ describe('2. the cadence is quiet, and it is the shared one', () => {
   it('suppresses the fallback entirely while the live stream is delivering', () => {
     expect(depth).toContain("if (active.source === 'socket' && active.status === 'live') return;");
     // And never polls for a tab nobody is looking at.
-    expect(depth).toContain("if (typeof document !== 'undefined' && document.hidden) return;");
+    expect(depth).toContain("if (typeof document !== 'undefined' && isBrowserInactive()) return;");
   });
 });
 
@@ -90,14 +115,22 @@ describe('3. the last real snapshot stays on screen', () => {
   it('empties the Spot ladder only when the market itself changed', () => {
     expect(tradePage).toContain('if (bookShownPairRef.current !== pair) {');
     // Exactly one place may blank it, and it is inside that guard.
-    const blanks = tradePage.match(/setBook\(\{\s*pair,\s*bids:\s*\[\],\s*asks:\s*\[\]\s*\}\)/g) ?? [];
+    const tree = parse(tradePage);
+    const blanks = nodes(tree).filter((node): node is ts.CallExpression => {
+      if (!ts.isCallExpression(node) || node.expression.getText(tree) !== 'setBook') return false;
+      const value = node.arguments[0];
+      if (!value || !ts.isObjectLiteralExpression(value)) return false;
+      return ['bids', 'asks'].every(name => value.properties.some(property => ts.isPropertyAssignment(property)
+        && property.name.getText(tree) === name && ts.isArrayLiteralExpression(property.initializer)
+        && property.initializer.elements.length === 0));
+    });
     expect(blanks).toHaveLength(1);
-    // ...and that one blank sits inside the guard, not somewhere after it.
-    const guardAt = tradePage.indexOf('if (bookShownPairRef.current !== pair) {');
-    const blankAt = tradePage.indexOf('setBook({ pair, bids: [], asks: [] })');
-    expect(guardAt).toBeGreaterThan(-1);
-    expect(blankAt).toBeGreaterThan(guardAt);
-    expect(blankAt - guardAt).toBeLessThan(200);
+    // Parentage proves the empty snapshot is guarded. Extra provenance
+    // fields such as asOf:null do not change the visibility contract.
+    let parent: ts.Node | undefined = blanks[0].parent;
+    while (parent && !ts.isIfStatement(parent)) parent = parent.parent;
+    expect(parent && ts.isIfStatement(parent) ? parent.expression.getText(tree).replace(/\s/g, '') : null)
+      .toBe('bookShownPairRef.current!==pair');
   });
 
   it('serves the futures last-good while a new book is still arriving', () => {
@@ -130,18 +163,14 @@ describe('3. the last real snapshot stays on screen', () => {
 
 describe('4. coming back to the tab is quiet', () => {
   it('re-reads the Spot book on return without clearing it', () => {
-    expect(tradePage).toContain("document.addEventListener('visibilitychange', onVisibility)");
-    const handler = tradePage.slice(tradePage.indexOf('const onVisibility = () => {'));
-    const body = handler.slice(0, handler.indexOf('};'));
+    const body = visibilityHandler(tradePage);
     expect(body).toContain('refreshBook()');
     // Nothing on this path may blank the ladder or raise anything.
     expect(body).not.toContain('setBook(');
   });
 
   it('takes the banner down on return instead of raising one', () => {
-    expect(banner).toContain("document.addEventListener('visibilitychange', onVisibility)");
-    const handler = banner.slice(banner.indexOf('const onVisibility = () => {'));
-    const body = handler.slice(0, handler.indexOf('};'));
+    const body = visibilityHandler(banner);
     expect(body).toContain('setShow(false)');
     expect(body).not.toContain('setShow(true)');
   });

@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 import { useEffect, useState } from 'react';
 import type { IChartApi, ISeriesApi } from 'lightweight-charts';
 import { chartSymbol, type ChartTradingInteraction } from '../lib/chartTrading';
@@ -16,9 +17,9 @@ export function PrivatePositionLines({chart,series,interaction,pair}:{
     if(!trades.length){setPoints([]);return;}
     let frame=0,stopped=false,previous='';
     const sync=()=>{
-      if(stopped)return;
+      if(stopped||isBrowserInactive()){frame=0;return;}
       try{
-        if(!document.hidden){
+        if(!isBrowserInactive()){
           const width=chart.timeScale().width(),height=chart.panes()[0]?.getHeight()??0;
           const next=trades.flatMap(t=>{
             const y=series.priceToCoordinate(t.entryPrice);
@@ -31,7 +32,8 @@ export function PrivatePositionLines({chart,series,interaction,pair}:{
         frame=requestAnimationFrame(sync);
       }catch{if(!stopped)setPoints([]);}
     };
-    sync();return()=>{stopped=true;cancelAnimationFrame(frame);};
+    const activity=()=>{cancelAnimationFrame(frame);frame=0;if(!isBrowserInactive())sync();};
+    addBrowserActivityListener(activity);sync();return()=>{stopped=true;removeBrowserActivityListener(activity);cancelAnimationFrame(frame);};
   },[chart,series,interaction,pair]);
   if(!interaction?.enabled)return null;
   return <div className="private-position-lines" aria-label="Линии открытых позиций">

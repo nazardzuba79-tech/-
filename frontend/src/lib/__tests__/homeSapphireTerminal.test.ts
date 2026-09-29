@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -12,7 +13,7 @@ function evaluate(file: string, overrides: Record<string, unknown> = {}) {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const output: any = {};
-  new Function('require', 'exports', compiled)((name: string) => overrides[name] ?? req(name), output);
+  new Function('require', 'exports', compiled)((name: string) => name.endsWith('/browserActivity') ? browserActivity : overrides[name] ?? req(name), output);
   return output;
 }
 // priceChange asks lib/testMarkets whether a pair is a VOLTEX test market.

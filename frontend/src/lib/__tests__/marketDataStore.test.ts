@@ -1,6 +1,7 @@
 import { marketDataStore, type MarketState } from '../marketDataStore';
 import { assetMetadataStore } from '../assetMetadataStore';
 import { api } from '../api';
+import { readDisplayJson, DISPLAY_REFRESH_MS } from '../displaySnapshotCache';
 
 /**
  * The client-side half of the load argument.
@@ -17,13 +18,17 @@ import { api } from '../api';
  * in-flight request per tab, no matter how many components subscribe.
  */
 jest.mock('../api', () => ({
+  API_BASE: '/api/v1',
   api: {
-    getMarketSnapshot: jest.fn(),
     getAssetIcons: jest.fn(),
   },
 }));
+jest.mock('../displaySnapshotCache', () => ({
+  ...jest.requireActual('../displaySnapshotCache'),
+  readDisplayJson: jest.fn(),
+}));
 
-const getMarketSnapshot = api.getMarketSnapshot as jest.Mock;
+const getMarketSnapshot = readDisplayJson as jest.Mock;
 const getAssetIcons = api.getAssetIcons as jest.Mock;
 
 function snapshot(overrides: Record<string, unknown> = {}) {
@@ -97,6 +102,7 @@ describe('marketDataStore', () => {
     // The headline number: 100 components mounting together cost VOLTEX
     // one HTTP request, not 100.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(1);
+    expect(getMarketSnapshot).toHaveBeenCalledWith('/api/v1/market/display/spot-snapshot', DISPLAY_REFRESH_MS);
     expect(marketDataStore._timerCount).toBe(1);
     expect(marketDataStore._subscriberCount).toBe(100);
 
@@ -108,7 +114,7 @@ describe('marketDataStore', () => {
     await flush();
     expect(getMarketSnapshot).toHaveBeenCalledTimes(1);
 
-    jest.advanceTimersByTime(3000);
+    jest.advanceTimersByTime(DISPLAY_REFRESH_MS);
     await flush();
 
     // One tick, one request — not one per subscriber.
@@ -151,30 +157,30 @@ describe('marketDataStore', () => {
   });
 
   it('polls at the fastest cadence any live subscriber asked for', async () => {
-    const offSlow = marketDataStore.subscribe(() => {}, 15_000);
-    const offFast = marketDataStore.subscribe(() => {}, 3_000);
+    const offSlow = marketDataStore.subscribe(() => {}, 150_000);
+    const offFast = marketDataStore.subscribe(() => {}, DISPLAY_REFRESH_MS);
     await flush();
     const baseline = getMarketSnapshot.mock.calls.length;
 
-    jest.advanceTimersByTime(3_000);
+    jest.advanceTimersByTime(DISPLAY_REFRESH_MS);
     await flush();
 
-    // The 15s subscriber is served the 3s data — nobody is ever given
+    // The 150s subscriber is served the 60s data — nobody is ever given
     // staler data than they asked for.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(baseline + 1);
     offSlow();
     offFast();
   });
 
-  it('never polls faster than the backend ticker TTL, however low the request', async () => {
+  it('never polls faster than the approved public display cadence, however low the request', async () => {
     const off = marketDataStore.subscribe(() => {}, 100);
     await flush();
     const baseline = getMarketSnapshot.mock.calls.length;
 
-    jest.advanceTimersByTime(2_900);
+    jest.advanceTimersByTime(DISPLAY_REFRESH_MS - 100);
     await flush();
-    // Floored at 3s: polling under the backend's 5s ticker cache cannot
-    // return fresher data, it can only cost requests.
+    // The public display transport is sampled once per minute. A mounted
+    // component requesting a shorter interval must not increase its traffic.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(baseline);
 
     jest.advanceTimersByTime(200);
@@ -243,7 +249,7 @@ describe('marketDataStore', () => {
     expect(state!.tickers.size).toBe(1);
 
     getMarketSnapshot.mockRejectedValueOnce(new Error('network'));
-    jest.advanceTimersByTime(3000);
+    jest.advanceTimersByTime(DISPLAY_REFRESH_MS);
     await flush();
 
     expect(state!.status).toBe('error');

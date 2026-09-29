@@ -18,6 +18,7 @@ function evaluate(file: string, overrides: Record<string, unknown> = {}) {
 const priceChange = evaluate('lib/priceChange.ts', { './testMarkets': evaluate('lib/testMarkets.ts') });
 const marketModule = evaluate('pages/home/useHomeMarket.ts', {
   '../../lib/api': { api: {} }, '../../lib/priceChange': priceChange,
+  '../../lib/browserActivity': require('../browserActivity'),
   '../../lib/futuresConfigStore': { futuresConfigStore: {} },
   './homeMarketSnapshot': evaluate('pages/home/homeMarketSnapshot.ts'),
 });

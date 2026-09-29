@@ -1,3 +1,5 @@
+import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
+
 import { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -294,6 +296,12 @@ export function PriceChart({
   const draggingRef = useRef<{ id: string; startPrice: number; startTriggerPrice: number; startExecPrice: number | null } | null>(
     null
   );
+  const cancelOrderDragRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const cancelInactiveDrag = () => { if (isBrowserInactive()) cancelOrderDragRef.current?.(); };
+    addBrowserActivityListener(cancelInactiveDrag);
+    return () => { removeBrowserActivityListener(cancelInactiveDrag); cancelOrderDragRef.current?.(); };
+  }, [pair, spotConditionalOrders]);
 
   const toolRef = useRef(tool);
   toolRef.current = tool;
@@ -984,7 +992,7 @@ export function PriceChart({
     }
 
     async function load() {
-      if (loading || historyLoading || historicalWindow || (typeof document !== 'undefined' && document.hidden)) return;
+      if (loading || historyLoading || historicalWindow || (typeof document !== 'undefined' && isBrowserInactive())) return;
       loading=true;
       const requestController = new AbortController();
       controller=requestController;
@@ -1083,7 +1091,7 @@ export function PriceChart({
 
     retryCandlesRef.current = () => { setLoadFailed(false); void load(); };
     load();
-    const poll = window.setInterval(load, 5000);
+    const poll = browserSetInterval(load, 5000);
     return () => {
       cancelled = true;
       retryCandlesRef.current = null;
@@ -1094,7 +1102,7 @@ export function PriceChart({
         privateHistoryRef.current = null;
         chartRef.current?.timeScale().unsubscribeVisibleLogicalRangeChange(onRangeChange);
       }
-      window.clearInterval(poll);
+      browserClearInterval(poll);
     };
   }, [pair, interval, drawingToolsOn, spotChartRefinements, candleLoader, privateTrading?.enabled]);
 
@@ -1131,13 +1139,13 @@ export function PriceChart({
         .catch(() => {});
     }
     load();
-    const poll = window.setInterval(load, 4000);
+    const poll = browserSetInterval(load, 4000);
     return () => {
       // `cancelled` covers the stale-response case without relying on the
       // router remounting: leaving spot re-runs this effect, the cleanup
       // fires first, and a request already in the air can no longer commit.
       cancelled = true;
-      window.clearInterval(poll);
+      browserClearInterval(poll);
     };
   }, [pair, spotConditionalOrders]);
 
@@ -1187,7 +1195,8 @@ export function PriceChart({
       // Belt and braces: the lines are not rendered off spot, so there is
       // nothing to grab — but this makes `api.updateOrderTrigger` provably
       // unreachable from a non-spot chart rather than merely unreached.
-      if (!spotConditionalOrders) return;
+      if (!spotConditionalOrders || isBrowserInactive()) return;
+      cancelOrderDragRef.current?.();
       e.preventDefault();
       const triggerPrice = parseFloat(order.triggerPrice ?? order.price ?? '0');
       draggingRef.current = {
@@ -1200,20 +1209,27 @@ export function PriceChart({
       setDragPrice(triggerPrice);
 
       const container = containerRef.current;
+      let cancelled = false;
+      const cancel = () => {
+        cancelled = true;
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        draggingRef.current = null;
+        setDraggingOrderId(null);
+        setDragPrice(null);
+        if (cancelOrderDragRef.current === cancel) cancelOrderDragRef.current = null;
+      };
+      cancelOrderDragRef.current = cancel;
       function handleMove(ev: MouseEvent) {
-        if (!container) return;
+        if (cancelled || !container || isBrowserInactive()) return;
         const rect = container.getBoundingClientRect();
         const price = yToPrice(ev.clientY - rect.top);
         if (price !== null) setDragPrice(price);
       }
       async function handleUp(ev: MouseEvent) {
-        window.removeEventListener('mousemove', handleMove);
-        window.removeEventListener('mouseup', handleUp);
-        const drag = draggingRef.current;
-        draggingRef.current = null;
-        setDraggingOrderId(null);
-        setDragPrice(null);
-        if (!drag || !container) return;
+        const drag = cancelled ? null : draggingRef.current;
+        cancel();
+        if (!drag || !container || isBrowserInactive()) return;
         const rect = container.getBoundingClientRect();
         const newTriggerPrice = yToPrice(ev.clientY - rect.top);
         if (newTriggerPrice === null) return;

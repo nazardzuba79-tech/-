@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 import { readDisplayJson, displayRefreshDelay, SLOW_DISPLAY_REFRESH_MS } from '../lib/displaySnapshotCache';
 import { SampledDataNote } from './SampledDataNote';
 import { useEffect, useRef, useState } from 'react';
@@ -70,9 +71,9 @@ export function CfdChart({symbol}:{symbol:string}){
     let cancelled=false,controller:AbortController|null=null,timer:ReturnType<typeof setTimeout>|null=null;
     const key=`${symbol}:${interval}`;
     if(renderedKey.current!==key){seriesRef.current?.setData([]);volumeRef.current?.setData([]);setAsOf(null);setStatus('loading');}
-    const schedule=(delay:number)=>{if(timer)clearTimeout(timer);timer=null;if(!cancelled&&!document.hidden)timer=setTimeout(()=>void load(),delay);};
+    const schedule=(delay:number)=>{if(timer)clearTimeout(timer);timer=null;if(!cancelled&&!isBrowserInactive())timer=setTimeout(()=>void load(),delay);};
     async function load(){
-      if(cancelled||controller||document.hidden)return;
+      if(cancelled||controller||isBrowserInactive())return;
       const request=new AbortController();controller=request;let delay=SLOW_DISPLAY_REFRESH_MS;
       try{
         const snapshot=await loadCandles(symbol,interval,request.signal);
@@ -84,11 +85,11 @@ export function CfdChart({symbol}:{symbol:string}){
         if(renderedKey.current!==key)chartRef.current?.timeScale().fitContent();
         renderedKey.current=key;setAsOf(snapshot.asOf);setStatus('ready');
       }catch{if(!cancelled&&!request.signal.aborted)setStatus('error');delay=60_000;}
-      finally{if(controller===request)controller=null;schedule(request.signal.aborted&&!cancelled&&!document.hidden?0:delay);}
+      finally{if(controller===request)controller=null;schedule(request.signal.aborted&&!cancelled&&!isBrowserInactive()?0:delay);}
     }
-    const visible=()=>{if(document.hidden){if(timer)clearTimeout(timer);timer=null;controller?.abort();}else schedule(0);};
-    document.addEventListener('visibilitychange',visible);void load();
-    return()=>{cancelled=true;controller?.abort();if(timer)clearTimeout(timer);document.removeEventListener('visibilitychange',visible);};
+    const visible=()=>{if(isBrowserInactive()){if(timer)clearTimeout(timer);timer=null;controller?.abort();}else schedule(0);};
+    addBrowserActivityListener(visible);void load();
+    return()=>{cancelled=true;controller?.abort();if(timer)clearTimeout(timer);removeBrowserActivityListener(visible);};
   },[symbol,interval]);
 
   return <div className="cfd-chart cfd-owned-chart" data-chart-status={status}>

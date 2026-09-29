@@ -2,6 +2,7 @@ import {readFileSync} from 'fs';
 import {resolve} from 'path';
 import {createRequire} from 'module';
 import ts from 'typescript';
+import * as browserActivity from '../browserActivity';
 // The real grace, not a number retyped here: the banner reads it from the
 // shared freshness rules and the two must not drift apart.
 import * as freshness from '../bookFreshness';
@@ -10,13 +11,13 @@ const {JSDOM}=req('jsdom'),React=req('react'),{act}=React;
 let dom:any,root:any,host:HTMLElement,Banner:any,update:any;
 const release=jest.fn(),subscribe=jest.fn((cb:any)=>{update=cb;cb('disconnected');return release;});
 beforeEach(()=>{
- jest.useFakeTimers();dom=new JSDOM('<div id="root"></div>');
+ jest.useFakeTimers();dom=new JSDOM('<div id="root"></div>',{pretendToBeVisual:true});
  Object.assign(globalThis,{window:dom.window,document:dom.window.document,IS_REACT_ACT_ENVIRONMENT:true});
  // Route DOM timers through Jest so recovery and grace periods are deterministic.
  dom.window.setTimeout=setTimeout;dom.window.clearTimeout=clearTimeout;
  host=document.getElementById('root')!;root=req('react-dom/client').createRoot(host);subscribe.mockClear();release.mockClear();
  const output:any={};const code=ts.transpileModule(readFileSync(resolve(frontend,'src/components/ConnectionBanner.tsx'),'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS}}).outputText;
- new Function('exports','require',code)(output,(name:string)=>name.endsWith('/i18n')?{useLanguage:()=>({t:(k:string)=>k})}:name.endsWith('/krakenSocket')?{krakenSocket:{getStatus:()=> 'disconnected',subscribeStatus:subscribe}}:name.endsWith('/bookFreshness')?freshness:req(name));Banner=output.ConnectionBanner;
+ new Function('exports','require',code)(output,(name:string)=>name.endsWith('/browserActivity')?browserActivity:name.endsWith('/i18n')?{useLanguage:()=>({t:(k:string)=>k})}:name.endsWith('/krakenSocket')?{krakenSocket:{getStatus:()=> 'disconnected',subscribeStatus:subscribe}}:name.endsWith('/bookFreshness')?freshness:req(name));Banner=output.ConnectionBanner;
 });
 afterEach(async()=>{await act(async()=>root.unmount());dom.window.close();jest.useRealTimers();});
 async function render(props:any={}){await act(async()=>root.render(React.createElement(Banner,props)));}
@@ -43,8 +44,14 @@ test('coming back to the tab takes a banner down instead of raising one',async()
  // the BROWSER suspended. Presenting that on return as a live fault is the
  // false alarm this change exists to remove.
  await render();await advance(freshness.RECONNECT_GRACE_MS);expect(host.textContent).toBe('connection.lost');
- // jsdom starts a document as hidden, so becoming visible has to be stated
- // before the event — which is exactly what a real return does.
+ // A real hidden transition clears the stale disconnect warning and its timer.
+ await act(async()=>{
+  Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
+  document.dispatchEvent(new dom.window.Event('visibilitychange'));
+ });
+ expect(host.textContent).toBe('');expect(jest.getTimerCount()).toBe(0);
+ await advance(freshness.RECONNECT_GRACE_MS*2);expect(host.textContent).toBe('');
+ // Becoming visible restarts the ordinary reconnect grace.
  await act(async()=>{
   Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});
   Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>'visible'});

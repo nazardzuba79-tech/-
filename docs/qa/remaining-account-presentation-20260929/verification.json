@@ -1,0 +1,120 @@
+{
+  "baseCommit": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "verifiedAtUtc": "2026-09-29T16:38:51Z",
+  "environment": "Isolated worktree; local Jest/React/SSR/jsdom and explicit in-memory transports only.",
+  "runtimeChange": {
+    "file": "frontend/src/pages/wallet-v3/WalletOverview.tsx",
+    "reason": "Reconstruct the BTC mark using the same economic walletEquityUsd the hook used, not enabled-collateral margin totalEquityUsd.",
+    "unchanged": "All USD totals, server balance/price sources, eligibility, financial actions, timers and network paths."
+  },
+  "owned": {
+    "success": true,
+    "passedSuites": 7,
+    "failedSuites": 0,
+    "passedTests": 149,
+    "failedTests": 0,
+    "pendingTests": 0,
+    "durationSeconds": 20.741,
+    "suites": [
+      {
+        "file": "frontend/src/lib/__tests__/walletOverview.test.ts",
+        "status": "passed",
+        "tests": 49
+      },
+      {
+        "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+        "status": "passed",
+        "tests": 41
+      },
+      {
+        "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "status": "passed",
+        "tests": 18
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+        "status": "passed",
+        "tests": 11
+      },
+      {
+        "file": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+        "status": "passed",
+        "tests": 7
+      },
+      {
+        "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "status": "passed",
+        "tests": 10
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+        "status": "passed",
+        "tests": 13
+      }
+    ]
+  },
+  "adjacent": {
+    "success": true,
+    "passedSuites": 4,
+    "failedSuites": 0,
+    "passedTests": 71,
+    "failedTests": 0,
+    "pendingTests": 0,
+    "durationSeconds": 12.16,
+    "suites": [
+      {
+        "file": "frontend/src/lib/__tests__/walletUnifiedAccount.test.ts",
+        "status": "passed",
+        "tests": 24
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+        "status": "passed",
+        "tests": 19
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyPerformancePeriods.test.ts",
+        "status": "passed",
+        "tests": 7
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts",
+        "status": "passed",
+        "tests": 21
+      }
+    ]
+  },
+  "beforeDiscrimination": {
+    "test": "lists each account with the server’s own figure and sums them once, in the headline",
+    "runtime": "Unmodified base-commit WalletOverview.tsx with the strengthened candidate test",
+    "passedTests": 0,
+    "failedTests": 1,
+    "economicWalletUsd": 1000250.5,
+    "enabledCollateralMarginUsd": 800250.5,
+    "realFundingUsd": 230701,
+    "btcMarkUsd": 100000,
+    "expectedTotalBtc": 12.309515,
+    "actualOldTotalBtc": 15.38593045,
+    "expectedUnifiedBtc": 10.002505,
+    "actualOldUnifiedBtc": 12.50234849,
+    "expectedFundingBtc": 2.30701,
+    "actualOldFundingBtc": 2.88358196,
+    "runtimeRestoredBeforeFinalChecks": true
+  },
+  "sourceSha256": {
+    "frontend/src/pages/wallet-v3/WalletOverview.tsx": "a6a1cdfa4b48776c452cc2c7e85b5b187b1ebaf05f8bc294217e6246ed478ea7",
+    "frontend/test-utils/copyPresentation.ts": "d74607f0a46a75d1cee6fb7fc8cae64f1f562d797df960395b79c512c63b7579",
+    "frontend/src/lib/__tests__/walletUxRefinement.test.ts": "ec470d651bfcfd9426c5879240f98ecd4ba82c30da2b5815170cf1a65d1284f9",
+    "frontend/src/lib/__tests__/walletOverview.test.ts": "5b9d9661d7f5c291afabb0d96fb810f69c11c64b36c031803acffa061e0f558b",
+    "frontend/src/lib/__tests__/copyFirstLoad.test.ts": "969e8128c07bb364f1e2df9fb3d2edb9805861a055895170c33fd7614852d1c1",
+    "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts": "9bab0a658a5203dd4d652373ce1dfa576793105a750e9d8760d7e516f0575ae6",
+    "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts": "a64f3ddacda67f8d3d9008dd12edd8c245817730d706e12585dcdeb93917b8fb",
+    "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts": "3535b94721cc07b176d2efe367697d939aa1e25c7609db271a372d9a0f237f50",
+    "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts": "853cfc13aa8c2f64c8f455a2f7983dd8db461fcf7cefe6c62a1c45e0452e8c3f"
+  },
+  "limits": [
+    "No full frontend suite rerun by this subtask; root owns the integrated gate.",
+    "No hosted browser/production/API/DB writes and no merge or deploy by this subtask.",
+    "The browserActivity module is not in the base; copyFirstLoad conditionally resolves the existing Jest module when the integrated runtime imports it."
+  ]
+}

@@ -10,9 +10,9 @@ import { resolve, join } from 'path';
  * without fixing that would have moved the problem rather than solved it,
  * so these are the assertions that make removing it safe.
  *
- * Structural, deliberately: "the frontend never calls Bybit directly" and
- * "no per-row fetch exists" are ABSENCE claims, and a rendering test
- * cannot prove the absence of a code path.
+ * Structural, deliberately: only approved public-data adapters may call a
+ * provider, and no per-row fetch exists. A rendering test alone cannot
+ * prove the absence of another network code path.
  */
 
 const frontend = resolve(__dirname, '../../..');
@@ -39,26 +39,36 @@ function sources(dir: string, out: string[] = []): string[] {
 const allSources = sources('src');
 const pairList = code(read('src/components/FuturesPairList.tsx'));
 
-// ── 26. The browser never talks to a venue ──────────────────────────
+// Approved direct public-data adapters coexist with the VOLTEX catalogue.
+// A new provider host in a UI or an account module is still a regression.
 
-describe('the frontend never calls a venue directly', () => {
+describe('direct venue reads stay in the approved public-data adapters', () => {
   it('found sources to scan', () => {
     expect(allSources.length).toBeGreaterThan(50);
   });
 
-  it('contains no direct upstream market API host', () => {
-    // Everything goes through the VOLTEX backend, so the browser cannot
-    // leak a user's IP to a venue, cannot be geo-blocked independently of
-    // the server, and cannot bypass the shared cache.
+  it('contains no upstream market API host outside its exact public adapter allowlist', () => {
+    const allowed: Record<string, readonly string[]> = {
+      'src/lib/directFuturesReference.ts': ['api.bybit.com', 'api.bytick.com'],
+      'src/lib/futuresCandles.ts': ['api.bybit.com', 'api.bytick.com'],
+      'src/lib/spotPublicMarket.ts': ['api.kraken.com'],
+    };
     const offenders: string[] = [];
+    const found = new Map<string, Set<string>>();
     for (const file of allSources) {
       for (const [n, line] of code(read(file)).split('\n').entries()) {
-        if (/api\.bybit\.com|api\.binance\.com|fapi\.binance\.com|www\.okx\.com|api\.kraken\.com|api\.coingecko\.com/i.test(line)) {
-          offenders.push(`${file}:${n + 1}`);
+        for (const match of line.matchAll(/api\.bybit\.com|api\.bytick\.com|api\.binance\.com|fapi\.binance\.com|www\.okx\.com|api\.kraken\.com|api\.coingecko\.com/gi)) {
+          if (!allowed[file]?.includes(match[0])) offenders.push(`${file}:${n + 1}: ${match[0]}`);
+          if (!found.has(file)) found.set(file, new Set());
+          found.get(file)!.add(match[0]);
         }
       }
     }
     expect(offenders).toEqual([]);
+    expect(Object.fromEntries([...found].map(([file, hosts]) => [file, [...hosts].sort()]))).toEqual(allowed);
+    for (const file of Object.keys(allowed)) {
+      expect(code(read(file))).not.toMatch(/Authorization|credentials:\s*['"]include['"]|getToken\(/);
+    }
   });
 
   it('reads the market universe from the VOLTEX API, if at all', () => {
@@ -92,14 +102,15 @@ describe('the futures market list scales', () => {
     // mount effect, because a cold /futures fetched that static endpoint
     // three times over. See lib/futuresConfigStore.
     expect(page).toContain('useFuturesConfig()');
-    expect(page).toContain('discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe)');
+    expect(page).toContain('const executable = futuresConfig?.symbols ?? CORE_SYMBOLS');
+    expect(page).toContain('discoverFuturesSymbols(executable, universe)');
     expect(page).toContain('api.getFuturesUniverse()');
     // Catalogue discovery is not price freshness: five minutes plus an
     // immediate visibility refresh keeps listings current without burning
     // Render bandwidth in background tabs.
-    expect(page).toContain('window.setInterval(refresh, 5 * 60_000)');
-    expect(page).toContain('if (document.hidden) return');
-    expect(page).toContain("document.addEventListener('visibilitychange', visible)");
+    expect(page).toContain('const reader = createVisibleRead(async () => {');
+    expect(page).toContain('}, 5 * 60_000, true)');
+    expect(page).toContain('reader.stop()');
     // The backend listing still governs what the REAL engine will execute.
     // The simulation engine lists every contract the terminal discovers, so
     // it is the one account that does not read this whitelist — which is a

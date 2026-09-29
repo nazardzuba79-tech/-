@@ -160,7 +160,7 @@ describe('the listing opens in the ordinary Spot terminal and cannot trade', () 
     expect(page).toContain('<TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />');
     expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />');
     expect(page).not.toMatch(/TestMarketTickerBar|TestMarketBook|TestMarketOrderPanel/);
-    expect(page).toContain("marketType !== 'spot' || document.hidden) return;");
+    expect(page).toContain("marketType !== 'spot' || isBrowserInactive()) return;");
     expect(page).toContain("const bookLive = !testPair || testMarket.asset?.state.phase === 'live';");
     // A deep link to an unresolved pair also waits (managed listings never read venue depth).
     expect(page).toContain("if (marketType !== 'spot' || !bookLive || pairResolving) return;");

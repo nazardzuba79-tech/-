@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -60,7 +61,7 @@ function renderSpotForm(pair: string, lang: (typeof LOCALES)[number] = 'ru') {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
   }).outputText;
   const output: Record<string, any> = {};
-  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name] ?? req(name));
+  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name] ?? (name.endsWith('/browserActivity') ? browserActivity : req(name)));
   return renderToStaticMarkup(React.createElement(output.OrderForm, { pair, onPlaced: () => undefined }));
 }
 

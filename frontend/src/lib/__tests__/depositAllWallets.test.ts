@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -31,7 +32,7 @@ function evaluate(file: string, imports: Record<string, unknown> = {}) {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   } }).outputText;
   const output: Record<string, any> = {};
-  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name]
+  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('/browserActivity') ? browserActivity : name.endsWith('.css') ? {} : imports[name]
     ?? (name.endsWith('/depositCatalogue') ? { MANUAL_DEPOSIT_CATALOGUE: false } : req(name)));
   return output;
 }
@@ -229,7 +230,7 @@ describe('what this change deliberately leaves alone', () => {
     expect(read('frontend/src/components/DepositModal.tsx')).toContain('useDepositWallets');
     // The deposit config is read through exactly one entry, and downloaded
     // in exactly one place behind it.
-    expect(hook.match(/loadDepositConfig\(\)\.then/g)?.length).toBe(1);
+    expect(hook.match(/await loadDepositConfig\(\)/g)?.length).toBe(1);
     expect(hook.match(/await getDepositConfig\(\)/g)?.length).toBe(1);
   });
 

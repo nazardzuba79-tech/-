@@ -45,11 +45,11 @@ const fmt = evaluate(wallet + 'format.ts', { '../../lib/i18n': translations });
 const ui = evaluate(wallet + 'ui.tsx', { '../../lib/i18n': { useLanguage: () => language() } });
 
 const rows = [
-  { symbol: 'BTC', name: 'Bitcoin', total: 271, available: 268.5, locked: 2.5, priceUsd: 80450.25, changePercent24h: 1.24, valueUsd: 21802017.75, spendable: true, priced: true },
-  { symbol: 'USDT', name: 'Tether', total: 32726245, available: 32726245, locked: 0, priceUsd: 1, changePercent24h: 0, valueUsd: 32726245, spendable: true, priced: true },
-  { symbol: 'XRP', name: 'XRP', total: 1200000, available: 1200000, locked: 0, priceUsd: 2.85, changePercent24h: -2.13, valueUsd: 3420000, spendable: true, priced: true },
-  { symbol: 'ETH', name: 'Ethereum', total: .00412, available: .00412, locked: 0, priceUsd: 4321.09, changePercent24h: null, valueUsd: 17.8028908, spendable: true, priced: true },
-  { symbol: 'SOL', name: 'Solana', total: 0, available: 0, locked: 0, priceUsd: 167.42, changePercent24h: 3.45, valueUsd: 0, spendable: true, priced: true },
+  { walletBalance: 271, collateralEnabled: true, collateralToggleable: false, symbol: 'BTC', name: 'Bitcoin', total: 271, available: 268.5, locked: 2.5, priceUsd: 80450.25, changePercent24h: 1.24, valueUsd: 21802017.75, spendable: true, priced: true },
+  { walletBalance: 32726245, collateralEnabled: true, collateralToggleable: false, symbol: 'USDT', name: 'Tether', total: 32726245, available: 32726245, locked: 0, priceUsd: 1, changePercent24h: 0, valueUsd: 32726245, spendable: true, priced: true },
+  { walletBalance: 1200000, collateralEnabled: true, collateralToggleable: false, symbol: 'XRP', name: 'XRP', total: 1200000, available: 1200000, locked: 0, priceUsd: 2.85, changePercent24h: -2.13, valueUsd: 3420000, spendable: true, priced: true },
+  { walletBalance: .00412, collateralEnabled: true, collateralToggleable: false, symbol: 'ETH', name: 'Ethereum', total: .00412, available: .00412, locked: 0, priceUsd: 4321.09, changePercent24h: null, valueUsd: 17.8028908, spendable: true, priced: true },
+  { walletBalance: 0, collateralEnabled: false, collateralToggleable: false, symbol: 'SOL', name: 'Solana', total: 0, available: 0, locked: 0, priceUsd: 167.42, changePercent24h: 3.45, valueUsd: 0, spendable: true, priced: true },
 ];
 const normalize = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ');
 function nodes(node: any, predicate: (value: any) => boolean): any[] {
@@ -76,16 +76,19 @@ function ledgerFixture(options: Record<string, any> = {}, lang = 'ru') {
     useRef(initial: any) { const slot = refCursor++; return refs[slot] ?? (refs[slot] = { current: initial }); },
     useEffect: (callback: () => any) => { effects.push(callback); },
   };
+  const toast = { error: jest.fn(), success: jest.fn() };
   const { AssetLedger } = evaluate(wallet + 'AssetLedger.tsx', {
     react: hooks, 'react-dom': { createPortal: (children: any) => children },
     'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     '../../components/CryptoIcon': { CryptoIcon: ({ symbol }: any) => React.createElement('span', { 'data-icon': symbol }) },
     '../../lib/i18n': { useLanguage: () => language(lang) }, './format': fmt, './ui': ui,
+    '../../lib/toast': { useToast: () => toast },
+    '../../lib/customerError': evaluate('frontend/src/lib/customerError.ts'),
   });
   const callbacks = { onDeposit: jest.fn(), onTransfer: jest.fn(), onWithdraw: jest.fn() };
   const props = { rows, hidden: false, unavailable: false, loading: false, ...callbacks, ...options };
   const render = () => { stateCursor = 0; refCursor = 0; effects.length = 0; return AssetLedger(props); };
-  return { render, props, callbacks, refs, effects,
+  return { render, props, callbacks, refs, effects, toast,
     html: () => normalize(renderToStaticMarkup(render())),
     tableRows: () => nodes(nodes(render(), n => n.type === 'tbody')[0], n => n.type === 'tr'),
   };
@@ -106,15 +109,17 @@ test('desktop ledger has exactly the six approved columns and original quantity/
   expect(html).toContain('$32 726 245,00');
 });
 
-test('the collateral column states the server-decided fact and is not a control', () => {
-  // On the Cross account a PRICED holding backs the margin; the switch only
-  // SHOWS that, and says it cannot be changed here. On a plain ledger there
-  // is no collateral and the cell is an unknown, never a zero or an "off".
-  const cross = ledgerFixture({ collateral: true, rows: [rows[0], { ...rows[1], priceUsd: null, valueUsd: null, priced: false }] });
+test('a locked collateral preference follows the server, including priced but disabled holdings', () => {
+  // Eligibility and the saved preference are distinct from price availability.
+  // Read the server's preference, and refuse changes without its permission.
+  const onCollateralChange = jest.fn();
+  const cross = ledgerFixture({ collateral: true, onCollateralChange, rows: [rows[0], { ...rows[1], collateralEnabled: false }] });
   const switches = nodes(cross.render(), node => node.props?.role === 'switch');
   expect(switches).toHaveLength(2);
-  expect(switches.map(node => node.props['aria-checked'])).toEqual([true, false]);
-  expect(switches.every(node => node.props['aria-disabled'] === 'true' && !node.props.onClick)).toBe(true);
+  expect(switches.map(node => node.props['aria-checked'])).toEqual([false, true]);
+  expect(switches.every(node => node.props['aria-disabled'] === true && node.props.disabled === true)).toBe(true);
+  switches.forEach(node => node.props.onClick());
+  expect(onCollateralChange).not.toHaveBeenCalled();
   const spot = ledgerFixture({ collateral: false });
   expect(nodes(spot.render(), node => node.props?.role === 'switch')).toHaveLength(0);
   expect(normalize(text(nodes(spot.tableRows()[0], node => node.type === 'td')[4]))).toBe(fmt.EM_DASH);
@@ -618,88 +623,122 @@ function restoreApprovedHistoryTypography(source: string): string {
   return source;
 }
 
-// Exact source hashes from verified main35f7dae. Only CRLF and the narrowly
-// enumerated history typography reversal above are permitted.
+// Keep exact guards for the unchanged financial formatting/modal boundaries.
+// The five old whole-file pins superseded by approved account-read, catalogue,
+// managed-listing and auth changes now have explicit behavior checks below.
 test.each([
-  // Re-taken for the Unified Trading Account. What changed and why the
-  // guard still has teeth: the hook now ALSO reads the authoritative
-  // `/native/wallet` account (once per load, plus on refresh and on the tab
-  // regaining focus — never on the 8s balance poll), and exposes it as
-  // `account`. The ordinary-ledger row derivation, the price join, the poll
-  // intervals and the keep-last-good error handling are unchanged. What was
-  // REMOVED is the branch that rendered a hardcoded holdings profile; there
-  // is no such list any more, on the server or here. Re-taken again for the
-  // reference layout: the view model gained `collateralUsd`, both margin
-  // ratios (ANSWERED BY THE SERVER, never divided here) and a per-row
-  // `walletBalance`, all pass-throughs. No format, rounding, currency or
-  // masking rule in this file changed.
-  [wallet + 'useWalletData.ts', '5da69390d6944e665b8d562654398b843acc0793f82dac375212c3feee907dba'],
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
-  [wallet + 'DepositModal.tsx', '1db97b349fe86b39fd81c8a35129ebfc319d47b866b0572963483ef76c8d61e4'],
-  // Re-taken for issue #144 (+3/-2 in each of WithdrawModal and
-  // TransferModal): the single line that displayed a failure now calls
-  // `customerErrorText` instead of rendering `ApiError.message`, and the now
-  // unused `ApiError` import is gone. The refusal itself is NOT softened —
-  // "Insufficient BTC balance" still reaches the customer as "Недостаточно
-  // BTC на балансе", in their own language. No amount, asset, network,
-  // address, validation rule, submit path, success condition or balance
-  // figure in either file changed; the success branch is untouched, so a
-  // withdrawal or transfer is still only reported done on the server's word.
   [wallet + 'WithdrawModal.tsx', '15873a49ea88eaefc7025d70b7eabb676b994d6511687327ef3a6196c7ec302b'],
-  // Re-taken for the Futures account store (+4/-0, purely additive): one
-  // import and one `refreshFuturesAccount(['balances'])` after a SUCCESSFUL
-  // transfer, so the shared futures account state does not keep serving a
-  // pre-transfer balance to the terminal for up to one poll interval. No
-  // financial figure, validation rule, format, amount, direction, error
-  // path or modal behaviour in this file changed — the call sits after
-  // `load()` on the success path only. The other two hashes in this suite
-  // (DepositModal.tsx, api.ts) are PRE-EXISTING failures on main cbe066e
-  // and are deliberately left untouched.
-  // Re-taken for the same one-line #144 change; see WithdrawModal above.
   [wallet + 'TransferModal.tsx', '27eb01d9c3404b3134e9fbfe7622b4f6c2e69ffbd40d3e6824f919c8c7f856b3'],
-  // ui.tsx re-pinned for ONE deliberate change to `Select`: its Escape
-  // handler now listens in the capture phase and stops propagation, so
-  // Escape closes the open dropdown instead of the dialog around it. The
-  // surrounding Modal also listens for Escape on `document` and registered
-  // first, so the whole deposit dialog used to shut when a user only wanted
-  // out of a list. No option, value, label, disabled rule, focus order or
-  // ARIA role changed, and no other export in this file was touched.
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
-  // Owner-approved deposit minimum policy: BELOW_MINIMUM is an amber manual
-  // processing state, not rejected. Only its union, style and mapping changed;
-  // quantity/format/filter/financial meaning remain pinned by this fingerprint.
   [wallet + 'TransactionHistory.tsx', 'b9b0b0c274bef595780cf7b748685b6486a72765af6af575a170f307a5b999b3'],
-  ['frontend/src/lib/api.ts', '364345bc08c0084e09387aaad375b185ca0c854d88ffe782c396b59617705d19'],
-  // Re-taken for the same change, on the server side: the presentation
-  // profile and its 80/20 display split are gone, so every account is now
-  // served its own ledger and nothing else. `valuationComplete` and
-  // `unpricedAssets` are new and additive — they REPORT the pre-existing
-  // behaviour of skipping an unpriced holding instead of summing it as 0.
-  // Pricing, the BigNumber arithmetic, the flow-adjusted performance series
-  // and the "never write to the ledger" rule are untouched.
-  // Re-taken for the manual-adjustment flow fix. An admin credit is a FLOW,
-  // not performance: leaving it out published a $6k→$31m top-up as +450 864 %
-  // for the week. `realSeries` now also reads the two audited adjustment
-  // actions and removes them like any deposit, and picks the flows of the
-  // ledger the recorded total actually measures — the simulation one for an
-  // account that has a native ledger, the real one otherwise — because
-  // subtracting a movement the total never saw would invent a loss. The
-  // pricing, the BigNumber arithmetic, the snapshot read and the "never
-  // write to the ledger" rule are untouched.
-  // Re-taken again for the flow-TIMING correction. A flow is now assigned
-  // to the first snapshot AT OR AFTER it, not to its UTC calendar day: the
-  // once-daily snapshot may have been recorded BEFORE a later same-day
-  // top-up, and subtracting the credit from an observation that never
-  // contained it flattens the wrong day and lets the next day's jump read
-  // as profit. A flow newer than the last snapshot is left for the
-  // observation that will contain it, so it is removed exactly once. The
-  // pricing, the BigNumber arithmetic, the ledger choice and the "never
-  // write to the ledger" rule are still untouched.
-  ['src/services/WalletPortfolioService.ts', 'fbafaf83e96f2a7fb2f40e9ec2f4b8b85191c22e2b10db1bf7fc4068462a4388'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
   ['src/api/routes/portfolio.ts', 'e943dce097247b01f5d001770c816faa5be4b024755724b8da2b90822f05f016'],
-  ['src/api/middleware/auth.ts', 'a2f258c6b2a3993670ec8378f82e36fb4132ab803036dd1ecd4bd1751ac3e13c'],
-])('preserves existing financial/data/format/modal source %s exactly', (file, hash) => {
+])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {
   const source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
   expect(createHash('sha256').update(source).digest('hex')).toBe(hash);
+});
+
+test('the wallet hook passes through economic and collateral equity separately and keeps unknown prices unknown', () => {
+  const native = {
+    initialized: true, assetsValue: '1000000', assetsEquityValue: '1000250.5', assetsComplete: false, unpricedAssets: ['BTC'],
+    account: { equity: '800250.5', available: '700000', unrealizedPnl: '250.5', initialMargin: '90', maintenanceMargin: '20',
+      orderReserve: '7', initialMarginRatio: '0.001', maintenanceRatio: '0.0002' },
+    collateral: { settleAsset: 'USDT', lines: [{ asset: 'BTC', price: '100000' }] },
+    rows: [{ asset: 'BTC', total: '2.25', walletQuantity: '2', available: '1.5', inUse: '0.75', price: null, value: null,
+      status: 'UNPRICED', collateralEnabled: false, collateralToggleable: true }],
+  };
+  const before = JSON.stringify(native);
+  const reads: any[] = [];
+  const { useWalletData } = evaluate(wallet + 'useWalletData.ts', {
+    react: { ...React, useState: (initial: any) => [initial === undefined ? native : initial, jest.fn()],
+      useMemo: (factory: () => unknown) => factory(), useCallback: (callback: unknown) => callback,
+      useRef: (initial: unknown) => ({ current: initial }), useEffect: () => {} },
+    '../../lib/api': { api: {}, getToken: () => 'fixture-session' },
+    '../../lib/browserActivity': require('../browserActivity'),
+    '../../lib/useVisibleAccountRead': { useVisibleAccountRead: (options: unknown) => { reads.push(options); return jest.fn(); } },
+    '../../lib/visibleRead': { createVisibleRead: jest.fn() },
+    '../../lib/nativeDemoApi': { nativeDemoApi: {} },
+  });
+  const view = useWalletData();
+  expect(view.account).toMatchObject({ walletEquityUsd: 1000250.5, totalEquityUsd: 800250.5,
+    collateralUsd: 1000000, spotUsd: null, futuresUsd: null, initialMarginRatio: .001, maintenanceMarginRatio: .0002 });
+  expect(view.btcEquivalent).toBe(10.002505);
+  expect(view.rows[0]).toMatchObject({ total: 2.25, walletBalance: 2, available: 1.5, locked: .75,
+    valueUsd: null, priceUsd: null, priced: false, collateralEnabled: false, collateralToggleable: true });
+  expect(reads).toHaveLength(3);
+  expect(reads.every(read => read.staleMs === 120000 && typeof read.reset === 'function')).toBe(true);
+  expect(JSON.stringify(native)).toBe(before);
+});
+
+test('the current deposit entry point forwards explicit asset selection and never mounts a closed catalogue', () => {
+  const Dialog = () => null;
+  const onClose = jest.fn();
+  const { DepositModal } = evaluate(wallet + 'DepositModal.tsx', {
+    '../../lib/useDepositOptions': {}, '../../lib/i18n': { useLanguage: () => language() }, './ui': ui, './format': fmt,
+    '../../lib/depositCatalogue': { MANUAL_DEPOSIT_CATALOGUE: true },
+    '../../components/DepositCatalogueDialog': { DepositCatalogueDialog: Dialog },
+  });
+  expect(DepositModal({ open: false, onClose, initialAsset: 'BTC' })).toBeNull();
+  const open = DepositModal({ open: true, onClose, initialAsset: 'BTC' });
+  expect(open.type).toBe(Dialog);
+  expect(open.props).toEqual({ onClose, initialAsset: 'BTC' });
+  expect(onClose).not.toHaveBeenCalled();
+});
+
+test('wallet API reads keep their shared authenticated transport and snapshots carry only the supplied amount', () => {
+  const api = read('frontend/src/lib/api.ts');
+  const ast = ts.createSourceFile('api.ts', api, ts.ScriptTarget.Latest, true);
+  const declaration = ast.statements.filter(ts.isVariableStatement).flatMap(node => [...node.declarationList.declarations])
+    .find(node => node.name.getText(ast) === 'api')!;
+  expect(ts.isObjectLiteralExpression(declaration.initializer!)).toBe(true);
+  const methods = (declaration.initializer as ts.ObjectLiteralExpression).properties;
+  const method = (name: string) => methods.find(node => node.name?.getText(ast) === name)!.getText(ast);
+  expect(method('getWalletOverview')).toMatch(/request<[\s\S]*?>\('\/wallet\/overview'\)/);
+  expect(method('getWalletPerformance')).toMatch(/request<[\s\S]*?>\('\/wallet\/performance'\)/);
+  expect(api).toContain('Authorization: `Bearer ${token}`');
+  expect(method('recordPortfolioSnapshot')).toMatch(/JSON\.stringify\(\{ totalValueUsd \}\)/);
+  expect(method('recordPortfolioSnapshot')).not.toMatch(/parseFloat|Number\(|Math\.|\*|\/\//);
+});
+
+test('the portfolio service values only the requested account balances and leaves unpriced holdings unknown', async () => {
+  const { WalletPortfolioService } = evaluate('src/services/WalletPortfolioService.ts', {
+    './PortfolioPerformanceEngine': evaluate('src/services/PortfolioPerformanceEngine.ts'),
+  });
+  const readSpot = jest.fn(async () => [{ asset: 'USDT', available: '2.1', locked: '.2' }, { asset: 'ABC', available: '4', locked: '0' }]);
+  const readFutures = jest.fn(async () => [{ asset: 'USDT', available: '7.5', locked: '.3' }]);
+  const service = new WalletPortfolioService({ balance: { findMany: readSpot }, futuresBalance: { findMany: readFutures } }, {}, {});
+  service.pricesFor = jest.fn(async () => new Map([['USDT', 1], ['BTC', 100000], ['ABC', null]]));
+  const view = await service.overview({ id: 'fixture-owner', role: 'USER', email: 'fixture@example.test' });
+  expect(readSpot).toHaveBeenCalledWith({ where: { userId: 'fixture-owner' } });
+  expect(readFutures).toHaveBeenCalledWith({ where: { userId: 'fixture-owner' } });
+  expect(view.real).toMatchObject({ spotValueUsd: 2.3, futuresValueUsd: 7.8, totalValueUsd: 10.1 });
+  expect(view.real.spot[1]).toEqual({ asset: 'ABC', available: '4', locked: '0', priceUsd: null, valueUsd: null });
+  expect(view.valuationComplete).toBe(false);
+  expect(view.unpricedAssets).toEqual(['ABC']);
+});
+
+test('authenticated wallet access rechecks session revocation on each read and rejects a pending login', async () => {
+  const verify = jest.fn((): any => ({ sub: 'fixture-owner', sid: 'fixture-session' }));
+  const { requireAuth } = evaluate('src/api/middleware/auth.ts', { jsonwebtoken: { default: { verify } } });
+  const findUnique = jest.fn(async (): Promise<any> => ({ id: 'fixture-session', userId: 'fixture-owner', revokedAt: null, lastSeenAt: new Date() }));
+  const update = jest.fn();
+  const gate = requireAuth({ session: { findUnique, update } });
+  const response = () => { const res: any = { status: jest.fn(), json: jest.fn() }; res.status.mockReturnValue(res); return res; };
+  const next = jest.fn();
+  const request = () => ({ headers: { authorization: 'Bearer fixture-token' } });
+  await gate(request(), response(), next);
+  expect(next).toHaveBeenCalledTimes(1);
+  findUnique.mockResolvedValueOnce({ id: 'fixture-session', userId: 'fixture-owner', revokedAt: new Date(), lastSeenAt: new Date() });
+  const revoked = response();
+  await gate(request(), revoked, next);
+  expect(findUnique).toHaveBeenCalledTimes(2);
+  expect(revoked.status).toHaveBeenCalledWith(401);
+  expect(next).toHaveBeenCalledTimes(1);
+  verify.mockReturnValueOnce({ sub: 'fixture-owner', purpose: '2fa' });
+  const pending = response();
+  await gate(request(), pending, next);
+  expect(pending.status).toHaveBeenCalledWith(401);
+  expect(next).toHaveBeenCalledTimes(1);
+  expect(update).not.toHaveBeenCalled();
 });

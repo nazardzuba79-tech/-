@@ -1,3 +1,4 @@
+import { isBrowserInactive } from './browserActivity';
 import { useEffect, useRef } from 'react';
 import { getAdminAlertSummary, type AdminAlertSummary } from './adminAlertApi';
 import { createVisibleRead } from './visibleRead';
@@ -74,13 +75,13 @@ export function useAdminAlertSound(enabled: boolean) {
 
     async function poll() {
       const token = getToken(), started = epoch;
-      if (cancelled || !token || document.hidden) return;
+      if (cancelled || !token || isBrowserInactive()) return;
       try {
         const next = await getAdminAlertSummary();
         if (cancelled || started !== epoch || token !== getToken()) return;
         const hasNew = changed(cursor.current, next);
         cursor.current = next;
-        if (hasNew && isAdminAlertSoundEnabled()) playChime();
+        if (hasNew && !isBrowserInactive() && isAdminAlertSoundEnabled()) playChime();
       } catch (error) {
         // Transient — preserve the last successful cursor and retry later.
         throw error;

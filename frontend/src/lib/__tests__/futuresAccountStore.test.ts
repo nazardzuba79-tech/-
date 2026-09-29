@@ -654,4 +654,22 @@ describe('browser read budget and mutation freshness', () => {
     expect(getFuturesPositions).toHaveBeenCalledTimes(2);
     clearToken(); expect(futuresAccountStore._timerCount).toBe(0); off();
   });
+
+  test('lifecycle wake discards a suspended pre-sleep account response and queues one current read', async () => {
+    const old = deferred<any[]>(), current = deferred<any[]>();
+    getFuturesPositions.mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
+    const off = futuresAccountStore.subscribe(() => {}, { positions: 10_000 });
+    visibilityDocument.hidden = true;
+    visibilityDocument.dispatchEvent(new Event('visibilitychange'));
+    visibilityDocument.hidden = false;
+    visibilityDocument.dispatchEvent(new Event('voltex:browser-activity'));
+    visibilityDocument.dispatchEvent(new Event('voltex:browser-activity'));
+    expect(getFuturesPositions).toHaveBeenCalledTimes(1);
+    old.resolve(POSITIONS_A); await flush(); await flush();
+    expect(getFuturesPositions).toHaveBeenCalledTimes(2);
+    expect(futuresAccountStore.getState().positions.data).toBeNull();
+    current.resolve([]); await flush();
+    expect(futuresAccountStore.getState().positions.data).toEqual([]);
+    off();
+  });
 });

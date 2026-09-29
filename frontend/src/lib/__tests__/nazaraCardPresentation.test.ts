@@ -1,6 +1,5 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { createHash } from 'crypto';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import { createReviewSyntheticState } from '../../../../src/services/copyTrading/canonical/reviewSyntheticHistory';
@@ -11,7 +10,11 @@ import { selectDemoPerformance } from '../../pages/copy-trading-bolt/demoPerform
 import { getTraderVisual } from '../../pages/copy-trading-bolt/traderVisuals';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 import { isModeledTraderData } from '../modeledCopyData';
-import { restoreCopyButtonDepositUx } from '../../../test-utils/copyDepositUx';
+import { languageModule } from '../../../test-utils/languageStub';
+import { copyFunctions, liveMetricModule } from '../../../test-utils/copyPresentation';
+import { syntheticChartData, syntheticPerformancePoints, formatSyntheticHistoryDate, periodRatioFacts } from '../syntheticCopyTrading';
+import { demoChartData } from '../../pages/copy-trading-bolt/demoPerformance';
+import { publicSignedUsdt, publicUsdtNumber } from '../copyTradingMoney';
 
 const frontend = resolve(__dirname, '../../..');
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
@@ -30,6 +33,8 @@ const React = frontendRequire('react');
 const { renderToStaticMarkup } = frontendRequire('react-dom/server');
 const empty = () => null;
 const dependencies = {
+  ...liveMetricModule(), ...languageModule('ru'),
+  useFiguresPending: () => false,
   useFollowing: () => ({ following: new Set<string>() }),
   getTraderVisual, nazarTrader, selectSyntheticPeriod, selectDemoPerformance,
   getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU,
@@ -59,7 +64,7 @@ describe('Nazara marketplace presentation only', () => {
     expect(html).toContain(formatPercent(getRoiForPeriod(trader, period)));
     expect(html).toContain(new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 }).format(selected.winRate) + '%');
     expect(html).toContain(new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 }).format(selected.maximumDrawdown) + '%');
-    expect(html).toContain(`<b>${trader.copiers}</b>`);
+    expect(html).toContain(`<b><span class="copy-live-metric">${trader.copiers}</span></b>`);
     expect(html).toContain(formatAccountSize(trader.aum));
     expect(html).not.toMatch(/Коэффициент Шарпа|Прибыль подписчиков|Чистая прибыль/);
     expect(html).toContain('Professional Strategy');
@@ -109,27 +114,84 @@ describe('Nazara marketplace presentation only', () => {
     expect(ordinary).toContain('Прибыль подписчиков');
     expect(ordinary).not.toContain('trader-card-nazara');
     const missing = render('ALL', trader, null);
-    expect(missing).toContain('<strong>—</strong>');
+    expect(missing).toMatch(/<strong><span class="copy-live-metric" data-unavailable="true"[^>]*><span class="copy-metric-dash">—/);
+    expect(missing).not.toContain('copy-metric-skeleton');
     expect(missing).not.toContain('97,2%');
   });
 
 });
 
-// Exact function fingerprints from the approved a484789 V8 starting state.
-// These guard the particularly important non-visual scope boundaries.
-// Profile and FollowersPanel are now intentionally covered by functional SSR
-// tests in nazarProfileCorrection: lifetime stats/name/money were approved.
-test.each(Object.entries({
-  CopyButton: 'cd2ed289d64d986e9355f26557e9428ff19c98b7bf6f5246576cf861e0afa2ce',
-  MetricsPanel: '584b60a9d224f8194e0450717490a62a80c3732ec5790852e55ff3b9980a7053',
-  ProfilePerformanceChart: '68921d09f3d5a0e24c53e553c89487462f7b0b51a2c1453ce9fc1dd6d19091fe',
-  MiniPerformanceChart: 'e2ea6405405bd0ff8e3f5058eacb2a37e32a518b7fba34e6fc0029d5d51215a8',
-}))('%s remains byte-equivalent to approved V8', (name, hash) => {
-  // The only mini-chart change is admitting Ksenia's separate ledger. Strip
-  // that additive condition to compare all approved Nazar geometry verbatim.
-  const original = name === 'CopyButton' ? restoreCopyButtonDepositUx(body(name)) : body(name);
-  const renderer = original.replace(" || trader.id === 'VX-KSENIA'", '')
-  expect(createHash('sha256').update(renderer).digest('hex')).toBe(hash);
+// The old V8 byte locks predated the approved request-state, period-panel and
+// first-paint work. Keep the actual money/geometry/actions contract observable
+// instead of accepting a new whole-function hash for every authorized change.
+const renderers = copyFunctions(['numberLabel', 'signedUsd', 'unsignedPercent', 'localizedDuration', 'periodLabelKey',
+  'profileChart', 'MetricsPanel', 'ProfilePerformanceChart', 'MiniPerformanceChart'], {
+  ...dependencies, useMemo: (factory: () => unknown) => factory(),
+  syntheticChartData, syntheticPerformancePoints, formatSyntheticHistoryDate, demoChartData,
+  publicSignedUsdt, publicUsdtNumber, BarChart3: empty,
+});
+const plainText = (html: string) => html.replace(/<[^>]*>/g, '').replace(/[\u00a0\u202f]/g, ' ');
+
+test.each(['7D', '30D', '90D', 'ALL'] as const)('%s mini chart and yellow profile chart preserve canonical paths and requested period', period => {
+  const response = toResponse(createReviewSyntheticState(new Date('2026-09-05T12:00:00Z')));
+  const before = JSON.stringify(response);
+  const trader = syntheticNazaraTrader(response);
+  const data = selectSyntheticPeriod(response, period);
+  const mini = renderToStaticMarkup(React.createElement(renderers.MiniPerformanceChart, { trader, period, synthetic: response }));
+  const chart = syntheticChartData(response, period);
+  expect(mini).toContain(`class="mini-chart-line" d="${chart.linePath}"`);
+  expect(mini).toContain(`class="mini-chart-area" d="${chart.areaPath}"`);
+  expect(mini).toContain('viewBox="0 0 900 280"');
+  for (const mode of ['ROI', 'PnL'] as const) {
+    const html = renderToStaticMarkup(React.createElement(renderers.ProfilePerformanceChart, { trader, period, mode, onMode: empty, periodData: data }));
+    const points = syntheticPerformancePoints(data, mode);
+    const geometry = renderers.profileChart(points.map(point => point.value), points.map(point => point.date), mode, period === 'ALL');
+    expect(html).toContain(`class="profile-chart-line" d="${geometry.line}"`);
+    expect(html).toContain(`class="profile-chart-area" d="${geometry.area}"`);
+    expect(html).toContain('stop-color="#f7a600"');
+    expect(html).toContain('viewBox="0 0 900 270"');
+    expect(html).toContain(`aria-label="${mode}, ${period}"`);
+    expect(plainText(html)).toContain(plainText(publicSignedUsdt(data.pnl)));
+    expect(plainText(html)).toContain(plainText(formatPercent(data.roi)));
+  }
+  const html = renderToStaticMarkup(React.createElement(renderers.MetricsPanel, { metrics: data, period, facts: periodRatioFacts(data) }));
+  expect(html).toContain(`class="profile-panel profile-metrics-panel" data-period="${period}"`);
+  expect(plainText(html)).toContain('Эффективность');
+  expect(plainText(html)).toContain(plainText(publicSignedUsdt(data.pnl)));
+  expect(plainText(html)).toContain(plainText(publicSignedUsdt(data.followerPnl)));
+  expect(html.match(/data-metric=/g)).toHaveLength(16);
+  expect(JSON.stringify(response)).toBe(before);
+});
+
+test('CopyButton preserves explicit deposit gating and eligible Following without requests', () => {
+  const trader = marketplaceTraders.find(item => item.id !== nazarTrader.id)!;
+  const following = new Set<string>();
+  const toggleFollowing = jest.fn((id: string) => following.has(id) ? following.delete(id) : following.add(id));
+  const toast = { success: jest.fn() };
+  let eligible = false, dialogOpen = false;
+  const Dialog = empty;
+  const { CopyButton } = copyFunctions(['CopyButton'], {
+    useCopyEligibility: () => ({ eligible }), useFollowing: () => ({ following, toggleFollowing }),
+    useCopyMarketplace: () => ({ settled: true, nazar: {}, ksenia: {} }),
+    useState: () => [dialogOpen, (next: boolean) => { dialogOpen = next; }],
+    CopyDepositDialog: Dialog, nazarTrader, Check: empty, toast,
+  });
+  const render = () => CopyButton({ trader, compact: true });
+  const click = () => render().props.children[0].props.onClick({ stopPropagation: jest.fn() });
+  expect(render().props.children[1]).toBe(false);
+  click();
+  expect(render().props.children[1].type).toBe(Dialog);
+  expect(toggleFollowing).not.toHaveBeenCalled();
+  expect(toast.success).not.toHaveBeenCalled();
+  render().props.children[1].props.onClose();
+  eligible = true;
+  click();
+  expect([...following]).toEqual([trader.id]);
+  expect(renderToStaticMarkup(render())).toContain('Копируется');
+  click();
+  expect(following.size).toBe(0);
+  expect(toggleFollowing.mock.calls).toEqual([[trader.id], [trader.id]]);
+  expect(toast.success).toHaveBeenCalledTimes(2);
 });
 
 test('premium CSS stays card-scoped, keeps the approved eligibility border, and respects reduced motion', () => {
@@ -154,7 +216,11 @@ test('copy-card polish retains disabled/Following states and uses scoped, readab
   expect(polish).toContain('width: min(1440px, calc(100vw - 64px))');
   expect(polish).toContain('@media (max-width: 600px)');
   expect(polish).toContain('font-size: 11px; line-height: 1.5; text-transform: none; color: #bbc1cb');
-  // Exact profile styling from production 9635e53: not an updated visual target.
-  const normalized = css.replace(/\r\n/g, '\n');
-  expect(createHash('sha256').update(normalized.slice(normalized.indexOf('.copytrading-bolt-root.profile-view {'))).digest('hex')).toBe('0a00205098d3db61e20e7e729e78d79bd6c66e3ba9e09eeae60553b4b7f78f38');
+  // The profile gained approved loading and translated metric rules after
+  // this card-only polish. Preserve its scoped geometry and chart colors.
+  expect(css).toMatch(/\.copytrading-bolt-root\.profile-view\s*\{/);
+  expect(css).toContain('.profile-chart-line');
+  const baseCss = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/CopyTradingBolt.css'), 'utf8');
+  expect(baseCss).toMatch(/\.profile-chart-line\s*\{[^}]*stroke:\s*#f7a600/);
+  expect(css).toContain('.profile-metrics-grid');
 });

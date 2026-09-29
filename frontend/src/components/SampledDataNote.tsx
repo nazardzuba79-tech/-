@@ -1,15 +1,16 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 import { useEffect } from 'react';
 import '../pages/trade-terminal/SampledDisplay.css';
 
 export { sampledDisplayText } from '../lib/sampledDisplayCopy';
 
 let motionUsers = 0;
-const reflectVisibility = () => { if (typeof document !== 'undefined') document.documentElement.dataset.sampledMotion = document.hidden ? 'paused' : 'running'; };
+const reflectVisibility = () => { if (typeof document !== 'undefined') document.documentElement.dataset.sampledMotion = isBrowserInactive() ? 'paused' : 'running'; };
 export function useSampledMotion(): void {
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (motionUsers++ === 0) { reflectVisibility(); document.addEventListener('visibilitychange', reflectVisibility); }
-    return () => { if (--motionUsers === 0) { document.removeEventListener('visibilitychange', reflectVisibility); delete document.documentElement.dataset.sampledMotion; } };
+    if (motionUsers++ === 0) { reflectVisibility(); addBrowserActivityListener(reflectVisibility); }
+    return () => { if (--motionUsers === 0) { removeBrowserActivityListener(reflectVisibility); delete document.documentElement.dataset.sampledMotion; } };
   }, []);
 }
 

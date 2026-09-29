@@ -1,3 +1,4 @@
+import { browserFallbackFetch as fetch, trackBrowserRead } from './browserActivity';
 import type { Candle } from './indicators';
 import type { FuturesDepthSnapshot } from './futuresDepth';
 import { isTestMarketPair } from './testMarkets';
@@ -89,7 +90,11 @@ export function parseEdgeSpotBook(payload: any, pair: string): FuturesDepthSnaps
   return { bids, asks, asOf: Number.isFinite(asOf) && asOf > 0 ? asOf : Date.now(), source: 'rest', status: 'live' };
 }
 
-export async function readSpotPublicBook(pair: string, signal?: AbortSignal): Promise<{ pair: string } & FuturesDepthSnapshot> {
+export function readSpotPublicBook(pair: string, signal?: AbortSignal): Promise<{ pair: string } & FuturesDepthSnapshot> {
+  return trackBrowserRead(loadReadSpotPublicBook(pair, signal));
+}
+
+async function loadReadSpotPublicBook(pair: string, signal?: AbortSignal): Promise<{ pair: string } & FuturesDepthSnapshot> {
   if (!/^[A-Z0-9]{1,32}\/[A-Z0-9]{2,12}$/.test(pair)) throw new Error('Invalid spot pair');
 
   // Canonical local market only: never try an external venue or its fallback.
@@ -150,7 +155,11 @@ function parseEdgeSpotCandles(payload: any, pair: string, interval: string): Can
   return candles;
 }
 
-export async function getSpotPublicCandles(pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number): Promise<{ candles: Candle[] }> {
+export function getSpotPublicCandles(pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number): Promise<{ candles: Candle[] }> {
+  return trackBrowserRead(loadGetSpotPublicCandles(pair, interval, limit, signal, endTime));
+}
+
+async function loadGetSpotPublicCandles(pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number): Promise<{ candles: Candle[] }> {
   if (isEdgeMarketPair(pair)) {
     return fetchNrxPublic(`/market/test-assets/${pairSlug(pair)}/candles?interval=${encodeURIComponent(interval)}&limit=${Math.min(1000, limit)}`, signal);
   }
