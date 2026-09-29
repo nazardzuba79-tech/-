@@ -51,7 +51,7 @@ export function TestMarketChart({ pair, asset, loaded, clockOffsetMs }: {
 
   if (asset && !preListing) {
     return <TerminalChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools candleLoader={testMarketCandleLoader}
-      tradingView={false} priceScaleMode="logarithmic" priceFormatter={formatTestAxisPrice} />;
+      tradingView={false} priceScaleMode="normal" priceFormatter={formatTestAxisPrice} />;
   }
 
   const parts = countdownParts(Number.isFinite(left) ? left : 0);
