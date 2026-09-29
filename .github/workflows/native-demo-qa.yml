@@ -11,6 +11,7 @@ on:
       - 'scripts/qa-limit-close.cjs'
       - 'scripts/qa-pnl-card.cjs'
       - 'scripts/qa-order-panel-refinement.cjs'
+      - 'scripts/qa-futures-tiny-price.cjs'
       - 'jest.config.js'
       - '.github/workflows/native-demo-qa.yml'
 permissions:
@@ -43,7 +44,7 @@ jobs:
       - name: Positions P&L and ROI presentation tests
         run: npx jest --runInBand frontend/src/lib/__tests__/futuresUnrealizedPnl.test.ts frontend/src/lib/__tests__/futuresReferenceRow.test.ts
       - name: Compact ticket options and chart menus
-        run: npx jest --runInBand frontend/src/lib/__tests__/futuresCompactTicketOptions.test.ts frontend/src/lib/__tests__/priceChartMarketOrders.test.ts frontend/src/lib/__tests__/futuresUiPolish.test.ts
+        run: npx jest --runInBand frontend/src/lib/__tests__/decimalInput.test.ts frontend/src/lib/__tests__/futuresCompactTicketOptions.test.ts frontend/src/lib/__tests__/priceChartMarketOrders.test.ts frontend/src/lib/__tests__/futuresUiPolish.test.ts
       - name: Disposable browser tooling
         id: browser-tooling
         run: |
@@ -53,6 +54,11 @@ jobs:
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
         run: node scripts/qa-native-demo-browser.cjs
+      - name: Tiny decimal inputs and accepted native orders
+        if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/native-browser/node_modules/playwright
+        run: node scripts/qa-futures-tiny-price.cjs
       - name: Positions P&L and ROI browser matrix at 320–1920px
         if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
         env:
@@ -87,6 +93,7 @@ jobs:
           path: |
             native-tests.json
             docs/qa/native-demo/
+            docs/qa/futures-tiny-price/
             docs/qa/limit-close/
             docs/qa/pnl-card/
             docs/qa/order-panel-refinement/

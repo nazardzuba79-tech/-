@@ -42,11 +42,21 @@ const restoredEcosystemKeys = [
 ].map(key => `home.ecosystem.${key}`);
 const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search', 'noResults', 'networkHint',
   'yourAddress', 'changeAsset', 'changeNetwork', 'sendOnly', 'inNetwork', 'lossWarning', 'copyAddress',
-  'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo'].map(key => `deposit.ui.${key}`);
+  'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo',
+  // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
+  'asset', 'minimumTitle', 'minimumEquivalent', 'minimumPegged', 'minimumNote'].map(key => `deposit.ui.${key}`);
+const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('localizes each decimal refusal in all seven languages', () => {
+    for (const code of LOCALES) {
+      expect(Object.keys(dicts[code]).filter(key => key.startsWith('futures.number')).sort()).toEqual([...decimalRefusalKeys].sort());
+      for (const key of decimalRefusalKeys) expect(dicts[code][key].trim()).not.toBe('');
+    }
+    for (const key of decimalRefusalKeys) expect(new Set(LOCALES.map(code => dicts[code][key])).size).toBe(LOCALES.length);
+  });
   it('localizes every added deposit UI key, preserving asset/network placeholders', () => {
     for (const code of LOCALES) {
       expect(Object.keys(dicts[code]).filter(key => key.startsWith('deposit.ui.')).sort()).toEqual([...depositUiKeys].sort());
@@ -213,7 +223,7 @@ describe('translation integrity', () => {
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.
           'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed'];
-        return !key || (!depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
+        return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);

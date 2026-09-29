@@ -1,24 +1,35 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, Check, ChevronRight, Copy, Info, QrCode, Search, X } from 'lucide-react';
+import { Check, ChevronDown, Copy, Info, QrCode, Search, X } from 'lucide-react';
 import QRCode from 'qrcode';
-import { useLanguage } from '../lib/i18n';
+import { localeOf, useLanguage } from '../lib/i18n';
 import { useDepositSelection, useDepositWallets } from '../lib/useDepositOptions';
 import { CryptoIcon } from './CryptoIcon';
 import { depositAssetMetadata } from '../lib/depositAssetMetadata';
+import { depositMinimumView } from '../lib/depositMinimum';
+import { orderDepositDestinations } from '../lib/depositOrder';
 import './DepositCatalogueDialog.css';
 
-type Step = 'address' | 'assets' | 'networks' | 'qr';
+type Step = 'address' | 'qr';
 
 /** One address-only UI for both entrypoints. No trading/balance API is used. */
 export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () => void; initialAsset?: string }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [retry, setRetry] = useState(0);
   const { loaded, wallets, error } = useDepositWallets(true, retry);
-  const selection = useDepositSelection(wallets, initialAsset);
+  // USDT on TRC-20 first: the window opens on it unless the page asked for an asset.
+  const ordered = useMemo(() => orderDepositDestinations(wallets), [wallets]);
+  const selection = useDepositSelection(ordered, initialAsset);
   const { assets, asset, setAsset, networks, wallet, setChain } = selection;
   const [step, setStep] = useState<Step>('address');
+  // The asset list is a menu over the window: a popover under the «Актив»
+  // field on a wide screen, a bottom sheet on a phone (CSS decides).
+  const [menuOpen, setMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const assetTrigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const overlay = useRef<HTMLDivElement>(null);
+  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId(), network: useId(), minimum: useId() };
   const [copyState, setCopyState] = useState<{ field: string; ok: boolean } | null>(null);
   const copyGeneration = useRef(0);
   const panel = useRef<HTMLDivElement>(null);
@@ -28,6 +39,8 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
   const currentDestination = useRef(destinationKey);
   currentDestination.current = destinationKey;
   const metadata = depositAssetMetadata[asset];
+  const minimum = depositMinimumView(asset);
+  const amount = (value: number) => value.toLocaleString(localeOf(lang), { maximumSignificantDigits: 4, useGrouping: true });
   const network = wallet ? `${wallet.networkName}${wallet.standard && wallet.standard !== 'Native' ? ` · ${wallet.standard}` : ''}` : '';
   const shownAssets = assets.filter(symbol => `${symbol} ${depositAssetMetadata[symbol]?.name ?? ''}`.toLowerCase().includes(search.trim().toLowerCase()));
   const qr = useMemo(() => wallet?.address && step === 'qr' ? QRCode.create(wallet.address, { errorCorrectionLevel: 'M' }).modules : null, [wallet?.address, step]);
@@ -45,14 +58,31 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
     };
   }, []);
   useEffect(() => { setCopyState(null); }, [destinationKey]);
+  // Opening the menu moves focus into it: the search field with a mouse or
+  // keyboard, the chosen asset on a touch screen (no keyboard pop-up).
   useEffect(() => {
-    if (step === 'assets') panel.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
-    else panel.current?.focus({ preventScroll: true });
-  }, [step]);
+    if (!menuOpen) return;
+    const fine = typeof matchMedia !== 'function' || matchMedia('(pointer: fine)').matches;
+    const target = fine ? menu.current?.querySelector<HTMLElement>('input')
+      : menu.current?.querySelector<HTMLElement>('[aria-selected="true"]') ?? menu.current?.querySelector<HTMLElement>('input');
+    target?.focus({ preventScroll: true });
+    // A press anywhere else in the window closes it. The backdrop (phone)
+    // and the dimmed page around the window (desktop) close it on their own
+    // click instead, so that press closes the menu only, never the window.
+    const outside = (event: PointerEvent) => {
+      const node = event.target as Element;
+      if (menu.current?.contains(node) || assetTrigger.current?.contains(node) || node === overlay.current || node.classList?.contains('dc-menu-backdrop')) return;
+      setMenuOpen(false); setSearch('');
+    };
+    document.addEventListener('pointerdown', outside, true);
+    return () => document.removeEventListener('pointerdown', outside, true);
+  }, [menuOpen]);
 
   const resetCopy = () => { copyGeneration.current++; setCopyState(null); };
   const changeStep = (next: Step) => { resetCopy(); setStep(next); };
-  const chooseAsset = (symbol: string) => { resetCopy(); setAsset(symbol); setChain(''); setSearch(''); setStep('address'); };
+  const closeMenu = (refocus = true) => { setMenuOpen(false); setSearch(''); if (refocus) assetTrigger.current?.focus({ preventScroll: true }); };
+  const chooseAsset = (symbol: string) => { resetCopy(); setAsset(symbol); setChain(''); setStep('address'); closeMenu(); };
+  const chooseNetwork = (chain: string) => { resetCopy(); setChain(chain); };
   const copy = async (field: 'address' | 'memo') => {
     const value = field === 'address' ? wallet?.address : wallet?.memo;
     if (!value) return;
@@ -73,10 +103,10 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
       : <span className="dc-fallback" style={{ width: size, height: size }}>{symbol}</span>;
   };
 
-  return createPortal(<div className="dc-overlay" onClick={event => { if (event.target === event.currentTarget) closeRef.current(); }}>
+  return createPortal(<div ref={overlay} className="dc-overlay" onClick={event => { if (event.target !== event.currentTarget) return; if (menuOpen) closeMenu(false); else closeRef.current(); }}>
     <div ref={panel} className="dc-dialog" role="dialog" aria-modal="true" aria-label={t('deposit.title')} tabIndex={-1}
       onKeyDown={event => {
-        if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); if (step !== 'address') changeStep('address'); else closeRef.current(); }
+        if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); if (menuOpen) closeMenu(); else if (step !== 'address') changeStep('address'); else closeRef.current(); }
         if (event.key === 'Tab') {
           const controls = [...panel.current!.querySelectorAll<HTMLElement>('button:not(:disabled),input,a[href],[tabindex="0"]')].filter(el => el.getClientRects().length);
           const first = controls[0], last = controls[controls.length - 1];
@@ -85,43 +115,83 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
         }
       }}>
       <header className="dc-header">
-        {step !== 'address' && <button className="dc-icon-button" onClick={() => changeStep('address')} aria-label={t('deposit.ui.back')}><ArrowLeft size={20}/></button>}
-        <h2>{t(step === 'assets' ? 'deposit.ui.chooseAsset' : step === 'networks' ? 'deposit.ui.chooseNetwork' : 'deposit.title')}</h2>
+        <h2>{t('deposit.title')}</h2>
         <button className="dc-icon-button dc-close" onClick={() => closeRef.current()} aria-label={t('deposit.close')}><X size={20}/></button>
       </header>
       <div className="dc-content">
         {!loaded ? <div className="dc-state" role="status"><span className="dc-loading"/>{t('wallet.loading')}</div>
         : error ? <div className="dc-state" role="alert"><Info size={28}/><p>{t('deposit.loadAddressError')}</p><button className="dc-primary" onClick={() => { resetCopy(); setRetry(x => x + 1); }}>{t('deposit.ui.retry')}</button></div>
         : !wallet ? <div className="dc-state">{t('deposit.noneConfigured')}</div>
-        : step === 'assets' ? <>
-          <label className="dc-search"><Search size={19}/><input placeholder={t('deposit.ui.search')} aria-label={t('deposit.ui.search')} value={search} onChange={e => setSearch(e.target.value)}/></label>
-          <div className="dc-asset-list" role="listbox" aria-label={t('deposit.ui.chooseAsset')} onKeyDown={event => {
-            if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
-            event.preventDefault();
-            const options = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]')];
-            const index = options.indexOf(document.activeElement as HTMLButtonElement);
-            const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
-            options[next]?.focus();
-          }}>
-            {shownAssets.map(symbol => <button type="button" role="option" aria-selected={symbol === asset} key={symbol} className={`dc-asset-row ${symbol === asset ? 'is-selected' : ''}`} onClick={() => chooseAsset(symbol)}>
-              {icon(symbol, 40)}<span className="dc-asset-label"><strong>{depositAssetMetadata[symbol]?.name ?? symbol}</strong><small>{symbol}</small></span>
-              {symbol === asset && <Check size={19} aria-hidden="true"/>}
-            </button>)}
+        : <>
+          <section className="dc-identity">{icon(asset, 52)}<h3>{t('deposit.ui.yourAddress', { asset })}</h3></section>
+          {/* Asset: a field that reads as one — label, the chosen asset in
+              full, and a chevron — not a small link under the heading. */}
+          <div className="dc-field">
+            <span className="dc-field-label" id={ids.asset}>{t('deposit.ui.asset')}</span>
+            <div className="dc-asset-field">
+              <button ref={assetTrigger} type="button" className={`dc-asset-trigger ${menuOpen ? 'is-open' : ''}`}
+                aria-haspopup="listbox" aria-expanded={menuOpen} aria-controls={menuOpen ? ids.menu : undefined}
+                aria-labelledby={`${ids.asset} ${ids.assetValue}`} onClick={() => menuOpen ? closeMenu() : (resetCopy(), setMenuOpen(true))}>
+                {icon(asset, 30)}
+                <span className="dc-asset-value" id={ids.assetValue}><strong>{asset}</strong><span>{metadata?.name ?? asset}</span></span>
+                <span className="dc-trigger-chevron" aria-hidden="true"><ChevronDown size={20} strokeWidth={2.6}/></span>
+              </button>
+              {menuOpen && <>
+                <div className="dc-menu-backdrop" aria-hidden="true" onClick={() => closeMenu()}/>
+                <div ref={menu} className="dc-menu" id={ids.menu}>
+                  <div className="dc-menu-head"><h3 id={ids.menuTitle}>{t('deposit.ui.chooseAsset')}</h3>
+                    <button type="button" className="dc-icon-button dc-menu-close" onClick={() => closeMenu()} aria-label={t('deposit.close')}><X size={20}/></button></div>
+                  <label className="dc-search"><Search size={18}/><input placeholder={t('deposit.ui.search')} aria-label={t('deposit.ui.search')} value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    onKeyDown={event => { if (event.key === 'ArrowDown') { event.preventDefault(); menu.current?.querySelector<HTMLElement>('[role="option"]')?.focus(); } }}/></label>
+                  <div className="dc-asset-list" role="listbox" aria-label={t('deposit.ui.chooseAsset')} onKeyDown={event => {
+                    if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+                    event.preventDefault();
+                    const options = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]')];
+                    const index = options.indexOf(document.activeElement as HTMLButtonElement);
+                    const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+                    options[next]?.focus();
+                  }}>
+                    {shownAssets.map(symbol => <button type="button" role="option" aria-selected={symbol === asset} key={symbol} className={`dc-asset-row ${symbol === asset ? 'is-selected' : ''}`} onClick={() => chooseAsset(symbol)}>
+                      {icon(symbol, 32)}<span className="dc-asset-label"><strong>{symbol}</strong><small>{depositAssetMetadata[symbol]?.name ?? symbol}</small></span>
+                      {symbol === asset && <Check size={19} aria-hidden="true"/>}
+                    </button>)}
+                  </div>
+                  {!shownAssets.length && <p className="dc-empty">{t('deposit.ui.noResults')}</p>}
+                </div>
+              </>}
+            </div>
           </div>
-          {!shownAssets.length && <p className="dc-empty">{t('deposit.ui.noResults')}</p>}
-        </> : step === 'networks' ? <>
-          <p className="dc-description">{t('deposit.ui.networkHint', { asset })}</p>
-          <div role="listbox" aria-label={t('deposit.network')}>
-            {networks.map(item => <button key={item.chain} role="option" aria-selected={item.chain === wallet.chain} className={`dc-network-row ${item.chain === wallet.chain ? 'is-selected' : ''}`} onClick={() => { resetCopy(); setChain(item.chain); setStep('address'); }}>
-              <span><strong>{item.networkName}</strong>{item.standard !== 'Native' && <small>{item.standard}</small>}</span>{item.chain === wallet.chain && <Check size={19}/>}
-            </button>)}
+          {/* Network: its own question, asked after the asset. Every network
+              that carries the asset is on screen at once. */}
+          <div className="dc-field">
+            <span className="dc-field-label" id={ids.network}>{t('deposit.network')}</span>
+            {networks.length > 1 ? <>
+              <div className="dc-networks" role="radiogroup" aria-labelledby={ids.network} onKeyDown={event => {
+                if (!['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(event.key)) return;
+                event.preventDefault();
+                const group = event.currentTarget;
+                const index = networks.findIndex(item => item.chain === wallet.chain);
+                const next = networks[(index + (event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1) + networks.length) % networks.length];
+                chooseNetwork(next.chain);
+                requestAnimationFrame(() => group.querySelector<HTMLElement>(`[data-chain="${next.chain}"]`)?.focus());
+              }}>
+                {networks.map(item => <button key={item.chain} type="button" role="radio" data-chain={item.chain} aria-checked={item.chain === wallet.chain} tabIndex={item.chain === wallet.chain ? 0 : -1}
+                  className={`dc-network-option ${item.chain === wallet.chain ? 'is-selected' : ''}`} onClick={() => chooseNetwork(item.chain)}>
+                  <span><strong>{item.networkName}</strong>{item.standard && item.standard !== 'Native' && <small>{item.standard}</small>}</span>
+                  {item.chain === wallet.chain && <Check size={17} aria-hidden="true"/>}
+                </button>)}
+              </div>
+              <p className="dc-field-hint">{t('deposit.ui.networkHint', { asset })}</p>
+            </> : <div className="dc-network"><span><strong>{network}</strong></span><Check size={17} aria-hidden="true"/></div>}
           </div>
-        </> : <>
-          <section className="dc-identity">{icon(asset, 56)}<h3>{t('deposit.ui.yourAddress', { asset })}</h3>
-            <button className="dc-change" onClick={() => changeStep('assets')} aria-label={t('deposit.ui.changeAsset')}>{metadata?.name ?? asset} <ChevronRight size={14}/></button>
+          {/* The rule before the address: seen before anything is copied. */}
+          <section className="dc-minimum" aria-labelledby={ids.minimum} data-testid="deposit-minimum">
+            <div className="dc-minimum-row"><span id={ids.minimum}>{t('deposit.ui.minimumTitle')}</span><strong>{amount(minimum.usd)} USD</strong></div>
+            {minimum.equivalent !== null && <div className="dc-minimum-equivalent" data-testid="deposit-minimum-equivalent">
+              {t('deposit.ui.minimumPegged', { amount: amount(minimum.equivalent), asset })}</div>}
+            <p>{t('deposit.ui.minimumNote')}</p>
           </section>
-          {networks.length > 1 ? <button className="dc-network" onClick={() => changeStep('networks')} aria-label={t('deposit.ui.changeNetwork')}><span><small>{t('deposit.network')}</small><strong>{network}</strong></span><ChevronRight size={18}/></button>
-            : <div className="dc-network"><span><small>{t('deposit.network')}</small><strong>{network}</strong></span><Check size={17}/></div>}
           <p className="dc-warning"><Info size={17}/><span>{t('deposit.ui.sendOnly')} <strong>{asset}</strong> {t('deposit.ui.inNetwork')} <strong>{network}</strong>. {t('deposit.ui.lossWarning')}</span></p>
           <div className="dc-address-card">
             {qr && <svg className="dc-qr" role="img" aria-label={t('deposit.ui.qrLabel', { asset, network })} viewBox={`0 0 ${qr.size + 8} ${qr.size + 8}`} shapeRendering="crispEdges">

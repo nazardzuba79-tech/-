@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { LanguageProvider } from '../src/lib/i18n';
 import { DepositModal as HeaderDeposit } from '../src/components/DepositModal';
 import { DepositModal as WalletDeposit } from '../src/pages/wallet-v3/DepositModal';
+import { marketDataStore } from '../src/lib/marketDataStore';
 import '../src/index.css';
 import '../src/pages/settings-arctic/tailwind-utilities.css';
 import '../src/pages/wallet-v3/wallet.css';
@@ -24,6 +25,13 @@ const rails = [
 const entries=rails.map(([assetId,asset,networkId,networkName,standard,address])=>({assetId,asset,networkId,networkName,standard,address,enabled:true,memo:'',memoLabel:'',memoAllowed:true}));
 const fixture={entries,requests:[] as string[],fail:false,delayMs:0};
 (window as any).__depositFixture=fixture;
+// Populate unrelated page prices to prove the deposit minimum remains
+// USD-only for volatile assets. `null` restores the empty store.
+(fixture as any).setPrices=(prices:Record<string,string>|null,fetchedAt=Date.now(),stale=false)=>{
+  const store=marketDataStore as any;
+  store.state=prices?{...store.state,tickers:new Map(Object.entries(prices).map(([asset,lastPrice])=>[`${asset}/USDT`,{pair:`${asset}/USDT`,lastPrice}])),tickersMeta:{source:'fixture',fetchedAt,stale}}
+    :{...store.state,tickers:new Map(),tickersMeta:null};
+};
 const originalFetch=window.fetch.bind(window);
 window.fetch=async (input,init)=>{
   const url=String(input);

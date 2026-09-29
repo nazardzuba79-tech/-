@@ -7,6 +7,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import * as bookMath from '../spotOrderBook';
 import * as futuresMath from '../futuresMath';
+import * as decimalInput from '../decimalInput';
 import * as assetReads from '../../components/spotOrderPresentation';
 import * as futuresDiscovery from '../futuresDiscovery';
 import * as accountPanelState from '../terminalAccountPanel';
@@ -192,6 +193,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   if (name === '../lib/spotOrderBook') return bookMath;
     if (name === '../lib/formatNumber') return { formatPrice: String, formatAmount: String };
     if (name === '../lib/futuresMath') return futuresMath;
+    if (name === '../lib/decimalInput') return decimalInput;
     if (name === './spotOrderPresentation') return assetReads;
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
     if (name === '../lib/futuresDepth') return { setFuturesDepthFallbackBase: () => {}, subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };

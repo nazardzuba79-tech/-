@@ -8,11 +8,11 @@ import { isManagedListingPair, parseTestMarkets, registerManagedListings, SIMULA
  * lib/marketDataStore: one timer, one in-flight request, reference-counted,
  * polled at the fastest cadence any subscriber asked for.
  *
- * It is deliberately quieter than that store. Before the listing nothing
- * about a test market changes except its countdown, which is drawn from
- * the server clock locally — so the store makes ONE request and then
- * sleeps until the listing moment. After it, lists refresh once a minute
- * and only an open terminal on the pair asks for more.
+ * Fixed VTA/NRX markets are deliberately quieter: before listing, their
+ * countdown follows the server clock locally and the store sleeps until
+ * launch. The managed catalogue keeps the subscriber's cadence because
+ * an administrator can publish another listing while all known rows are
+ * still in the future. Only an open terminal asks for faster updates.
  */
 
 export const TEST_MARKET_LIST_INTERVAL_MS = 60_000;
@@ -55,7 +55,7 @@ export interface TestMarketsState {
 type Listener = (state: TestMarketsState) => void;
 
 class TestMarketStore {
-  constructor(private readonly endpoint = `${API_BASE}/market/test-assets`) {}
+  constructor(private readonly endpoint = `${API_BASE}/market/test-assets`, private readonly catalogue = false) {}
   private state: TestMarketsState = { loaded: false, error: false, assets: [], clockOffsetMs: 0 };
   private subscribers = new Map<symbol, { listener: Listener; intervalMs: number }>();
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -71,7 +71,8 @@ class TestMarketStore {
     this.subscribers.set(key, { listener, intervalMs });
     listener(this.state);
     if (this.subscribers.size === 1 && typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
-    if (!this.state.loaded || (this.anyLive() && Date.now() - this.fetchedAt >= intervalMs)) void this.refresh();
+    if (!this.state.loaded || (this.catalogue && this.subscribers.size === 1)
+      || ((this.catalogue || this.anyLive()) && Date.now() - this.fetchedAt >= intervalMs)) void this.refresh();
     else this.schedule();
     return () => {
       this.subscribers.delete(key);
@@ -117,13 +118,14 @@ class TestMarketStore {
     if (document.hidden || !this.subscribers.size) return;
     // Preview-only listings are intentionally static: visibility changes
     // must not start a clock or create background traffic.
-    if (this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;
+    if (!this.catalogue && this.state.loaded && !this.anyLive() && this.armedListings().length === 0) return;
     // Live or armed pre-listing: a tab that slept through the listing moment must wake.
     const cadence = Math.min(...[...this.subscribers.values()].map((s) => s.intervalMs));
     if (Date.now() - this.fetchedAt >= cadence) void this.refresh();
+    else if (this.catalogue) this.schedule();
   };
 
-  /** While every asset is pre-listing the only refresh is at the listing. */
+  /** Fixed markets sleep until launch; a catalogue also discovers newly published rows. */
   private schedule(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
@@ -133,10 +135,13 @@ class TestMarketStore {
     if (this.state.loaded && !this.state.error && this.state.assets.length > 0 && !this.anyLive()) {
       const armed = this.armedListings();
       // Unarmed preview: one initial request, then complete silence until a new deploy/reload arms it.
-      if (armed.length === 0) return;
-      const serverNow = Date.now() + this.state.clockOffsetMs;
-      const nextListing = Math.min(...armed.map((asset) => Date.parse(asset.listingAt)));
-      delay = Math.max(1_000, nextListing - serverNow + 1_000);
+      if (armed.length === 0 && !this.catalogue) return;
+      if (armed.length > 0) {
+        const serverNow = Date.now() + this.state.clockOffsetMs;
+        const nextListing = Math.min(...armed.map((asset) => Date.parse(asset.listingAt)));
+        const listingDelay = Math.max(1_000, nextListing - serverNow + 1_000);
+        delay = this.catalogue ? Math.min(delay, listingDelay) : listingDelay;
+      }
     }
     this.timer = setTimeout(() => void this.refresh(), Math.min(delay, MAX_TIMEOUT_MS));
   }
@@ -145,7 +150,7 @@ class TestMarketStore {
 export const testMarketStore = new TestMarketStore();
 export const nrxMarketStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`);
 /** Published managed listings (Admin → Listings), straight from the market edge. */
-export const managedListingStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/listings`);
+export const managedListingStore = new TestMarketStore(`${NRX_EDGE_BASE}/market/listings`, true);
 /** A deep link to a pair the tab has never seen learns whether it is a listing; re-read rarely, and at each listing moment. */
 export const MANAGED_LISTING_DISCOVERY_INTERVAL_MS = 15 * 60_000;
 

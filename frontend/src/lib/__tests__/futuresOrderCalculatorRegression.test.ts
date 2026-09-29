@@ -8,7 +8,7 @@ describe('Futures quantity calculator and LIMIT readiness regression', () => {
     expect(FORM).toContain("const [priceEdited, setPriceEdited] = useState(false);");
     expect(FORM).toContain("if (family !== 'LIMIT' || priceEdited || price !== '') return;");
     expect(FORM).toContain('lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0');
-    expect(FORM).toContain('setPrice(String(lastPrice));');
+    expect(FORM).toContain('setPrice(decimalFromNumber(lastPrice));');
   });
 
   test('manual or order-book price selection is never overwritten by a later tick', () => {
