@@ -6,6 +6,7 @@ on:
       - 'src/api/routes/depositCatalogue.ts'
       - 'src/index.ts'
       - 'frontend/src/lib/depositCatalogue.ts'
+      - 'frontend/src/lib/depositCatalogueEdge.ts'
       - 'frontend/src/lib/useDepositOptions.ts'
       - 'frontend/src/lib/i18n/**'
       - 'frontend/src/lib/__tests__/deposit*.test.ts'
@@ -22,6 +23,7 @@ on:
       - 'frontend/src/pages/admin/AdminWalletsPage.tsx'
       - 'frontend/src/pages/admin/depositCatalogue.css'
       - 'scripts/qa-deposit-catalogue.cjs'
+      - 'scripts/qa-deposit-catalogue-edge.cjs'
       - 'scripts/export-deposit-catalogue-baseline*'
       - 'workers/deposit-catalogue/**'
       - '.github/workflows/deposit-catalogue.yml'
@@ -30,7 +32,7 @@ permissions:
 jobs:
   catalogue:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
         with: { persist-credentials: false, fetch-depth: 0 }
@@ -47,6 +49,7 @@ jobs:
           src/api/routes/__tests__/deposits.test.ts
           src/services/__tests__/TreasuryWalletService.test.ts
           frontend/src/lib/__tests__/depositAllWallets.test.ts
+          frontend/src/lib/__tests__/depositCatalogueEdge.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
           frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
@@ -72,6 +75,17 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: ../output/qa-tools/node_modules/playwright
         run: node scripts/qa-deposit-catalogue.cjs
+      - name: Build the direct Cloudflare read variant
+        working-directory: frontend
+        env:
+          VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+          VITE_API_URL: /api/v1
+          VITE_DEPOSIT_CATALOGUE_URL: http://127.0.0.1:8791
+        run: npx vite build --outDir ../output/deposit-catalogue-edge-frontend
+      - name: Direct public read from the real Worker, one-minute idle, no Render fallback
+        env:
+          QA_PLAYWRIGHT_MODULE: ../output/qa-tools/node_modules/playwright
+        run: node scripts/qa-deposit-catalogue-edge.cjs
       - name: Mounted picker, clipboard, QR, responsive and idle regression
         env:
           VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
@@ -92,5 +106,6 @@ jobs:
           name: manual-deposit-catalogue-evidence
           path: |
             docs/qa/manual-deposit-catalogue
+            docs/qa/deposit-catalogue-edge
             docs/qa/deposit-ui
           retention-days: 7

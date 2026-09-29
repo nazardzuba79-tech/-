@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import { CoinRanking } from '../CoinGeckoService';
-import { DEPOSIT_RAILS, railKey } from './registry';
+import { railKey } from './registry';
+import { publicCatalogueBody, publicEntries, resolvedEntries } from './publicView';
 import { CatalogueError, CatalogueStore, StoredCatalogue, documentSchema, entrySchema } from './store';
 
 export class DepositCatalogue {
@@ -21,17 +22,12 @@ export class DepositCatalogue {
     try { return await pending; } finally { if (this.pending === pending) this.pending = undefined; }
   }
   private resolved(value: StoredCatalogue) {
-    const entries = new Map([...value.document.baseline, ...value.document.overrides].map(e => [railKey(e), e]));
-    return DEPOSIT_RAILS.map(rail => {
-      const entry = entries.get(railKey(rail));
-      return { ...rail, address: entry?.address ?? '', memo: entry?.memo ?? '', memoLabel: entry?.memoLabel || (rail.memoAllowed ? rail.memoLabel : ''),
-        enabled: entry?.enabled ?? false, status: !entry?.address ? 'unconfigured' : entry.enabled ? 'configured' : 'disabled' };
-    });
+    return resolvedEntries(value.document);
   }
   async publicCatalogue() {
     const stored = await this.load();
-    const entries = this.resolved(stored).filter(e => e.status === 'configured').map(({ status, ...entry }) => entry);
-    return { version: createHash('sha256').update(JSON.stringify(entries)).digest('hex'), entries };
+    const entries = publicEntries(stored.document);
+    return { version: createHash('sha256').update(publicCatalogueBody(entries)).digest('hex'), entries };
   }
   async adminCatalogue(refresh = false) {
     if (refresh) { this.cached = undefined; this.pending = undefined; this.generation++; }
