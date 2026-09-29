@@ -13,7 +13,7 @@ describe('Futures quantity calculator and LIMIT readiness regression', () => {
 
   test('manual or order-book price selection is never overwritten by a later tick', () => {
     expect(FORM).toMatch(/if \(pickedPrice\) \{[\s\S]{0,160}setPriceEdited\(true\)/);
-    expect(FORM).toMatch(/onChange=\{\(e\) => \{[\s\S]{0,120}setPriceEdited\(true\);[\s\S]{0,120}setPrice\(e\.target\.value\)/);
+    expect(FORM).toMatch(/onChange=\{\(e\) => \{[\s\S]{0,120}setPriceEdited\(true\);[\s\S]{0,120}setPrice\(decimalText\(e\.target\.value\)\)/);
   });
 
   test('quantity drives position value and margin only from a positive real price', () => {

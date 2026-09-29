@@ -238,7 +238,11 @@ test.each([
     // beside «Только уменьшение» (disabled under Reduce Only), and each level
     // shows its % from the price and ≈ P&L. Same `protectionEnabled` state,
     // same `armedProtection` and order payload; the standard ticket is untouched.
-    "b32bb1a41f8b50022bbf691d603ff57383d8826b2cea3a77ac1d4558ff306946"
+    // Owner follow-up 2026-09-29: the TP/SL box is drawn as a round «+» (the
+    // checkbox stays underneath), and price/size/TP/SL are text fields that
+    // keep a dot — `type="number"` printed «12,91» under <html lang="ru"> and
+    // «270,5» reached parseFloat as 270. Same state, gates and payload.
+    "2545d373aa9acfaf24a7ade254d64f15bd883c0a5c3943aae74917c001d86a87"
   ],
   [
     "components/FuturesAccountSummary.tsx",

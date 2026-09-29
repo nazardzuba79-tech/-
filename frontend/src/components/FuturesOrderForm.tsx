@@ -25,6 +25,20 @@ import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { formatAmount, formatPrice } from '../lib/formatNumber';
 import { OrderFamilyTabs, type OrderFamily } from './OrderFamilyPresentation';
 
+/**
+ * A decimal as this terminal prints it: with a dot.
+ *
+ * A `type="number"` field is drawn by the browser in the page's language, so
+ * under `<html lang="ru">` it showed «12,91» beside a book printing 12.91,
+ * and a level typed with a comma («270,5») reached `parseFloat` as 270. Both
+ * separators are accepted as typed; the field keeps one.
+ */
+function decimalText(raw: string): string {
+  const s = raw.replace(/,/g, '.').replace(/[^\d.]/g, '');
+  const dot = s.indexOf('.');
+  return dot === -1 ? s : s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, '');
+}
+
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
 const SIZE_PRESETS = [0, 25, 50, 75, 100];
@@ -878,15 +892,16 @@ export function FuturesOrderForm({
             <div className="fo-fieldRow fo-priceInputRow">
               <input
                 className="mono fo-input"
-                type="number"
-                step="any"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 required
                 value={price}
                 readOnly={historicalEntry}
                 aria-readonly={historicalEntry || undefined}
                 onChange={(e) => {
                   setPriceEdited(true);
-                  setPrice(e.target.value);
+                  setPrice(decimalText(e.target.value));
                 }}
                 placeholder="0.00"
               />
@@ -923,12 +938,13 @@ export function FuturesOrderForm({
           <div className="fo-fieldRow fo-qtyInputRow">
             <input
               className="mono fo-input"
-              type="number"
-              step="any"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
               required
               value={quantity}
               onChange={(e) => {
-                setQuantity(e.target.value);
+                setQuantity(decimalText(e.target.value));
                 setPercent(0);
               }}
               placeholder={archive && baseAsset === 'BTC' ? '0.000' : '0.00000'}
@@ -945,14 +961,17 @@ export function FuturesOrderForm({
             <input type="checkbox" checked={protectionEnabled && !reduceOnly} disabled={reduceOnly}
               aria-controls={reduceOnly ? undefined : protectionPanelId} data-entry-protection-toggle="true"
               onChange={e => setBracketExpanded(e.target.checked)} />
+            <span className="fo-tpslPlus" aria-hidden="true">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M5 1.5v7M1.5 5h7" /></svg>
+            </span>
             TP / SL
           </label>}
           {reduceOnlyControl}
         </div> : reduceOnlyControl}
         {archiveProtection && !reduceOnly && <div className="archive-order-protection" id={protectionPanelId} hidden={!protectionEnabled}>
           <div className="archive-protection-fields">
-            <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(e.target.value)} />{protectionHint(entryTakeProfit, 'TP')}</label>
-            <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(e.target.value)} />{protectionHint(entryStopLoss, 'SL')}</label>
+            <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(decimalText(e.target.value))} />{protectionHint(entryTakeProfit, 'TP')}</label>
+            <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(decimalText(e.target.value))} />{protectionHint(entryStopLoss, 'SL')}</label>
           </div>
         </div>}
 
@@ -982,7 +1001,7 @@ export function FuturesOrderForm({
                     inputMode="decimal"
                     placeholder="—"
                     value={entryTakeProfit}
-                    onChange={(e) => setEntryTakeProfit(e.target.value)}
+                    onChange={(e) => setEntryTakeProfit(decimalText(e.target.value))}
                     aria-label={t('futures.takeProfitLabel')}
                     data-entry-take-profit="true"
                   />
@@ -994,7 +1013,7 @@ export function FuturesOrderForm({
                     inputMode="decimal"
                     placeholder="—"
                     value={entryStopLoss}
-                    onChange={(e) => setEntryStopLoss(e.target.value)}
+                    onChange={(e) => setEntryStopLoss(decimalText(e.target.value))}
                     aria-label={t('futures.stopLossLabel')}
                     data-entry-stop-loss="true"
                   />
