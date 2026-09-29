@@ -53,7 +53,6 @@ import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
 import './trade-terminal/TerminalPremium.css';
 import './trade-terminal/VoltexTerminalSystem.css';
-import './trade-terminal/TerminalPreviewPolish.css';
 import './trade-terminal/ArchiveTerminalPreview.css';
 import './trade-terminal/FuturesMobile.css';
 import './trade-terminal/FuturesOrderPanelRefinement.css';
@@ -483,7 +482,7 @@ export function FuturesPage() {
   }
 
   return (
-    <div id={archivePreview ? 'archive-terminal-preview' : undefined} className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-premium-terminal-preview data-mobile-keyboard={Boolean(mobileViewport?.inset)}
+    <div id={archivePreview ? 'archive-terminal-preview' : undefined} className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-mobile-keyboard={Boolean(mobileViewport?.inset)}
       style={mobileViewport ? { '--mobile-viewport-height': `${mobileViewport.height}px`, '--mobile-keyboard-inset': `${mobileViewport.inset}px` } as React.CSSProperties : undefined}
       data-terminal-design={archivePreview ? 'archive' : design ?? undefined}>
       {requestedDesign && !archivePreview && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
