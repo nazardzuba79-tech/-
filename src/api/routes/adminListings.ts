@@ -40,10 +40,15 @@ function failure(res: Response, error: unknown) {
   return res.status(503).json({ error: 'LISTINGS_UNAVAILABLE', message: 'Listings are temporarily unavailable' });
 }
 
-/** Build a config from the admin form: the server fills the schema version and an automatic seed. */
+/**
+ * Build a config from the admin form: the server fills the schema version and
+ * an automatic seed. The simulation profile is never taken from a request —
+ * the store assigns it once, by creation order.
+ */
 function configFromBody(body: unknown, previous: ListingConfig | null): ListingConfig {
-  const input = (body && typeof body === 'object' ? (body as Record<string, unknown>).config : null) as Record<string, unknown> | null;
-  if (!input || typeof input !== 'object') throw new ListingValidationError('INVALID_CONFIG', 'config is required');
+  const raw = (body && typeof body === 'object' ? (body as Record<string, unknown>).config : null) as Record<string, unknown> | null;
+  if (!raw || typeof raw !== 'object') throw new ListingValidationError('INVALID_CONFIG', 'config is required');
+  const { simulationProfile: _assignedByStore, ...input } = raw;
   const seedMode = input.seedMode === 'manual' ? 'manual' : 'auto';
   const symbol = typeof input.symbol === 'string' ? input.symbol.trim().toUpperCase() : '';
   const listingAt = typeof input.listingAt === 'string' ? input.listingAt : '';

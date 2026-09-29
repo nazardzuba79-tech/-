@@ -155,14 +155,38 @@ test('several future listings with different dates are published side by side', 
   assert.deepEqual(pairs, ['QAX/USDT', 'QBX/USDT']);
 });
 
+const profiles = async () => Object.fromEntries((await (await admin('/internal/listings')).json()).listings
+  .map((l) => [l.id, [l.draft.simulationProfile, l.active?.simulationProfile ?? null]]));
+
+test('simulation profiles rotate by creation order and never change afterwards', async () => {
+  // qax was listing #1 and qbx #2; the refused and duplicate attempts above spent no ordinal.
+  assert.deepEqual(await profiles(), { qax: ['CALM_TREND', 'CALM_TREND'], qbx: ['IMPULSE_TREND', 'IMPULSE_TREND'] });
+  for (const [id, symbol] of [['qcx', 'QCX'], ['qdx', 'QDX'], ['qex', 'QEX']]) {
+    // A request that names a profile is ignored: the rotation decides.
+    assert.equal((await saveDraft(id, config({ symbol, simulationProfile: 'CALM_TREND' }), 0)).status, 200);
+  }
+  const listing = (await (await admin('/internal/listings')).json()).listings.find((l) => l.id === 'qcx');
+  assert.equal((await saveDraft('qcx', config({ symbol: 'QCX', name: 'Edited', simulationProfile: 'COMPRESSION_BREAKOUT' }), listing.draftRevision)).status, 200);
+  assert.deepEqual(await profiles(), {
+    qax: ['CALM_TREND', 'CALM_TREND'], qbx: ['IMPULSE_TREND', 'IMPULSE_TREND'],
+    qcx: ['PULLBACK_TREND', null], qdx: ['COMPRESSION_BREAKOUT', null], qex: ['CALM_TREND', null],
+  });
+  // The public catalogue shape is unchanged: no profile in it.
+  assert.ok(!JSON.stringify(await catalogue()).includes('_TREND'));
+});
+
 test('whole workerd restart keeps drafts, versions and the active configuration', async () => {
   const before = await (await admin('/internal/listings')).json();
   const publicBefore = (await catalogue()).assets.map((a) => [a.pair, a.version, a.name]);
+  const profilesBefore = await profiles();
   await mf.dispose();
   mf = new Miniflare(options);
   const after = await (await admin('/internal/listings')).json();
   assert.deepEqual(after.listings.map((l) => [l.id, l.draftRevision, l.activeVersion]), before.listings.map((l) => [l.id, l.draftRevision, l.activeVersion]));
   assert.deepEqual((await catalogue()).assets.map((a) => [a.pair, a.version, a.name]), publicBefore);
+  // Profiles survive the restart, and the rotation continues where it stopped (#6 = IMPULSE_TREND).
+  assert.deepEqual(await profiles(), profilesBefore);
+  assert.equal((await (await saveDraft('qfx', config({ symbol: 'QFX' }), 0)).json()).draft.simulationProfile, 'IMPULSE_TREND');
 });
 
 test('the existing NRX edge is untouched and calls out to nothing', async () => {

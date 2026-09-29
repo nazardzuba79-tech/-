@@ -14,6 +14,7 @@
  */
 import { z } from 'zod';
 import type { TestAssetConfig } from '../testMarkets/testAssetConfig';
+import { SIMULATION_PROFILES, profileForOrdinal } from '../testMarkets/simulationRealism';
 
 export const LISTING_QUOTE = 'USDT' as const;
 export const LISTING_SCHEMA_VERSION = 1 as const;
@@ -64,6 +65,12 @@ export const listingConfigSchema = z.object({
   seed: z.string().regex(LISTING_SEED_PATTERN, 'seed: 8–64 lowercase letters, digits or hyphens'),
   /** After listing, ordinary Spot orders may be placed (matched only against real resting orders). */
   tradable: z.boolean(),
+  /**
+   * Candle character, assigned by the store when the listing is created
+   * (`withStableProfile`) and never changed afterwards. Absent on listings
+   * created before profiles existed: they keep the original candles.
+   */
+  simulationProfile: z.enum(SIMULATION_PROFILES).optional(),
 }).strict();
 
 export type ListingConfig = z.infer<typeof listingConfigSchema>;
@@ -119,6 +126,19 @@ export function withStableSeed(next: ListingConfig, previous: ListingConfig | nu
 }
 
 /**
+ * Profile stability. A new listing takes the profile of its creation
+ * ordinal (#1 CALM_TREND, #2 IMPULSE_TREND, #3 PULLBACK_TREND,
+ * #4 COMPRESSION_BREAKOUT, #5 CALM_TREND…); every later save keeps the
+ * stored one, whatever the request carried. A listing stored without a
+ * profile stays without one, so its candles never change.
+ */
+export function withStableProfile(next: ListingConfig, previous: ListingConfig | null, creationOrdinal: number | null): ListingConfig {
+  const { simulationProfile: _requested, ...rest } = next;
+  if (previous) return previous.simulationProfile ? { ...rest, simulationProfile: previous.simulationProfile } : rest;
+  return creationOrdinal === null ? rest : { ...rest, simulationProfile: profileForOrdinal(creationOrdinal) };
+}
+
+/**
  * Rules for publishing `next` over the currently active version, at server
  * time `now`. They protect the past: once a market has history, nothing that
  * shapes that history can change.
@@ -133,6 +153,7 @@ export function checkPublishable(next: ListingConfig, active: ListingConfig | nu
   if (next.symbol !== active.symbol) throw new ListingValidationError('TICKER_LOCKED', 'The ticker of a published listing cannot change');
   if (next.seed !== active.seed) throw new ListingValidationError('HISTORY_LOCKED', 'The seed of a published listing cannot change');
   if (next.initialPrice !== active.initialPrice) throw new ListingValidationError('HISTORY_LOCKED', 'The initial price of a published listing cannot change');
+  if (next.simulationProfile !== active.simulationProfile) throw new ListingValidationError('HISTORY_LOCKED', 'The simulation profile of a published listing cannot change');
   if (next.listingAt !== active.listingAt) {
     const activeAt = Date.parse(active.listingAt);
     // Moving the date is a postponement or an earlier opening of a market that has not opened yet.
@@ -155,6 +176,7 @@ export function listingSimulationConfig(config: ListingConfig): TestAssetConfig 
     listingAt: Date.parse(config.listingAt),
     initialPrice: Number(config.initialPrice),
     seed: config.seed,
+    ...(config.simulationProfile ? { simulationProfile: config.simulationProfile } : {}),
   };
 }
 

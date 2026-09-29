@@ -1,5 +1,5 @@
 import {
-  checkPublishable, generateSeed, listingSimulationConfig, logoBytes, parseListingConfig, withStableSeed,
+  checkPublishable, generateSeed, listingSimulationConfig, logoBytes, parseListingConfig, withStableProfile, withStableSeed,
   ListingValidationError, type ListingConfig, type PublishedListing,
 } from '../listingConfig';
 import { managedListingResponse, listingForPath } from '../listingPublic';
@@ -122,5 +122,50 @@ describe('public market of a published listing (computed on read)', () => {
     expect(body).not.toContain('qax-20261001-synthetic');
     expect(body).not.toContain('ownerAllocation');
     expect(get('/market/listings', [published()], listingAt, )!.headers.get('cache-control')).toBe('no-store');
+  });
+});
+
+describe('simulation profile of a managed listing', () => {
+  const listingAt = Date.parse(config().listingAt);
+  test('optional in the schema; only the four profiles are accepted', () => {
+    expect(parseListingConfig(config()).simulationProfile).toBeUndefined();
+    for (const profile of ['CALM_TREND', 'IMPULSE_TREND', 'PULLBACK_TREND', 'COMPRESSION_BREAKOUT'] as const) {
+      expect(parseListingConfig(config({ simulationProfile: profile })).simulationProfile).toBe(profile);
+    }
+    expect(code(() => parseListingConfig({ ...config(), simulationProfile: 'RANDOM' }))).toBe('INVALID_CONFIG');
+  });
+  test('assigned once at creation by ordinal, then kept whatever a later request carries', () => {
+    expect([0, 1, 2, 3, 4, 5].map((n) => withStableProfile(config(), null, n).simulationProfile)).toEqual([
+      'CALM_TREND', 'IMPULSE_TREND', 'PULLBACK_TREND', 'COMPRESSION_BREAKOUT', 'CALM_TREND', 'IMPULSE_TREND',
+    ]);
+    // A request cannot choose its own profile at creation…
+    expect(withStableProfile(config({ simulationProfile: 'COMPRESSION_BREAKOUT' }), null, 0).simulationProfile).toBe('CALM_TREND');
+    // …nor change it on a later save.
+    const created = withStableProfile(config(), null, 1);
+    expect(withStableProfile(config({ name: 'Renamed', simulationProfile: 'CALM_TREND' }), created, null).simulationProfile).toBe('IMPULSE_TREND');
+    // A listing stored before profiles existed keeps the original candles.
+    expect('simulationProfile' in withStableProfile(config({ simulationProfile: 'PULLBACK_TREND' }), config(), null)).toBe(false);
+  });
+  test('locked with the history after publish', () => {
+    const active = config({ simulationProfile: 'IMPULSE_TREND' });
+    expect(code(() => checkPublishable(config({ simulationProfile: 'CALM_TREND' }), active, NOW))).toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable(config(), active, NOW))).toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable(config({ simulationProfile: 'IMPULSE_TREND' }), config(), NOW))).toBe('HISTORY_LOCKED');
+    expect(code(() => checkPublishable(config({ simulationProfile: 'IMPULSE_TREND', name: 'Renamed' }), active, NOW))).toBeNull();
+  });
+  test('the profile reaches the simulation: other candles, the same hour anchors', async () => {
+    const plain = listingSimulationConfig(config());
+    const calm = listingSimulationConfig(config({ simulationProfile: 'CALM_TREND' }));
+    expect(plain.simulationProfile).toBeUndefined();
+    expect(calm.simulationProfile).toBe('CALM_TREND');
+    const at = listingAt + 6 * HOUR;
+    expect(testMarketCandles(calm, '5m', at)).not.toEqual(testMarketCandles(plain, '5m', at));
+    for (let h = 0; h <= 6; h++) {
+      expect(new TestMarketSimulation(calm).priceAt(listingAt + h * HOUR)).toBe(new TestMarketSimulation(plain).priceAt(listingAt + h * HOUR));
+    }
+    // The edge serves exactly the profile's candles, and the public record does not expose the profile.
+    const listing = published(config({ simulationProfile: 'CALM_TREND' }));
+    expect((await get('/market/test-assets/QAX-USDT/candles?interval=5m', [listing], at)!.json()).candles).toEqual(testMarketCandles(calm, '5m', at));
+    expect(JSON.stringify(await get('/market/listings', [listing], at)!.json())).not.toContain('CALM_TREND');
   });
 });

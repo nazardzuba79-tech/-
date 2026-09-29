@@ -10,6 +10,7 @@
 
 import { NEURIX } from './neurix';
 import { managedListingAssets } from '../listings/managedSnapshot';
+import type { SimulationProfile } from './simulationRealism';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -29,6 +30,13 @@ export interface TestAssetConfig {
   initialPrice: number;
   /** Changing the seed changes the whole history; the same seed always gives the same candles. */
   seed: string;
+  /**
+   * How candles look inside each hour (simulationRealism.ts). Never moves an
+   * hour anchor or the final price. Absent: the original intra-hour path.
+   */
+  simulationProfile?: SimulationProfile;
+  /** Re-rolls the realism layer's look without touching the anchors. Default 0. */
+  realismSeedOffset?: number;
 }
 
 export const VOLTORA: TestAssetConfig = {
@@ -46,6 +54,10 @@ export const VOLTORA: TestAssetConfig = {
   listingAt: Date.parse('2026-09-28T15:00:00Z'),
   initialPrice: 0.01,
   seed: 'voltora-2026-09-27',
+  // Candle character only (owner, 2026-09-29): impulses, breakouts out of
+  // consolidation, pullbacks and long wicks. Every hour anchor, P48 and the
+  // listing schedule are unchanged; see simulationRealism.ts.
+  simulationProfile: 'IMPULSE_TREND',
 };
 
 // Render's existing public listing. NRX metadata is owned exclusively by the edge.
