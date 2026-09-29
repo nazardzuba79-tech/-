@@ -4475,6 +4475,72 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - **Preserved:** Codex's catalogue design (DO + CAS + secret, admin editing on Render, 30 s Render cache, the existing Render public route and its QA).
 - **Checks actually run (local):** workerd integration 18/18; Jest `catalogue` + `depositAllWallets` + `depositCatalogueEdge` 58/58; backend `tsc`; frontend `tsc -b`; `wrangler deploy --dry-run --env staging`; browser `qa-deposit-catalogue-edge.cjs` 6/6 with a real 60 s idle (1 Cloudflare GET per open, 0 on asset/network/copy/memo/QR, 0 while idle, 0 Render catalogue calls, error + retry when the Worker is down); existing `qa-deposit-catalogue.cjs` (Render path) PASS with a short idle.
 - **Not done / production dependencies:** the Worker has no deploy automation and no public hostname yet; production needs a deploy of `voltex-deposit-catalogue-production` with a route (e.g. `deposit.voltextech.net`) and a frontend build with `VITE_MANUAL_DEPOSIT_CATALOGUE=true` and `VITE_DEPOSIT_CATALOGUE_URL`. Not merged, not deployed; nothing verified against production.
+
+## Claude — 2026-09-29 — Admin → Listings: managed simulated markets without code or deploy (stage 2)
+
+- Base: `main` `a7925e90`, then merged current `main` `e17aa533` (clean). Branch `claude/ecstatic-brahmagupta-cwkvt5-listings`. See `docs/LISTINGS.md` for architecture, request budget and production steps.
+- **Material files:**
+  - Config core: `src/services/listings/{listingConfig,listingPublic,store,registry,managedSnapshot,ownerAllocation}.ts`. `testMarketSimulation.ts` caches by the full config.
+  - Guards and valuation: `testAssetConfig.ts`, `nrxSpot.ts`, `OrderService.ts`, `WalletPortfolioService.ts` — additive. VTA/NRX are unchanged.
+  - Admin API: `src/api/routes/adminListings.ts` + `src/index.ts`.
+  - Cloudflare: `workers/market-edge/src/{listingsStore.ts,worker.ts}`, `wrangler.toml` (DO `LISTINGS`, migration `listings-v1`), health `public-display-edge-v10`.
+  - Frontend:
+    - Store and routing: `marketEdge.ts`, `nrxMarket.ts`, `testMarkets.ts`, `testMarketStore.ts`, `api.ts`, `spotPublicMarket.ts`.
+    - Pages and components: `TradePage.tsx`, `NrxBookTabs.tsx`, `OrderForm.tsx`, `TestMarketTerminal.tsx`, `CryptoIcon.tsx`, `TestMarketsStrip.tsx`.
+    - Admin: `pages/admin/{AdminListingsPage.tsx,adminListingsApi.ts,adminListingsTime.ts,adminListings.css}`, `App.tsx`, `AdminLayout.tsx` nav.
+    - `vite.config.ts` `VITE_MARKET_EDGE_URL` define.
+  - Owner allocation: `scripts/allocate-listing-owner.cjs`.
+  - QA and CI: `scripts/qa-admin-listings.cjs`, `.github/workflows/admin-listings.yml`, `deploy-market-edge.yml` (listings tests + v10), evidence `docs/qa/admin-listings/`.
+- **Fixed on the way (also on main):**
+  - `useTestMarkets` built a new merged array every render. `useMarketTickers` then rebuilt its Map each render, and React Router's transition never committed: clicking a row on Markets (NRX too), or any header link away from Markets, left the Markets page on screen with the new URL. The array is now memoised.
+  - A deep link to an unknown pair fired venue candle/book reads before the listings catalogue answered. `TradePage` now waits (`pairResolving`) until the shared venue snapshot or the catalogue knows the pair.
+- **Preserved:**
+  - VTA/NRX dates, seeds, prices, history, rights and the VTA DemoBalance path.
+  - Codex's admin gate (#326) and customer-only Users list.
+  - The password vault (#325) is untouched.
+  - The market-edge display routes, standard matching/settlement, collateral exclusion for test assets.
+  - No old PR #314 migration was used.
+- **Checks actually run (local):**
+  - Unit and route tests:
+    - Backend + frontend `tsc`.
+    - Jest `listingConfig` 25, `tradingGates` 7, `adminListings` 12, `managedListings` 6, and the NRX/Spot/order suites with a disposable Postgres: 211/211.
+    - `ownerAllocation.pg` 3/3.
+    - workerd listings 12/12 and the market-edge contract test.
+    - Full Jest vs `main` `e17aa533`: identical failure set (122 = 122, environment-only), 0 new.
+  - Browser:
+    - `qa-admin-listings.cjs` 16/16: create → preview → publish → open from Markets → pre-listing → live, with no rebuild.
+    - One history across edge, Preview and a Worker restart; history lock.
+    - 0 Render requests about the pair; 0 Worker outbound; 1440/390.
+    - `qa-nrx-market`, `qa-voltora-listing`, `qa-spot-cfd-terminal`, `qa-admin-gate` PASS.
+    - Ten existing browser QA scripts give identical results on branch and main (5 fail on main locally too).
+- **Not done / production dependencies:**
+  - `LISTINGS_STORE_TOKEN` on the Worker and Render, plus `LISTINGS_STORE_URL` on Render.
+  - A gated `market-edge` deploy that applies `listings-v1`, then Render + frontend deploys.
+  - No allocation was run. Not merged, not deployed; nothing verified against production.
+
+## Claude — 2026-09-29 — Cloudflare activation prepared: Listings store + direct Deposit read (task 2)
+
+- Base: PR #333 head `8896d5eb` (Codex integration of #330 after #329). #331 (Codex's parallel Listings) was not touched or duplicated. The order-gate follow-up from the #333 review is out of scope and unchanged.
+- **Listings:**
+  - `store.ts`: Render never crashes on missing or invalid `LISTINGS_STORE_*`. It is "not configured", with the reason logged by name only. The Worker's missing secret maps to `STORE_NOT_CONFIGURED` and a refused token to `STORE_AUTH_FAILED`.
+  - Worker `listingsStore.ts`: a missing secret answers `store_not_configured`.
+  - Admin page: «Листинги не подключены» with Create disabled.
+  - `deploy-market-edge.yml`: puts `LISTINGS_STORE_TOKEN` from the GitHub secret after deploy (stdin, ≥32 chars), then runs `scripts/smoke-market-edge-listings.mjs` (v10, public catalogue, NRX, admin store CONNECTED/NOT CONFIGURED/TOKEN MISMATCH).
+  - `render.yaml`: `LISTINGS_STORE_URL`/`_TOKEN` added as `sync: false`.
+- **Deposit:**
+  - New manual-only `deploy-deposit-catalogue.yml` updates the existing production Worker (code only). It refuses if the Worker or its secret is absent, reads the real `workers.dev` origin from the Cloudflare API, runs `scripts/smoke-deposit-public.mjs` and prints `VITE_DEPOSIT_CATALOGUE_URL`.
+  - Vite fails the build on an invalid `VITE_DEPOSIT_CATALOGUE_URL`.
+  - The browser test adds overlapping opens sharing one request.
+- **Runbook:** `docs/CLOUDFLARE_ACTIVATION.md`.
+- **Checks actually run (local, not production):**
+  - Backend and frontend `tsc`.
+  - Jest: listings suites 55/55, including the new `storeConfig`.
+  - workerd: listings 12/12, market-edge smoke 4/4, deposit integration 18/18, deposit smoke 2/2; market-edge contract test.
+  - `wrangler deploy --dry-run`: market-edge and deposit `--env production` both PASS.
+  - Browser: `qa-admin-listings` 17/17 (new rollout states) and `qa-deposit-catalogue-edge` 7/7 with a real 60 s idle.
+  - Full Jest vs `8896d5eb`: 0 new failures.
+- **Read-only production observation:** `market.voltextech.net/health` = `public-display-edge-v9`, and `/market/listings` answers 404. No public deposit Worker hostname is known.
+- **Not done:** everything in `docs/CLOUDFLARE_ACTIVATION.md` (GitHub secret, deploy dispatches, Render env, Pages env, production QA). No merge, deploy, secret, balance, address or allocation change.
 ## Claude — 2026-09-29 — Port #306 premium terminal layer and #280 Spot/CFD identity onto main
 
 - Base: main `e17aa533` (after #328). Branch `claude/ecstatic-brahmagupta-cwkvt5-terminal-polish`. Commit: this one (local, not pushed). Sources: Codex #306 `069d29ff` (owner-reviewed preview) and ChatGPT #280 `8673dd04`, reconciled hunk by hunk.

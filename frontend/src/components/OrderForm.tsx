@@ -11,7 +11,7 @@ import { parseChangePercent } from '../lib/priceChange';
 import { positiveOrderNumber, orderFundingPrice, balancePercentageQuantity } from '../lib/spotOrderEntry';
 import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedback';
 import { customerErrorText } from '../lib/customerError';
-import { isTestMarketPair } from '../lib/testMarkets';
+import { isManagedTradablePair, isTestMarketPair } from '../lib/testMarkets';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -77,7 +77,8 @@ export function OrderForm({
   // An upcoming listing (VOLTORA) shows the whole form, like any pair, but
   // trading has not opened: a Buy/Sell answers with that and sends nothing.
   // The server refuses the pair on its own as well (OrderService).
-  const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
+  // NRX and a tradable managed listing use the ordinary Spot order path (the server refuses them before listing).
+  const notTradingYet = isTestMarketPair(pair) && pair.toUpperCase() !== 'NRX/USDT' && !isManagedTradablePair(pair) && !(privateVta && vta.snapshot && marketPrice) && !vtaUnconfirmed;
   const vtaLocked = privateVta && (submitting || vtaUnconfirmed);
   useEffect(() => onSessionChange(() => {
     if (!privateVta) return;

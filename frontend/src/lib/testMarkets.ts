@@ -42,6 +42,10 @@ export interface TestAsset {
   listingAt: string;
   initialPrice: number;
   state: TestMarketState;
+  /** Managed listings only (Admin → Listings). */
+  managed?: boolean;
+  logo?: string | null;
+  displayTimeZone?: string;
 }
 
 export interface TestMarketsSnapshot {
@@ -49,8 +53,37 @@ export interface TestMarketsSnapshot {
   assets: TestAsset[];
 }
 
+/**
+ * Managed listings (Admin → Listings) are not in code: the public catalogue on
+ * the market edge names them. Parsing that catalogue registers each pair here,
+ * with its logo and whether it trades on Spot after listing.
+ */
+const MANAGED_PAIR_PATTERN = /^[A-Z][A-Z0-9]{1,9}\/USDT$/;
+const managedListings = new Map<string, { symbol: string; logo: string | null; tradable: boolean }>();
+
+export function registerManagedListings(assets: readonly TestAsset[]): void {
+  for (const asset of assets) {
+    if (asset.managed) managedListings.set(asset.pair, { symbol: asset.symbol, logo: asset.logo ?? null, tradable: asset.isTradable });
+  }
+}
+
+export function isManagedListingPair(pair: string | null | undefined): boolean {
+  return typeof pair === 'string' && managedListings.has(pair.toUpperCase());
+}
+
+/** A managed listing that trades on ordinary Spot once listed (the server enforces the time). */
+export function isManagedTradablePair(pair: string | null | undefined): boolean {
+  return typeof pair === 'string' && managedListings.get(pair.toUpperCase())?.tradable === true;
+}
+
+/** The logo a published listing carries, by ticker. Never a registry lookup by ticker. */
+export function managedListingLogo(symbol: string): string | null | undefined {
+  for (const listing of managedListings.values()) if (listing.symbol === symbol.toUpperCase()) return listing.logo;
+  return undefined;
+}
+
 export function isTestMarketPair(pair: string | null | undefined): boolean {
-  return typeof pair === 'string' && TEST_MARKET_PAIRS.includes(pair.toUpperCase());
+  return typeof pair === 'string' && (TEST_MARKET_PAIRS.includes(pair.toUpperCase()) || managedListings.has(pair.toUpperCase()));
 }
 
 const finiteOrNull = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
@@ -61,8 +94,12 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
   if (!body || typeof body.serverTime !== 'number' || !Array.isArray(body.assets)) return null;
   const assets: TestAsset[] = [];
   for (const raw of body.assets as any[]) {
-    if (!raw || typeof raw.pair !== 'string' || !isTestMarketPair(raw.pair) || raw.isTestAsset !== true
-      || raw.isTradable !== (raw.pair.toUpperCase() === 'NRX/USDT')) continue;
+    const managed = raw?.managed === true;
+    if (!raw || typeof raw.pair !== 'string' || raw.isTestAsset !== true) continue;
+    if (managed) {
+      // A published listing: any well-formed USDT pair that is not a built-in test asset.
+      if (!MANAGED_PAIR_PATTERN.test(raw.pair.toUpperCase()) || TEST_MARKET_PAIRS.includes(raw.pair.toUpperCase()) || typeof raw.isTradable !== 'boolean') continue;
+    } else if (!isTestMarketPair(raw.pair) || raw.isTradable !== (raw.pair.toUpperCase() === 'NRX/USDT')) continue;
     const listingAt = typeof raw.listingAt === 'string' ? Date.parse(raw.listingAt) : NaN;
     const state = raw.state ?? {};
     if (!Number.isFinite(listingAt) || (state.phase !== 'pre-listing' && state.phase !== 'live')) continue;
@@ -88,6 +125,11 @@ export function parseTestMarkets(payload: unknown): TestMarketsSnapshot | null {
         quoteVolume24h: finiteOrNull(state.quoteVolume24h),
         serverTime: finiteOrNull(state.serverTime) ?? body.serverTime,
       },
+      ...(managed ? {
+        managed: true,
+        logo: typeof raw.logo === 'string' && /^data:image\/(png|jpeg|webp|svg\+xml);base64,/.test(raw.logo) ? raw.logo : null,
+        displayTimeZone: typeof raw.displayTimeZone === 'string' ? raw.displayTimeZone : 'UTC',
+      } : {}),
     });
   }
   return { serverTime: body.serverTime, assets };
@@ -241,4 +283,22 @@ export function withSimulationPreview(url: string, previewTime: string | null): 
 
 export function testMarketSlug(pair: string): string {
   return pair.toUpperCase().replace('/', '-');
+}
+
+/**
+ * A managed listing's opening moment with its time zone spelled out, plus UTC:
+ * «01.10.2026 · 15:00 Europe/Kyiv · 12:00 UTC». An unknown zone falls back to UTC only.
+ */
+export function managedListingTime(value: string, timeZone: string, locale = 'ru-RU'): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '—';
+  const part = (zone: string, withDate: boolean) => new Intl.DateTimeFormat(locale, {
+    ...(withDate ? { day: '2-digit', month: '2-digit', year: 'numeric' } : {}), hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone,
+  }).format(date).replace(',', ' ·');
+  try {
+    if (timeZone === 'UTC') return `${part('UTC', true)} UTC`;
+    return `${part(timeZone, true)} ${timeZone} · ${part('UTC', false)} UTC`;
+  } catch {
+    return `${part('UTC', true)} UTC`;
+  }
 }

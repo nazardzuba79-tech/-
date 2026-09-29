@@ -109,7 +109,7 @@ extracted, no address seeded, and address ownership is not independently verifie
 Refresh and review the snapshot with the owner before activation. No direct
 production SQL or direct authenticated API export was run in this session.
 
-Keep `VITE_MANUAL_DEPOSIT_CATALOGUE` absent/false in production. Implementation
+Keep `VITE_MANUAL_DEPOSIT_CATALOGUE` absent/false in production. Activation (direct Cloudflare read, `VITE_DEPOSIT_CATALOGUE_URL`) follows `docs/CLOUDFLARE_ACTIVATION.md` §B after the reviewed catalogue is in place. Implementation
 is ready for review; deployment, reviewed baseline seeding, remote verification
 and feature activation remain pending explicit owner authorization.
 

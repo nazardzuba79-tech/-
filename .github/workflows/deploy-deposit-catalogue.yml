@@ -1,0 +1,78 @@
+name: Deploy deposit catalogue public read (production Worker)
+
+# Manual only. Updates the EXISTING production Worker
+# `voltex-deposit-catalogue-production` so it also serves the read-only
+# GET /public/deposit-catalogue. It never creates the Worker, never seeds or
+# edits the catalogue, and never sets or rotates DEPOSIT_CATALOGUE_STORE_TOKEN:
+# provisioning, seeding and secrets stay separate owner-approved operations.
+# The Durable Object namespace is unchanged (same script, class and v1 tag).
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type deploy-production-public-read to update the existing production Worker'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-deposit-catalogue-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.inputs.confirm == 'deploy-production-public-read'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: c379227476dedde6dff09c787ffdb510
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate && npm run build
+      - run: npm ci --prefix workers/deposit-catalogue --no-audit --no-fund
+      - name: Worker tests on real workerd (CAS, auth, public view, smoke script)
+        run: npm test --prefix workers/deposit-catalogue && npm run test:smoke --prefix workers/deposit-catalogue
+      - name: Refuse unless the production Worker already exists with its secret
+        working-directory: workers/deposit-catalogue
+        run: |
+          if ! names="$(npx wrangler secret list --env production --format json 2>/dev/null)"; then
+            echo "::error::voltex-deposit-catalogue-production is not provisioned (or not visible to this token). Provision it separately first."
+            exit 1
+          fi
+          printf '%s' "$names" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const n=JSON.parse(s).map(x=>x.name);if(!n.includes('DEPOSIT_CATALOGUE_STORE_TOKEN')){console.error('::error::DEPOSIT_CATALOGUE_STORE_TOKEN is missing on the production Worker; not deploying');process.exit(1)}console.log('production_secret=present')})"
+      - name: Deploy (code only)
+        working-directory: workers/deposit-catalogue
+        run: npx wrangler deploy --env production
+      - name: Resolve the Worker's real public origin from Cloudflare
+        id: origin
+        run: |
+          subdomain="$(curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/subdomain" \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const j=JSON.parse(s);if(!j.success||!j.result?.subdomain)process.exit(1);process.stdout.write(j.result.subdomain)})")"
+          echo "url=https://voltex-deposit-catalogue-production.${subdomain}.workers.dev" >> "$GITHUB_OUTPUT"
+      - name: Read-only production smoke
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if node scripts/smoke-deposit-public.mjs "${{ steps.origin.outputs.url }}" --site-origin https://voltextech.net; then exit 0; fi
+            echo "deposit_smoke_retry attempt=$attempt"; sleep 10
+          done
+          exit 1
+      - name: Next step for the frontend (not done here)
+        run: |
+          {
+            echo "### Deposit public read is live on the Worker"
+            echo ""
+            echo "Set on the Cloudflare Pages production build, then redeploy Pages:"
+            echo ""
+            echo '```'
+            echo "VITE_MANUAL_DEPOSIT_CATALOGUE=true"
+            echo "VITE_DEPOSIT_CATALOGUE_URL=${{ steps.origin.outputs.url }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
