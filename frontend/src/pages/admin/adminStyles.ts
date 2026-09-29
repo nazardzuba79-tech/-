@@ -45,7 +45,8 @@ const LIGHT_THEME_VARS = {
 } as CSSProperties;
 
 export const styles: Record<string, CSSProperties> = {
-  loadingScreen: { minHeight: '100vh', background: '#ffffff' },
+  // The /admin access check renders outside the admin shell: it carries the same light tokens.
+  loadingScreen: { ...LIGHT_THEME_VARS, minHeight: '100vh', background: '#ffffff' },
   // `color` is set explicitly here (not just the --text-* variables) because
   // index.css's `body { color: var(--text-primary) }` resolves against the
   // ORIGINAL dark-theme value at body's own scope — a descendant redefining

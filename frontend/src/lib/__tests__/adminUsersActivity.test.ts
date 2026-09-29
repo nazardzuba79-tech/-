@@ -30,6 +30,10 @@ function load(file: string): any {
   const code = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
+    if (name.endsWith('/adminReadApi')) return {
+      getAdminGateMe: (signal?: AbortSignal) => api.getMe?.(signal),
+      getAdminUsersAbortable: (signal?: AbortSignal) => api.getAdminUsers(undefined, signal),
+    };
     if (name.endsWith('/lib/api') || name === './api') return { api, getToken: () => 'test-only', onSessionChange: () => () => {}, ApiError, API_BASE: '/api/v1' };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
   });
@@ -296,4 +300,91 @@ test('12. customer-only pagination and last-login sorting span pages without an 
   await click(Array.from(host.querySelectorAll('.admin-pagination-top button')).find((button) => button.textContent === '2') ?? null);
   expect(rows()).toEqual(['customer-20']);
   expect(host.textContent).toContain('21–21 из 21');
+});
+
+/* Failure states of the activity read. Unknown deposit numbers are shown as
+   unknown («—», «…», «Не удалось загрузить»), never as 0 or «нет пополнений»,
+   and a failure after a good read keeps that read on screen. */
+const activityCalls2 = () => fetchMock.mock.calls.filter((c: any[]) => String(c[0]).includes('/admin/user-activity')).length;
+
+test('13. first activity read fails (503): «Загрузка…» ends, numbers stay unknown, retry recovers with one request', async () => {
+  const good = activity;
+  activity = null;
+  fetchMock.mockImplementation(async (url: string) => String(url).endsWith('/admin/user-activity') && !activity ? json({ error: 'unavailable' }, 503) : json(good));
+  await mount();
+  const alert = host.querySelector('[data-activity-error]')!;
+  expect(alert.getAttribute('data-activity-error')).toBe('empty');
+  expect(host.textContent).not.toContain('Загрузка…');
+  expect(host.textContent).toContain('Не удалось загрузить');
+  expect(host.textContent).not.toContain('Нет пополнений в очереди');
+  expect(host.querySelector('[data-user-tab="deposits"]')!.textContent).toBe('Пополнения');
+  expect(host.querySelector('[data-user-card="payer"] [data-event-unknown]')).not.toBeNull();
+  expect(host.textContent).toMatch(/Готовы к проверке\s*—/);
+  activity = good;
+  const before = activityCalls2();
+  await click(host.querySelector('[data-activity-retry]'));
+  expect(activityCalls2()).toBe(before + 1);
+  expect(host.querySelector('[data-activity-error]')).toBeNull();
+  expect(host.querySelector('[data-user-card="payer"] [data-event="deposit"]')).not.toBeNull();
+});
+
+test('14. network error and an incomplete answer are failures too, never zeros', async () => {
+  fetchMock.mockImplementation(async (url: string) => { if (String(url).endsWith('/admin/user-activity')) throw new TypeError('Failed to fetch'); return json({}); });
+  await mount();
+  expect(host.querySelector('[data-activity-error="empty"]')).not.toBeNull();
+  await act(async () => root.unmount());
+  root = req('react-dom/client').createRoot(host);
+  modules.clear();
+  fetchMock.mockImplementation(async (url: string) => String(url).endsWith('/admin/user-activity') ? json({ asOf: new Date().toISOString(), packages: [] }) : json({}));
+  await mount();
+  expect(host.querySelector('[data-activity-error="empty"]')).not.toBeNull();
+  expect(host.textContent).not.toContain('Нет пополнений в очереди');
+});
+
+test('15. a failure after a good read keeps the data and says the update failed', async () => {
+  await mount();
+  expect(host.querySelector('[data-user-card="payer"] [data-event="deposit"]')).not.toBeNull();
+  fetchMock.mockImplementation(async (url: string) => String(url).endsWith('/admin/user-activity') ? json({ error: 'unavailable' }, 503) : json({}));
+  // The next read comes from the normal visible-tab cadence: an hour later the tab is shown again.
+  visibility = 'hidden'; dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+  visibility = 'visible';
+  jest.useFakeTimers({ doNotFake: ['setImmediate', 'queueMicrotask', 'nextTick'] });
+  jest.setSystemTime(Date.now() + 2 * HOUR);
+  await act(async () => { dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange')); await flush(); await flush(); });
+  jest.useRealTimers();
+  const alert = host.querySelector('[data-activity-error]')!;
+  expect(alert.getAttribute('data-activity-error')).toBe('stale');
+  expect(alert.textContent).toContain('Не удалось обновить данные о пополнениях');
+  expect(host.querySelector('[data-user-card="payer"] [data-event="deposit"]')).not.toBeNull();
+  expect(host.textContent).not.toMatch(/Готовы к проверке\s*—/);
+});
+
+test('16. a hung activity read is aborted after the timeout and reported, not left «Загрузка…»', async () => {
+  jest.useFakeTimers({ doNotFake: ['setImmediate', 'queueMicrotask', 'nextTick'] });
+  let signal: AbortSignal | undefined;
+  fetchMock.mockImplementation((url: string, init: any = {}) => {
+    if (!String(url).endsWith('/admin/user-activity')) return Promise.resolve(json({}));
+    signal = init.signal;
+    return new Promise((_, fail) => init.signal.addEventListener('abort', () => fail(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
+  });
+  await mount();
+  expect(host.textContent).toContain('Загрузка…');
+  await act(async () => { jest.advanceTimersByTime(20_000); await flush(); await flush(); });
+  expect(signal!.aborted).toBe(true);
+  expect(host.textContent).not.toContain('Загрузка…');
+  expect(host.querySelector('[data-activity-error="empty"]')).not.toBeNull();
+});
+
+test('17. users list failure offers a retry; a retry while one is running is not doubled', async () => {
+  api.getAdminUsers.mockRejectedValueOnce(Object.assign(new Error('Request failed (503)'), { status: 503 }));
+  await mount();
+  expect(host.querySelector('[data-users-error="empty"]')).not.toBeNull();
+  let answer!: (v: any) => void;
+  api.getAdminUsers.mockImplementation(() => new Promise(done => { answer = done; }));
+  const retry = host.querySelector('[data-users-retry]') as HTMLButtonElement;
+  await act(async () => { retry.click(); retry.click(); await flush(); });
+  expect(api.getAdminUsers).toHaveBeenCalledTimes(2);
+  await act(async () => { answer(structuredClone(users)); await flush(); });
+  expect(host.querySelector('[data-users-error]')).toBeNull();
+  expect(rows().length).toBe(5);
 });

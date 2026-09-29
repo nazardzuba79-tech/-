@@ -4421,3 +4421,35 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved: existing admin badges, deposit activity/filtering, registration notifications, all trading and financial logic, current-main work from other agents. No production data, deployment, or merge touched.
 - Verification: 117 backend tests, 12 frontend tests, 1 disposable PostgreSQL integration test; backend/frontend TypeScript, Prisma validate, and production frontend build passed. Existing Vite chunk-size warning only. Next: owner review of the recoverable-password security tradeoff and migration before any release.
 - Owner authorized publication. PR #325 CI exposed one stale `frontend/src/lib/api.ts` fingerprint in `frontend/src/lib/__tests__/futuresTickerHeader.test.ts` caused solely by the additive Admin Users DTO field. Follow-up `35411ed7` updates that test baseline; targeted 47/47 tests pass. No Futures runtime changed. Final-head CI and Render deploy must still be verified before claiming production success.
+- PR #325's updated head passed all 18 remote workflows. Before merge, main advanced via PR #326 (admin access and activity failures); reconciliation preserves both complete handoff sections, the new admin loading/error behavior, and the password column. Only four new activity-test selectors now target the retained mobile deposit badges instead of the replaced desktop Event cell. On this combined tree: 159 focused Jest tests, 1 disposable PostgreSQL test, backend TypeScript and frontend production build passed. Final-head CI/deployment still pending.
+
+## Claude — 2026-09-29 — PR 1: /admin access-check states and Users activity failures
+
+- **Base:** fresh `origin/main` `a7925e90` (release #324). Branch `claude/ecstatic-brahmagupta-cwkvt5`.
+- **Files:**
+  - `frontend/src/lib/useAdminGate.ts`
+  - `frontend/src/lib/adminReadApi.ts` (added in follow-up commits pushed to this branch by the owner's other agent)
+  - `frontend/src/pages/admin/AdminLayout.tsx`
+  - `adminUserActivity.ts`
+  - `AdminUsersPage.tsx`
+  - `adminStyles.ts`, `adminConsole.css`
+  - `frontend/src/lib/api.ts` is back to byte-identical with main: the abortable `/me` and `/admin/users` reads live in `adminReadApi.ts`, so the api fingerprint needs no normalisation
+  - tests: `adminConsoleInteractions`, `adminUsersActivity`
+  - `scripts/qa-admin-gate.cjs`, `.github/workflows/admin-gate.yml`, `docs/qa/admin-gate/`
+- **Gate:**
+  - States: checking / ok / denied (no token, 401, 403, non-admin) / error (5xx, network, malformed, or a 15 s timeout that aborts the request).
+  - The error state keeps the admin on `/admin` with «Повторить» — no redirect.
+  - Admin pages and their requests mount only on ok; the server-side `requireAdmin` is unchanged.
+  - Retry is single-flight, and a session change re-checks.
+- **Users page:**
+  - The activity read has a 20 s timeout and strict parsing: an incomplete answer is a failure, not zeros.
+  - Unknown numbers render as «—» and «…»; after a good read, a failure keeps the data and is marked stale.
+  - Contextual «Повторить» on the activity and the users list; the users list also gets a 20 s timeout and an in-flight guard.
+  - Hourly visible-only polling and the removal of the page-wide «Обновить» are preserved.
+- **Preserved:** Codex's customer-only list (#306 era) and last-login sort; НОВЫЙ next to the email; the deposit/credit flows; the alert poll (now started only on ok).
+- **Checks:**
+  - Frontend `tsc -b` + build.
+  - Jest after the merge: `adminConsoleInteractions` 19/19, `adminUsersActivity` 17/17, `futuresTickerHeader` 35/35, plus `renderBandwidthBudget`, `adminDepositRails`, `routeCodeSplitting`.
+  - Full Jest before the refactor, branch vs clean main: only the api fingerprint (resolved by `adminReadApi.ts`) and `registerWalletTailwindOwnership` "build output" differed. The latter fails identically on a clean-main build (pre-existing, skipped when `dist` is absent).
+  - Browser: `qa-admin-gate.cjs` 22/22, three consecutive runs.
+- **Unresolved:** the production slowdown is not measured or claimed fixed; the admin gate CI workflow has not yet run remotely.
