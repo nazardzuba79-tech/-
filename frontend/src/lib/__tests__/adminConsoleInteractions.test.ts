@@ -20,6 +20,10 @@ function load(file: string): any {
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
     if (name.endsWith('/depositCatalogue')) return { MANUAL_DEPOSIT_CATALOGUE: false };
+    if (name.endsWith('/adminReadApi')) return {
+      getAdminGateMe: (signal?: AbortSignal) => api.getMe(signal),
+      getAdminUsersAbortable: (signal?: AbortSignal) => api.getAdminUsers?.(undefined, signal),
+    };
     if (name.endsWith('/api')) return { api, getToken: () => token, onSessionChange: (listener: () => void) => { sessionListeners.add(listener); return () => sessionListeners.delete(listener); }, ApiError: class extends Error {} };
     if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
@@ -36,7 +40,6 @@ beforeEach(() => {
   wallets = [{ chain: 'ethereum', nativeAsset: 'ETH', nativeDepositsSupported: true, tokens: ['USDT'], address: '0x' + 'a'.repeat(40), defaultAddress: '0x' + 'b'.repeat(40), isOverridden: true, envConfigured: true, updatedAt: null, updatedByAdminId: 'admin-1' }];
   token = 'test-only';
   api = { getAdminWallets: jest.fn(async () => wallets), setAdminWalletAddress: jest.fn(async (chain, address) => { wallets = wallets.map(w => w.chain === chain ? { ...w, address } : w); }), resetAdminWallet: jest.fn(async chain => { wallets = wallets.map(w => w.chain === chain ? { ...w, address: w.defaultAddress, isOverridden: false } : w); }), getMe: jest.fn(async () => ({ isAdmin: true, email: 'qa@example.invalid' })) };
-  api.getAdminGateMe = api.getMe;
   modules.clear();
   sessionListeners.clear();
 });
