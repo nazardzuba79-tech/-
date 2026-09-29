@@ -238,7 +238,10 @@ test.each([
     // beside «Только уменьшение» (disabled under Reduce Only), and each level
     // shows its % from the price and ≈ P&L. Same `protectionEnabled` state,
     // same `armedProtection` and order payload; the standard ticket is untouched.
-    "b32bb1a41f8b50022bbf691d603ff57383d8826b2cea3a77ac1d4558ff306946"
+    // Follow-up: TP/SL uses the round plus, and decimal text drafts are fail-closed:
+    // comma decimals normalize to a dot, unsupported syntax is preserved as invalid
+    // instead of being silently rewritten into another executable number.
+    "2545d373aa9acfaf24a7ade254d64f15bd883c0a5c3943aae74917c001d86a87"
   ],
   [
     "components/FuturesAccountSummary.tsx",

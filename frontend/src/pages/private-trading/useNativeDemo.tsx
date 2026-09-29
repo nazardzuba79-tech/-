@@ -10,6 +10,7 @@ import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCa
 import { compactNativeUiState,shouldPollNativeLive,NATIVE_LIVE_POLL_MS } from '../../lib/nativeLivePolicy';
 import { useNativeHistory } from './useNativeHistory';
 import { createVisibleRead } from '../../lib/visibleRead';
+import { readNativeEngineHint,writeNativeEngineHint } from '../../lib/nativeEngineHint';
 
 const NATIVE_WARM_PREFIX='voltex:native-state:v2:';
 const NATIVE_WARM_MAX_AGE_MS=2*60_000;
@@ -73,6 +74,10 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
    */
   const[binding,setBinding]=useState<'unknown'|'owner'|'ordinary'>('unknown');
   const requested=binding==='owner'||binding==='unknown';
+  /** Display-only: this user's last verdict, so the ticket paints its final
+   * shape before this one arrives. Never authorizes anything. See lib/nativeEngineHint. */
+  const[engineHint]=useState(()=>readNativeEngineHint(getToken()));
+  useEffect(()=>{if(binding!=='unknown')writeNativeEngineHint(getToken(),binding==='owner');},[binding]);
   const[error,setError]=useState(''),[busy,setBusy]=useState(false),[card,setCard]=useState<PrivateResultCard|null>(null);
   const errorRef=useRef('');
   const[selecting,setSelecting]=useState<'entry'|'exit'|null>(null),[candle,setCandle]=useState<ChartTradeCandle|null>(null),[exitId,setExitId]=useState<string|null>(null);
@@ -210,7 +215,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   function selectEntry(p:NativePosition){onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));setSelectedId(p.id);setFocus(f=>({tradeId:p.id,time:p.openedAt,sequence:(f?.sequence??0)+1}));}
   function exitOnChart(p:NativePosition){if(p.symbol!==normalized){pendingExit.current=p.id;onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));}setSelectedId(p.id);setExitId(p.id);setCandle(null);setSelecting('exit');}
   const getState=useCallback(()=>stateRef.current,[]),getError=useCallback(()=>errorRef.current,[]);
-  return{requested,allowed,checked,binding,state,stateLoaded,getState,getError,error,busy,card,setCard,dialog,setDialog,candle,setCandle,entryIntent,exitId,setExitId,selectedId,run,execute,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
+  return{requested,allowed,checked,binding,engineHint,state,stateLoaded,getState,getError,error,busy,card,setCard,dialog,setDialog,candle,setCandle,entryIntent,exitId,setExitId,selectedId,run,execute,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
     setHistoryDemand:history.setHistoryDemand,historyHasMore:history.historyHasMore,loadMoreHistory:history.loadMoreHistory,
     pickEntry:()=>{setEntryIntent(true);setCandle(null);setExitId(null);setSelecting('entry');}};
 }
