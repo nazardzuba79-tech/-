@@ -6,7 +6,7 @@ export function SpotOrdersEmpty({ title, detail, loading = false, kind = 'orders
   onRetry?: () => void; retryLabel?: string; retrying?: boolean;
 }) {
   const Icon = kind === 'assets' ? WalletCards : kind === 'history' ? History : LayoutList;
-  return <div className={`spot-orders-empty${onRetry ? ' terminal-account-state' : ''}`} role={onRetry ? 'alert' : 'status'} aria-busy={loading || retrying}>
+  return <div className={`spot-orders-empty${onRetry ? ' terminal-account-state' : ''}`} role={onRetry ? 'alert' : 'status'} aria-busy={loading || retrying} data-initial-loading={loading || undefined}>
     <span className="spot-orders-empty-icon" aria-hidden="true"><Icon size={19} strokeWidth={1.5} /></span>
     <div><strong>{title}</strong>{detail && <span>{detail}</span>}</div>
     {onRetry && <button type="button" className="terminal-account-retry" disabled={loading || retrying} onClick={onRetry}>{retryLabel}</button>}
