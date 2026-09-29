@@ -40,6 +40,7 @@ export function FuturesOrderForm({
   symbol,
   onPlaced,
   onOpenTransfer,
+  onTransfer,
   pickedPrice,
   pickedPriceSequence,
   executionEnabled = true,
@@ -54,6 +55,9 @@ export function FuturesOrderForm({
   symbol: string;
   onPlaced: () => void;
   onOpenTransfer?: () => void;
+  /** The «+» beside «Доступно» on the compact ticket: move money into this
+   *  account. The page decides where that goes; without it no «+» renders. */
+  onTransfer?: () => void;
   /** A level clicked in the order book — fills the price field, the same
    *  affordance the spot terminal's form has. */
   pickedPrice?: string | null;
@@ -771,6 +775,40 @@ export function FuturesOrderForm({
     place(activeCloseTarget ? (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY') : side);
   }
 
+  const reduceOnlyControl = (
+    <label className="fo-reduceOnlyRow">
+      <input type="checkbox" checked={reduceOnly} onChange={(e) => {
+        setReduceOnly(e.target.checked);
+        if (!e.target.checked) setCloseTarget(null);
+      }} />
+      {t('futures.reduceOnly')}
+    </label>
+  );
+  /** TP/SL on the compact ticket: a checkbox beside Reduce Only, only on an
+   *  engine that arms it WITH the order (see `entryProtection`). */
+  const archiveProtection = archive && execution.entryProtection && connectedFamily;
+  /**
+   * What a level means before it is sent: its distance from the order's
+   * price and, once the size is known, the P&L it would lock in. A take
+   * profit is a gain and a stop a loss whichever side the button picks, so
+   * the magnitude is the same for a long and a short. Fees are not in it,
+   * hence «≈».
+   */
+  const protectionHint = (raw: string, kind: 'TP' | 'SL') => {
+    const level = parseFloat(raw);
+    if (raw === '' || !Number.isFinite(level) || level <= 0 || !(effectivePrice > 0)) return null;
+    const pct = (level / effectivePrice - 1) * 100;
+    const pnl = orderSizeKnown ? Math.abs(level - effectivePrice) * quantityNumber : null;
+    return (
+      <small className={`fo-tpslHint ${kind === 'TP' ? 'up' : 'down'}`} data-tpsl-hint={kind}>
+        {`${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(2)}%`}
+        {pnl !== null && Number.isFinite(pnl) && ` · ≈ ${kind === 'TP' ? '+' : '−'}${formatAmount(pnl)} ${quoteAsset}`}
+      </small>
+    );
+  };
+  /** The same figure the % slider and the margin check size with. */
+  const availableKnown = availableMargin !== null && Number.isFinite(availableMargin);
+
   return (
     <div className="fo-panel">
       <OrderFamilyTabs value={family} archive={archive} onChange={next => {
@@ -822,6 +860,18 @@ export function FuturesOrderForm({
             whatever either one contains. The caption used to sit ABOVE the
             quantity field and INSIDE the price field, which is exactly why
             the two were different heights. */}
+        {archive && <div className="fo-availRow" data-available-margin={availableKnown ? availableMargin!.toFixed(2) : undefined}>
+          <span className="fo-availLabel">{t('trade.available')}</span>
+          <span className="fo-availValue mono" aria-busy={!availableKnown && account.balances.loading ? true : undefined}>
+            {availableKnown
+              ? `${formatAmount(availableMargin!)} ${quoteAsset}`
+              : account.balances.loading ? <span className="fo-availPending" aria-hidden="true" /> : '—'}
+          </span>
+          {onTransfer && <button type="button" className="fo-availTransfer" onClick={onTransfer}
+            aria-label={t('futures.transferAction')} title={t('futures.transferAction')}>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M5 1.5v7M1.5 5h7" /></svg>
+          </button>}
+        </div>}
         {family === 'LIMIT' ? (
           <label className="fo-label fo-field fo-priceField">
             <span className="fo-fieldCaption">{t('trade.price')}</span>
@@ -890,32 +940,21 @@ export function FuturesOrderForm({
         {/* The ONLY persistent slider in this panel. */}
         <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} continuous label={t('trade.quantity')} />
 
-        {archive && execution.entryProtection && connectedFamily && !reduceOnly && <div className="archive-order-protection">
-          <button type="button" className="archive-protection-toggle" aria-label="TP/SL" title={t('futures.tpslAtEntry')} aria-expanded={protectionEnabled} aria-controls={protectionPanelId} onClick={() => setBracketExpanded(enabled => !enabled)}>
-            <span className="archive-protection-toggle-icon" aria-hidden="true">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z" />
-                <path d="m8.5 12 2.5 2.5 4.5-5" />
-              </svg>
-            </span>
-            <span className="archive-protection-copy"><strong>TP/SL</strong></span>
-            <svg className="archive-protection-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
-          </button>
-          <div id={protectionPanelId} hidden={!protectionEnabled}>
-            <div className="archive-protection-fields">
-              <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(e.target.value)} /></label>
-              <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(e.target.value)} /></label>
-            </div>
+        {archive ? <div className="fo-optionsRow">
+          {archiveProtection && <label className="fo-tpslToggle" title={t(reduceOnly ? 'futures.tpslReduceOnlyOff' : 'futures.tpslAtEntry')}>
+            <input type="checkbox" checked={protectionEnabled && !reduceOnly} disabled={reduceOnly}
+              aria-controls={reduceOnly ? undefined : protectionPanelId} data-entry-protection-toggle="true"
+              onChange={e => setBracketExpanded(e.target.checked)} />
+            TP / SL
+          </label>}
+          {reduceOnlyControl}
+        </div> : reduceOnlyControl}
+        {archiveProtection && !reduceOnly && <div className="archive-order-protection" id={protectionPanelId} hidden={!protectionEnabled}>
+          <div className="archive-protection-fields">
+            <label><span>{t('futures.takeProfitLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.takeProfitLabel')} inputMode="decimal" placeholder="TP" data-entry-take-profit="true" value={entryTakeProfit} onChange={e => setEntryTakeProfit(e.target.value)} />{protectionHint(entryTakeProfit, 'TP')}</label>
+            <label><span>{t('futures.stopLossLabel')}</span><input disabled={!protectionEnabled} aria-label={t('futures.stopLossLabel')} inputMode="decimal" placeholder="SL" data-entry-stop-loss="true" value={entryStopLoss} onChange={e => setEntryStopLoss(e.target.value)} />{protectionHint(entryStopLoss, 'SL')}</label>
           </div>
         </div>}
-
-        <label className="fo-reduceOnlyRow">
-          <input type="checkbox" checked={reduceOnly} onChange={(e) => {
-            setReduceOnly(e.target.checked);
-            if (!e.target.checked) setCloseTarget(null);
-          }} />
-          {t('futures.reduceOnly')}
-        </label>
 
         {/* TP/SL AT ENTRY — only on an engine that takes them WITH the order.
             See `entryProtection` in lib/futuresExecution: the simulation

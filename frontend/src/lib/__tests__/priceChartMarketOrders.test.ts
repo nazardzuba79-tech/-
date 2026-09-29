@@ -109,6 +109,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === '../lib/spotChartPriceFormat') return chartPriceFormat;
     if (name === '../lib/chartTrading') return chartTrading;
     if (name === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+    if (name === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
@@ -372,8 +373,13 @@ describe('clean terminal chart presentation preserves chart behavior', () => {
     const tree = chart.render();
     expect(chart.chartOptions[0].grid).toEqual({ vertLines: { visible: false }, horzLines: { visible: false } });
     expect(chart.chartOptions[0].crosshair.horzLine.color).toBe('#f0b90b');
+    // Spot keeps the flat toggle; Futures reaches the same state through its
+    // «Индикаторы» menu (ChartToolbarMenus), which receives it as a prop.
     const ma = nodes(tree).find(node => node.type === 'button' && node.key === 'ma');
-    expect(ma.props['aria-pressed']).toBe(true);
+    const menus = nodes(tree).find(node => Array.isArray(node.props?.indicators));
+    const maOn = ma ? ma.props['aria-pressed'] : menus.props.indicators.find((i: any) => i.key === 'ma').active;
+    expect(maOn).toBe(true);
+    expect(Boolean(menus)).toBe(props.market === 'futures');
     chart.unmount();
   });
   test('collapsing the rail leaves conditional order lines and indicator settings intact and exits the active drawing tool', async () => {

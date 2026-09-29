@@ -111,6 +111,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id === '../lib/spotChartPriceFormat') return chartPriceFormat;
     if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+    if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
     if (id === './ChartDrawingLayer') return layer;
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     return localRequire(id);
@@ -242,6 +243,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
       if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+    if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, output);
@@ -346,6 +348,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
       if (id === '../lib/chartTrading') return chartTrading;
     if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
+    if (id === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
       if (id === './ChartDrawingLayer') return layer;
       return localRequire(id);
     }, bindings);

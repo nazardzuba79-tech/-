@@ -42,6 +42,8 @@ jobs:
         run: npm test -- --runInBand --json --outputFile=native-tests.json --runTestsByPath src/private-trading/__tests__/nativeDemoEngine.test.ts src/private-trading/__tests__/nativeDemoReplay.test.ts src/private-trading/__tests__/nativeDemoService.test.ts src/private-trading/__tests__/nativeReduceOnlyClose.test.ts src/private-trading/__tests__/crossDemo.test.ts src/api/routes/__tests__/nativeDemoAccess.test.ts frontend/src/lib/__tests__/nativeDemoFrontend.test.ts frontend/src/lib/__tests__/largeNumberPresentation.test.ts frontend/src/lib/__tests__/privateTradingFrontend.test.ts src/private-trading/__tests__/simulationOnlyIsolation.test.ts frontend/src/lib/__tests__/cardNumberFormat.test.ts frontend/src/lib/__tests__/privateTradingFrontend.test.ts frontend/src/lib/__tests__/largeNumberPresentation.test.ts
       - name: Positions P&L and ROI presentation tests
         run: npx jest --runInBand frontend/src/lib/__tests__/futuresUnrealizedPnl.test.ts frontend/src/lib/__tests__/futuresReferenceRow.test.ts
+      - name: Compact ticket options and chart menus
+        run: npx jest --runInBand frontend/src/lib/__tests__/futuresCompactTicketOptions.test.ts frontend/src/lib/__tests__/priceChartMarketOrders.test.ts frontend/src/lib/__tests__/futuresUiPolish.test.ts
       - name: Disposable browser tooling
         id: browser-tooling
         run: |

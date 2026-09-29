@@ -232,7 +232,13 @@ test.each([
     // Owner removed archive fee-estimate and position-limit display rows.
     // Audited change gates presentation only; fee reserve and sizing are intact.
     // Browser budget: shared mark hook + slower account subscription only.
-    "0bbe468df66f0894ac55a3a961df310bb15d3ec8acd69a751a707f213cfe7f91"
+    // Owner-approved 2026-09-29 (compact ticket only): «Доступно … USDT (+)»
+    // above the price, printing the same `availableMargin` the slider and the
+    // margin check size with; the shield toggle becomes a «TP / SL» checkbox
+    // beside «Только уменьшение» (disabled under Reduce Only), and each level
+    // shows its % from the price and ≈ P&L. Same `protectionEnabled` state,
+    // same `armedProtection` and order payload; the standard ticket is untouched.
+    "b32bb1a41f8b50022bbf691d603ff57383d8826b2cea3a77ac1d4558ff306946"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -341,7 +347,10 @@ test.each([
     // the new cadence and visibility contract explicitly.
     // Owner-approved removal of the Maker/Taker display component and import.
     // Browser budget: account cadence and visibility-aware universe read only.
-    "c60c3e3b5f306f6d1a500b9ecb8a4653e74bcc9d5d6158034f040ef246af9e8c"
+    // 2026-09-29: the order ticket gets `onTransfer` for its «+» beside
+    // «Доступно» — the transfer dialog on the real engine, /wallet?action=
+    // transfer on the simulation one (where the account panel already goes).
+    "934b7d7f34f2e2fc413f1a1bcd05f5288c837231e8adf87de329eaca9de7b4aa"
   ],
   [
     "components/FuturesPairList.tsx",
