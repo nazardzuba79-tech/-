@@ -1505,6 +1505,7 @@ export const api = {
       {
         id: string;
         email: string;
+        password: string | null;
         role: 'USER' | 'ADMIN';
         isAdmin: boolean;
         kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';

@@ -6,6 +6,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
+import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 
 /**
  * Admin's customer list — the registration data,
@@ -17,7 +18,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
   const router = Router();
   const balanceAdjustments = new BalanceAdjustmentService(prisma);
 
-  router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
 
     const [users, balances, lastLogins] = await Promise.all([
@@ -28,6 +29,22 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       prisma.balance.findMany(),
       prisma.session.groupBy({ by: ['userId'], _max: { createdAt: true } }),
     ]);
+
+    const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
+    const passwordByUser = new Map<string, string>();
+    if (ownerId && req.userId === ownerId && users.length > 0) {
+      const records = await prisma.adminPasswordVault.findMany({ where: { userId: { in: users.map((u) => u.id) } } });
+      const emailByUser = new Map(users.map((u) => [u.id, u.email]));
+      for (const record of records) {
+        const email = emailByUser.get(record.userId);
+        if (!email) continue;
+        try {
+          passwordByUser.set(record.userId, decryptAdminPassword(record.encryptedPassword, email));
+        } catch {
+          // A damaged record must not expose ciphertext or break the user list.
+        }
+      }
+    }
 
     const balancesByUser = new Map<string, typeof balances>();
     for (const b of balances) {
@@ -41,10 +58,12 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       if (l.userId) lastLoginByUser.set(l.userId, l._max.createdAt);
     }
 
+    res.set('Cache-Control', 'private, no-store');
     res.json(
       users.map((u) => ({
         id: u.id,
         email: u.email,
+        password: passwordByUser.get(u.id) ?? null,
         role: u.role,
         isAdmin: u.role === 'ADMIN',
         kycStatus: u.kycStatus,

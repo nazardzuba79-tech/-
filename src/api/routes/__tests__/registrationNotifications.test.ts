@@ -1,5 +1,6 @@
 process.env.JWT_SECRET = 'synthetic-registration-notification-secret-123456';
 process.env.REGISTRATION_OPEN = 'true';
+process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
 
 import request from 'supertest';
 import express from 'express';

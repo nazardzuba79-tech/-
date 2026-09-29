@@ -4412,3 +4412,54 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Combined verification actually run: 17 focused suites / 325 tests PASS, covering P&L/ROI, locale integrity, native terminal/unknown-account behavior, homepage snapshots and SSR, Copy period rendering/progression, published snapshots/request deadlines, payload redaction and workflow coverage. Backend TypeScript build and frontend TypeScript plus standard Vite production build PASS; changed browser-script syntax and diff whitespace PASS. Existing Vite large-chunk warning remains.
 - No release migration: Prisma schema, migration files and dependency manifests/locks are unchanged relative to `b3864580`. No production database or production account was accessed to make that comparison.
 - Browser QA remains the final-head CI gate because this workspace has no Chromium executable; no new browser run is claimed. This combined preparation performed no push, remote merge, deployment, production request or trade.
+
+## Codex — 2026-09-29 — Admin Users future-password column
+
+- Base: fresh `origin/main` `a7925e90` after its unrelated Futures/Copy/Home update. Implementation commit: `cb04f963` on `codex/admin-registration-passwords`.
+- New USER registration and password change save an AES-GCM encrypted, owner-readable copy alongside the existing bcrypt hash. The Admin Users desktop `Событие` column becomes `Пароль`; older accounts without a saved copy show `—`. Only the configured owner admin receives decrypted values; other admins receive null. The additive vault table cascades on account deletion.
+- Material files: `prisma/schema.prisma`, `prisma/migrations/20260929120000_admin_password_vault/migration.sql`, `src/services/AdminPasswordVault.ts`, `src/api/routes/{auth,account,adminUsers}.ts`, `frontend/src/{lib/api.ts,pages/admin/AdminUsersPage.tsx}`, and their focused tests plus `scripts/test-admin-password-postgres.cjs`.
+- Preserved: existing admin badges, deposit activity/filtering, registration notifications, all trading and financial logic, current-main work from other agents. No production data, deployment, or merge touched.
+- Verification: 117 backend tests, 12 frontend tests, 1 disposable PostgreSQL integration test; backend/frontend TypeScript, Prisma validate, and production frontend build passed. Existing Vite chunk-size warning only. Next: owner review of the recoverable-password security tradeoff and migration before any release.
+- Owner authorized publication. PR #325 CI exposed one stale `frontend/src/lib/api.ts` fingerprint in `frontend/src/lib/__tests__/futuresTickerHeader.test.ts` caused solely by the additive Admin Users DTO field. Follow-up `35411ed7` updates that test baseline; targeted 47/47 tests pass. No Futures runtime changed. Final-head CI and Render deploy must still be verified before claiming production success.
+- PR #325's updated head passed all 18 remote workflows. Before merge, main advanced via PR #326 (admin access and activity failures); reconciliation preserves both complete handoff sections, the new admin loading/error behavior, and the password column. Only four new activity-test selectors now target the retained mobile deposit badges instead of the replaced desktop Event cell. On this combined tree: 159 focused Jest tests, 1 disposable PostgreSQL test, backend TypeScript and frontend production build passed. Final-head CI/deployment still pending.
+- Reconciled-head admin-gate CI browser QA then found three selectors still targeting deposit badges in the removed desktop Event cell. `scripts/qa-admin-gate.cjs` now checks the retained mobile-card badges as attached at both viewports; no production UI or financial flow changed. Await new CI before merging.
+
+## Claude — 2026-09-29 — PR 1: /admin access-check states and Users activity failures
+
+- **Base:** fresh `origin/main` `a7925e90` (release #324). Branch `claude/ecstatic-brahmagupta-cwkvt5`.
+- **Files:**
+  - `frontend/src/lib/useAdminGate.ts`
+  - `frontend/src/lib/adminReadApi.ts` (added in follow-up commits pushed to this branch by the owner's other agent)
+  - `frontend/src/pages/admin/AdminLayout.tsx`
+  - `adminUserActivity.ts`
+  - `AdminUsersPage.tsx`
+  - `adminStyles.ts`, `adminConsole.css`
+  - `frontend/src/lib/api.ts` is back to byte-identical with main: the abortable `/me` and `/admin/users` reads live in `adminReadApi.ts`, so the api fingerprint needs no normalisation
+  - tests: `adminConsoleInteractions`, `adminUsersActivity`
+  - `scripts/qa-admin-gate.cjs`, `.github/workflows/admin-gate.yml`, `docs/qa/admin-gate/`
+- **Gate:**
+  - States: checking / ok / denied (no token, 401, 403, non-admin) / error (5xx, network, malformed, or a 15 s timeout that aborts the request).
+  - The error state keeps the admin on `/admin` with «Повторить» — no redirect.
+  - Admin pages and their requests mount only on ok; the server-side `requireAdmin` is unchanged.
+  - Retry is single-flight, and a session change re-checks.
+- **Users page:**
+  - The activity read has a 20 s timeout and strict parsing: an incomplete answer is a failure, not zeros.
+  - Unknown numbers render as «—» and «…»; after a good read, a failure keeps the data and is marked stale.
+  - Contextual «Повторить» on the activity and the users list; the users list also gets a 20 s timeout and an in-flight guard.
+  - Hourly visible-only polling and the removal of the page-wide «Обновить» are preserved.
+- **Preserved:** Codex's customer-only list (#306 era) and last-login sort; НОВЫЙ next to the email; the deposit/credit flows; the alert poll (now started only on ok).
+- **Checks:**
+  - Frontend `tsc -b` + build.
+  - Jest after the merge: `adminConsoleInteractions` 19/19, `adminUsersActivity` 17/17, `futuresTickerHeader` 35/35, plus `renderBandwidthBudget`, `adminDepositRails`, `routeCodeSplitting`.
+  - Full Jest before the refactor, branch vs clean main: only the api fingerprint (resolved by `adminReadApi.ts`) and `registerWalletTailwindOwnership` "build output" differed. The latter fails identically on a clean-main build (pre-existing, skipped when `dist` is absent).
+  - Browser: `qa-admin-gate.cjs` 22/22, three consecutive runs.
+- **Unresolved:** the production slowdown is not measured or claimed fixed; the admin gate CI workflow has not yet run remotely.
+
+## Claude — 2026-09-29 — Futures: chart menus, «Доступно», TP/SL beside Reduce Only
+
+- Base: fresh `main` `a7925e90` (the earlier `claude/peaceful-volta-h5zw7g` Copy Trading commits were already merged there by #324; the branch was restarted from main). Commit: `4305dcfc`.
+- Owner request: bring exactly three marked pieces of the approved terminal mockup into the real `/futures` terminal. Nothing else from the mockup (palette, layout) was taken.
+- Material files: new `frontend/src/components/ChartToolbarMenus.{tsx,css}`; `PriceChart.tsx` (Futures only: two menus replace the flat type/indicator buttons; Spot/CFD keep them), `FuturesOrderForm.tsx` (compact ticket only: «Доступно … USDT (+)» printing `availableMargin`; TP/SL checkbox in one row with «Только уменьшение», level hints), `FuturesPage.tsx` (`onTransfer`), `FuturesOrderPanelRefinement.css`; tests `futuresCompactTicketOptions.test.ts` (new), stubs in `chartDrawings`/`futuresChartBlank`/`priceChartMarketOrders`, Futures default-MA check reads the menu props, two `futuresUiPolish` fingerprints re-taken with reasons; `scripts/qa-order-panel-refinement.cjs` drives the checkbox; `native-demo-qa.yml` runs the new suite.
+- Preserved: order payload and `armedProtection` (TP/SL still travels on the order, only while ticked, never under Reduce Only, only where `entryProtection`); the standard (non-archive) ticket and its tests; the real engine's behaviour (no TP/SL at entry there, positions table remains the place); `onOpenTransfer` for the account panel; chart types, indicators and their computations.
+- Checks actually run: frontend `tsc -b` and production build PASS; `npx jest frontend/src` — 137 suites pass, 20 fail, and the failing set is identical to clean `main` built the same way (19 fail on unbuilt main; `registerWalletTailwindOwnership` fails on main too once `dist` exists, `isSelected`). Local fixture browser: interaction script 1440/390 PASS; `qa-order-panel-refinement.cjs` PASS 1920/1440/390/320; `qa-native-demo-browser.cjs` and `qa-limit-close.cjs` PASS. Evidence: `docs/qa/futures-compact-ticket/`.
+- Not done / next: TP/SL at entry for ordinary accounts needs the real engine to accept protection on `POST /futures/orders` (backend change, not in this task). Not merged, not deployed.

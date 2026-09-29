@@ -701,6 +701,9 @@ export function FuturesPage() {
               executionEnabled={nativeExecution ? true : (futuresConfig?.symbols.includes(symbol) ?? false)}
               onPlaced={handleOrderPlaced}
               onOpenTransfer={nativeExecution ? undefined : () => setShowTransfer(true)}
+              /* The «+» beside «Доступно»: the same destination the account
+                 panel's «Перевести» reaches on either engine. */
+              onTransfer={nativeExecution ? () => navigate('/wallet?action=transfer') : () => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
               /* The LAST TRADED price, which is what the button beside the

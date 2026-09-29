@@ -6,6 +6,7 @@
  */
 process.env.JWT_SECRET = 'bcrypt-phase2a-isolated-test-secret';
 process.env.REGISTRATION_OPEN = 'true';
+process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
 
 import request from 'supertest';
 import express, { RequestHandler } from 'express';

@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useAdminGate } from '../../lib/useAdminGate';
+import { useAdminGate, type AdminGate } from '../../lib/useAdminGate';
 import { useAdminAlertSound } from '../../lib/useAdminAlerts';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
@@ -27,19 +27,60 @@ const SECTIONS = [
   { to: '/admin/listings', label: 'Листинги', icon: BoxesIcon, group: 'Рынки' },
 ];
 
+const CHECK_ERROR_TEXT: Record<'TIMEOUT' | 'NETWORK' | 'SERVER', string> = {
+  TIMEOUT: 'Сервер не ответил вовремя.',
+  NETWORK: 'Нет связи с сервером.',
+  SERVER: 'Сервер временно недоступен.',
+};
+
+/** What /admin shows before access is confirmed: no sidebar, no identity, no private data. */
+function AdminGateScreen({ gate }: { gate: Extract<AdminGate, { status: 'checking' | 'error' }> }) {
+  const checking = gate.status === 'checking';
+  return (
+    <div style={styles.loadingScreen} className="admin-gate-screen" data-admin-gate={gate.status}>
+      <div className="admin-gate-card" role={checking ? 'status' : 'alert'} aria-live="polite">
+        <LogoMark size={28} />
+        {checking ? (
+          <>
+            <span className="admin-gate-spinner" aria-hidden="true" />
+            <p className="admin-gate-title">Проверяем доступ к админ-панели…</p>
+            {gate.slow && <p className="admin-gate-note" data-admin-gate-slow>Это занимает дольше обычного. Ждём ответ сервера.</p>}
+          </>
+        ) : (
+          <>
+            <p className="admin-gate-title">Не удалось проверить доступ</p>
+            <p className="admin-gate-note" data-admin-gate-reason={gate.reason}>
+              {CHECK_ERROR_TEXT[gate.reason]} Это не отказ в доступе — попробуйте ещё раз.
+            </p>
+            <div className="admin-gate-actions">
+              <button type="button" className="admin-gate-retry" data-admin-gate-retry onClick={gate.retry}>Повторить</button>
+              <Link to="/" className="admin-gate-home">На биржу</Link>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Gate for everything under /admin, via the shared useAdminGate hook — see
  * its own note for why the check is against `role` from GET /me and why
  * nothing here is trusted on its own. Deliberately not linked from anywhere
  * in the normal UI: reached only by a direct visit to /admin.
+ *
+ * The admin pages (and every privileged request they make) mount only on
+ * `ok`. A refused session leaves for the home page; a check that could not
+ * finish stays here with a retry.
  */
 export function AdminLayout() {
-  const { status, me } = useAdminGate();
+  const gate = useAdminGate();
+  const { status, me } = gate;
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  useAdminAlertSound(status !== 'loading' && status !== 'denied');
+  useAdminAlertSound(status === 'ok');
 
-  if (status === 'loading') return <div style={styles.loadingScreen} />;
+  if (gate.status === 'checking' || gate.status === 'error') return <AdminGateScreen gate={gate} />;
   if (status === 'denied') return <Navigate to="/" replace />;
 
   const activeSection = SECTIONS.find((s) => location.pathname.startsWith(s.to));

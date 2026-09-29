@@ -4,6 +4,7 @@ import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { adminUsersRouter } from '../adminUsers';
+import { encryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId, sid: 'sid:' + userId }, process.env.JWT_SECRET!)}`;
@@ -115,6 +116,43 @@ describe('admin users routes', () => {
       expect(prisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { role: 'USER', email: { contains: 'alice', mode: 'insensitive' } } })
       );
+    });
+
+    it('returns stored passwords only to the configured owner, with no ciphertext or cache', async () => {
+      const previousOwner = process.env.PRIVATE_TRADING_OWNER_ID;
+      const previousKey = process.env.API_KEY_ENCRYPTION_SECRET;
+      process.env.PRIVATE_TRADING_OWNER_ID = 'owner-admin';
+      process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
+      try {
+        const encryptedPassword = encryptAdminPassword('ExampleTestPassword123', 'alice@team.com');
+        const prisma = adminPrisma({
+          user: {
+            findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }),
+            findMany: jest.fn().mockResolvedValue([
+              { id: 'new-user', email: 'alice@team.com', role: 'USER', createdAt: new Date(), kycStatus: 'NOT_STARTED' },
+              { id: 'old-user', email: 'old@team.com', role: 'USER', createdAt: new Date(), kycStatus: 'NOT_STARTED' },
+            ]),
+          },
+          adminPasswordVault: {
+            findMany: jest.fn().mockResolvedValue([{ userId: 'new-user', encryptedPassword }]),
+          },
+        });
+        const app = buildApp(prisma);
+        const owner = await request(app).get('/api/v1/admin/users').set('Authorization', authHeader('owner-admin'));
+        expect(owner.status).toBe(200);
+        expect(owner.headers['cache-control']).toContain('no-store');
+        expect(owner.body.map((row: any) => row.password)).toEqual(['ExampleTestPassword123', null]);
+        expect(JSON.stringify(owner.body)).not.toContain(encryptedPassword);
+        const other = await request(app).get('/api/v1/admin/users').set('Authorization', authHeader('other-admin'));
+        expect(other.status).toBe(200);
+        expect(other.body.map((row: any) => row.password)).toEqual([null, null]);
+        expect(prisma.adminPasswordVault.findMany).toHaveBeenCalledTimes(1);
+      } finally {
+        if (previousOwner === undefined) delete process.env.PRIVATE_TRADING_OWNER_ID;
+        else process.env.PRIVATE_TRADING_OWNER_ID = previousOwner;
+        if (previousKey === undefined) delete process.env.API_KEY_ENCRYPTION_SECRET;
+        else process.env.API_KEY_ENCRYPTION_SECRET = previousKey;
+      }
     });
   });
 
