@@ -124,7 +124,7 @@ export interface DepositWallet {
  * address cannot be resolved is DROPPED and flagged, never rendered blank:
  * an empty address in a funds-receiving field is how deposits get lost.
  */
-export function useDepositWallets(active: boolean) {
+export function useDepositWallets(active: boolean, retry = 0) {
   const empty = {
     loaded: false,
     wallets: [] as DepositWallet[],
@@ -172,7 +172,7 @@ export function useDepositWallets(active: boolean) {
     });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+  }, [active, retry]);
 
   return state;
 }
@@ -234,14 +234,14 @@ export function useMinimumEquivalent(
  * credit: an asset only appears because some wallet lists it, and a network
  * only appears under an asset whose own `assets` include it.
  */
-export function useDepositSelection(wallets: DepositWallet[]) {
+export function useDepositSelection(wallets: DepositWallet[], initialAsset = '') {
   const assets = useMemo(() => {
     const seen: string[] = [];
     for (const wallet of wallets) for (const asset of wallet.assets) if (!seen.includes(asset)) seen.push(asset);
     return seen;
   }, [wallets]);
 
-  const [assetChoice, setAsset] = useState('');
+  const [assetChoice, setAsset] = useState(initialAsset);
   const [chainChoice, setChain] = useState('');
 
   // Fall back rather than hold a choice the current wallets cannot honour:

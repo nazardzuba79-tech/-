@@ -40,10 +40,21 @@ const restoredEcosystemKeys = [
   'title', 'subtitle', 'pause', 'resume', 'nasdaq', 'nyse', 'cme',
   'jpmorgan', 'goldman', 'morganstanley',
 ].map(key => `home.ecosystem.${key}`);
+const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search', 'noResults', 'networkHint',
+  'yourAddress', 'changeAsset', 'changeNetwork', 'sendOnly', 'inNetwork', 'lossWarning', 'copyAddress',
+  'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo'].map(key => `deposit.ui.${key}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('localizes every added deposit UI key, preserving asset/network placeholders', () => {
+    for (const code of LOCALES) {
+      expect(Object.keys(dicts[code]).filter(key => key.startsWith('deposit.ui.')).sort()).toEqual([...depositUiKeys].sort());
+      for (const key of depositUiKeys) expect(dicts[code][key].trim()).not.toBe('');
+      for (const key of ['yourAddress', 'networkHint', 'qrLabel']) expect(dicts[code][`deposit.ui.${key}`]).toContain('{asset}');
+      expect(dicts[code]['deposit.ui.qrLabel']).toContain('{network}');
+    }
+  });
   it('has all seven dictionaries, and each is non-trivial', () => {
     expect(Object.keys(dicts).sort()).toEqual([...LOCALES].sort());
     for (const code of LOCALES) {
@@ -186,7 +197,7 @@ describe('translation integrity', () => {
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.
           'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed'];
-        return !key || (!restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key));
+        return !key || (!depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key) && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       // Added for the approved compact order-panel disclosure; older copy remains frozen.

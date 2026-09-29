@@ -5,6 +5,7 @@ import { Key, useLanguage } from '../../lib/i18n';
 import { FieldLabel, Modal, SecondaryButton, Select } from './ui';
 import { formatAmount, formatUsd } from './format';
 import { MANUAL_DEPOSIT_CATALOGUE } from '../../lib/depositCatalogue';
+import { DepositCatalogueDialog } from '../../components/DepositCatalogueDialog';
 
 /**
  * The approved V3 deposit design, on the real deposit backend.
@@ -14,7 +15,12 @@ import { MANUAL_DEPOSIT_CATALOGUE } from '../../lib/depositCatalogue';
  * the reference archive's sample addresses are not used anywhere, and no
  * address is ever constructed client-side.
  */
-export function DepositModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function DepositModal({ open, onClose, initialAsset }: { open: boolean; onClose: () => void; initialAsset?: string }) {
+  if (MANUAL_DEPOSIT_CATALOGUE) return open ? <DepositCatalogueDialog onClose={onClose} initialAsset={initialAsset}/> : null;
+  return <LegacyDepositModal open={open} onClose={onClose}/>;
+}
+
+function LegacyDepositModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, lang } = useLanguage();
   const CHAIN_LABEL: Record<string, Key> = {
     bitcoin: 'deposit.chain.bitcoin',

@@ -1,0 +1,16 @@
+{
+  "base": "08e4af19594d16421ad9814608916dd0e1c368a5",
+  "results": [
+    {
+      "scenario": "BTC→USDT single mouse click",
+      "result": "PASS (reported mouse issue not reproduced)"
+    },
+    {
+      "scenario": "focus USDT → parent render → Enter",
+      "result": "REPRODUCED FAILURE",
+      "focusLost": true,
+      "expected": "USDT",
+      "actual": "BTC"
+    }
+  ]
+}
