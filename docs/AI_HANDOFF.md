@@ -4638,3 +4638,21 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Three suites, `homepageTailwindUtilities`, `marketUniverseScale` and `sharedHeaderStylesheetOwnership`, also fail on clean main 1e6d61db. They are not caused by this PR.
   - `qa-native-demo-browser` at 0535f973: 3 local runs, 44/44 each. The CI `account-summary-1440` timeout on that head did not reproduce; the failed job was re-run once on GitHub.
 - **Unresolved:** the CFD desktop ticket scroll/pinned CTA and the terminal-only «Доход» Nav item (both above) are still open for owner review.
+
+## Claude — 2026-09-29 — Futures ticket follow-up: TP/SL «+», no late TP/SL, dot decimals
+
+- Base: `main` `e17aa533` (PR #328 already carries the compact menus/ticket work). Commit: `28c51cdd`.
+- Owner report on production: TP/SL should be a neat «+»; «Только уменьшение» paints first and TP/SL a moment later; the order-field "font" looks odd.
+- Root cause (load order): the not-ready simulation execution in `useNativeFuturesExecution.ts` spread `REAL_FUTURES_EXECUTION` and so carried `entryProtection: false` until the account loaded. Now true once the engine is known (verdict), cached (tab transcript) or remembered for this user (new `lib/nativeEngineHint.ts`, display-only, localStorage keyed by JWT `sub`, written from `useNativeDemo` on each verdict). `ready` still gates every order; «ordinary» still returns the real engine.
+- Font: unchanged since `a9be41f9` (Inter Terminal 16/600), pixel-identical in the owner's before/after screenshots. The visible difference was «12,91» from `type="number"` under `<html lang="ru">`; price/size/TP/SL are now text fields keeping a dot (also fixes «270,5» parsing as 270).
+- Material files: `FuturesOrderForm.tsx`, `FuturesOrderPanelRefinement.css`, `useNativeFuturesExecution.ts`, `useNativeDemo.tsx`, `nativeEngineHint.ts` (new); tests `futuresCompactTicketOptions`, `futuresOrderCalculatorRegression` (regex), `nativeLiveHook` (stub), `futuresUiPolish` (form fingerprint re-taken with reason).
+- Preserved: order payload, `armedProtection`, Reduce Only exclusion, fail-closed engine binding, standard ticket behaviour, Codex's PR #328 integration.
+- Checks actually run: frontend `tsc -b` and production build PASS; `npx jest frontend/src` 137 pass / 20 fail, failing set identical to built `main`; affected suites 117/117; local fixture browser: interaction script 1440/390 PASS, `qa-order-panel-refinement.cjs` PASS 1920/1440/390/320, load-order recording (TP/SL now with the access verdict, not after the account). The hint's first-frame path is covered by unit tests only (fixture tokens are not JWTs).
+
+## Codex — 2026-09-29 — Futures follow-up: fail-closed decimal drafts on current main
+
+- Base: production `main` `2c36ae31`, after Spot/CFD #334. Ported Claude #332's TP/SL «+» and engine-hint work while preserving #334.
+- Review blocker fixed: invalid price/quantity/TP/SL text is no longer destructively stripped into another number. A valid comma decimal normalizes to a dot; unsupported syntax remains visible but non-executable.
+- Added mounted regression cases for exponent/sign/letters/multiple separators, comma decimals, precision, empty/trailing-dot drafts, invalid quantity and armed TP/SL.
+- No order, balance or production state was changed. Remote final-head CI pending at commit creation.
+

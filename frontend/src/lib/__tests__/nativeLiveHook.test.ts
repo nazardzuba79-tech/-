@@ -7,6 +7,7 @@ import { compactNativeUiState,shouldPollNativeLive,NATIVE_LIVE_POLL_MS } from '.
 import { chartExits } from '../nativeChartExits';
 import { withNativeTransportRetry } from '../nativeTransportRetry';
 import { createVisibleRead } from '../visibleRead';
+import { readNativeEngineHint,writeNativeEngineHint } from '../nativeEngineHint';
 
 const frontend=resolve(__dirname,'../../..'),req=createRequire(resolve(frontend,'package.json'));
 const React=req('react'),{createRoot}=req('react-dom/client'),{JSDOM}=req('jsdom');
@@ -30,7 +31,7 @@ describe('actual React native hook live lifecycle',()=>{
       react:React,'react-router-dom':{useSearchParams:()=>[new URLSearchParams()]},
       '../../lib/api':{getToken:()=>`x.${Buffer.from(JSON.stringify({sub:'qa',sid:'session'})).toString('base64url')}.x`,onSessionChange:(fn:()=>void)=>{offSession=fn;return()=>{};}},
       '../../lib/nativeDemoApi':{nativeDemoApi:api},'../../lib/privateTradingApi':{PrivateTradingError:TestError,privateErrorText:(e:Error)=>e.message,privateTradingApi:{}},
-      '../../lib/visibleRead':{createVisibleRead},
+      '../../lib/visibleRead':{createVisibleRead},'../../lib/nativeEngineHint':{readNativeEngineHint,writeNativeEngineHint},
       '../../lib/nativeCommandLane':{NativeCommandLane,acceptsRevision},'../../lib/nativeTransportRetry':{withNativeTransportRetry},'../../lib/nativeChartExits':{chartExits},
       '../../lib/nativeLivePolicy':{compactNativeUiState,shouldPollNativeLive,NATIVE_LIVE_POLL_MS},'./useNativeHistory':history,
     });

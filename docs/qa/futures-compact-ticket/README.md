@@ -29,3 +29,28 @@ Screenshots: `before-1440.png`, `before-1440-form.png`, `after-1440.png`,
 `after-1440-toolbar.png`, `after-1440-menu-type.png`,
 `after-1440-menu-indicators.png`, `after-1440-form-tpsl.png`,
 `after-390-toolbar.png`, `after-390-tpsl.png`.
+
+## Follow-up, same day (owner's production screenshot)
+
+* **TP/SL is a round «+»**, the same mark as the «+» beside «Доступно». Ticked,
+  it fills gold and turns into «×»; under «Только уменьшение» it is dimmed.
+  The checkbox stays underneath across the whole label, so click, Space and
+  screen readers work as before. `followup-tpsl-plus-{off,on,reduce-only}.png`.
+* **«Только уменьшение» first, TP/SL a moment later — root cause.** While the
+  simulation account loads, `useNativeFuturesExecution` returned a not-ready
+  execution spread from `REAL_FUTURES_EXECUTION`, which carries
+  `entryProtection: false`; TP/SL appeared only when the whole account had
+  loaded. The not-ready execution now says `entryProtection` as soon as the
+  engine is known (server verdict), cached (this tab's transcript), or
+  remembered for this user (`lib/nativeEngineHint`, a display-only hint keyed
+  by user id). Orders still wait for `ready`. Local fixture: TP/SL moved from
+  "after the account" to the access verdict (~0.9 s → with a remembered hint,
+  the first frame; fixture tokens are not JWTs, so the hint itself is covered
+  by unit tests rather than this browser run).
+* **Field font.** The field font did not change: Inter Terminal 16 px/600 since
+  `a9be41f9` (2026-09-25), identical in the owner's before/after screenshots.
+  What differed from the rest of the terminal was «12,91»: a `type="number"`
+  field is drawn in the page language (`<html lang="ru">`), so it printed a
+  comma beside a book printing 12.91 — and a level typed as «270,5» reached
+  `parseFloat` as 270. Price, size, TP and SL are now text fields that accept
+  either separator and keep a dot.

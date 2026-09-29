@@ -134,3 +134,136 @@ describe('«TP / SL» beside «Только уменьшение»', () => {
     expect(byClass(tree, 'fo-reduceOnlyRow')).toHaveLength(1);
   });
 });
+
+describe('numbers in the ticket are printed with a dot', () => {
+  it('turns a typed comma into the dot the book and header use, in price, size and levels', async () => {
+    const t = await compactTicket();
+    const input = (placeholder: string) => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder);
+    input('0.00').props.onChange({ target: { value: '12,91' } });
+    expect(input('0.00').props.value).toBe('12.91');
+    expect(input('0.00').props.type).toBe('text');
+    input('0.000').props.onChange({ target: { value: '1,50' } });
+    expect(input('0.000').props.value).toBe('1.50');
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    byData(t.render(), 'data-entry-take-profit')[0].props.onChange({ target: { value: '270,5' } });
+    expect(byData(t.render(), 'data-entry-take-profit')[0].props.value).toBe('270.5');
+  });
+});
+
+describe('invalid decimal drafts fail closed', () => {
+  it.each(['1e-8', '1e3', '-1', '1.2.3', '12abc34'])('does not rewrite or submit invalid price %s', async (raw) => {
+    const t = await compactTicket();
+    const input = () => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === '0.00');
+    input().props.onChange({ target: { value: raw } });
+    expect(input().props.value).toBe(raw);
+    const buy = byClass(t.render(), 'buy')[0];
+    expect(buy.props.disabled).toBe(true);
+    buy.props.onClick();
+    await tick();
+    expect(t.placed).not.toHaveBeenCalled();
+  });
+
+  it('keeps valid comma decimals and precision without changing their numeric value', async () => {
+    const t = await compactTicket();
+    const input = (placeholder: string) => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder);
+    input('0.00').props.onChange({ target: { value: '0001,2500' } });
+    expect(input('0.00').props.value).toBe('0001.2500');
+    input('0.000').props.onChange({ target: { value: '0,00000001' } });
+    expect(input('0.000').props.value).toBe('0.00000001');
+    input('0.00').props.onChange({ target: { value: '123456789012345,6789' } });
+    expect(input('0.00').props.value).toBe('123456789012345.6789');
+  });
+
+  it('treats empty and trailing-dot drafts as editing states, not executable orders', async () => {
+    const t = await compactTicket();
+    const input = () => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === '0.00');
+    for (const raw of ['', '1.']) {
+      input().props.onChange({ target: { value: raw } });
+      expect(input().props.value).toBe(raw);
+      expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    }
+    expect(t.placed).not.toHaveBeenCalled();
+  });
+
+  it('refuses an invalid quantity and invalid armed TP/SL instead of mutating them', async () => {
+    const t = await compactTicket();
+    const qty = () => nodes(t.render()).find((n: any) => n.type === 'input' && n.props.placeholder === '0.000');
+    qty().props.onChange({ target: { value: '-0.5' } });
+    expect(qty().props.value).toBe('-0.5');
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+
+    qty().props.onChange({ target: { value: '0.5' } });
+    t.tpslBox(t.render()).props.onChange({ target: { checked: true } });
+    const tp = () => byData(t.render(), 'data-entry-take-profit')[0];
+    tp().props.onChange({ target: { value: '9e4' } });
+    expect(tp().props.value).toBe('9e4');
+    expect(byClass(t.render(), 'buy')[0].props.disabled).toBe(true);
+    expect(byClass(t.render(), 'sell')[0].props.disabled).toBe(true);
+    expect(t.placed).not.toHaveBeenCalled();
+  });
+});
+
+// ── TP/SL is there from the first frame on the simulation engine ─────────
+
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import * as ts from 'typescript';
+import { readNativeEngineHint, writeNativeEngineHint } from '../nativeEngineHint';
+
+function memoryStorage() {
+  const map = new Map<string, string>();
+  return { getItem: (k: string) => map.get(k) ?? null, setItem: (k: string, v: string) => { map.set(k, v); }, removeItem: (k: string) => { map.delete(k); }, map } as any;
+}
+const jwt = (claims: object) => ['h', Buffer.from(JSON.stringify(claims)).toString('base64url'), 's'].join('.');
+
+describe('the engine hint', () => {
+  it('remembers the verdict per user, not per token, and forgets it for the real engine', () => {
+    const store = memoryStorage();
+    const a = jwt({ sub: 'user-1', sid: 'one' }), b = jwt({ sub: 'user-1', sid: 'two' }), other = jwt({ sub: 'user-2', sid: 'x' });
+    expect(readNativeEngineHint(a, store)).toBe(false);
+    writeNativeEngineHint(a, true, store);
+    expect(readNativeEngineHint(b, store)).toBe(true);
+    expect(readNativeEngineHint(other, store)).toBe(false);
+    expect([...store.map.keys()].some((k: string) => k.includes(a) || k.includes('one'))).toBe(false);
+    writeNativeEngineHint(b, false, store);
+    expect(readNativeEngineHint(a, store)).toBe(false);
+    expect(readNativeEngineHint('not-a-jwt', store)).toBe(false);
+  });
+});
+
+function nativeExecutionHook() {
+  const text = readFileSync(resolve(__dirname, '../useNativeFuturesExecution.ts'), 'utf8');
+  const code = ts.transpileModule(text, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  const exports: Record<string, any> = {};
+  new Function('exports', 'require', code)(exports, (id: string) => {
+    if (id === 'react') return { useMemo: (factory: () => unknown) => factory() };
+    if (id === './futuresExecution') return { REAL_FUTURES_EXECUTION: { engine: 'REAL', entryProtection: false } };
+    if (id === './nativeFuturesAdapter') return { nativeAccountState: () => null };
+    if (id === './nativeReduceTarget') return { nativeOrderDraft: () => null };
+    if (id === './privateTradingError') return { PrivateTradingError: Error };
+    throw new Error(`Unexpected runtime import: ${id}`);
+  });
+  return exports.useNativeFuturesExecution;
+}
+const loading = (over: Record<string, unknown>) => ({
+  binding: 'unknown', allowed: false, checked: false, stateLoaded: false, state: null, engineHint: false,
+  candle: null, exitId: null, entryIntent: false, run: jest.fn(), execute: jest.fn(), getState: () => null,
+  busy: false, initialize: jest.fn(), showCard: jest.fn(), ...over,
+});
+
+describe('a ticket that is still loading', () => {
+  const hook = nativeExecutionHook();
+  it('shows TP/SL before the verdict only for a user last bound to this engine', () => {
+    expect(hook(loading({ engineHint: true }), null).entryProtection).toBe(true);
+    expect(hook(loading({ engineHint: false }), null).entryProtection).toBe(false);
+    expect(hook(loading({ binding: 'owner', checked: true, allowed: true }), null).entryProtection).toBe(true);
+  });
+  it('still takes no order until the engine is ready', async () => {
+    const execution = hook(loading({ engineHint: true }), null);
+    expect(execution.ready).toBe(false);
+    await expect(execution.placeOrder({})).rejects.toThrow('Торговый счёт ещё не загружен');
+  });
+  it('drops the hint the moment the server says ordinary', () => {
+    expect(hook(loading({ binding: 'ordinary', engineHint: true }), null)).toBeNull();
+  });
+});
