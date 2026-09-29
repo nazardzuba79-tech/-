@@ -87,6 +87,14 @@ export function useNativeFuturesExecution(
         contract,
         account_aggregate: aggregate,
         activation,
+        // The engine carries TP/SL on the order (see the ready branch). Say so
+        // as soon as it is known — or, before the verdict, remembered — to be
+        // this engine: the server's verdict, this tab's cached transcript, or
+        // the user's last verdict (lib/nativeEngineHint). Otherwise the ticket
+        // paints without TP/SL and grows it a second later. Nothing can be
+        // sent until `ready`: every command below refuses and the ticket
+        // gates on it.
+        entryProtection: binding === 'owner' || state !== null || (binding === 'unknown' && native.engineHint === true),
         placeOrder: refuse, cancelOrder: refuse, closePosition: refuse,
         setProtection: refuse, clearProtection: refuse,
         refresh: () => { void run({ kind: 'REFRESH' }); },
@@ -185,5 +193,5 @@ export function useNativeFuturesExecution(
       showPnlCard: (positionId: string) => { void native.showCard(positionId); },
       refresh: () => { void run({ kind: 'REFRESH' }); },
     };
-  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, execute, native.entryIntent, native.stateLoaded, native.getState, contract, native.showCard, native.busy, native.initialize]);
+  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, execute, native.entryIntent, native.stateLoaded, native.getState, contract, native.showCard, native.busy, native.initialize, native.engineHint]);
 }

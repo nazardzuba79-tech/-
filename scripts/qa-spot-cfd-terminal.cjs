@@ -106,6 +106,17 @@ const READ = (tokenNames) => {
     overlaps,
     hasNaN: /\bNaN\b/.test(text),
     hasUndefined: /\bundefined\b/.test(text),
+    smallTargetDetails: [...document.querySelectorAll('button')]
+      .filter(b => { const r = b.getBoundingClientRect(); return r.height > 0 && r.height < 28 && r.width > 8; })
+      .map(b => {
+        const r = b.getBoundingClientRect();
+        return {
+          text: (b.getAttribute('aria-label') || b.textContent || '').trim().slice(0, 60),
+          cls: String(b.className || '').slice(0, 80),
+          width: Math.round(r.width),
+          height: Math.round(r.height),
+        };
+      }),
     smallTargets: [...document.querySelectorAll('button')]
       .filter(b => { const r = b.getBoundingClientRect(); return r.height > 0 && r.height < 28 && r.width > 8; })
       .length,
@@ -147,6 +158,13 @@ const READ = (tokenNames) => {
       await page.waitForTimeout(3200);
       const m = await page.evaluate(READ, TOKENS);
       m.pageErrors = errs;
+      if (!mobile && name !== 'futures') {
+        m.desktopCta = await page.evaluate((terminalName) => {
+          const e = document.querySelector(terminalName === 'spot' ? '.order-form-area .submit-btn' : '.cfd-form-area .cfd-submit');
+          const r = e?.getBoundingClientRect();
+          return r ? { height: Math.round(r.height), bottom: Math.round(r.bottom), visible: r.width > 4 && r.height > 4 } : null;
+        }, name);
+      }
 
       if (mobile && (name === 'spot' || name === 'cfd')) {
         await page.locator('#mobile-trade-trade').click();
@@ -162,13 +180,19 @@ const READ = (tokenNames) => {
           const chartSelector = terminalName === 'spot' ? '.chart-area' : '.cfd-chart-area';
           const form = document.querySelector(selector);
           const r = form?.getBoundingClientRect();
+          const cta = form?.querySelector(terminalName === 'spot' ? '.submit-btn' : '.cfd-submit');
+          const c = cta?.getBoundingClientRect();
           return {
             visible: visible(selector),
             chartVisible: visible(chartSelector),
             width: r ? Math.round(r.width) : 0,
             rightOverflow: r ? Math.max(0, Math.round(r.right - document.documentElement.clientWidth)) : 0,
+            ctaHeight: c ? Math.round(c.height) : 0,
+            ctaRightOverflow: c ? Math.max(0, Math.round(c.right - document.documentElement.clientWidth)) : 0,
           };
         }, name);
+        // Evidence of the order ticket itself, reached the way a user does.
+        await page.screenshot({ path: path.join(OUT, `${name}-${key}-trade.png`) }).catch(() => {});
 
         await page.locator('#mobile-trade-account').click();
         await page.waitForTimeout(120);
@@ -199,13 +223,12 @@ const READ = (tokenNames) => {
       if (m.hasUndefined) findings.push(`${name} @${key}: "undefined" is rendered`);
       if (m.stripClipped) findings.push(`${name} @${key}: the top strip is clipped above the viewport`);
       if (errs.length) findings.push(`${name} @${key}: ${errs.length} uncaught page error(s): ${errs[0]}`);
-      /* Tap targets are asserted for the two terminals this change is about.
-         Futures has ONE control under 28px and had it before any of this
-         existed — measured on unmodified main, where Spot had 22 and CFD 7.
-         It is recorded below so it is not lost, but it is not this task's to
-         fix, and failing on it would mean failing on someone else's bug. */
-      if (mobile && name !== 'futures' && m.smallTargets > 0) {
-        findings.push(`${name} @${key}: ${m.smallTargets} tap target(s) under 28px tall`);
+      /* Final mobile QA: every actual button must be usable by touch, on all
+         three terminals (Futures measured 0 under 28px on current main).
+         Keep the exact labels/classes in the finding so a failure is directly
+         actionable instead of being filed away as a historical exception. */
+      if (mobile && m.smallTargets > 0) {
+        findings.push(`${name} @${key}: ${m.smallTargets} tap target(s) under 28px tall — ${JSON.stringify(m.smallTargetDetails)}`);
       }
       if (mobile && name !== 'futures' && m.strip && m.strip.h > 112) {
         findings.push(`${name} @${key}: mobile ticker is ${m.strip.h}px tall; expected <=112px`);
@@ -225,11 +248,20 @@ const READ = (tokenNames) => {
       if (mobile && name !== 'futures' && (!m.tradeWorkspace?.visible || m.tradeWorkspace.chartVisible || m.tradeWorkspace.rightOverflow > 0)) {
         findings.push(`${name} @${key}: Trade workspace isolation/width failed ${JSON.stringify(m.tradeWorkspace)}`);
       }
+      /* The primary action is the one control a trader must never miss:
+         at least 50px on desktop and 52px on phones (the released Futures
+         ticket and TerminalMobileParity.css), fully inside the viewport. */
+      if (!mobile && name !== 'futures' && (!m.desktopCta?.visible || m.desktopCta.height < 50)) {
+        findings.push(`${name} @${key}: primary action missing or under 50px ${JSON.stringify(m.desktopCta)}`);
+      }
+      if (mobile && name !== 'futures' && (m.tradeWorkspace?.ctaHeight ?? 0) < 52) {
+        findings.push(`${name} @${key}: primary action on the Trade tab missing or under 52px (${m.tradeWorkspace?.ctaHeight ?? 0}px)`);
+      }
+      if (mobile && name !== 'futures' && (m.tradeWorkspace?.ctaRightOverflow ?? 0) > 0) {
+        findings.push(`${name} @${key}: primary action overflows the viewport by ${m.tradeWorkspace.ctaRightOverflow}px`);
+      }
       if (mobile && name !== 'futures' && (!m.accountWorkspace?.visible || m.accountWorkspace.rightOverflow > 0)) {
         findings.push(`${name} @${key}: Account workspace isolation/width failed ${JSON.stringify(m.accountWorkspace)}`);
-      }
-      if (mobile && name === 'futures' && m.smallTargets > 0) {
-        (report.preExisting ||= []).push(`futures @${key}: ${m.smallTargets} tap target(s) under 28px tall (pre-existing on main, out of scope)`);
       }
     }
 

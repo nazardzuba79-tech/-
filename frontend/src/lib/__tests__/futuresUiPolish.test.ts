@@ -28,7 +28,7 @@ function semantic(source){
  const sf=ts.createSourceFile('component.tsx',source.replace(/\r\n/g,'\n'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const transformed=ts.transform(sf,[context=>root=>{
   const visit=node=>{
-   if(ts.isJsxAttribute(node)&&['className','style','aria-pressed'].includes(node.name.getText(sf)))return undefined;
+   if(ts.isJsxAttribute(node)&&['className','style','aria-pressed','data-premium-terminal-preview'].includes(node.name.getText(sf)))return undefined;
    if(ts.isVariableStatement(node)&&node.declarationList.declarations.some(d=>d.name.getText(sf)==='styles'))return undefined;
    if(ts.isImportDeclaration(node)&&node.moduleSpecifier.text.endsWith('.css'))return undefined;
    return ts.visitEachChild(node,visit,context);
@@ -238,7 +238,10 @@ test.each([
     // beside «Только уменьшение» (disabled under Reduce Only), and each level
     // shows its % from the price and ≈ P&L. Same `protectionEnabled` state,
     // same `armedProtection` and order payload; the standard ticket is untouched.
-    "b32bb1a41f8b50022bbf691d603ff57383d8826b2cea3a77ac1d4558ff306946"
+    // Follow-up: TP/SL uses the round plus, and decimal text drafts are fail-closed:
+    // comma decimals normalize to a dot, unsupported syntax is preserved as invalid
+    // instead of being silently rewritten into another executable number.
+    "0fa57c8e5477c4c1675db3bdb90d723155a09718caef853a1f439fa1d5085774"
   ],
   [
     "components/FuturesAccountSummary.tsx",

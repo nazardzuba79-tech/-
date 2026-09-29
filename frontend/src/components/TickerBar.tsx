@@ -3,6 +3,9 @@ import { useMarketTicker } from '../lib/useMarketData';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
 import { formatSpotBookNumber } from '../lib/spotOrderBook';
+import { List as ListIcon } from 'lucide-react';
+import { CryptoIcon } from './CryptoIcon';
+import { useAssetMetadata } from '../lib/assetMetadataStore';
 
 interface Stats {
   lastPrice: number;
@@ -33,6 +36,7 @@ export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair:
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = pair.split('/');
   const displayPrice = spotPrecision ? formatSpotBookNumber : formatPrice;
+  const assetName = useAssetMetadata([baseAsset])[baseAsset.toUpperCase()]?.name ?? null;
 
   // 3s, the cadence this bar has always used. The store polls at the
   // fastest cadence any live subscriber asks for, so this stays as fresh
@@ -65,20 +69,31 @@ export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair:
 
   return (
     <div className="ticker-bar">
-      <div
-        className="pair-selector"
-        role={onSelectPair ? 'button' : undefined}
-        tabIndex={onSelectPair ? 0 : undefined}
-        onClick={onSelectPair}
-        onKeyDown={(e) => {
-          if (onSelectPair && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            onSelectPair();
-          }
-        }}
-      >
-        <span className="pair-name">{pair}</span>
-        <span className="pair-arrow" aria-hidden="true" />
+      <div className="pair-cluster">
+        {onSelectPair && (
+          <button type="button" className="pair-markets-btn" aria-label={t('nav.markets')} title={t('nav.markets')} onClick={onSelectPair}>
+            <ListIcon size={16} />
+          </button>
+        )}
+        <div
+          className="pair-selector"
+          role={onSelectPair ? 'button' : undefined}
+          tabIndex={onSelectPair ? 0 : undefined}
+          onClick={onSelectPair}
+          onKeyDown={(e) => {
+            if (onSelectPair && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              onSelectPair();
+            }
+          }}
+        >
+          <CryptoIcon symbol={baseAsset} size={24} />
+          <span className="pair-identity">
+            <span className="pair-name">{pair}</span>
+            <span className="pair-asset">{assetName}</span>
+          </span>
+          <span className="pair-arrow" aria-hidden="true" />
+        </div>
       </div>
 
       <div className="ticker-item">

@@ -4541,3 +4541,143 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Full Jest vs `8896d5eb`: 0 new failures.
 - **Read-only production observation:** `market.voltextech.net/health` = `public-display-edge-v9`, and `/market/listings` answers 404. No public deposit Worker hostname is known.
 - **Not done:** everything in `docs/CLOUDFLARE_ACTIVATION.md` (GitHub secret, deploy dispatches, Render env, Pages env, production QA). No merge, deploy, secret, balance, address or allocation change.
+
+## Claude — 2026-09-29 — Deposit public read: weak ETag revalidation (If-None-Match)
+
+- Base: `main` `3bec9e0b`. Branch `claude/ecstatic-brahmagupta-cwkvt5-deposit-weak-etag`.
+- **Cause:** production smoke run 36546856123 returned 200 instead of 304. Cloudflare serves the Worker's ETag as `W/"…"` after compressing the body, and the Worker compared `If-None-Match` by strict string equality.
+- **Fix:**
+  - `workers/deposit-catalogue/src/conditional.js` (new) implements RFC 9110 §13.1.2 weak comparison for `If-None-Match`, public GET/HEAD only:
+    - the same opaque tag, weak or strong, gets 304;
+    - lists, whitespace and `*` are handled;
+    - a malformed value never matches.
+  - `index.js` uses it. A 304 keeps ETag, `Cache-Control: no-cache`, CORS and Vary, with no body.
+  - The private `If-Match` CAS is unchanged and still strict.
+  - `scripts/smoke-deposit-public.mjs` accepts a strong or weak ETag and sends it back exactly as received. It also checks the other form of the same version, a different version (200), a malformed value (200), and the 304 headers.
+- **Tests:**
+  - `conditional.test.mjs`: 4 new.
+  - `integration.test.mjs`: 3 new, covering the 304 matrix for GET/HEAD, a changed catalogue not confirmed by its old ETag, and weak or quoted If-Match refused without a write.
+  - `smoke.integration.test.mjs`: a Cloudflare-like proxy that weakens the ETag.
+  - With the old strict comparison restored, the new workerd test and the proxied smoke fail (`200, sent weak`); with the fix all pass.
+- **Checks actually run (local):**
+  - workerd 25/25, smoke 3/3.
+  - `wrangler deploy --dry-run --env production`.
+  - Backend and frontend `tsc`.
+  - Jest catalogue/deposit 58/58.
+  - Browser `qa-deposit-catalogue-edge` 7/7 (short idle).
+- **Preserved:** catalogue data and namespace, addresses/networks/memo, secrets, Listings, Pages settings, and the Render route (its own strict compare is untouched). No merge, deploy or production change.
+- **Next:** after merge, re-run the Deposit workflow (`confirm = deploy-production-public-read`). Pages settings only after its smoke passes.
+
+## Claude — 2026-09-29 — Port #306 premium terminal layer and #280 Spot/CFD identity onto main
+
+- Base: main `e17aa533` (after #328). Branch `claude/ecstatic-brahmagupta-cwkvt5-terminal-polish`. Commit: this one (local, not pushed). Sources: Codex #306 `069d29ff` (owner-reviewed preview) and ChatGPT #280 `8673dd04`, reconciled hunk by hunk.
+- **Ported from #306:**
+  - `TerminalPreviewPolish.css`, imported by Spot/CFD (`TradePage.tsx`) and Futures (`FuturesPage.tsx`), and the `data-premium-terminal-preview` marker on all three roots.
+  - `TERMINAL_NAV_COPY` in `Nav.tsx`.
+  - The `data-initial-loading`/`aria-busy` flag on the Spot `order-summary` (`OrderForm.tsx`).
+  - The `cfd-form-fields` wrapper (`CfdOrderForm.tsx`).
+  - The `futuresUiPolish` ignore of the marker attribute.
+  - `scripts/qa-premium-terminal-preview.cjs`.
+- **Changed from #306:**
+  - Primary actions are 50px desktop / 52px phone (`--preview-cta-height`); #306 had 44/48, below qa-order-panel-refinement's ≥50 and Spot/CFD phone parity.
+  - `.archive-protection-toggle` rules dropped: #328 replaced that card with `.fo-tpslToggle`.
+  - The label rule also covers Spot's real `.form-label`/`.order-family-label`.
+  - The `PairListSidebar` `.pairs-list` loading flag and its CSS selector are not ported: that module is sha-pinned by `cryptoCatalogue.test.ts`, which is left untouched.
+  - QA script: no hard-coded Windows Playwright path. It starts the disposable native fixture itself, sets `locale:'en-US'`, and drives #328's TP/SL checkbox and Reduce Only. It fails on failed interactions, page errors or overflow.
+- **Ported from #280:**
+  - `TickerBar.tsx` identity: markets button, `CryptoIcon`, pair/asset-name stack.
+  - `CfdTickerBar.tsx` identity: `CfdInstrumentIcon` plus symbol/name.
+  - In `VoltexTerminalSystem.css`:
+    - the INSTRUMENT IDENTITY block and its mobile sizes;
+    - `flex-direction:row` for the CFD cluster;
+    - `.pair-cluster` added to main's #313 desktop Spot strip rule;
+    - `.pair-asset:empty` hidden;
+    - the transparent `.orderbook-spread`.
+  - The `futuresTickerHeader` normalization and the `terminalDesignSystem` identity test.
+  - The stricter small-target check with details in `qa-spot-cfd-terminal.cjs`; Futures is now included and measured 0.
+  - `futures-visual-polish.yml`: artifact path plus trigger paths.
+- **Not ported from #280:**
+  - `--text-primary:#ffffff` in the shared token block (it would move Futures; #306 sets the token for all three terminals).
+  - The ticket field/summary/CTA typography (#306's later layer owns these at ID weight; mixing the two produced 0-radius boxed summaries).
+  - The 13px order-type tabs (they cut off the fifth family, OCO, in the 1440 ticket).
+  - The MOBILE widths hunk (already on main).
+- **Tests and QA scripts:**
+  - `spotPairTransition` TickerBar harness: stubs for the two new presentational imports.
+  - New Jest assertion: the premium layer keeps CTAs ≥50/52.
+  - `qa-spot-cfd-terminal.cjs` now measures the primary action (desktop ≥50, phone ≥52 on the Trade tab reached by tapping `#mobile-trade-trade`) and saves `*-trade.png`. Clean main fails this check (Spot 44px; CFD 44px desktop / 40px phone); the branch passes it.
+- **Preserved:** every data/API path, P&L/ROI math, precision, order types, chart trading, VTA/NRX, the #328 compact ticket geometry, and main's newer mobile tab QA.
+- **Checks run:**
+  - Frontend `tsc -b` and `vite build` passed (existing chunk warning); backend `tsc` passed.
+  - Full Jest: branch 5778 tests, 5553 passed / 121 failed. Clean main (pr1/wt, built): 5776 tests, 5551 passed / 121 failed. New failing names: 0.
+  - Focused suites: 181 passed. The 2 failing tests in `spotPairTransition` fail identically on main.
+  - Browser, final build: `qa-spot-cfd-terminal` PASS; `qa-premium-terminal-preview` PASS (18 screens, 29/29 interactions, 0 errors/overflow); `qa-order-panel-refinement` PASS with `LANG=en_US.UTF-8`. Without LANG it fails on both branch and main with only `Invalid language tag: en-US@posix`.
+  - Browser, earlier build, before the PairListSidebar revert: PASS for:
+    - `qa-futures-visual-polish --label local`, and the sampled 1440/390 run;
+    - `qa-native-demo-browser`, `qa-limit-close`, `qa-pnl-card`, `qa-large-numbers-browser`;
+    - `qa-futures-pair-persistence`, `qa-futures-header-turnover`, `qa-futures-bottom-panel`, `qa-futures-pair-labels`;
+    - `qa-futures-cold-open` (local build A/B);
+    - `qa-voltora-listing`, `qa-home-laptop-first-load`, `qa-home-snapshot-reload`;
+    - `qa-vta-demo` and `qa-nrx-market` (disposable local Postgres DB `voltex_pr4_qa`).
+  - Not run: `qa-private-card-browser`, `qa-kyc-edge`.
+- **Evidence:** `docs/qa/spot-cfd-terminal/` and `docs/qa/premium-terminals-preview/` (trimmed to the 1440/390 shots).
+- **Unresolved:**
+  - #306 restyles Futures (graphite fields, 8px CTA radius, deep buy/sell, disabled grey). This is the owner-reviewed intent but visibly changes the released Futures ticket; owner sign-off is needed.
+  - The desktop CFD ticket now scrolls its fields above a pinned CTA; at 1440×900 the summary box is partly below the fold.
+  - The Nav shows «Доход» only on terminal pages, as in #306.
+  - Remote CI not run.
+
+### Claude — #334 check after the owner's Futures decision (2026-09-29)
+
+- **Agent:** Claude Code. **Branch:** `claude/ecstatic-brahmagupta-cwkvt5-terminal-polish` (PR #334). This entry is docs only; no code change.
+- **Owner commits 482e3641 and f161f32f:**
+  - Futures keeps its released design. `FuturesPage.tsx` no longer imports `TerminalPreviewPolish.css` and no longer carries `data-premium-terminal-preview`.
+  - `terminalDesignSystem.test.ts` now pins the layer to Spot/CFD and forbids the marker on Futures.
+  - This resolves the "#306 restyles Futures" item above. I discarded my own equivalent test edit and kept the owner's.
+- **Checks run (local, at f161f32f):**
+  - The `futures-visual-polish` Jest guard line plus `futuresUiPolish`: 119/119 passed. Frontend `tsc -b`: passed.
+  - Three suites, `homepageTailwindUtilities`, `marketUniverseScale` and `sharedHeaderStylesheetOwnership`, also fail on clean main 1e6d61db. They are not caused by this PR.
+  - `qa-native-demo-browser` at 0535f973: 3 local runs, 44/44 each. The CI `account-summary-1440` timeout on that head did not reproduce; the failed job was re-run once on GitHub.
+- **Unresolved:** the CFD desktop ticket scroll/pinned CTA and the terminal-only «Доход» Nav item (both above) are still open for owner review.
+
+## Claude — 2026-09-29 — Futures ticket follow-up: TP/SL «+», no late TP/SL, dot decimals
+
+- Base: `main` `e17aa533` (PR #328 already carries the compact menus/ticket work). Commit: `28c51cdd`.
+- Owner report on production: TP/SL should be a neat «+»; «Только уменьшение» paints first and TP/SL a moment later; the order-field "font" looks odd.
+- Root cause (load order): the not-ready simulation execution in `useNativeFuturesExecution.ts` spread `REAL_FUTURES_EXECUTION` and so carried `entryProtection: false` until the account loaded. Now true once the engine is known (verdict), cached (tab transcript) or remembered for this user (new `lib/nativeEngineHint.ts`, display-only, localStorage keyed by JWT `sub`, written from `useNativeDemo` on each verdict). `ready` still gates every order; «ordinary» still returns the real engine.
+- Font: unchanged since `a9be41f9` (Inter Terminal 16/600), pixel-identical in the owner's before/after screenshots. The visible difference was «12,91» from `type="number"` under `<html lang="ru">`; price/size/TP/SL are now text fields keeping a dot (also fixes «270,5» parsing as 270).
+- Material files: `FuturesOrderForm.tsx`, `FuturesOrderPanelRefinement.css`, `useNativeFuturesExecution.ts`, `useNativeDemo.tsx`, `nativeEngineHint.ts` (new); tests `futuresCompactTicketOptions`, `futuresOrderCalculatorRegression` (regex), `nativeLiveHook` (stub), `futuresUiPolish` (form fingerprint re-taken with reason).
+- Preserved: order payload, `armedProtection`, Reduce Only exclusion, fail-closed engine binding, standard ticket behaviour, Codex's PR #328 integration.
+- Checks actually run: frontend `tsc -b` and production build PASS; `npx jest frontend/src` 137 pass / 20 fail, failing set identical to built `main`; affected suites 117/117; local fixture browser: interaction script 1440/390 PASS, `qa-order-panel-refinement.cjs` PASS 1920/1440/390/320, load-order recording (TP/SL now with the access verdict, not after the account). The hint's first-frame path is covered by unit tests only (fixture tokens are not JWTs).
+
+## Codex — 2026-09-29 — Futures follow-up: fail-closed decimal drafts on current main
+
+- Base: production `main` `2c36ae31`, after Spot/CFD #334. Ported Claude #332's TP/SL «+» and engine-hint work while preserving #334.
+- Review blocker fixed: invalid price/quantity/TP/SL text is no longer destructively stripped into another number. A valid comma decimal normalizes to a dot; unsupported syntax remains visible but non-executable.
+- Added mounted regression cases for exponent/sign/letters/multiple separators, comma decimals, precision, empty/trailing-dot drafts, invalid quantity and armed TP/SL.
+- No order, balance or production state was changed. Remote final-head CI pending at commit creation.
+
+## Claude — 2026-09-29 — Simulation realism: candle profiles for VTA and future simulated listings
+
+- Base: fresh `main` `1e6d61db`. Branch `claude/vta-simulation-realism`, implementation commit `ce062fc8`. Design: `docs/SIMULATION_REALISM.md`; evidence: `docs/qa/vta-simulation-realism/`.
+- **What changed:** base simulation → profile → intrabar realism → OHLC. `simulationRealism.ts` spreads each hour's FIXED return over its twelve 5m candles (steady / burst / pullback / compression→breakout, pin bars, dojis, sweeps) and builds ticks with wick excursions that are zero at the candle's first and last tick; wicks capped per profile (`maxWick`). Four profiles in one table `REALISM_PROFILES`; `realismSeedOffset` re-rolls the look. `simulationRandom.ts` = the old PRNG moved unchanged. `1m` served from the same ticks.
+- **VTA:** `simulationProfile: 'IMPULSE_TREND'`; seed, initialPrice, listingAt, regimes, hour anchors unchanged (P48 5.5234599, P168 35171.298).
+- **Managed listings:** optional `simulationProfile` in the config. The listings DO assigns it on INSERT from `meta.simulation_profile_ordinal` (same transaction; no schema/migration change): #1 CALM, #2 IMPULSE, #3 PULLBACK, #4 COMPRESSION, #5 CALM…; `withStableProfile` keeps it on every save, `checkPublishable` locks it, Render drops it from requests, the public catalogue does not expose it. Admin → Listings shows it read-only.
+- **Material files:** `src/services/testMarkets/{simulationRealism,simulationRandom,testMarketSimulation,testMarketService,testAssetConfig}.ts`, `src/services/listings/listingConfig.ts`, `src/api/routes/adminListings.ts`, `workers/market-edge/src/listingsStore.ts`, `frontend/src/pages/admin/{AdminListingsPage.tsx,adminListingsApi.ts,adminListings.css}`, tests (`simulationRealism.test.ts` new; `listingConfig`, `adminListings`, `testMarkets` route, workerd `listings.integration`), `test-markets.yml` (+ new suite).
+- **Preserved:** NRX and any listing stored without a profile are byte-identical to main (SHA-256 of candles, hour anchors and tape pinned in the test); VTA DemoBalance/sale path, listing gates, Worker routes, wrangler/secrets/migrations, Deposit, Pages settings untouched. `PriceChart` intervals unchanged (no 1m button).
+- **Checks actually run (local):** backend + frontend `tsc`; `vite build`; targeted Jest 9 suites 159/159; workerd listings 13/13, smoke 4/4, `test.mjs` contract; full Jest branch vs clean `1e6d61db` worktree: 0 new failures (the one extra, `registerWalletTailwindOwnership` "build output", fails on main too with the same stale gitignored `frontend/dist`). Browser (built-in pane, production bundle + real `testMarketsRouter` + real edge `managedListingResponse`): VTA before/after 5m/15m/1h, four new pairs on one base scenario, 53/53 HTTP checks, restart and second-client identity, Admin → Listings at 1280/390.
+- **Not done:** no merge, no deploy, no production change. Deploy order when approved: Render + frontend first, then market-edge (an old Render cannot parse a store answer that contains a profile). After deploy, VTA's intra-hour path changes: the chart at an already-recorded private sale may differ slightly from that stored fill.
+
+## Claude — 2026-09-29 — VTA activation boundary for simulation realism (PR #336 review)
+
+- Follow-up on PR #336 (draft, `claude/vta-simulation-realism`). Merged current `main` `2c36ae31` (#334) in `52873468`: only this file conflicted, both entries kept. Implementation commit `b6fa57d9`.
+- **Review finding addressed:** the profile applied from hour zero, so VTA's already-shown intra-hour history and the executable price at past private sales would change. Added `TestAssetConfig.realismFrom` (fixed epoch ms, rounded up to the next hour after listing): earlier hours take the original path, later hours the profile; both share every hour anchor, so the join is seamless. VTA: `2026-10-01T00:00:00Z` (listing + 57h). Managed listings keep the profile from their listing.
+- **Invariant (tested):** before the boundary every VTA price (sampled every 37 s from the listing), 5m/1m candle, tape, display book and ticker state equals main's; all hour anchors and 1h+ open/close for every profile. **Intentionally different after the boundary:** intra-hour candles, wicks, tape/book/last price between hour boundaries, 24h high/low and 24h change between hour boundaries.
+- **Checks actually run (local):** backend `tsc`; frontend `tsc -b` + `vite build` on the merged tree; targeted Jest 9 suites 163/163; workerd listings 13/13, smoke 4/4, `test.mjs`; full Jest merged branch vs clean `2c36ae31` worktree: 0 new failures (same stale-`frontend/dist` build-output test as before, same on main with that dist). HTTP QA 58/58 and browser screenshots with a shifted local market clock (2026-10-01 06:00 UTC), evidence replaced in `docs/qa/vta-simulation-realism/`.
+- **Not done:** no merge, deploy, production data, balance or allocation change. The deploy must land before 2026-10-01 00:00 UTC, or move `realismFrom` to a later hour first. Deploy order: Render + frontend, then market-edge.
+
+## Codex — 2026-09-29 — VTA realism release candidate on current main
+
+- Base: production `main` `e2471417` after safe Futures #337. Integrated Claude #336 runtime and evidence; only `docs/AI_HANDOFF.md` overlapped, and all entries were preserved.
+- VTA keeps the legacy generator before fixed `2026-10-01T00:00:00Z`; IMPULSE_TREND begins only at that aligned hour. New managed listings retain the four-profile round-robin from listing time.
+- No production market, balance, allocation, order or Worker was changed by preparation. Final-head CI and staged Render/frontend → market-edge release remain pending.
+

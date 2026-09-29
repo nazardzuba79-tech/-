@@ -14,18 +14,28 @@ interface FormState {
   name: string; symbol: string; logo: string | null; initialPrice: string;
   wallTime: string; timeZone: string; ownerAllocation: string;
   seedMode: 'auto' | 'manual'; seed: string; tradable: boolean;
+  /** Display only: assigned by the store, never sent. */
+  simulationProfile: ListingConfig['simulationProfile'] | null;
 }
 
 const emptyForm = (): FormState => ({
   name: '', symbol: '', logo: null, initialPrice: '', wallTime: '', timeZone: 'Europe/Kyiv', ownerAllocation: '0',
-  seedMode: 'auto', seed: '', tradable: false,
+  seedMode: 'auto', seed: '', tradable: false, simulationProfile: null,
 });
 
 const fromConfig = (config: ListingConfig): FormState => ({
   name: config.name, symbol: config.symbol, logo: config.logo, initialPrice: config.initialPrice,
   wallTime: utcToZonedWallTime(config.listingAt, config.displayTimeZone), timeZone: config.displayTimeZone,
   ownerAllocation: config.ownerAllocation, seedMode: config.seedMode, seed: config.seed, tradable: config.tradable,
+  simulationProfile: config.simulationProfile ?? null,
 });
+
+const PROFILE_LABELS: Record<NonNullable<ListingConfig['simulationProfile']>, string> = {
+  CALM_TREND: 'Спокойный тренд',
+  IMPULSE_TREND: 'Импульсный тренд',
+  PULLBACK_TREND: 'Тренд с откатами',
+  COMPRESSION_BREAKOUT: 'Сжатие → пробой',
+};
 
 /** The instant in the listing's own zone and in UTC, always both. */
 function listingMoment(iso: string, timeZone: string): string {
@@ -222,6 +232,11 @@ export function AdminListingsPage() {
               {form.seedMode === 'manual' && <input value={form.seed} onChange={(e) => setForm({ ...form, seed: e.target.value.toLowerCase() })} placeholder="например qax-launch-0001" data-field="seed" />}
               {form.seedMode === 'auto' && form.seed && <small>Сохранён: <code data-saved-seed>{form.seed}</code> — не меняется при правках.</small>}
             </fieldset>
+            <div className="listing-profile" data-listing-profile={form.simulationProfile ?? (editing.id ? 'original' : 'pending')}>
+              <span>Характер свечей</span>
+              <b>{form.simulationProfile ? PROFILE_LABELS[form.simulationProfile] : editing.id ? 'Исходный' : 'Назначится при создании'}</b>
+              <small>По очереди для новых листингов: спокойный тренд → импульсный → с откатами → сжатие и пробой. Меняет только вид свечей, не траекторию и не итоговую цену; после создания не меняется.</small>
+            </div>
             <div className="listing-logo">
               <span>Логотип</span>
               <div>

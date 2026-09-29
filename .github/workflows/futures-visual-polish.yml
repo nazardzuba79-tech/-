@@ -32,6 +32,10 @@ on:
       - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
       - 'scripts/qa-futures-visual-polish.cjs'
       - 'scripts/qa-spot-cfd-terminal.cjs'
+      - 'frontend/src/pages/trade-terminal/TerminalPreviewPolish.css'
+      - 'frontend/src/components/TickerBar.tsx'
+      - 'frontend/src/components/CfdTickerBar.tsx'
+      - 'frontend/src/components/CfdOrderForm.tsx'
       - '.github/workflows/futures-visual-polish.yml'
 
 permissions:
@@ -76,6 +80,8 @@ jobs:
         if: always()
         with:
           name: futures-visual-polish-${{ github.sha }}
-          path: docs/qa/futures-visual-polish/ci-*
+          path: |
+            docs/qa/futures-visual-polish/ci-*
+            docs/qa/spot-cfd-terminal/*
           retention-days: 7
           if-no-files-found: warn

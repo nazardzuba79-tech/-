@@ -23,12 +23,13 @@
 .listing-form { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); min-width: 0; }
 .listing-form h2 { margin: 0; font-size: 16px; }
 .listing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
-.listing-grid label, .listing-logo, .listing-seed { display: grid; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); min-width: 0; }
+.listing-grid label, .listing-logo, .listing-seed, .listing-profile { display: grid; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); min-width: 0; }
 .listing-grid input:not([type=checkbox]):not([type=radio]):not([type=file]), .listing-grid select, .listing-preview-controls input { min-height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text-primary); font-size: 13px; min-width: 0; width: 100%; box-sizing: border-box; }
 .listing-grid small, .listing-preview-controls small { font-weight: 500; color: var(--text-tertiary); overflow-wrap: anywhere; }
 .listing-seed { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin: 0; }
 .listing-seed label { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; margin-right: 10px; }
 .listing-seed code { font-size: 11px; overflow-wrap: anywhere; }
+.listing-profile b { color: var(--text-primary); }
 .listing-logo > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .listing-logo img { border-radius: 50%; object-fit: cover; }
 .listing-logo input[type=file] { max-width: 100%; font-size: 12px; }
