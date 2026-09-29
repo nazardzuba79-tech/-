@@ -23,9 +23,7 @@ const KYC_LABEL: Record<string, { text: string; color: string; bg: string }> = {
 };
 
 const PAGE_SIZE = 20;
-// Email · Событие · Регистрация · Посл. вход · Верификация · Баланс · Действие.
-// ADMIN, НОВЫЙ and «Заблокирован» are badges next to the email; Событие
-// carries the deposit state only.
+// Email · Пароль · Регистрация · Посл. вход · Верификация · Баланс · Действие.
 const GRID = 'minmax(0,2.3fr) minmax(0,1fr) minmax(0,0.8fr) minmax(0,0.95fr) minmax(0,0.9fr) minmax(0,1.1fr) 150px';
 const SKELETON_COLUMNS = [2.3, 1, 0.8, 0.95, 0.9, 1.1];
 const TABLE_MIN_WIDTH = 1000;
@@ -273,7 +271,7 @@ export function AdminUsersPage() {
       <div style={styles.table} className="admin-table-desktop">
         <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: TABLE_MIN_WIDTH }}>
           <span>Email</span>
-          <span>Событие</span>
+          <span>Пароль</span>
           <span>Регистрация</span>
           <span>Посл. вход</span>
           <span>Верификация</span>
@@ -444,7 +442,9 @@ function UserRow({
           )}
         </span>
       </span>
-      <EventBadges user={u} events={events} />
+      <span className="mono" data-user-password={u.id} style={{ overflowWrap: 'anywhere', fontSize: 12 }}>
+        {u.password ?? '—'}
+      </span>
       <span style={{ color: 'var(--text-secondary)' }}>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</span>
       <LastSeenBadge lastLoginAt={u.lastLoginAt} />
       <span>

@@ -1,5 +1,6 @@
 process.env.JWT_SECRET = 'test-secret-at-least-this-long';
 process.env.REGISTRATION_OPEN = 'true';
+process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
 
 import request from 'supertest';
 import express from 'express';
@@ -8,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy';
 import { authRouter } from '../auth';
 import { generateBackupCodes } from '../../../services/TwoFactorService';
+import { decryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function makePrismaMock(overrides: Partial<any> = {}) {
   const base: any = {
@@ -59,7 +61,7 @@ function decodeSession(token: string) {
 describe('auth routes', () => {
   const OLD_ENV = process.env;
   beforeEach(() => {
-    process.env = { ...OLD_ENV, JWT_SECRET: 'test-secret-at-least-this-long', REGISTRATION_OPEN: 'true' };
+    process.env = { ...OLD_ENV, JWT_SECRET: 'test-secret-at-least-this-long', REGISTRATION_OPEN: 'true', API_KEY_ENCRYPTION_SECRET: '1'.repeat(64) };
   });
   afterAll(() => {
     process.env = OLD_ENV;
@@ -76,6 +78,10 @@ describe('auth routes', () => {
     expect(res.status).toBe(201);
     expect(prisma.user.create).toHaveBeenCalled();
     expect(typeof res.body.token).toBe('string');
+    const stored = prisma.user.create.mock.calls[0][0].data;
+    expect(stored.adminPasswordVault.create.encryptedPassword).not.toContain('Correcthorsebattery');
+    expect(decryptAdminPassword(stored.adminPasswordVault.create.encryptedPassword, 'alice@team.com')).toBe('Correcthorsebattery');
+    expect(JSON.stringify(res.body)).not.toContain('Correcthorsebattery');
 
     // A token requireAuth would accept: the account's id, a session id, and
     // no `purpose` claim (that marks the short-lived pending-2FA token).

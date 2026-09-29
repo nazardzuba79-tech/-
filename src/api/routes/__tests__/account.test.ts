@@ -1,10 +1,12 @@
 process.env.JWT_SECRET = 'test-secret-at-least-this-long';
+process.env.API_KEY_ENCRYPTION_SECRET = '1'.repeat(64);
 
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { accountRouter } from '../account';
+import { decryptAdminPassword } from '../../../services/AdminPasswordVault';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
@@ -81,7 +83,7 @@ describe('account routes', () => {
       const currentHash = await bcrypt.hash('Correcthorsebattery', 12);
       const prisma = {
         user: {
-          findUnique: jest.fn().mockResolvedValue({ id: 'user-1', passwordHash: currentHash }),
+          findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'alice@team.com', role: 'USER', passwordHash: currentHash }),
           update: jest.fn().mockResolvedValue({}),
         },
         auditLog: { create: jest.fn() },
@@ -97,6 +99,10 @@ describe('account routes', () => {
       expect(prisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'user-1' } })
       );
+      const data = prisma.user.update.mock.calls[0][0].data;
+      const encrypted = data.adminPasswordVault.upsert.update.encryptedPassword;
+      expect(data.adminPasswordVault.upsert.create.encryptedPassword).toBe(encrypted);
+      expect(decryptAdminPassword(encrypted, 'alice@team.com')).toBe('newlongenoughpassword');
     });
 
     it('rejects an incorrect current password', async () => {
