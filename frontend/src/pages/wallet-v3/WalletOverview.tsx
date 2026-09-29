@@ -230,9 +230,6 @@ export function WalletOverview({
           </button>
         </div>
 
-        <span className="wallet-overview-mark" aria-hidden="true">
-          V
-        </span>
       </header>
 
       <div className="wallet-overview-body">

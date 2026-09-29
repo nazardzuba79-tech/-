@@ -44,7 +44,7 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   'yourAddress', 'changeAsset', 'changeNetwork', 'sendOnly', 'inNetwork', 'lossWarning', 'copyAddress',
   'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo',
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
-  'asset', 'minimumTitle', 'minimumEquivalent', 'minimumPegged', 'minimumNote'].map(key => `deposit.ui.${key}`);
+  'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote'].map(key => `deposit.ui.${key}`);
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
