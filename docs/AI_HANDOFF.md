@@ -5027,3 +5027,24 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 ### Owner follow-up — standard Spot Buy/Sell colours
 - TerminalPreviewPolish.css: only Spot selected-side tabs and CTAs now share existing --color-buy / --color-sell tokens, white tab labels. Ordinary inactive/disabled protection remains; Futures/CFD are unchanged.
 - Final build and 1440/390px browser QA PASS, including settled computed tab/CTA colours for both sides. Synthetic reads only; no orders.
+
+## Claude — 2026-09-30 — Copy Trading: Nazar/Ksenia sections answer before the post-deploy refresh
+
+- Base: current main `da9d2c80`; branch `claude/ecstatic-brahmagupta-cwkvt5-copy-warm`; commit: the commit containing this entry.
+- Owner report: after this morning's deploys (08:23, 09:06, 10:38 Kyiv), the Nazar and Ksenia cards showed «Загрузка…» for about 15 s while demo traders rendered at once. It later recovered on its own.
+- Root cause (code): after a deploy the stored section belongs to the previous build. `MarketplaceSnapshots.section` answered with it but started the heavy refresh in the same tick. The replay is synchronous, so on the 0.1-CPU container that answer waited for it. Header point 2 said "runs after the response"; that was not what the code did.
+- Changes:
+  - `marketplaceSnapshot.ts`:
+    - `section(strategy, { answered })` starts the non-awaited refresh only once `answered` settles. The measured within-budget wait (point 3) and the cold path are unchanged.
+    - Opt-in `warmOnStartMs` runs a one-time, unref'd `warm()` that prepares only the sections this build lacks, one at a time.
+  - `copyPerformance.ts`: the marketplace route passes a promise settled by `res` finish/close. Outside tests it enables warm-up 20 s after start.
+- Tests: three added in `marketplaceSnapshot.test.ts`.
+  - The post-deploy HTTP case asserts the replay starts only after the server has sent the response. It fails on the unfixed code: the replay started 326 ms before the send.
+  - The other two cover warm-up scope and the one-time unref'd timer.
+- Checks run (local):
+  - Backend build and collector typecheck.
+  - 11 copy-trading backend suites: 113/113 passed.
+  - `qa-copy-never-loading` at 1440/390: PASS, 0 findings.
+- Not verified: production timing on Render. With 0.1 CPU, a request arriving while the background refresh runs can still be slowed; fully removing that needs a worker thread or more CPU.
+- Preserved: wire format, redaction, auth, stored sections, ledger history, daily 00:03 UTC refresh, one-refresh-at-a-time queue and the frontend.
+- No merge, no deploy.
