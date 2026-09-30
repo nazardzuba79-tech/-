@@ -1,0 +1,52 @@
+{
+  "todo": 0,
+  "skipped": 0,
+  "passedSuites": 170,
+  "failures": [
+    {
+      "suite": "supportForm.test.ts",
+      "name": "mail secrets, SMTP settings and support recipient configuration stay out of frontend code"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "blanket route resets cannot move the shared authenticated header finds the page-root resets this repo actually ships"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "blanket route resets cannot move the shared authenticated header and none of them shifts a box without excluding the header"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet only the audited auth and terminal scopes override a header class"
+    },
+    {
+      "suite": "sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width"
+    },
+    {
+      "suite": "registerWalletTailwindOwnership.test.ts",
+      "name": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named"
+    },
+    {
+      "suite": "plainLanguage.test.ts",
+      "name": "hardcoded component copy speaks about the product, not about the plumbing"
+    },
+    {
+      "suite": "noProviderBranding.test.ts",
+      "name": "customer-facing components render no provider branding has no provider name in customer presentation code"
+    },
+    {
+      "suite": "homepageTailwindUtilities.test.ts",
+      "name": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages"
+    },
+    {
+      "suite": "marketUniverseScale.test.ts",
+      "name": "direct venue reads stay in the approved public-data adapters contains no upstream market API host outside its exact public adapter allowlist"
+    }
+  ],
+  "suites": 177,
+  "passed": 2981,
+  "implementation": "20ff86afbb568be00287bc8825888c6180ebadf7",
+  "failedSuites": 7,
+  "failed": 10
+}
