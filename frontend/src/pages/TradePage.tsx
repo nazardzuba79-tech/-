@@ -329,7 +329,8 @@ export function TradePage() {
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
-      <ConnectionBanner />
+      {/* Simulated listings have their own feed; Kraken loss says nothing about their availability. */}
+      <ConnectionBanner key={testPair ? pair : 'spot'} connected={testPair ? testMarket.loaded && !testMarket.error && !!testMarket.asset : undefined} />
 
       <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
         <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />

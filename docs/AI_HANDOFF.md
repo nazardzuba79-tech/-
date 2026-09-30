@@ -5015,3 +5015,15 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved Claude releases, initial Admin access gate, server authorization, hourly refresh policy, financial behavior and UI styling.
 - Verified 53 Node tests, 41 Jest tests, frontend build and 26 browser scenarios (390/1440px). Brief returns cause zero extra requests and no blocked input even with a hanging validation fixture.
 - Next: owner-authorized PR/CI/merge and verify deployed Pages SHA. Full idle recovery remains intentionally visible.
+
+## Codex — 2026-09-30 — VTA connection source and measurement readability
+
+- Base: main da9d2c80. Commit: the commit containing this entry.
+- TradePage now passes the existing simulation feed status to ConnectionBanner for test/managed listings; a disconnected Kraken socket no longer falsely reports VTA down. Actual simulation failures still show after normal grace and clear on recovery. Ordinary Spot remains subscribed to Kraken. No additional reads, intervals or backend changes.
+- chartDrawings/drawingGeometry: range card font 11 to 14px, automatically wider box, localized grouped percent (+19 327,66% in Russian). Clamp visible range labels to plot bounds so mobile does not clip. Measurement math, drawing anchors, trades, pricing and Claude market simulation are preserved.
+- Validation: 142 focused Jest tests PASS, TypeScript/Vite build PASS (existing chunk-size warning). scripts/qa-vta-presentation.cjs: 1440/390px PASS with disconnected venue, healthy/failed/recovered VTA, 14px grouped label, no clipping/overflow, no writes or page errors. Synthetic fixtures only. Screenshots output/vta-presentation; harness added to existing visual CI.
+- Next: PR checks and owner-authorized release workflow; no production trades or token credit.
+
+### Owner follow-up — standard Spot Buy/Sell colours
+- TerminalPreviewPolish.css: only Spot selected-side tabs and CTAs now share existing --color-buy / --color-sell tokens, white tab labels. Ordinary inactive/disabled protection remains; Futures/CFD are unchanged.
+- Final build and 1440/390px browser QA PASS, including settled computed tab/CTA colours for both sides. Synthetic reads only; no orders.
