@@ -152,14 +152,15 @@ async function main() {
     await shot(s.page, `success-${width}`);
     await s.context.close();
 
-    // Returning to a fresh Admin page validates the session, but must not
-    // defeat the hourly summary budget or leave the global wake notice stuck.
+    // A brief return to an already authorized Admin page must not enter a
+    // full wake at all, even when the session service would be slow/offline.
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
     await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
     await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
     const beforeReturns = { ...state.calls };
+    state.me = 'hang';
     await s.page.evaluate(() => {
       window.__adminQaHidden = false;
       Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__adminQaHidden });
@@ -168,15 +169,16 @@ async function main() {
     for (let i = 0; i < 3; i++) {
       await s.page.evaluate(() => { window.__adminQaHidden = true; document.dispatchEvent(new Event('visibilitychange')); });
       await s.page.clock.fastForward(1000);
-      const validation = s.page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/me'));
       await s.page.evaluate(() => { window.__adminQaHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
-      await validation;
+      assert.equal(await s.page.locator('[data-browser-phase]').count(), 0, 'brief return displayed the wake notice');
       await s.page.clock.runFor(500);
       await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
     }
     const unchanged = state.calls.users === beforeReturns.users && state.calls.activity === beforeReturns.activity && state.calls.alerts === beforeReturns.alerts;
-    record(`three fresh tab returns → no summary reloads or stuck notice${w}`,
-      unchanged && state.calls.me === beforeReturns.me + 3 && s.errors.length === 0,
+    await s.page.getByPlaceholder('Email пользователя').fill('ready');
+    assert.equal(await s.page.locator('[data-user-row="u-ready"]').count(), 1, 'Admin input stayed blocked');
+    record(`three brief tab returns → no requests, notice or blocked input${w}`,
+      unchanged && state.calls.me === beforeReturns.me && s.errors.length === 0,
       `me=${state.calls.me - beforeReturns.me} users=${state.calls.users - beforeReturns.users} activity=${state.calls.activity - beforeReturns.activity} alerts=${state.calls.alerts - beforeReturns.alerts}`);
     await s.context.close();
 

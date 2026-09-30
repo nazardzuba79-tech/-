@@ -13,7 +13,13 @@ import { validateBrowserSession } from './lib/browserSession';
 import { getToken, onSessionChange } from './lib/api';
 import { BrowserSleepNotice } from './components/BrowserSleepNotice';
 
-startBrowserActivity({ validate: validateBrowserSession, identity: getToken });
+startBrowserActivity({
+  validate: validateBrowserSession,
+  identity: getToken,
+  // Admin's initial gate and every privileged server request still authorize
+  // access. A brief tab switch is not a full idle wake; trading stays unchanged.
+  briefReturnScope: () => /^\/admin(?:\/|$)/.test(window.location.pathname) ? window.location.pathname : null,
+});
 
 function SessionContent() {
   const token = React.useSyncExternalStore(onSessionChange, getToken);

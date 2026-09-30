@@ -5006,3 +5006,12 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Preserved: Claude/current-main Admin UI and customer filtering, one-hour active cadence, session validation on every wake, default trading forced refresh, five-minute sleep, mutation invalidation, auth/financial behavior. The normal wake notice is not hidden during validation.
 - Validation: red reproduction (2 reads vs 1), 46 lifecycle/read-budget tests, 41 Admin/JSDOM tests, frontend typecheck/build, 26 browser scenarios at 390/1440 all PASS. Evidence: `docs/qa/admin-return-refresh-20260930.md`.
 - Publication: review branch only; no merge/deploy or production account actions. No production latency claim.
+
+## Codex — 2026-09-30 — Brief Admin tab-return correction
+
+- Base: current main 23fc145b; commit: the commit containing this entry. PR #346 removed redundant data reads but left full validation on every brief return.
+- Files: browserActivity.ts, main.tsx, test-browser-activity.cjs, qa-admin-gate.cjs and docs/qa/admin-brief-return-20260930.md.
+- Active Admin routes resume before the original five-minute deadline without validation/sync UI; same route/session and no pending reads are required. Hidden traffic still stops; long idle, errors, session/route changes and trading keep full recovery.
+- Preserved Claude releases, initial Admin access gate, server authorization, hourly refresh policy, financial behavior and UI styling.
+- Verified 53 Node tests, 41 Jest tests, frontend build and 26 browser scenarios (390/1440px). Brief returns cause zero extra requests and no blocked input even with a hanging validation fixture.
+- Next: owner-authorized PR/CI/merge and verify deployed Pages SHA. Full idle recovery remains intentionally visible.

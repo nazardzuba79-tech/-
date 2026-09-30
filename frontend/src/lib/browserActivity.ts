@@ -14,6 +14,8 @@ let generation = 0;
 let suppressGesture = false;
 let validate: () => Promise<void> = async () => {};
 let identity: () => string | null = () => null;
+let briefReturnScope: () => string | null = () => null;
+let briefReturn: { scope: string; owner: string; deadline: number } | null = null;
 const listeners = new Set<Listener>();
 const reads = new Map<Promise<unknown>, { generation: number; owner: string | null }>();
 let readFailed = false;
@@ -65,6 +67,7 @@ function arm() {
 }
 export function sleepBrowser() {
   if (!started) return;
+  briefReturn = null;
   generation++; clearTimeout(idle); idle = undefined;
   phase = 'sleeping'; publish(true);
 }
@@ -82,6 +85,17 @@ export function trackBrowserRead<T>(promise: Promise<T>, reportFailure = true): 
 export function resumeBrowser(): Promise<void> {
   if (!started || hidden() || phase === 'active') return Promise.resolve();
   if (wake) return wake;
+  const paused = briefReturn;
+  briefReturn = null;
+  // An already active Admin screen can pause transports for a brief tab switch
+  // without entering a full wake barrier. Never reuse across routes/accounts,
+  // a pending read, an error, or the actual five-minute inactivity deadline.
+  if (phase === 'sleeping' && paused && paused.scope === briefReturnScope()
+      && paused.owner === identity() && Date.now() < paused.deadline
+      && ![...reads.values()].some(value => value.owner === identity())) {
+    phase = 'active'; lastActivity = Date.now(); arm(); publish(true);
+    return Promise.resolve();
+  }
   const epoch = ++generation;
   phase = 'validating'; publish();
   const current = async () => {
@@ -219,9 +233,10 @@ async function fetchDisplay(input: RequestInfo | URL, init?: RequestInit, report
   });
 }
 
-export function startBrowserActivity(options: { validate: () => Promise<void>; identity: () => string | null }) {
+export function startBrowserActivity(options: { validate: () => Promise<void>; identity: () => string | null; briefReturnScope?: () => string | null }) {
   if (started) return () => {};
   started = true; validate = options.validate; identity = options.identity;
+  briefReturnScope = options.briefReturnScope ?? (() => null);
   lastActivity = Date.now(); phase = hidden() ? 'sleeping' : 'active'; arm();
   const input = (event: Event) => {
     if (!event.isTrusted || hidden()) return;
@@ -247,7 +262,15 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
     if (event.type === 'pointermove') lastMove = Date.now();
     lastActivity = Date.now(); arm();
   };
-  const visible = () => { if (hidden()) sleepBrowser(); else void resumeBrowser(); };
+  const visible = () => {
+    if (!hidden()) { void resumeBrowser(); return; }
+    const scope = briefReturnScope(), owner = identity();
+    const paused = phase === 'active' && !wake && scope && owner
+      && ![...reads.values()].some(value => value.owner === owner)
+      ? { scope, owner, deadline: lastActivity + BROWSER_IDLE_MS } : null;
+    sleepBrowser();
+    briefReturn = paused;
+  };
   const focus = () => {
     if (hidden()) return;
     if (ownedFrameFocused && !focusedOwnedChart()) {
@@ -280,6 +303,6 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
     document.removeEventListener('visibilitychange', visible);
     window.removeEventListener('focus', focus); window.removeEventListener('blur', blur); document.removeEventListener('focusin', focus); window.removeEventListener('pageshow', pageshow);
     window.removeEventListener('pagehide', sleepBrowser);
-    phase = 'active'; suppressGesture = false; publish();
+    phase = 'active'; briefReturn = null; briefReturnScope = () => null; suppressGesture = false; publish();
   };
 }

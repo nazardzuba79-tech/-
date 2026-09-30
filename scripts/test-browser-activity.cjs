@@ -10,7 +10,7 @@ const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKi
 const sessionCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../frontend/src/lib/browserSession.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const visibleReadCode = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../frontend/src/lib/visibleRead.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const flush = async () => { for (let i=0; i<20; i++) await Promise.resolve(); await new Promise(setImmediate); };
-function setup({ validate = async () => {}, fetcher = async () => new Response('{}') } = {}) {
+function setup({ validate = async () => {}, fetcher = async () => new Response('{}'), briefReturnScope } = {}) {
   let now = 1_000_000, serial = 0, token = 'a'; const jobs = new Map(), calls = [];
   const target = () => ({ listeners: new Map(), addEventListener(type, cb) { if (!this.listeners.has(type)) this.listeners.set(type,new Set()); this.listeners.get(type).add(cb); }, removeEventListener(type,cb) { this.listeners.get(type)?.delete(cb); }, dispatchEvent(event) { for (const cb of this.listeners.get(event.type) || []) cb(event); } });
   const window = target(), document = Object.assign(target(), { hidden: false });
@@ -24,7 +24,7 @@ function setup({ validate = async () => {}, fetcher = async () => new Response('
   vm.runInNewContext(visibleReadCode, readerSandbox);
   const createVisibleRead = readerSandbox.exports.createVisibleRead;
   let validations=0;
-  const stop=api.startBrowserActivity({identity:()=>token,validate:async()=>{validations++;await validate();}});
+  const stop=api.startBrowserActivity({identity:()=>token,validate:async()=>{validations++;await validate();},briefReturnScope});
   const advance=async ms=>{const end=now+ms;for(;;){const next=[...jobs].filter(([,j])=>j.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!next)break;const[id,j]=next;now=j.at;if(j.repeat)j.at+=j.ms;else jobs.delete(id);j.fn();await flush();}now=end;await flush();};
   return { api,createVisibleRead,calls,jobs,stop,advance,window,document,get validations(){return validations;},setToken:t=>{token=t;},
     hidden:value=>{document.hidden=value;document.dispatchEvent(new Event('visibilitychange'));},
@@ -227,6 +227,36 @@ test('a failed initial hourly admin read is retried once on return', async () =>
   assert.equal(reads, 2); assert.equal(s.api.getBrowserPhase(), 'active');
   reader.stop(); s.stop();
 });
+
+test('brief Admin return resumes without validation or a syncing phase; hidden traffic remains stopped', async () => {
+  const s = setup({ briefReturnScope: () => '/admin/users', validate: () => { throw new Error('must not validate a brief return'); } });
+  const phases = []; const off = s.api.onBrowserPhase(() => phases.push(s.api.getBrowserPhase()));
+  let reads = 0; const reader = s.createVisibleRead(async () => { reads++; }, 3_600_000, true, false);
+  await flush(); s.hidden(true); await s.advance(1000);
+  assert.equal(reads, 1); s.hidden(false); await flush();
+  assert.equal(s.api.getBrowserPhase(), 'active'); assert.equal(s.validations, 0);
+  assert.equal(reads, 1); assert.deepEqual(phases, ['sleeping', 'active']);
+  assert.equal(s.input('pointerdown').blocked, false);
+  reader.stop(); off(); s.stop();
+});
+
+for (const reason of ['five-minute-boundary', 'idle-before-hide', 'session-change', 'route-change', 'pending-read', 'failed-wake']) {
+  test(`Admin brief-return shortcut refuses ${reason}`, async () => {
+    let scope = '/admin/users', pending, validations = 0;
+    const s = setup({ briefReturnScope: () => scope, validate: async () => { if (reason === 'failed-wake' && ++validations === 1) throw new Error('offline'); } });
+    if (reason === 'idle-before-hide') await s.advance(300000);
+    if (reason === 'pending-read') s.api.trackBrowserRead(new Promise(resolve => { pending = resolve; }));
+    if (reason === 'failed-wake') { s.api.sleepBrowser(); await s.wake(); assert.equal(s.api.getBrowserPhase(), 'error'); }
+    const before = s.validations;
+    s.hidden(true);
+    if (reason === 'five-minute-boundary') await s.advance(300000);
+    if (reason === 'session-change') s.setToken('other');
+    if (reason === 'route-change') scope = '/futures';
+    s.hidden(false); await flush(); pending?.(); await s.advance(151);
+    assert.equal(s.validations, before + 1); assert.equal(s.api.getBrowserPhase(), 'active');
+    s.stop();
+  });
+}
 
 test('validation failure keeps transports stopped with no automatic retry',async()=>{
   const s=setup({validate:async()=>{throw new Error('offline');}});s.api.sleepBrowser();await s.wake();assert.equal(s.api.getBrowserPhase(),'error');await s.advance(1800000);s.input('pointermove');assert.equal(s.validations,1);assert.equal(s.calls.length,0);s.stop();
