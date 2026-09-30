@@ -94,23 +94,31 @@ export function AdminListingsPage() {
   const [previewAt, setPreviewAt] = useState('');
   const [publishing, setPublishing] = useState<{ listing: AdminListing; key: string } | null>(null);
   const loading = useRef(false);
+  const mounted = useRef(false);
+  const listRequest = useRef<AbortController | null>(null);
   const previewRequest = useRef(0);
   const logoRequest = useRef(0);
 
   const load = useCallback(async () => {
-    if (loading.current) return;
+    if (!mounted.current || loading.current) return;
     loading.current = true;
+    const controller = new AbortController(); listRequest.current = controller;
     try {
-      const body = await adminListingsApi.list();
+      const body = await adminListingsApi.list(controller.signal);
+      if (controller.signal.aborted) return;
       setListings(body.listings);
       setLoadError(null);
       setNotConnected(false);
     } catch (error) {
+      if (controller.signal.aborted) return;
       setLoadError(errorText(error));
       setNotConnected(error instanceof ListingApiError && (error.code === 'STORE_NOT_CONFIGURED' || error.code === 'STORE_AUTH_FAILED'));
-    } finally { loading.current = false; }
+    } finally { if (listRequest.current === controller) { loading.current = false; listRequest.current = null; } }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    mounted.current = true; void load();
+    return () => { mounted.current = false; listRequest.current?.abort(); listRequest.current = null; loading.current = false; };
+  }, [load]);
 
   const current = useMemo(() => (editing?.id ? listings?.find((item) => item.id === editing.id) ?? null : null), [editing, listings]);
   const listingAtUtc = form.wallTime ? zonedWallTimeToUtc(form.wallTime, form.timeZone) : null;

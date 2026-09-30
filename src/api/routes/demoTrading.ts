@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
@@ -54,10 +55,10 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     }
   });
 
-  router.get('/demo/balances', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.get('/demo/balances', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const balances = await demoTrading.getBalances(req.userId!);
     res.json(balances.map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })));
-  });
+  }));
 
   router.post('/demo/orders', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);
@@ -88,7 +89,7 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     }
   });
 
-  router.get('/demo/orders/open', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.get('/demo/orders/open', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const orders = await demoTrading.getOpenOrders(req.userId!);
     res.json(
       orders.map((o) => ({
@@ -103,13 +104,13 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
         createdAt: o.createdAt,
       }))
     );
-  });
+  }));
 
-  router.delete('/demo/orders/:orderId', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.delete('/demo/orders/:orderId', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const cancelled = await demoTrading.cancelOrder(req.userId!, req.params.orderId);
     if (!cancelled) return res.status(404).json({ error: 'Order not found or not cancellable' });
     res.status(204).send();
-  });
+  }));
 
   router.get('/demo/orderbook/:pair', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const snapshot = demoTrading.getOrderBook(req.params.pair.toUpperCase());
@@ -121,10 +122,10 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     });
   });
 
-  router.get('/demo/trades/:pair', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.get('/demo/trades/:pair', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const trades = await demoTrading.getRecentTrades(req.params.pair.toUpperCase());
     res.json(trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })));
-  });
+  }));
 
   return router;
 }

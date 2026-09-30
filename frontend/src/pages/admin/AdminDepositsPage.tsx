@@ -55,31 +55,43 @@ export function AdminDepositsPage() {
   // dropped: it runs once more after it, so an action's confirmation never
   // shows over a list read before that action.
   const again = useRef(false);
+  const mounted = useRef(false);
+  const queueRequest = useRef<AbortController | null>(null);
   const reload = useCallback((): Promise<void> => {
+    if (!mounted.current) return Promise.resolve();
     if (loading.current) { again.current = true; return loading.current; }
+    const controller = new AbortController();
+    queueRequest.current = controller;
     const run = (async () => {
       do {
         again.current = false;
-        try { setQueue(await adminDepositApi.queue()); setLoadError(false); }
-        catch { setLoadError(true); }
-      } while (again.current);
-    })().finally(() => { loading.current = null; });
+        try {
+          const next = await adminDepositApi.queue(controller.signal);
+          if (controller.signal.aborted) return;
+          setQueue(next); setLoadError(false);
+        } catch { if (!controller.signal.aborted) setLoadError(true); }
+      } while (!controller.signal.aborted && again.current);
+    })().finally(() => {
+      if (queueRequest.current === controller) { loading.current = null; queueRequest.current = null; }
+    });
     loading.current = run;
     return run;
   }, []);
 
   useEffect(() => {
+    mounted.current = true;
+    let disposed = false;
     void reload();
     // The day's first automatic scan runs when an admin opens this page after
     // 07:00 (Kyiv). The server allows it once a day, never at night, never
     // right after another scan; otherwise it does nothing.
     const pendingOpen = new AbortController();
     void waitUntilActive(pendingOpen.signal).then(() => {
-      if (!pendingOpen.signal.aborted) return adminDepositApi.openTrigger().then((r) => { if (r.ran) void reload(); });
+      if (!pendingOpen.signal.aborted) return adminDepositApi.openTrigger().then((r) => { if (!disposed && r.ran) void reload(); });
     }).catch(() => {});
-    api.getAllClients().then(setClients).catch(() => {});
+    api.getAllClients(pendingOpen.signal).then(next => { if (!disposed) setClients(next); }).catch(() => {});
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const visible = () => !isBrowserInactive();
+    const visible = () => !disposed && !isBrowserInactive();
     const schedule = () => {
       if (timer !== undefined) clearTimeout(timer);
       timer = undefined;
@@ -88,7 +100,13 @@ export function AdminDepositsPage() {
     const onVisibility = () => { if (visible()) void reload().then(schedule); else if (timer !== undefined) { clearTimeout(timer); timer = undefined; } };
     schedule();
     addBrowserActivityListener(onVisibility);
-    return () => { pendingOpen.abort(); if (timer !== undefined) clearTimeout(timer); removeBrowserActivityListener(onVisibility); };
+    return () => {
+      disposed = true; mounted.current = false;
+      pendingOpen.abort(); queueRequest.current?.abort(); queueRequest.current = null;
+      loading.current = null; again.current = false;
+      if (timer !== undefined) clearTimeout(timer);
+      removeBrowserActivityListener(onVisibility);
+    };
   }, [reload]);
 
   useEffect(() => {

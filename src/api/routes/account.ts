@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
@@ -93,7 +94,7 @@ const SECURITY_LOG_LIMIT = 50;
 export function accountRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -110,25 +111,25 @@ export function accountRouter(prisma: PrismaClient): Router {
       twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt,
     });
-  });
+  }));
 
   // Self-service profile fields — name/phone/country the user enters
   // themselves in Settings. Purely informational, distinct from the
   // identity-document country submitted for KYC review.
-  router.patch('/me/profile', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.patch('/me/profile', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = updateProfileSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     const user = await prisma.user.update({ where: { id: req.userId }, data: parsed.data });
     res.json({ displayName: user.displayName, phone: user.phone, country: user.country });
-  });
+  }));
 
   // Profile photo. A base64 image can exceed the app-wide 100KB JSON body
   // limit on its own, so index.ts mounts a wider parser for this one path
   // ahead of the global one — see the comment there. Without that mount
   // this endpoint 413s before ever reaching the size check below, so the
   // two limits have to be kept in step.
-  router.put('/me/avatar', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.put('/me/avatar', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = avatarSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'Missing image' });
 
@@ -140,14 +141,14 @@ export function accountRouter(prisma: PrismaClient): Router {
       data: { avatarUrl: parsed.data.image },
     });
     res.json({ avatarUrl: user.avatarUrl });
-  });
+  }));
 
-  router.delete('/me/avatar', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.delete('/me/avatar', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     await prisma.user.update({ where: { id: req.userId }, data: { avatarUrl: null } });
     res.json({ avatarUrl: null });
-  });
+  }));
 
-  router.patch('/me/password', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.patch('/me/password', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = changePasswordSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { currentPassword, newPassword } = parsed.data;
@@ -174,11 +175,11 @@ export function accountRouter(prisma: PrismaClient): Router {
     });
 
     res.json({ status: 'ok' });
-  });
+  }));
 
   // The account's own login/security event history — real AuditLog rows,
   // scoped to req.userId so no one can read another account's log.
-  router.get('/account/security-log', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/account/security-log', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const entries = await prisma.auditLog.findMany({
       where: { userId: req.userId, action: { in: SECURITY_LOG_ACTIONS } },
       orderBy: { createdAt: 'desc' },
@@ -192,14 +193,14 @@ export function accountRouter(prisma: PrismaClient): Router {
         metadata: e.metadata,
       }))
     );
-  });
+  }));
 
   // Real devices/browsers with a live (non-revoked) session — see the
   // Session model's doc comment. req.sessionId (set by requireAuth only
   // when the bearer token carries a `sid` claim) marks which row belongs
   // to the request making this very call, so the frontend can label
   // "This device" and the sign-out button can warn before ending it.
-  router.get('/me/sessions', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/me/sessions', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const sessions = await prisma.session.findMany({
       where: { userId: req.userId, revokedAt: null },
       orderBy: { lastSeenAt: 'desc' },
@@ -214,14 +215,14 @@ export function accountRouter(prisma: PrismaClient): Router {
         current: s.id === req.sessionId,
       }))
     );
-  });
+  }));
 
   // "Sign out this device" — sets revokedAt, which requireAuth checks on
   // every subsequent request carrying that session's token, so this has
   // an immediate, real effect instead of just removing a row from a list.
   // Revoking the session making THIS very request is allowed on purpose:
   // it just signs the caller out right now, same as clicking logout.
-  router.delete('/me/sessions/:id', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.delete('/me/sessions/:id', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const session = await prisma.session.findUnique({ where: { id: req.params.id } });
     if (!session || session.userId !== req.userId) {
       return res.status(404).json({ error: 'Session not found' });
@@ -237,7 +238,7 @@ export function accountRouter(prisma: PrismaClient): Router {
       });
     }
     res.json({ status: 'ok' });
-  });
+  }));
 
   // Step 1 of enabling 2FA: mint a new TOTP secret and hand back a QR code
   // (plus the raw base32 key for manual entry). Stored on the user record
@@ -245,7 +246,7 @@ export function accountRouter(prisma: PrismaClient): Router {
   // the user actually has it loaded in an authenticator app — otherwise a
   // dropped request here could silently half-enable 2FA with a secret
   // nobody possesses, locking the account out.
-  router.post('/account/2fa/setup', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.post('/account/2fa/setup', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.twoFactorEnabled) {
@@ -257,12 +258,12 @@ export function accountRouter(prisma: PrismaClient): Router {
 
     const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, { margin: 1, width: 240 });
     res.json({ secret: base32, otpauthUrl, qrCodeDataUrl });
-  });
+  }));
 
   // Step 2: prove possession of the secret with a live code. On success,
   // issues a fresh set of backup codes (returned exactly once — only the
   // bcrypt hashes are ever stored) and flips twoFactorEnabled on.
-  router.post('/account/2fa/verify', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.post('/account/2fa/verify', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = twoFactorCodeSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -291,12 +292,12 @@ export function accountRouter(prisma: PrismaClient): Router {
     });
 
     res.json({ status: 'ok', backupCodes: plaintext });
-  });
+  }));
 
   // Disabling requires a live code (TOTP or backup) too — otherwise anyone
   // who hijacks an already-open session could strip 2FA protection off the
   // account without ever having to defeat it.
-  router.post('/account/2fa/disable', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.post('/account/2fa/disable', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = twoFactorCodeSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -318,7 +319,7 @@ export function accountRouter(prisma: PrismaClient): Router {
     });
 
     res.json({ status: 'ok' });
-  });
+  }));
 
   return router;
 }

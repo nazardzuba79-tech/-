@@ -120,8 +120,13 @@ test.each([
   // The browser regression exercises the session-switch guard with a real 401.
   // Admin Users password column: one additive nullable field in getAdminUsers'
   // response type. Futures/Spot methods and their transport stay unchanged.
-  ['frontend/src/lib/api.ts', '1d94b9b20fa84c9cf560fec948cc01c60fda3bbf0f4a11fd1d8321d1c5d78eb1'],
-  ['src/api/routes/futures.ts', '3eff9ba113edc85e3b44dd88cb876cd88e09ce99412353ed85221bdadbd2bc19'],
+  // API lifecycle audit: optional AbortSignals on GETs only; mutation transports are unchanged.
+  ['frontend/src/lib/api.ts', 'ef54b1ccb06e1e2f3440d6c564007275d2a64fa8495cd1f4bd443ca6917acf53'],
+  // 2026-09-30: reviewed Express 4 async-error containment. All fourteen
+  // handler bodies are byte-identical to f62d28da; only asyncRoute and the
+  // local wrapped auth binding changed. Pin the complete reviewed file;
+  // request failures are exercised by futuresAsyncErrors.test.ts.
+  ['src/api/routes/futures.ts', '271a1ec4f7d3fc96f1f27992504b455f1299809f591fd5e7644c3dc8cda93233'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,

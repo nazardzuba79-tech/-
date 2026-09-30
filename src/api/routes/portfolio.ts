@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -32,7 +33,7 @@ export function portfolioRouter(prisma: PrismaClient, walletPortfolio?: WalletPo
    * returned under `real` regardless, and stay the only thing any other part
    * of the exchange reads.
    */
-  router.get('/wallet/overview', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/wallet/overview', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     if (!walletPortfolio) return res.status(503).json({ error: 'Portfolio service unavailable' });
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
@@ -45,7 +46,7 @@ export function portfolioRouter(prisma: PrismaClient, walletPortfolio?: WalletPo
       console.error('[wallet/overview]', err);
       res.status(500).json({ error: 'Internal server error' });
     }
-  });
+  }));
 
   /**
    * Portfolio performance: one canonical daily series per account, with 7D,
@@ -53,7 +54,7 @@ export function portfolioRouter(prisma: PrismaClient, walletPortfolio?: WalletPo
    * series cannot cover comes back `available: false` rather than borrowing a
    * shorter window's number.
    */
-  router.get('/wallet/performance', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/wallet/performance', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     if (!walletPortfolio) return res.status(503).json({ error: 'Portfolio service unavailable' });
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
@@ -66,13 +67,13 @@ export function portfolioRouter(prisma: PrismaClient, walletPortfolio?: WalletPo
       console.error('[wallet/performance]', err);
       res.status(500).json({ error: 'Internal server error' });
     }
-  });
+  }));
 
   const snapshotSchema = z.object({
     totalValueUsd: z.string().refine((v) => Number.isFinite(Number(v)) && Number(v) >= 0, 'must be a non-negative number'),
   });
 
-  router.post('/wallet/portfolio-snapshot', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.post('/wallet/portfolio-snapshot', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = snapshotSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -90,9 +91,9 @@ export function portfolioRouter(prisma: PrismaClient, walletPortfolio?: WalletPo
       data: { userId: req.userId!, totalValueUsd: parsed.data.totalValueUsd },
     });
     res.json({ recorded: true });
-  });
+  }));
 
-  router.get('/wallet/portfolio-history', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/wallet/portfolio-history', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const range = typeof req.query.range === 'string' ? req.query.range : '30d';
     const days = RANGE_DAYS[range];
     if (!days) return res.status(400).json({ error: 'range must be one of: 7d, 30d, 90d' });
@@ -106,7 +107,7 @@ export function portfolioRouter(prisma: PrismaClient, walletPortfolio?: WalletPo
     res.json({
       points: snapshots.map((s) => ({ date: s.createdAt, totalValueUsd: s.totalValueUsd.toString() })),
     });
-  });
+  }));
 
   return router;
 }

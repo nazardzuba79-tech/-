@@ -26,7 +26,7 @@ describe('Render free-tier bandwidth guardrails', () => {
 
     expect(nav).not.toContain('useAdminAlertSound');
     expect(layout).not.toContain('setAdminAlertSoundEnabled');
-    expect(users).toContain('getAdminRecentDepositsByUser()');
+    expect(users).toContain('getAdminRecentDepositsByUser(controller.signal)');
     expect(users).not.toContain('getAdminDeposits()');
 
     // The deposit page reads the stored registry (one DB-only request) and

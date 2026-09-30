@@ -73,11 +73,11 @@ export function useAdminAlertSound(enabled: boolean) {
     let epoch = 0;
     cursor.current = null;
 
-    async function poll() {
+    async function poll(signal: AbortSignal) {
       const token = getToken(), started = epoch;
       if (cancelled || !token || isBrowserInactive()) return;
       try {
-        const next = await getAdminAlertSummary();
+        const next = await getAdminAlertSummary(signal);
         if (cancelled || started !== epoch || token !== getToken()) return;
         const hasNew = changed(cursor.current, next);
         cursor.current = next;

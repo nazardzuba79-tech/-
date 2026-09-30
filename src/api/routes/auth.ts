@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router, Request, RequestHandler } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
@@ -164,7 +165,7 @@ export function authRouter(
   // onboarding people, then set REGISTRATION_OPEN=false in .env so randoms
   // who find the URL can't create accounts. Simple on/off switch, no invite
   // system yet — ask if you want invite-only registration instead.
-  router.post('/auth/register', limit.register, async (req, res) => {
+  router.post('/auth/register', limit.register, asyncRoute(async (req, res) => {
     if (process.env.REGISTRATION_OPEN === 'false') {
       return res.status(403).json({ error: 'Registration is currently closed' });
     }
@@ -224,9 +225,9 @@ export function authRouter(
 
     // After the response: the new account has no country yet, so offer one.
     backfillCountry(user.id, req);
-  });
+  }));
 
-  router.post('/auth/login', limit.login, async (req, res) => {
+  router.post('/auth/login', limit.login, asyncRoute(async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { email, password } = parsed.data;
@@ -260,9 +261,9 @@ export function authRouter(
 
     // Accounts that predate country detection get theirs on a later sign-in.
     if (!user.country) backfillCountry(user.id, req);
-  });
+  }));
 
-  router.post('/auth/login/2fa', twoFactorLimiter, async (req, res) => {
+  router.post('/auth/login/2fa', twoFactorLimiter, asyncRoute(async (req, res) => {
     const parsed = login2faSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { pendingToken, code } = parsed.data;
@@ -306,7 +307,7 @@ export function authRouter(
     res.json({ token: issueToken(user.id, session.id) });
 
     if (!user.country) backfillCountry(user.id, req);
-  });
+  }));
 
   return router;
 }

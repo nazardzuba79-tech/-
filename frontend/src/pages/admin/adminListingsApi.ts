@@ -50,13 +50,14 @@ export class ListingApiError extends Error {
   constructor(message: string, readonly status: number, readonly code: string | null, readonly draftRevision: number | null = null) { super(message); }
 }
 
-async function call<T>(path: string, init: { method?: string; body?: unknown; ifMatch?: number } = {}): Promise<T> {
+async function call<T>(path: string, init: { method?: string; body?: unknown; ifMatch?: number; signal?: AbortSignal } = {}): Promise<T> {
   const token = getToken();
   if (!token) throw new ListingApiError('Сессия администратора недоступна', 401, null);
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      method: init.method ?? 'GET', cache: 'no-store', signal: AbortSignal.timeout(20_000),
+      method: init.method ?? 'GET', cache: 'no-store', signal: init.signal
+        ? AbortSignal.any([init.signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000),
       headers: { Authorization: `Bearer ${token}`, ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(init.ifMatch !== undefined ? { 'If-Match': String(init.ifMatch) } : {}) },
       ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
@@ -74,7 +75,7 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
 }
 
 export const adminListingsApi = {
-  list: () => call<{ revision: string; serverTime: number; listings: AdminListing[] }>('/admin/listings'),
+  list: (signal?: AbortSignal) => call<{ revision: string; serverTime: number; listings: AdminListing[] }>('/admin/listings', { signal }),
   create: (config: ListingForm) => call<{ id: string; draftRevision: number; draft: ListingConfig }>('/admin/listings', { method: 'POST', body: { config } }),
   saveDraft: (id: string, config: ListingForm, draftRevision: number) =>
     call<{ id: string; draftRevision: number; draft: ListingConfig }>(`/admin/listings/${encodeURIComponent(id)}/draft`, { method: 'PUT', body: { config }, ifMatch: draftRevision }),

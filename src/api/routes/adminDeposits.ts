@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -334,7 +335,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   // reused treasury address) as permanently excluded from the feed above —
   // for entries that will never get credited because they aren't actually
   // this exchange's deposits.
-  router.post('/admin/deposits/ignore', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.post('/admin/deposits/ignore', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const parsed = ignoreSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { chain, txHash } = parsed.data;
@@ -353,7 +354,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     }
 
     res.json({ status: 'ignored' });
-  });
+  }));
 
   // CLOSED. The old one-transfer credit bypassed the package minimum. Every
   // credit now goes through /admin/deposit-packages/confirm. Kept as an

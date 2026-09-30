@@ -96,10 +96,15 @@ export function useAdminUserActivity(
   const [failed, setFailed] = useState(false);
   const [receivedAt, setReceivedAt] = useState<number | null>(null);
   const refresh = useVisibleAccountRead({
-    load: () => {
+    load: signal => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
-      return load(controller.signal).finally(() => clearTimeout(timer));
+      const abort = () => { controller.abort(); clearTimeout(timer); };
+      signal.addEventListener('abort', abort, { once: true });
+      if (signal.aborted) abort();
+      return load(controller.signal).finally(() => {
+        clearTimeout(timer); signal.removeEventListener('abort', abort);
+      });
     },
     staleMs: ADMIN_ACTIVITY_POLL_MS, poll: true, refreshOnWake: false,
     accept: next => { setActivity(next); setFailed(false); setReceivedAt(Date.now()); },

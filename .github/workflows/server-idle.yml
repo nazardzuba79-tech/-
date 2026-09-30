@@ -22,6 +22,15 @@ on:
       - 'src/cfd/**'
       - 'src/private-trading/**'
       - 'src/api/routes/orders.ts'
+      - 'src/api/routes/balances.ts'
+      - 'src/api/routes/futures.ts'
+      - 'src/api/asyncRoute.ts'
+      - 'src/api/routes/**'
+      - 'src/api/middleware/**'
+      - 'src/api/routes/__tests__/futuresAsyncErrors.test.ts'
+      - 'src/api/routes/__tests__/spotAsyncErrors.test.ts'
+      - 'src/api/routes/__tests__/futuresProtection.test.ts'
+      - 'src/api/routes/__tests__/orders.test.ts'
       - 'src/api/routes/privateTrading.ts'
       - 'src/__tests__/serverIdle*.ts'
       - 'src/__tests__/serverWatcherSleep.pg.test.ts'
@@ -74,6 +83,15 @@ jobs:
         run: npx prisma migrate deploy
       - name: Backend typecheck and build
         run: npm run build
+      - name: API errors stay within the request and preserve trading responses
+        run: >-
+          npx jest --runInBand --silent --runTestsByPath
+          src/api/routes/__tests__/futuresAsyncErrors.test.ts
+          src/api/routes/__tests__/spotAsyncErrors.test.ts
+          src/api/routes/__tests__/apiFailureContainment.test.ts
+          src/api/routes/__tests__/asyncRouteAudit.test.ts
+          src/api/routes/__tests__/futuresProtection.test.ts
+          src/api/routes/__tests__/orders.test.ts
       - name: Sleep/wake mechanism, wake wiring and the simulated idle day
         run: >-
           npx jest --runInBand --silent --runTestsByPath

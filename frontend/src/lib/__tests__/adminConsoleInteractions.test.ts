@@ -20,6 +20,7 @@ function load(file: string): any {
   new Function('exports', 'require', code)(exports, (name: string) => {
     if (name.endsWith('.css')) return {};
     if (name.endsWith('/depositCatalogue')) return { MANUAL_DEPOSIT_CATALOGUE: false };
+    if (name.endsWith('/adminUserActivity')) return { useAdminUserActivity: () => ({ activity: null, failed: false, receivedAt: null, refresh: async () => {} }) };
     if (name.endsWith('/adminReadApi')) return {
       getAdminGateMe: (signal?: AbortSignal) => api.getMe(signal),
       getAdminUsersAbortable: (signal?: AbortSignal) => api.getAdminUsers?.(undefined, signal),
@@ -45,6 +46,33 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); });
 async function mountWallets() { const { AdminWalletsPage } = load(resolve(frontend, 'src/pages/admin/AdminWalletsPage')); await act(async () => { root.render(React.createElement(AdminWalletsPage)); await flush(); }); }
+
+test('leaving Admin Users aborts both page reads', async () => {
+  api.getAdminUsers = jest.fn(() => new Promise(() => {}));
+  api.getAdminRecentDepositsByUser = jest.fn(() => new Promise(() => {}));
+  const { AdminUsersPage } = load(resolve(frontend, 'src/pages/admin/AdminUsersPage'));
+  const { MemoryRouter } = req('react-router-dom');
+  await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminUsersPage))); await flush(); });
+  const usersSignal = api.getAdminUsers.mock.calls[0][1] as AbortSignal;
+  const depositsSignal = api.getAdminRecentDepositsByUser.mock.calls[0][0] as AbortSignal;
+  await act(async () => { root.render(null); await flush(); });
+  expect(usersSignal?.aborted).toBe(true);
+  expect(depositsSignal?.aborted).toBe(true);
+});
+
+test('leaving Admin Listings cancels its pending list read', async () => {
+  const originalFetch = globalThis.fetch;
+  const fetcher = jest.fn(() => new Promise<Response>(() => {}));
+  globalThis.fetch = fetcher;
+  try {
+    const { AdminListingsPage } = load(resolve(frontend, 'src/pages/admin/AdminListingsPage'));
+    const { MemoryRouter } = req('react-router-dom');
+    await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminListingsPage))); await flush(); });
+    const signal = (fetcher.mock.calls as unknown as [string, RequestInit][])[0][1].signal!;
+    await act(async () => { root.render(null); await flush(); });
+    expect(signal.aborted).toBe(true);
+  } finally { globalThis.fetch = originalFetch; }
+});
 async function mountDeposits() {
   const { AdminDepositsPage } = load(resolve(frontend, 'src/pages/admin/AdminDepositsPage'));
   const { MemoryRouter } = req('react-router-dom');
@@ -99,6 +127,37 @@ function mockDepositApi(q: any) {
   });
 }
 const fetched = (suffix: string) => fetchMock.mock.calls.filter((c: any[]) => String(c[0]).includes(suffix));
+
+test('a late deposit poll cannot restart polling after leaving the page', async () => {
+  jest.useFakeTimers({ doNotFake: ['setImmediate'] });
+  try {
+    const q = queue();
+    mockDepositApi(q);
+    await mountDeposits();
+    let finish!: (value: any) => void;
+    fetchMock.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    await act(async () => { jest.advanceTimersByTime(60_000); await flush(); });
+    const requests = fetched('/admin/deposit-queue').length;
+    await act(async () => { root.render(null); await flush(); });
+    await act(async () => { finish({ ok: true, json: async () => q }); await flush(); });
+    await act(async () => { jest.advanceTimersByTime(60_000); await flush(); });
+    expect(fetched('/admin/deposit-queue')).toHaveLength(requests);
+    expect(jest.getTimerCount()).toBe(0);
+  } finally { jest.useRealTimers(); }
+});
+
+test('leaving deposits aborts queue and client directory reads', async () => {
+  mockDepositApi(queue());
+  const delegate = fetchMock.getMockImplementation()!;
+  fetchMock.mockImplementation((url: string, init: any) => String(url).endsWith('/admin/deposit-queue') ? new Promise(() => {}) : delegate(url, init));
+  api.getAllClients = jest.fn(() => new Promise(() => {}));
+  await mountDeposits();
+  const queueSignal = fetched('/admin/deposit-queue')[0][1].signal;
+  const clientsSignal = api.getAllClients.mock.calls[0][0];
+  await act(async () => { root.render(null); await flush(); });
+  expect(queueSignal?.aborted).toBe(true);
+  expect(clientsSignal?.aborted).toBe(true);
+});
 
 test('accumulation cards: 15 + 20 awaits a top-up of 265 with crediting unavailable; a 300 package offers «Проверить и зачислить»', async () => {
   mockDepositApi(queue());

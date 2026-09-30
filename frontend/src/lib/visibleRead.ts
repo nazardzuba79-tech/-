@@ -3,12 +3,13 @@ import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityLis
  * Successful acquisition time (not visibility or a failed attempt) determines age.
  * A mutation during a GET queues one subsequent GET; it never joins an old snapshot.
  */
-export function createVisibleRead(read: () => Promise<void>, staleMs: number, poll = false, refreshOnWake = true) {
+export function createVisibleRead(read: (signal: AbortSignal) => Promise<void>, staleMs: number, poll = false, refreshOnWake = true) {
   let stopped = false;
   let dirty = true;
   let succeededAt: number | null = null;
   let attemptedAt: number | null = null;
   let running: Promise<void> | null = null;
+  let controller: AbortController | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   const hidden = () => typeof document !== 'undefined' && isBrowserInactive();
   const clear = () => { if (timer !== null) clearTimeout(timer); timer = null; };
@@ -23,10 +24,11 @@ export function createVisibleRead(read: () => Promise<void>, staleMs: number, po
     if (stopped || hidden()) return Promise.resolve();
     if (running) return running;
     clear(); dirty = false; attemptedAt = Date.now();
+    const requestController = new AbortController(); controller = requestController;
     running = trackBrowserRead(Promise.resolve().then(() => {
       if (stopped || hidden()) { dirty = true; return; }
       dirty = false;
-      return read();
+      return read(requestController.signal);
     }).then(() => { if (!stopped && !dirty) succeededAt = Date.now(); }))
       .catch(() => {
         // Keep the consumer's last-good data, but a failed explicit refresh
@@ -35,6 +37,7 @@ export function createVisibleRead(read: () => Promise<void>, staleMs: number, po
       })
       .finally(() => {
         running = null;
+        controller = null;
         if (!stopped && dirty && !hidden()) void load(); else schedule();
       });
     return running;
@@ -52,6 +55,6 @@ export function createVisibleRead(read: () => Promise<void>, staleMs: number, po
   visible();
   return {
     refresh: () => { dirty = true; return load(); },
-    stop: () => { stopped = true; clear(); removeBrowserActivityListener(visible); },
+    stop: () => { stopped = true; controller?.abort(); clear(); removeBrowserActivityListener(visible); },
   };
 }

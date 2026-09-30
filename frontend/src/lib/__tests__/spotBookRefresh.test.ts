@@ -34,13 +34,15 @@ function setup() {
   const refs = { bookPairRef: { current: 'BTC/USDT' }, bookGenerationRef: { current: 1 },
     bookRequestRef: { current: 0 }, bookWsVersionRef: { current: 0 },
     bookPendingRef: { current: null as null | { generation: number; request: number } } };
-  const setBook = jest.fn();
-  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'api', 'setBook', 'pair', 'marketType', 'isTestMarketPair', 'isBrowserInactive', 'readSpotPublicBook', ...Object.keys(refs),
-    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api, setBook, pair, 'spot', () => false, isBrowserInactive, api.getExternalOrderBook, ...Object.values(refs)) as () => void;
-  return { requests, api, refs, setBook, callback };
+  const setBook = jest.fn(), setBookFeed = jest.fn();
+  const callback = (pair = refs.bookPairRef.current) => new Function('useCallback', 'api', 'setBook', 'setBookFeed', 'pair', 'marketType', 'isTestMarketPair', 'isBrowserInactive', 'readSpotPublicBook', ...Object.keys(refs),
+    `${compiled}; return refreshBook;`)((fn: unknown) => fn, api, setBook, setBookFeed, pair, 'spot', () => false, isBrowserInactive, api.getExternalOrderBook, ...Object.values(refs)) as () => void;
+  return { requests, api, refs, setBook, setBookFeed, callback };
 }
 const settle = async () => { for (let tick = 0; tick < 5; tick++) await Promise.resolve(); };
 const book = { bids: [], asks: [] };
+beforeEach(() => jest.useFakeTimers());
+afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
 test('ticker state resets with the selected pair instead of briefly showing the old instrument price', () => {
   expect(source).toContain('<TickerBar key={pair} pair={pair}');
@@ -117,6 +119,7 @@ test('failed REST releases its own lock without inventing data; unmount generati
   const ctx = setup(), refresh = ctx.callback(); refresh();
   ctx.requests[0].reject(new Error('test-only unavailable feed')); await settle();
   expect(ctx.setBook).not.toHaveBeenCalled(); expect(ctx.refs.bookPendingRef.current).toBeNull();
+  expect(ctx.setBookFeed).toHaveBeenCalledWith({ pair: 'BTC/USDT', healthy: false });
   refresh(); ctx.refs.bookGenerationRef.current++;
   ctx.requests[1].resolve(book); await settle();
   expect(ctx.setBook).not.toHaveBeenCalled();

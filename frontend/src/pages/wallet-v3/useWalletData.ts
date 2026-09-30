@@ -146,13 +146,13 @@ export function useWalletData() {
   const snapshotRecorded = useRef(false);
 
   const loadOverview = useVisibleAccountRead({
-    load: () => api.getWalletOverview(), staleMs: WALLET_STALE_MS,
+    load: signal => api.getWalletOverview(signal), staleMs: WALLET_STALE_MS,
     accept: res => { setOverview(res); setOverviewState('ok'); },
     fail: () => setOverviewState(prev => prev === 'ok' ? 'ok' : 'error'),
     reset: () => { setOverview(null); setOverviewState('loading'); snapshotRecorded.current = false; },
   });
   const loadUnified = useVisibleAccountRead({
-    load: () => nativeDemoApi.wallet(), staleMs: WALLET_STALE_MS,
+    load: signal => nativeDemoApi.wallet(signal), staleMs: WALLET_STALE_MS,
     // An optional engine denial settles the probe, but does not recategorize
     // an established Cross account or replace its last confirmed transcript.
     accept: next => setUnified(prev => next ?? prev ?? null),
@@ -160,7 +160,7 @@ export function useWalletData() {
     reset: () => setUnified(undefined),
   });
   const loadPerformance = useVisibleAccountRead({
-    load: () => api.getWalletPerformance(), staleMs: WALLET_STALE_MS,
+    load: signal => api.getWalletPerformance(signal), staleMs: WALLET_STALE_MS,
     accept: res => { setPerformance(res); setPerformanceState('ok'); },
     fail: () => setPerformanceState(prev => prev === 'ok' ? 'ok' : 'error'),
     reset: () => { setPerformance(null); setPerformanceState('loading'); },

@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -18,7 +19,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
   const router = Router();
   const service = new WithdrawalService(prisma);
 
-  router.get('/admin/withdrawals', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+  router.get('/admin/withdrawals', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const withdrawals = await prisma.withdrawal.findMany({
       orderBy: { createdAt: 'desc' },
       take: 200,
@@ -41,7 +42,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
         updatedAt: w.updatedAt,
       }))
     );
-  });
+  }));
 
   router.post('/admin/withdrawals/:id/approve', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     try {
