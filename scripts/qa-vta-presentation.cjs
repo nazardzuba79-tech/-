@@ -74,6 +74,26 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
       assert.equal(await banner.count(), 1, 'VTA own sustained failure must remain visible');
       failed = false; await page.clock.runFor(5000); await page.waitForTimeout(100);
       assert.equal(await banner.count(), 0, 'healthy VTA clears its warning');
+      if (width === 390) await page.locator('#mobile-trade-trade').click();
+      for (const side of ['buy', 'sell']) {
+        await page.locator(`.order-form-tab.${side}`).click();
+        await page.waitForFunction(side => {
+          const tab = document.querySelector(`.order-form-tab.${side}.active`);
+          if (!tab) return false;
+          const probe = document.createElement('span'); probe.style.color = `var(--color-${side})`; tab.append(probe);
+          const standard = getComputedStyle(probe).color; probe.remove();
+          const cta = document.querySelector(`.submit-btn.${side}`);
+          return getComputedStyle(tab).backgroundColor === standard && cta && getComputedStyle(cta).backgroundColor === standard;
+        }, side);
+        const colours = await page.evaluate(side => {
+          const tab = document.querySelector(`.order-form-tab.${side}.active`), cta = document.querySelector(`.submit-btn.${side}`);
+          const probe = document.createElement('span'); probe.style.color = `var(--color-${side})`; tab.append(probe);
+          const standard = getComputedStyle(probe).color; probe.remove();
+          return { tab: getComputedStyle(tab).backgroundColor, cta: getComputedStyle(cta).backgroundColor, standard };
+        }, side);
+        assert.equal(colours.tab, colours.standard); assert.equal(colours.cta, colours.standard);
+      }
+      await page.screenshot({ path: path.join(out, `vta-sell-${width}.png`), fullPage: true });
       assert.deepEqual(writes, []); assert.deepEqual(errors, []);
       console.log(`PASS ${width}px: healthy VTA + disconnected venue silent; own outage/recovery correct; grouped 14px label ${metrics.width.toFixed(1)}px; no writes/errors/overflow`);
       await ctx.close();
