@@ -311,7 +311,18 @@ export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): Draw
         prims.push({ t: 'poly', points: arrowHead({ x: a.x, y: cy }, { x: b.x, y: cy }, 8), closed: false, stroke: tone, width: 1 });
       }
       const lines = drawingRangeLines(range, view.lang, { price: kind !== 'daterange', date: kind !== 'pricerange' });
-      label({ x: cx, y: down ? y2 : y1, lines, bg: tone, color: readableTextOn(tone), place: down ? 'below' : 'above' });
+      const rangeLabel: Extract<Primitive, { t: 'label' }> = {
+        t: 'label', x: cx, y: down ? y2 : y1, lines, bg: tone,
+        color: readableTextOn(tone), size: 14, place: down ? 'below' : 'above',
+      };
+      // Keep the larger card inside a small plot when its measurement is visible.
+      // Shift only the label; price/time anchors and the measured range stay intact.
+      if (x2 >= 0 && x1 <= view.width && y2 >= 0 && y1 <= view.height) {
+        const box = labelBox(rangeLabel);
+        rangeLabel.x += Math.max(4, Math.min(box.x, view.width - box.w - 4)) - box.x;
+        rangeLabel.y += Math.max(4, Math.min(box.y, view.height - box.h - 4)) - box.y;
+      }
+      label(rangeLabel);
       pointAnchors();
       break;
     }

@@ -213,6 +213,17 @@
   :is(.order-form-tab.buy.active, .cfd-sideTab.buy.active) { background: #193b30; color: #91dbbe; }
 :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview]
   :is(.order-form-tab.sell.active, .cfd-sideTab.sell.active) { background: #44252e; color: #f1adb7; }
+/* Spot uses the terminal's standard trade colours for both selected side and CTA. */
+:is(#archive-terminal-preview, .vx-terminal).spot-terminal[data-premium-terminal-preview] {
+  --preview-buy: var(--color-buy);
+  --preview-sell: var(--color-sell);
+}
+:is(#archive-terminal-preview, .vx-terminal).spot-terminal[data-premium-terminal-preview] .order-form-tab.buy.active {
+  background: var(--preview-buy); border-color: var(--preview-buy); color: #fff;
+}
+:is(#archive-terminal-preview, .vx-terminal).spot-terminal[data-premium-terminal-preview] .order-form-tab.sell.active {
+  background: var(--preview-sell); border-color: var(--preview-sell); color: #fff;
+}
 :is(#archive-terminal-preview, .vx-terminal)[data-premium-terminal-preview] .archive-tool-dialog {
   background: var(--preview-panel);
   border: 1px solid var(--preview-line);

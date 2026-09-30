@@ -32,6 +32,7 @@ on:
       - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
       - 'scripts/qa-futures-visual-polish.cjs'
       - 'scripts/qa-spot-cfd-terminal.cjs'
+      - 'scripts/qa-vta-presentation.cjs'
       - 'frontend/src/pages/trade-terminal/TerminalPreviewPolish.css'
       - 'frontend/src/components/TickerBar.tsx'
       - 'frontend/src/components/CfdTickerBar.tsx'
@@ -76,6 +77,10 @@ jobs:
         run: node scripts/qa-futures-visual-polish.cjs --label ci
       - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
         run: node scripts/qa-spot-cfd-terminal.cjs
+      - name: VTA source-specific connection and readable measurement card
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-vta-presentation.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -83,5 +88,6 @@ jobs:
           path: |
             docs/qa/futures-visual-polish/ci-*
             docs/qa/spot-cfd-terminal/*
+            output/vta-presentation/*
           retention-days: 7
           if-no-files-found: warn
