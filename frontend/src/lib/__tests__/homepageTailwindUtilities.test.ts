@@ -34,8 +34,12 @@ const HOME_CSS = 'src/pages/home/home.css';
 /** The homepage's own utilities layer, mirroring settings-arctic's. */
 const HOME_UTILITIES_CSS = 'src/pages/home/home-tailwind-utilities.css';
 
-/** Utilities the homepage genuinely uses — the ones that broke. */
-const REQUIRED_UTILITIES = ['flex-col', 'gap-5', 'pb-7', 'grid-cols-1'];
+/**
+ * Utilities the homepage genuinely uses — the ones that broke. `pb-7` left
+ * the list with the institutional proposal (2026-09-30): its `<main>` is
+ * laid out by home-institutional.css, and no homepage source names it.
+ */
+const REQUIRED_UTILITIES = ['flex-col', 'gap-5', 'grid-cols-1'];
 
 describe('the homepage owns its Tailwind utilities', () => {
   it('1. HomePage imports its own homepage CSS', () => {

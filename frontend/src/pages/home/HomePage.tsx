@@ -1,16 +1,13 @@
 import { HomeHeader } from './HomeHeader';
-import { HomeHero } from './HomeHero';
-import { HomeMarketOverview } from './HomeMarketOverview';
-import { HomeCardTravel } from './HomeCardTravel';
 import { HomeTradingSessions } from './HomeTradingSessions';
 import { HomeHeatmap } from './HomeHeatmap';
-import { HomeEcosystem } from './HomeEcosystem';
-import { MotionStage } from './HomeMotion';
-import { HomeMarkets } from './HomeMarkets';
 import { HomeFaq } from './HomeFaq';
 import { HomeFooter } from './HomeFooter';
 import { Reveal } from './Reveal';
 import { useHomeMarket } from './useHomeMarket';
+import { IxHero } from './institutional/IxHero';
+import { IxMarkets } from './institutional/IxMarkets';
+import { IxCard, IxProducts, IxReach, IxStats } from './institutional/IxSections';
 import './home.css';
 import './home-live-market.css';
 import './home-six-hour-market.css';
@@ -19,56 +16,41 @@ import './home-six-hour-market.css';
 // `.vx-home` rules above. See home-tailwind-utilities.css for why the
 // homepage ships its own copy at all.
 import './home-tailwind-utilities.css';
-import './home-card-travel.css';
 import './home-trading-sessions.css';
 import './home-heatmap.css';
-// Perspective display geometry must win over the shared compact preview rules.
-import './hero-reference.css';
-import './home-sapphire.css';
-import './sapphire-terminal-detail.css';
+// The institutional proposal's design system; last, so its tokens and the
+// few overrides of the reused sections win.
+import './institutional/home-institutional.css';
 
 /**
- * The VOLTEX homepage, in the approved section order:
+ * The VOLTEX homepage — institutional proposal (owner review, 2026-09-30).
  *
- *   header · hero + market tape · market overview · approved Crypto Card A ·
- *   trading sessions · heatmap · markets · institutional ecosystem · FAQ · footer
+ *   header · hero with a live market board · market facts · markets table ·
+ *   market map · products · Crypto Card · trading sessions · coverage · FAQ ·
+ *   footer
  *
- * One market hook feeds every section. Public quote/depth/candle snapshots
- * refresh on a six-hour presentation cadence; the real trading terminals keep
- * their own live feeds. Sections below the fold reveal once as they come into
- * view.
+ * One market hook still feeds every section, on the same six-hour public
+ * snapshot cadence; links, tabs, favourites and the header's session logic
+ * are unchanged. Sections below the fold reveal once as they come into view.
  */
 export function HomePage() {
   const market = useHomeMarket();
 
   return (
-    <div className="vx-home vx-reference-home vx-sapphire-home">
+    <div className="vx-home vx-ix">
       <HomeHeader />
-      <main className="flex flex-col gap-5 pb-7">
-        <HomeHero market={market} />
-        <Reveal>
-          <HomeMarketOverview market={market} />
-        </Reveal>
-        <Reveal>
-          <MotionStage className="vx-travel-stage"><HomeCardTravel /></MotionStage>
-        </Reveal>
-        <Reveal>
-          <HomeTradingSessions />
-        </Reveal>
-        <Reveal>
-          <HomeHeatmap market={market} />
-        </Reveal>
-        <Reveal>
-          <HomeMarkets market={market} />
-        </Reveal>
-        <Reveal>
-          <HomeEcosystem />
-        </Reveal>
-        <Reveal>
-          <HomeFaq />
-        </Reveal>
+      <main className="ix-main">
+        <IxHero market={market} />
+        <IxStats market={market} />
+        <Reveal><IxMarkets market={market} /></Reveal>
+        <Reveal><div className="ix-legacy ix-legacy-heatmap"><HomeHeatmap market={market} /></div></Reveal>
+        <Reveal><IxProducts /></Reveal>
+        <Reveal><IxCard /></Reveal>
+        <Reveal><div className="ix-legacy ix-legacy-sessions"><HomeTradingSessions /></div></Reveal>
+        <Reveal><IxReach market={market} /></Reveal>
+        <Reveal><div className="ix-legacy ix-legacy-faq"><HomeFaq /></div></Reveal>
       </main>
-      <HomeFooter />
+      <div className="ix-legacy ix-legacy-footer"><HomeFooter /></div>
     </div>
   );
 }

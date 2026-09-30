@@ -222,9 +222,13 @@ function validRanking(value: unknown): HomeRanking | null {
   if (!record(value) || !nonEmpty(value.symbol) || !text(value.name) || !text(value.image)) return null;
   if (!Array.isArray(value.categories) || !value.categories.every(text)) return null;
   if (!finiteOrNull(value.changePercent24h) || !finiteOrNull(value.changePercent7d)) return null;
+  // The 7-day path is optional and bounded; a malformed one is dropped, not the row.
+  const sparkline = Array.isArray(value.sparkline) && value.sparkline.length <= 400 && value.sparkline.every(finite)
+    ? value.sparkline as number[] : undefined;
   return {
     symbol: value.symbol, name: value.name, image: value.image, categories: value.categories,
     changePercent24h: value.changePercent24h, changePercent7d: value.changePercent7d,
+    ...(sparkline ? { sparkline } : {}),
   };
 }
 

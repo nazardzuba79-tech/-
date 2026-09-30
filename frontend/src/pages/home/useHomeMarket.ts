@@ -27,6 +27,8 @@ export interface HomeRanking {
   categories: string[];
   changePercent24h: number | null;
   changePercent7d: number | null;
+  /** The rankings feed's 7-day path; kept when the payload carries it. */
+  sparkline?: number[];
 }
 
 type Global = Awaited<ReturnType<typeof api.getGlobalMarket>>;

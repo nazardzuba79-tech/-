@@ -5048,3 +5048,37 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Not verified: production timing on Render. With 0.1 CPU, a request arriving while the background refresh runs can still be slowed; fully removing that needs a worker thread or more CPU.
 - Preserved: wire format, redaction, auth, stored sections, ledger history, daily 00:03 UTC refresh, one-refresh-at-a-time queue and the frontend.
 - No merge, no deploy.
+
+## Claude — 2026-09-30 — Homepage: institutional redesign proposal (owner review, no merge)
+
+- Base: main `f62d28da`; branch `claude/peaceful-volta-h5zw7g-home-institutional`; commit: the commit containing this entry.
+- Owner request: a visual audit of `/`, a list of the problems, a proposed direction, a working preview and before/after screenshots, all before any production change. No merge, no deploy.
+- Audit findings (current main):
+  - Stock hero art (globe plus a laptop render with a fake terminal) and the English «OWN YOUR FUTURE.» slogan on a Russian page.
+  - Floating glass quote cards, a lifestyle Crypto Card photo and a decorative world map.
+  - The markets table sits at roughly 60% of the scroll, with an empty «График» column.
+  - Third-party logos (Nasdaq, NYSE, CME, J.P.Morgan, Goldman Sachs, Morgan Stanley) that read as partnerships. This is a trust and legal risk.
+  - Mixed type and uneven container edges.
+- Change: `HomePage.tsx` now composes the new `src/pages/home/institutional/*` sections:
+  - hero with a market board fed by `useHomeMarket`: the hero pair, the area chart from `hero.candles`, four crypto rows with rankings sparklines, and XAU/WTI CFD rows;
+  - a market facts row;
+  - the markets table, moved up;
+  - products;
+  - the card as a product;
+  - a coverage section that replaces the third-party logos, counted from the loaded data.
+  Existing heatmap, trading sessions, FAQ, footer and header stay mounted and are restyled only via `home-institutional.css`.
+- Data: `HomeRanking.sparkline` is added, and `homeMarketSnapshot.validRanking` keeps it when it is a finite array of at most 400 points. Routes, links, tabs, favourites, the six-hour cadence and the header session logic are unchanged.
+- Tests changed:
+  - `homeSessionsRendering.test.ts`: guards the card section before trading sessions with the proposal's card image, replacing the Titanium hand scene. The new market-fed sections are stubbed.
+  - `homepageTailwindUtilities.test.ts`: `pb-7` is dropped from the required utilities because no homepage source names it any more.
+  - Merging this means the owner accepts replacing the approved Titanium scene.
+- Checks run:
+  - Frontend `tsc` and `npm run build`: PASS.
+  - 25 homepage-related Jest suites, re-run after the two test edits: all PASS.
+  - Local browser at 1440/1920/390: no page errors and no horizontal overflow; desktop height 5893 → 5629 px.
+  - Full frontend Jest suite: NOT run (stopped by the owner).
+- Preview: the artifact «Нова головна VOLTEX» with a Було/Стало switch, built from both bundles on example data.
+- Unresolved:
+  - `ixCopy.ts` has en and ru only; zh/es/hi/ja/ko fall back to en and need translation before release.
+  - Coin icons missing from the public CDN show letter fallbacks in the preview.
+  - The old sapphire, tape, overview, ecosystem and card-travel components stay on disk, unused by `/`.

@@ -21,18 +21,26 @@ function modules(lang = 'ru') {
     }).outputText;
     new Function('require', 'exports', code)((name: string) => {
       if (name.endsWith('.css')) return {};
-      if (name === '../../lib/i18n') {
+      if (name === '../../lib/i18n' || name === '../../../lib/i18n') {
         const dictionary = load(`lib/i18n/locales/${lang}.ts`)[lang.toUpperCase()];
         return { useLanguage: () => ({ lang, t: (key: string) => {
           if (!(key in dictionary)) throw new Error(`Missing ${lang} translation: ${key}`);
           return dictionary[key];
         } }), localeOf: () => lang };
       }
-      if (name === './useHomeMarket') return { useHomeMarket: () => ({}) };
+      if (name === './useHomeMarket' || name === '../useHomeMarket') return { useHomeMarket: () => ({}), formatCompactUsd: () => '—' };
       // These unrelated sections neither decide nor influence the two mounted
       // production sections' DOM order. Card, sessions and wrappers stay real.
       const unrelated = ['HomeHeader', 'HomeHero', 'HomeMarketOverview', 'HomeHeatmap', 'HomeMarkets', 'HomeEcosystem', 'HomeFaq', 'HomeFooter'];
       if (unrelated.some(part => name === `./${part}`)) return { [name.slice(2)]: () => null };
+      // The institutional proposal's market-fed sections, likewise unrelated;
+      // its Crypto Card section (IxCard) stays real.
+      if (name === './institutional/IxHero') return { IxHero: () => null };
+      if (name === './institutional/IxMarkets') return { IxMarkets: () => null };
+      if (name === './institutional/IxSections') {
+        const real = load('pages/home/institutional/IxSections.tsx');
+        return { ...real, IxStats: () => null, IxProducts: () => null, IxReach: () => null };
+      }
       if (name.startsWith('.')) {
         const candidate = resolve(dirname(full), name);
         const extension = ['.tsx', '.ts'].find(ext => existsSync(candidate + ext));
@@ -45,15 +53,16 @@ function modules(lang = 'ru') {
   return load;
 }
 
-test('production homepage DOM mounts approved Titanium before the immediately following trading sessions section', () => {
+// The institutional proposal (2026-09-30) replaces the Titanium hand scene
+// with the card itself; the section order it guards is unchanged.
+test('production homepage DOM mounts the Crypto Card section before the immediately following trading sessions section', () => {
   const { HomePage } = modules()('pages/home/HomePage.tsx');
   const html = renderToStaticMarkup(React.createElement(StaticRouter, { location: '/' }, React.createElement(HomePage)));
   const sections = [...html.matchAll(/<section\b[^>]*>/g)].map(match => match[0]);
   expect(sections).toHaveLength(2);
   expect(sections[0]).toContain('id="card"');
-  expect(sections[0]).toContain('data-hand-variant="titanium-soft"');
   expect(sections[1]).toContain('id="trading-sessions"');
-  expect(html).toContain('/cards/travel/voltex-titanium-soft.png');
+  expect(html).toContain('/cards/crypto-card-final/voltex-black-signature-final.webp');
   expect(html).not.toContain('Один мир. Разные часовые пояса.');
 });
 
