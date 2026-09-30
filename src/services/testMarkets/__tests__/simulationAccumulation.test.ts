@@ -97,7 +97,12 @@ describe('VTA final flush and accumulation lifecycle', () => {
     const first = hour(phased, firstFinal);
     expect(first.open).toBe(before);
     const baseline = hour(control, firstFinal);
-    expect(first.close / first.open).toBeCloseTo(baseline.close / baseline.open, 7);
+    const finalHourIndex = (firstFinal - L) / HOUR_MS;
+    // The engine resumes the exact seeded relative return, not an approximation.
+    expect(phased.hourPlan(finalHourIndex).logReturn).toBe(control.hourPlan(finalHourIndex).logReturn);
+    // Public OHLC is rounded to eight significant figures, so its ratio may differ
+    // microscopically even though the underlying log return is identical.
+    expect(first.close / first.open).toBeCloseTo(baseline.close / baseline.open, 6);
     expect(first.open).not.toBe(baseline.open);
   });
 
