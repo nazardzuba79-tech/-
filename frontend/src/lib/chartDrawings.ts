@@ -295,7 +295,9 @@ export function drawingRange(a: DrawingPoint, b: DrawingPoint, candles: readonly
 export function drawingRangeLines(range: DrawingRange, lang = 'en', parts: { price?: boolean; date?: boolean } = { price: true, date: true }): string[] {
   const lines: string[] = [];
   if (parts.price !== false) {
-    lines.push(range.pct === null ? '—' : `${range.pct > 0 ? '+' : ''}${range.pct.toFixed(2)}%`);
+    const percent = range.pct;
+    lines.push(percent === null || !Number.isFinite(percent) ? '—'
+      : `${percent > 0 ? '+' : ''}${percent.toLocaleString(lang === 'ko' ? 'ko-KR' : lang, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true })}%`);
   }
   if (parts.date !== false) {
     lines.push(`${range.bars} ${BAR_WORD[lang] ?? BAR_WORD.en}, ${formatDrawingDuration(range.seconds, lang)}`);
