@@ -145,7 +145,7 @@ describe('local arbitrage keeps the real authenticated shell without a market su
     expect(document.querySelector('.header-brand [data-real-logo-slot]')).not.toBeNull();
     expect(document.querySelector('.nav-wallet-link')?.getAttribute('href')).toBe('/wallet');
     expect(Array.from(document.querySelectorAll('a[href="/banking"]')).map(node => node.textContent)).toEqual(['Banking & Earn', 'Banking & Earn']);
-    expect(document.querySelector('a[href="/arbitrage"].nav-active')).not.toBeNull();
+    expect(document.querySelector('a[href="/trade"].nav-active')).not.toBeNull();
     expect(document.querySelector('a[href="/futures"]')).not.toBeNull();
     expect(document.querySelector('a[href="/trade?market=cfd"]')).not.toBeNull();
     expect(document.querySelector('a[href="/otc"]')).not.toBeNull();
