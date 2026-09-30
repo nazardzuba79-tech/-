@@ -157,6 +157,14 @@ describe('the Graphite sheet', () => {
     expect(css).toContain('#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(246,70,93,.12); }');
   });
 
+  it('gives the positions panel a little more room on a tall desktop, never less than before', () => {
+    expect(css).toContain('#archive-terminal-preview .terminal:not([data-account-compact=true]) { grid-template-rows:56px minmax(280px,1fr) clamp(230px,24vh,262px); }');
+  });
+
+  it('draws P&L, ROI and «≈… USD» as Bybit does: one size, one weight, one colour, nothing dimmed', () => {
+    expect(css).toMatch(/\.futures-unrealized :is\(\.futures-position-money,\.futures-unrealized-unit,\.futures-position-roi,\.futures-position-approx\),\n#archive-terminal-preview \.bottom-panel \.futures-position-pnl :is\(\.futures-position-realized,\.futures-position-approx\) \{\n\s+font-size:13px; font-weight:500; line-height:17px; opacity:1; color:inherit;/);
+  });
+
   it('leaves «Доступно» without its «+»', () => {
     const form = read('frontend/src/components/FuturesOrderForm.tsx');
     expect(form).not.toContain('fo-availTransfer');

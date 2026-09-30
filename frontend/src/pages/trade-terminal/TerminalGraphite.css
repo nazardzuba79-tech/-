@@ -111,3 +111,21 @@
 #archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(246,70,93,.12); }
 #archive-terminal-preview .rb-ratio[data-available=true] { background:rgba(246,70,93,.10); }
 #archive-terminal-preview .rb-ratio > i { background:rgba(46,189,133,.16); }
+
+/* Positions panel a little taller on desktop (owner, 2026-09-30: «розширити
+   чуть панель», with the «≈… USD» line under each P&L, as on Bybit). 230px
+   stays the floor, so a laptop keeps its chart; a tall screen gets up to
+   262px. The folded (compact) panel is untouched. */
+@media (min-width:901px) {
+  #archive-terminal-preview .terminal:not([data-account-compact=true]) { grid-template-rows:56px minmax(280px,1fr) clamp(230px,24vh,262px); }
+}
+
+/* The P&L cells as Bybit draws them (owner, 2026-09-30: «не бачу щоб на
+   байбіт пригушалось % прибутку … в точності як на байбіт»). The figure,
+   its unit, the ROI and the «≈… USD» line are one size, one weight and the
+   one profit/loss colour, with nothing dimmed; realized follows the same
+   rule. */
+#archive-terminal-preview .bottom-panel .futures-unrealized :is(.futures-position-money,.futures-unrealized-unit,.futures-position-roi,.futures-position-approx),
+#archive-terminal-preview .bottom-panel .futures-position-pnl :is(.futures-position-realized,.futures-position-approx) {
+  font-size:13px; font-weight:500; line-height:17px; opacity:1; color:inherit;
+}
