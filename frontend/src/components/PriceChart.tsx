@@ -599,7 +599,24 @@ export function PriceChart({
       // The default keeps the terminal's grey vertical and gold horizontal hair.
       crosshair: { vertLine: { color: s.crosshair === DEFAULT_CHART_SETTINGS.crosshair ? 'rgba(148, 163, 184, 0.35)' : rgbaOf(s.crosshair, 0.45) }, horzLine: { color: s.crosshair, labelBackgroundColor: s.crosshair } },
     });
+    // Volume in its own strip under the candles, as Binance draws it (owner,
+    // 2026-09-30: «обсяг … залазить на свічки … у Binance він в окремій смузі
+    // знизу»). The candles then keep the whole upper pane; RSI and MACD, when
+    // shown, still take the bottom of it as before. Hidden volume goes back to
+    // the main pane, which lets the empty strip close.
     volume.applyOptions({ visible: s.volume });
+    const volumePane = s.volume ? 1 : 0;
+    if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);
+    if (s.volume) {
+      const panes = chart.panes();
+      panes[0]?.setStretchFactor(0.8);
+      panes[1]?.setStretchFactor(0.2);
+      volume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0 } });
+    } else {
+      volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    }
+    chart.applyOptions({ layout: { panes: { separatorColor: 'rgba(255, 255, 255, 0.08)', separatorHoverColor: 'rgba(255, 255, 255, 0.16)' } } });
+    chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: showRSI || showMACD ? 0.3 : 0.06 } });
     volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.75), rgbaOf(s.bodyDown, 0.75)];
     const candles = candlesRef.current;
     if (candles?.length) volume.setData(candles.map(c => ({ time: c.time as any, value: c.volume, color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1] })));
@@ -609,7 +626,7 @@ export function PriceChart({
       if (watermarkRef.current) watermarkRef.current.applyOptions({ lines });
       else watermarkRef.current = createTextWatermark(chart.panes()[0], { horzAlign: 'center', vertAlign: 'center', lines }) as unknown as { detach: () => void; applyOptions: (o: object) => void };
     } else if (watermarkRef.current) { watermarkRef.current.detach(); watermarkRef.current = null; }
-  }, [viewSettings, pair, interval]);
+  }, [viewSettings, pair, interval, showRSI, showMACD]);
 
   useEffect(() => {
     if (!tradingSelection) return;

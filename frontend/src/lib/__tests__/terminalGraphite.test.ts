@@ -86,6 +86,10 @@ describe('chart settings', () => {
     expect(chart).toContain("aria-label={t('chart.settings.open')}");
     expect(chart).toContain('{settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} />}');
     expect(chart).toContain("fontFamily: token('--voltex-chart-font', 'Inter, Arial, sans-serif')");
+    // Volume in its own strip under the candles, as Binance draws it (owner, 2026-09-30).
+    expect(chart).toContain('const volumePane = s.volume ? 1 : 0;');
+    expect(chart).toContain('if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);');
+    expect(chart).toContain('panes[1]?.setStretchFactor(0.2);');
     for (const other of ['frontend/src/pages/TradePage.tsx', 'frontend/src/pages/CfdPage.tsx']) {
       if (existsSync(resolve(root, other))) expect(read(other)).not.toContain('chartSettings');
     }

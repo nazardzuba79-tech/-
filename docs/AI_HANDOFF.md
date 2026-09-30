@@ -5086,3 +5086,30 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `qa-futures-visual-polish` with assertions: first FAIL, «Изолированная» clipped by 2px at 1664; select padding 12/10px fixed it, then PASS.
   - Preview page checked locally under a sub-path: TP/SL present in both builds at 1440/390, no page errors.
 - **Not done:** no merge, no deploy.
+
+### Claude — futures chart: volume in its own strip; Bybit black kept (PR #347)
+
+- **Owner ask:** «Давай чорний як у Байбіт, тобто Чорний 2 · як Bybit. Обсяг під графіком залазить на свічки … У Binance він в окремій смузі знизу.»
+- **Tone:** tone 2 («як Bybit») is already the default of `TerminalPanelTiles.css`, so the repo needed no change. The preview's tones 1 and 3 are removed; they were never in the repo.
+- **Change:** in `PriceChart.tsx`, the chart-settings effect now handles volume placement, on the futures chart with settings only.
+  - With volume on, the volume series moves to pane 1 (`moveToPane`).
+  - Panes are stretched 0.8 / 0.2, with a 12% top margin on volume and a quiet `rgba(255,255,255,.08)` pane separator.
+  - With volume off, the series goes back to pane 0 and hidden.
+  - The candle price scale's bottom margin is 0.06, or 0.3 with RSI/MACD, as before.
+  - The effect now also re-runs on `showRSI`/`showMACD`.
+  - Spot/CFD charts (no `chartSettings`) are untouched.
+- **Preserved:** Codex and earlier work on `PriceChart` stays as it was:
+  - position lines, drawings, market-order markers;
+  - the RSI/MACD panes;
+  - the order form and book;
+  - `PrivatePositionLines` still measures pane 0.
+- **Test:** `terminalGraphite.test.ts` pins the pane move and the 0.2 strip.
+- **Screenshot:** `docs/qa/terminal-graphite/volume-strip-1440.png` (main vs this branch, fixture data).
+- **Checks actually run (local, fixture data):**
+  - `npx jest frontend/`: 168/168 suites, 2867 tests.
+  - `tsc -b` and build: PASS.
+  - `qa-futures-visual-polish` (asserting): PASS.
+  - `qa-order-panel-refinement`: PASS. It first failed only on Chromium's «Invalid language tag: en-US@posix» because `LANG` was empty in this container; with `LANG=en_US.UTF-8` it passed.
+  - Preview checked at 1440 and 390: TP/SL present, no page errors.
+- **Preview (not in repo):** https://claude.ai/artifact/6aSCWuDDuFVFwccNzALZr7, «Було» (main) vs «Стало».
+- **Not done:** no merge, no deploy. Spot/CFD candles are still white/orange (owner not asked yet).
