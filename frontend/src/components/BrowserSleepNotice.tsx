@@ -6,10 +6,11 @@ import './BrowserSleepNotice.css';
 export function BrowserSleepNotice() {
   const phase = useSyncExternalStore(onBrowserPhase, getBrowserPhase);
   const { t } = useLanguage();
-  // A normal pause keeps the last received values without an overlay or a
-  // Continue control. Page reload and the existing safe resume lifecycle work
-  // independently of this presentation component.
-  if (phase === 'active' || phase === 'sleeping') return null;
+  if (phase === 'active') return null;
+  // Retain the existing phase marker for lifecycle diagnostics without a
+  // visible notice, announcement, focus target or Continue control. Reload
+  // and the safe resume lifecycle are independent of this component.
+  if (phase === 'sleeping') return <span hidden aria-hidden="true" data-browser-phase={phase} />;
   const loading = phase === 'validating' || phase === 'syncing';
   return <aside className="browser-sleep-notice" role="status" aria-live="polite" data-browser-phase={phase}>
     <span>{t(loading ? 'browserSyncing' : 'browserSyncError')}</span>

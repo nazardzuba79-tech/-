@@ -8,7 +8,7 @@ The owner asked to remove the additional «Продолжить» control and ke
 
 ## Narrow implementation
 
-- `BrowserSleepNotice.tsx` renders nothing in active and ordinary sleeping phases.
+- `BrowserSleepNotice.tsx` renders no visible UI in active and ordinary sleeping phases. Sleep retains its existing `data-browser-phase` diagnostic marker on an empty hidden span, with no text, status announcement, controls or focus target.
 - No Continue/retry button is rendered in any phase.
 - Existing validation/synchronization and genuine failure text remain passive statuses. A real failure is not relabelled as a healthy connection.
 - No account store, trading component, timer, request cadence, session boundary or financial command handler is changed. Existing known snapshots remain in memory while sleeping. No data is invented for a request that has never succeeded.
@@ -21,5 +21,7 @@ Mounted React/JSDOM tests load the real notice component, real browser lifecycle
 ## Validation and release boundary
 
 Local clone/dependency installation is unavailable because this runtime cannot resolve GitHub/registry hosts. No local Jest/build or authenticated production walkthrough is claimed. Final-head existing GitHub CI is required; test results will be recorded on the PR after they finish. No test is skipped or weakened by this patch.
+
+The first head `a8af2037` passed Full frontend regression but the existing real-browser idle job expected the `data-browser-phase` marker to remain queryable during sleep. The empty hidden marker preserves that diagnostic contract rather than deleting or relaxing the sleep, zero-request, stream-cleanup, wake-safety and financial invariants. The marker follows the actual lifecycle phase; it does not independently simulate a successful state. A new final-head run is required.
 
 The shared historical `docs/AI_HANDOFF.md`, latest Codex request-cancellation fixes and Claude's separate positions-panel PR #353 are preserved. This scoped handoff avoids replacing the large shared log. No merge, production deployment or infrastructure change is part of this review branch.
