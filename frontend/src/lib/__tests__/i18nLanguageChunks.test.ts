@@ -227,6 +227,10 @@ describe('translation integrity', () => {
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
+        // `otc.*` is the OTC page from the owner's OTC.zip (2026-09-30):
+        // `git diff --numstat` over the locales directory reports `63 0` for
+        // every language, additions only; asserted by name below.
+        if (key?.startsWith('otc.')) return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
@@ -242,6 +246,22 @@ describe('translation integrity', () => {
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
     }
+  });
+
+  it('carries the OTC page copy in every language, the Russian word for word from OTC.zip', () => {
+    const otcKeys = Object.keys(dicts.ru).filter(key => key.startsWith('otc.'));
+    expect(otcKeys.length).toBe(63);
+    for (const code of LOCALES) {
+      for (const key of otcKeys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
+      // The two placeholders the page fills must survive translation.
+      expect(dicts[code]['otc.minFrom']).toContain('{amount}');
+      expect(dicts[code]['otc.form.note']).toContain('{min}');
+      expect(dicts[code]['otc.private.perDeal']).toContain('{min}');
+    }
+    expect(dicts.ru['otc.heroTitle']).toBe('Институциональная OTC-торговля');
+    expect(dicts.ru['otc.form.submit']).toBe('Оставить заявку');
+    expect(dicts.ru['otc.cash.p1Text']).toBe('Выберите страну получения из справочника — точная доступность подтверждается менеджером по заявке.');
+    expect(new Set(LOCALES.map(code => dicts[code]['otc.heroTitle'])).size).toBe(LOCALES.length);
   });
 
   it('localizes the neutral manual-catalogue note without changing legacy deposit copy', () => {
