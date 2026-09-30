@@ -15,7 +15,8 @@ const L = VOLTORA.listingAt;
 /** VTA's original scenario, without the later profile, cycle or wick overlays. */
 const {
   simulationProfile: _vtaProfile, realismFrom: _vtaFrom,
-  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, naturalWicks: _vtaNaturalWicks, ...BASE
+  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, naturalWicks: _vtaNaturalWicks,
+  accumulationPhase: _vtaAccumulation, ...BASE
 } = VOLTORA;
 const withProfile = (profile: SimulationProfile, extra: Partial<TestAssetConfig> = {}): TestAssetConfig => ({ ...BASE, simulationProfile: profile, ...extra });
 /** Preserve the original Oct 1 profile-only activation contract independently of live VTA's new cycles. */
@@ -127,8 +128,8 @@ describe('an isolated profile never moves the base trajectory', () => {
     expect(sha(anchors(withProfile(profile), 168))).toBe(MAIN.VTA.anchors);
   });
 
-  test('P48 = 5.5234599 and P168 = 35171.298 for live VTA, every isolated profile and the original baseline', () => {
-    for (const asset of [VOLTORA, BASE, ...SIMULATION_PROFILES.map((p) => withProfile(p))]) {
+  test('P48 = 5.5234599 and P168 = 35171.298 for every isolated profile and the original baseline', () => {
+    for (const asset of [BASE, ...SIMULATION_PROFILES.map((p) => withProfile(p))]) {
       const sim = new TestMarketSimulation(asset);
       expect(sim.priceAt(L + 48 * HOUR_MS)).toBe(5.5234599);
       expect(sim.priceAt(L + 168 * HOUR_MS)).toBe(35171.298);
