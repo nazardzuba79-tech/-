@@ -152,6 +152,34 @@ async function main() {
     await shot(s.page, `success-${width}`);
     await s.context.close();
 
+    // Returning to a fresh Admin page validates the session, but must not
+    // defeat the hourly summary budget or leave the global wake notice stuck.
+    reset();
+    s = await open(width, height, { clock: true });
+    await s.page.goto(`${base}/admin/users`);
+    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
+    await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
+    const beforeReturns = { ...state.calls };
+    await s.page.evaluate(() => {
+      window.__adminQaHidden = false;
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__adminQaHidden });
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__adminQaHidden ? 'hidden' : 'visible' });
+    });
+    for (let i = 0; i < 3; i++) {
+      await s.page.evaluate(() => { window.__adminQaHidden = true; document.dispatchEvent(new Event('visibilitychange')); });
+      await s.page.clock.fastForward(1000);
+      const validation = s.page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/me'));
+      await s.page.evaluate(() => { window.__adminQaHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
+      await validation;
+      await s.page.clock.runFor(500);
+      await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
+    }
+    const unchanged = state.calls.users === beforeReturns.users && state.calls.activity === beforeReturns.activity && state.calls.alerts === beforeReturns.alerts;
+    record(`three fresh tab returns → no summary reloads or stuck notice${w}`,
+      unchanged && state.calls.me === beforeReturns.me + 3 && s.errors.length === 0,
+      `me=${state.calls.me - beforeReturns.me} users=${state.calls.users - beforeReturns.users} activity=${state.calls.activity - beforeReturns.activity} alerts=${state.calls.alerts - beforeReturns.alerts}`);
+    await s.context.close();
+
     // 2-3. 401 / 403 are refusals: the browser leaves /admin
     for (const code of ['401', '403']) {
       reset({ me: code });

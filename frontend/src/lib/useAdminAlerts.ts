@@ -88,10 +88,10 @@ export function useAdminAlertSound(enabled: boolean) {
       }
     }
 
-    let reader = getToken() ? createVisibleRead(poll, POLL_MS, true) : null;
+    let reader = getToken() ? createVisibleRead(poll, POLL_MS, true, false) : null;
     const off = onSessionChange(() => {
       epoch++; cursor.current = null; reader?.stop();
-      reader = getToken() ? createVisibleRead(poll, POLL_MS, true) : null;
+      reader = getToken() ? createVisibleRead(poll, POLL_MS, true, false) : null;
     });
     return () => {
       cancelled = true;

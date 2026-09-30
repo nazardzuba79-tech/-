@@ -101,7 +101,7 @@ export function useAdminUserActivity(
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       return load(controller.signal).finally(() => clearTimeout(timer));
     },
-    staleMs: ADMIN_ACTIVITY_POLL_MS, poll: true,
+    staleMs: ADMIN_ACTIVITY_POLL_MS, poll: true, refreshOnWake: false,
     accept: next => { setActivity(next); setFailed(false); setReceivedAt(Date.now()); },
     fail: () => setFailed(true),
     reset: () => { setActivity(null); setFailed(false); setReceivedAt(null); },

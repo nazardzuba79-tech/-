@@ -3,7 +3,7 @@ import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityLis
  * Successful acquisition time (not visibility or a failed attempt) determines age.
  * A mutation during a GET queues one subsequent GET; it never joins an old snapshot.
  */
-export function createVisibleRead(read: () => Promise<void>, staleMs: number, poll = false) {
+export function createVisibleRead(read: () => Promise<void>, staleMs: number, poll = false, refreshOnWake = true) {
   let stopped = false;
   let dirty = true;
   let succeededAt: number | null = null;
@@ -28,7 +28,11 @@ export function createVisibleRead(read: () => Promise<void>, staleMs: number, po
       dirty = false;
       return read();
     }).then(() => { if (!stopped && !dirty) succeededAt = Date.now(); }))
-      .catch(() => { /* The consumer preserves last-good data and reports failure. */ })
+      .catch(() => {
+        // Keep the consumer's last-good data, but a failed explicit refresh
+        // cannot make the next deliberate wake reuse it as a fresh result.
+        succeededAt = null;
+      })
       .finally(() => {
         running = null;
         if (!stopped && dirty && !hidden()) void load(); else schedule();
@@ -38,7 +42,9 @@ export function createVisibleRead(read: () => Promise<void>, staleMs: number, po
   const visible = (event?: Event) => {
     clear();
     if (hidden() || stopped) return;
-    if (event?.type === 'voltex:browser-activity') dirty = true;
+    // Trading state must refresh on every wake. Low-frequency Admin summaries
+    // retain their successful-read budget; explicit invalidations still win.
+    if (refreshOnWake && event?.type === 'voltex:browser-activity') dirty = true;
     if (dirty || succeededAt === null || Date.now() - succeededAt >= staleMs) void load();
     else schedule();
   };
