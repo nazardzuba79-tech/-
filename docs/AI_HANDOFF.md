@@ -5135,3 +5135,12 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Screenshots compared side by side with the ZIP's own render.
 - Not run: the Windows/Postgres CI variants and production. The deposit window was only seen against a stub, which shows its load-error state.
 - Unresolved: the request parameters are not delivered to a manager. They could go into the support form as a prefilled message if the owner wants that. The unused `trade.otc*` keys can be removed with a digest re-take.
+
+### Codex — 2026-09-30 — Russian-only local VOLTEX Assistant (review only)
+
+- Owner-requested fresh-main branch `codex/voltex-assistant-ru`, base `1b045ab34c09e2b95931dd46c5f3a1c5f54ad1c4`; feature SHA is the commit containing this entry. No merge/deploy/production activity.
+- Material files: `SupportWidget.tsx/.css`, new `supportAssistant.ts` and `assistantRu.ts`, Assistant/form tests, `qa-support-form.cjs`, its existing CI workflow, `docs/VOLTEX_ASSISTANT.md` and local QA evidence.
+- Exactly 14 deterministic FAQ intents; all generated text is Russian regardless of site/input language. Ukrainian only recognizes intent. Unknown/mixed/human requests become editable unsent drafts. Fixed routes, bounded memory-only history, secret-pattern guard and existing session-remount isolation.
+- Reviewed Claude #357 at `012d0b13ad4ff48b7f01a50223f183bba9059d67`; manually preserved its useful headset/radio-chip/form hierarchy. No blind merge. Existing terminal docking, Worker/email contract, limits, timeout, rate limits, duplicate prevention and honest failures preserved. Backend/business logic untouched.
+- Local evidence: 171 focused tests, 19 Worker cases, backend/frontend TypeScript and production build; browser FAQ zero API/Worker requests, explicit form one POST, seven desktop/mobile widths and reduced-height keyboard emulation. Details and limitations in `docs/VOLTEX_ASSISTANT.md`.
+- Full Windows frontend snapshot has 14 failures in 11 unrelated suites, all reproduced on the clean base; no waiver or unrelated fix. Next: owner review and Linux CI, then explicit release approval. No physical mobile-keyboard or production email validation claimed.

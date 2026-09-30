@@ -12,6 +12,9 @@ on:
       - 'frontend/src/components/SupportWidget.css'
       - 'frontend/src/lib/supportForm.ts'
       - 'frontend/src/lib/supportEndpoint.ts'
+      - 'frontend/src/lib/supportAssistant.ts'
+      - 'frontend/src/lib/i18n/locales/assistantRu.ts'
+      - 'frontend/src/lib/__tests__/supportAssistant.test.ts'
       - 'frontend/src/lib/__tests__/supportForm.test.ts'
       - 'scripts/qa-support-form.cjs'
       - '.github/workflows/support-form.yml'
@@ -54,6 +57,7 @@ jobs:
         run: >-
           npm test -- --runInBand --runTestsByPath
           frontend/src/lib/__tests__/supportForm.test.ts
+          frontend/src/lib/__tests__/supportAssistant.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
           frontend/src/lib/__tests__/routeCodeSplitting.test.ts
           src/services/__tests__/NodemailerCompatibility.test.ts
