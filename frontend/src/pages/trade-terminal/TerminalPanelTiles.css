@@ -1,0 +1,31 @@
+/* PANELS AS TILES — a proposal (owner, 2026-09-30: «розділення цих панелей
+   чуть дешеві, що з ними можна зробити цікаве?»). Kept in its own sheet so
+   it can be taken back by deleting one import.
+
+   The panels were cut apart by 1px lines drawn over one gradient; a line
+   is the cheapest separator there is, and on a gradient it fades in and out
+   along its length. Here each panel is its own tile with a 6px corner,
+   standing on a near-black ground with 4px between tiles — the way Bybit's
+   current terminal is built. The gradient the owner approved stays: every
+   tile paints the SAME viewport-sized gradient (background-attachment:
+   fixed), so it still runs continuously from the header down, only broken
+   by the gaps. The bottom panel keeps its own #101014.
+
+   Desktop only: the phone layout has no side-by-side panels to separate. */
+@media (min-width:901px) {
+  #archive-terminal-preview {
+    --tile-ground:#060607;
+    --tile-fill:linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%);
+    --border:rgba(255,255,255,.08);
+    background:var(--tile-ground) !important;
+  }
+  #archive-terminal-preview .terminal { padding:4px; gap:4px; background:var(--tile-ground); }
+  #archive-terminal-preview :is(.ticker-bar,.chart-area,.orderbook-area,.order-form-area) {
+    background:var(--tile-fill) fixed !important;
+    border:0 !important; border-radius:6px;
+  }
+  #archive-terminal-preview .bottom-panel { border:0; border-radius:6px; }
+  /* The rows that paint the panel colour at a tile's top edge follow its corner. */
+  #archive-terminal-preview .bottom-panel .bottom-tabs { border-radius:6px 6px 0 0; }
+  #archive-terminal-preview .ticker-bar { border-bottom:0; }
+}

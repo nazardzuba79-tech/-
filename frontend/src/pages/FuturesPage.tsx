@@ -57,6 +57,7 @@ import './trade-terminal/ArchiveTerminalPreview.css';
 import './trade-terminal/FuturesMobile.css';
 import './trade-terminal/FuturesOrderPanelRefinement.css';
 import './trade-terminal/TerminalGraphite.css';
+import './trade-terminal/TerminalPanelTiles.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately
