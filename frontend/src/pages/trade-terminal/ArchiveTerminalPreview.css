@@ -544,9 +544,12 @@
    контрасніші, такі ж самі як на скріні 1:1»). Read off that screenshot:
    #1ace88 and #f55065 with white 700 labels, full strength even with no
    quantity entered. Ours showed #00c67c / #ff3453 at 90% opacity while
-   disabled. Disabled still refuses the click and keeps its cursor. */
-#archive-terminal-preview .fo-submitPair .buy { background:#1ace88; color:#fff; }
-#archive-terminal-preview .fo-submitPair .sell { background:#f55065; color:#fff; }
+   disabled. Disabled still refuses the click and keeps its cursor.
+   2026-09-30 (owner: «не хватає преміальності»): deeper, as on the owner's
+   newer Bybit screenshot — #1ead6a and #ea4151 read off its «Лонг» / «Шорт».
+   The lighter mint and pink read as a toy beside it. */
+#archive-terminal-preview .fo-submitPair .buy { background:#1ead6a; color:#fff; }
+#archive-terminal-preview .fo-submitPair .sell { background:#ea4151; color:#fff; }
 #archive-terminal-preview .fo-submitPair button:disabled { opacity:1; }
 /* LONG / SHORT at the reference's proportion (owner: «кнопки… не такі
    товсті»): on the owner's Bybit screenshot each button is 49×162px, height

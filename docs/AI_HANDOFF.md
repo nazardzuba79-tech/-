@@ -5068,3 +5068,26 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Fixed abandoned read ownership in Futures, Spot, CFD, Copy, Wallet and Admin; stopped Admin deposit polling from restarting after unmount. Preserved write operations, financial math, approved UI, prior PR recovery work and Claude #353.
 - Builds pass. Backend routes/middleware: 619 passing, six DB-gated skipped. Final local frontend assertions: 2,897 passing; ten Windows path-sensitive baseline failures independently reproduced. See docs/qa/api-lifecycle-audit-20260930/README.md for exact commands, limits and test-first evidence.
 - No merge, deployment, production mutation, real order or credit. Final-head CI remains to be checked on PR; no live outage injection or new authenticated production browser walkthrough. Direct Cloudflare API authentication was unavailable; GitHub Pages check for current main passed.
+
+## Claude — 2026-09-30 — Futures terminal: deeper Long/Short, quiet order-panel scrollbar, silent routine sync
+
+- Base: main `acace848` (#353 included); branch `claude/peaceful-volta-h5zw7g-calm-ship`; commit: the commit containing this entry.
+- Owner decision on proposal «Мій»: take its edits except the header ones. The header stays as it is: link weight, colour and glyphs, and the boxed wallet.
+- Changes:
+  - `ArchiveTerminalPreview.css`: Long/Short `#1ead6a` / `#ea4151`, read off the owner's newer Bybit screenshot. They were `#1ace88` / `#f55065`, read off the 2026-09-24 screenshot.
+  - `TerminalCalm.css` (new, imported just before `TerminalPanelTiles.css`): the order panel's scrollbar shows only under the pointer.
+  - `BrowserSleepNotice.tsx`: «Обновляем данные…» appears only if validating/syncing lasts longer than 3 s (`SYNC_NOTICE_DELAY_MS`). Until then only the hidden `data-browser-phase` marker renders. A failure still shows at once.
+- Preserved:
+  - ChatGPT's #355: no Continue control, and the diagnostic marker contract.
+  - The panel tiles, as the last import.
+  - #353's 220px panel.
+  - The shared-header ownership list.
+- Tests changed:
+  - `futuresVisualPolish.test.ts`: new colours.
+  - `browserSleepNotice.test.ts`: a quick refresh shows nothing; the notice appears after 3 s.
+- Checks run (local):
+  - `tsc`, frontend build: PASS.
+  - 30 terminal/header/notice/i18n Jest suites: 618 passed.
+  - `node --test` browser-activity and idle-read tests: 53 passed.
+  - `qa-browser-sleep.cjs` (candidate, 16 scenarios) and `qa-browser-sleep-native.cjs` (1440/390): PASS. These ran on local Chromium via a temporary copy with the `msedge` channel swapped for the local executable; CI runs the original.
+- Not run: the Windows/Postgres CI variant; production.

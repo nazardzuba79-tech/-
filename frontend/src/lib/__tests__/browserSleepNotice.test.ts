@@ -120,13 +120,31 @@ describe('a paused browser has no Continue UI and retains known account values',
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  test('validation and synchronization are passive status only; the last good values are not blanked', async () => {
+  test('a quick refresh after a return shows nothing; only the hidden phase marker', async () => {
+    await mount();
+    const validation = deferred<void>();
+    validate.mockImplementationOnce(() => validation.promise);
+    await React.act(async () => { activity.sleepBrowser(); void activity.resumeBrowser(); });
+    expect(activity.getBrowserPhase()).toBe('validating');
+    await tick(2_900);
+    expect(document.querySelector('[role="status"]')).toBeNull(); expectNoControls();
+    expect(document.querySelector('[data-browser-phase="validating"]')?.hasAttribute('hidden')).toBe(true);
+    await React.act(async () => { validation.resolve(); await flush(); });
+    await tick(200);
+    expect(activity.getBrowserPhase()).toBe('active');
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    expect(document.querySelector('[data-browser-phase]')).toBeNull();
+  });
+
+  test('validation and synchronization are passive status only once slow; the last good values are not blanked', async () => {
     await mount();
     const validation = deferred<void>(), nextBalance = deferred<typeof NEW_BALANCES>();
     validate.mockImplementationOnce(() => validation.promise);
     balances.mockImplementationOnce(() => nextBalance.promise);
     await React.act(async () => { activity.sleepBrowser(); void activity.resumeBrowser(); });
     expect(activity.getBrowserPhase()).toBe('validating'); expectNoControls();
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    await tick(3_000);
     expect(document.querySelector('[role="status"]')?.textContent).toBe(messages.browserSyncing);
     expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
     await React.act(async () => { validation.resolve(); await flush(); });

@@ -236,8 +236,8 @@ describe('5. text contrast at the reference level', () => {
       const all = [...CSS.matchAll(new RegExp(`(?:^|\\n)${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\{([^}]*)\\}`, 'g'))];
       return all[all.length - 1][1];
     };
-    expect(last('#archive-terminal-preview .fo-submitPair .buy')).toContain('background:#1ace88');
-    expect(last('#archive-terminal-preview .fo-submitPair .sell')).toContain('background:#f55065');
+    expect(last('#archive-terminal-preview .fo-submitPair .buy')).toContain('background:#1ead6a');
+    expect(last('#archive-terminal-preview .fo-submitPair .sell')).toContain('background:#ea4151');
     expect(last('#archive-terminal-preview .fo-submitPair button:disabled')).toContain('opacity:1');
     expect(last('#archive-terminal-preview .fo-submitPair button')).toContain('height:42px');
   });
