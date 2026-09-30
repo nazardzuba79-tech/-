@@ -1,0 +1,32 @@
+/* A QUIETER TERMINAL (owner, 2026-09-30: «у всіх 4 колір чорний, але моїй
+   біржі таке враження що не хватає преміальності, у чому справа?», next to
+   BingX, Bitget and Bybit screenshots). Measured on those screenshots, the
+   tiles and the ground were already Bybit's (#101014 on #000000) and the
+   figures just as bright; what read cheaper was the header and one stray
+   scrollbar:
+     - ten header links in 600-weight Arial (the header never took the
+       terminal's face), two of them with pictures, the wallet in a box;
+     - the order panel's scrollbar standing on screen at all times.
+   One sheet, so it can be taken back by deleting one import. Subjects avoid
+   the shared header's own classes (sharedHeaderStylesheetOwnership). */
+
+/* Header links in the terminal's face, grey at 500; the page you are on and
+   the one under the pointer in white. The gold underline stays the one mark
+   of the active section. */
+#archive-terminal-preview .global-header .top-nav-link {
+  font-family:'IBM Plex Sans Terminal','Inter Terminal',Inter,system-ui,sans-serif;
+  font-weight:500; color:#aeb4bd;
+}
+#archive-terminal-preview .global-header .top-nav-link:hover,
+#archive-terminal-preview .global-header .top-nav-link.is-active { color:#eaecef; }
+/* Text only in the row: no card or robot glyph before two of the links, no
+   wallet glyph. The Trade menu's chevron stays; it says there is a menu. */
+#archive-terminal-preview .global-header .top-nav-link > svg:not(.nav-chevron) { display:none; }
+/* «Кошелёк» as a plain link beside «Депозит», which stays the one gold control. */
+#archive-terminal-preview .global-header .nav-wallet-link,
+#archive-terminal-preview .global-header .nav-wallet-link:hover { background:transparent; border-color:transparent; }
+
+/* The order panel still scrolls, but its scrollbar shows only under the
+   pointer, as on the reference. */
+#archive-terminal-preview .order-form-area { scrollbar-color:transparent transparent; }
+#archive-terminal-preview .order-form-area:hover { scrollbar-color:#2a3038 transparent; }
