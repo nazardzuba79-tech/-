@@ -7,6 +7,9 @@ import { MarketplaceSnapshots, marketplaceSection } from '../../services/copyTra
 import { randomUUID } from 'crypto';
 
 const SECTIONS = ['nazar', 'ksenia', 'identities'] as const;
+/** After a deploy, prepare this build's sections before the first visitor
+ *  asks, a little after start-up rather than during it. */
+export const MARKETPLACE_WARM_ON_START_MS = 20_000;
 
 /**
  * ONE STRUCTURED LINE PER SECTION, EVERY REQUEST — INCLUDING THE GOOD ONES.
@@ -54,7 +57,8 @@ function logSections(requestId: string, results: PromiseSettledResult<unknown>[]
  * The normal production backend owns persistence and same-environment identity.
  * The existing legacy synthetic/admin and real account routes remain separate. */
 export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPerformanceService(prisma),
-  snapshots = new MarketplaceSnapshots(prisma, service, { dailyRefresh: process.env.NODE_ENV !== 'test' })) {
+  snapshots = new MarketplaceSnapshots(prisma, service, process.env.NODE_ENV !== 'test'
+    ? { dailyRefresh: true, warmOnStartMs: MARKETPLACE_WARM_ON_START_MS } : {})) {
   const router = Router();
   // One authenticated bootstrap; a failed section must not discard its peers.
   // PerformanceService already coalesces and caches each UTC-day projection.
@@ -76,8 +80,10 @@ export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPe
     // MarketplaceSnapshots still queues the heavy appends one at a time;
     // parallel cache reads do not increase the concurrent replay heap.
     // Identities remain a small independent read.
-    const nazarSection = snapshots.section('nazar');
-    const kseniaSection = snapshots.section('ksenia');
+    // A heavy refresh this answer does not wait for starts once it is sent.
+    const answered = new Promise<void>(resolve => { res.once('finish', resolve); res.once('close', resolve); });
+    const nazarSection = snapshots.section('nazar', { answered });
+    const kseniaSection = snapshots.section('ksenia', { answered });
     const results = await Promise.allSettled([
       nazarSection,
       kseniaSection,

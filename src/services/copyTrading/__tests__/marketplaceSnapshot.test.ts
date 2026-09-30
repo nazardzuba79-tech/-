@@ -355,3 +355,80 @@ it('the opt-in daily refresh has no idle polling and appends each strategy only 
     jest.useRealTimers();
   }
 });
+
+/** The replay is synchronous: on the 0.1-CPU container nothing else runs
+ *  while it does. This stands in for it, holding the event loop. */
+function blockingGet(ms: number, calls: { strategy: string; at: number }[]) {
+  return async (strategy: PerformanceStrategy) => {
+    calls.push({ strategy, at: Date.now() });
+    const until = Date.now() + ms;
+    while (Date.now() < until) { /* hold the CPU, as the replay does */ }
+    return yesterday[strategy] as any;
+  };
+}
+
+it('after a deploy, the confirmed section is sent before the heavy refresh takes the CPU', async () => {
+  const { db } = cloneTable();
+  const service = new CopyPerformanceService(db, at('2026-09-27'));
+  const calls: { strategy: string; at: number }[] = [];
+  jest.spyOn(service, 'get').mockImplementation(blockingGet(300, calls));
+  // Stored by the previous build; this process has measured nothing yet.
+  const snapshots = new MarketplaceSnapshots(db, service, { now: at('2026-09-27'), build: 'next-build' });
+  // When the server finished handing the answer to the network. The client
+  // here shares this process, so its own clock would include the replay.
+  let sentAt = Infinity;
+  const server = express()
+    .use((_req, res, next) => { res.once('finish', () => { sentAt = Date.now(); }); next(); })
+    .use('/api/v1', copyPerformanceRouter(db, service, snapshots));
+  const response = await request(server).get('/api/v1/copy-trading/marketplace').set('Authorization', bearer());
+  expect(response.status).toBe(200);
+  expect(response.body.errors).toEqual({});
+  expect(JSON.stringify(response.body.nazar)).toBe(JSON.stringify(JSON.parse(JSON.stringify(yesterday.nazar))));
+  expect(validStrategy(response.body.ksenia, 'VX-KSENIA')).toBe(true);
+  // The build's own sections are still prepared — after the answer, in order.
+  for (let i = 0; i < 100 && calls.length < 2; i++) await new Promise(resolve => setTimeout(resolve, 20));
+  await (snapshots as any).queue;
+  expect(calls.map(call => call.strategy)).toEqual(['nazar', 'ksenia']);
+  expect(Number.isFinite(sentAt)).toBe(true);
+  for (const call of calls) expect(call.at).toBeGreaterThanOrEqual(sentAt);
+});
+
+it('warm-up prepares only the sections this build does not have, one at a time', async () => {
+  const { db, rows } = cloneTable();
+  const service = new CopyPerformanceService(db, at('2026-09-27'));
+  const calls: string[] = [];
+  jest.spyOn(service, 'get').mockImplementation(async strategy => { calls.push(strategy); return yesterday[strategy] as any; });
+  const current = new MarketplaceSnapshots(db, service, { now: at('2026-09-27'), build: null });
+  await current.warm();
+  expect(calls).toEqual([]);
+  const deployed = new MarketplaceSnapshots(db, service, { now: at('2026-09-27'), build: 'next-build' });
+  await deployed.warm();
+  expect(calls).toEqual(['nazar', 'ksenia']);
+  for (const strategy of ['nazar', 'ksenia'] as const) {
+    expect(decodeMarketplaceSnapshot(strategy, rows.get(marketplaceSnapshotId(strategy)).stateText)?.build).toBe('next-build');
+  }
+  // The first visitor then reads this build's section with no further work.
+  await deployed.section('nazar'); await deployed.section('ksenia');
+  expect(calls).toEqual(['nazar', 'ksenia']);
+});
+
+it('warm-up is opt-in, runs once after start-up and never keeps the process alive', async () => {
+  const warm = jest.spyOn(MarketplaceSnapshots.prototype, 'warm').mockResolvedValue();
+  const unref = jest.fn();
+  const timeout = jest.spyOn(global, 'setTimeout');
+  try {
+    const { db } = cloneTable();
+    const service = new CopyPerformanceService(db, at('2026-09-27'));
+    new MarketplaceSnapshots(db, service, { now: at('2026-09-27'), build: null });
+    expect(timeout).not.toHaveBeenCalled();
+    timeout.mockImplementationOnce(((fn: () => void) => { fn(); return { unref } as any; }) as any);
+    new MarketplaceSnapshots(db, service, { now: at('2026-09-27'), build: null, warmOnStartMs: 20_000 });
+    expect(timeout).toHaveBeenCalledTimes(1);
+    expect(timeout.mock.calls[0][1]).toBe(20_000);
+    expect(unref).toHaveBeenCalledTimes(1);
+    expect(warm).toHaveBeenCalledTimes(1);
+  } finally {
+    timeout.mockRestore();
+    warm.mockRestore();
+  }
+});
