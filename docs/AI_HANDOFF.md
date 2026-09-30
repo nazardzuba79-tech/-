@@ -5160,3 +5160,10 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `npx jest frontend/src/lib/__tests__`: all pass after the test updates.
   - `qa-native-demo-browser`, both the full run and `NATIVE_QA_PNL_ONLY=1`: PASS.
   - `qa-futures-bottom-panel`, `qa-futures-visual-polish`, `qa-futures-tiny-price`: PASS.
+- **CI follow-ups on PR #347 (same day):**
+  - `read-budget` (Windows, CRLF checkout) failed on a LF-only substring in the new approx CSS assertion. The assertion is now a whitespace-tolerant regex (`6586257a`).
+  - `visual-polish` → `qa-spot-cfd-terminal.cjs` failed with 14 findings: the Futures ticker strip is now a `#101014` tile on desktop, and the IBM Plex `--font-family` is Futures-only, so neither matches Spot/CFD. This is the owner's Futures-only Graphite finish.
+    - The harness now reports exactly those two differences under `futuresOnlyFinish` instead of failing.
+    - Every other token must still match, and Spot and CFD must still match each other's strip.
+    - Reproduced locally: FAIL with 14 findings before the change, PASS after.
+  - **Open for the owner:** whether Spot/CFD should also take the Graphite finish (font, black tiles, green/red candles).

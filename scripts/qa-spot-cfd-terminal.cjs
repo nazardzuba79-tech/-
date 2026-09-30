@@ -73,6 +73,14 @@ const MOBILE = [[320,740],[360,800],[390,844],[430,932]];
 const TERMINALS = [['futures','/futures'],['spot','/trade'],['cfd','/trade?market=cfd']];
 const TOKENS = ['--bg-primary','--bg-secondary','--bg-tertiary','--border-color','--text-primary',
   '--text-secondary','--accent-yellow','--color-buy','--color-sell','--panel','--font-family'];
+/* The Graphite finish (owner, 2026-09-30, PR #347) was asked for on the
+   Futures terminal only: the IBM Plex face and, on desktop, the ticker strip
+   drawn as a #101014 tile. Spot and CFD keep the shared design until the
+   owner extends the finish to them, so exactly these two differences are
+   reported under `futuresOnlyFinish` instead of failing; every other token
+   still has to match, and Spot and CFD still have to match each other. */
+const FUTURES_ONLY_TOKENS = new Set(['--font-family']);
+const FUTURES_TILE_STRIP = 'rgb(16, 16, 20)';
 
 const READ = (tokenNames) => {
   const root = document.querySelector('.trade-terminal');
@@ -270,14 +278,20 @@ const READ = (tokenNames) => {
     const { futures, spot, cfd } = report.widths[key];
     for (const [n, v] of [['spot', spot], ['cfd', cfd]]) {
       if (!futures || !v || futures.missing || v.missing) continue;
-      const bad = TOKENS.filter(t => futures.tokens[t] !== v.tokens[t]);
+      const finish = TOKENS.filter(t => FUTURES_ONLY_TOKENS.has(t) && futures.tokens[t] !== v.tokens[t]);
+      if (finish.length) (report.futuresOnlyFinish ||= []).push(`${n} @${key}: ${finish.join(', ')}`);
+      const bad = TOKENS.filter(t => !FUTURES_ONLY_TOKENS.has(t) && futures.tokens[t] !== v.tokens[t]);
       if (bad.length) {
         if (mobile) findings.push(`${n} @${key}: ${bad.length} token(s) differ from Futures - ${bad.join(', ')}`);
         else (report.preExisting ||= []).push(`${n} @${key}: desktop token drift on current main - ${bad.join(', ')}`);
       }
       if (v.strip && futures.strip && v.strip.bg !== futures.strip.bg) {
-        findings.push(`${n} @${key}: strip background ${v.strip.bg} != Futures ${futures.strip.bg}`);
+        if (!mobile && futures.strip.bg === FUTURES_TILE_STRIP) (report.futuresOnlyFinish ||= []).push(`${n} @${key}: strip background ${v.strip.bg} (Futures tile ${futures.strip.bg})`);
+        else findings.push(`${n} @${key}: strip background ${v.strip.bg} != Futures ${futures.strip.bg}`);
       }
+    }
+    if (spot?.strip && cfd?.strip && spot.strip.bg !== cfd.strip.bg) {
+      findings.push(`spot/cfd @${key}: strip backgrounds differ (${spot.strip.bg} vs ${cfd.strip.bg})`);
     }
   }
 
@@ -294,7 +308,7 @@ const READ = (tokenNames) => {
   report.status = findings.length ? 'FAIL' : 'PASS';
   fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({ status: report.status, findings,
-    futuresDrift: report.futuresDrift, preExisting: report.preExisting,
+    futuresDrift: report.futuresDrift, preExisting: report.preExisting, futuresOnlyFinish: report.futuresOnlyFinish,
     summary: Object.fromEntries(Object.entries(report.widths).map(([k, v]) =>
       [k, Object.fromEntries(Object.entries(v).map(([n, m]) =>
         [n, m.missing ? 'MISSING' : `strip=${m.strip ? m.strip.h + 'px' : 'n/a'} ovf=${m.overflowX} lap=${m.overlaps.length}`]))])) }, null, 2));
