@@ -60,7 +60,7 @@ test('draws the caller\'s «≈… USD» line under the ROI, and nothing when it
   expect(panel).toContain('{realizedApprox && <small className="futures-position-approx">{realizedApprox}</small>}');
   expect(panel).not.toContain('!archive && Number.isFinite(realized)');
   const css = read('components/FuturesUnrealizedPnl.css');
-  expect(css).toContain('.futures-unrealized .futures-position-approx {\n  grid-column: 1; grid-row: 3;');
+  expect(css).toMatch(/\.futures-unrealized \.futures-position-approx \{\s+grid-column: 1; grid-row: 3;/);
   expect(css).toContain('.futures-unrealized:has(.futures-position-approx) .archive-pnl-open { grid-row: 1 / 4; }');
 });
 test('engine values are passed through; presentation has no financial inputs/formulas', () => {
