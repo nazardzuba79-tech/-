@@ -1,0 +1,113 @@
+/* THE GRAPHITE FINISH ON THE LIVE TERMINAL (owner, 2026-09-30: «зі свого
+   дезайну добав … настройки графіка, більш акуратна форма для ордерів, і там
+   де маржа, і шрифт поправ, акуратний як у байбіт. І більш приглушений
+   стакан»). Taken from the approved «Графіт» concept and laid over the
+   archive terminal; loaded last, so it wins over the sheets before it at the
+   same ID weight. Presentation only: every figure, control and handler is
+   the one the form, the book and the chart already had. */
+
+/* ── Type ───────────────────────────────────────────────────────────────
+   IBM Plex Sans (self-hosted, TerminalFonts.css): an even, slightly narrow
+   grotesque whose figures line up in columns — the calm the owner pointed
+   at on Bybit. Figures (.mono) take the same face instead of a monospace,
+   and the chart's axis and labels follow through the chart token. The
+   global header keeps the face every other page has. */
+#archive-terminal-preview {
+  --font-family:'IBM Plex Sans Terminal','Inter Terminal',Inter,system-ui,sans-serif;
+  font-family:var(--font-family);
+}
+#archive-terminal-preview .terminal :is(.mono,.chart-tab,.chart-tool-btn,.voltex-plot-title) { font-family:var(--font-family); font-variant-numeric:tabular-nums; }
+#archive-terminal-preview .terminal-chart-shell { --voltex-chart-font:'IBM Plex Sans Terminal','Inter Terminal',Inter,Arial,sans-serif; }
+
+/* ── Chart: one header row ──────────────────────────────────────────────
+   The «График» row said what the panel is and held two words at its far
+   end; with it folded into the toolbar, the chart gains its height and the
+   toolbar lines up with the book's «Стакан / Сделки» row beside it. */
+#archive-terminal-preview .terminal-chart-shell.is-heading-folded .chart-toolbar { height:40px; min-height:40px; }
+/* Timeframes, then the chart's type and indicators right after them, and
+   the settings and the source switch closing the row at its far right. */
+#archive-terminal-preview .terminal-chart-shell .chart-toolbar .chart-tools { margin-left:0; }
+#archive-terminal-preview .chart-toolbar-end { display:flex; align-items:center; gap:8px; flex:none; margin-left:auto; padding-left:10px; border-left:1px solid rgba(255,255,255,.08); }
+#archive-terminal-preview .chart-toolbar-end .chart-settings-trigger { display:grid; place-items:center; width:28px; height:28px; padding:0; color:#a1a5ad; background:transparent; }
+#archive-terminal-preview .chart-toolbar-end .chart-settings-trigger:hover,
+#archive-terminal-preview .chart-toolbar-end .chart-settings-trigger[aria-expanded=true] { color:#eaecef; background:rgba(255,255,255,.06); }
+#archive-terminal-preview .terminal-chart-source { display:flex; align-items:center; gap:2px; padding:2px; border-radius:7px; background:rgba(255,255,255,.04); }
+#archive-terminal-preview .terminal-chart-source button { height:24px; padding:0 9px; border:0; border-radius:5px; background:transparent; color:#8b9098; font:500 11px/1 var(--font-family); cursor:pointer; transition:color .12s, background-color .12s; }
+#archive-terminal-preview .terminal-chart-source button:hover { color:#eaecef; }
+#archive-terminal-preview .terminal-chart-source button[aria-pressed=true] { color:#eaecef; background:rgba(255,255,255,.09); }
+/* The chosen timeframe as a quiet chip, like the switch beside it; gold is
+   left to the things that act (the order's side, its type, the accent). */
+#archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab { color:#8b9098; }
+#archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab:hover { color:#eaecef; }
+#archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab.active { color:#eaecef; background:rgba(255,255,255,.09); }
+
+/* ── Margin mode, leverage, price and quantity: Bybit, to the pixel ─────
+   Owner, 2026-09-30, beside a Bybit screenshot: «зроби ці форми по
+   контрасності і формі в точності як на байбіт». Read off that screenshot:
+   filled #232227 boxes on the #101014 panel, no outline at rest, a 4px
+   corner on the two selects (38px) and a 6px corner on the two fields
+   (48px). The select text is white 14px; leverage is the accent (Bybit's
+   orange there — ours is the VOLTEX gold), red past the warning threshold;
+   the caret is a small filled triangle in #87888e. In the fields the
+   caption is a floating label: in the middle as a placeholder while the
+   field is empty, small at the top once it holds a figure; the figure is
+   white 16px at the left, «Последняя» in the accent and the unit in white
+   at the right. The approved outline logic stays: typing turns it gold, a
+   refused figure red. */
+#archive-terminal-preview .fo-mlRow { gap:12px; }
+#archive-terminal-preview .fo-mlTrigger { height:38px; min-height:38px; padding:0 10px 0 12px; border-radius:4px; font-size:14px; font-weight:600; color:#ffffff; }
+#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev { color:var(--accent); font-size:14px; font-weight:500; }
+#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev.fo-mlHigh { color:#f6465d; }
+/* The «▾» glyph is not in Plex and fell back to a stray arrow: the caret is
+   drawn, as Bybit's filled triangle. */
+#archive-terminal-preview .fo-mlTrigger .fo-mlChevron { flex:none; box-sizing:content-box; width:0; height:0; margin:0 0 0 6px; padding:0; font-size:0; line-height:0; opacity:1; transform:none; border-style:solid; border-width:5px 4.5px 0; border-color:#87888e transparent transparent; transition:transform .12s; }
+#archive-terminal-preview .fo-mlTrigger[aria-expanded=true] .fo-mlChevron { transform:rotate(180deg); }
+#archive-terminal-preview :is(.fo-mlTrigger, .fo-priceInputRow, .fo-qtyInputRow, .order-family-input, .archive-protection-fields input) {
+  background:#232227 !important; border:1px solid transparent !important;
+}
+#archive-terminal-preview :is(.fo-mlTrigger:hover:not(:disabled), .fo-priceInputRow:hover, .fo-qtyInputRow:hover, .order-family-input:hover, .archive-protection-fields input:hover) {
+  background:#28272d !important; border-color:transparent !important;
+}
+#archive-terminal-preview :is(.order-family-input, .archive-protection-fields input) { border-radius:6px; }
+#archive-terminal-preview :is(.order-family-input:focus-within, .archive-protection-fields input:focus-visible) { border-color:var(--accent) !important; }
+#archive-terminal-preview :is(.fo-priceInputRow, .fo-qtyInputRow):focus-within,
+#archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] { border-color:var(--accent) !important; }
+#archive-terminal-preview :is(.fo-priceInputRow, .fo-qtyInputRow):has(.fo-input[aria-invalid="true"]) { border-color:var(--sell, #f6465d) !important; }
+
+#archive-terminal-preview .fo-field { --fo-field-height:48px; }
+#archive-terminal-preview .fo-field .fo-fieldRow { border-radius:6px; min-height:var(--fo-field-height); }
+#archive-terminal-preview .fo-field > .fo-fieldCaption {
+  top:7px; left:13px; font-size:11px; line-height:14px; font-weight:400; color:#6d6e73;
+  transform:none; transition:top .12s ease, font-size .12s ease, transform .12s ease;
+}
+#archive-terminal-preview .fo-field:has(.fo-input:placeholder-shown):not(:focus-within) > .fo-fieldCaption {
+  top:calc(var(--fo-field-height) / 2); transform:translateY(-50%); font-size:14px;
+}
+#archive-terminal-preview .fo-field :is(.fo-input,.fo-markPrice) {
+  padding:21px 0 5px 13px; text-align:left;
+  font-size:16px; line-height:20px; font-weight:600; color:#ffffff;
+}
+#archive-terminal-preview .fo-field .fo-markPrice { align-items:flex-end; justify-content:flex-start; color:#a1a5ad; font-weight:500; }
+#archive-terminal-preview .fo-field .fo-input::placeholder { color:transparent; -webkit-text-fill-color:transparent; opacity:0; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing { min-width:0; padding:0 14px 0 10px; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-unit { font-size:14px; font-weight:600; color:#ffffff; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn { font-size:14px; font-weight:600; color:var(--accent); text-decoration:none; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn:hover { color:var(--accent); text-decoration:underline; }
+@media (prefers-reduced-motion: reduce) {
+  #archive-terminal-preview .fo-field > .fo-fieldCaption, #archive-terminal-preview .fo-mlTrigger .fo-mlChevron { transition:none; }
+}
+/* «Доступно» without the «+»: its figure closes the row on the right. */
+#archive-terminal-preview .fo-availRow { font-size:12px; }
+#archive-terminal-preview .fo-availValue { font-weight:500; }
+
+/* ── Order book: quieter ────────────────────────────────────────────────
+   The depth bars were painted at .30 (asks) and .18 (bids) and read as two
+   solid red and green slabs. Bybit's bars are a tint the figures sit on:
+   both sides at one weight, low enough that the price column — the only
+   coloured text — carries the side. The figures keep the white and the
+   13px the owner matched to Bybit on 2026-09-24. */
+#archive-terminal-preview .rb-row .rb-depth { inset:2px 0; border-radius:1px; }
+#archive-terminal-preview .rb-row.bid .rb-depth { background:rgba(46,189,133,.12); }
+#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(246,70,93,.12); }
+#archive-terminal-preview .rb-ratio[data-available=true] { background:rgba(246,70,93,.10); }
+#archive-terminal-preview .rb-ratio > i { background:rgba(46,189,133,.16); }

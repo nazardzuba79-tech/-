@@ -1,0 +1,52 @@
+/* Chart settings: portalled to <body>, so it carries its own dark surface
+   and does not depend on the terminal's scope. */
+.vx-chart-settings { position:fixed; inset:0; z-index:1200; display:grid; place-items:center; padding:16px; background:rgba(0,0,0,.55);
+  font-family:'IBM Plex Sans Terminal','Inter Terminal',Inter,system-ui,sans-serif; font-variant-numeric:tabular-nums; color:#eaecef; }
+.vx-chart-settings .vcs-box { width:min(700px,100%); max-height:calc(100vh - 32px); display:flex; flex-direction:column; overflow:hidden;
+  background:#181a1f; border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,.65); }
+.vx-chart-settings .vcs-head { display:flex; align-items:center; justify-content:space-between; padding:12px 12px 12px 20px; border-bottom:1px solid #2a2d33; }
+.vx-chart-settings h2 { margin:0; font-size:16px; font-weight:500; }
+.vx-chart-settings button { font:inherit; color:inherit; cursor:pointer; }
+.vx-chart-settings .vcs-close { width:30px; height:30px; display:grid; place-items:center; border:0; border-radius:6px; background:transparent; color:#a1a5ad; }
+.vx-chart-settings .vcs-close:hover { background:#22252b; color:#eaecef; }
+.vx-chart-settings .vcs-body { display:grid; grid-template-columns:200px minmax(0,1fr); min-height:360px; flex:1; overflow:hidden; }
+.vx-chart-settings .vcs-nav { display:grid; align-content:start; gap:2px; padding:10px; border-right:1px solid #2a2d33; }
+.vx-chart-settings .vcs-nav button { height:40px; padding:0 12px; border:0; border-radius:8px; background:transparent; color:#a1a5ad; font-size:13px; font-weight:500; text-align:left; }
+.vx-chart-settings .vcs-nav button:hover { color:#eaecef; }
+.vx-chart-settings .vcs-nav button[aria-selected=true] { background:#22252b; color:#eaecef; }
+.vx-chart-settings .vcs-pane { overflow:auto; padding:16px 20px; }
+.vx-chart-settings .vcs-cap { margin:0 0 10px; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#6b6f77; }
+.vx-chart-settings .vcs-cap:not(:first-child) { margin-top:20px; }
+.vx-chart-settings .vcs-presets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.vx-chart-settings .vcs-presets button { display:grid; gap:3px; padding:12px; border:1px solid #2a2d33; border-radius:10px; background:#0f1013; text-align:left; }
+.vx-chart-settings .vcs-presets button:hover { border-color:#454951; }
+.vx-chart-settings .vcs-presets button[aria-pressed=true] { border-color:#f0c964; }
+.vx-chart-settings .vcs-presets b { font-size:12.5px; font-weight:500; }
+.vx-chart-settings .vcs-presets small { font-size:11px; color:#6b6f77; }
+.vx-chart-settings .vcs-swatch { display:flex; gap:4px; margin-bottom:6px; }
+.vx-chart-settings .vcs-swatch i { width:9px; height:24px; border-radius:2px; }
+.vx-chart-settings .vcs-swatch i:first-child { height:18px; margin-top:3px; }
+.vx-chart-settings .vcs-row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:42px; font-size:13px; color:#a1a5ad; }
+.vx-chart-settings .vcs-check { display:flex; align-items:center; gap:8px; min-height:36px; font-size:13px; color:#a1a5ad; cursor:pointer; }
+.vx-chart-settings .vcs-check input { width:14px; height:14px; margin:0; accent-color:#f0c964; }
+.vx-chart-settings .vcs-colors { display:flex; align-items:center; gap:8px; }
+.vx-chart-settings input[type=color] { -webkit-appearance:none; appearance:none; width:36px; height:30px; padding:3px; border:1px solid #2a2d33; border-radius:8px; background:#0f1013; cursor:pointer; }
+.vx-chart-settings input[type=color]:disabled { opacity:.4; cursor:default; }
+.vx-chart-settings input[type=color]::-webkit-color-swatch-wrapper { padding:0; }
+.vx-chart-settings input[type=color]::-webkit-color-swatch { border:0; border-radius:5px; }
+.vx-chart-settings input[type=color]::-moz-color-swatch { border:0; border-radius:5px; }
+.vx-chart-settings select { height:30px; padding:0 8px; border:1px solid #2a2d33; border-radius:8px; background:#0f1013; color:#eaecef; font:inherit; font-size:12.5px; }
+.vx-chart-settings .vcs-foot { display:flex; align-items:center; gap:8px; padding:12px 20px; border-top:1px solid #2a2d33; }
+.vx-chart-settings .vcs-grow { flex:1; }
+.vx-chart-settings .vcs-btn { height:32px; padding:0 16px; border:1px solid #3a3d44; border-radius:999px; background:transparent; font-size:12.5px; font-weight:500; }
+.vx-chart-settings .vcs-btn:hover { border-color:#5a5e66; }
+.vx-chart-settings .vcs-ok { border-color:#eaecef; background:#eaecef; color:#0a0b0d; font-weight:600; }
+.vx-chart-settings .vcs-ok:hover { background:#fff; }
+.vx-chart-settings :focus-visible { outline:2px solid #f0c964; outline-offset:2px; }
+@media (max-width:640px) {
+  .vx-chart-settings .vcs-body { grid-template-columns:minmax(0,1fr); }
+  .vx-chart-settings .vcs-nav { display:flex; overflow-x:auto; border-right:0; border-bottom:1px solid #2a2d33; }
+  .vx-chart-settings .vcs-nav button { flex:none; }
+  .vx-chart-settings .vcs-presets { grid-template-columns:minmax(0,1fr); }
+  .vx-chart-settings .vcs-pane { padding:14px 16px; }
+}

@@ -584,12 +584,13 @@
   background: transparent !important;
 }
 /* The chart paints nothing of its own so the gradient shows through it
-   (PriceChart reads these tokens); its candles are the screenshot's clean
-   white and orange, its axis figures white with no ruled edge. Volume keeps
-   the exchange's own colours (owner: no blue). */
+   (PriceChart reads these tokens); its axis figures are white with no ruled
+   edge. The candles are the standard green and red, the book's own buy and
+   sell (owner, 2026-09-30); the white and orange they were stays one click
+   away as a preset in the chart's settings, which paint over these. */
 #archive-terminal-preview .terminal-chart-shell {
   --voltex-plot-background: rgba(0,0,0,0);
-  --voltex-candle-up: #ffffff; --voltex-candle-down: #ff9800;
+  --voltex-candle-up: #2ebd85; --voltex-candle-down: #f6465d;
   --voltex-axis-text: #ffffff; --voltex-axis-border: rgba(0,0,0,0);
 }
 /* On a gradient any fixed fill matches the background somewhere, and the

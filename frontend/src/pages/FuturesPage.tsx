@@ -56,6 +56,8 @@ import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/ArchiveTerminalPreview.css';
 import './trade-terminal/FuturesMobile.css';
 import './trade-terminal/FuturesOrderPanelRefinement.css';
+import './trade-terminal/TerminalGraphite.css';
+import './trade-terminal/TerminalPanelTiles.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately
@@ -621,7 +623,7 @@ export function FuturesPage() {
             >
               <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
                 privateTrading={nativeExecution ? native.interaction : undefined}
-                positionLines={chartPositionLines} />
+                positionLines={chartPositionLines} chartSettings foldHeading={archivePreview && desktopMarkets} />
               {nativeExecution && <button
                 type="button"
                 /* Touch has no double click. This is a compact control that
@@ -701,9 +703,6 @@ export function FuturesPage() {
               executionEnabled={nativeExecution ? true : (futuresConfig?.symbols.includes(symbol) ?? false)}
               onPlaced={handleOrderPlaced}
               onOpenTransfer={nativeExecution ? undefined : () => setShowTransfer(true)}
-              /* The «+» beside «Доступно»: the same destination the account
-                 panel's «Перевести» reaches on either engine. */
-              onTransfer={nativeExecution ? () => navigate('/wallet?action=transfer') : () => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
               /* The LAST TRADED price, which is what the button beside the

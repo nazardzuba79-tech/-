@@ -1,0 +1,41 @@
+/* PANELS AS TILES, ON A DARKER GROUND (owner, 2026-09-30: «розділення цих
+   панелей чуть дешеві, що з ними можна зробити цікаве?», then «зроби версію
+   з чуть чорнішим фоном … три версії»). Kept in its own sheet so it can be
+   taken back by deleting one import.
+
+   The panels were cut apart by 1px lines drawn over one gradient; a line is
+   the cheapest separator there is, and on a gradient it fades in and out
+   along its length. Here each panel is its own tile with a 6px corner on a
+   black ground with 4px between tiles — the way Bybit's terminal is built.
+
+   The tone is four tokens. Read off the owner's Bybit screenshot: tiles
+   #101014, the ground between them #000000, the header #17181f. The two
+   other tones the owner was shown (a darker graphite gradient, and a near
+   black) are these same four tokens with other values.
+
+   Desktop gets the tiles; a phone keeps its own layout and only takes the
+   tone. */
+#archive-terminal-preview {
+  --tile-ground:#000000;
+  --tile-fill:#101014;
+  --tile-header:#17181f;
+  --tile-bottom:#101014;
+  --border:rgba(255,255,255,.08);
+  background:var(--tile-fill) !important;
+}
+#archive-terminal-preview .global-header { background:var(--tile-header); --bg:var(--tile-header); }
+#archive-terminal-preview .bottom-panel { --panel:var(--tile-bottom); }
+@media (min-width:901px) {
+  #archive-terminal-preview { background:var(--tile-ground) !important; }
+  #archive-terminal-preview .terminal { padding:4px; gap:4px; background:var(--tile-ground); }
+  /* `fixed`: a gradient tone is painted once across the viewport, so it
+     runs on from tile to tile instead of restarting in each. */
+  #archive-terminal-preview :is(.ticker-bar,.chart-area,.orderbook-area,.order-form-area) {
+    background:var(--tile-fill) fixed !important;
+    border:0 !important; border-radius:6px;
+  }
+  #archive-terminal-preview .bottom-panel { border:0; border-radius:6px; }
+  /* The rows that paint the panel colour at a tile's top edge follow its corner. */
+  #archive-terminal-preview .bottom-panel .bottom-tabs { border-radius:6px 6px 0 0; }
+  #archive-terminal-preview .ticker-bar { border-bottom:0; }
+}

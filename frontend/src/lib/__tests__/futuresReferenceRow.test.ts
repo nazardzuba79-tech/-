@@ -144,7 +144,7 @@ describe('2. the positions row carries the reference columns', () => {
   test('unrealized carries ROI under it, and realized is its OWN column', () => {
     expect(PANEL).toContain('futures-position-pnl');
     // The dedicated cell consumes both authoritative values together.
-    expect(PANEL).toContain('<FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset}>');
+    expect(PANEL).toContain('<FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset} approx={p.unrealizedPnl === null ? null : approxUsd(Number(p.unrealizedPnl), quoteAsset)}>');
     expect(PANEL).toContain('const realized = parseFloat(p.realizedPnl);');
     // The two are NEVER summed: adding them would double-count the fees and
     // funding already inside the realized figure, on a size that is no

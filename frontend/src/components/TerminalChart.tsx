@@ -9,7 +9,7 @@ import type { ChartCandleLoader, ChartPositionLine, ChartTradingInteraction } fr
 import './TerminalChart.css';
 
 /** Switch only the chart subtree: tickets, order families and books keep their state. */
-export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, positionLines, candleLoader, tradingView=true, priceScaleMode, priceFormatter }: {
+export function TerminalChart({ pair, market='spot', compactTools=false, privateTrading, positionLines, candleLoader, tradingView=true, priceScaleMode, priceFormatter, chartSettings=false, foldHeading=false }: {
   pair:string; market?:'spot'|'futures'; chrome?:'default'|'terminal'; drawingTools?:boolean;
   compactTools?:boolean;
   privateTrading?:ChartTradingInteraction;
@@ -22,6 +22,13 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
   /** See PriceChart. */
   priceScaleMode?:'normal'|'logarithmic';
   priceFormatter?:(price:number)=>string;
+  /** The viewer's chart settings and their gear (see PriceChart). */
+  chartSettings?:boolean;
+  /** Fold the «График» heading into the chart's own toolbar: one row, with
+   *  the VOLTEX / TradingView switch at its right end. The heading row comes
+   *  back while TradingView is shown, since that chart has no VOLTEX toolbar
+   *  to carry the switch. */
+  foldHeading?:boolean;
 }) {
   const [mode,setMode]=useState<'voltex'|'tradingview'>('voltex');
   const { t }=useLanguage();
@@ -32,8 +39,14 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
    * is being chosen must cancel that choice rather than strand it.
    */
   const choosing = privateTrading?.enabled && privateTrading.selecting;
-  return <div className="terminal-chart-shell">
-    <div className="terminal-chart-heading">
+  const voltexShown = mode==='voltex' || !tradingView;
+  const switcher = <div role="group" aria-label={t('futures.chart')} className="terminal-chart-source">
+        <button type="button" aria-pressed={mode==='voltex'} onClick={()=>setMode('voltex')}>VOLTEX</button>
+        {tradingView && <button type="button" aria-pressed={mode==='tradingview'} onClick={()=>{ if (choosing) privateTrading?.onCancelSelection(); setMode('tradingview'); }}>TradingView</button>}
+      </div>;
+  const folded = foldHeading && voltexShown;
+  return <div className={`terminal-chart-shell${folded ? ' is-heading-folded' : ''}`}>
+    {!folded && <div className="terminal-chart-heading">
       <span>{t('futures.chart')}</span>
       <div role="group" aria-label={t('futures.chart')}>
         {/* The "Сделка с графика" button used to sit here. It is gone from
@@ -46,11 +59,12 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
         <button type="button" aria-pressed={mode==='voltex'} onClick={()=>setMode('voltex')}>VOLTEX</button>
         {tradingView && <button type="button" aria-pressed={mode==='tradingview'} onClick={()=>{ if (choosing) privateTrading?.onCancelSelection(); setMode('tradingview'); }}>TradingView</button>}
       </div>
-    </div>
-    {mode==='voltex' || !tradingView
+    </div>}
+    {voltexShown
       ? <TradingViewRulerLayer>
           <PriceChart key={`${market}:${pair}`} pair={pair} chrome="terminal" drawingTools market={market} compactTools={compactTools}
             privateTrading={privateTrading} positionLines={positionLines} priceScaleMode={priceScaleMode} priceFormatter={priceFormatter}
+            chartSettings={chartSettings} toolbarEnd={folded ? switcher : undefined}
             candleLoader={candleLoader ?? (market==='futures'?getFuturesCandles:getSpotPublicCandles)} />
         </TradingViewRulerLayer>
       : <TradingViewAdvancedChart key={`${market}:${pair}`} pair={pair} market={market} />}

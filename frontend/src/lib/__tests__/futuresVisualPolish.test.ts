@@ -380,11 +380,14 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     }
   });
 
-  it('lets the chart show the gradient, with clean white / orange candles and a white axis', () => {
+  it('lets the chart show the gradient, with green / red candles and a white axis', () => {
+    // 2026-09-30: the standard green and red by default (owner); the white
+    // and orange they were is the «Белый / оранжевый» preset in the chart's
+    // settings (chartSettings.ts), which paint over these tokens.
     const shell = everyRule('#archive-terminal-preview .terminal-chart-shell');
     expect(shell).toContain('--voltex-plot-background: rgba(0,0,0,0)');
-    expect(shell).toContain('--voltex-candle-up: #ffffff');
-    expect(shell).toContain('--voltex-candle-down: #ff9800');
+    expect(shell).toContain('--voltex-candle-up: #2ebd85');
+    expect(shell).toContain('--voltex-candle-down: #f6465d');
     expect(shell).toContain('--voltex-axis-text: #ffffff');
     // The chart reads them, with every other chart's values as fallbacks.
     expect(CHART).toContain("const candleUp = token('--voltex-candle-up', '#eaecef');");
@@ -392,8 +395,12 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     expect(CHART).toContain("borderColor: token('--voltex-axis-border', '#292c34')");
   });
 
-  it('keeps the volume bars the exchange\'s own colours — no blue', () => {
-    expect(CHART).toContain("color: c.close >= c.open ? 'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)',");
+  it('keeps the volume bars in the candles\' own colours — no blue', () => {
+    // Every chart without the settings keeps the exchange's own pair; the
+    // futures chart's volume follows whatever candle colours are chosen.
+    expect(CHART).toContain("useRef<[string, string]>(['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)'])");
+    expect(CHART).toContain('color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1],');
+    expect(CHART).toContain('volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.75), rgbaOf(s.bodyDown, 0.75)];');
     expect(CHART.toLowerCase()).not.toContain('#2962ff');
   });
 

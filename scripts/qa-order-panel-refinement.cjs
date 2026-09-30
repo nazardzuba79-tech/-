@@ -52,7 +52,7 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     assert.equal(await toggleBox.isChecked(), false);
     const available = page.locator('.fo-availRow');
     assert(Number(await available.getAttribute('data-available-margin')) > 0, 'Available margin must be printed above the price');
-    assert.equal(await available.locator('.fo-availTransfer').count(), 1, 'Transfer «+» missing beside «Доступно»');
+    assert.equal(await available.locator('button').count(), 0, 'No «+» beside «Доступно» (owner, 2026-09-30)');
     assert.equal(await page.locator('.futures-terminal-status').count(), 0);
     assert(!/Мейкер|Тейкер/.test(await page.locator('.order-form-area').innerText()), 'Fee strip still rendered');
     await page.locator('.fo-qtyInputRow input').fill('0.012');
@@ -81,7 +81,8 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
       return { price: rect('.fo-priceField'), quantity: rect('.fo-qtyInputRow'), long: rect('.fo-submitPair .buy'), short: rect('.fo-submitPair .sell'), overflow: document.documentElement.scrollWidth - innerWidth };
     });
     assert.equal(geometry.overflow, 0, 'Horizontal page overflow');
-    const fieldHeight = width > 900 ? 44 : 48;
+    // Bybit's 48px field with a floating label, desktop and phone alike (owner, 2026-09-30).
+    const fieldHeight = 48;
     assert.equal(geometry.price.height, fieldHeight); assert.equal(geometry.quantity.height, fieldHeight);
     assert(Math.abs(geometry.price.width - geometry.quantity.width) < 1);
     assert.equal(geometry.long.height, geometry.short.height);

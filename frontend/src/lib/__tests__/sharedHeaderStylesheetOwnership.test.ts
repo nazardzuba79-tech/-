@@ -315,6 +315,9 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
       'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-actions',
       'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header .header-left',
       'src/pages/trade-terminal/TerminalMobileParity.css: .trade-terminal.vx-terminal .global-header',
+      // 2026-09-30: the terminal tone paints the header's background (a
+      // token) inside the futures root; no geometry, no display.
+      'src/pages/trade-terminal/TerminalPanelTiles.css: #archive-terminal-preview .global-header',
       'src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .global-header',
       'src/pages/trade-terminal/VoltexTerminalSystem.css: .trade-terminal.trade-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal.vx-terminal .header-brand',
     ]);

@@ -541,15 +541,18 @@ async function largeValues(width) {
         assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), (example.formatted || signed(example.pnl)) + ' USDT');
         const roi = Number(grouped(example.roi, 2).replaceAll(',', '')) === 0 ? '0.00' : signed(example.roi);
         assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), `(${roi}%)`);
-        assert.equal(await s.page.locator('.futures-position-approx').count(), 0);
+        // Bybit's «≈… USD» line under unrealized and under realized (owner, 2026-09-30).
+        const approx = `≈${grouped(Math.abs(Number(example.pnl)) < 0.005 ? 0 : example.pnl, 2)} USD`;
+        assert.deepEqual((await s.page.locator('.futures-position-approx').allInnerTexts()).map(t => t.trim()), [approx, approx]);
         const layout = await tableLayout(s.page, width);
         const cell = await s.page.locator('.futures-unrealized').evaluate(e => {
-          const money = e.querySelector('.futures-position-money'), roi = e.querySelector('.futures-position-roi');
-          const a = money.getBoundingClientRect(), b = roi.getBoundingClientRect(), td = e.closest('td').getBoundingClientRect();
-          return { amount: { top:a.top,bottom:a.bottom,left:a.left,right:a.right }, roi: { top:b.top,bottom:b.bottom,left:b.left,right:b.right }, td: {left:td.left,right:td.right}, tone:e.dataset.tone, color:getComputedStyle(e).color, profit:getComputedStyle(e).getPropertyValue('--buy').trim(), loss:getComputedStyle(e).getPropertyValue('--sell').trim() };
+          const money = e.querySelector('.futures-position-money'), roi = e.querySelector('.futures-position-roi'), usd = e.querySelector('.futures-position-approx');
+          const a = money.getBoundingClientRect(), b = roi.getBoundingClientRect(), c = usd.getBoundingClientRect(), td = e.closest('td').getBoundingClientRect();
+          return { amount: { top:a.top,bottom:a.bottom,left:a.left,right:a.right }, roi: { top:b.top,bottom:b.bottom,left:b.left,right:b.right }, approx: { top:c.top,bottom:c.bottom,left:c.left,right:c.right }, td: {left:td.left,right:td.right}, tone:e.dataset.tone, color:getComputedStyle(e).color, profit:getComputedStyle(e).getPropertyValue('--buy').trim(), loss:getComputedStyle(e).getPropertyValue('--sell').trim() };
         });
         assert(cell.roi.top >= cell.amount.bottom - 1, 'ROI must be on its own line');
-        for (const line of [cell.amount, cell.roi]) assert(line.left >= cell.td.left && line.right <= cell.td.right + 1, 'P&L text escapes its cell');
+        assert(cell.approx.top >= cell.roi.bottom - 1, '«≈ USD» must be on its own line under the ROI');
+        for (const line of [cell.amount, cell.roi, cell.approx]) assert(line.left >= cell.td.left && line.right <= cell.td.right + 1, 'P&L text escapes its cell');
         assert.equal(cell.tone, Number(example.pnl) === 0 ? 'neutral' : Number(example.pnl) > 0 ? 'profit' : 'loss');
         if (pnlOnly && example.id === 'huge-profit') {
           // Reveal the complete cell inside the existing horizontal scroller,

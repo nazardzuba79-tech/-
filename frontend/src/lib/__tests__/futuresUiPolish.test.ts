@@ -246,7 +246,9 @@ test.each([
     // The mounted compact/standard-ticket suite covers refusal of all four
     // fields, tiny-price execution, protection and historical-entry precision.
     // Existing engine, leverage, margin, contract and Reduce Only checks stay.
-    "e5ed95cf21299c1c68c3dc4b31899e4618dc240a5618b062d92e224ab6773e7c"
+    // 2026-09-30: the «+» beside «Доступно» is gone with its `onTransfer`
+    // prop (owner); the row keeps the figure. Nothing else in the form moved.
+    "8aa9ea7f1f61e26a367d21e101d9213b343199975b53ab63a8fdda3f3cac234f"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -358,7 +360,9 @@ test.each([
     // 2026-09-29: the order ticket gets `onTransfer` for its «+» beside
     // «Доступно» — the transfer dialog on the real engine, /wallet?action=
     // transfer on the simulation one (where the account panel already goes).
-    "934b7d7f34f2e2fc413f1a1bcd05f5288c837231e8adf87de329eaca9de7b4aa"
+    // 2026-09-30: that `onTransfer` is gone with the «+»; the chart gets
+    // `chartSettings` and, on a desktop archive terminal, `foldHeading`.
+    "cbe78d01d9fbee5c2d4c4b73e3028f04b14788fa511ccfdcaaf5060b5dda914b"
   ],
   [
     "components/FuturesPairList.tsx",

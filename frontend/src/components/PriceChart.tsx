@@ -1,6 +1,6 @@
 import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 
-import { useEffect, useRef, useState, useCallback, useId } from 'react';
+import { useEffect, useRef, useState, useCallback, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   createChart,
@@ -18,6 +18,7 @@ import {
   CrosshairMode,
   PriceScaleMode,
   createSeriesMarkers,
+  createTextWatermark,
   type ISeriesMarkersPluginApi,
   type SeriesMarker,
 } from 'lightweight-charts';
@@ -44,9 +45,16 @@ import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCa
 import './DrawingTools.css';
 import { PrivatePositionLines } from './PrivatePositionLines';
 import { ChartToolbarMenus } from './ChartToolbarMenus';
+import { ChartSettingsDialog } from './ChartSettingsDialog';
+import { DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, subscribeChartSettings, type ChartSettings } from '../lib/chartSettings';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
+/** The futures chart (the one with the viewer's settings) opens on fewer,
+ *  wider bars — about Binance's density (owner, 2026-09-30: «якість як у
+ *  бінанс») — so each candle reads as a body and a wick rather than a hair.
+ *  Scrolling back still reaches every loaded bar. */
+const SETTINGS_VISIBLE_CANDLES = 120;
 // Fetch enough extra history that the MA200 line has a full 200-bar
 // warm-up BEFORE the window we actually show — otherwise the line only
 // starts partway across the visible chart (no average exists yet for the
@@ -125,6 +133,8 @@ export function PriceChart({
   positionLines,
   priceScaleMode = 'normal',
   priceFormatter,
+  chartSettings = false,
+  toolbarEnd,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
@@ -162,6 +172,13 @@ export function PriceChart({
   /** Axis/crosshair labels for such a market, where one fixed precision is
    *  either too coarse at the start or too long at the end. Must be stable. */
   priceFormatter?: (price: number) => string;
+  /** The viewer's chart settings (lib/chartSettings) with the gear that edits
+   *  them. Only the futures terminal asks for it; every other chart keeps the
+   *  paint written below. */
+  chartSettings?: boolean;
+  /** Placed at the right end of the toolbar (the terminal's VOLTEX /
+   *  TradingView switch, when the heading row is folded into the toolbar). */
+  toolbarEnd?: ReactNode;
 }) {
   const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
@@ -198,6 +215,14 @@ export function PriceChart({
   const spotConditionalOrders = market === 'spot';
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const [viewSettings, setViewSettings] = useState<ChartSettings | null>(() => (chartSettings ? getChartSettings() : null));
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => (chartSettings ? subscribeChartSettings(setViewSettings) : undefined), [chartSettings]);
+  /** Paint the settings replace — kept so «as the terminal» can put it back. */
+  const basePaintRef = useRef<{ background: string } | null>(null);
+  const watermarkRef = useRef<{ detach: () => void; applyOptions: (o: object) => void } | null>(null);
+  /** Volume bars follow the candles' own colours. */
+  const volumeColorsRef = useRef<[string, string]>(['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)']);
   // The candlestick series stays the single coordinate-conversion
   // authority (priceToCoordinate/coordinateToPrice, used throughout the
   // drawing tools and SL/TP drag logic) regardless of which visual chart
@@ -341,7 +366,7 @@ export function PriceChart({
         // reference's (owner, 2026-09-24: more contrast): its price scale
         // reads at ~243 of 255, where #dbe3ee read at 211.
         textColor: token('--voltex-axis-text', terminal ? '#f3f4f6' : '#a3adba'),
-        fontFamily: 'Inter, Arial, sans-serif',
+        fontFamily: token('--voltex-chart-font', 'Inter, Arial, sans-serif'),
         fontSize: terminal ? 12 : 11,
       },
       grid: {
@@ -461,6 +486,7 @@ export function PriceChart({
     macdLine.priceScale().applyOptions({ scaleMargins: { top: 0.78, bottom: 0.02 }, visible: false });
 
     chartRef.current = chart;
+    basePaintRef.current = { background: plotBackground || '#101014' };
     seriesRef.current = series;
     lineSeriesRef.current = lineSeries;
     areaSeriesRef.current = areaSeries;
@@ -552,6 +578,55 @@ export function PriceChart({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The viewer's chart settings, applied over the paint the chart was created with.
+  useEffect(() => {
+    const chart = chartRef.current, series = seriesRef.current, volume = volumeSeriesRef.current;
+    if (!viewSettings || !chart || !series || !volume) return;
+    const s = viewSettings, clear = 'rgba(0,0,0,0)';
+    series.applyOptions({
+      upColor: s.body ? s.bodyUp : clear, downColor: s.body ? s.bodyDown : clear,
+      borderVisible: s.border, borderUpColor: s.borderUp, borderDownColor: s.borderDown,
+      wickVisible: s.wick, wickUpColor: s.wickUp, wickDownColor: s.wickDown,
+      priceLineVisible: s.lastPriceLine,
+    });
+    chart.applyOptions({
+      layout: { background: { type: ColorType.Solid, color: s.background ?? basePaintRef.current?.background ?? '#101014' } },
+      grid: {
+        vertLines: { visible: s.grid === 'all' || s.grid === 'vertical', color: s.gridColor },
+        horzLines: { visible: s.grid === 'all' || s.grid === 'horizontal', color: s.gridColor },
+      },
+      // The default keeps the terminal's grey vertical and gold horizontal hair.
+      crosshair: { vertLine: { color: s.crosshair === DEFAULT_CHART_SETTINGS.crosshair ? 'rgba(148, 163, 184, 0.35)' : rgbaOf(s.crosshair, 0.45) }, horzLine: { color: s.crosshair, labelBackgroundColor: s.crosshair } },
+    });
+    // Volume in its own strip under the candles, as Binance draws it (owner,
+    // 2026-09-30: «обсяг … залазить на свічки … у Binance він в окремій смузі
+    // знизу»). The candles then keep the whole upper pane; RSI and MACD, when
+    // shown, still take the bottom of it as before. Hidden volume goes back to
+    // the main pane, which lets the empty strip close.
+    volume.applyOptions({ visible: s.volume });
+    const volumePane = s.volume ? 1 : 0;
+    if (volume.getPane().paneIndex() !== volumePane) volume.moveToPane(volumePane);
+    if (s.volume) {
+      const panes = chart.panes();
+      panes[0]?.setStretchFactor(0.8);
+      panes[1]?.setStretchFactor(0.2);
+      volume.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0 } });
+    } else {
+      volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    }
+    chart.applyOptions({ layout: { panes: { separatorColor: 'rgba(255, 255, 255, 0.08)', separatorHoverColor: 'rgba(255, 255, 255, 0.16)' } } });
+    chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: showRSI || showMACD ? 0.3 : 0.06 } });
+    volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.75), rgbaOf(s.bodyDown, 0.75)];
+    const candles = candlesRef.current;
+    if (candles?.length) volume.setData(candles.map(c => ({ time: c.time as any, value: c.volume, color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1] })));
+    const text = `${pair.includes('/') ? pair : pair.replace(/USDT$/, '/USDT')} · ${interval}`;
+    if (s.watermark) {
+      const lines = [{ text, color: 'rgba(255,255,255,0.05)', fontSize: 44, fontStyle: '600' }];
+      if (watermarkRef.current) watermarkRef.current.applyOptions({ lines });
+      else watermarkRef.current = createTextWatermark(chart.panes()[0], { horzAlign: 'center', vertAlign: 'center', lines }) as unknown as { detach: () => void; applyOptions: (o: object) => void };
+    } else if (watermarkRef.current) { watermarkRef.current.detach(); watermarkRef.current = null; }
+  }, [viewSettings, pair, interval, showRSI, showMACD]);
 
   useEffect(() => {
     if (!tradingSelection) return;
@@ -947,7 +1022,7 @@ export function PriceChart({
           res.candles.map((c) => ({
             time: c.time as any,
             value: c.volume,
-            color: c.close >= c.open ? 'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)',
+            color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1],
           }))
         );
         maSeriesRef.current?.setData(computeSMA(res.candles, MA_PERIOD) as any);
@@ -974,12 +1049,13 @@ export function PriceChart({
 
         if (!hasSetInitialRange && chartRef.current) {
           hasSetInitialRange = true;
-          if (res.candles.length > VISIBLE_CANDLES) {
-            // Show only the most recent VISIBLE_CANDLES bars — every one
+          const visible = chartSettings ? SETTINGS_VISIBLE_CANDLES : VISIBLE_CANDLES;
+          if (res.candles.length > visible) {
+            // Show only the most recent `visible` bars — every one
             // of them sits past the MA's 200-bar warm-up, so the line
             // spans the full visible width instead of trailing off partway.
             chartRef.current.timeScale().setVisibleLogicalRange({
-              from: res.candles.length - VISIBLE_CANDLES,
+              from: res.candles.length - visible,
               to: res.candles.length - 1,
             });
           } else {
@@ -1444,6 +1520,17 @@ export function PriceChart({
               <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
             </>}
           </div>
+          {(chartSettings || toolbarEnd) && <div className="chart-toolbar-end">
+            {chartSettings && <button type="button" className="chart-tool-btn chart-settings-trigger" aria-haspopup="dialog" aria-expanded={settingsOpen}
+              aria-label={t('chart.settings.open')} title={t('chart.settings.open')} onClick={() => setSettingsOpen(true)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
+              </svg>
+            </button>}
+            {toolbarEnd}
+          </div>}
+          {settingsOpen && <ChartSettingsDialog onClose={() => setSettingsOpen(false)} />}
         </div>
       ) : (
         <div style={styles.topToolbar}>

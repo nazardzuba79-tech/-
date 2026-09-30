@@ -176,15 +176,22 @@ it('Spot and CFD carry the Futures TradingView surface, value for value', () => 
   // Both charts paint nothing of their own and take the Futures chart tokens.
   const futuresChart = block(archive, '#archive-terminal-preview .terminal-chart-shell');
   const spotCfdChart = block(css, `${P} :is(.terminal-chart-shell, .cfd-chart)`);
-  for (const token of ['--voltex-plot-background: rgba(0,0,0,0)', '--voltex-candle-up: #ffffff',
-    '--voltex-candle-down: #ff9800', '--voltex-axis-text: #ffffff', '--voltex-axis-border: rgba(0,0,0,0)']) {
+  for (const token of ['--voltex-plot-background: rgba(0,0,0,0)', '--voltex-axis-text: #ffffff', '--voltex-axis-border: rgba(0,0,0,0)']) {
     expect(futuresChart).toContain(token);
     expect(spotCfdChart).toContain(token);
   }
+  // The candles part here on 2026-09-30: Futures takes the standard green /
+  // red with the viewer's chart settings over it (owner's request was for the
+  // Futures terminal); Spot and CFD keep the white / orange until asked.
+  expect(futuresChart).toContain('--voltex-candle-up: #2ebd85');
+  expect(futuresChart).toContain('--voltex-candle-down: #f6465d');
+  expect(spotCfdChart).toContain('--voltex-candle-up: #ffffff');
+  expect(spotCfdChart).toContain('--voltex-candle-down: #ff9800');
   // «Синій колір ні, обєм залишаємо як і зараз є на біржі»: the CFD volume
-  // takes exactly the colours PriceChart already draws on Spot and Futures.
+  // takes exactly the colours PriceChart draws on Spot (and on any chart
+  // without the settings).
   const priceChart = read('src/components/PriceChart.tsx');
-  expect(priceChart).toContain("'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)'");
+  expect(priceChart).toContain("['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)']");
   expect(spotCfdChart).toContain('--voltex-volume-up: rgba(234,236,239,0.5)');
   expect(spotCfdChart).toContain('--voltex-volume-down: rgba(247,166,0,0.5)');
 
