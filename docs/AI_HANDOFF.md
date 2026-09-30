@@ -5068,3 +5068,26 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Fixed abandoned read ownership in Futures, Spot, CFD, Copy, Wallet and Admin; stopped Admin deposit polling from restarting after unmount. Preserved write operations, financial math, approved UI, prior PR recovery work and Claude #353.
 - Builds pass. Backend routes/middleware: 619 passing, six DB-gated skipped. Final local frontend assertions: 2,897 passing; ten Windows path-sensitive baseline failures independently reproduced. See docs/qa/api-lifecycle-audit-20260930/README.md for exact commands, limits and test-first evidence.
 - No merge, deployment, production mutation, real order or credit. Final-head CI remains to be checked on PR; no live outage injection or new authenticated production browser walkthrough. Direct Cloudflare API authentication was unavailable; GitHub Pages check for current main passed.
+
+## Claude — 2026-09-30 — Futures terminal: proposal «Мій» (quieter header, deeper Long/Short, silent routine sync)
+
+- Base: main `70379b5b`; branch `claude/peaceful-volta-h5zw7g-calm-terminal`; commit: the commit containing this entry. A proposal for review: no PR, no merge, no deploy.
+- Owner question: why VOLTEX looks less premium than BingX/Bitget/Bybit on the same black. Pixel sampling of the owner's screenshots shows the tiles and ground are already Bybit's (#101014 on #000), with the same text brightness. The differences are:
+  - the header: ten 600-weight Arial links with glyphs, and a boxed wallet;
+  - lighter Long/Short;
+  - a standing scrollbar in the order panel;
+  - the «Обновляем данные…» plaque.
+- Changes:
+  - `TerminalCalm.css` (new, imported just before `TerminalPanelTiles.css`): header links in the terminal face at 500, grey, with the active link white; no inline glyphs; wallet unboxed; order-panel scrollbar only on hover.
+  - `ArchiveTerminalPreview.css`: Long/Short #1ead6a/#ea4151, from the owner's newer Bybit screenshot. They replace #1ace88/#f55065 from the 2026-09-24 screenshot.
+  - `BrowserSleepNotice.tsx`: the validating/syncing notice shows only after 3 s (`SYNC_NOTICE_DELAY_MS`). The hidden `data-browser-phase` marker stays, and a failure still shows at once.
+- Preserved:
+  - ChatGPT's quiet-pause work (#355): no Continue control, and the marker contract the idle QA scripts use.
+  - Panel tiles, as the last import.
+  - The shared-header ownership list, unchanged.
+- Tests changed: `futuresVisualPolish.test.ts` (new colours); `browserSleepNotice.test.ts` (a quick refresh shows nothing; the notice appears after 3 s).
+- Checks run:
+  - `tsc`: PASS; 29 terminal/header/notice Jest suites: 587 passed.
+  - Local preview browser at 2000/1600/1440/390: no page errors, no overflow.
+  - The idle browser QA scripts were NOT run.
+- Preview: artifact «Варіанти терміналу VOLTEX», with Було / Мій / Claude-чат.
