@@ -5028,154 +5028,23 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - TerminalPreviewPolish.css: only Spot selected-side tabs and CTAs now share existing --color-buy / --color-sell tokens, white tab labels. Ordinary inactive/disabled protection remains; Futures/CFD are unchanged.
 - Final build and 1440/390px browser QA PASS, including settled computed tab/CTA colours for both sides. Synthetic reads only; no orders.
 
-## Claude — 2026-09-30 — Futures terminal: Graphite finish (chart settings, form, font, book, tiles proposal)
+## Claude — 2026-09-30 — Copy Trading: Nazar/Ksenia sections answer before the post-deploy refresh
 
-- Base: `main` `14252d2b`. Branch `claude/peaceful-volta-h5zw7g-terminal-graphite`. Commits: `3733b2ce` (features), `7353214a` (panels as tiles, a separate proposal), the screenshots commit, and the one carrying this entry.
-- **Owner ask (2026-09-30):** bring from the approved «Графит» concept:
-  - chart settings;
-  - a neater order form and margin selects;
-  - a Bybit-like font;
-  - a quieter order book;
-  - remove the «+» beside the balance;
-  - propose something for the «cheap» panel separation.
-- **Changes**
-  - `lib/chartSettings.ts` + `components/ChartSettingsDialog.tsx/.css` (new).
-    - Presets: green/red default, white/orange, red/green.
-    - Body/border/wick, background, grid, crosshair, watermark, volume, last-price line.
-    - Stored in localStorage, validated field by field. Cancel/Esc/backdrop revert the live preview.
-  - `PriceChart.tsx`: `chartSettings` / `toolbarEnd` props and a gear. Volume follows the candle colours only with settings on; every other chart keeps the old pair.
-  - `TerminalChart.tsx`: `foldHeading`. `FuturesPage` passes it on desktop (≥1025px) archive only.
-  - Archive candle tokens are now `#2ebd85` / `#f6465d`. **Spot and CFD keep white/orange** (not asked); the `terminalDesignSystem` guard now states that split.
-  - `TerminalGraphite.css` (new, loaded after `FuturesOrderPanelRefinement.css`):
-    - IBM Plex Sans for the terminal, including `.mono` and the chart font token;
-    - 40px fields with caption left / figure right;
-    - 34px margin/leverage selects, leverage white (red past threshold), drawn chevron;
-    - book depth bars at .12;
-    - quiet timeframe chip and VOLTEX/TradingView switch.
-  - IBM Plex Sans woff2 (fontsource 5.3.0, OFL): `public/fonts/ibm-plex-sans/`, with `@font-face` in `TerminalFonts.css`.
-  - `FuturesOrderForm.tsx`: `fo-availTransfer` and the `onTransfer` prop are removed, along with the FuturesPage wiring and the dead CSS.
-  - `TerminalPanelTiles.css` (proposal, one import): desktop tiles, 6px radius, 4px gaps on `#060607`. The approved gradient is painted on the tiles via `background-attachment: fixed`.
-  - i18n: `chart.settings.*` added in 7 locales.
-- **Tests updated:**
-  - `futuresVisualPolish`, `terminalDesignSystem`, `futuresUiPolish` (two fingerprints, with reasons);
-  - `futuresCompactTicketOptions` (no «+»);
-  - `i18nLanguageChunks` (new keys excluded by prefix);
-  - the three PriceChart harnesses (stubs for the new modules);
-  - `scripts/qa-order-panel-refinement.cjs` (field 40px on desktop, no button in «Доступно»).
-  - New suites: `terminalGraphite.test.ts`, `terminalPanelTiles.test.ts`.
-- **Checks actually run (local, fixture data only):**
-  - Frontend `tsc -b` and production build: PASS.
-  - `npx jest frontend/`: 168/168 suites, 2866 tests PASS.
-  - Full `npx jest` at the features stage: 11 failing suites.
-    - 4 were frontend suites of this change; all 4 are fixed.
-    - The other 7 are backend suites (CFD quote, provider matrix, canonical copy, live isolation, VTA pg). They fail identically on a clean `14252d2b` worktree.
-  - Browser, all PASS:
-    - `qa-order-panel-refinement` (1920/1440/390/320);
-    - `qa-futures-visual-polish` with assertions (order POST body, book alignment, grouping, tab switch, price pick, calculator);
-    - `qa-native-demo-browser`, `qa-futures-tiny-price`, `qa-futures-bottom-panel`;
-    - a chart-settings script (open, focus, preset, Ok persists across reload, Cancel reverts, Esc, Reset; 1440 and 390; no page errors, no horizontal overflow).
-  - `qa-futures-cold-open` not run locally: it needs CI's `/tmp/buildA`/`buildB` setup.
-  - Local QA runs overwrote tracked `docs/qa/*` reference images; those were restored, not committed.
-  - Screenshots: `docs/qa/terminal-graphite/`.
-- **Preserved:** every order/price/account path, the Codex form-refusal work, the approved gradient, the white book figures at 13px, and the mobile layout (the heading stays on phones).
-- **Unresolved / for the owner:**
-  - whether to keep the tiles;
-  - whether Spot/CFD candles should also turn green/red.
-- **Not done:** no merge, no deploy.
-
-## Claude — 2026-09-30 — Futures terminal follow-up: Binance candles, Bybit form, darker tones
-
-- Branch `claude/peaceful-volta-h5zw7g-terminal-graphite` (PR #347). Commit: the one carrying this entry.
-- **Owner ask:**
-  - candles and volume by default «як у бінанс»;
-  - the order-form fields and margin selects «по контрасності і формі в точності як на байбіт»;
-  - three darker versions of the background;
-  - «+ TP / SL» looked changed.
-- **Changes**
-  - `PriceChart.tsx` (futures chart with settings only):
-    - opens on 120 bars instead of 300, so candles are wider (Binance density);
-    - volume uses the candle colours at .75 alpha (was .35).
-    - Candle colours were already Binance's, measured on the owner's screenshot: `#2ebd85` / `#f6465d`.
-  - `TerminalGraphite.css` (values sampled from the owner's Bybit screenshot):
-    - margin/leverage selects: `#232227` fill, no outline, 38px, 4px corner, white 14px/600, leverage in the accent, drawn triangle caret `#87888e`;
-    - price/quantity: 48px, 6px corner, floating label (placeholder-like in the middle while empty, 11px at the top when filled), value white 16px/600 left, «Последняя» in the accent;
-    - the numeric placeholder is not painted (`index.css` sets `-webkit-text-fill-color` on every placeholder, so that is overridden too);
-    - order-family and TP/SL level inputs take the same fill.
-    - My earlier inline-caption layout (40px) is replaced by this.
-  - `TerminalPanelTiles.css`: the tone is four tokens (`--tile-ground/-fill/-header/-bottom`), defaulting to Bybit's `#000000` / `#101014` / `#17181f` / `#101014`; a phone takes the tone without the tiles.
-  - «+ TP / SL» was not changed by this PR. The live preview simply ran an ordinary account, where the ticket has no TP/SL. The preview now emulates the simulation engine the owner's account uses.
-- **Preview (not in repo):** https://claude.ai/artifact/6aSCWuDDuFVFwccNzALZr7, a main build vs this build with a switch between three tones.
-  - Tone 1 (graphite gradient `#1c1e24`→`#0e0e11`, ground `#060608`), tone 2 (Bybit, the sheet default), tone 3 (`#070709`, ground `#000`).
-  - Tones 1 and 3 are preview-only overrides of the four tokens.
-  - The owner has not chosen yet.
-- **Tests updated:** `terminalGraphite`, `terminalPanelTiles`, `futuresVisualPolish` (volume alpha), `sharedHeaderStylesheetOwnership` (enumerated header override: background token only), `qa-order-panel-refinement.cjs` (48px fields).
-- **Checks actually run (local, fixture data):**
-  - Frontend `tsc -b` and build: PASS.
-  - `npx jest frontend/`: 167/168 at first, the one failure being the header-ownership enumeration; after adding the entry, that suite passes 11/11. The full frontend run was not repeated after that one-line test change.
-  - `qa-order-panel-refinement` PASS.
-  - `qa-futures-visual-polish` with assertions: first FAIL, «Изолированная» clipped by 2px at 1664; select padding 12/10px fixed it, then PASS.
-  - Preview page checked locally under a sub-path: TP/SL present in both builds at 1440/390, no page errors.
-- **Not done:** no merge, no deploy.
-
-## Claude — 2026-09-30 — Futures chart: volume in its own strip; Bybit black kept (PR #347, commit e0bf1002)
-
-- **Owner ask:** «Давай чорний як у Байбіт, тобто Чорний 2 · як Bybit. Обсяг під графіком залазить на свічки … У Binance він в окремій смузі знизу.»
-- **Tone:** tone 2 («як Bybit») is already the default of `TerminalPanelTiles.css`, so the repo needed no change. The preview's tones 1 and 3 are removed; they were never in the repo.
-- **Change:** in `PriceChart.tsx`, the chart-settings effect now handles volume placement, on the futures chart with settings only.
-  - With volume on, the volume series moves to pane 1 (`moveToPane`).
-  - Panes are stretched 0.8 / 0.2, with a 12% top margin on volume and a quiet `rgba(255,255,255,.08)` pane separator.
-  - With volume off, the series goes back to pane 0 and hidden.
-  - The candle price scale's bottom margin is 0.06, or 0.3 with RSI/MACD, as before.
-  - The effect now also re-runs on `showRSI`/`showMACD`.
-  - Spot/CFD charts (no `chartSettings`) are untouched.
-- **Preserved:** Codex and earlier work on `PriceChart` stays as it was:
-  - position lines, drawings, market-order markers;
-  - the RSI/MACD panes;
-  - the order form and book;
-  - `PrivatePositionLines` still measures pane 0.
-- **Test:** `terminalGraphite.test.ts` pins the pane move and the 0.2 strip.
-- **Screenshot:** `docs/qa/terminal-graphite/volume-strip-1440.png` (main vs this branch, fixture data).
-- **Checks actually run (local, fixture data):**
-  - `npx jest frontend/`: 168/168 suites, 2867 tests.
-  - `tsc -b` and build: PASS.
-  - `qa-futures-visual-polish` (asserting): PASS.
-  - `qa-order-panel-refinement`: PASS. It first failed only on Chromium's «Invalid language tag: en-US@posix» because `LANG` was empty in this container; with `LANG=en_US.UTF-8` it passed.
-  - Preview checked at 1440 and 390: TP/SL present, no page errors.
-- **Preview (not in repo):** https://claude.ai/artifact/6aSCWuDDuFVFwccNzALZr7, «Було» (main) vs «Стало».
-- **Not done:** no merge, no deploy. Spot/CFD candles are still white/orange (owner not asked yet).
-
-## Claude — 2026-09-30 — Positions table: Bybit's «≈… USD» line under both P&L figures (PR #347)
-
-- **Owner ask** (with a Bybit screenshot): «З низу дублювання в usdt як у байбіт, і добавляй на біржу».
-- **Change**
-  - `FuturesPositionsPanel.tsx`: new `approxUsd(value, quoteAsset)` → `≈1,651.70 USD`.
-    - Two decimals, grouped.
-    - Never `-0.00`.
-    - Only for a USDT/USDC/USD quote; any other quote asset gets no line.
-  - Unrealized: `FuturesUnrealizedPnl` takes an optional `approx` and draws it as a third line under the ROI.
-    - The P&L-card button now spans three rows.
-    - Without `approx`, the cell is unchanged (two lines).
-  - Realized: the same line now also shows on the live (archive) terminal. It was `!archive` only since 9989f5ac.
-  - Figures are the engine's own; nothing is recomputed.
-  - Desktop row height 64 → 69px at 1440 (fixture).
-- **Preserved:**
-  - The engine-values-only rule of `FuturesUnrealizedPnl` (its source still has no financial inputs).
-  - Its two-line render without `approx`.
-  - The ROI/amount layout and the mobile wrapping.
-- **Tests updated:**
-  - `futuresUnrealizedPnl.test.ts`: new approx test.
-  - `futuresReferenceRow.test.ts`: the pinned JSX line.
-  - `qa-native-demo-browser.cjs`: it asserted no approx line, and now asserts both lines' text and that the line sits under the ROI inside its cell.
-- **Screenshot:** `docs/qa/terminal-graphite/pnl-approx-usd-1440.png` (main vs this branch, fixture).
-- **Checks actually run (local, fixture, `LANG=en_US.UTF-8`):**
-  - `tsc -b` and build: PASS.
-  - `npx jest frontend/src/lib/__tests__`: all pass after the test updates.
-  - `qa-native-demo-browser`, both the full run and `NATIVE_QA_PNL_ONLY=1`: PASS.
-  - `qa-futures-bottom-panel`, `qa-futures-visual-polish`, `qa-futures-tiny-price`: PASS.
-- **CI follow-ups on PR #347 (same day):**
-  - `read-budget` (Windows, CRLF checkout) failed on a LF-only substring in the new approx CSS assertion. The assertion is now a whitespace-tolerant regex (`6586257a`).
-  - `visual-polish` → `qa-spot-cfd-terminal.cjs` failed with 14 findings: the Futures ticker strip is now a `#101014` tile on desktop, and the IBM Plex `--font-family` is Futures-only, so neither matches Spot/CFD. This is the owner's Futures-only Graphite finish.
-    - The harness now reports exactly those two differences under `futuresOnlyFinish` instead of failing.
-    - Every other token must still match, and Spot and CFD must still match each other's strip.
-    - Reproduced locally: FAIL with 14 findings before the change, PASS after.
-  - **Open for the owner:** whether Spot/CFD should also take the Graphite finish (font, black tiles, green/red candles).
+- Base: current main `da9d2c80`; branch `claude/ecstatic-brahmagupta-cwkvt5-copy-warm`; commit: the commit containing this entry.
+- Owner report: after this morning's deploys (08:23, 09:06, 10:38 Kyiv), the Nazar and Ksenia cards showed «Загрузка…» for about 15 s while demo traders rendered at once. It later recovered on its own.
+- Root cause (code): after a deploy the stored section belongs to the previous build. `MarketplaceSnapshots.section` answered with it but started the heavy refresh in the same tick. The replay is synchronous, so on the 0.1-CPU container that answer waited for it. Header point 2 said "runs after the response"; that was not what the code did.
+- Changes:
+  - `marketplaceSnapshot.ts`:
+    - `section(strategy, { answered })` starts the non-awaited refresh only once `answered` settles. The measured within-budget wait (point 3) and the cold path are unchanged.
+    - Opt-in `warmOnStartMs` runs a one-time, unref'd `warm()` that prepares only the sections this build lacks, one at a time.
+  - `copyPerformance.ts`: the marketplace route passes a promise settled by `res` finish/close. Outside tests it enables warm-up 20 s after start.
+- Tests: three added in `marketplaceSnapshot.test.ts`.
+  - The post-deploy HTTP case asserts the replay starts only after the server has sent the response. It fails on the unfixed code: the replay started 326 ms before the send.
+  - The other two cover warm-up scope and the one-time unref'd timer.
+- Checks run (local):
+  - Backend build and collector typecheck.
+  - 11 copy-trading backend suites: 113/113 passed.
+  - `qa-copy-never-loading` at 1440/390: PASS, 0 findings.
+- Not verified: production timing on Render. With 0.1 CPU, a request arriving while the background refresh runs can still be slowed; fully removing that needs a worker thread or more CPU.
+- Preserved: wire format, redaction, auth, stored sections, ledger history, daily 00:03 UTC refresh, one-refresh-at-a-time queue and the frontend.
+- No merge, no deploy.
