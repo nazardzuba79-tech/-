@@ -4997,3 +4997,58 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Merge commit is the commit containing this entry. Seven locale conflicts preserve exactly the new main Deposit minimum text/keys plus the four unchanged idle notices. The auto-merged language contract retains new Deposit keys and idle normalization. Wallet removes the decorative mark from #344 while keeping the reviewed economic-equity/BTC calculation. Deposit destination wake revalidation is intact; the new amount display reads already-held prices and adds no network subscription or polling. Independent source review found no new idle/security conflict.
 - Existing root handoff bytes and all previous main entries were verified and retained; only main's new append-only section and this entry were added. No branch, original historical report, financial guard, production account/order/allocation or database data was overwritten.
 - The earlier frozen ea17fdc runtime and 90-file fingerprint describe the pre-#344 checkpoint. The merged candidate additionally includes the approved Deposit/Wallet presentation changes from #344; it requires a fresh frontend build/full regression and exact merged-main CI. No updated full-suite or deployment result is claimed at this checkpoint. Intermediate 56a4586 already passed corrected real-provider CFD, real-PG VTA and Spot browser gates, but is diagnostic evidence rather than final release clearance.
+
+## Claude — 2026-09-30 — Futures terminal: Graphite finish (chart settings, form, font, book, tiles proposal)
+
+- Base: `main` `14252d2b`. Branch `claude/peaceful-volta-h5zw7g-terminal-graphite`. Commits: `3733b2ce` (features), `7353214a` (panels as tiles, a separate proposal), the screenshots commit, and the one carrying this entry.
+- **Owner ask (2026-09-30):** bring from the approved «Графит» concept:
+  - chart settings;
+  - a neater order form and margin selects;
+  - a Bybit-like font;
+  - a quieter order book;
+  - remove the «+» beside the balance;
+  - propose something for the «cheap» panel separation.
+- **Changes**
+  - `lib/chartSettings.ts` + `components/ChartSettingsDialog.tsx/.css` (new).
+    - Presets: green/red default, white/orange, red/green.
+    - Body/border/wick, background, grid, crosshair, watermark, volume, last-price line.
+    - Stored in localStorage, validated field by field. Cancel/Esc/backdrop revert the live preview.
+  - `PriceChart.tsx`: `chartSettings` / `toolbarEnd` props and a gear. Volume follows the candle colours only with settings on; every other chart keeps the old pair.
+  - `TerminalChart.tsx`: `foldHeading`. `FuturesPage` passes it on desktop (≥1025px) archive only.
+  - Archive candle tokens are now `#2ebd85` / `#f6465d`. **Spot and CFD keep white/orange** (not asked); the `terminalDesignSystem` guard now states that split.
+  - `TerminalGraphite.css` (new, loaded after `FuturesOrderPanelRefinement.css`):
+    - IBM Plex Sans for the terminal, including `.mono` and the chart font token;
+    - 40px fields with caption left / figure right;
+    - 34px margin/leverage selects, leverage white (red past threshold), drawn chevron;
+    - book depth bars at .12;
+    - quiet timeframe chip and VOLTEX/TradingView switch.
+  - IBM Plex Sans woff2 (fontsource 5.3.0, OFL): `public/fonts/ibm-plex-sans/`, with `@font-face` in `TerminalFonts.css`.
+  - `FuturesOrderForm.tsx`: `fo-availTransfer` and the `onTransfer` prop are removed, along with the FuturesPage wiring and the dead CSS.
+  - `TerminalPanelTiles.css` (proposal, one import): desktop tiles, 6px radius, 4px gaps on `#060607`. The approved gradient is painted on the tiles via `background-attachment: fixed`.
+  - i18n: `chart.settings.*` added in 7 locales.
+- **Tests updated:**
+  - `futuresVisualPolish`, `terminalDesignSystem`, `futuresUiPolish` (two fingerprints, with reasons);
+  - `futuresCompactTicketOptions` (no «+»);
+  - `i18nLanguageChunks` (new keys excluded by prefix);
+  - the three PriceChart harnesses (stubs for the new modules);
+  - `scripts/qa-order-panel-refinement.cjs` (field 40px on desktop, no button in «Доступно»).
+  - New suites: `terminalGraphite.test.ts`, `terminalPanelTiles.test.ts`.
+- **Checks actually run (local, fixture data only):**
+  - Frontend `tsc -b` and production build: PASS.
+  - `npx jest frontend/`: 168/168 suites, 2866 tests PASS.
+  - Full `npx jest` at the features stage: 11 failing suites.
+    - 4 were frontend suites of this change; all 4 are fixed.
+    - The other 7 are backend suites (CFD quote, provider matrix, canonical copy, live isolation, VTA pg). They fail identically on a clean `14252d2b` worktree.
+  - Browser, all PASS:
+    - `qa-order-panel-refinement` (1920/1440/390/320);
+    - `qa-futures-visual-polish` with assertions (order POST body, book alignment, grouping, tab switch, price pick, calculator);
+    - `qa-native-demo-browser`, `qa-futures-tiny-price`, `qa-futures-bottom-panel`;
+    - a chart-settings script (open, focus, preset, Ok persists across reload, Cancel reverts, Esc, Reset; 1440 and 390; no page errors, no horizontal overflow).
+  - `qa-futures-cold-open` not run locally: it needs CI's `/tmp/buildA`/`buildB` setup.
+  - Local QA runs overwrote tracked `docs/qa/*` reference images; those were restored, not committed.
+  - Screenshots: `docs/qa/terminal-graphite/`.
+- **Preserved:** every order/price/account path, the Codex form-refusal work, the approved gradient, the white book figures at 13px, and the mobile layout (the heading stays on phones).
+- **Unresolved / for the owner:**
+  - whether to keep the tiles;
+  - whether Spot/CFD candles should also turn green/red.
+- **Not done:** no merge, no deploy.
