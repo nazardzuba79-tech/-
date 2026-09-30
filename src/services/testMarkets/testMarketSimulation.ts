@@ -270,6 +270,9 @@ interface HourPlan {
   shapes?: CandleShape[];
   /** A cycle's complete canonical hour; boundaries are sampled from it. */
   cycleTicks?: Tick[];
+  /** Optional hard price envelope for a bounded accumulation phase. */
+  rangeFloor?: number;
+  rangeCeiling?: number;
 }
 
 /**
@@ -385,13 +388,17 @@ export class TestMarketSimulation {
         trendStep: 0, previousRegime: 'consolidation', nextRegime: 'consolidation',
       }) : null;
       const steps = realistic ? realistic.steps : hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+      const rangeFloor = anchor * (1 - config.maxBandFraction / 2);
+      const rangeCeiling = anchor * (1 + config.maxBandFraction / 2);
       const boundaries = [open];
       let logPrice = Math.log(open);
       for (let k = 0; k < CANDLES_PER_HOUR; k++) {
         logPrice += steps[k];
-        boundaries.push(k === CANDLES_PER_HOUR - 1 ? close : Math.exp(logPrice));
+        const raw = k === CANDLES_PER_HOUR - 1 ? close : Math.exp(logPrice);
+        boundaries.push(Math.max(rangeFloor, Math.min(rangeCeiling, raw)));
       }
-      plan = { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}) };
+      plan = { hour, regime, open, logReturn: Math.log(boundaries[CANDLES_PER_HOUR] / open), sigma, cluster, boundaries,
+        rangeFloor, rangeCeiling, ...(realistic ? { shapes: realistic.shapes } : {}) };
     } else {
       const baseline = this.baselineHourPlan(hour);
       const scale = open / baseline.open;
@@ -452,17 +459,28 @@ export class TestMarketSimulation {
     });
   }
 
+  private boundTicks(plan: HourPlan, ticks: Tick[]): Tick[] {
+    if (plan.rangeFloor === undefined || plan.rangeCeiling === undefined) return ticks;
+    const floor = plan.rangeFloor, ceiling = plan.rangeCeiling;
+    return ticks.map((tick) => {
+      const price = Math.max(floor, Math.min(ceiling, tick.price));
+      const high = Math.max(price, Math.min(ceiling, tick.high));
+      const low = Math.min(price, Math.max(floor, tick.low));
+      return { ...tick, price, high, low };
+    });
+  }
+
   private ticks(plan: HourPlan, slot: number): Tick[] {
     const policy = this.asset.naturalWicks;
     // Cycle extrema are part of the owner's exact shock/recovery contract.
-    if (!policy || plan.cycleTicks) return this.originalTicks(plan, slot);
+    if (!policy || plan.cycleTicks) return this.boundTicks(plan, this.originalTicks(plan, slot));
     const index = plan.hour * CANDLES_PER_HOUR + slot;
     const at = this.asset.listingAt + index * CANDLE_MS;
     const windowAt = Math.floor(at / NATURAL_WICK_WINDOW_MS) * NATURAL_WICK_WINDOW_MS;
     const firstWindow = Math.floor(this.asset.listingAt / NATURAL_WICK_WINDOW_MS) * NATURAL_WICK_WINDOW_MS;
     const windowIndex = (windowAt - firstWindow) / NATURAL_WICK_WINDOW_MS;
     if (!naturalWickWindowAllowed(policy, windowAt) || !naturalWickWindowSelected(this.asset.seed, this.realismOffset, windowIndex)) {
-      return this.originalTicks(plan, slot);
+      return this.boundTicks(plan, this.originalTicks(plan, slot));
     }
     let window = this.naturalWindows.get(windowAt);
     if (!window) {
@@ -474,7 +492,7 @@ export class TestMarketSimulation {
         const memberPlan = hour === plan.hour ? plan : this.hourPlan(hour);
         // Non-aligned listings can have a UTC bucket spanning two hour plans.
         // Keep the entire bucket intact if either belongs to an exact cycle.
-        if (memberPlan.cycleTicks) return this.originalTicks(plan, slot);
+        if (memberPlan.cycleTicks) return this.boundTicks(plan, this.originalTicks(plan, slot));
         original.push({ index: member, open: memberPlan.boundaries[memberSlot], close: memberPlan.boundaries[memberSlot + 1],
           maxWick: naturalWickLimit(this.realism?.maxWick), ticks: this.originalTicks(memberPlan, memberSlot) });
       }
@@ -482,7 +500,7 @@ export class TestMarketSimulation {
       this.naturalWindows.set(windowAt, window);
       if (this.naturalWindows.size > 96) this.naturalWindows.delete(this.naturalWindows.keys().next().value as number);
     }
-    return window.find((candle) => candle.index === index)!.ticks;
+    return this.boundTicks(plan, window.find((candle) => candle.index === index)!.ticks);
   }
 
   /** Read-only tape of completed canonical ticks; never samples a future tick. */
