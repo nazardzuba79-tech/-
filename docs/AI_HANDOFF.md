@@ -5087,7 +5087,7 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Preview page checked locally under a sub-path: TP/SL present in both builds at 1440/390, no page errors.
 - **Not done:** no merge, no deploy.
 
-### Claude — futures chart: volume in its own strip; Bybit black kept (PR #347)
+## Claude — 2026-09-30 — Futures chart: volume in its own strip; Bybit black kept (PR #347, commit e0bf1002)
 
 - **Owner ask:** «Давай чорний як у Байбіт, тобто Чорний 2 · як Bybit. Обсяг під графіком залазить на свічки … У Binance він в окремій смузі знизу.»
 - **Tone:** tone 2 («як Bybit») is already the default of `TerminalPanelTiles.css`, so the repo needed no change. The preview's tones 1 and 3 are removed; they were never in the repo.
