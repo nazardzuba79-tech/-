@@ -101,29 +101,42 @@ export function SupportWidget() {
         aria-label={open ? t('support.close') : t('support.title')}
         aria-expanded={open}
       >
-        {open ? (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="var(--on-accent)" strokeWidth="2.2" strokeLinecap="round" />
-          </svg>
-        ) : (
-          <ChatIcon />
-        )}
+        {open ? <CloseIcon size={20} /> : <HeadsetIcon size={24} />}
       </button>
 
       {open && (
         <div className="support-panel" role="dialog" aria-label={t('support.title')}>
           <div className="support-panel-header">
-            <div>
+            <span className="support-panel-avatar" aria-hidden="true"><HeadsetIcon size={20} /></span>
+            <div className="support-panel-heading">
               <div className="support-panel-title">{t('support.title')}</div>
               <div className="support-panel-sub">{t('support.responseTime')}</div>
             </div>
             <button type="button" className="support-panel-close" onClick={() => setOpen(false)} aria-label={t('support.close')}>
-              ✕
+              <CloseIcon size={16} />
             </button>
           </div>
 
           <form className="support-form" onSubmit={handleSubmit}>
             <div className="support-form-body">
+              <fieldset className="support-topics">
+                <legend>{t('support.formSubject')}</legend>
+                <div className="support-topic-grid">
+                  {SUPPORT_SUBJECTS.map((s) => (
+                    <label key={s} className="support-topic">
+                      <input
+                        type="radio"
+                        name="support-subject"
+                        value={s}
+                        checked={subject === s}
+                        onChange={() => { setSubject(s); edited(); }}
+                      />
+                      <span>{t(SUBJECT_LABEL_KEY[s])}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="support-row">
               <label className="support-field">
                 <span>{t('support.formName')}</span>
                 <input
@@ -146,16 +159,9 @@ export function SupportWidget() {
                   onChange={(e) => { setEmail(e.target.value); edited(); }}
                   aria-describedby="support-email-hint"
                 />
-                <small id="support-email-hint">{t('support.formEmailHint')}</small>
               </label>
-              <label className="support-field">
-                <span>{t('support.formSubject')}</span>
-                <select value={subject} onChange={(e) => { setSubject(e.target.value as SupportSubject); edited(); }}>
-                  {SUPPORT_SUBJECTS.map((s) => (
-                    <option key={s} value={s}>{t(SUBJECT_LABEL_KEY[s])}</option>
-                  ))}
-                </select>
-              </label>
+              </div>
+              <small id="support-email-hint" className="support-hint">{t('support.formEmailHint')}</small>
               <label className="support-field">
                 <span>{t('support.formMessage')}</span>
                 <textarea
@@ -166,6 +172,7 @@ export function SupportWidget() {
                   onChange={(e) => { setMessage(e.target.value); edited(); }}
                   placeholder={t('support.formMessagePlaceholder')}
                 />
+                <small className="support-count" aria-hidden="true">{message.length} / {SUPPORT_LIMITS.message}</small>
               </label>
               {/* Honeypot: invisible to people and to screen readers, skipped by Tab. */}
               <div className="support-hp" aria-hidden="true">
@@ -179,15 +186,15 @@ export function SupportWidget() {
             <div className="support-form-footer">
               {phase === 'sent' && (
                 <div className="support-result support-result-ok" role="status">
-                  <strong>{t('support.formSent')}</strong>
-                  <span>{t('support.formSentHint')}</span>
+                  <CheckIcon />
+                  <div><strong>{t('support.formSent')}</strong><span>{t('support.formSentHint')}</span></div>
                 </div>
               )}
               {phase === 'failed' && (
-                <div className="support-result support-result-error" role="alert">{t('support.formFailed')}</div>
+                <div className="support-result support-result-error" role="alert"><AlertIcon /><span>{t('support.formFailed')}</span></div>
               )}
               {phase === 'check' && (
-                <div className="support-result support-result-error" role="alert">{t('support.formCheck')}</div>
+                <div className="support-result support-result-error" role="alert"><AlertIcon /><span>{t('support.formCheck')}</span></div>
               )}
               <button type="submit" className="support-submit" disabled={sending}>
                 {sending ? t('support.sending') : t('support.send')}
@@ -200,15 +207,38 @@ export function SupportWidget() {
   );
 }
 
-function ChatIcon() {
+/** A thin headset, as on the owner's Bybit reference (2026-09-30). */
+function HeadsetIcon({ size }: { size: number }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 12a8 8 0 1 1 3.2 6.4L4 20l1.1-3.5A7.96 7.96 0 0 1 4 12Z"
-        stroke="var(--on-accent)"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 14v-2a7.5 7.5 0 0 1 15 0v2" />
+      <rect x="3.5" y="13" width="3.5" height="5.5" rx="1.6" />
+      <rect x="17" y="13" width="3.5" height="5.5" rx="1.6" />
+      <path d="M18.75 18.5v.25a2.75 2.75 0 0 1-2.75 2.75H13" />
+    </svg>
+  );
+}
+
+function CloseIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg className="support-result-mark" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" /><path d="M8 12.5l2.7 2.7L16 9.8" />
+    </svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <svg className="support-result-mark" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="9" /><path d="M12 7.5v5.5M12 16.5v.01" />
     </svg>
   );
 }
@@ -218,15 +248,16 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'fixed',
     bottom: 24,
     right: 24,
-    width: 56,
-    height: 56,
+    width: 50,
+    height: 50,
     borderRadius: '50%',
     background: 'var(--accent)',
+    color: 'var(--on-accent)',
     border: 'none',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: 'var(--shadow-lg)',
+    boxShadow: '0 6px 18px rgba(0, 0, 0, 0.35)',
     cursor: 'pointer',
     zIndex: 998,
   },
