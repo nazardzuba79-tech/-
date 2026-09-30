@@ -13,6 +13,7 @@ import { managedListingAssets } from '../listings/managedSnapshot';
 import type { SimulationProfile } from './simulationRealism';
 import type { CyclicImpulseConfig } from './simulationCycles';
 import type { NaturalWickConfig } from './simulationNaturalWicks';
+import type { AccumulationPhaseConfig } from './simulationAccumulation';
 
 export interface TestAssetConfig {
   /** Base asset ticker, e.g. VTA. */
@@ -52,6 +53,8 @@ export interface TestAssetConfig {
   wickBoostFrom?: number;
   /** Versioned tick-range enrichment; never changes tick prices, bodies or volume. */
   naturalWicks?: NaturalWickConfig;
+  /** Forward-only final flush -> accumulation -> rebased final-growth lifecycle. */
+  accumulationPhase?: AccumulationPhaseConfig;
 }
 
 export const VOLTORA: TestAssetConfig = {
@@ -92,6 +95,19 @@ export const VOLTORA: TestAssetConfig = {
   naturalWicks: {
     historicalUntil: Date.parse('2026-09-29T14:45:00Z'),
     futureFrom: Date.parse('2026-09-29T14:45:00Z'),
+  },
+  // Owner update (2026-09-30): stop the launch run with one final -25% flush,
+  // fully reclaim it inside that hour, then accumulate for exactly seven days
+  // in a slowly varying 15%-30% peak-to-trough band. After the week, resume
+  // the existing seeded regime returns from the accumulated price (no jump
+  // back to the old absolute price path). This boundary may be moved forward
+  // before release if final-head CI/deploy cannot complete before it.
+  accumulationPhase: {
+    anchorAt: Date.parse('2026-09-30T07:00:00Z'),
+    flushFraction: 0.25,
+    accumulationHours: 7 * 24,
+    minBandFraction: 0.15,
+    maxBandFraction: 0.30,
   },
 };
 

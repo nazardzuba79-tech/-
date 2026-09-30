@@ -10,7 +10,8 @@ const fresh = () => new TestMarketSimulation(VOLTORA);
 /** Only the original regime/volume contract uses the unmodified baseline. All other tests exercise live VTA. */
 const {
   simulationProfile: _vtaProfile, realismFrom: _vtaFrom,
-  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, naturalWicks: _vtaNaturalWicks, ...BASE
+  cyclicImpulse: _vtaCycle, wickBoostFrom: _vtaWicks, naturalWicks: _vtaNaturalWicks,
+  accumulationPhase: _vtaAccumulation, ...BASE
 } = VOLTORA;
 const baseline = () => new TestMarketSimulation(BASE);
 
@@ -160,7 +161,7 @@ describe('the first 48 hours', () => {
   test('P48 = P0 × 1.30^25 × 0.96^6 ≈ 5.5235 (+55,135%)', () => {
     const anchor = 0.01 * Math.pow(1.3, 25) * Math.pow(0.96, 6);
     expect(anchor).toBeCloseTo(5.5235, 3);
-    const p48 = fresh().priceAt(L + 48 * HOUR_MS) as number;
+    const p48 = baseline().priceAt(L + 48 * HOUR_MS) as number;
     expect(Math.abs(p48 / anchor - 1)).toBeLessThan(1e-6);
   });
 
@@ -202,7 +203,7 @@ describe('after 48 hours the impulse decays by 20% a day', () => {
   test.each([3, 4, 5, 9])('day %i closes exactly on its anchor', (day) => {
     const counts = blockCounts(day - 2);
     expect(counts.impulse + counts.consolidation + counts.pullback).toBe(24);
-    const sim = fresh();
+    const sim = baseline();
     const start = sim.priceAt(L + (day - 1) * DAY_MS) as number;
     const end = sim.priceAt(L + day * DAY_MS) as number;
     const anchor = Math.pow(1 + impulseRate(day), counts.impulse) * Math.pow(0.96, counts.pullback);
