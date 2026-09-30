@@ -65,10 +65,17 @@ describe('VTA final flush and accumulation lifecycle', () => {
     );
     expect(candles).toHaveLength(7 * 24);
     const closes = candles.map((c) => c.close / anchor);
+    const highs = candles.map((c) => c.high / anchor);
+    const lows = candles.map((c) => c.low / anchor);
+    expect(Math.max(...highs)).toBeLessThanOrEqual(1.15);
+    expect(Math.min(...lows)).toBeGreaterThanOrEqual(0.85);
+    // The requested accumulation must visibly explore a 15%-30% total range,
+    // including shadows, while never escaping the 30% outer envelope.
+    const totalRange = Math.max(...highs) - Math.min(...lows);
+    expect(totalRange).toBeGreaterThanOrEqual(0.15);
+    expect(totalRange).toBeLessThanOrEqual(0.30);
     expect(Math.max(...closes)).toBeLessThanOrEqual(1.15);
     expect(Math.min(...closes)).toBeGreaterThanOrEqual(0.85);
-    // The requested 15%-30% accumulation reads as a broad range, not a flat line.
-    expect(Math.max(...closes) - Math.min(...closes)).toBeGreaterThan(0.08);
     expect(candles.every((c, i) => i === 0 || c.open === candles[i - 1].close)).toBe(true);
   });
 
