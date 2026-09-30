@@ -1,3 +1,5 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, browserFetch as fetch, browserSetInterval, browserClearInterval } from '../../lib/browserActivity';
+
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { parseChangePercent } from '../../lib/priceChange';
@@ -220,7 +222,7 @@ export function useHomeMarket(): HomeMarket {
     };
 
     async function loadCfd() {
-      if (cancelled || document.hidden || !heroVisible || cfdInFlight
+      if (cancelled || isBrowserInactive() || !heroVisible || cfdInFlight
         || Date.now() - cfdStartedAt < HOME_MARKET_REFRESH_MS) return;
       cfdInFlight = true;
       cfdStartedAt = Date.now();
@@ -244,7 +246,7 @@ export function useHomeMarket(): HomeMarket {
     }
 
     async function loadHero() {
-      if (cancelled || document.hidden || !heroVisible || !heroPair || heroInFlight
+      if (cancelled || isBrowserInactive() || !heroVisible || !heroPair || heroInFlight
         || Date.now() - heroStartedAt < HOME_MARKET_REFRESH_MS) return;
       heroInFlight = true;
       heroStartedAt = Date.now();
@@ -303,7 +305,7 @@ export function useHomeMarket(): HomeMarket {
     }
 
     function loadTickers() {
-      if (cancelled || document.hidden || tickerInFlight
+      if (cancelled || isBrowserInactive() || tickerInFlight
         || Date.now() - tickerStartedAt < HOME_MARKET_REFRESH_MS) return;
       tickerInFlight = true;
       tickerStartedAt = Date.now();
@@ -352,7 +354,7 @@ export function useHomeMarket(): HomeMarket {
     // asks for none of them and an expired one asks for all of them once. A
     // hidden tab asks for nothing; the visibility handler catches it up.
     function loadBootstrap() {
-      if (cancelled || document.hidden) return;
+      if (cancelled || isBrowserInactive()) return;
       const at = Date.now();
       if (at - rankingsStartedAt >= HOME_MARKET_REFRESH_MS) {
         rankingsStartedAt = at;
@@ -436,15 +438,15 @@ export function useHomeMarket(): HomeMarket {
       : null;
     if (terminal) observer?.observe(terminal);
     refresh();
-    const poll = window.setInterval(refresh, HOME_MARKET_REFRESH_MS);
-    document.addEventListener('visibilitychange', refresh);
+    const poll = browserSetInterval(refresh, HOME_MARKET_REFRESH_MS);
+    addBrowserActivityListener(refresh);
 
     return () => {
       cancelled = true;
-      window.clearInterval(poll);
+      browserClearInterval(poll);
       if (expiry !== null) window.clearTimeout(expiry);
       observer?.disconnect();
-      document.removeEventListener('visibilitychange', refresh);
+      removeBrowserActivityListener(refresh);
     };
   }, []);
 

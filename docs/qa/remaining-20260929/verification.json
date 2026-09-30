@@ -1,0 +1,511 @@
+{
+  "recordedAt": "2026-09-29T17:10:14Z",
+  "repository": "nazardzuba79-tech/-",
+  "reviewedMain": "9742375b96aff614b690042e13111c1df1178ec5",
+  "sourceCommit": "ea17fdc7413b4f41004693fd30088f962a2f1127",
+  "sourceTree": "69117d0577b6d005b949c01bc4940856f05efc56",
+  "runtimeFingerprint": "bd8bb93b8adfc68b668aaa2a5abe260aa05c2e340da8f50727b543bf55983bcc",
+  "runtimeFiles": [
+    {
+      "path": "frontend/src/App.tsx",
+      "gitBlob": "87b8df0f7bb8937b5363143c739ee3c9d61e7bb1",
+      "sha256": "b8661097cd8e77ffab57cc48a28d79876017a89239320364ebb82f11bd24b725"
+    },
+    {
+      "path": "frontend/src/components/BrowserSleepNotice.css",
+      "gitBlob": "c46a035e352edfd4b1b0844dedffa27d31353235",
+      "sha256": "9b9bdc18f867d461ac3a43441334c5a6bfcd2a7bb79f46f505ae3becda01e0a1"
+    },
+    {
+      "path": "frontend/src/components/BrowserSleepNotice.tsx",
+      "gitBlob": "3839b1808aabe034550167cd9c9ac133068b6f6b",
+      "sha256": "c53f98bf68fddf90dec7bec1bf9b63858ae8a04f894bf26dbd649d77f55052c9"
+    },
+    {
+      "path": "frontend/src/components/CfdChart.tsx",
+      "gitBlob": "765bd6a4ab0bb0a56f600d4d7b942d2a5d90e5a7",
+      "sha256": "cd8eb8e8206bb1031965e81275ef1bb61662e658227e4c9a1aa38fe6808ce533"
+    },
+    {
+      "path": "frontend/src/components/CfdMarketsSection.tsx",
+      "gitBlob": "a3b802e0d9e401a2be06637f7081bbf289fe7510",
+      "sha256": "5fdb6aec1df271af28fea801251ec846b1290a5ffbba6c79df077f17d5a9fb16"
+    },
+    {
+      "path": "frontend/src/components/ConnectionBanner.tsx",
+      "gitBlob": "6c762c3a9f4060dedf1e24ccdb2a12c1b8683aa2",
+      "sha256": "efc34565b77e08a025c81deeaa9169afd0f2d1363590060cdacfa321b340e862"
+    },
+    {
+      "path": "frontend/src/components/FuturesContractDetails.tsx",
+      "gitBlob": "d640a6e52260d466ec91dbbde19e0b7665b3dcfb",
+      "sha256": "7114ee5594e65394e37490f6a2b1cdadd3efdcf769ca936582c45a6812265cae"
+    },
+    {
+      "path": "frontend/src/components/FuturesTickerBar.tsx",
+      "gitBlob": "7a6a8a89e72e5ec5b44ba4e5c811734c38c7239c",
+      "sha256": "fd19932e0cc3c709af476f274f4518d601dc078a869918326269561008042f0a"
+    },
+    {
+      "path": "frontend/src/components/FuturesTurnover.tsx",
+      "gitBlob": "1b87ef642ec2074f76302fa7658129cf18679f4b",
+      "sha256": "216da88e03c529f79775029151e846b8d4e4afcf11649520063909b3fa953a84"
+    },
+    {
+      "path": "frontend/src/components/NrxBookTabs.tsx",
+      "gitBlob": "6cbd776bb6a8029d28e3b898cbac4912be272ea9",
+      "sha256": "664ca29e8ffb78a73e0d9624553430611350b17962ab8d6b21dbfa08c26337cb"
+    },
+    {
+      "path": "frontend/src/components/OrderForm.tsx",
+      "gitBlob": "946c2daa393ad5da9f2146276fc5ae0d80b23757",
+      "sha256": "e4d02a6d9478d1d462facdb93bb2e64cf7f48545bad94bad009f264116cb9472"
+    },
+    {
+      "path": "frontend/src/components/PriceChart.tsx",
+      "gitBlob": "e1f484136aaff94b3e40f91479ade24dda99d663",
+      "sha256": "0801c357426ad18db8962b5dd872b3abadd029dad04bd719993afacff6eb0132"
+    },
+    {
+      "path": "frontend/src/components/PrivatePositionLines.tsx",
+      "gitBlob": "42bcfec276cd613c5cadb29488eb6006418c2a7a",
+      "sha256": "9efa67aab9c07ffcefc5c7ecb955bf5eff9575fd0e3cb4ad829f303def718939"
+    },
+    {
+      "path": "frontend/src/components/PrivateTradingEntry.tsx",
+      "gitBlob": "97d3145d0a2afed4f046bd406488c4b8e3074f73",
+      "sha256": "da37bc0050f82b6a22b0c1b23277fbe85b99d12c85fe0c84b1976af7197328a9"
+    },
+    {
+      "path": "frontend/src/components/SampledDataNote.tsx",
+      "gitBlob": "5a86a17214fcdfdfcf85700df08014e2fa7bc99d",
+      "sha256": "fbef44a932901c8765ead20d83aa37e1de3704aa044b7bfacbf8bbfb75ea3d13"
+    },
+    {
+      "path": "frontend/src/components/TestMarketTerminal.tsx",
+      "gitBlob": "6da4890d353ccc0037a58fe58ecd9fb741e68c19",
+      "sha256": "ea869a27309fa685690e42983dff7e9dcda379a6f30cf17ba6a04fff9debde7c"
+    },
+    {
+      "path": "frontend/src/components/TradingViewAdvancedChart.tsx",
+      "gitBlob": "5c0ff5607c08f659aabb08d6bb9d382f26d6b055",
+      "sha256": "60c5a670fb4f58d66a9e38044e55f3c04c6b7e7c8372e3f2e07302863720da48"
+    },
+    {
+      "path": "frontend/src/components/WalletBalanceControl.tsx",
+      "gitBlob": "c256622efd257b889fdb4be758c37ac2210082be",
+      "sha256": "00158deb1f6e7af57d08312e2a31348545a120272877f003546501ace2f8178b"
+    },
+    {
+      "path": "frontend/src/components/spotOrderPresentation.ts",
+      "gitBlob": "f0e603985c20c2e06161190da483dffaae277753",
+      "sha256": "ecfa21f6d707922c473acec2c44f6a7f3412be0a889ad48ff51d9fe258795f62"
+    },
+    {
+      "path": "frontend/src/lib/adminAlertApi.ts",
+      "gitBlob": "b24129bf3b16c9109bb9aa40fa753ea4ea938a7b",
+      "sha256": "a3adeb460b15c37e4a26fbe8dfbaef3dd3a6001d50f3ed9e7d649b8e701a9647"
+    },
+    {
+      "path": "frontend/src/lib/adminReadApi.ts",
+      "gitBlob": "ee897555f75d3c892df0baf675b4d037531c2988",
+      "sha256": "6f9faabc4125eb00da95c94ac18eafdfe85ea136c167723f63a49a625d260533"
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "gitBlob": "988d265fd2c999739b892572b755668db9452a42",
+      "sha256": "1d10eb36095068113bd69ed8a221e681e78f0e0a4d3db427afc03196819d6baf"
+    },
+    {
+      "path": "frontend/src/lib/bankingApi.ts",
+      "gitBlob": "01c8c329e70b46b5ca12ea4e7f43a6e1518c8daf",
+      "sha256": "8896546b7158bf575bffbdbcc3d5aaac3a75a93bab8699d2c24c81e20a92aab8"
+    },
+    {
+      "path": "frontend/src/lib/browserActivity.ts",
+      "gitBlob": "7657698c4751a84362e44f2f82c9da594f8fb3b0",
+      "sha256": "41aff174a551e746096e4647a0cbbc03b71934b8caf87aad40026890ad428f71"
+    },
+    {
+      "path": "frontend/src/lib/browserSession.ts",
+      "gitBlob": "e20eb6751fdf77ae9d95eacb20141e0674cba0a3",
+      "sha256": "0e035f5874d39f960f4ccde23494bc7a96fbf4068eb5d7e8cdc35e282ab72093"
+    },
+    {
+      "path": "frontend/src/lib/catalogueStore.ts",
+      "gitBlob": "6959a1f75000763f039b3bfe0b1378991d437619",
+      "sha256": "9e9cb6394e13007876d22da87f84023e70c55f4ef928da1bd01289d804e29164"
+    },
+    {
+      "path": "frontend/src/lib/copyMarketplaceStore.ts",
+      "gitBlob": "200aaa1a056bcef1833aec7969929ab1016d4819",
+      "sha256": "eaf5f571261dba9fa0b44ebe72138e3b3a3e68602adbc2788d2b1899eb84c30d"
+    },
+    {
+      "path": "frontend/src/lib/depositCatalogue.ts",
+      "gitBlob": "566787da05532a948fac93a6c9126cfeb135a173",
+      "sha256": "88a7af28b157e5dc566ce043d5ef359f906c6face78bf03d8d2c4c0a0d87ca43"
+    },
+    {
+      "path": "frontend/src/lib/directFuturesReference.ts",
+      "gitBlob": "7fa3f8e67ec59fa94380c5f7aa283d098dffbc5c",
+      "sha256": "732ec41ae14eb7581e8e7cb19c0f8dba21980b45b96e22521e1144f35ea64b3a"
+    },
+    {
+      "path": "frontend/src/lib/displaySnapshotCache.ts",
+      "gitBlob": "6e9a817e0131b4581111ce69000e58ed8ff35bdc",
+      "sha256": "671990e34d2560e24805ee4760f27095aa4595dfb1463e6e7cbee0c2331083d1"
+    },
+    {
+      "path": "frontend/src/lib/futuresAccountStore.ts",
+      "gitBlob": "3819f80d1053608f7db047fd96736b63cc95cd55",
+      "sha256": "5c973b7fb0af4a493629c36f2611f6ab117c4025c7f866fda60696d254fef0be"
+    },
+    {
+      "path": "frontend/src/lib/futuresCandles.ts",
+      "gitBlob": "1f23802f79a5a971a94f375fd21f34f803b72948",
+      "sha256": "6ed031c2900f078d9ce136c4ebbecde7e6fea483b3c769e31cebb5e63c693198"
+    },
+    {
+      "path": "frontend/src/lib/futuresConfigStore.ts",
+      "gitBlob": "6d908881ce0c3c319955dda0172112f03b445b9d",
+      "sha256": "ac928f367236a30f9bbd2befcd4588ede9e668195d54d8778d9a106e598278c7"
+    },
+    {
+      "path": "frontend/src/lib/futuresDepth.ts",
+      "gitBlob": "bb0fb3bcae3e33c22b90aeffa27fada235071f86",
+      "sha256": "b90dae597eef2f7481c603fb9a054079433cfbda4618a6d331aef0c3c68df893"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/en.ts",
+      "gitBlob": "b1648b2b7e8c1161387dbfeb38cf70402cb0ccfe",
+      "sha256": "cc2601efa1da43b5396d3bb7955f4fc38bd79ae5db82f37c3af3c5515c4562f5"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/es.ts",
+      "gitBlob": "305daeadc7ad654364fee3fd34eb290632747f2b",
+      "sha256": "4d41be12e8786ef3f450665080494c868a7f1307caeee23e9b1c0b7673553989"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/hi.ts",
+      "gitBlob": "14eb476d512257b2710f044d70d21e54cc76d98d",
+      "sha256": "3f642fc85445eaec6f66f6bb1b72dc1b6a7c9d1a69f17eab85e9c2475391ed49"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/ja.ts",
+      "gitBlob": "550b54df436f49aeff337c57e6ad9cd87c3e86cd",
+      "sha256": "4fc05f9de187cc99dea907ccb4a9d29c9df8fb2799463bca657d5c1e8bc0ebc6"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/ko.ts",
+      "gitBlob": "53c3e9ece470faad1c00b5e0582b43ebea477bcf",
+      "sha256": "a5de04d283ec4406c57821c36bede48fd78abfc4d970f08b74979a4b8f4e7bb0"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/ru.ts",
+      "gitBlob": "313881d1ff6ca480a94047d49b26069307bc6543",
+      "sha256": "2ce8996ab580a350d9d3d27995afac6184df52e92f5e00b2ba4088dd4c0f28cf"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/zh.ts",
+      "gitBlob": "6c3e36a25ab530cdbc1dfa10f3afebc694980c0e",
+      "sha256": "db079ad979fbec5f5ec373cf2543d44dcdc30f2093eca69d57058710e923d635"
+    },
+    {
+      "path": "frontend/src/lib/krakenSocket.ts",
+      "gitBlob": "b32d539d189a61245769ac63facd677556c312ea",
+      "sha256": "4c2921f0fc5eaa22f3f7ae2f453a957516e81923a28ce383fdcbb8cdeb7975c9"
+    },
+    {
+      "path": "frontend/src/lib/liveMarketStore.ts",
+      "gitBlob": "7622a210d4f5e16e77fe3fce5e09864f66e97ea5",
+      "sha256": "8c57340d6f58fd6325199ac79a601feea5a5a27f7dfede3d322871f59a5050b6"
+    },
+    {
+      "path": "frontend/src/lib/marketDataStore.ts",
+      "gitBlob": "4c02c0e1a3c3249cc9b5b6a7a4a5a73138d1209f",
+      "sha256": "e1a344ad11c8870538c51156085b6c2707a21e95e705fca87e3128736b635e49"
+    },
+    {
+      "path": "frontend/src/lib/nativeDemoApi.ts",
+      "gitBlob": "16c03cbcddf63f1fad02192ba6138e38669e6024",
+      "sha256": "69075f233f41a650263bee43ef357acf6e8212607a9bb376d037a281cfcc9b81"
+    },
+    {
+      "path": "frontend/src/lib/nrxMarket.ts",
+      "gitBlob": "ea28267148033deafdb7d9069e8c65a0beac5e77",
+      "sha256": "c6d650e45c661f908db6d4b45c0716d83dabf4de91feb311c31fb44bcad009e8"
+    },
+    {
+      "path": "frontend/src/lib/privateTradingApi.ts",
+      "gitBlob": "514ea9be746d26b40fcdd86d7fb8604e0b54a93c",
+      "sha256": "1426635d7609370c1945e58f1dfe1f720fbaa23af3acc0a98173b61998acbea7"
+    },
+    {
+      "path": "frontend/src/lib/sampledDepth.ts",
+      "gitBlob": "5de32a17090e6421ab6c5f6c8ab8bf55041ceb2c",
+      "sha256": "2bba9b56de60aa4bd94a154ee749f9c7fa7ae697067d049a14271863aea13ffb"
+    },
+    {
+      "path": "frontend/src/lib/spotPublicMarket.ts",
+      "gitBlob": "a32be447d1623ee8d3db78d1bc8f7ea6d45bbfd6",
+      "sha256": "c1d65b1969a8b5611b145a3be48205e6af452787189bf3755cee154bfbafff4c"
+    },
+    {
+      "path": "frontend/src/lib/testMarketStore.ts",
+      "gitBlob": "abb51c5b2fbb718b716e92c89e31699b4ce02d59",
+      "sha256": "4e18fa49e4fdcd7eb18a34729efb2feea5ea04db83457066ce00e9727cac5eeb"
+    },
+    {
+      "path": "frontend/src/lib/useAdminAlerts.ts",
+      "gitBlob": "8e75200e7fcb21ae68450be098100d784249bd31",
+      "sha256": "b2e2528f5cd85da463caafd030f87255a9ec672f50a29b1ab63599ba504a1b56"
+    },
+    {
+      "path": "frontend/src/lib/useCfdTickers.ts",
+      "gitBlob": "9d43d1d2949b6a9ba8417105b34ed96fec354f4f",
+      "sha256": "7d0129b43b15ac674cc9b8cfb843d8f06155fe19cae4ee21096b873c4f99dcdd"
+    },
+    {
+      "path": "frontend/src/lib/useCopyMarketplace.ts",
+      "gitBlob": "e8ba807e4dd109b1102ed6f58782b46284951652",
+      "sha256": "d77ae3efefcb2a6fb8b3a7a8b395bd7a78867002427fea473c4e10bca5604a13"
+    },
+    {
+      "path": "frontend/src/lib/useDepositOptions.ts",
+      "gitBlob": "bd4d719577fc2a64bbefe270030d5a3604495afd",
+      "sha256": "d29e7ba828655e59b8f5595c00ddce539da619f9cad1ffb1d7061fa83ce64f86"
+    },
+    {
+      "path": "frontend/src/lib/usePrivateScenarioRefresh.ts",
+      "gitBlob": "a847f769220e4cfd27989dc1c9929a634eb5ae46",
+      "sha256": "466bc4729c061f806c262e1817f92c512f95c4fc87dce2c1576a3e3fad8b8610"
+    },
+    {
+      "path": "frontend/src/lib/visibleRead.ts",
+      "gitBlob": "bf5adba107ffb054323937e1b784330563944800",
+      "sha256": "5a7a073791e505a9456a844e0d920acafce58389b93be2ae3f678ceccb94fc43"
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "gitBlob": "a2b12ebf3605b37f7eacd7f0be457656e783f4bf",
+      "sha256": "d66b13a008df3cae0fdc91bc91f9a3af95984c133798ce4aeb4e7d92fd465f59"
+    },
+    {
+      "path": "frontend/src/mobile-review/ReviewApp.tsx",
+      "gitBlob": "c590d979ffb5b0bb0dd915e2d3da15356ff9f9c6",
+      "sha256": "4d3f38cffdf53ea983779cc3e88dd13cbd8339ac0bc93ddbaddb7ca56d6bdfdc"
+    },
+    {
+      "path": "frontend/src/mobile-review/deployment.ts",
+      "gitBlob": "85092856ea103b142cbf0fbc06753f7b6c7772b1",
+      "sha256": "690f257954a5406b49349704ceb66578c7f4761bdfe4929aeb4dbf9c0e32880e"
+    },
+    {
+      "path": "frontend/src/mobile-review/fixtures.ts",
+      "gitBlob": "fdc91eecca36429aa54d4eeb4d652ac76cf97d0b",
+      "sha256": "8252b3308a18462ccf6bf4b781c3748d141cc111f8f0f189d23604af9dd1a478"
+    },
+    {
+      "path": "frontend/src/mobile-review/lifecycle.ts",
+      "gitBlob": "f101290e182572e944a1927cbea011029f7ed054",
+      "sha256": "082152d8c678c42c24eb6a83a43ba6cd2914a0dc8f72fddfde7cccd78131e0a9"
+    },
+    {
+      "path": "frontend/src/mobile-review/main.tsx",
+      "gitBlob": "cd865d77bd1544900f50516a37375760a0066d38",
+      "sha256": "8731fb59f94aec33b4c9e30a79809951b0bd320ac9ea05256942a38e8fba99f5"
+    },
+    {
+      "path": "frontend/src/mobile-review/messages.ts",
+      "gitBlob": "73d9c70b4f3613ba0d0004691576630e6c2cc7c4",
+      "sha256": "cc08be4f41fa6c4a80127960950b5973675860b303347241fe0e85b208410a3f"
+    },
+    {
+      "path": "frontend/src/mobile-review/mount.tsx",
+      "gitBlob": "f53bae9a0166ff942ad3586646c4373a738fa0aa",
+      "sha256": "da4d1fcdff4c7d9efefde414add9fca831840f72e09f7595abce028a30de9b25"
+    },
+    {
+      "path": "frontend/src/mobile-review/policy.ts",
+      "gitBlob": "f4a0bdadf0f6ee409e2a76ee002446839943cca5",
+      "sha256": "a993c2fa35fb1b4162c4779b4743baf76d8050b2b90b856b68ca86917e797123"
+    },
+    {
+      "path": "frontend/src/mobile-review/pwa.ts",
+      "gitBlob": "aad417db264d507adb04b3acaaacba93bfa19598",
+      "sha256": "6ba3954a685e5214d85d184f1fa41411660eef777bd992fd16b329a3866687a2"
+    },
+    {
+      "path": "frontend/src/mobile-review/review.css",
+      "gitBlob": "ce1be12731e275a5f65a6b256d7f69624452fbb1",
+      "sha256": "fd72aa429f3efe4fb278c678192d888e9f7161d1beda67a1b816500563d20284"
+    },
+    {
+      "path": "frontend/src/mobile-review/telegram.ts",
+      "gitBlob": "67593e317a4fc19943152387cecf441b96cd090d",
+      "sha256": "6fc77d3b0ed8d63dd16095cd20ef1b9c201d35464245ec4b839719df17f20dd5"
+    },
+    {
+      "path": "frontend/src/pages/ArbitragePage.tsx",
+      "gitBlob": "d37449b0dbda95eca1a0ac6060035f32ea75179f",
+      "sha256": "fa19abd9cc58217309ad556e8a44e143dae4a275ab79048be19a63c34ffd9805"
+    },
+    {
+      "path": "frontend/src/pages/TradePage.tsx",
+      "gitBlob": "31e62bb6af84f2edd9c1f209afb8f5a85c915fb5",
+      "sha256": "1ec741bea93c56de702f8be67d79d19d49127bf2e96b14808de0c1be1a101c19"
+    },
+    {
+      "path": "frontend/src/pages/TradingBotsPage.tsx",
+      "gitBlob": "227f97ce574a37884101eb1d953d28362a4bd7c5",
+      "sha256": "fafd5f4184d72dd21024a517b1972d58eb4f7e51d979157b0aa6b7e95b71dbf0"
+    },
+    {
+      "path": "frontend/src/pages/admin/AdminDepositsPage.tsx",
+      "gitBlob": "73ba327e7db1e62dd557a29196bb2e3d63718836",
+      "sha256": "8e875e8c939eded3f0e638ad5ee2d493102f6df44139f24d51e9e59c3128cdd0"
+    },
+    {
+      "path": "frontend/src/pages/admin/adminDepositApi.ts",
+      "gitBlob": "2debc5571a7dcef2cf2ae5f21df7bbf05e629943",
+      "sha256": "ef2c409b7481db6cfc67873df109b5afdb0ee4dac0811ac2ce5267991bb59e3d"
+    },
+    {
+      "path": "frontend/src/pages/admin/adminListingsApi.ts",
+      "gitBlob": "6cfe9a3d5417b8372d413171a704a866981a06c4",
+      "sha256": "1222ecfae76264d55092e67cdefd6f8f8710ff01f1fa9e68bb08b2e6a07d57c0"
+    },
+    {
+      "path": "frontend/src/pages/admin/adminUserActivity.ts",
+      "gitBlob": "3b9724e4d6ae2810abac50b018a96801faea62cc",
+      "sha256": "a3c5e24b26653365939528738f193bb5e8af1afde28eaf04d0be18321a3e57b0"
+    },
+    {
+      "path": "frontend/src/pages/analytics/AnalyticsWorkspace.tsx",
+      "gitBlob": "27f11d36485a7062308187f32ddeeee4b9b7a56d",
+      "sha256": "4dfd57b85b664041d37923f220a43c193aac28b21fc238c31fa806d18e029fa4"
+    },
+    {
+      "path": "frontend/src/pages/analytics/analyticsStore.ts",
+      "gitBlob": "dca6b106787001b5a64b77289d88be9dad410b20",
+      "sha256": "c101c62e962d9a367dd0e6e151509f6646e341ee9fa248abe6208c23f7f54ff4"
+    },
+    {
+      "path": "frontend/src/pages/home/HomeMotion.tsx",
+      "gitBlob": "0edf4de5058585a8fd84c34a8145fd2c81149875",
+      "sha256": "53def5fb03d50bdb00297e77170232b86fdf7585a20fbfc7d894c33384dba292"
+    },
+    {
+      "path": "frontend/src/pages/home/HomeSapphireTape.tsx",
+      "gitBlob": "f1039b14c918dd17c4d82895bc60f9ec315ee7c6",
+      "sha256": "4eb680dd956aff7101d7876298ec29e092a1fde629cfca1086aeb3a36b0c3a27"
+    },
+    {
+      "path": "frontend/src/pages/home/HomeTicker.tsx",
+      "gitBlob": "5124042f92a35d09c7578cd3ad8b670a88dde34d",
+      "sha256": "152d055d2468e40f504b9a4504bb8507b112ff92bc3771437f3617e367e793e3"
+    },
+    {
+      "path": "frontend/src/pages/home/HomeTradingSessions.tsx",
+      "gitBlob": "5ff990ce738d54c2bf8395c78ee531aad8ff6d6c",
+      "sha256": "9f9f7367380f9017fe20eec12d9f8888e713a34853d097947038aba644ea8dda"
+    },
+    {
+      "path": "frontend/src/pages/home/useHomeMarket.ts",
+      "gitBlob": "ded96370728fd21c42b6bd53049b2cac326fab70",
+      "sha256": "8902b3b8e05eaf89a76945acf4d86bf47dc8808fb0b94cfeaf10780a93b951d0"
+    },
+    {
+      "path": "frontend/src/pages/markets-bolt/MarketsAnalyticsSection.tsx",
+      "gitBlob": "9b29759688eb6dab77c8ff66032bc768287e4ae7",
+      "sha256": "ebbc1d2c79331a39625cac924711774c8ec7b631732b235d37fb5a6ef3b883f6"
+    },
+    {
+      "path": "frontend/src/pages/markets-bolt/components.tsx",
+      "gitBlob": "937526a12f096c37266bd817bb1e7fda939dd580",
+      "sha256": "bf8c5182efa4865a8efde6b10f57c67eacf6de92e3e69ba9a1bbb3fa6360f69b"
+    },
+    {
+      "path": "frontend/src/pages/private-trading/PrivateTradingPage.tsx",
+      "gitBlob": "eecd023555613be3f651c6542496951db879678d",
+      "sha256": "bc1ebcd63768c4981d507f52e007d273f797e3852a2bf9d8d53dd22d1f8f9138"
+    },
+    {
+      "path": "frontend/src/pages/private-trading/useNativeDemo.tsx",
+      "gitBlob": "de949b1b02faf3a958b2f543b9c4e46e1185ff3f",
+      "sha256": "0ebd41cc2da2a8ccbb8306e47ca31cefe51727b0830274ea998f36a2016ab6b5"
+    },
+    {
+      "path": "frontend/src/pages/wallet-v3/WalletOverview.tsx",
+      "gitBlob": "843e5239e69784ab25d362bfd92e7ce71123dc85",
+      "sha256": "a6a1cdfa4b48776c452cc2c7e85b5b187b1ebaf05f8bc294217e6246ed478ea7"
+    },
+    {
+      "path": "frontend/src/pages/wallet-v3/useWalletData.ts",
+      "gitBlob": "c13518dfa54c36698bbd7fd90125b99f60282e87",
+      "sha256": "cce5e1f0c8720ee69c2f3bd6f4984a3a41538ab7279cc313803e1038a3e3ec8b"
+    },
+    {
+      "path": "src/auth/telegramInitData.ts",
+      "gitBlob": "12509f1353734b0894256fed33ee3b76b32ab2be",
+      "sha256": "9ff41b8f8c34242a7acd691c417b18bfc18494290f9669bab27b8abfbab858e5"
+    },
+    {
+      "path": "src/services/listings/ownerAllocation.ts",
+      "gitBlob": "36711609324a1e9a0110f3e89d6f2f255cfdaa72",
+      "sha256": "69c4a52a237c37c2ee7ea41396e57d85b9806cb0aa5544486bc8f3b9cf1a78f9"
+    }
+  ],
+  "environment": {
+    "node": "v24.19.0",
+    "network": "fixture transports only",
+    "productionDatabaseUsed": false
+  },
+  "frontend": {
+    "command": "env -u DATABASE_URL -u DIRECT_URL node node_modules/jest/bin/jest.js frontend/src --runInBand --detectOpenHandles --json --outputFile=<local evidence>/final-full.json",
+    "passed": 2847,
+    "failed": 0,
+    "pending": 0,
+    "todo": 0,
+    "passedSuites": 166,
+    "failedSuites": 0,
+    "openHandles": 0,
+    "exitCode": 0,
+    "durationSeconds": 121.964,
+    "rawSha256": "38f8ce1d7b10079a0de5329aef480efb2be3d1157e89154086bbf2ae6a42acb0",
+    "archive": "final-full.json.gz",
+    "archiveSha256": "42b3ab011c7c62fa9460090cfbbac2fc01e7c6fceedf65d84266f017e067af3b"
+  },
+  "builds": {
+    "frontend": {
+      "command": "npm run build --prefix frontend",
+      "exitCode": 0
+    },
+    "backend": {
+      "command": "npm run build",
+      "exitCode": 0
+    }
+  },
+  "ownerAllocation": {
+    "unitPassed": 14,
+    "unitFailed": 0,
+    "unitExitCode": 0,
+    "postgresLocal": "not run: no verified local PostgreSQL binary; required disposable PostgreSQL CI remains pending"
+  },
+  "safetyReview": {
+    "sourceCommits": [
+      "e479bfc3498b39ed263b1a9bdcf7ceb162511951",
+      "2698a3e81cf91ec20c472df50d02dbfa8293b380"
+    ],
+    "lifecyclePassed": 29,
+    "targetedCorePassed": 8,
+    "targetedOptionalPassed": 11,
+    "finding": "no remaining code-safety blocker in reviewed scope; targeted subsets are distinct from the complete frontend gate"
+  },
+  "scope": {
+    "mobile": "isolated loopback review; no public PWA or real Telegram authentication/account linking",
+    "productionMutationsDuringLocalQA": false,
+    "remoteCIAndDeployment": "pending publication and exact commit checks"
+  }
+}

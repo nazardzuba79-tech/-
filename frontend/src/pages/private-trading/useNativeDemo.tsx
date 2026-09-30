@@ -1,3 +1,5 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, trackBrowserRead } from '../../lib/browserActivity';
+
 import { useCallback,useEffect,useRef,useState,useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getToken,onSessionChange } from '../../lib/api';
@@ -117,7 +119,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   },[resetSession]);
   useEffect(()=>{alive.current=true;const controller=new AbortController();let cancelled=false;
     async function check(){
-      if(document.hidden)return;
+      if(isBrowserInactive())return;
       try{
         if(!getToken()){resetSession();setBinding('ordinary');return;}
         const a=await nativeDemoApi.access(controller.signal);
@@ -134,13 +136,13 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     const reader=createVisibleRead(check,NATIVE_ACCESS_POLL_MS,true);
     // Authorization is a gate, not a display cache: preserve its immediate
     // visible-return recheck (including transient outage/recovery) at any age.
-    const visible=()=>{if(!document.hidden)void reader.refresh();};
-    document.addEventListener('visibilitychange',visible);
+    const visible=()=>{if(!isBrowserInactive())void reader.refresh();};
+    addBrowserActivityListener(visible);
     const off=onSessionChange(()=>{resetSession();setBinding('unknown');setChecked(false);void reader.refresh();});
-    return()=>{cancelled=true;alive.current=false;controller.abort();reader.stop();document.removeEventListener('visibilitychange',visible);off();};
+    return()=>{cancelled=true;alive.current=false;controller.abort();reader.stop();removeBrowserActivityListener(visible);off();};
   },[resetSession,suspend]);
   useEffect(()=>{if(!requested||!allowed)return;let cancelled=false;const controller=new AbortController();
-    nativeDemoApi.activate(controller.signal).then(()=>nativeDemoApi.live(controller.signal)).then(s=>{if(!cancelled)commitState(s);}).catch(e=>{if(!cancelled)fail(e);});
+    void trackBrowserRead(nativeDemoApi.activate(controller.signal).then(()=>nativeDemoApi.live(controller.signal)).then(s=>{if(!cancelled)commitState(s);})).catch(e=>{if(!cancelled)fail(e);});
     return()=>{cancelled=true;controller.abort();};
   },[requested,allowed,fail,commitState]);
   useEffect(()=>{setCandle(null);setEntryIntent(false);setSelecting(pendingExit.current?'exit':null);setExitId(pendingExit.current);pendingExit.current=null;},[symbol,requested]);
@@ -178,12 +180,18 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     // A command in flight answers with fresh state anyway; the timer only fills quiet time.
     let timer:ReturnType<typeof setInterval>|null=null;
     const stop=()=>{if(timer!==null)clearInterval(timer);timer=null;};
-    const schedule=()=>{stop();if(!document.hidden)timer=setInterval(()=>{if(shouldPollNativeLive(stateRef.current,document.hidden,lane.current.pending))void run({kind:'REFRESH'});},NATIVE_LIVE_POLL_MS);};
-    const visible=()=>{schedule();if(!document.hidden)void nativeDemoApi.activate().then(()=>run({kind:'REFRESH'})).catch(fail);};
+    const schedule=()=>{stop();if(!isBrowserInactive())timer=setInterval(()=>{if(shouldPollNativeLive(stateRef.current,isBrowserInactive(),lane.current.pending))void run({kind:'REFRESH'});},NATIVE_LIVE_POLL_MS);};
+    const visible=()=>{
+      schedule();if(isBrowserInactive())return;
+      // Activation may finish after the wake's other reads. Keep the barrier
+      // through its authoritative live refresh without replaying any order.
+      const activation=nativeDemoApi.activate().catch(error=>{fail(error);throw error;});
+      void trackBrowserRead(activation.then(()=>execute({kind:'REFRESH'}))).catch(()=>{});
+    };
     schedule();
-    document.addEventListener('visibilitychange',visible);
-    return()=>{stop();document.removeEventListener('visibilitychange',visible);};
-  },[requested,allowed,run,fail]);
+    addBrowserActivityListener(visible);
+    return()=>{stop();removeBrowserActivityListener(visible);};
+  },[requested,allowed,run,execute,fail]);
   useEffect(()=>{const id=params.get('nativeCard');if(requested&&allowed&&id)nativeDemoApi.getCard(id).then(setCard).catch(fail);},[params,requested,allowed,fail]);
   const initialize=useCallback(async()=>{
     if(!state||!allowed)return;

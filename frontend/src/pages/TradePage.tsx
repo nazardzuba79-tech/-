@@ -1,5 +1,7 @@
 import { VtaSpotPanels } from '../components/VtaSpotPanels';
 import { NrxBookTabs } from '../components/NrxBookTabs';
+import { isBrowserInactive, browserSetInterval, browserClearInterval, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
+
 import { readSpotPublicBook } from '../lib/spotPublicMarket';
 import { SampledDataNote } from '../components/SampledDataNote';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -174,7 +176,7 @@ export function TradePage() {
   // look — actual order matching always happens on our own internal book
   // (see OrderForm), this is display only.
   const refreshBook = useCallback(() => {
-    if (bookPairRef.current !== pair || marketType !== 'spot' || document.hidden) return;
+    if (bookPairRef.current !== pair || marketType !== 'spot' || isBrowserInactive()) return;
     const generation = bookGenerationRef.current;
     // A slow fallback must finish instead of being invalidated by every 2s
     // poll. A new pair/generation can still start immediately while its old
@@ -205,10 +207,10 @@ export function TradePage() {
     }
     if (marketType !== 'spot' || !bookLive || pairResolving) return;
     refreshBook();
-    const timer=window.setInterval(()=>{if(!document.hidden)refreshBook();},testPair ? 10_000 : 60_000);
-    const visible=()=>{if(!document.hidden)refreshBook();};
-    document.addEventListener('visibilitychange',visible);
-    return()=>{bookGenerationRef.current+=1;clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
+    const timer=browserSetInterval(()=>{if(!isBrowserInactive())refreshBook();},testPair ? 10_000 : 60_000);
+    const visible=()=>{if(!isBrowserInactive())refreshBook();};
+    addBrowserActivityListener(visible);
+    return()=>{bookGenerationRef.current+=1;browserClearInterval(timer);removeBrowserActivityListener(visible);};
   }, [pair,marketType,refreshBook,bookLive,testPair,pairResolving]);
 
   function handleOrderPlaced() {

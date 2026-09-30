@@ -28,7 +28,7 @@ const PREVIOUS_VTA: TestAssetConfig = {
 const revisedAsset = (extra: Partial<TestAssetConfig> = {}): TestAssetConfig => ({
   ...PREVIOUS_VTA, naturalWicks: { historicalUntil: REVISION, futureFrom: REVISION }, ...extra,
 });
-const withoutRanges = ({ naturalWicks: _ranges, ...asset }: TestAssetConfig): TestAssetConfig => asset;
+const withoutRanges = ({ naturalWicks: _ranges, accumulationPhase: _lifecycle, ...asset }: TestAssetConfig): TestAssetConfig => asset;
 const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const unchanged = (candles: readonly SimCandle[]) => candles.map(({ high: _high, low: _low, ...rest }) => rest);
 const ohlc = (candles: readonly SimCandle[]) => candles.map(({ openTime, open, high, low, close }) => ({ openTime, open, high, low, close }));
@@ -65,6 +65,7 @@ describe('the requested VTA historical range revision is explicit and selective'
   test('live VTA opts into only the requested wick policy, retaining its existing scenario identity', () => {
     expect(withoutRanges(VOLTORA)).toEqual({ ...PREVIOUS_VTA, listingArmed: VOLTORA.listingArmed });
     expect(VOLTORA.naturalWicks).toEqual({ historicalUntil: REVISION, futureFrom: REVISION });
+    expect(VOLTORA.accumulationPhase).toBeDefined();
     expect(NEURIX.naturalWicks).toBeUndefined();
   });
 

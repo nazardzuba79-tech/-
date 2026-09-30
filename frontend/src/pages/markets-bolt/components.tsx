@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../../lib/browserActivity';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
@@ -198,8 +199,8 @@ export function MarketsBoltPage() {
     // refreshes hourly — a 10s poll could never see fresher data, it only
     // cost VOLTEX ~30 requests a minute per open Markets tab. The poll
     // remains so a rate-limited first load still recovers on its own.
-    const interval = setInterval(load, 5 * 60_000);
-    return () => clearInterval(interval);
+    const interval = browserSetInterval(load, 5 * 60_000);
+    return () => browserClearInterval(interval);
   }, []);
 
 

@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from '../../lib/browserActivity';
 import { API_BASE, getToken } from '../../lib/api';
 
 /** Admin deposit registry calls (kept out of lib/api.ts on purpose). Every

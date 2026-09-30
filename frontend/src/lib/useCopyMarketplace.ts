@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import { useSyncExternalStore } from 'react';
 import { clearToken, getToken, onSessionChange } from './api';
 import { CopyMarketplaceStore, MarketplaceFailure, type CopyMarketplaceResponse } from './copyMarketplaceStore';

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { allocateListingOwner, allocationReceiptId } from '../ownerAllocation';
 import type { ListingConfig, PublishedListing } from '../listingConfig';
@@ -44,6 +44,79 @@ pg('managed listing owner allocation on disposable PostgreSQL', () => {
     await db.balance.update({ where: { userId_asset: { userId: owner, asset: listing.config.symbol } }, data: { available: '10' } });
     expect((await allocateListingOwner(db, listing, owner)).applied).toBe(false);
     expect((await balance(owner, listing.config.symbol))!.available.toString()).toBe('10');
+  });
+
+  test('a receipt emitted before the safeguard remains valid after display-only republish and equivalent decimal formatting', async () => {
+    await allocateListingOwner(db, listing, owner);
+    const receipt = await db.auditLog.findUnique({ where: { id: allocationReceiptId(listing.id) } });
+    const changedDisplay = { ...listing, version: 2, config: { ...listing.config, name: 'QA Renamed', ownerAllocation: '1000.50000000' } };
+    expect(await allocateListingOwner(db, changedDisplay, owner)).toEqual({
+      applied: false, userId: owner, asset: listing.config.symbol, quantity: '1000.5',
+    });
+    expect(await db.auditLog.findUnique({ where: { id: allocationReceiptId(listing.id) } })).toEqual(receipt);
+    expect((await balance(owner, listing.config.symbol))!.available.toString()).toBe('1000.5');
+  });
+
+  test('changed exact quantity or asset cannot reinterpret a prior allocation receipt', async () => {
+    listing = { ...listing, config: { ...listing.config, ownerAllocation: '9007199254740993.00000001' } };
+    await allocateListingOwner(db, listing, owner);
+    const assetBefore = await balance(owner, listing.config.symbol);
+    const usdtBefore = await balance(owner, 'USDT');
+    const receiptBefore = await db.auditLog.findUnique({ where: { id: allocationReceiptId(listing.id) } });
+    for (const extra of [{ ownerAllocation: '9007199254740993.00000002' }, { symbol: 'QAOTHER' }]) {
+      await expect(allocateListingOwner(db, { ...listing, config: { ...listing.config, ...extra } }, owner))
+        .rejects.toThrow('Allocation receipt conflicts');
+    }
+    expect(await balance(owner, listing.config.symbol)).toEqual(assetBefore);
+    expect(await balance(owner, 'QAOTHER')).toBeNull();
+    expect(await balance(owner, 'USDT')).toEqual(usdtBefore);
+    expect(await db.auditLog.findUnique({ where: { id: allocationReceiptId(listing.id) } })).toEqual(receiptBefore);
+  });
+
+  test.each(['foreign action', 'foreign listing', 'foreign asset', 'numeric quantity', 'malformed quantity', 'null metadata', 'array metadata'])
+  ('a %s receipt fails closed without changing any balance or receipt', async (kind) => {
+    await allocateListingOwner(db, listing, owner);
+    const receiptId = allocationReceiptId(listing.id);
+    const prior = (await db.auditLog.findUnique({ where: { id: receiptId } }))!;
+    const metadata = prior.metadata as Prisma.JsonObject;
+    const changes: Record<string, Prisma.AuditLogUpdateInput> = {
+      'foreign action': { action: 'ANOTHER_ALLOCATION' },
+      'foreign listing': { metadata: { ...metadata, listingId: 'qa-foreign-listing' } },
+      'foreign asset': { metadata: { ...metadata, asset: 'QAOTHER' } },
+      'numeric quantity': { metadata: { ...metadata, quantity: 1000.5 } },
+      'malformed quantity': { metadata: { ...metadata, quantity: 'NaN' } },
+      'null metadata': { metadata: Prisma.JsonNull },
+      'array metadata': { metadata: [] },
+    };
+    await db.auditLog.update({ where: { id: receiptId }, data: changes[kind] });
+    const receiptBefore = await db.auditLog.findUnique({ where: { id: receiptId } });
+    const balancesBefore = await db.balance.findMany({ where: { userId: owner }, orderBy: { asset: 'asc' } });
+    await expect(allocateListingOwner(db, listing, owner)).rejects.toThrow('Allocation receipt conflicts');
+    expect(await db.balance.findMany({ where: { userId: owner }, orderBy: { asset: 'asc' } })).toEqual(balancesBefore);
+    expect(await db.auditLog.findUnique({ where: { id: receiptId } })).toEqual(receiptBefore);
+  });
+
+  test('another verified ADMIN cannot reuse the owner receipt', async () => {
+    await allocateListingOwner(db, listing, owner);
+    await db.user.update({ where: { id: other }, data: { role: 'ADMIN' } });
+    await expect(allocateListingOwner(db, listing, other)).rejects.toThrow('Allocation belongs to another owner');
+    expect(await balance(other, listing.config.symbol)).toBeNull();
+    expect((await balance(owner, listing.config.symbol))!.available.toString()).toBe('1000.5');
+  });
+
+  test('an audit write failure rolls the credit back in the actual database transaction', async () => {
+    const failingReceipt = {
+      $transaction: (fn: (tx: Prisma.TransactionClient) => unknown) => db.$transaction(async (tx) => fn(new Proxy(tx, {
+        get: (target, prop) => prop === 'auditLog'
+          ? { findUnique: target.auditLog.findUnique.bind(target.auditLog), create: async () => { throw new Error('receipt failure'); } }
+          : target[prop as keyof typeof target],
+      }))),
+    } as unknown as PrismaClient;
+    const usdtBefore = await balance(owner, 'USDT');
+    await expect(allocateListingOwner(failingReceipt, listing, owner)).rejects.toThrow('receipt failure');
+    expect(await balance(owner, listing.config.symbol)).toBeNull();
+    expect(await balance(owner, 'USDT')).toEqual(usdtBefore);
+    expect(await db.auditLog.findUnique({ where: { id: allocationReceiptId(listing.id) } })).toBeNull();
   });
 
   test('non-admin or unknown owner, another owner after the first, unexplained inventory, zero quantity: fail closed', async () => {

@@ -36,7 +36,7 @@ async function waitFor(check, message) {
         window.__qaSetVisibility=value=>{window.__qaVisibility=value;document.dispatchEvent(new Event('visibilitychange'));};
       });
       const page=await context.newPage();
-      const counts={open:0,history:0,chartTriggers:0,cancels:0,otherWrites:0},errors=[],orderQueries=[];
+      const counts={open:0,history:0,chartTriggers:0,sessions:0,cancels:0,otherWrites:0},errors=[],orderQueries=[];
       const progress={width,counts,orderQueries,pageErrors:errors};
       report.widths.push(progress);
       let hasOrder=true;
@@ -61,17 +61,21 @@ async function waitFor(check, message) {
           assert.equal(status,'PENDING_TRIGGER,OPEN,PARTIALLY_FILLED','unclassified orders request');
           counts.open++;return reply(hasOrder?[row]:[]);
         }
-        if(p==='/api/v1/me')return reply({id:'qa',email:'qa@example.invalid',displayName:'QA',kycStatus:'NOT_STARTED',role:'USER',isAdmin:false});
+        if(p==='/api/v1/me'){counts.sessions++;return reply({id:'qa',email:'qa@example.invalid',displayName:'QA',kycStatus:'NOT_STARTED',role:'USER',isAdmin:false});}
         if(p==='/api/v1/balances')return reply([{asset:'USDT',available:'10000',locked:'0'},{asset:'BTC',available:'0.1',locked:'0'}]);
         if(p.includes('private-trading/access'))return reply({allowed:false});
         if(p.includes('support/conversations/mine'))return reply({conversation:null});
-        if(p.includes('assets/icons'))return reply({icons:{}});
-        if(p.includes('external/rankings'))return reply({gainers:[],losers:[]});
-        if(p.includes('candles'))return reply({candles:CANDLES});
+        if(p.includes('assets/icons'))return reply({assets:{}});
+        if(p.includes('external/rankings'))return reply({source:'isolated-qa',rankings:[]});
+        if(p.includes('candles'))return reply({pair:decodeURIComponent(p.split('/').pop()).replace('-','/'),interval:url.searchParams.get('interval')||'1h',candles:CANDLES});
         if(p.includes('external/symbols'))return reply({symbols:PAIRS});
         if(p.includes('/market/pairs'))return reply(PAIRS.map(pair=>({pair,base:pair.split('/')[0],quote:'USDT'})));
-        if(p.includes('orderbook'))return reply({bids:[[84000,1]],asks:[[84100,1]],fetchedAt:Date.now()});
-        if(p.includes('snapshot'))return reply({pairs:PAIRS.map(pair=>({pair,lastPrice:84100,high24h:84200,low24h:83000,changePercent:1,quoteVolume24h:1e6,volume24h:100})),fetchedAt:Date.now()});
+        // Wake waits for the actual public book/candle contracts to settle.
+        // Incomplete legacy fixtures must not leave the lifecycle in ERROR.
+        if(p.includes('orderbook')||p.includes('/market/display/spot-book/'))return reply({pair:decodeURIComponent(p.split('/').pop()).replace('-','/'),bids:[{price:'84000',quantity:'1'}],asks:[{price:'84100',quantity:'1'}],timestamp:Date.now()});
+        if(p==='/api/v1/market/display/spot-snapshot')return reply({_display:{mode:'snapshot',capturedAt:Date.now(),refreshMs:60000},tickers:{available:true,source:'isolated-qa',fetchedAt:Date.now(),stale:false,value:PAIRS.map(pair=>({pair,lastPrice:'84100',high24h:'84200',low24h:'83000',changePercent24h:'1',quoteVolume24h:'1000000',volume24h:'100'}))},overview:{available:false},sentiment:{available:false}});
+        if(['/api/v1/market/test-assets','/api/v1/market/nrx','/api/v1/market/listings'].includes(p)
+          ||(url.hostname==='market.voltextech.net'&&['/market/nrx','/market/listings'].includes(p)))return reply({serverTime:Date.now(),assets:[]});
         if(p.includes('tickers'))return reply({tickers:PAIRS.map(pair=>({pair,lastPrice:84100,high24h:84200,low24h:83000,changePercent:1,quoteVolume24h:1e6,volume24h:100}))});
         if(p.startsWith('/api/v1/'))return reply([]);
         return route.fulfill({status:503,contentType:'application/json',body:'{"error":"external network disabled in QA"}'});
@@ -87,19 +91,25 @@ async function waitFor(check, message) {
       await page.locator('[data-order-id="fixture-history"]').waitFor();
       await page.evaluate(()=>window.__qaSetVisibility('hidden'));
       await page.waitForTimeout(200);
-      const beforeHidden={open:counts.open,history:counts.history,chartTriggers:counts.chartTriggers};
+      const beforeHidden={open:counts.open,history:counts.history,chartTriggers:counts.chartTriggers,sessions:counts.sessions};
       await page.waitForTimeout(12500);
       assert.equal(counts.open,beforeHidden.open,'hidden open-order reads must stop');
       assert.equal(counts.history,beforeHidden.history,'hidden history reads must stop');
       Object.assign(progress,{hiddenWindowMs:12500,hiddenOpenReads:counts.open-beforeHidden.open,hiddenHistoryReads:counts.history-beforeHidden.history,unchangedChartTriggerReads:counts.chartTriggers-beforeHidden.chartTriggers});
       await page.evaluate(()=>window.__qaSetVisibility('visible'));
       await waitFor(()=>counts.open>beforeHidden.open&&counts.history>beforeHidden.history,'return must immediately refresh both readers');
+      // Started GETs are not a completed authoritative wake. Wait for the
+      // real barrier before the next deliberate tab/cancel interaction.
+      await page.locator('[data-browser-phase]').waitFor({state:'detached',timeout:10000});
       assert.equal(counts.open,beforeHidden.open+1);assert.equal(counts.history,beforeHidden.history+1);
-      const afterReturn={open:counts.open,history:counts.history};
+      assert.equal(counts.sessions,beforeHidden.sessions+1,'return validates the session exactly once');
+      const afterReturn={open:counts.open,history:counts.history,sessions:counts.sessions};
       await page.evaluate(()=>{for(let i=0;i<5;i++)document.dispatchEvent(new Event('visibilitychange'));});
       await page.waitForTimeout(200);
       assert.equal(counts.open,afterReturn.open);assert.equal(counts.history,afterReturn.history);
+      assert.equal(counts.sessions,afterReturn.sessions,'duplicate visibility events cannot revalidate the session');
       await page.locator('#spot-tab-open').click();
+      await page.waitForFunction(()=>document.querySelector('#spot-tab-open')?.getAttribute('aria-selected')==='true');
       await page.locator('[data-order-id="fixture-order"] button').click();
       await waitFor(()=>counts.cancels===1,'existing cancel endpoint must still work');
       await page.locator('[data-order-id="fixture-order"]').waitFor({state:'detached'});
@@ -108,7 +118,7 @@ async function waitFor(check, message) {
       assert.equal(counts.otherWrites,0,'only explicit isolated cancel allowed');
       assert.deepEqual(errors,[],'no uncaught browser errors');
       await page.screenshot({path:path.join(out,`spot-${width}.png`)});
-      Object.assign(progress,{immediateReturn:true,cancels:counts.cancels,status:'PASS'});
+      Object.assign(progress,{immediateReturn:true,wakeCompleted:true,wakeSessionReads:counts.sessions-beforeHidden.sessions,cancels:counts.cancels,status:'PASS'});
       await context.close();
     }
     report.status='PASS';console.log(JSON.stringify(report,null,2));

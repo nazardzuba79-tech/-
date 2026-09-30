@@ -1,0 +1,316 @@
+{
+  "title": "PR #345 initial CI run before targeted harness corrections",
+  "publishedHead": "b343c355369677df65bdd77495ed8826c00e2479",
+  "testedMergeCommit": "6424c347562e2c14553c2bdef5f7e5a473bf5213",
+  "testedTree": "89edcb0caa4bebef2790bb7524f3532a4c767ff5",
+  "base": "9742375b96aff614b690042e13111c1df1178ec5",
+  "note": "Historical first attempt, not the final release result. Successful initial jobs do not waive any failed job. Final release results must identify their own published head.",
+  "runs": [
+    {
+      "name": "Admin access gate and Users loading states",
+      "runId": 36604258622,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258622",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1
+    },
+    {
+      "name": "Admin account deletion",
+      "runId": 36604257796,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604257796",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Admin Listings (managed simulated markets)",
+      "runId": 36604258559,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258559",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Analytics live data",
+      "runId": 36604258479,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258479",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "App shell and chunk recovery",
+      "runId": 36604258453,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258453",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1
+    },
+    {
+      "name": "Browser idle sleep",
+      "runId": 36604258612,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258612",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Browser read budget",
+      "runId": 36604258458,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258458",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "CFD working terminal",
+      "runId": 36604257943,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604257943",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1
+    },
+    {
+      "name": "Copy Trading card regression",
+      "runId": 36604258551,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258551",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Customer-facing error wording",
+      "runId": 36604258500,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258500",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Deposit packages — manual approval only",
+      "runId": 36604257876,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604257876",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Direct Spot public market data",
+      "runId": 36604258212,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258212",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Full frontend regression",
+      "runId": 36604258537,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258537",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Futures design and Pro integration",
+      "runId": 36604257916,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604257916",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Futures pair persistence and header cluster",
+      "runId": 36604258000,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258000",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Futures trading panel and order book polish",
+      "runId": 36604258236,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258236",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Homepage laptop first-load",
+      "runId": 36604258226,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258226",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "KYC edge (Cloudflare document path, Render metadata only)",
+      "runId": 36604258348,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258348",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Manual deposit catalogue",
+      "runId": 36604258716,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258716",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Markets 7d/30d movers",
+      "runId": 36604258177,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258177",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Mobile clients isolated review",
+      "runId": 36604258445,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258445",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Native demo engine and browser",
+      "runId": 36604257787,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604257787",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Native test account access",
+      "runId": 36604258859,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258859",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "NRX investor market review",
+      "runId": 36604258416,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258416",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Performance phase two preservation",
+      "runId": 36604258148,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258148",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Private reference UI evidence",
+      "runId": 36604259030,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604259030",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Private trading and replay",
+      "runId": 36604258208,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258208",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Private VTA demo and terminal headers",
+      "runId": 36604258690,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258690",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1
+    },
+    {
+      "name": "Sampled public display budget",
+      "runId": 36604258590,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258590",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Server idle (sleeping background loops, idle database budget)",
+      "runId": 36604258218,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258218",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Spot idle reads and session payload",
+      "runId": 36604258045,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258045",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1
+    },
+    {
+      "name": "Support form (Cloudflare Worker + widget)",
+      "runId": 36604258109,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258109",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "failure",
+      "attempt": 1
+    },
+    {
+      "name": "Test markets (VOLTORA)",
+      "runId": 36604258397,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604258397",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    },
+    {
+      "name": "Verify / deploy voltex-market-edge (Cloudflare Worker)",
+      "runId": 36604257932,
+      "url": "https://github.com/nazardzuba79-tech/-/actions/runs/36604257932",
+      "head": "b343c355369677df65bdd77495ed8826c00e2479",
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1
+    }
+  ]
+}

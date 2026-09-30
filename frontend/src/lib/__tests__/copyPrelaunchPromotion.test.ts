@@ -15,7 +15,7 @@ const { renderToStaticMarkup } = req('react-dom/server');
 const source = (path: string) => readFileSync(resolve(frontend, path), 'utf8');
 let language = 'ru';
 function evaluate(path: string, overrides: Record<string, unknown> = {}) {
-  const code = ts.transpileModule(source(path), { compilerOptions: {
+  const code = ts.transpileModule(source(path).replace('import.meta.env.VITE_API_URL', "''"), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   }}).outputText;
   const output: Record<string, any> = {};
@@ -42,18 +42,53 @@ test.each([0, -1, 9_999.99, 10_000, 10_000.01, 100_000, NaN, Infinity])('copy el
   }
 });
 
-test('normal API paths replace review-only sources without altering token or request behavior', () => {
+test('normal API paths use one shared marketplace read without review-only sources or per-page polling', () => {
   const api = source('src/lib/api.ts');
   expect(api).toContain("getNazarCopyTrading: () => request<SyntheticCopyTradingResponse>('/copy-trading/nazar')");
   expect(api).toContain("getKseniaCopyTrading: () => request<import('./kseniaCopyTrading').KseniaResponse>('/copy-trading/ksenia')");
   expect(api).toContain("('/copy-trading/identities')");
   expect(api).not.toMatch(/reviewReadPath|reviewMarketData|review-api|review-synthetic\.json|exchange-api-review/);
   const page = source('src/pages/CopyTradingPage.tsx');
-  expect(page).toContain('api.getNazarCopyTrading()');
-  expect(page).toContain('api.getKseniaCopyTrading()');
+  expect(page).toContain('const marketplace = useCopyMarketplace();');
+  expect(page).not.toMatch(/api\.get(?:Nazar|Ksenia)CopyTrading\(/);
   expect(page).not.toMatch(/getSyntheticCopyTrading|advanceSimulation|resetSimulation|isAdmin|import\.meta\.env\.MODE/);
-  expect(page).toContain('window.setInterval');
-  expect(page).toContain('new Date().toISOString().slice(0, 10)');
+  expect(page).not.toContain('window.setInterval');
+  const shared = source('src/lib/useCopyMarketplace.ts');
+  expect(shared).toContain('/copy-trading/marketplace');
+  expect(shared).toContain('onSessionChange(copyMarketplaceStore.syncSession)');
+  expect(shared).not.toMatch(/review-api|review-synthetic\.json|exchange-api-review/);
+});
+
+test('shared marketplace transport carries the captured bearer and abort signal without account writes', async () => {
+  const oldFetch = globalThis.fetch;
+  const fetch = jest.fn(async () => ({ ok: true, status: 200, json: async () => ({ fixture: true }) }));
+  const clearToken = jest.fn();
+  let request!: (signal: AbortSignal) => Promise<unknown>;
+  let token: string | null = 'fixture-session';
+  const onSessionChange = jest.fn();
+  class StoreFixture {
+    syncSession = jest.fn();
+    constructor(load: typeof request) { request = load; }
+  }
+  try {
+    globalThis.fetch = fetch as any;
+    evaluate('src/lib/useCopyMarketplace.ts', {
+      './browserActivity': require('../browserActivity'),
+      './api': { getToken: () => token, clearToken, onSessionChange },
+      './copyMarketplaceStore': { CopyMarketplaceStore: StoreFixture, MarketplaceFailure: class extends Error {} },
+    });
+    const controller = new AbortController();
+    await expect(request(controller.signal)).resolves.toEqual({ fixture: true });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith('/api/v1/copy-trading/marketplace', {
+      signal: controller.signal, headers: { Authorization: 'Bearer fixture-session' },
+    });
+    expect(clearToken).not.toHaveBeenCalled();
+    expect(onSessionChange).toHaveBeenCalledTimes(1);
+    token = null;
+    await expect(request(controller.signal)).rejects.toThrow('unauthenticated');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  } finally { globalThis.fetch = oldFetch; }
 });
 
 test('owner media never falls back to a viewer or an unrelated administrator', () => {

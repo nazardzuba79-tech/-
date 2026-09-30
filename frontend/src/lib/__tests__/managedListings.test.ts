@@ -91,20 +91,25 @@ const compile = (file: string) => ts.transpileModule(readFileSync(file, 'utf8').
 
 /** Execute the real store, parser and registry; only transport and document visibility are fixtures. */
 function stores(read: (url: string) => Promise<unknown>) {
-  const listeners = new Set<() => void>();
+  const listeners = new Set<(event?: Event) => void>();
   const document = {
     hidden: false,
-    addEventListener: (_name: string, listener: () => void) => listeners.add(listener),
-    removeEventListener: (_name: string, listener: () => void) => listeners.delete(listener),
+    addEventListener: (_name: string, listener: (event?: Event) => void) => listeners.add(listener),
+    removeEventListener: (_name: string, listener: (event?: Event) => void) => listeners.delete(listener),
   };
+  const activity: any = {};
+  const fetch = async (url: string) => ({ ok: true, json: () => read(url) });
+  new Function('exports', 'document', 'globalThis', compile(resolve(frontend, 'src/lib/browserActivity.ts')))(activity, document, { fetch });
   const output: any = {};
   new Function('require', 'exports', 'document', 'fetch', compile(resolve(frontend, 'src/lib/testMarketStore.ts')))((name: string) => {
     if (name === './api') return { API_BASE: '/api/v1' };
     if (name === './testMarkets') return testMarketHelpers;
     if (name === './nrxMarket') return { ...nrxHelpers, fetchNrxPublic: read };
+    if (name === './browserActivity') return activity;
     return req(name);
   }, output, document, async (url: string) => ({ ok: true, json: () => read(url) }));
-  return { ...output, listeners, visibility(hidden: boolean) { document.hidden = hidden; for (const listener of listeners) listener(); } };
+  return { ...output, listeners, visibility(hidden: boolean) { document.hidden = hidden; for (const listener of listeners) listener(); },
+    wake() { document.hidden = false; for (const listener of listeners) listener(new Event('voltex:browser-activity')); } };
 }
 
 describe('managed catalogue scheduling with the real store', () => {
@@ -199,6 +204,28 @@ describe('managed catalogue scheduling with the real store', () => {
     await jest.advanceTimersByTimeAsync(59_000);
     expect(read).toHaveBeenCalledTimes(3);
     offAgain();
+  });
+
+  test('sleep removes the catalogue clock and waking supersedes a suspended pre-sleep response', async () => {
+    const responses: ((value: unknown) => void)[] = [];
+    const read = jest.fn((_url: string) => new Promise(resolve => responses.push(resolve)));
+    const market = stores(read);
+    const off = market.managedListingStore.subscribe(() => {}, 60_000);
+    await settle();
+    market.visibility(true);
+    expect(jest.getTimerCount()).toBe(0);
+    await jest.advanceTimersByTimeAsync(300_000);
+    expect(read).toHaveBeenCalledTimes(1);
+    market.wake(); market.wake();
+    responses[0]({ serverTime: Date.now() - 300_000, assets: [managed()] });
+    await settle(); await settle();
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(market.managedListingStore.getState().assets).toEqual([]);
+    responses[1]({ serverTime: Date.now(), assets: [managed({ pair: 'QWX/USDT', symbol: 'QWX' })] });
+    await settle(); await settle();
+    expect(market.managedListingStore.getState().assets.map((asset: any) => asset.pair)).toEqual(['QWX/USDT']);
+    market.visibility(true); expect(jest.getTimerCount()).toBe(0);
+    off();
   });
 
   test.each(['VTA', 'NRX'])('%s keeps its fixed-market launch-only budget, including route re-entry', async (symbol) => {

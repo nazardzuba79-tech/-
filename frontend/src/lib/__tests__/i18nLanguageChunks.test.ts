@@ -44,7 +44,7 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   'yourAddress', 'changeAsset', 'changeNetwork', 'sendOnly', 'inNetwork', 'lossWarning', 'copyAddress',
   'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo',
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
-  'asset', 'minimumTitle', 'minimumEquivalent', 'minimumPegged', 'minimumNote'].map(key => `deposit.ui.${key}`);
+  'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote'].map(key => `deposit.ui.${key}`);
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
@@ -212,7 +212,8 @@ describe('translation integrity', () => {
         // answer and the listing card for an upcoming listing (VOLTORA).
         // `support.form*` are the support form's result lines and address hint
         // (2026-09-26: support became a form answered by email).
-        const addedSinceDigest = ['futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
+        const addedSinceDigest = ['browserSleeping', 'browserSyncing', 'browserSyncError', 'browserContinue',
+          'futures.positionLimits', 'futures.allMarkets', 'futures.openContract', 'futures.orderError.serverUnavailable',
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',

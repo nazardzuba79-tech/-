@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import { MARKET_EDGE_BASE } from './marketEdge';
 import { isManagedListingPair } from './testMarkets';
 

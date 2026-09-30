@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { FuturesTurnover } from './FuturesTurnover';
 import { memo, useEffect, useState } from 'react';
 import { api } from '../lib/api';
@@ -417,8 +418,8 @@ const NextFundingCountdown = memo(function NextFundingCountdown({ intervalHours 
 
   useEffect(() => {
     if (intervalHours === null || intervalHours <= 0) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const id = browserSetInterval(() => setNow(Date.now()), 1000);
+    return () => browserClearInterval(id);
   }, [intervalHours]);
 
   // Funding settles at every UTC multiple of the interval, so the next

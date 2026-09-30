@@ -1,3 +1,4 @@
+import { browserFetch as fetch, browserFallbackFetch, waitUntilActive, trackBrowserRead } from './browserActivity';
 import { nativeRequestDeadline } from './nativeRequestDeadline';
 import { getToken } from './api';
 import { PrivateTradingError, type PrivateResultCard } from './privateTradingApi';
@@ -167,10 +168,13 @@ export type NativeDraft=
  | {kind:'LEVERAGE';positionId:string;leverage:string}
  | {kind:'REFRESH'};
 export function createNativeDemoClient(base:string,token:()=>string|null,fetcher:typeof fetch=fetch){
-  async function request<T>(path:string,body?:unknown,signal?:AbortSignal):Promise<T>{
+  async function request<T>(path:string,body?:unknown,signal?:AbortSignal,optionalProbe=false):Promise<T>{
     const bearer=token();if(!bearer)throw new PrivateTradingError('Войдите в аккаунт',401);
+    if(body===undefined)await waitUntilActive(signal);
+    if(token()!==bearer)throw new PrivateTradingError('Сессия завершена',401);
     return nativeRequestDeadline(async requestSignal=>{
-    const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal:requestSignal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
+    const transport=optionalProbe&&fetcher===fetch?browserFallbackFetch:fetcher;
+    const response=await transport(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal:requestSignal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
     const data=await response.json().catch(()=>null);if(token()!==bearer)throw new PrivateTradingError('Сессия завершена',401);
     if(!response.ok)throw new PrivateTradingError(
       typeof data?.error==='string'?data.error:'Счёт временно недоступен',
@@ -182,10 +186,19 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     },signal);
   }
   return{
-    access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),
+    access:(signal?:AbortSignal)=>{
+      const task=request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal,true);
+      // Ordinary accounts are explicitly denied this optional engine. Preserve
+      // the rejection for the existing access policy, but it is a settled probe.
+      void trackBrowserRead(task.catch(error=>{
+        if(error instanceof PrivateTradingError&&error.status===403&&error.code==='private_access_denied')return;
+        throw error;
+      })).catch(()=>{});
+      return task;
+    },
     state:(signal?:AbortSignal)=>request<NativeState>('/native/state',undefined,signal),
     live:(signal?:AbortSignal)=>request<NativeState>('/native/live',undefined,signal),
-    activate:(signal?:AbortSignal)=>request<{ok:true}>('/native/execution-session',{},signal),
+    activate:async(signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<{ok:true}>('/native/execution-session',{},signal));},
     history:<K extends keyof NativeHistoryItems>(kind:K,revision:number,options:{symbol?:string;cursor?:string;signal?:AbortSignal}={})=>{
       const params=new URLSearchParams({kind,revision:String(revision),limit:'50'});
       if(options.symbol)params.set('symbol',options.symbol);
@@ -210,7 +223,13 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
      * valuations that can disagree — here the rows add up to the header by
      * construction.
      */
-    wallet:(signal?:AbortSignal)=>request<NativeWallet>('/native/wallet',undefined,signal),
+    wallet:(signal?:AbortSignal)=>trackBrowserRead(request<NativeWallet>('/native/wallet',undefined,signal,true).catch(error=>{
+      // These are the backend's two established "no native wallet" outcomes.
+      // No session, unexpected denial or service failure can become an empty account.
+      if(error instanceof PrivateTradingError&&((error.status===403&&error.code==='private_access_denied')
+        ||(error.status===409&&error.code==='initialize_demo')))return null;
+      throw error;
+    })),
     setCollateral:(asset:string,enabled:boolean,idempotencyKey:string)=>request<NativeWallet>('/native/collateral-preference',{asset,enabled,idempotencyKey}),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,
@@ -226,7 +245,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
      * touches no repository, issues no command and creates no revision,
      * which is why it takes no idempotency key.
      */
-    quote:(input:NativeQuoteInput,signal?:AbortSignal)=>request<NativeQuoteResult>('/native/quote',input,signal),
+    quote:async(input:NativeQuoteInput,signal?:AbortSignal)=>{await waitUntilActive(signal);return trackBrowserRead(request<NativeQuoteResult>('/native/quote',input,signal));},
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),
     getCard:(id:string)=>{const m=/^native:(\d+):(native-[a-zA-Z0-9-]+)$/.exec(id);if(!m)throw new PrivateTradingError('Карточка не найдена',404);return request<PrivateResultCard>(`/native/cards/${m[1]}/${m[2]}`);},
   };

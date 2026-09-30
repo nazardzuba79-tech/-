@@ -335,7 +335,7 @@ async function panelStates(page, width, expected) {
   rows.push({width,uiParity:'10 side/order-type combinations identical; unsupported submissions refused with zero POSTs',prelisting:'blocked',autoEstimate:estimate,retry:'one fill',reload:'standard history and assets persisted',wallet,cash,remainingVta:available,simulationUsdt:usdt,serverTotal:projection.totalValueUsd,nativeAssetsValue:unified.assetsValue,errors,over});
   simNow=VOLTORA.listingAt-1000; await ctx.close();
  }
- const ctx=await browser.newContext({viewport:{width:1440,height:1000}});
+ const ctx=await browser.newContext({viewport:{width:1440,height:1000},locale:'ru-RU'});
  await ctx.addInitScript(()=>{localStorage.setItem('exchange_token','fixture');localStorage.setItem('exchange_lang','ru');});
  await ctx.route('**/*',r=>r.request().url().startsWith(origin)?r.continue():r.abort());
  const page=await ctx.newPage();
@@ -355,8 +355,22 @@ async function panelStates(page, width, expected) {
   localStorage.removeItem('exchange_token');window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token',newValue:null}));
   localStorage.setItem('exchange_token','other');window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token',newValue:'other'}));
  });
+ // SessionContent remounts account-owned UI on a token change. Confirm the
+ // previous draft is gone before deliberately selecting the new account's SELL.
+ await page.waitForFunction(()=>{
+  const form=document.querySelector('.order-form-area');
+  return form?.querySelector('.order-form-tabs button[aria-pressed="true"]')?.textContent==='Купить'
+   && form.querySelector('.order-type-tabs button[aria-pressed="true"]')?.textContent==='Лимит';
+ });
+ if(await page.evaluate(()=>localStorage.getItem('exchange_token'))!=='other')throw Error('account switch did not retain the new token');
+ if(await quantity.inputValue()!=='')throw Error('old draft leaked into the new account before selection');
+ await form.locator('.order-form-tabs').getByRole('button',{name:'Продать',exact:true}).click();
+ await form.locator('.order-type-tabs').first().getByRole('button',{name:'Рынок',exact:true}).click();
  await page.waitForFunction(()=>document.querySelector('.order-form-area .amount')?.textContent.includes('0.00000000'));
+ const lateSaleResponse=page.waitForResponse(response=>response.request().method()==='POST'
+  && new URL(response.url()).pathname==='/api/v1/demo/vta/sell' && response.status()===401);
  releaseHeld();heldResponse=null;
+ await (await lateSaleResponse).finished();
  await page.waitForFunction(()=>!document.querySelector('.order-form-area button[type="submit"]').disabled);
  if(await page.evaluate(()=>localStorage.getItem('exchange_token'))!=='other')throw Error('old 401 logged out the new account');
  if(await quantity.inputValue()!=='')throw Error('old completion leaked quantity into another account');
@@ -387,9 +401,15 @@ async function panelStates(page, width, expected) {
  await page.getByRole('button',{name:'Финансирование',exact:true}).click();
  await page.waitForFunction(()=>document.querySelector('.wallet-funding')?.getAttribute('data-account-scope')==='SIMULATION_SPOT');
  await page.evaluate(()=>{localStorage.setItem('exchange_token','other');window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token',newValue:'other'}));});
+ await page.waitForFunction(()=>!document.querySelector('.wallet-funding'));
+ if(await page.evaluate(()=>localStorage.getItem('exchange_token'))!=='other')throw Error('Wallet account switch did not retain the new token');
+ if(await page.locator('.wallet-funding [data-asset="VTA"]').count())throw Error('owner VTA survived the account remount');
+ await page.getByRole('button',{name:'Финансирование',exact:true}).click();
  await page.waitForFunction(()=>document.querySelector('.wallet-funding')?.getAttribute('data-account-scope')==='REAL_FUNDING');
  if(await page.locator('.wallet-funding [data-asset="VTA"]').count())throw Error('owner VTA leaked into switched wallet');
  await page.evaluate(()=>{localStorage.setItem('exchange_token','fixture');window.dispatchEvent(new StorageEvent('storage',{key:'exchange_token',newValue:'fixture'}));});
+ await page.waitForFunction(()=>!document.querySelector('.wallet-funding'));
+ await page.getByRole('button',{name:'Финансирование',exact:true}).click();
  await page.waitForFunction(()=>document.querySelector('.wallet-funding')?.getAttribute('data-account-scope')==='SIMULATION_SPOT');
  rows.push({walletSwitch:'account scope resets on cross-tab session change; owner projection never leaks'});
 

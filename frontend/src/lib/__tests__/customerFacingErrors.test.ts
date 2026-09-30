@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { join, relative, resolve, sep } from 'path';
 import { customerErrorText } from '../customerError';
@@ -45,7 +46,7 @@ function load(file: string, imports: Record<string, unknown> = {}) {
   const output: Record<string, any> = {};
   const source = readFileSync(resolve(frontend, 'src', file), 'utf8').replace('import.meta.env.VITE_API_URL', 'undefined');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  new Function('require', 'exports', code)((name: string) => (name in imports ? imports[name] : req(name)), output);
+  new Function('require', 'exports', code)((name: string) => (name in imports ? imports[name] : (name.endsWith('/browserActivity') ? browserActivity : req(name))), output);
   return output;
 }
 const { privateErrorText } = load('lib/privateTradingApi.ts', {

@@ -430,19 +430,32 @@ async function chartFlow(width) {
       await s.context.route('**/private-trading/access',route=>failAccess
         ?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'QA access outage'})})
         :route.continue());
-      // The production hook now polls access once a minute and also re-checks
-      // immediately when a tab becomes visible. Drive that explicit wake path
-      // instead of waiting a real minute in browser CI.
+      // Drive an actual hidden -> visible lifecycle. A duplicate visible event
+      // is intentionally a no-op now that wake/session validation is coalesced.
+      const returnToTab = () => p.evaluate(() => {
+        Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
+        document.dispatchEvent(new Event('visibilitychange'));
+        delete document.hidden;
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
       const failed=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.status()===503);
-      await p.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+      await returnToTab();
       await failed;
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===true);
       assert.deepEqual(JSON.parse(await p.locator('[data-entry-reference]').getAttribute('data-entry-reference')),reference);
       failAccess=false;
+      const wakeFailures=[];
+      p.on('response',response=>{if(response.status()>=400)wakeFailures.push({path:new URL(response.url()).pathname,status:response.status()});});
+      p.on('requestfailed',request=>wakeFailures.push({path:new URL(request.url()).pathname,error:request.failure()?.errorText}));
       const recovered=p.waitForResponse(r=>r.url().endsWith('/private-trading/access')&&r.ok());
-      await p.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+      await returnToTab();
       await recovered;
       await p.waitForFunction(()=>document.querySelector('.fo-submitPair .buy')?.disabled===false);
+      await p.waitForFunction(()=>!document.querySelector('[data-browser-phase]')).catch(async error => {
+        error.message += `; browser phase: ${await p.locator('[data-browser-phase]').getAttribute('data-browser-phase')}`;
+        console.error('Wake transport failures',JSON.stringify(wakeFailures));
+        throw error;
+      });
     }
     await workspace(p, 'trade');
     const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());

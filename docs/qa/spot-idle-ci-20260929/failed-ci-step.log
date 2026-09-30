@@ -1,0 +1,46 @@
+##[group]Run node scripts/qa-spot-idle-reads.cjs
+2026-09-29T17:22:29.5119848Z node scripts/qa-spot-idle-reads.cjs
+2026-09-29T17:22:29.5187172Z shell: /usr/bin/bash -e {0}
+2026-09-29T17:22:29.5187431Z env:
+2026-09-29T17:22:29.5187793Z   QA_PLAYWRIGHT_MODULE: /tmp/spot-idle-browser/node_modules/playwright
+2026-09-29T17:22:29.5188170Z ##[endgroup]
+2026-09-29T17:23:22.3068639Z locator.click: Timeout 30000ms exceeded.
+2026-09-29T17:23:22.3069022Z Call log:
+2026-09-29T17:23:22.3069386Z   - waiting for locator('[data-order-id="fixture-order"] button')
+2026-09-29T17:23:22.3070725Z     - locator resolved to <button type="button" class="cancel-btn" aria-label="Отменить BTC/USDT fixture-order">Отменить</button>
+2026-09-29T17:23:22.3071309Z   - attempting click action
+2026-09-29T17:23:22.3071760Z     2 × waiting for element to be visible, enabled and stable
+2026-09-29T17:23:22.3072121Z       - element is not visible
+2026-09-29T17:23:22.3072398Z     - retrying click action
+2026-09-29T17:23:22.3072726Z     - waiting 20ms
+2026-09-29T17:23:22.3073103Z     2 × waiting for element to be visible, enabled and stable
+2026-09-29T17:23:22.3073461Z       - element is not visible
+2026-09-29T17:23:22.3073722Z     - retrying click action
+2026-09-29T17:23:22.3073994Z       - waiting 100ms
+2026-09-29T17:23:22.3074382Z     58 × waiting for element to be visible, enabled and stable
+2026-09-29T17:23:22.3074746Z        - element is not visible
+2026-09-29T17:23:22.3075030Z      - retrying click action
+2026-09-29T17:23:22.3075295Z        - waiting 500ms
+2026-09-29T17:23:22.3075456Z
+2026-09-29T17:23:22.3075703Z     at /home/runner/work/-/-/scripts/qa-spot-idle-reads.cjs:103:68 {
+2026-09-29T17:23:22.3076082Z   log: [
+2026-09-29T17:23:22.3076464Z     `  - waiting for locator('[data-order-id="fixture-order"] button')`,
+2026-09-29T17:23:22.3077320Z     '    - locator resolved to <button type="button" class="cancel-btn" aria-label="Отменить BTC/USDT fixture-order">Отменить</button>',
+2026-09-29T17:23:22.3077940Z     '  - attempting click action',
+2026-09-29T17:23:22.3078395Z     '    2 × waiting for element to be visible, enabled and stable',
+2026-09-29T17:23:22.3078782Z     '      - element is not visible',
+2026-09-29T17:23:22.3079088Z     '    - retrying click action',
+2026-09-29T17:23:22.3079887Z     '    - waiting 20ms',
+2026-09-29T17:23:22.3080314Z     '    2 × waiting for element to be visible, enabled and stable',
+2026-09-29T17:23:22.3080685Z     '      - element is not visible',
+2026-09-29T17:23:22.3080983Z     '    - retrying click action',
+2026-09-29T17:23:22.3081263Z     '      - waiting 100ms',
+2026-09-29T17:23:22.3081669Z     '    58 × waiting for element to be visible, enabled and stable',
+2026-09-29T17:23:22.3082126Z     '       - element is not visible',
+2026-09-29T17:23:22.3082441Z     '     - retrying click action',
+2026-09-29T17:23:22.3082718Z     '       - waiting 500ms'
+2026-09-29T17:23:22.3082975Z   ],
+2026-09-29T17:23:22.3083183Z   name: 'TimeoutError'
+2026-09-29T17:23:22.3083433Z }
+2026-09-29T17:23:22.3203184Z ##[error]Process completed with exit code 1.
+2026-09-29T17:23:22.3302359Z

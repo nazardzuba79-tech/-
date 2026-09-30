@@ -1,0 +1,93 @@
+{
+  "sourceCommit": "e2c9d91260b43a1e500f2942d78a5af7cd36ac98",
+  "sourceTree": "c94835458a27f5cb9edb93026ca40ae85cbf9c0c",
+  "reviewedMain": "9d8a537c5e57beafec347554aa1d456d9ede1049",
+  "previousCombinedSource": "a68a2fd4f3f1ccb276ae128ca8f37a1adb770511",
+  "applicationChangesFromPreviousCandidate": [
+    {
+      "path": "frontend/src/components/DepositCatalogueDialog.css",
+      "before": "66e7d9c810d84e7898e0aac8298f0e4285e8e299",
+      "after": "45a4a280feaabd7f7172001e107ac8a506c76d54",
+      "newMain": "45a4a280feaabd7f7172001e107ac8a506c76d54"
+    },
+    {
+      "path": "frontend/src/components/DepositCatalogueDialog.tsx",
+      "before": "32240a245fb850b9289d7c772dd249088eccca3b",
+      "after": "e2f5d4ad8e8ec422f9715d0f18c844f098e6bd36",
+      "newMain": "e2f5d4ad8e8ec422f9715d0f18c844f098e6bd36"
+    },
+    {
+      "path": "frontend/src/lib/__tests__/depositMinimumRule.test.ts",
+      "before": "68c9bbd9c28e31ec7ac16dbb34da046422c2faf7",
+      "after": "e81bf1beb4347ce08750a5b9163c5ba29757a688",
+      "newMain": "e81bf1beb4347ce08750a5b9163c5ba29757a688"
+    },
+    {
+      "path": "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "before": "b2d48ce3848a5fe22030b53bb165ce75d4793ae6",
+      "after": "85ca2432b2e055164d260efe5ac2e9df525aed16",
+      "newMain": "583e3a1c78080df84f0426f2778b0c07f5e47462"
+    },
+    {
+      "path": "frontend/src/lib/depositMinimum.ts",
+      "before": "1b0dd676e3f4a63899c4b8a366f40808d9da50f3",
+      "after": "766cc446a0bb890f5d0e63969817439a4f2ddcb2",
+      "newMain": "766cc446a0bb890f5d0e63969817439a4f2ddcb2"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/en.ts",
+      "before": "b1648b2b7e8c1161387dbfeb38cf70402cb0ccfe",
+      "after": "3c88630456932fd055cf805d0c67bb1ffafeca47",
+      "newMain": "71afb6d9a0bb223aae31c4548203409999862188"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/es.ts",
+      "before": "305daeadc7ad654364fee3fd34eb290632747f2b",
+      "after": "68a4bd2bda20dc1141f61fc2970671c2b87e1f5e",
+      "newMain": "8ea6350cfd315ff784695d210f87ca4b2d3c6bdf"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/hi.ts",
+      "before": "14eb476d512257b2710f044d70d21e54cc76d98d",
+      "after": "b36e9bd2ce3511d1502f74ece64b7d154e5f941b",
+      "newMain": "9dcd444803fdcf1b5555ea816720a9083b793f98"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/ja.ts",
+      "before": "550b54df436f49aeff337c57e6ad9cd87c3e86cd",
+      "after": "3022ddd9c5b04fe895f8a20bb048ba301226f2a0",
+      "newMain": "c9d328c16cd0ec1079d6a3dfe217232d1e6d61f7"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/ko.ts",
+      "before": "53c3e9ece470faad1c00b5e0582b43ebea477bcf",
+      "after": "9f58021840ea387326148fc39fbf0f94e2fb79a0",
+      "newMain": "3fa38d9969dc6da255ab397e06159d2d3f2f10f7"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/ru.ts",
+      "before": "313881d1ff6ca480a94047d49b26069307bc6543",
+      "after": "1c6f9d9563b3397e8700eff2a95ad1a2cfb5b0fe",
+      "newMain": "34b94ab8a5ced08f713baf2fc4896645359fb2c9"
+    },
+    {
+      "path": "frontend/src/lib/i18n/locales/zh.ts",
+      "before": "6c3e36a25ab530cdbc1dfa10f3afebc694980c0e",
+      "after": "d466089f027df340e1fb8d51aca402a7559cda6c",
+      "newMain": "f712f50659b094c0df9ffee9ee2160afa5d77640"
+    },
+    {
+      "path": "frontend/src/pages/wallet-v3/WalletOverview.tsx",
+      "before": "843e5239e69784ab25d362bfd92e7ce71123dc85",
+      "after": "a16e815821e7bf7c6d49d181551f8179489dd176",
+      "newMain": "43b24666736034dcb8965cdd7e14429908e3af83"
+    },
+    {
+      "path": "frontend/src/pages/wallet-v3/wallet.css",
+      "before": "f27c8fa4592b8bb516c8624e12416354670f3ea4",
+      "after": "03a5b66890e2b2df86e8c7c4581659ddd6fa034a",
+      "newMain": "03a5b66890e2b2df86e8c7c4581659ddd6fa034a"
+    }
+  ],
+  "note": "Records the approved #344 main reconciliation. Earlier ea17fdc fingerprint and local full-suite result remain their own historical checkpoints. Fresh combined build/full frontend and exact-head CI are required; final outcomes are recorded in PR #345."
+}

@@ -8,9 +8,9 @@
  *
  * Scenarios (each at 390 and 1440 px):
  *   success · 401 · 403 · 503 · network error · hung /me (timeout) · retry ·
- *   activity failing first time · activity failing after a good read (clock
- *   fast-forward to the hourly re-read) · session revoked (401 on a privileged
- *   read) · token replaced by a non-admin account.
+ *   activity failing first time · activity failing after a good active hourly
+ *   read · idle suspension and failed wake read retaining data · session revoked
+ *   (401 on a privileged read) · token replaced by a non-admin account.
  *
  * Env: QA_PLAYWRIGHT_MODULE (playwright path), QA_CHROMIUM (optional browser
  * binary), QA_OUT (evidence dir; default docs/qa/admin-gate).
@@ -108,7 +108,7 @@ async function main() {
     for (const res of hung) res.socket?.destroy();
   };
   async function open(width, height, { tokenValue = ADMIN_TOKEN, clock = false } = {}) {
-    const context = await browser.newContext({ viewport: { width, height } });
+    const context = await browser.newContext({ viewport: { width, height }, locale: 'en-US' });
     await context.addInitScript((t) => { if (t && !sessionStorage.getItem('qa-seeded')) { localStorage.setItem('exchange_token', t); sessionStorage.setItem('qa-seeded', '1'); } }, tokenValue);
     const page = await context.newPage();
     // A real network failure as the page sees it: the request never gets a response.
@@ -128,6 +128,17 @@ async function main() {
   const gate = (page) => page.evaluate(() => document.querySelector('[data-admin-gate]')?.getAttribute('data-admin-gate') ?? null);
   const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   const shot = (page, name) => page.screenshot({ path: path.join(out, `${name}.png`) });
+  async function advanceWhileActive(page, milliseconds) {
+    // An hourly poll belongs to an actively used tab. Trusted mouse input
+    // keeps that state real while the unmodified five-minute idle clock runs.
+    for (let elapsed = 0, turn = 0; elapsed < milliseconds; turn++) {
+      await page.mouse.move(8 + turn % 2, 8);
+      const step = Math.min(4 * 60_000, milliseconds - elapsed);
+      await page.clock.fastForward(step);
+      elapsed += step;
+      assert.equal(await page.locator('[data-browser-phase]').count(), 0, 'active hourly fixture unexpectedly slept');
+    }
+  }
 
   for (const [width, height] of [[390, 844], [1440, 900]]) {
     const w = `@${width}`;
@@ -139,6 +150,34 @@ async function main() {
     record(`success${w}`, (await gate(s.page)) === null && state.calls.privilegedBeforeOk === 0 && (await overflow(s.page)) <= 1 && s.errors.length === 0,
       `privileged-before-ok=${state.calls.privilegedBeforeOk} me=${state.calls.me} users=${state.calls.users} activity=${state.calls.activity}`);
     await shot(s.page, `success-${width}`);
+    await s.context.close();
+
+    // Returning to a fresh Admin page validates the session, but must not
+    // defeat the hourly summary budget or leave the global wake notice stuck.
+    reset();
+    s = await open(width, height, { clock: true });
+    await s.page.goto(`${base}/admin/users`);
+    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
+    await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
+    const beforeReturns = { ...state.calls };
+    await s.page.evaluate(() => {
+      window.__adminQaHidden = false;
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__adminQaHidden });
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__adminQaHidden ? 'hidden' : 'visible' });
+    });
+    for (let i = 0; i < 3; i++) {
+      await s.page.evaluate(() => { window.__adminQaHidden = true; document.dispatchEvent(new Event('visibilitychange')); });
+      await s.page.clock.fastForward(1000);
+      const validation = s.page.waitForResponse((response) => new URL(response.url()).pathname.endsWith('/me'));
+      await s.page.evaluate(() => { window.__adminQaHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
+      await validation;
+      await s.page.clock.runFor(500);
+      await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
+    }
+    const unchanged = state.calls.users === beforeReturns.users && state.calls.activity === beforeReturns.activity && state.calls.alerts === beforeReturns.alerts;
+    record(`three fresh tab returns → no summary reloads or stuck notice${w}`,
+      unchanged && state.calls.me === beforeReturns.me + 3 && s.errors.length === 0,
+      `me=${state.calls.me - beforeReturns.me} users=${state.calls.users - beforeReturns.users} activity=${state.calls.activity - beforeReturns.activity} alerts=${state.calls.alerts - beforeReturns.alerts}`);
     await s.context.close();
 
     // 2-3. 401 / 403 are refusals: the browser leaves /admin
@@ -209,18 +248,42 @@ async function main() {
     record(`activity first read fails → unknown → retry${w}`, unknown && state.calls.activity === before + 1 && !(await s.page.locator('[data-activity-error]').count()), `activity-calls=${state.calls.activity}`);
     await s.context.close();
 
-    // 8. activity fails after a good read (hourly re-read via clock): data kept, marked stale
+    // 8. activity fails after a good read in an active tab: data kept, marked stale
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
     await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
     state.activity = '503';
     const reads = state.calls.activity;
-    await s.page.clock.fastForward('01:00:30');
+    await advanceWhileActive(s.page, HOUR + 30_000);
     await s.page.waitForSelector('[data-activity-error="stale"]', { timeout: 10_000 });
     const kept = (await s.page.locator('[data-user-card="u-ready"] [data-event="deposit"]').count()) === 1;
     await shot(s.page, `activity-stale-${width}`);
     record(`activity fails after success → data kept, marked stale${w}`, kept && state.calls.activity === reads + 1, `reads=${state.calls.activity - reads}`);
+    await s.context.close();
+
+    // 8b. An unattended tab sleeps before the hourly poll. Wake revalidates
+    // the session and reads once; a failed read must retain the last good data.
+    reset();
+    s = await open(width, height, { clock: true });
+    await s.page.goto(`${base}/admin/users`);
+    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
+    const activityBeforeSleep = state.calls.activity;
+    await s.page.clock.fastForward(5 * 60_000 + 1);
+    await s.page.waitForSelector('[data-browser-phase="sleeping"]');
+    const beforeSleep = { ...state.calls };
+    await s.page.clock.fastForward(HOUR);
+    assert.deepEqual(state.calls, beforeSleep, 'idle tab issued a scheduled account read');
+    assert.equal(state.calls.activity, activityBeforeSleep, 'idle tab reached its hourly activity poll');
+    state.activity = '503';
+    await s.page.mouse.click(8, 8);
+    await s.page.waitForSelector('[data-activity-error="stale"]', { timeout: 10_000 });
+    await s.page.waitForSelector('[data-browser-phase="error"]', { timeout: 10_000 });
+    const keptAfterWake = (await s.page.locator('[data-user-card="u-ready"] [data-event="deposit"]').count()) === 1;
+    record(`idle defers hourly read → failed wake keeps last good data${w}`,
+      keptAfterWake && state.calls.me === beforeSleep.me + 1 && state.calls.activity === beforeSleep.activity + 1,
+      `wake-me=${state.calls.me - beforeSleep.me} wake-activity=${state.calls.activity - beforeSleep.activity}`);
+    await shot(s.page, `activity-idle-wake-${width}`);
     await s.context.close();
 
     // 9. session revoked: a privileged read answers 401 → token cleared, admin left

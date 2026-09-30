@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -31,12 +32,12 @@ export function CfdMarketsSection({ id }: { id?: string }) {
         .catch(() => {});
     }
     load();
-    const interval = setInterval(load, 5000);
-    return () => clearInterval(interval);
+    const interval = browserSetInterval(load, 5000);
+    return () => browserClearInterval(interval);
   }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = browserSetInterval(() => {
       setHistory((prev) => {
         const next = new Map(prev);
         for (const pair of OVERVIEW_PAIRS) {
@@ -48,7 +49,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
         return next;
       });
     }, 3000);
-    return () => clearInterval(interval);
+    return () => browserClearInterval(interval);
   }, [tickers]);
 
   const fmt = (n: number) => n.toLocaleString(localeOf(lang), { maximumFractionDigits: n < 1 ? 6 : 2 });

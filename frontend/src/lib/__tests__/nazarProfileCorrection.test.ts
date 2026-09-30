@@ -10,6 +10,9 @@ import { dailyReturnChart } from '../dailyReturnChart';
 import { nazarTrader, formatPercent, formatAccountSize, roiClass, PERIODS } from '../../pages/copy-trading-bolt/traders';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 import { isModeledTraderData } from '../modeledCopyData';
+import { periodRatioFacts } from '../syntheticCopyTrading';
+import { languageModule } from '../../../test-utils/languageStub';
+import { liveMetricModule } from '../../../test-utils/copyPresentation';
 
 const frontend = resolve(__dirname, '../../..');
 const requireFrontend = createRequire(resolve(frontend, 'package.json'));
@@ -17,20 +20,25 @@ const React = requireFrontend('react');
 const { renderToStaticMarkup } = requireFrontend('react-dom/server');
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
 const parsed = ts.createSourceFile('components.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ['numberLabel', 'signedUsd', 'unsignedPercent', 'durationLabel', 'fallbackMetrics', 'MetricsPanel', 'DailyReturnChart', 'FollowersPanel', 'Profile'];
+const names = ['localizedDuration', 'periodLabelKey', 'numberLabel', 'signedUsd', 'unsignedPercent', 'durationLabel', 'fallbackMetrics', 'MetricsPanel', 'DailyReturnChart', 'FollowersPanel', 'Profile'];
 const declarations = names.map(name => {
   const node = parsed.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
   if (!node) throw new Error(`Missing real component ${name}`);
   return node.getText(parsed);
 });
 let selectedPeriod = 'ALL';
+let stateCursor = 0;
 const empty = () => null;
 // Actual profile/readout/follower/histogram markup, with only unrelated children
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
-  isModeledTraderData,
+  isModeledTraderData, periodRatioFacts,
+  ...languageModule('ru'), ...liveMetricModule(),
+  useFiguresPending: () => false, useEffect: () => {},
   useMemo: (fn: () => unknown) => fn(),
-  useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
+  // Render the settled analytics phase; copyFirstLoad exercises the real
+  // 16 ms transition and confirms that the first identity paint is retained.
+  useState: (initial: unknown) => [stateCursor++ === 0 ? true : initial === '90D' ? selectedPeriod : initial, empty],
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,
   publicSignedUsdt, publicUsdtNumber, dailyReturnChart, formatSyntheticHistoryDate,
   Avatar: empty, VipBadge: empty, FavoriteButton: empty, CopyButton: empty, ArrowLeft: empty,
@@ -44,31 +52,42 @@ const compiled = ts.transpileModule(`${declarations.join('\n')}\nexports.Profile
 const exportsObject: Record<string, any> = {};
 new Function('require', 'exports', ...Object.keys(deps), compiled)(requireFrontend, exportsObject, ...Object.values(deps));
 const baseline = toResponse(createReviewSyntheticState(new Date('2026-09-05T12:00:00Z')));
-const render = (trader = syntheticNazaraTrader(baseline), synthetic: typeof baseline | null = baseline) => renderToStaticMarkup(React.createElement(exportsObject.Profile, {
-  trader, synthetic, onBack: empty,
-}));
+const render = (trader = syntheticNazaraTrader(baseline), synthetic: typeof baseline | null = baseline) => {
+  stateCursor = 0;
+  return renderToStaticMarkup(React.createElement(exportsObject.Profile, { trader, synthetic, onBack: empty }));
+};
 const plain = (value: string) => value.replace(/\u00a0|\u202f/g, ' ');
 
-test.each(PERIODS)('%s keeps lifetime statistics separate from the selected chart period', period => {
+test.each(PERIODS)('%s displays its selected-period statistics while the hero retains lifetime identity facts', period => {
   selectedPeriod = period;
+  const before = JSON.stringify(baseline);
   const html = plain(render());
-  const sidebar = html.split('<aside>')[1].split('</aside>')[0];
-  expect(sidebar).toContain('ALL · SINCE INCEPTION');
-  expect(sidebar).toContain('<span>Win Rate</span><strong>92,7%</strong>');
-  expect(sidebar).toContain('<span>Total Trades</span><strong>471</strong>');
-  expect(sidebar).toContain('<span>Max Drawdown</span><strong>5,79%</strong>');
-  expect(sidebar).toContain('+4 711 027 USDT');
-  expect(sidebar).not.toMatch(/Winning Trades|Losing Trades|Trading Days|Weekly Trades/);
+  const { JSDOM } = requireFrontend('jsdom');
+  const dom = new JSDOM(html);
+  const document = dom.window.document;
+  const panel = document.querySelector('.profile-metrics-panel')!;
+  const value = (id: string) => panel.querySelector(`[data-metric="${id}"] strong`)!.textContent;
+  const selected = selectSyntheticPeriod(baseline, period);
+  expect(panel.getAttribute('data-period')).toBe(period);
+  expect(panel.querySelector('h2')!.textContent).toBe('Эффективность');
+  expect(value('roi')).toBe(formatPercent(selected.roi));
+  expect(value('masterPnl')).toBe(plain(publicSignedUsdt(selected.pnl)));
+  expect(value('followersPnl')).toBe(plain(publicSignedUsdt(selected.followerPnl)));
+  expect(value('totalTrades')!.replace(/\s/g, '')).toBe(String(selected.totalTrades));
+  expect(value('winRate')).toBe(`${selected.winRate.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`);
+  expect(value('maxDrawdown')).toBe(`${selected.maximumDrawdown.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`);
+  expect(panel.querySelectorAll('[data-metric]')).toHaveLength(16);
+  const hero = document.querySelector('.trader-hero-metrics')!.textContent;
+  expect(hero).toContain('7 200 000 USDT');
+  expect(hero).toContain('5,79%');
   expect(html).toContain(`data-yellow-period="${period}"`);
-  expect(html).toContain(formatPercent(selectSyntheticPeriod(baseline, period).roi));
   expect(html).toContain('Дневная доходность');
-  expect(html).not.toMatch(/Средняя доходность|Average Return|Средний PnL|plot.average/);
+  expect(html).not.toMatch(/Средняя доходность|Average Return|plot.average|NaN|Nazara/);
   expect(html).toContain('<h1 class="trader-display-name">Nazar</h1>');
   expect(html).toContain('Доход Nazar');
-  expect(html).not.toMatch(/Nazara/);
-  expect(html).toContain('7 200 000 USDT');
   expect(html).not.toMatch(/\d[\d ]{3,},\d{2} USDT/);
-  expect(html).toContain('<span>Max Drawdown</span><strong>5,79%</strong>');
+  expect(JSON.stringify(baseline)).toBe(before);
+  dom.window.close();
 });
 
 test.each([true, false, undefined])('actual profile shows identityVerified=%s only inline with its heading', identityVerified => {
@@ -114,7 +133,7 @@ test('actual histogram markup uses the same uncapped signed geometry and canonic
   expect(rects).toHaveLength(loss.length);
   loss.forEach((bar, index) => {
     expect(rects[index][0]).toContain(`height="${bar.height}"`);
-    expect(rects[index][0]).toContain(`${bar.date}: ${bar.returnPct.toLocaleString('ru-RU', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}%`);
+    expect(rects[index][0]).toContain(`${bar.date}: ${bar.returnPct.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`);
   });
   const scale = plot.bars.find(bar => bar.returnPct > 0)!;
   loss.forEach(bar => expect(bar.height / Math.abs(bar.returnPct)).toBeCloseTo(scale.height / scale.returnPct, 10));

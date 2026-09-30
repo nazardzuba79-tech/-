@@ -83,8 +83,20 @@ jobs:
           npm run build --prefix frontend
           cp -r frontend/dist /tmp/buildB
           git checkout -- frontend/src/pages/FuturesPage.tsx
-          test "$(grep -o 'index-[A-Za-z0-9]*\.js' /tmp/buildA/index.html)" != "$(grep -o 'index-[A-Za-z0-9]*\.js' /tmp/buildB/index.html)" \
-            || { echo "both builds emitted the same entry hash; nothing would be stale"; exit 1; }
+          node - /tmp/buildA /tmp/buildB <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const entries = process.argv.slice(2).map(dir => {
+            // Vite hashes include underscores and hyphens. Missing entries
+            // must fail explicitly rather than compare as two empty strings.
+            const entry = fs.readFileSync(path.join(dir, 'index.html'), 'utf8').match(/assets\/(index-[\w-]+\.js)/)?.[1];
+            assert.ok(entry, `Missing module entry in ${dir}/index.html`);
+            return entry;
+          });
+          assert.notEqual(entries[0], entries[1], 'both builds emitted the same entry hash; nothing would be stale');
+          console.log(`Verified different entry assets: ${entries.join(' → ')}`);
+          NODE
       - name: Restore the shipped build
         run: npm run build --prefix frontend
       - name: Install disposable browser

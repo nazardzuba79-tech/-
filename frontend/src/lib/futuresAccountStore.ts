@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener, trackBrowserRead } from './browserActivity';
 import { api, getToken, onSessionChange } from './api';
 
 /**
@@ -160,7 +161,7 @@ class FuturesAccountStore {
   private sessionUnsubscribe: (() => void) | null = null;
   private visibilityWatching = false;
 
-  private readonly onVisibilityChange = () => {
+  private readonly onVisibilityChange = (event?: Event) => {
     // A background Futures tab must be completely quiet. Timers are removed
     // while hidden; an already in-flight request is allowed to settle, but
     // no new poll is scheduled. When the trader returns, restart only the
@@ -168,7 +169,11 @@ class FuturesAccountStore {
     for (const resource of RESOURCE_KEYS) this.retime(resource);
     if (this.isHidden()) return;
     for (const resource of RESOURCE_KEYS) {
-      if (this.isWanted(resource) && this.needsRefresh(resource)) void this.refresh(resource);
+      if (!this.isWanted(resource)) continue;
+      // A request suspended before sleep may contain the pre-sleep account.
+      // Supersede it and queue one fresh read after it settles.
+      if (event?.type === 'voltex:browser-activity') this.dirty.add(resource);
+      if (this.needsRefresh(resource)) void this.refresh(resource);
     }
   };
 
@@ -248,7 +253,7 @@ class FuturesAccountStore {
     const current = this.state[resource];
     this.patch(resource, current.data === null ? { loading: true } : { refreshing: true });
 
-    runtime.inFlight = (FETCHERS[resource]() as Promise<never[]>)
+    runtime.inFlight = trackBrowserRead((FETCHERS[resource]() as Promise<never[]>)
       .then((data) => {
         // Two independent guards, both required. The generation catches a
         // logout/login that happened while this was in the air; the token
@@ -271,7 +276,7 @@ class FuturesAccountStore {
         });
         if (exposureChanged && resource === 'orders') this.invalidate(['positions', 'balances', 'orderHistory']);
         if (exposureChanged && resource === 'positions') this.invalidate(['balances', 'positionHistory']);
-      })
+      }))
       .catch(() => {
         if (generation !== this.generation || getToken() !== token) return;
         // A failure keeps whatever was last known good on screen and flags
@@ -318,18 +323,18 @@ class FuturesAccountStore {
   }
 
   private isHidden(): boolean {
-    return typeof document !== 'undefined' && document.hidden;
+    return typeof document !== 'undefined' && isBrowserInactive();
   }
 
   private ensureVisibilityWatch(): void {
     if (this.visibilityWatching || typeof document === 'undefined') return;
-    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    addBrowserActivityListener(this.onVisibilityChange);
     this.visibilityWatching = true;
   }
 
   private stopVisibilityWatch(): void {
     if (!this.visibilityWatching || typeof document === 'undefined') return;
-    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    removeBrowserActivityListener(this.onVisibilityChange);
     this.visibilityWatching = false;
   }
 

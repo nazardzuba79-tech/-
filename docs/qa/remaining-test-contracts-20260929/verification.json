@@ -1,0 +1,1022 @@
+{
+  "baselineMain": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "scope": "nine frontend test-contract suites, no runtime edit",
+  "before": {
+    "counts": {
+      "suites": 9,
+      "tests": 105,
+      "passed": 91,
+      "failed": 14,
+      "skipped": 0
+    },
+    "suites": [
+      {
+        "file": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+        "cases": [
+          {
+            "name": "selective Card promotion preserves the exact approved page, composition, copy and state machine",
+            "status": "failed"
+          },
+          {
+            "name": "all approved masters and the two new presentation assets are byte-exact and no superseded source compositions are published",
+            "status": "passed"
+          },
+          {
+            "name": "Copy preserves its approved source except exact labels and click-only deposit requirement UX",
+            "status": "failed"
+          },
+          {
+            "name": "Card remains an authenticated standalone route, independent of Spot terminal changes",
+            "status": "failed"
+          },
+          {
+            "name": "all 196 Card-related shared translations retain owner-approved English product branding",
+            "status": "passed"
+          },
+          {
+            "name": "Card API uses normal authenticated backend requests without review or client eligibility branches",
+            "status": "passed"
+          },
+          {
+            "name": "only approved Card dependencies are added and the production build workflow remains unchanged",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "cases": [
+          {
+            "name": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships",
+            "status": "failed"
+          },
+          {
+            "name": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header",
+            "status": "passed"
+          },
+          {
+            "name": "no route stylesheet may move the shared authenticated header the terminal reset keeps its own scope, at unchanged specificity",
+            "status": "passed"
+          },
+          {
+            "name": "no route stylesheet may move the shared authenticated header because the header really does render inside those page wrappers",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet every class it renders is a class Nav.tsx actually writes",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet and Nav imports no stylesheet of its own \u2014 index.css carries it",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet the layout the production defect destroyed is declared there, eagerly",
+            "status": "failed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class",
+            "status": "failed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width",
+            "status": "passed"
+          },
+          {
+            "name": "build output: the shipped chunks agree the eager chunk still ships the header layout",
+            "status": "passed"
+          },
+          {
+            "name": "build output: the shipped chunks agree and no lazy chunk blanket-resets it",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/orderBookCalmMotion.test.ts",
+        "cases": [
+          {
+            "name": "order book rows keep their DOM across a moving ladder keys a price row by its depth slot, never by the price in it",
+            "status": "passed"
+          },
+          {
+            "name": "order book rows keep their DOM across a moving ladder still renders the level it was given \u2014 the slot is identity, not content",
+            "status": "passed"
+          },
+          {
+            "name": "order book rows keep their DOM across a moving ladder scales each side against its own deepest level, not a shared one",
+            "status": "passed"
+          },
+          {
+            "name": "centre price and its direction arrow hold their position renders the arrow as its own element, not as part of the number",
+            "status": "passed"
+          },
+          {
+            "name": "centre price and its direction arrow hold their position gives the arrow a fixed width so either glyph, or neither, occupies the same space",
+            "status": "passed"
+          },
+          {
+            "name": "centre price and its direction arrow hold their position still reports the direction it measured, and still says which price it is",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes draws the bars well under the old 30% alpha",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes does not ease the bar at all: no sheet may animate a depth bar",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes does not ease the buy/sell ratio bar either",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes keeps the bar on a transform, so a bar change never re-lays-out the row",
+            "status": "failed"
+          },
+          {
+            "name": "the data contract is untouched still tells stale and unavailable apart, and still names them",
+            "status": "passed"
+          },
+          {
+            "name": "the data contract is untouched draws a placeholder ladder while waiting instead of an alarm or a blank",
+            "status": "passed"
+          },
+          {
+            "name": "the data contract is untouched does not average, interpolate or invent a level anywhere in the panel",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one keys a Spot row by its depth slot, never by the price in it",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one no longer pulses a row when its quantity changes",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one keeps the Spot bar on a transform, so a size change never re-lays-out the row",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one still shows real levels and invents none",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/supportForm.test.ts",
+        "cases": [
+          {
+            "name": "accepts a complete form and names each bad field otherwise",
+            "status": "passed"
+          },
+          {
+            "name": "sends exactly the four fields (and the empty honeypot) to the configured endpoint, without cookies",
+            "status": "passed"
+          },
+          {
+            "name": "reports success ONLY when the provider accepted the email",
+            "status": "passed"
+          },
+          {
+            "name": "a guest: nothing is requested on mount or open; Send is one POST; success clears the message",
+            "status": "passed"
+          },
+          {
+            "name": "a provider refusal shows the failure line, keeps the draft and never shows success",
+            "status": "passed"
+          },
+          {
+            "name": "a signed-in user gets name and email prefilled from one profile read, only when they open the form",
+            "status": "passed"
+          },
+          {
+            "name": "a double submit is one POST",
+            "status": "passed"
+          },
+          {
+            "name": "a name of spaces is caught before any request",
+            "status": "passed"
+          },
+          {
+            "name": "the widget has no chat left: no polling, no stored thread, no Render support endpoint",
+            "status": "passed"
+          },
+          {
+            "name": "no mail secret, SMTP setting or recipient address lives anywhere in the frontend source",
+            "status": "failed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+        "cases": [
+          {
+            "name": "/register owns every rule it renders uses no Tailwind utility at all \u2014 its whole vocabulary is vx-auth-*",
+            "status": "passed"
+          },
+          {
+            "name": "/register owns every rule it renders reaches auth-shell.css through the component that declares it",
+            "status": "passed"
+          },
+          {
+            "name": "/register owns every rule it renders and imports no stylesheet of its own to go stale",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses its stylesheet declares no utilities layer",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses but it does use them heavily, including responsive and arbitrary values",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses so tailwind.config must keep scanning it, or the classes stop existing",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses and HomePage must stay eager, because that is what delivers them",
+            "status": "passed"
+          },
+          {
+            "name": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named",
+            "status": "passed"
+          },
+          {
+            "name": "the utilities layers in this repo are the three we think they are Crypto Card is the one scoped layer \u2014 the precedent for narrowing another",
+            "status": "passed"
+          },
+          {
+            "name": "build output: a cold /wallet downloads every utility it uses every one of them is in the CSS that route fetches",
+            "status": "failed"
+          },
+          {
+            "name": "build output: a cold /wallet downloads every utility it uses and no Tailwind preflight came with them",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/marketUniverseScale.test.ts",
+        "cases": [
+          {
+            "name": "the frontend never calls a venue directly found sources to scan",
+            "status": "passed"
+          },
+          {
+            "name": "the frontend never calls a venue directly contains no direct upstream market API host",
+            "status": "failed"
+          },
+          {
+            "name": "the frontend never calls a venue directly reads the market universe from the VOLTEX API, if at all",
+            "status": "passed"
+          },
+          {
+            "name": "the futures market list scales renders through a window rather than mounting every row",
+            "status": "passed"
+          },
+          {
+            "name": "the futures market list scales has no hardcoded market-count ceiling",
+            "status": "passed"
+          },
+          {
+            "name": "the futures market list scales takes its symbols from the backend listing, never from a local list",
+            "status": "failed"
+          },
+          {
+            "name": "the window survives the list shrinking under it clamps the window against the CURRENT row count, not just against zero",
+            "status": "passed"
+          },
+          {
+            "name": "the window survives the list shrinking under it renders a screenful before the container has been measured",
+            "status": "passed"
+          },
+          {
+            "name": "no fake zero in the market list carries an unpriced market as null, never as 0",
+            "status": "passed"
+          },
+          {
+            "name": "no fake zero in the market list sorts unpriced markets last in BOTH directions",
+            "status": "passed"
+          },
+          {
+            "name": "candles and order book are fetched for the selected symbol only requests candles for one pair, inside a symbol-keyed effect",
+            "status": "passed"
+          },
+          {
+            "name": "candles and order book are fetched for the selected symbol only requests the order book for one symbol only",
+            "status": "passed"
+          },
+          {
+            "name": "candles and order book are fetched for the selected symbol only reads all list prices from the ONE shared snapshot, not per row",
+            "status": "passed"
+          },
+          {
+            "name": "spot and futures symbol isolation the futures list is driven by the futures listing, the spot list is not",
+            "status": "passed"
+          },
+          {
+            "name": "spot and futures symbol isolation drawings stay keyed per market type and symbol",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "cases": [
+          {
+            "name": "the homepage owns its Tailwind utilities 1. HomePage imports its own homepage CSS",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 2. HomePage imports a homepage-owned stylesheet declaring @tailwind utilities",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 2b. the utilities layer is imported AFTER home.css, so a utility wins ties",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 2c. home.css itself is untouched by this fix \u2014 no design drift",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 3. tailwind.config scans the homepage sources",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 4. preflight stays disabled \u2014 this ships utilities, never a global reset",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities the homepage keeps its own scoped stand-in for the disabled preflight",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet 6. Settings and Crypto Card still own their own utilities, and are lazy",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not",
+            "status": "failed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet no homepage file imports another route's stylesheet",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages",
+            "status": "passed"
+          },
+          {
+            "name": "5. the built EAGER stylesheet carries the homepage utilities index-*.css contains the utilities `/` needs",
+            "status": "passed"
+          },
+          {
+            "name": "5. the built EAGER stylesheet carries the homepage utilities and still carries no Tailwind preflight reset",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/plainLanguage.test.ts",
+        "cases": [
+          {
+            "name": "ru dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "en dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "zh dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "es dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "hi dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "ja dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "ko dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "hardcoded component copy speaks about the product, not about the plumbing",
+            "status": "failed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+        "cases": [
+          {
+            "name": "the dictionary contains no provider branding has translations to check at all",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (ru)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (en)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (zh)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (es)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (hi)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (ja)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (ko)",
+            "status": "passed"
+          },
+          {
+            "name": "customer-facing components render no provider branding found the frontend sources",
+            "status": "passed"
+          },
+          {
+            "name": "customer-facing components render no provider branding has no provider name in any executable line",
+            "status": "failed"
+          },
+          {
+            "name": "provenance is kept, not deleted live provenance remains in pure data modules, with no rendering API",
+            "status": "passed"
+          },
+          {
+            "name": "provenance is kept, not deleted still travels in the API contract",
+            "status": "passed"
+          },
+          {
+            "name": "provenance is kept, not deleted is still produced by the backend service",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  },
+  "after": {
+    "counts": {
+      "suites": 9,
+      "tests": 109,
+      "passed": 109,
+      "failed": 0,
+      "skipped": 0
+    },
+    "suites": [
+      {
+        "file": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+        "cases": [
+          {
+            "name": "selective Card promotion preserves the exact approved page, composition, copy and state machine",
+            "status": "passed"
+          },
+          {
+            "name": "all approved masters and the two new presentation assets are byte-exact and no superseded source compositions are published",
+            "status": "passed"
+          },
+          {
+            "name": "unchanged collateral sources remain exact and the removed prelaunch wrapper stays absent",
+            "status": "passed"
+          },
+          {
+            "name": "the released currency section uses its translated balance-yield copy and unchanged currency assets",
+            "status": "passed"
+          },
+          {
+            "name": "shared homepage and navigation entry points still lead to Card",
+            "status": "passed"
+          },
+          {
+            "name": "Card remains an authenticated standalone route, independent of Spot terminal changes",
+            "status": "passed"
+          },
+          {
+            "name": "all 196 Card-related shared translations retain owner-approved English product branding",
+            "status": "passed"
+          },
+          {
+            "name": "Card API uses normal authenticated backend requests without review or client eligibility branches",
+            "status": "passed"
+          },
+          {
+            "name": "only approved Card dependencies are added and the production build workflow remains unchanged",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "cases": [
+          {
+            "name": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships",
+            "status": "passed"
+          },
+          {
+            "name": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header",
+            "status": "passed"
+          },
+          {
+            "name": "no route stylesheet may move the shared authenticated header the terminal reset keeps its own scope, at unchanged specificity",
+            "status": "passed"
+          },
+          {
+            "name": "no route stylesheet may move the shared authenticated header because the header really does render inside those page wrappers",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet every class it renders is a class Nav.tsx actually writes",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet and Nav imports no stylesheet of its own \u2014 index.css carries it",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet the layout the production defect destroyed is declared there, eagerly",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet only the audited auth and terminal scopes override a header class",
+            "status": "passed"
+          },
+          {
+            "name": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width",
+            "status": "passed"
+          },
+          {
+            "name": "build output: the shipped chunks agree the eager chunk still ships the header layout",
+            "status": "passed"
+          },
+          {
+            "name": "build output: the shipped chunks agree and no lazy chunk blanket-resets it",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/supportForm.test.ts",
+        "cases": [
+          {
+            "name": "accepts a complete form and names each bad field otherwise",
+            "status": "passed"
+          },
+          {
+            "name": "sends exactly the four fields (and the empty honeypot) to the configured endpoint, without cookies",
+            "status": "passed"
+          },
+          {
+            "name": "reports success ONLY when the provider accepted the email",
+            "status": "passed"
+          },
+          {
+            "name": "a guest: nothing is requested on mount or open; Send is one POST; success clears the message",
+            "status": "passed"
+          },
+          {
+            "name": "a provider refusal shows the failure line, keeps the draft and never shows success",
+            "status": "passed"
+          },
+          {
+            "name": "a signed-in user gets name and email prefilled from one profile read, only when they open the form",
+            "status": "passed"
+          },
+          {
+            "name": "a double submit is one POST",
+            "status": "passed"
+          },
+          {
+            "name": "a name of spaces is caught before any request",
+            "status": "passed"
+          },
+          {
+            "name": "the widget has no chat left: no polling, no stored thread, no Render support endpoint",
+            "status": "passed"
+          },
+          {
+            "name": "mail secrets, SMTP settings and support recipient configuration stay out of frontend code",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/orderBookCalmMotion.test.ts",
+        "cases": [
+          {
+            "name": "order book rows keep their DOM across a moving ladder keys a price row by its depth slot, never by the price in it",
+            "status": "passed"
+          },
+          {
+            "name": "order book rows keep their DOM across a moving ladder still renders the level it was given \u2014 the slot is identity, not content",
+            "status": "passed"
+          },
+          {
+            "name": "order book rows keep their DOM across a moving ladder scales each side against its own deepest level, not a shared one",
+            "status": "passed"
+          },
+          {
+            "name": "centre price and its direction arrow hold their position renders the arrow as its own element, not as part of the number",
+            "status": "passed"
+          },
+          {
+            "name": "centre price and its direction arrow hold their position gives the arrow a fixed width so either glyph, or neither, occupies the same space",
+            "status": "passed"
+          },
+          {
+            "name": "centre price and its direction arrow hold their position still reports the direction it measured, and still says which price it is",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes draws the bars well under the old 30% alpha",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes does not ease the bar at all: no sheet may animate a depth bar",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes does not ease the buy/sell ratio bar either",
+            "status": "passed"
+          },
+          {
+            "name": "depth bars are muted and settle between publishes keeps the bar on a transform, so a bar change never re-lays-out the row",
+            "status": "passed"
+          },
+          {
+            "name": "the data contract is untouched still tells stale and unavailable apart, and still names them",
+            "status": "passed"
+          },
+          {
+            "name": "the data contract is untouched draws a placeholder ladder while waiting instead of an alarm or a blank",
+            "status": "passed"
+          },
+          {
+            "name": "the data contract is untouched does not average, interpolate or invent a level anywhere in the panel",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one keys a Spot row by its depth slot, never by the price in it",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one no longer pulses a row when its quantity changes",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one keeps the Spot bar on a transform, so a size change never re-lays-out the row",
+            "status": "passed"
+          },
+          {
+            "name": "the Spot ladder obeys the same rules as the futures one still shows real levels and invents none",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "cases": [
+          {
+            "name": "the homepage owns its Tailwind utilities 1. HomePage imports its own homepage CSS",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 2. HomePage imports a homepage-owned stylesheet declaring @tailwind utilities",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 2b. the utilities layer is imported AFTER home.css, so a utility wins ties",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 2c. home.css itself is untouched by this fix \u2014 no design drift",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 3. tailwind.config scans the homepage sources",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities 4. preflight stays disabled \u2014 this ships utilities, never a global reset",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage owns its Tailwind utilities the homepage keeps its own scoped stand-in for the disabled preflight",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet 6. Settings and Crypto Card still own their own utilities, and are lazy",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet no homepage file imports another route's stylesheet",
+            "status": "passed"
+          },
+          {
+            "name": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages",
+            "status": "passed"
+          },
+          {
+            "name": "5. the built EAGER stylesheet carries the homepage utilities index-*.css contains the utilities `/` needs",
+            "status": "passed"
+          },
+          {
+            "name": "5. the built EAGER stylesheet carries the homepage utilities and still carries no Tailwind preflight reset",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+        "cases": [
+          {
+            "name": "the dictionary contains no provider branding has translations to check at all",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (ru)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (en)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (zh)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (es)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (hi)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (ja)",
+            "status": "passed"
+          },
+          {
+            "name": "the dictionary contains no provider branding is clean across all languages (ko)",
+            "status": "passed"
+          },
+          {
+            "name": "customer-facing components render no provider branding found the frontend sources",
+            "status": "passed"
+          },
+          {
+            "name": "customer-facing components render no provider branding keeps the excluded provenance and transport modules free of rendering APIs",
+            "status": "passed"
+          },
+          {
+            "name": "customer-facing components render no provider branding has no provider name in customer presentation code",
+            "status": "passed"
+          },
+          {
+            "name": "provenance is kept, not deleted live provenance remains in pure data modules, with no rendering API",
+            "status": "passed"
+          },
+          {
+            "name": "provenance is kept, not deleted still travels in the API contract",
+            "status": "passed"
+          },
+          {
+            "name": "provenance is kept, not deleted is still produced by the backend service",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+        "cases": [
+          {
+            "name": "reads all nested conditional class branches without treating conditions as utilities",
+            "status": "passed"
+          },
+          {
+            "name": "/register owns every rule it renders uses no Tailwind utility at all \u2014 its whole vocabulary is vx-auth-*",
+            "status": "passed"
+          },
+          {
+            "name": "/register owns every rule it renders reaches auth-shell.css through the component that declares it",
+            "status": "passed"
+          },
+          {
+            "name": "/register owns every rule it renders and imports no stylesheet of its own to go stale",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses its stylesheet declares no utilities layer",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses but it does use them heavily, including responsive and arbitrary values",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses so tailwind.config must keep scanning it, or the classes stop existing",
+            "status": "passed"
+          },
+          {
+            "name": "/wallet does NOT own the utilities it uses and HomePage must stay eager, because that is what delivers them",
+            "status": "passed"
+          },
+          {
+            "name": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named",
+            "status": "passed"
+          },
+          {
+            "name": "the utilities layers in this repo are the three we think they are Crypto Card is the one scoped layer \u2014 the precedent for narrowing another",
+            "status": "passed"
+          },
+          {
+            "name": "build output: a cold /wallet downloads every utility it uses every one of them is in the CSS that route fetches",
+            "status": "passed"
+          },
+          {
+            "name": "build output: a cold /wallet downloads every utility it uses and no Tailwind preflight came with them",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/plainLanguage.test.ts",
+        "cases": [
+          {
+            "name": "ru dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "en dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "zh dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "es dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "hi dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "ja dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "ko dictionary speaks about the product, not about the plumbing",
+            "status": "passed"
+          },
+          {
+            "name": "hardcoded component copy speaks about the product, not about the plumbing",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "frontend/src/lib/__tests__/marketUniverseScale.test.ts",
+        "cases": [
+          {
+            "name": "direct venue reads stay in the approved public-data adapters found sources to scan",
+            "status": "passed"
+          },
+          {
+            "name": "direct venue reads stay in the approved public-data adapters contains no upstream market API host outside its exact public adapter allowlist",
+            "status": "passed"
+          },
+          {
+            "name": "direct venue reads stay in the approved public-data adapters reads the market universe from the VOLTEX API, if at all",
+            "status": "passed"
+          },
+          {
+            "name": "the futures market list scales renders through a window rather than mounting every row",
+            "status": "passed"
+          },
+          {
+            "name": "the futures market list scales has no hardcoded market-count ceiling",
+            "status": "passed"
+          },
+          {
+            "name": "the futures market list scales takes its symbols from the backend listing, never from a local list",
+            "status": "passed"
+          },
+          {
+            "name": "the window survives the list shrinking under it clamps the window against the CURRENT row count, not just against zero",
+            "status": "passed"
+          },
+          {
+            "name": "the window survives the list shrinking under it renders a screenful before the container has been measured",
+            "status": "passed"
+          },
+          {
+            "name": "no fake zero in the market list carries an unpriced market as null, never as 0",
+            "status": "passed"
+          },
+          {
+            "name": "no fake zero in the market list sorts unpriced markets last in BOTH directions",
+            "status": "passed"
+          },
+          {
+            "name": "candles and order book are fetched for the selected symbol only requests candles for one pair, inside a symbol-keyed effect",
+            "status": "passed"
+          },
+          {
+            "name": "candles and order book are fetched for the selected symbol only requests the order book for one symbol only",
+            "status": "passed"
+          },
+          {
+            "name": "candles and order book are fetched for the selected symbol only reads all list prices from the ONE shared snapshot, not per row",
+            "status": "passed"
+          },
+          {
+            "name": "spot and futures symbol isolation the futures list is driven by the futures listing, the spot list is not",
+            "status": "passed"
+          },
+          {
+            "name": "spot and futures symbol isolation drawings stay keyed per market type and symbol",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  },
+  "unchangedHashCounts": {
+    "approvedCardSources": 31,
+    "preservedMainSources": 18,
+    "approvedAssets": 20
+  },
+  "translationEntriesWithUnchangedDigest": 196,
+  "sourceFiles": [
+    {
+      "file": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+      "sha256": "c0210a70eaa3f8a29ed8e268cf1235b39cec67e6c88d67863a1286503c2b6bc9"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "sha256": "d57b3146c09584a23e3f47ab96dec580268483b8361a8f85493d47ec537ba112"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/marketUniverseScale.test.ts",
+      "sha256": "f1b6595d8a793f52df75ad737fc9264785b9be950380f72c6ad15d81077ac713"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+      "sha256": "2d64508dbe7fd0f0465d8cc0a3f57b5173fce4ef8edf9ce5add29e5bef3436c6"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/orderBookCalmMotion.test.ts",
+      "sha256": "f6f7cf863e44c962c13753219c69aa428f69d23da3f5ff78d2e5cde5a87e0c59"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/plainLanguage.test.ts",
+      "sha256": "be5c0558fe1421f78800f92eecec04999d60cd1a991c5d675c67c7dd025b942a"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+      "sha256": "40c7bf6c15882d3f601280eeb8d93db551740b1dec4dc77787c74aff7fa848b3"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "sha256": "f90d62437bf3ecf8a769591b0f9673e5ef5fbf52a1df8ed1d73f76ac7d3fddfe"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/supportForm.test.ts",
+      "sha256": "3c5016aa75c8177f1965778e8d02bcd57b0eeca6665a85e3603f7ce02253e03f"
+    },
+    {
+      "file": "frontend/test-utils/sourceContracts.ts",
+      "sha256": "b49fd22abdab7a602ff56018583644bc3a38db2de4463c74a2fce39e6969458f"
+    }
+  ],
+  "viteBuild": "PASS; six build-dependent CSS assertions executed; existing large-chunk warning",
+  "productionAccess": false
+}

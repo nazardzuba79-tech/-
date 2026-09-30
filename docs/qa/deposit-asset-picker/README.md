@@ -59,3 +59,35 @@ Completion-run results and screenshots are recorded separately; do not treat
 the original #339 measurements as verification of a later head.
 
 Widths: 1920, 1440, 430, 390, 360 and 320, for Header and Wallet.
+
+## Follow-up: the minimum in two lines, and no «V» on Wallet (2026-09-29)
+
+Owner: the note «Для зачисления сумма подтверждённых пополнений в одном активе
+и одной сети должна быть не ниже минимума» was hard for newcomers; approved
+wording per coin, a two-line block, and the large decorative «V» removed from
+the Wallet overview.
+
+| Coin | Line 1 (bold) |
+|---|---|
+| USDT / USDC (and the other pegged USD, DAI) | Минимальное пополнение — 300 USDT / 300 USDC |
+| BTC, ETH, BNB, SOL, POL, TON | Минимальное пополнение — 300 USDT или эквивалент в BTC (≈ 0,003 BTC) |
+
+Line 2: «Несколько переводов в одном активе и сети суммируются.» (the same
+rule as before, said plainly).
+
+The `(≈ …)` part closes both gaps the #339 review found:
+- it needs a price that is live (`tickersMeta.stale === false`, so never the
+  warm cache or a stale-served snapshot);
+- the price must be younger than `DEPOSIT_PRICE_MAX_AGE_MS`, which is pinned
+  to the server's own bound;
+- a one-shot timeout takes an estimate down the moment it ages out, even
+  with no other re-render;
+- the window reads only the shared market snapshot: no request, no
+  subscription, no polling.
+
+Without such a price the line reads «… или эквивалент в BTC» alone. On
+Wallet alone the snapshot is usually not live, so that is the common case
+there.
+
+Screenshots: `minimum-before-*` (main `9742375b`), `minimum-after-*`,
+`wallet-no-v-{1440,390}` (local fixture, no data).

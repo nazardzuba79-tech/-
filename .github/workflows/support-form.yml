@@ -60,7 +60,11 @@ jobs:
       - name: Production build has no mail secret
         run: |
           npm run build --prefix frontend
-          if grep -R -l -E "SMTP_PASS|SMTP_USER|SUPPORT_ADMIN_EMAIL|voltex\.crypto@gmail\.com|CLOUDFLARE_API_TOKEN" frontend/dist; then
+          # The exact protected-owner email comparison in
+          # frontend/src/pages/admin/DeleteUserDialog.tsx is an intentional identity.
+          # frontend/src/lib/__tests__/supportForm.test.ts permits only that guard
+          # and rejects that address elsewhere; actual mail/token markers stay forbidden.
+          if grep -R -l -E "SMTP_PASS|SMTP_USER|SUPPORT_ADMIN_EMAIL|SUPPORT_FROM_EMAIL|CLOUDFLARE_API_TOKEN" frontend/dist; then
             echo "secret-like string in the bundle"; exit 1
           fi
           grep -R -q "support.voltextech.net/v1/support" frontend/dist

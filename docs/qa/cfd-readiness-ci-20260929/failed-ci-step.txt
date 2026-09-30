@@ -1,0 +1,9 @@
+##[group]Run node scripts/qa-cfd-display-browser.cjs
+2026-09-29T17:22:30.8006322Z [36;1mnode scripts/qa-cfd-display-browser.cjs[0m
+2026-09-29T17:22:30.8063387Z shell: /usr/bin/bash -e {0}
+2026-09-29T17:22:30.8063605Z env:
+2026-09-29T17:22:30.8063865Z   CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-display-qa/node_modules/playwright
+2026-09-29T17:22:30.8064168Z ##[endgroup]
+2026-09-29T17:23:01.2339143Z CFD_WORKING_TERMINAL_REPORT {"revision":"6424c347562e2c14553c2bdef5f7e5a473bf5213","environment":"disposable loopback CI; real public display providers; no DB writes","startedAt":"2026-09-29T17:22:31.120Z","scenarios":[],"pageErrors":[],"findings":["page.waitForFunction: Timeout 25000ms exceeded."],"blockedWrites":0,"blockedExternalHosts":["fonts.googleapis.com"],"failedPage":{"title":"VOLTEX","chart":"error","rows":["XAUUSDGold Spot——","XAGUSDSilver Spot——","XPTUSDPlatinum Spot——","XPDUSDPalladium Spot——","WTIUSDCrude Oil WTI Spot96.410—","XBRUSDBrent Spot114.890—","EURUSDEuro vs US Dollar——","GBPUSDBritish Pound vs US Dollar——","USDJPYUS Dollar vs Japanese Yen——","AUDUSDAustralian Dollar vs US Dollar——","USDCADUS Dollar vs Canadian Dollar——","USDCHFUS Dollar vs Swiss Franc——","NZDUSDNew Zealand Dollar vs US Dollar——"]},"completedAt":"2026-09-29T17:23:01.233Z"}
+2026-09-29T17:23:33.4180778Z ##[error]Process completed with exit code 1.
+2026-09-29T17:23:33.4247828Z

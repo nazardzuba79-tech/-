@@ -32,6 +32,7 @@ on:
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/nrxMarket.ts'
       - 'frontend/src/lib/marketEdge.ts'
+      - 'frontend/src/lib/browserActivity.ts'
       - 'frontend/src/lib/displaySnapshotCache.ts'
       - 'frontend/src/lib/sampledDisplayCopy.ts'
       - 'src/api/middleware/auth.ts'

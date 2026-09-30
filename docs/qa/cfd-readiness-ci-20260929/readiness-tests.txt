@@ -1,0 +1,22 @@
+✔ readiness probes exact uncached real routes for the selected and reload charts, then stops (8.146176ms)
+✔ a transient chart failure is recorded before a bounded retry, with no display-cache route (4.323758ms)
+✔ missing or non-numeric actual quotes fail after exactly three attempts without chart requests (2.129561ms)
+▶ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars
+  ✔ symbol (4.842136ms)
+  ✔ interval (3.640628ms)
+  ✔ invalidRange (2.835877ms)
+  ✔ booleanPrices (4.908114ms)
+  ✔ invalidTime (0.577004ms)
+  ✔ duplicateTime (1.106988ms)
+  ✔ oneBar (2.320293ms)
+✔ HTTP 200 cannot pass mismatched identities, invalid OHLC, duplicate times or insufficient bars (23.146417ms)
+✔ transport and non-JSON failures retain diagnostics and exhaust finite retries (1.216741ms)
+✔ foreign, credentialled and non-origin targets are rejected before any request (1.094791ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 175.802974

@@ -1,0 +1,42 @@
+{
+  "base": "c3223e6b570f8147da8c614bbde1fe253df863ac",
+  "scope": "Only support workflow bundle scan; unchanged production source and Worker code.",
+  "sourceGuardUnchanged": true,
+  "sourceGuardSha256": "3c5016aa75c8177f1965778e8d02bcd57b0eeca6665a85e3603f7ce02253e03f",
+  "sourceGuardTests": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "rootExistingDistScan": {
+    "oldExit": 0,
+    "newExit": 1,
+    "oldMatchedFiles": [
+      "lastLoginLabel-CWTrzTfB.js"
+    ]
+  },
+  "syntheticForbiddenMarkerProbes": [
+    {
+      "marker": "SMTP_PASS",
+      "detected": true
+    },
+    {
+      "marker": "SMTP_USER",
+      "detected": true
+    },
+    {
+      "marker": "SUPPORT_ADMIN_EMAIL",
+      "detected": true
+    },
+    {
+      "marker": "SUPPORT_FROM_EMAIL",
+      "detected": true
+    },
+    {
+      "marker": "CLOUDFLARE_API_TOKEN",
+      "detected": true
+    }
+  ],
+  "deployTriggersAndJobUnchanged": true,
+  "releaseEffect": "Editing support-form.yml matches its unchanged main-push path filter, so the existing Support Worker verify/deploy job is triggered after merge despite no Worker source change."
+}

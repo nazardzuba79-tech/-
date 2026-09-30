@@ -18,16 +18,21 @@ test('shared local animation pauses when hidden, resumes idempotently and cleans
  const disposers:(()=>void)[]=[],listeners=new Set<()=>void>();
  const document={hidden:false,documentElement:{dataset:{} as Record<string,string>},
   addEventListener:jest.fn((_type:string,fn:()=>void)=>listeners.add(fn)),removeEventListener:jest.fn((_type:string,fn:()=>void)=>listeners.delete(fn))};
+ const activity:any={};
+ new Function('exports','document',compile('lib/browserActivity.ts'))(activity,document);
  const output:any={};
  new Function('require','exports','document',compile('components/SampledDataNote.tsx'))((name:string)=>{
   if(name==='react')return{useEffect:(fn:()=>()=>void)=>disposers.push(fn())};if(name.endsWith('/i18n'))return{};
+  if(name.endsWith('/browserActivity'))return activity;
   if(name.endsWith('/sampledDisplayCopy'))return{sampledDisplayText:()=>({label:'Snapshot',title:'Sampled'})};
   if(name.endsWith('.css')||name==='react/jsx-runtime')return{};throw new Error(name);
  },output,document);
- output.useSampledMotion();output.useSampledMotion();expect(document.addEventListener).toHaveBeenCalledTimes(1);
+ output.useSampledMotion();output.useSampledMotion();
+ expect(document.addEventListener.mock.calls.map(([type])=>type)).toEqual(['voltex:browser-activity','visibilitychange']);
  expect(document.documentElement.dataset.sampledMotion).toBe('running');document.hidden=true;listeners.forEach(fn=>fn());
  expect(document.documentElement.dataset.sampledMotion).toBe('paused');document.hidden=false;listeners.forEach(fn=>fn());
  expect(document.documentElement.dataset.sampledMotion).toBe('running');disposers[0]();expect(listeners.size).toBe(1);
- disposers[1]();expect(listeners.size).toBe(0);expect(document.removeEventListener).toHaveBeenCalledTimes(1);
+ disposers[1]();expect(listeners.size).toBe(0);
+ expect(document.removeEventListener.mock.calls.map(([type])=>type)).toEqual(['voltex:browser-activity','visibilitychange']);
  expect(document.documentElement.dataset.sampledMotion).toBeUndefined();
 });

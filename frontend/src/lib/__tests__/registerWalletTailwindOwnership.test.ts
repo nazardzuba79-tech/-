@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { resolve, join } from 'path';
+import { jsxClassNames } from '../../../test-utils/sourceContracts';
 
 /**
  * WHICH STYLESHEET SHIPS THE UTILITIES /register AND /wallet USE?
@@ -63,21 +64,15 @@ function sources(...roots: string[]): string[] {
 function classNames(files: string[]): Set<string> {
   const found = new Set<string>();
   for (const file of files) {
-    const src = readFileSync(file, 'utf8');
-    for (const match of src.matchAll(/className\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([\s\S]*?)\}(?=\s*(?:\/?>|\n|\s[a-zA-Z-]+=)))/g)) {
-      const literal = match[1] ?? match[2];
-      const segments = literal !== undefined
-        ? [literal]
-        : [...(match[3] ?? '').matchAll(/['"`]([^'"`]*)['"`]/g)].map((m) => m[1]);
-      for (const segment of segments) {
-        for (const cls of segment.replace(/\$\{[^}]*\}/g, ' ').split(/\s+/)) {
-          if (cls) found.add(cls);
-        }
-      }
-    }
+    for (const name of jsxClassNames(readFileSync(file, 'utf8'))) found.add(name);
   }
   return found;
 }
+
+it('reads all nested conditional class branches without treating conditions as utilities', () => {
+  const source = '<button aria-selected={isSelected} className={`flex ${disabled ? "cursor-not-allowed" : isSelected ? "bg-gold-wash" : "hover:bg-panel-2"}`} />';
+  expect([...jsxClassNames(source)].sort()).toEqual(['bg-gold-wash', 'cursor-not-allowed', 'flex', 'hover:bg-panel-2']);
+});
 
 /** Hand-written project classes and parse noise — never Tailwind output. */
 const PROJECT_CLASS = /^(vx-|wallet-|fo-|ob-|crypto-card|lucide|tab$|state$|num$|group$|disabled$|invalid$|period$|p$|hideZero$|[A-Z]|[a-z]+\.[a-zA-Z])/;

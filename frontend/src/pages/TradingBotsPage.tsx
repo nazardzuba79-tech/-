@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../lib/browserActivity';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
@@ -23,14 +24,15 @@ function usePresentationWeek() {
     let timer: ReturnType<typeof setTimeout>;
     const refresh = () => {
       clearTimeout(timer);
+      if (isBrowserInactive()) return;
       const now = Date.now();
       setWeek(presentationWeek(now));
       timer = setTimeout(refresh, nextPresentationWeek(now) - now + 50);
     };
     refresh();
     window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', refresh);
-    return () => { clearTimeout(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+    addBrowserActivityListener(refresh);
+    return () => { clearTimeout(timer); window.removeEventListener('focus', refresh); removeBrowserActivityListener(refresh); };
   }, []);
   return week;
 }

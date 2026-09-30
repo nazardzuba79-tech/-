@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import { useEffect, useState } from 'react';
 import { api } from './api';
 

@@ -6,9 +6,18 @@ import { localeOf, useLanguage } from '../lib/i18n';
 import { useDepositSelection, useDepositWallets } from '../lib/useDepositOptions';
 import { CryptoIcon } from './CryptoIcon';
 import { depositAssetMetadata } from '../lib/depositAssetMetadata';
-import { depositMinimumView } from '../lib/depositMinimum';
+import { depositMinimumView, type HeldQuote } from '../lib/depositMinimum';
+import { marketDataStore } from '../lib/marketDataStore';
 import { orderDepositDestinations } from '../lib/depositOrder';
 import './DepositCatalogueDialog.css';
+
+/** The asset's price as the page already holds it — read, never fetched or
+ *  subscribed to. Whether it is usable is `depositMinimumView`'s decision. */
+function heldQuote(asset: string): HeldQuote | null {
+  const { tickers, tickersMeta } = marketDataStore.getState();
+  const ticker = tickers.get(`${asset}/USDT`);
+  return ticker && tickersMeta ? { price: ticker.lastPrice, fetchedAt: tickersMeta.fetchedAt, stale: tickersMeta.stale } : null;
+}
 
 type Step = 'address' | 'qr';
 
@@ -29,7 +38,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
   const assetTrigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
-  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId(), network: useId(), minimum: useId() };
+  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId(), network: useId() };
   const [copyState, setCopyState] = useState<{ field: string; ok: boolean } | null>(null);
   const copyGeneration = useRef(0);
   const panel = useRef<HTMLDivElement>(null);
@@ -39,7 +48,15 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
   const currentDestination = useRef(destinationKey);
   currentDestination.current = destinationKey;
   const metadata = depositAssetMetadata[asset];
-  const minimum = depositMinimumView(asset);
+  const minimum = depositMinimumView(asset, heldQuote(asset));
+  // An estimate leaves the screen when its price ages out, even while nothing
+  // else re-renders: one timeout per shown estimate, no request, no polling.
+  const [, setEstimateClock] = useState(0);
+  useEffect(() => {
+    if (minimum.estimateExpiresAt === null) return;
+    const timer = setTimeout(() => setEstimateClock(tick => tick + 1), Math.max(0, minimum.estimateExpiresAt - Date.now()) + 25);
+    return () => clearTimeout(timer);
+  }, [minimum.estimateExpiresAt]);
   const amount = (value: number) => value.toLocaleString(localeOf(lang), { maximumSignificantDigits: 4, useGrouping: true });
   const network = wallet ? `${wallet.networkName}${wallet.standard && wallet.standard !== 'Native' ? ` · ${wallet.standard}` : ''}` : '';
   const shownAssets = assets.filter(symbol => `${symbol} ${depositAssetMetadata[symbol]?.name ?? ''}`.toLowerCase().includes(search.trim().toLowerCase()));
@@ -186,11 +203,14 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
             </> : <div className="dc-network"><span><strong>{network}</strong></span><Check size={17} aria-hidden="true"/></div>}
           </div>
           {/* The rule before the address: seen before anything is copied. */}
-          <section className="dc-minimum" aria-labelledby={ids.minimum} data-testid="deposit-minimum">
-            <div className="dc-minimum-row"><span id={ids.minimum}>{t('deposit.ui.minimumTitle')}</span><strong>{amount(minimum.usd)} USD</strong></div>
-            {minimum.equivalent !== null && <div className="dc-minimum-equivalent" data-testid="deposit-minimum-equivalent">
-              {t('deposit.ui.minimumPegged', { amount: amount(minimum.equivalent), asset })}</div>}
-            <p>{t('deposit.ui.minimumNote')}</p>
+          {/* Two lines (owner, 2026-09-29): the minimum in the chosen coin's
+              terms, then one plain sentence. */}
+          <section className="dc-minimum" data-testid="deposit-minimum">
+            <p className="dc-minimum-line"><strong>{minimum.pegged
+              ? t('deposit.ui.minimumPeggedLine', { amount: amount(minimum.usd), asset })
+              : t('deposit.ui.minimumOtherLine', { amount: amount(minimum.usd), asset })}</strong>
+              {minimum.estimate !== null && <span className="dc-minimum-estimate" data-testid="deposit-minimum-equivalent">{' '}{t('deposit.ui.minimumApprox', { amount: amount(minimum.estimate), asset })}</span>}</p>
+            <p className="dc-minimum-note">{t('deposit.ui.minimumNote')}</p>
           </section>
           <p className="dc-warning"><Info size={17}/><span>{t('deposit.ui.sendOnly')} <strong>{asset}</strong> {t('deposit.ui.inNetwork')} <strong>{network}</strong>. {t('deposit.ui.lossWarning')}</span></p>
           <div className="dc-address-card">

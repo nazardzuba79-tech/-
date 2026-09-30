@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import fs from 'fs';
 import path from 'path';
 import { createRequire } from 'module';
@@ -99,6 +100,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   // The drawing layer is its own module, compiled against the same real helpers.
   const layer: Record<string, any> = {};
   new Function('require', 'exports', tsx(layerSource))((id: string) => {
+    if (id.endsWith('/browserActivity')) return browserActivity;
     if (id === '../lib/chartDrawings') return drawings;
     if (id === '../lib/drawingGeometry') return geometry;
     return localRequire(id);
@@ -106,6 +108,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
   const compiled = tsx(`${source}\nexport { DrawToolbar, DrawingDialog, drawingToolGroups };`);
   const exports: Record<string, any> = {};
   new Function('require', 'exports', compiled)((id: string) => {
+    if (id.endsWith('/browserActivity')) return browserActivity;
     if (id.endsWith('.css') || id === 'lightweight-charts' || id === '../lib/api' || id === '../lib/indicators') return {};
     if (id === '../lib/chartDrawings') return drawings;
     if (id === '../lib/spotChartPriceFormat') return chartPriceFormat;
@@ -232,6 +235,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     let index = 0;
     const output: Record<string, any> = {};
     new Function('require', 'exports', compiled)((id: string) => {
+    if (id.endsWith('/browserActivity')) return browserActivity;
       if (id === 'react') return { ...React,
         useState: (initial: any) => { const i = index++; if (!(i in state)) state[i] = initial;
           return [state[i], (next: any) => { state[i] = typeof next === 'function' ? next(state[i]) : next; }]; },
@@ -340,6 +344,7 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     const controls: any[] = [];
     const bindings: Record<string, any> = {};
     new Function('require', 'exports', compiled)((id: string) => {
+    if (id.endsWith('/browserActivity')) return browserActivity;
       if (id === 'react') return { ...React, useState: () => [draft, (next: string) => { draft = next; }],
         useId: () => 'test-dialog', useEffect: () => {}, useRef: () => ({ current: { querySelectorAll: () => controls } }) };
       if (id.endsWith('.css') || id === 'lightweight-charts' || id === '../lib/api' || id === '../lib/indicators') return {};

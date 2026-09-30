@@ -1,3 +1,4 @@
+import { browserFetch as fetch } from './browserActivity';
 import { getToken } from './api';
 
 export type BankingAsset='USDT'|'USDC'|'BTC'|'ETH'|'SOL';

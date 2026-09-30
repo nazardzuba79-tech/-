@@ -27,6 +27,11 @@ on:
       - 'frontend/src/pages/TradePage.tsx'
       - 'frontend/src/pages/markets-bolt/**'
       - 'scripts/qa-voltora-listing.cjs'
+      - 'scripts/qa-spot-layout-stability.cjs'
+      - 'frontend/src/components/SpotOrdersView.tsx'
+      - 'frontend/src/pages/trade-terminal/TerminalPreviewPolish.css'
+      - 'frontend/src/lib/__tests__/marketTickerIdentity.test.ts'
+      - 'frontend/src/lib/__tests__/spotOrdersPresentation.test.ts'
       - '.github/workflows/test-markets.yml'
 
 permissions:
@@ -52,10 +57,13 @@ jobs:
           src/services/testMarkets/__tests__/testMarketSimulation.test.ts
           src/services/testMarkets/__tests__/simulationRealism.test.ts
           src/services/testMarkets/__tests__/simulationCycles.test.ts
+          src/services/testMarkets/__tests__/simulationAccumulation.test.ts
           src/services/testMarkets/__tests__/simulationNaturalWicks.test.ts
           src/services/testMarkets/__tests__/testMarketDepth.test.ts
           src/api/routes/__tests__/testMarkets.test.ts
           frontend/src/lib/__tests__/testMarkets.test.ts
+          frontend/src/lib/__tests__/marketTickerIdentity.test.ts
+          frontend/src/lib/__tests__/spotOrdersPresentation.test.ts
           frontend/src/lib/__tests__/spotChartPriceFormat.test.ts
           frontend/src/lib/__tests__/cfdTerminal.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
@@ -71,6 +79,11 @@ jobs:
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/voltora-preview-browser/node_modules/playwright
         run: node scripts/qa-voltora-listing.cjs
+      - name: Spot background refresh geometry
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltora-preview-browser/node_modules/playwright
+          QA_OUT: docs/qa/voltora-listing/layout-stability
+        run: node scripts/qa-spot-layout-stability.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

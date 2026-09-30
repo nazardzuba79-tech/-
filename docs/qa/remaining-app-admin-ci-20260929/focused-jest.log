@@ -1,0 +1,198 @@
+PASS frontend/src/lib/__tests__/adminConsoleInteractions.test.ts (5.456 s)
+PASS frontend/src/lib/__tests__/adminUsersActivity.test.ts
+  ● Console
+
+    console.error
+      Warning: Removing a style property during rerender (borderColor) when a conflicting property is set (border) can lead to styling bugs. To avoid this, don't mix shorthand and non-shorthand properties for the same value; instead, replace the shorthand with separate values.
+          at button
+          at div
+          at div
+          at AdminPagination (eval at load (/workspace/scratch/2e1965f14243/voltex-remaining-app-admin-ci-20260929/frontend/src/lib/__tests__/adminUsersActivity.test.ts:31:3), <anonymous>:9:28)
+          at div
+          at div
+          at AdminUsersPage (eval at load (/workspace/scratch/2e1965f14243/voltex-remaining-app-admin-ci-20260929/frontend/src/lib/__tests__/adminUsersActivity.test.ts:31:3), <anonymous>:82:58)
+          at Router (/workspace/scratch/2e1965f14243/voltex-finish-20260929/frontend/node_modules/react-router/dist/development/chunk-7SIULPXI.js:9993:13)
+          at MemoryRouter (/workspace/scratch/2e1965f14243/voltex-finish-20260929/frontend/node_modules/react-router/dist/development/chunk-7SIULPXI.js:9903:3)
+
+      at printWarning (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:86:30)
+      at error (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:60:7)
+      at validateShorthandPropertyCollisionInDev (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:2899:9)
+      at diffProperties (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:10123:7)
+      at prepareUpdate (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:10977:10)
+      at updateHostComponent$1 (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:21825:25)
+      at completeWork (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:22194:11)
+      at completeUnitOfWork (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:26632:16)
+      at performUnitOfWork (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:26607:5)
+      at workLoopSync (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:26505:5)
+      at renderRootSync (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:26473:7)
+      at performSyncWorkOnRoot (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:26124:20)
+      at flushSyncCallbacks (../voltex-finish-20260929/frontend/node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushActQueue (../voltex-finish-20260929/frontend/node_modules/react/cjs/react.development.js:2667:24)
+      at recursivelyFlushAsyncActWork (../voltex-finish-20260929/frontend/node_modules/react/cjs/react.development.js:2633:9)
+      at ../voltex-finish-20260929/frontend/node_modules/react/cjs/react.development.js:2545:15
+
+PASS frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts
+  ● Console
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:202:3)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:89:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.exhausted module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:189:5)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:96:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.exhausted module=Nav-Spdin6iK.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:189:5)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:97:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:202:3)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:107:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:202:3)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:113:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:202:3)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:123:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:202:3)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:124:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.exhausted module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:189:5)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:128:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.no_guard module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:199:5)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:151:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.exhausted module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:189:5)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:156:30)
+
+    console.warn
+      voltex.bootstrap.chunk_recovery.reloading module=FuturesPage-Bjwiy2MF.js
+
+      234 |     ? (error as { message: string }).message : '';
+      235 |   const module = message.match(/[^/\s]+\.(?:js|mjs|css)/)?.[0] ?? 'unknown';
+    > 236 |   console.warn(`voltex.bootstrap.chunk_recovery.${outcome} module=${module}`);
+          |           ^
+      237 | }
+      238 |
+
+      at report (frontend/src/lib/chunkRecovery.ts:236:11)
+      at attemptChunkRecovery (frontend/src/lib/chunkRecovery.ts:202:3)
+      at Object.<anonymous> (frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts:332:30)
+
+PASS frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       66 passed, 66 total
+Snapshots:   0 total
+Time:        13.196 s
+Ran all test suites within paths "frontend/src/lib/__tests__/futuresColdOpenRecovery.test.ts", "frontend/src/lib/__tests__/adminConsoleInteractions.test.ts", "frontend/src/lib/__tests__/adminUsersActivity.test.ts", "frontend/src/lib/__tests__/renderBandwidthBudget.test.ts".
+Test results written to: output/ci-app-admin/focused-jest.json

@@ -4,6 +4,8 @@ dist/
 *.log
 uploads/
 *.tsbuildinfo
+frontend/dist-mobile-review/
+.ci-output/
 outputs/
 # Same category, singular: scripts/qa-*.cjs write regenerable browser-QA
 # screenshots and reports here (2.5 MB per run). The handoff entries already

@@ -1,0 +1,42 @@
+{
+  "environment": "production bundle with isolated fixture API; no production requests",
+  "widths": [
+    {
+      "width": 1440,
+      "counts": {
+        "open": 5,
+        "history": 3,
+        "chartTriggers": 5,
+        "cancels": 0,
+        "otherWrites": 0
+      },
+      "orderQueries": [
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "PENDING_TRIGGER",
+        "FILLED,CANCELLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "FILLED,CANCELLED",
+        "PENDING_TRIGGER",
+        "PENDING_TRIGGER,OPEN,PARTIALLY_FILLED",
+        "FILLED,CANCELLED"
+      ],
+      "pageErrors": [],
+      "hiddenWindowMs": 12500,
+      "hiddenOpenReads": 0,
+      "hiddenHistoryReads": 0,
+      "unchangedChartTriggerReads": 0,
+      "beforeCancel": {
+        "phase": "validating",
+        "openSelected": "false",
+        "historySelected": "true"
+      }
+    }
+  ],
+  "status": "FAIL",
+  "error": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-order-id=\"fixture-order\"] button')\u001b[22m\n\u001b[2m    - locator resolved to <button type=\"button\" class=\"cancel-btn\" aria-label=\"Отменить BTC/USDT fixture-order\">Отменить</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not visible\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    58 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not visible\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n"
+}

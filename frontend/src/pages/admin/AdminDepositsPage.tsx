@@ -1,3 +1,4 @@
+import { addBrowserActivityListener, removeBrowserActivityListener, isBrowserInactive, waitUntilActive } from '../../lib/browserActivity';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
@@ -72,10 +73,13 @@ export function AdminDepositsPage() {
     // The day's first automatic scan runs when an admin opens this page after
     // 07:00 (Kyiv). The server allows it once a day, never at night, never
     // right after another scan; otherwise it does nothing.
-    adminDepositApi.openTrigger().then((r) => { if (r.ran) void reload(); }).catch(() => {});
+    const pendingOpen = new AbortController();
+    void waitUntilActive(pendingOpen.signal).then(() => {
+      if (!pendingOpen.signal.aborted) return adminDepositApi.openTrigger().then((r) => { if (r.ran) void reload(); });
+    }).catch(() => {});
     api.getAllClients().then(setClients).catch(() => {});
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const visible = () => document.visibilityState === 'visible';
+    const visible = () => !isBrowserInactive();
     const schedule = () => {
       if (timer !== undefined) clearTimeout(timer);
       timer = undefined;
@@ -83,8 +87,8 @@ export function AdminDepositsPage() {
     };
     const onVisibility = () => { if (visible()) void reload().then(schedule); else if (timer !== undefined) { clearTimeout(timer); timer = undefined; } };
     schedule();
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => { if (timer !== undefined) clearTimeout(timer); document.removeEventListener('visibilitychange', onVisibility); };
+    addBrowserActivityListener(onVisibility);
+    return () => { pendingOpen.abort(); if (timer !== undefined) clearTimeout(timer); removeBrowserActivityListener(onVisibility); };
   }, [reload]);
 
   useEffect(() => {

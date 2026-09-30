@@ -32,7 +32,7 @@ import { LedgerRow, LoadState, UnifiedAccount, WalletOverview as OverviewData, W
  * arithmetic on this page. Each account row shows the server's own figure.
  *
  * THE BTC EQUIVALENT uses the same mark the hook divided the account's
- * equity by (`totalEquityUsd / btcEquivalent`), so the Overview and the
+ * economic equity by (`walletEquityUsd / btcEquivalent`), so the Overview and the
  * Unified section cannot disagree on a BTC figure.
  *
  * THE P&L PILL IS 7D, AND SAYS SO. VOLTEX stores one snapshot per day; there
@@ -137,14 +137,18 @@ export function WalletOverview({
       : (fundingUsd ?? 0) + (unifiedUsd ?? 0)
     : known(account?.totalEquityUsd);
 
-  // One BTC mark for the whole page: the one the hook used for the
-  // account's equity, or the spot feed's when the account has no equity.
-  const btcPrice =
-    account?.totalEquityUsd && btcEquivalent && account.totalEquityUsd > 0 && btcEquivalent > 0
-      ? account.totalEquityUsd / btcEquivalent
-      : overview?.btcPriceUsd && overview.btcPriceUsd > 0
-        ? overview.btcPriceUsd
-        : null;
+  // The hook divides economic wallet equity by the native BTC mark. Use
+  // that same equity here: collateral-disabled assets remain in the wallet,
+  // even though they no longer contribute to margin totalEquityUsd.
+  const walletEquity = account?.walletEquityUsd;
+  const impliedBtcPrice = typeof walletEquity === 'number' && Number.isFinite(walletEquity) && walletEquity > 0
+    && typeof btcEquivalent === 'number' && Number.isFinite(btcEquivalent) && btcEquivalent > 0
+    ? walletEquity / btcEquivalent : null;
+  const quotedBtcPrice = overview?.btcPriceUsd;
+  const btcPrice = impliedBtcPrice !== null && Number.isFinite(impliedBtcPrice) && impliedBtcPrice > 0
+    ? impliedBtcPrice
+    : typeof quotedBtcPrice === 'number' && Number.isFinite(quotedBtcPrice) && quotedBtcPrice > 0
+      ? quotedBtcPrice : null;
   const btc = (usd: number | null) => (usd === null || btcPrice === null ? EM_DASH : formatAmount(usd / btcPrice, lang, 8));
   const usd = (v: number | null) => (v === null ? EM_DASH : formatUsd(v, lang));
 
@@ -230,9 +234,6 @@ export function WalletOverview({
           </button>
         </div>
 
-        <span className="wallet-overview-mark" aria-hidden="true">
-          V
-        </span>
       </header>
 
       <div className="wallet-overview-body">

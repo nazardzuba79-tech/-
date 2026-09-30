@@ -37,31 +37,52 @@ export function depositMinimumEquivalent(config: DepositConfig, asset: string, l
 
 /**
  * The production deposit rule, as the backend enforces it
- * (`src/config/limits.ts`: MIN_DEPOSIT_USD, DEPOSIT_USD_PEGGED_ASSETS).
- * The manual catalogue — read straight from
+ * (`src/config/limits.ts`: MIN_DEPOSIT_USD, DEPOSIT_USD_PEGGED_ASSETS,
+ * DEPOSIT_PRICE_MAX_AGE_MS). The manual catalogue — read straight from
  * Cloudflare — carries addresses only, so the deposit window states the rule
  * from here; `depositMinimumRule.test.ts` fails the moment the two differ.
  * Nothing here decides a credit: the server re-prices at credit time.
  */
 export const DEPOSIT_MINIMUM_USD = 300;
 export const DEPOSIT_USD_PEGGED = ['USDT', 'USDC', 'USD', 'DAI'] as const;
+export const DEPOSIT_PRICE_MAX_AGE_MS = 2 * 60_000;
+
+/** A price the page already holds (the shared market snapshot). */
+export interface HeldQuote { price: unknown; fetchedAt: number; stale: boolean }
 
 export interface DepositMinimumView {
   /** The rule itself, in USD. */
   usd: number;
-  /** The server's fixed one-to-one minimum for a USD-pegged asset;
-   *  null for every asset that would need a market-price estimate. */
+  /** The server's fixed one-to-one minimum for a USD-pegged asset; null otherwise. */
   equivalent: number | null;
   pegged: boolean;
+  /** «≈ 0.003 BTC»: the minimum in a non-pegged asset from a live price, or null. */
+  estimate: number | null;
+  /** The moment `estimate` stops being current (ms since epoch), or null. */
+  estimateExpiresAt: number | null;
 }
 
 /**
- * The deposit window states the USD rule and the server's fixed peg policy.
- * Other assets stay USD-only: an open address window has no live quote
- * subscription, so a cached conversion could become stale while it is open.
- * This view needs no market read, request, subscription or expiry timer.
+ * What the deposit window says about the minimum for one asset.
+ *
+ * Owner, 2026-09-29: «Минимальное пополнение — 300 USDT или эквивалент в BTC
+ * (≈ 0,003 BTC)». The estimate is shown only from a price that is live — not
+ * a warm-cache or stale-served snapshot — and no older than the server's own
+ * bound for pricing a deposit; `estimateExpiresAt` lets the window take it
+ * down the moment it ages out, even if nothing else re-renders (the two gaps
+ * the review of #339 found). Without such a price: the rule alone.
  */
-export function depositMinimumView(asset: string): DepositMinimumView {
+export function depositMinimumView(asset: string, quote: HeldQuote | null = null, now = Date.now()): DepositMinimumView {
   const pegged = DEPOSIT_USD_PEGGED.some(symbol => symbol === asset);
-  return { usd: DEPOSIT_MINIMUM_USD, equivalent: pegged ? DEPOSIT_MINIMUM_USD : null, pegged };
+  let estimate: number | null = null;
+  let estimateExpiresAt: number | null = null;
+  if (!pegged && quote && quote.stale === false && Number.isFinite(quote.fetchedAt)) {
+    const age = now - quote.fetchedAt;
+    if (age >= 0 && age < DEPOSIT_PRICE_MAX_AGE_MS) {
+      const config: DepositConfig = { chains: [], minDepositUsd: DEPOSIT_MINIMUM_USD, usdPeggedAssets: [...DEPOSIT_USD_PEGGED] };
+      estimate = depositMinimumEquivalent(config, asset, quote.price);
+      if (estimate !== null) estimateExpiresAt = quote.fetchedAt + DEPOSIT_PRICE_MAX_AGE_MS;
+    }
+  }
+  return { usd: DEPOSIT_MINIMUM_USD, equivalent: pegged ? DEPOSIT_MINIMUM_USD : null, pegged, estimate, estimateExpiresAt };
 }

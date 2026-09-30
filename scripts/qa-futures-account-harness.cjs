@@ -145,14 +145,33 @@ function readBody(req) {
 const num = (s) => Number(s);
 const fixed = (n) => n.toFixed(8);
 
-function marketRoutes(pathname) {
+function marketRoutes(pathname, query = new URLSearchParams()) {
   if (BUDGET_QA) {
-    if (pathname === '/api/v1/market/display/spot-snapshot') return marketRoutes('/api/v1/market/snapshot');
-    if (pathname === '/api/v1/market/display') return { type: 'snapshot', rows: [] };
+    const display = refreshMs => ({mode:'snapshot',capturedAt:now,refreshMs});
+    const interval = query.get('interval') || '1h';
+    const fixtureAsset = symbol => ({pair:`${symbol}/USDT`,symbol,name:`Fixture ${symbol}`,quote:'USDT',isTestAsset:true,isTradable:symbol!=='VTA',status:'SPOT',listingArmed:true,listingAt:new Date(now-86400000).toISOString(),initialPrice:0.25,...(symbol==='QAIDLE'?{managed:true,listingId:'qa-idle-1',version:1,logo:null,displayTimeZone:'UTC'}:{}),state:{phase:'live',lastPrice:0.25,openPrice24h:0.2,change24hPercent:25,high24h:0.3,low24h:0.18,volume24h:1000,quoteVolume24h:250,serverTime:now}});
+    if (pathname === '/api/v1/market/test-assets') return {serverTime:now,assets:[fixtureAsset('VTA')]};
+    if (pathname === '/api/v1/market/nrx') return {serverTime:now,assets:[fixtureAsset('NRX')]};
+    if (pathname === '/api/v1/market/listings') return {serverTime:now,assets:[fixtureAsset('QAIDLE')]};
+    const simulated = /\/(VTA|NRX|QAIDLE)-USDT(?:\/candles)?$/.exec(pathname)?.[1];
+    if (simulated && pathname.endsWith('/candles')) return {pair:`${simulated}/USDT`,interval,candles:Array.from({length:520},(_,i)=>({time:Math.floor((now-(520-i)*3600000)/1000),open:.23,high:.27,low:.21,close:.25,volume:100}))};
+    if (simulated && pathname.includes('/trades/')) return {pair:`${simulated}/USDT`,trades:[{id:'qa-public-trade',price:'0.25',quantity:'100',side:'BUY',timestamp:now,time:now}]};
+    if (simulated && pathname.includes('/spot-book/')) return {pair:`${simulated}/USDT`,timestamp:now,available:true,bids:[{price:'0.249',quantity:'100'}],asks:[{price:'0.251',quantity:'100'}]};
+    if (pathname === '/api/v1/cfd/display/tickers') return {_display:display(21600000),configured:true,source:'isolated-fixture',tickers:[{symbol:'XAUUSD',name:'Gold',price:'2650',status:'sampled',fetchedAt:now,asOf:now,changePercent24h:'1.2'}]};
+    if (pathname.startsWith('/api/v1/cfd/display/candles/')) return {_display:display(21600000),symbol:'XAUUSD',interval,fetchedAt:now,bars:Array.from({length:320},(_,i)=>({openTime:now-(320-i)*3600000,open:2600+i/10,high:2602+i/10,low:2598+i/10,close:2601+i/10,volume:10}))};
+    if (pathname.startsWith('/api/v1/market/display/spot-book/')) return marketRoutes('/api/v1/market/external/orderbook/BTC-USDT');
+    if (pathname === '/api/v1/market/display/spot-snapshot') return {...marketRoutes('/api/v1/market/snapshot'),_display:display(60000)};
+    if (pathname === '/api/v1/market/display') return {_display:display(60000),version:1,type:'snapshot',status:'live',revision:1,epoch:'isolated-budget-fixture',rows:FUTURES_SYMBOLS.map(pair=>{
+      const baseAsset=pair.split('/')[0],providerSymbol=pair.replace('/',''),price=MARK[pair];
+      return {id:`linear_perpetual:${providerSymbol}`,pair,symbol:pair,providerSymbol,provider:'bybit',marketType:'linear_perpetual',baseAsset,quoteAsset:'USDT',settleAsset:'USDT',volumeAsset:baseAsset,turnoverAsset:'USDT',lastPrice:price,bidPrice:price-1,askPrice:price+1,high24h:price*1.02,low24h:price*.98,volume24h:1000,quoteVolume24h:price*1000,changePercent24h:1,indexPrice:price,markPrice:price,fundingRate:.0001,fundingIntervalMinutes:480,openInterest:1000,openInterestValue:price*1000,providerEventAt:now,sequence:null,receivedAt:now,fetchedAt:now,stale:false};
+    })};
     if (pathname === '/api/v1/market/universe') return { available: false, instruments: [] };
-    if (pathname.startsWith('/api/v1/market/futures/candles/')) return marketRoutes('/api/v1/market/external/candles/BTC-USDT');
+    if (pathname.startsWith('/api/v1/market/futures/candles/')) {
+      const symbol = pathname.split('/').pop().replace('-','');
+      return {retCode:0,result:{category:'linear',symbol,list:marketRoutes('/api/v1/market/external/candles/BTC-USDT').candles.map(c=>[String(c.time*1000),String(c.open),String(c.high),String(c.low),String(c.close),String(c.volume)])}};
+    }
     if (pathname.startsWith('/api/v1/market/derivatives/')) return { available: false, reason: 'fixture' };
-    if (pathname === '/api/v1/market/assets/icons') return { assets: [] };
+    if (pathname === '/api/v1/market/assets/icons') return { assets: {} };
   }
   if (pathname === '/api/v1/futures/config') {
     return {
@@ -204,7 +223,7 @@ function marketRoutes(pathname) {
   // taken against a working chart rather than an empty one.
   if (pathname.startsWith('/api/v1/market/external/candles/')) {
     const base = 104000;
-    return { candles: Array.from({ length: 520 }, (_, i) => ({
+    return { pair:pathname.split('/').pop().replace('-','/'),interval:query.get('interval')||'1h',candles: Array.from({ length: 520 }, (_, i) => ({
       time: Math.floor((now - (520 - i) * 900_000) / 1000),
       open: base + i, high: base + i + 40, low: base + i - 40, close: base + i + 10, volume: 12 + (i % 7),
     })) };
@@ -330,7 +349,6 @@ const PROTECTION_PATH = /^\/api\/v1\/futures\/positions\/([^/]+)\/protection$/;
 function authedRoutes(pathname, acct, query) {
   if (BUDGET_QA) {
     if (pathname === '/api/v1/support/conversations/mine') return { conversation: null, messages: [] };
-    if (pathname === '/api/v1/native/wallet') return null;
     if (pathname === '/api/v1/wallet/overview') return { real: { spot: acct.spot, futures: acct.futures, spotValueUsd: Number(acct.spot[0]?.available ?? 0), futuresValueUsd: Number(acct.futures[0]?.available ?? 0), totalValueUsd: Number(acct.spot[0]?.available ?? 0) + Number(acct.futures[0]?.available ?? 0) }, valuationComplete: true, unpricedAssets: [], btcPriceUsd: MARK['BTC/USDT'] };
     if (pathname === '/api/v1/wallet/performance') return { periods: Object.fromEntries(['7d','30d','90d','1y','all'].map(p => [p, { period: p, available: false, points: [] }])), ageDays: 0, startedOn: null };
     if (pathname === '/api/v1/admin/users') return Object.values(accounts).map(a => ({ ...a.me, balances: a.spot }));
@@ -407,6 +425,15 @@ const server = http.createServer(async (req, res) => {
     const t = url.searchParams.get('token') || 'qa-user-a';
     return json(200, accounts[t] ?? null);
   }
+  // Fixture-only public edge proxy. Browser requests remain real loopback HTTP;
+  // no account endpoint or external network is reachable through this route.
+  if (BUDGET_QA && pathname.startsWith('/__qa/public-edge/') && req.method === 'GET') {
+    const publicPath = pathname.slice('/__qa/public-edge'.length);
+    if (!/^\/market\/(?:nrx|listings|test-assets|display\/spot-book|external\/trades)(?:\/|$)/.test(publicPath)) return json(404,{error:'not in public fixture'});
+    record(req.method,pathname);
+    const body = marketRoutes(`/api/v1${publicPath}`,url.searchParams);
+    return body === undefined ? json(404,{error:'not in public fixture'}) : json(200,body);
+  }
 
   if (pathname.startsWith('/api/')) {
     record(req.method, pathname);
@@ -423,7 +450,7 @@ const server = http.createServer(async (req, res) => {
       return json(200, { allowed: false, nativeAvailable: false, simulationOnly: false });
     }
 
-    const market = marketRoutes(pathname);
+    const market = marketRoutes(pathname, url.searchParams);
     if (market !== undefined) return market === null ? json(404, { error: 'not in fixture set' }) : json(200, market);
 
     // Everything past here is account data and requires a session. An
@@ -433,6 +460,7 @@ const server = http.createServer(async (req, res) => {
     if (!acct) return json(401, { error: 'Unauthorized' });
 
     if (req.method === 'GET') {
+      if (BUDGET_QA && pathname === '/api/v1/private-trading/native/wallet') return json(403, {code:'private_access_denied',error:'Режим недоступен'});
       const body = authedRoutes(pathname, acct, url.searchParams);
       if (body !== undefined) return json(200, body);
       return json(404, { error: 'not in fixture set' });

@@ -1,3 +1,4 @@
+import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesReference } from '../lib/useFuturesReference';
@@ -29,8 +30,8 @@ export function FuturesContractDetails({ symbol }: { symbol: string }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (intervalHours === null || intervalHours <= 0) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const id = browserSetInterval(() => setNow(Date.now()), 1000);
+    return () => browserClearInterval(id);
   }, [intervalHours]);
   const countdown = fundingCountdown(intervalHours, now);
 

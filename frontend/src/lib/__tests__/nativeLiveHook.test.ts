@@ -1,3 +1,4 @@
+import * as browserActivity from '../browserActivity';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -14,13 +15,13 @@ const React=req('react'),{createRoot}=req('react-dom/client'),{JSDOM}=req('jsdom
 function load(file:string,imports:Record<string,unknown>){
   const out:any={},source=readFileSync(resolve(frontend,'src',file),'utf8');
   const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-  new Function('require','exports',code)((name:string)=>name in imports?imports[name]:req(name),out);return out;
+  new Function('require','exports',code)((name:string)=>name.endsWith('/browserActivity')?browserActivity:name in imports?imports[name]:req(name),out);return out;
 }
 class TestError extends Error {constructor(message:string,public status:number,public code?:string){super(message);}}
 const initial=()=>({initialized:true,revision:7,source:'DEMO_BALANCE',asOf:1,model:{version:'test'},account:null,ledger:null,
   positions:[{id:'p',symbol:'BTCUSDT',status:'OPEN',protection:{takeProfit:null,stopLoss:null}}],orders:[],history:[],events:[],entries:[]});
 describe('actual React native hook live lifecycle',()=>{
-  let dom:any,root:any,current:any,state:any,api:any,offSession:()=>void;
+  let dom:any,root:any,current:any,state:any,api:any,offSession:()=>void,stopActivity:(()=>void)|undefined;
   beforeEach(async()=>{
     jest.useFakeTimers();dom=new JSDOM('<div id="root"></div>',{url:'http://localhost/',pretendToBeVisual:true});
     Object.assign(globalThis,{window:dom.window,document:dom.window.document,IS_REACT_ACT_ENVIRONMENT:true});
@@ -39,7 +40,7 @@ describe('actual React native hook live lifecycle',()=>{
     root=createRoot(document.getElementById('root'));
     await React.act(async()=>{root.render(React.createElement(Harness));});
   });
-  afterEach(async()=>{await React.act(async()=>root.unmount());dom.window.close();jest.useRealTimers();delete (globalThis as any).window;delete (globalThis as any).document;delete (globalThis as any).IS_REACT_ACT_ENVIRONMENT;});
+  afterEach(async()=>{await React.act(async()=>root.unmount());stopActivity?.();stopActivity=undefined;dom.window.close();jest.useRealTimers();delete (globalThis as any).window;delete (globalThis as any).document;delete (globalThis as any).IS_REACT_ACT_ENVIRONMENT;});
   const tick=(ms:number)=>React.act(async()=>{jest.advanceTimersByTime(ms);});
   test('active 30s live GET; hidden makes no reads; visibility refreshes; ACCESS is bounded to 60s',async()=>{
     expect(api.live).toHaveBeenCalledTimes(1);expect(api.access).toHaveBeenCalledTimes(1);expect(api.history).not.toHaveBeenCalled();
@@ -56,6 +57,25 @@ describe('actual React native hook live lifecycle',()=>{
     const reads=api.live.mock.calls.length;await tick(120_000);expect(api.live).toHaveBeenCalledTimes(reads);
     await React.act(async()=>{await current.run({kind:'REFRESH'});});expect(api.live).toHaveBeenCalledTimes(reads+1);
     expect(api.command).toHaveBeenCalledTimes(1);expect(current.state.positions).toEqual([]);
+  });
+  test('wake stays blocked through delayed activation and its fresh live snapshot, without an order command',async()=>{
+    let finishActivation!:(value:unknown)=>void,finishLive!:(value:unknown)=>void;
+    api.activate.mockImplementationOnce(()=>new Promise(resolve=>{finishActivation=resolve;}));
+    api.live.mockImplementationOnce(()=>new Promise(resolve=>{finishLive=resolve;}));
+    stopActivity=browserActivity.startBrowserActivity({validate:async()=>{},identity:()=> 'fixture-session'});
+    await React.act(async()=>{browserActivity.sleepBrowser();void browserActivity.resumeBrowser();});
+    await tick(300);
+    expect(browserActivity.getBrowserPhase()).toBe('syncing');
+    expect(api.activate).toHaveBeenCalledTimes(2);expect(api.live).toHaveBeenCalledTimes(1);
+    await React.act(async()=>{finishActivation({ok:true});});
+    await tick(300);
+    expect(browserActivity.getBrowserPhase()).toBe('syncing');
+    expect(api.live).toHaveBeenCalledTimes(2);
+    await React.act(async()=>{finishLive({...initial(),revision:8,positions:[]});});
+    await tick(150);
+    expect(browserActivity.getBrowserPhase()).toBe('active');
+    expect(current.state.revision).toBe(8);expect(current.state.positions).toEqual([]);
+    expect(api.command).not.toHaveBeenCalled();
   });
   test('fresh visible return still rechecks authorization and recovers without an execution command',async()=>{
     expect(api.access).toHaveBeenCalledTimes(1);

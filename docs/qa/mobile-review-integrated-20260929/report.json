@@ -1,0 +1,52 @@
+{
+  "baseCommit": "c237649ccd93e74c68013c861ab9cbd38af56726",
+  "sourceCommit": "ea17fdc7413b4f41004693fd30088f962a2f1127",
+  "cases": [
+    "pwa 320px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide PASS",
+    "pwa 360px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide PASS",
+    "pwa 390px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide PASS",
+    "pwa 430px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide PASS",
+    "telegram 320px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide, SDK lifecycle, BackButton and safe area PASS",
+    "telegram 360px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide, SDK lifecycle, BackButton and safe area PASS",
+    "telegram 390px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide, SDK lifecycle, BackButton and safe area PASS",
+    "telegram 430px: markets, chart, order, offline, positions/orders/wallet/copy, draft preservation, visibility/pagehide, SDK lifecycle, BackButton and safe area PASS",
+    "Invalid/missing/unverified-SDK Telegram launch fails closed with controlled text; SW caches static assets only; update waits and preserves draft; offline navigation shows locked shell PASS"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "apiRequests": [],
+  "screenshots": [
+    "pwa-390-markets.png",
+    "pwa-390-chart.png",
+    "pwa-390-order.png",
+    "pwa-430-markets.png",
+    "pwa-430-chart.png",
+    "pwa-430-order.png",
+    "telegram-390-markets.png",
+    "telegram-390-chart.png",
+    "telegram-390-order.png",
+    "telegram-390-light-safe-area.png",
+    "telegram-430-markets.png",
+    "telegram-430-chart.png",
+    "telegram-430-order.png",
+    "pwa-offline-shell.png"
+  ],
+  "paintedPlots": [
+    "pwa-320: rendered candle pixels PASS",
+    "pwa-360: rendered candle pixels PASS",
+    "pwa-390: rendered candle pixels PASS",
+    "pwa-430: rendered candle pixels PASS",
+    "telegram-320: rendered candle pixels PASS",
+    "telegram-360: rendered candle pixels PASS",
+    "telegram-390: rendered candle pixels PASS",
+    "telegram-430: rendered candle pixels PASS"
+  ],
+  "runtime": {
+    "node": "v24.19.0",
+    "chromium": "153.0.8010.0",
+    "locale": "en-US",
+    "physicalDevices": false,
+    "realTelegramLaunch": false
+  },
+  "status": "PASS"
+}

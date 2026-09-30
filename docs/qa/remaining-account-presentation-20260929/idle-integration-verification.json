@@ -1,0 +1,202 @@
+{
+  "verifiedAtUtc": "2026-09-29T16:59:29Z",
+  "baseCommit": "f2cd6616fd8e7ad566fb50268574e608ce81cd29",
+  "implementationCommit": "384dbb90b74775aec89efd3be8a05e9d21bf0fc3",
+  "environment": "Isolated current-root worktree; real React/JSDOM/browserActivity and explicit in-memory account/marketplace seams.",
+  "runtimeChanged": false,
+  "before": {
+    "sourceCommit": "f2cd6616fd8e7ad566fb50268574e608ce81cd29",
+    "success": false,
+    "passedSuites": 0,
+    "failedSuites": 2,
+    "passedTests": 1,
+    "failedTests": 17,
+    "pendingTests": 0,
+    "todoTests": 0,
+    "durationSeconds": 18.375,
+    "detectOpenHandles": true,
+    "reportedOpenHandles": 0,
+    "naturalExitCode": 1,
+    "forceExit": false,
+    "suites": [
+      {
+        "file": "frontend/src/lib/__tests__/copyPerformancePeriods.test.ts",
+        "status": "failed",
+        "tests": 7
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+        "status": "failed",
+        "tests": 11
+      }
+    ],
+    "rawJsonSha256": "7639b980a91d20f05ce57fa93baebc58bce3564159da24663cd96e1f7dd5c34f"
+  },
+  "after": {
+    "sourceCommit": "384dbb90b74775aec89efd3be8a05e9d21bf0fc3",
+    "success": true,
+    "passedSuites": 4,
+    "failedSuites": 0,
+    "passedTests": 73,
+    "failedTests": 0,
+    "pendingTests": 0,
+    "todoTests": 0,
+    "durationSeconds": 19.47,
+    "detectOpenHandles": true,
+    "reportedOpenHandles": 0,
+    "naturalExitCode": 0,
+    "forceExit": false,
+    "suites": [
+      {
+        "file": "frontend/src/lib/__tests__/copyPerformancePeriods.test.ts",
+        "status": "passed",
+        "tests": 7
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+        "status": "passed",
+        "tests": 12
+      },
+      {
+        "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+        "status": "passed",
+        "tests": 41
+      },
+      {
+        "file": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+        "status": "passed",
+        "tests": 13
+      }
+    ],
+    "rawJsonSha256": "d0c17b16e5e1ffd88cce0f290bc085ccdce741dbdbdc155d9341f6c13cb004b2"
+  },
+  "earlierDiagnosticIsolation": {
+    "accountAdjacent": {
+      "sourceCommit": "54bba32b6bec91a0413fe294acae7f4a3bf5eac9",
+      "success": true,
+      "passedSuites": 11,
+      "failedSuites": 0,
+      "passedTests": 220,
+      "failedTests": 0,
+      "pendingTests": 0,
+      "todoTests": 0,
+      "durationSeconds": 32.166,
+      "detectOpenHandles": true,
+      "reportedOpenHandles": 0,
+      "naturalExitCode": 0,
+      "forceExit": false,
+      "suites": [
+        {
+          "file": "frontend/src/lib/__tests__/copyPerformancePeriods.test.ts",
+          "status": "passed",
+          "tests": 7
+        },
+        {
+          "file": "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+          "status": "passed",
+          "tests": 11
+        },
+        {
+          "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+          "status": "passed",
+          "tests": 18
+        },
+        {
+          "file": "frontend/src/lib/__tests__/walletUnifiedAccount.test.ts",
+          "status": "passed",
+          "tests": 24
+        },
+        {
+          "file": "frontend/src/lib/__tests__/walletOverview.test.ts",
+          "status": "passed",
+          "tests": 49
+        },
+        {
+          "file": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+          "status": "passed",
+          "tests": 7
+        },
+        {
+          "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+          "status": "passed",
+          "tests": 41
+        },
+        {
+          "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+          "status": "passed",
+          "tests": 10
+        },
+        {
+          "file": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+          "status": "passed",
+          "tests": 13
+        },
+        {
+          "file": "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+          "status": "passed",
+          "tests": 19
+        },
+        {
+          "file": "frontend/src/lib/__tests__/copyHiddenTradeHistory.test.ts",
+          "status": "passed",
+          "tests": 21
+        }
+      ],
+      "rawJsonSha256": "81f78d61d7873140d31daad0ab32be2754de8bdae08bd17892b4e7322fae7611"
+    },
+    "rootMarketWidget": {
+      "sourceCommit": "0e0f76fc99443b2d8bf43a4f1aaa8a8d90f096a7",
+      "success": true,
+      "passedSuites": 4,
+      "failedSuites": 0,
+      "passedTests": 66,
+      "failedTests": 0,
+      "pendingTests": 0,
+      "todoTests": 0,
+      "durationSeconds": 5.561,
+      "detectOpenHandles": true,
+      "reportedOpenHandles": 0,
+      "naturalExitCode": 0,
+      "forceExit": false,
+      "suites": [
+        {
+          "file": "frontend/src/lib/__tests__/orderBookFreshnessAndExecution.test.ts",
+          "status": "passed",
+          "tests": 25
+        },
+        {
+          "file": "frontend/src/lib/__tests__/marketDataStore.test.ts",
+          "status": "passed",
+          "tests": 17
+        },
+        {
+          "file": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+          "status": "passed",
+          "tests": 20
+        },
+        {
+          "file": "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+          "status": "passed",
+          "tests": 4
+        }
+      ],
+      "rawJsonSha256": "532f94c2fb0eb69572cbe647241c59a305b07824a7cf7c684479d9548870b631"
+    }
+  },
+  "sourceSha256": {
+    "frontend/src/lib/__tests__/copyFirstLoad.test.ts": "b6add7ad1a3fe47b0c0a64f0ef0e75a21a0958d57313d6e00abfda8a1b738e2b",
+    "frontend/src/lib/__tests__/copyPerformancePeriods.test.ts": "e4df3d2c45852ead97f40dfc71c9666d4735b413d6b4c55acb215f4015a0ac1a",
+    "frontend/src/lib/__tests__/walletUxRefinement.test.ts": "1c041cf405444875c431a9cf2238a26f2c43226f3884a37b12a88a9dc6250e9f",
+    "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts": "05e34ca327de5a2420163834f0e475e7fa89fc02e973de3d45ad2498fbd2fd12",
+    "frontend/src/lib/browserActivity.ts": "41aff174a551e746096e4647a0cbbc03b71934b8caf87aad40026890ad428f71",
+    "frontend/src/lib/copyMarketplaceStore.ts": "eaf5f571261dba9fa0b44ebe72138e3b3a3e68602adbc2788d2b1899eb84c30d",
+    "frontend/src/lib/useCopyMarketplace.ts": "d77ae3efefcb2a6fb8b3a7a8b395bd7a78867002427fea473c4e10bca5604a13",
+    "frontend/src/pages/wallet-v3/useWalletData.ts": "471f6c416fcfb00572b456a50deb5f45541aa5df85e2f3f58704aa1f52be27ec"
+  },
+  "reproduce": "node node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --runTestsByPath frontend/src/lib/__tests__/copyFirstLoad.test.ts frontend/src/lib/__tests__/copyPerformancePeriods.test.ts frontend/src/lib/__tests__/walletUxRefinement.test.ts frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+  "limits": [
+    "Scoped checks only; no full frontend gate or production verification claimed.",
+    "Earlier diagnostic isolation uses its explicitly recorded source checkpoint.",
+    "Root owns the separate Futures candle open-handle fix and final combined gates."
+  ]
+}

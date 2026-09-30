@@ -1,3 +1,4 @@
+import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityListener } from '../../lib/browserActivity';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pause, Play } from 'lucide-react';
@@ -17,9 +18,9 @@ export function HomeTicker({ market }: { market: HomeMarket }) {
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-    const visible = () => node.dataset.hidden = String(document.hidden);
+    const visible = () => node.dataset.hidden = String(isBrowserInactive());
     visible();
-    document.addEventListener('visibilitychange', visible);
+    addBrowserActivityListener(visible);
     const observer = typeof IntersectionObserver !== 'undefined'
       ? new IntersectionObserver(entries => {
         node.dataset.offscreen = String(!entries.some(entry => entry.isIntersecting));
@@ -27,7 +28,7 @@ export function HomeTicker({ market }: { market: HomeMarket }) {
     observer?.observe(node);
     return () => {
       observer?.disconnect();
-      document.removeEventListener('visibilitychange', visible);
+      removeBrowserActivityListener(visible);
     };
   }, []);
   const copy = homeLiveCopy[lang];
