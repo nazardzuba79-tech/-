@@ -62,3 +62,23 @@ This entry follows the reconciled layout above: the shared `docs/AI_HANDOFF.md` 
 - **Still different from Bybit, left for the owner:**
   - Bybit shows the USDT figure to 4 decimals with no «+» on profits. VOLTEX keeps its 2 decimals and the sign, which existing guards pin.
 - **Not done:** no merge, no deploy.
+
+## Claude follow-up — 30 September 2026 (positions panel height as Bybit)
+
+The owner sent a production screenshot at 2000×1090 and a Bybit one: «в низу багато місця, потрібно продовжити і заповнити частину цього місця», then «В точності як у байбіт, щоб поміщалась одна угода, і ще чуть вільного місця».
+
+- **Change (`TerminalGraphite.css`, desktop ≥901px, archive terminal):** the positions panel is now a fixed 220px, replacing #352's `clamp(230px, 24vh, 262px)`.
+  - The chart and the order book take the freed height: +42px at 2000×1090, +10px at 1366–1440.
+  - The folded (compact) panel is untouched.
+- **Measured on fixture data:**
+  - One position (68px row): 72px of free space below it. The Bybit screenshot shows about 65px under its single row.
+  - Two positions: both rows whole, the second ending 4px above the panel's bottom edge.
+  - Chart height at 2000×1090 went from 660 to 702px.
+- **Test:** `terminalGraphite.test.ts` pins the 220px rule.
+- **Screenshot:** `panel-one-trade-2000.png`.
+- **Checks actually run (local, fixture data, `LANG=en_US.UTF-8`):**
+  - `npx jest frontend/`: 169/169 suites, 2876 tests PASS.
+  - Frontend build: PASS.
+  - Browser scripts, all PASS: `qa-futures-bottom-panel`, `qa-futures-visual-polish`, `qa-order-panel-refinement`, `qa-spot-cfd-terminal`, `qa-native-demo-browser` (full and P&L-only), `qa-futures-tiny-price`.
+  - `qa-futures-cold-open` was not run locally; it needs CI's A/B build.
+- **Not done:** no merge, no deploy.

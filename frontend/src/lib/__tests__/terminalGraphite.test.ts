@@ -157,8 +157,8 @@ describe('the Graphite sheet', () => {
     expect(css).toContain('#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(246,70,93,.12); }');
   });
 
-  it('gives the positions panel a little more room on a tall desktop, never less than before', () => {
-    expect(css).toContain('#archive-terminal-preview .terminal:not([data-account-compact=true]) { grid-template-rows:56px minmax(280px,1fr) clamp(230px,24vh,262px); }');
+  it('keeps the positions panel to two whole rows on desktop so the chart and book take the rest', () => {
+    expect(css).toContain('#archive-terminal-preview .terminal:not([data-account-compact=true]) { grid-template-rows:56px minmax(280px,1fr) 220px; }');
   });
 
   it('draws P&L, ROI and «≈… USD» as Bybit does: one size, one weight, one colour, nothing dimmed', () => {
