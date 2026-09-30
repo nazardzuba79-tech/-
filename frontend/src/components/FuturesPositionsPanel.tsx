@@ -31,6 +31,17 @@ function group(value: number, digits: number): string {
  * not `15000000` — at the precision the server sent it in. The same rule
  * as the money columns: comma between thousands, dot before decimals.
  */
+/**
+ * Bybit's second line under a P&L figure, «≈-1,203.76 USD» (owner,
+ * 2026-09-30): the same figure at two decimals, read as dollars. Only for a
+ * dollar-stable quote asset — a figure in any other asset is not spelled as
+ * dollars — and never «-0.00».
+ */
+const USD_QUOTES = new Set(['USDT', 'USDC', 'USD']);
+function approxUsd(value: number, quoteAsset: string): string | null {
+  if (!Number.isFinite(value) || !USD_QUOTES.has(quoteAsset)) return null;
+  return `≈${group(Math.abs(value) < 0.005 ? 0 : value, 2)} USD`;
+}
 function groupQuantity(raw: string): string {
   const value = Number(raw);
   if (!raw.trim() || !Number.isFinite(value)) return raw;
@@ -443,6 +454,7 @@ export function FuturesPositionsPanel({
                   // and funding already inside the realized figure would be
                   // counted a second time by a total.
                   const realized = parseFloat(p.realizedPnl);
+                  const realizedApprox = approxUsd(realized, quoteAsset);
                   /**
                    * A native Cross liquidation reference is only meaningful
                    * when the engine and the account header use the same
@@ -526,7 +538,7 @@ export function FuturesPositionsPanel({
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
                       <Td label={t('futures.colUnrealized')} className="mono futures-unrealized-cell">
-                        <FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset}>
+                        <FuturesUnrealizedPnl amount={p.unrealizedPnl} roi={p.roe} asset={quoteAsset} approx={p.unrealizedPnl === null ? null : approxUsd(Number(p.unrealizedPnl), quoteAsset)}>
                           {archive && <button type="button" className="archive-pnl-open" title={t('futures.pnlCard')} aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
                             onClick={()=>execution.showPnlCard ? execution.showPnlCard(p.id) : setCardPosition(p)}><ExternalLink size={17} aria-hidden="true"/></button>}
                         </FuturesUnrealizedPnl>
@@ -538,7 +550,7 @@ export function FuturesPositionsPanel({
                             data-unit={Number.isFinite(realized) ? quoteAsset : undefined}
                             data-positive={Number.isFinite(realized) && realized > 0 ? 'true' : undefined}
                           >{Number.isFinite(realized) ? group(realized, archive ? 2 : 4) : '—'}</span>
-                          {!archive && Number.isFinite(realized) && <small className="futures-position-approx">≈{group(realized, 2)} USD</small>}
+                          {realizedApprox && <small className="futures-position-approx">{realizedApprox}</small>}
                         </div>
                       </Td>
                       {/* TP/SL and the two close pills: two columns, or one

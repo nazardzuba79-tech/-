@@ -5113,3 +5113,32 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Preview checked at 1440 and 390: TP/SL present, no page errors.
 - **Preview (not in repo):** https://claude.ai/artifact/6aSCWuDDuFVFwccNzALZr7, «Було» (main) vs «Стало».
 - **Not done:** no merge, no deploy. Spot/CFD candles are still white/orange (owner not asked yet).
+
+## Claude — 2026-09-30 — Positions table: Bybit's «≈… USD» line under both P&L figures (PR #347)
+
+- **Owner ask** (with a Bybit screenshot): «З низу дублювання в usdt як у байбіт, і добавляй на біржу».
+- **Change**
+  - `FuturesPositionsPanel.tsx`: new `approxUsd(value, quoteAsset)` → `≈1,651.70 USD`.
+    - Two decimals, grouped.
+    - Never `-0.00`.
+    - Only for a USDT/USDC/USD quote; any other quote asset gets no line.
+  - Unrealized: `FuturesUnrealizedPnl` takes an optional `approx` and draws it as a third line under the ROI.
+    - The P&L-card button now spans three rows.
+    - Without `approx`, the cell is unchanged (two lines).
+  - Realized: the same line now also shows on the live (archive) terminal. It was `!archive` only since 9989f5ac.
+  - Figures are the engine's own; nothing is recomputed.
+  - Desktop row height 64 → 69px at 1440 (fixture).
+- **Preserved:**
+  - The engine-values-only rule of `FuturesUnrealizedPnl` (its source still has no financial inputs).
+  - Its two-line render without `approx`.
+  - The ROI/amount layout and the mobile wrapping.
+- **Tests updated:**
+  - `futuresUnrealizedPnl.test.ts`: new approx test.
+  - `futuresReferenceRow.test.ts`: the pinned JSX line.
+  - `qa-native-demo-browser.cjs`: it asserted no approx line, and now asserts both lines' text and that the line sits under the ROI inside its cell.
+- **Screenshot:** `docs/qa/terminal-graphite/pnl-approx-usd-1440.png` (main vs this branch, fixture).
+- **Checks actually run (local, fixture, `LANG=en_US.UTF-8`):**
+  - `tsc -b` and build: PASS.
+  - `npx jest frontend/src/lib/__tests__`: all pass after the test updates.
+  - `qa-native-demo-browser`, both the full run and `NATIVE_QA_PNL_ONLY=1`: PASS.
+  - `qa-futures-bottom-panel`, `qa-futures-visual-polish`, `qa-futures-tiny-price`: PASS.
