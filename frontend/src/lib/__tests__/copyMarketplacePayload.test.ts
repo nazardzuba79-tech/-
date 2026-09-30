@@ -255,8 +255,8 @@ describe('wiring', () => {
     const snapshot = readFileSync(resolve(__dirname, '../../../../src/services/copyTrading/marketplaceSnapshot.ts'), 'utf8');
     expect(snapshot).toContain('const summary = summarizeStrategy(response);');
     expect(snapshot).toContain('const response = await this.service.get(strategy);');
-    expect(route).toContain("snapshots.section('nazar')");
-    expect(route).toContain("snapshots.section('ksenia')");
+    expect(route).toContain("snapshots.section('nazar', { answered })");
+    expect(route).toContain("snapshots.section('ksenia', { answered })");
     expect(route).toContain('marketplaceSection(strategy, await service.get(strategy))');
   });
 
