@@ -4998,6 +4998,15 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Existing root handoff bytes and all previous main entries were verified and retained; only main's new append-only section and this entry were added. No branch, original historical report, financial guard, production account/order/allocation or database data was overwritten.
 - The earlier frozen ea17fdc runtime and 90-file fingerprint describe the pre-#344 checkpoint. The merged candidate additionally includes the approved Deposit/Wallet presentation changes from #344; it requires a fresh frontend build/full regression and exact merged-main CI. No updated full-suite or deployment result is claimed at this checkpoint. Intermediate 56a4586 already passed corrected real-provider CFD, real-PG VTA and Spot browser gates, but is diagnostic evidence rather than final release clearance.
 
+## Codex — 2026-09-30 — Admin fresh tab-return request budget
+
+- Base: current main `14252d2b`; remote `integration/claude-codex` no longer exists. Commit: the commit containing this entry.
+- Root cause: browser lifecycle wake unconditionally dirtied hourly Admin readers, bypassing the prior freshness interval on every tab return.
+- Changes: `visibleRead.ts` opt-out wake-refresh policy; `useVisibleAccountRead.ts` forwarding; Admin activity and alerts opt out; failed reads invalidate freshness without clearing last-good consumer data. Added lifecycle and actual browser regression cases.
+- Preserved: Claude/current-main Admin UI and customer filtering, one-hour active cadence, session validation on every wake, default trading forced refresh, five-minute sleep, mutation invalidation, auth/financial behavior. The normal wake notice is not hidden during validation.
+- Validation: red reproduction (2 reads vs 1), 46 lifecycle/read-budget tests, 41 Admin/JSDOM tests, frontend typecheck/build, 26 browser scenarios at 390/1440 all PASS. Evidence: `docs/qa/admin-return-refresh-20260930.md`.
+- Publication: review branch only; no merge/deploy or production account actions. No production latency claim.
+
 ## Claude — 2026-09-30 — Futures terminal: Graphite finish (chart settings, form, font, book, tiles proposal)
 
 - Base: `main` `14252d2b`. Branch `claude/peaceful-volta-h5zw7g-terminal-graphite`. Commits: `3733b2ce` (features), `7353214a` (panels as tiles, a separate proposal), the screenshots commit, and the one carrying this entry.

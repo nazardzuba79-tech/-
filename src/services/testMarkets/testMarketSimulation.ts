@@ -43,6 +43,7 @@ import type { TestAssetConfig } from './testAssetConfig';
 import { normal, seededRandom } from './simulationRandom';
 import { REALISM_PROFILES, isSimulationProfile, realisticHour, realisticTicks, type CandleShape, type RealismParams } from './simulationRealism';
 import { cycleForHour, cycleHourTicks, cycleShockClose } from './simulationCycles';
+import { accumulationFactor, accumulationForHour, flushHourTicks, type AccumulationHour } from './simulationAccumulation';
 import { NATURAL_WICK_WINDOW_MS, naturalWickCandles, naturalWickLimit, naturalWickWindowAllowed, naturalWickWindowSelected,
   type NaturalWickCandle } from './simulationNaturalWicks';
 
@@ -269,6 +270,9 @@ interface HourPlan {
   shapes?: CandleShape[];
   /** A cycle's complete canonical hour; boundaries are sampled from it. */
   cycleTicks?: Tick[];
+  /** Optional hard price envelope for a bounded accumulation phase. */
+  rangeFloor?: number;
+  rangeCeiling?: number;
 }
 
 /**
@@ -281,6 +285,7 @@ export class TestMarketSimulation {
   private hourOpens: number[] = [];
   private closedCandles = new Map<number, SimCandle>();
   private cycleHours = new Map<number, HourPlan>();
+  private accumulationHours = new Map<number, HourPlan>();
   private naturalWindows = new Map<number, NaturalWickCandle[]>();
   /** The profile's parameters, or null for the legacy intra-hour path. */
   private readonly realism: RealismParams | null;
@@ -343,7 +348,70 @@ export class TestMarketSimulation {
     return { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}) };
   }
 
+  private accumulationOpen(hour: number, phase: AccumulationHour): number {
+    const config = this.asset.accumulationPhase!;
+    const anchor = this.hourOpen(phase.startHour);
+    if (phase.relativeHour === 0) return anchor;
+    if (phase.relativeHour <= config.accumulationHours) {
+      return anchor * accumulationFactor(this.asset.seed, config, phase.relativeHour - 1);
+    }
+    const finalStart = phase.startHour + config.accumulationHours + 1;
+    let price = anchor * accumulationFactor(this.asset.seed, config, config.accumulationHours);
+    for (let h = finalStart; h < hour; h++) {
+      price *= Math.exp(this.baselineHourPlan(h).logReturn);
+    }
+    return price;
+  }
+
+  private accumulationHourPlan(hour: number, phase: AccumulationHour): HourPlan {
+    const cached = this.accumulationHours.get(hour);
+    if (cached) return cached;
+    const config = this.asset.accumulationPhase!;
+    const open = this.accumulationOpen(hour, phase);
+    let plan: HourPlan;
+    if (phase.phase === 'flush') {
+      const baseline = this.baselineHourPlan(hour);
+      const original = Array.from({ length: CANDLES_PER_HOUR }, (_, slot) => this.baselineTicks(baseline, slot)).flat();
+      const phaseTicks = flushHourTicks(this.asset.seed, hour, open, config.flushFraction, original);
+      const boundaries = [open];
+      for (let slot = 0; slot < CANDLES_PER_HOUR; slot++) boundaries.push(phaseTicks[(slot + 1) * TICKS_PER_CANDLE - 1].price);
+      plan = { ...baseline, open, regime: 'pullback', logReturn: 0, boundaries, cycleTicks: phaseTicks, shapes: undefined };
+    } else if (phase.phase === 'accumulation') {
+      const anchor = this.hourOpen(phase.startHour);
+      const close = anchor * accumulationFactor(this.asset.seed, config, phase.relativeHour);
+      const logReturn = Math.log(close / open);
+      const regime: Regime = 'consolidation';
+      const cluster = clusterFactor(this.asset.seed, hour);
+      const sigma = candleSigma(regime, logReturn, cluster);
+      const realistic = this.realism ? realisticHour({
+        seed: this.asset.seed, offset: this.realismOffset, hour, regime, logReturn, sigma, params: this.realism,
+        trendStep: 0, previousRegime: 'consolidation', nextRegime: 'consolidation',
+      }) : null;
+      const steps = realistic ? realistic.steps : hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+      const rangeFloor = anchor * (1 - config.maxBandFraction / 2);
+      const rangeCeiling = anchor * (1 + config.maxBandFraction / 2);
+      const boundaries = [open];
+      let logPrice = Math.log(open);
+      for (let k = 0; k < CANDLES_PER_HOUR; k++) {
+        logPrice += steps[k];
+        const raw = k === CANDLES_PER_HOUR - 1 ? close : Math.exp(logPrice);
+        boundaries.push(Math.max(rangeFloor, Math.min(rangeCeiling, raw)));
+      }
+      plan = { hour, regime, open, logReturn: Math.log(boundaries[CANDLES_PER_HOUR] / open), sigma, cluster, boundaries,
+        rangeFloor, rangeCeiling, ...(realistic ? { shapes: realistic.shapes } : {}) };
+    } else {
+      const baseline = this.baselineHourPlan(hour);
+      const scale = open / baseline.open;
+      plan = { ...baseline, open, boundaries: baseline.boundaries.map((value) => value * scale) };
+    }
+    this.accumulationHours.set(hour, plan);
+    if (this.accumulationHours.size > 240) this.accumulationHours.delete(this.accumulationHours.keys().next().value as number);
+    return plan;
+  }
+
   hourPlan(hour: number): HourPlan {
+    const accumulation = accumulationForHour(this.asset.accumulationPhase, this.asset.listingAt, hour);
+    if (accumulation) return this.accumulationHourPlan(hour, accumulation);
     const cycle = cycleForHour(this.asset.cyclicImpulse, this.asset.listingAt, hour);
     if (!cycle) return this.baselineHourPlan(hour);
     const cached = this.cycleHours.get(hour);
@@ -391,17 +459,28 @@ export class TestMarketSimulation {
     });
   }
 
+  private boundTicks(plan: HourPlan, ticks: Tick[]): Tick[] {
+    if (plan.rangeFloor === undefined || plan.rangeCeiling === undefined) return ticks;
+    const floor = plan.rangeFloor, ceiling = plan.rangeCeiling;
+    return ticks.map((tick) => {
+      const price = Math.max(floor, Math.min(ceiling, tick.price));
+      const high = Math.max(price, Math.min(ceiling, tick.high));
+      const low = Math.min(price, Math.max(floor, tick.low));
+      return { ...tick, price, high, low };
+    });
+  }
+
   private ticks(plan: HourPlan, slot: number): Tick[] {
     const policy = this.asset.naturalWicks;
     // Cycle extrema are part of the owner's exact shock/recovery contract.
-    if (!policy || plan.cycleTicks) return this.originalTicks(plan, slot);
+    if (!policy || plan.cycleTicks) return this.boundTicks(plan, this.originalTicks(plan, slot));
     const index = plan.hour * CANDLES_PER_HOUR + slot;
     const at = this.asset.listingAt + index * CANDLE_MS;
     const windowAt = Math.floor(at / NATURAL_WICK_WINDOW_MS) * NATURAL_WICK_WINDOW_MS;
     const firstWindow = Math.floor(this.asset.listingAt / NATURAL_WICK_WINDOW_MS) * NATURAL_WICK_WINDOW_MS;
     const windowIndex = (windowAt - firstWindow) / NATURAL_WICK_WINDOW_MS;
     if (!naturalWickWindowAllowed(policy, windowAt) || !naturalWickWindowSelected(this.asset.seed, this.realismOffset, windowIndex)) {
-      return this.originalTicks(plan, slot);
+      return this.boundTicks(plan, this.originalTicks(plan, slot));
     }
     let window = this.naturalWindows.get(windowAt);
     if (!window) {
@@ -413,7 +492,7 @@ export class TestMarketSimulation {
         const memberPlan = hour === plan.hour ? plan : this.hourPlan(hour);
         // Non-aligned listings can have a UTC bucket spanning two hour plans.
         // Keep the entire bucket intact if either belongs to an exact cycle.
-        if (memberPlan.cycleTicks) return this.originalTicks(plan, slot);
+        if (memberPlan.cycleTicks) return this.boundTicks(plan, this.originalTicks(plan, slot));
         original.push({ index: member, open: memberPlan.boundaries[memberSlot], close: memberPlan.boundaries[memberSlot + 1],
           maxWick: naturalWickLimit(this.realism?.maxWick), ticks: this.originalTicks(memberPlan, memberSlot) });
       }
@@ -421,7 +500,7 @@ export class TestMarketSimulation {
       this.naturalWindows.set(windowAt, window);
       if (this.naturalWindows.size > 96) this.naturalWindows.delete(this.naturalWindows.keys().next().value as number);
     }
-    return window.find((candle) => candle.index === index)!.ticks;
+    return this.boundTicks(plan, window.find((candle) => candle.index === index)!.ticks);
   }
 
   /** Read-only tape of completed canonical ticks; never samples a future tick. */
@@ -622,7 +701,13 @@ const MAX_SIMULATIONS = 64;
 export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
   const cycle = asset.cyclicImpulse;
   const natural = asset.naturalWicks;
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycle ? `${cycle.anchorAt}:${cycle.notBefore}:${cycle.periodHours}` : 'no-cycle'}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${natural ? `${natural.historicalUntil ?? 'no-history'}:${natural.futureFrom}` : 'original-wicks'}`;
+  const accumulation = asset.accumulationPhase;
+  const cycleKey = cycle ? `${cycle.anchorAt}:${cycle.notBefore}:${cycle.periodHours}` : 'no-cycle';
+  const naturalKey = natural ? `${natural.historicalUntil ?? 'no-history'}:${natural.futureFrom}` : 'original-wicks';
+  const accumulationKey = accumulation
+    ? `${accumulation.anchorAt}:${accumulation.flushFraction}:${accumulation.accumulationHours}:${accumulation.minBandFraction}:${accumulation.maxBandFraction}`
+    : 'no-accumulation';
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);
