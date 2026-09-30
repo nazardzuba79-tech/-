@@ -66,17 +66,19 @@ function bandWidth(seed: string, config: AccumulationPhaseConfig, hour: number):
 export function accumulationFactor(seed: string, config: AccumulationPhaseConfig, hour: number): number {
   if (hour <= 0) return 1;
   const targetHour = Math.min(hour, config.accumulationHours);
-  let factor = 1;
-  for (let i = 1; i <= targetHour; i++) {
-    const width = bandWidth(seed, config, i);
-    const half = width / 2;
-    const random = seededRandom(seed, 'accumulation-walk-v1', i);
-    const meanReversion = (1 - factor) * 0.18;
-    const noise = normal(random) * Math.max(0.0045, half * 0.12);
-    // Keep closes slightly inside the band; wicks may test its outer edge.
-    factor = clamp(factor + meanReversion + noise, 1 - half * 0.88, 1 + half * 0.88);
-  }
-  return factor;
+  const phaseRandom = seededRandom(seed, 'accumulation-wave-phase-v2');
+  const primaryPhase = phaseRandom() * Math.PI * 2;
+  const secondaryPhase = phaseRandom() * Math.PI * 2;
+  const width = bandWidth(seed, config, targetHour);
+  const half = width / 2;
+  // Two incommensurate waves keep the range irregular while ensuring the week
+  // actually explores it. Small seeded noise prevents a visibly mathematical sine.
+  const primary = Math.sin(primaryPhase + targetHour * Math.PI * 2 / 38);
+  const secondary = Math.sin(secondaryPhase + targetHour * Math.PI * 2 / 13);
+  const random = seededRandom(seed, 'accumulation-close-noise-v2', targetHour);
+  const noise = normal(random) * 0.07;
+  const shape = clamp(primary * 0.78 + secondary * 0.17 + noise * 0.05, -0.92, 0.92);
+  return 1 + half * shape;
 }
 
 export interface PhaseTick {
