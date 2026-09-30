@@ -33,11 +33,33 @@ export function ChartSettingsDialog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     boxRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); cancel(); } };
-    document.addEventListener('keydown', onKey);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancel(); return; }
+      if (e.key !== 'Tab') return;
+      const box = boxRef.current;
+      if (!box) return;
+      const focusable = Array.from(box.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]'
+      )).filter(element => element.tabIndex >= 0 && !element.hidden);
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (!first || !last) { e.preventDefault(); box.focus(); return; }
+      // Do not let keyboard navigation reach the trading ticket behind the modal.
+      if (!box.contains(document.activeElement)) {
+        e.preventDefault(); (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
     return () => {
-      document.removeEventListener('keydown', onKey);
-      (openerRef.current as HTMLElement | null)?.focus?.();
+      document.removeEventListener('keydown', onKey, true);
+      // Pair/route changes can unmount the dialog without calling Cancel.
+      // Reverting after Ok is also safe: saveChartSettings already kept the draft.
+      revertChartSettings();
+      const opener = openerRef.current as HTMLElement | null;
+      if (opener?.isConnected) opener.focus?.();
     };
     // cancel only reads module state; binding once is enough.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,7 +76,7 @@ export function ChartSettingsDialog({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div className="vx-chart-settings" onMouseDown={e => { if (e.target === e.currentTarget) cancel(); }}>
-      <div className="vcs-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby="vcs-title">
+      <div className="vcs-box" ref={boxRef} role="dialog" aria-modal="true" aria-labelledby="vcs-title" tabIndex={-1}>
         <div className="vcs-head">
           <h2 id="vcs-title">{t('chart.settings.title')}</h2>
           <button type="button" className="vcs-close" onClick={cancel} aria-label={t('chart.settings.cancel')}>
