@@ -126,10 +126,12 @@ function walk(dir, files = []) {
       return { context, page, errors };
     }
     const panelOf = (page) => page.locator('.support-panel');
+    const SUBJECT_RU = { TECHNICAL: 'Техническая проблема', KYC: 'Вопрос по KYC', CARD: 'Вопрос по карте', OTHER: 'Другое' };
     async function fill(panel, v) {
       if (v.name !== undefined) await panel.getByLabel('Имя').fill(v.name);
       if (v.email !== undefined) await panel.getByLabel('Email').fill(v.email);
-      if (v.subject) await panel.getByLabel('Тема обращения').selectOption(v.subject);
+      // The topic is four chips (radio buttons) under «Тема обращения».
+      if (v.subject) await panel.getByRole('group', { name: 'Тема обращения' }).getByRole('radio', { name: SUBJECT_RU[v.subject] }).check();
       if (v.message !== undefined) await panel.getByLabel('Сообщение').fill(v.message);
     }
 
