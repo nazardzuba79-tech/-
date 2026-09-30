@@ -12,7 +12,12 @@ export interface WithdrawalResult {
   amount: string;
   status: string;
   txHash?: string;
+  /** False for a request that held nothing (see requestUnheldWithdrawal). */
+  balanceHeld: boolean;
 }
+
+/** Requests that still claim an unheld amount: open, or already paid out. */
+export const UNHELD_CLAIMING_STATUSES = ['PENDING', 'APPROVED', 'SENT'];
 
 /**
  * Manual withdrawal requests — the reverse of DepositService's manual
@@ -27,6 +32,9 @@ export interface WithdrawalResult {
  * txHash, lock released — the funds genuinely left) — or PENDING/APPROVED
  * -> REJECTED at any point before SENT (lock released back to `available`,
  * since nothing was actually sent).
+ *
+ * A Cross trading account's request follows the same lifecycle without the
+ * lock: see requestUnheldWithdrawal.
  */
 export class WithdrawalService {
   constructor(private prisma: PrismaClient) {}
@@ -90,6 +98,83 @@ export class WithdrawalService {
     });
   }
 
+  /**
+   * A withdrawal REQUEST from a Cross trading account — the owner's, or a
+   * configured test account's — whose balance lives in the trading
+   * simulation rather than in the spot ledger this service can hold.
+   *
+   * Nothing is moved. The request is recorded for the admin, who reviews it
+   * and pays by hand, exactly as for a held request; it simply has no lock to
+   * release or return (`balanceHeld: false`).
+   *
+   * `available` is what the account can withdraw of this asset right now,
+   * read by the caller from the account's own valuation. Unheld requests
+   * that are open or already paid out for the same asset count against it,
+   * under a lock on the user's row, so neither two requests at once nor a
+   * repeat after a payout can claim the same funds twice.
+   */
+  async requestUnheldWithdrawal(params: {
+    userId: string;
+    asset: string;
+    network: string;
+    toAddress: string;
+    amount: string;
+    available: string;
+  }): Promise<WithdrawalResult> {
+    if (isTestAssetPairOrSymbol(params.asset)) throw new WithdrawalRequestError(TEST_ASSET_NOT_TRADABLE_MESSAGE);
+    const amount = new BigNumber(params.amount);
+    if (!amount.isFinite() || amount.isLessThanOrEqualTo(0)) {
+      throw new WithdrawalRequestError('Amount must be greater than zero');
+    }
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${params.userId} FOR UPDATE`;
+      const claimed = await this.unheldClaimed(tx, params.userId, params.asset);
+      const withdrawable = BigNumber.max(new BigNumber(params.available).minus(claimed), 0);
+      if (!withdrawable.isFinite() || withdrawable.isLessThan(amount)) {
+        throw new WithdrawalRequestError(`Insufficient ${params.asset} balance`);
+      }
+
+      const withdrawal = await tx.withdrawal.create({
+        data: {
+          userId: params.userId,
+          asset: params.asset,
+          network: params.network,
+          toAddress: params.toAddress,
+          amount: amount.toString(),
+          status: 'PENDING',
+          balanceHeld: false,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: params.userId,
+          action: 'WITHDRAWAL_REQUESTED',
+          metadata: {
+            withdrawalId: withdrawal.id,
+            asset: params.asset,
+            network: params.network,
+            toAddress: params.toAddress,
+            amount: amount.toString(),
+            balanceHeld: false,
+          },
+        },
+      });
+
+      return this.toResult(withdrawal);
+    });
+  }
+
+  /** The part of an unheld balance already claimed by this user's requests. */
+  async unheldClaimed(db: Prisma.TransactionClient | PrismaClient, userId: string, asset: string): Promise<BigNumber> {
+    const sum = await db.withdrawal.aggregate({
+      where: { userId, asset, balanceHeld: false, status: { in: UNHELD_CLAIMING_STATUSES } },
+      _sum: { amount: true },
+    });
+    return new BigNumber(sum._sum.amount?.toString() ?? '0');
+  }
+
   /** Admin has reviewed the request and intends to send the funds — the
    * hold stays locked (nothing has actually moved on-chain yet). */
   async approveWithdrawal(params: { withdrawalId: string; performedByAdminId: string }): Promise<WithdrawalResult> {
@@ -120,15 +205,18 @@ export class WithdrawalService {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['APPROVED']);
 
-      const balance = await tx.balance.findUnique({
-        where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-      });
-      await tx.balance.update({
-        where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-        data: {
-          locked: new BigNumber(balance!.locked.toString()).minus(withdrawal.amount.toString()).toString(),
-        },
-      });
+      // An unheld request moved nothing, so there is no lock to release.
+      if (withdrawal.balanceHeld !== false) {
+        const balance = await tx.balance.findUnique({
+          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
+        });
+        await tx.balance.update({
+          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
+          data: {
+            locked: new BigNumber(balance!.locked.toString()).minus(withdrawal.amount.toString()).toString(),
+          },
+        });
+      }
 
       const updated = await tx.withdrawal.update({
         where: { id: withdrawal.id },
@@ -158,16 +246,19 @@ export class WithdrawalService {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['PENDING', 'APPROVED']);
 
-      const balance = await tx.balance.findUnique({
-        where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-      });
-      await tx.balance.update({
-        where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-        data: {
-          available: new BigNumber(balance!.available.toString()).plus(withdrawal.amount.toString()).toString(),
-          locked: new BigNumber(balance!.locked.toString()).minus(withdrawal.amount.toString()).toString(),
-        },
-      });
+      // An unheld request moved nothing, so there is nothing to give back.
+      if (withdrawal.balanceHeld !== false) {
+        const balance = await tx.balance.findUnique({
+          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
+        });
+        await tx.balance.update({
+          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
+          data: {
+            available: new BigNumber(balance!.available.toString()).plus(withdrawal.amount.toString()).toString(),
+            locked: new BigNumber(balance!.locked.toString()).minus(withdrawal.amount.toString()).toString(),
+          },
+        });
+      }
 
       const updated = await tx.withdrawal.update({
         where: { id: withdrawal.id },
@@ -204,6 +295,7 @@ export class WithdrawalService {
     amount: unknown;
     status: string;
     txHash?: string | null;
+    balanceHeld?: boolean | null;
   }): WithdrawalResult {
     return {
       id: w.id,
@@ -213,6 +305,7 @@ export class WithdrawalService {
       amount: (w.amount as { toString(): string }).toString(),
       status: w.status,
       txHash: w.txHash ?? undefined,
+      balanceHeld: w.balanceHeld !== false,
     };
   }
 }

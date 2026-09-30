@@ -264,6 +264,9 @@ export function FuturesAccountSummary({
         <button type="button" onClick={() => navigate('/wallet?action=deposit')} style={styles.actionBtn}>
           {t('futures.depositAction')}
         </button>
+        <button type="button" onClick={() => navigate('/wallet?action=withdraw')} style={styles.actionBtn}>
+          {t('wallet.withdraw')}
+        </button>
         <button
           type="button"
           onClick={() => (onOpenTransfer ? onOpenTransfer() : navigate('/wallet?action=transfer'))}

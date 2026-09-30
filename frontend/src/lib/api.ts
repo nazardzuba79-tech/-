@@ -836,10 +836,20 @@ export const api = {
     >('/withdrawals/me'),
 
   requestWithdrawal: (params: { asset: string; network: string; toAddress: string; amount: string }) =>
-    request<{ id: string; asset: string; network: string; toAddress: string; amount: string; status: string }>(
+    request<{ id: string; asset: string; network: string; toAddress: string; amount: string; status: string; balanceHeld: boolean }>(
       '/withdrawals',
       { method: 'POST', body: JSON.stringify(params) }
     ),
+
+  /** What the caller can withdraw, per asset, exactly as the server checks it.
+   * TRADING = the Cross trading account; SPOT = the spot ledger, with
+   * `futures` naming what would have to be transferred first. */
+  getWithdrawalOptions: () =>
+    request<{
+      source: 'TRADING' | 'SPOT';
+      assets: { asset: string; available: string }[];
+      futures: { asset: string; available: string }[];
+    }>('/withdrawals/options'),
 
   // Read-only mirror of Kraken market data — coin list, price, order book.
   getExternalSymbols: () =>
@@ -1274,6 +1284,7 @@ export const api = {
         status: string;
         txHash: string | null;
         rejectionReason: string | null;
+        balanceHeld: boolean;
         createdAt: string;
       }[]
     >('/admin/withdrawals'),

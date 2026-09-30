@@ -277,7 +277,8 @@ test('Wallet entry wires all ledger actions to the original modal state and keep
     expect(ledger).toContain(`${callback}={() => setModal('${modal}')}`);
   }
   expect(source).toContain("searchParams.get('action')");
-  expect(source).toContain('<WithdrawModal open={modal === \'withdraw\'} onClose={() => setModal(null)} onSubmitted={refresh} />');
+  // The withdraw panel can hand over to the transfer when the funds sit on futures.
+  expect(source).toContain('<WithdrawModal open={modal === \'withdraw\'} onClose={() => setModal(null)} onSubmitted={refresh} onTransfer={() => setModal(\'transfer\')} />');
   expect(source).toContain('<TransferModal open={modal === \'transfer\'} onClose={() => setModal(null)} onSubmitted={refresh} />');
 });
 
@@ -623,12 +624,28 @@ function restoreApprovedHistoryTypography(source: string): string {
   return source;
 }
 
+// The withdraw panel was rebuilt on 2026-09-30 (owner: withdrawal must work
+// from every button and go to the admin queue). Its old whole-file pin is
+// replaced by what it must keep doing.
+test('withdraw panel reads what can be withdrawn from the server and never from a presentation profile', () => {
+  const source = read(wallet + 'WithdrawModal.tsx');
+  expect(source).toContain('api.getWithdrawalOptions()');
+  expect(source).toContain('api.requestWithdrawal(request)');
+  expect(source).not.toMatch(/getBalances|getWalletOverview|presentation|nativeDemoApi/);
+  // The amount sent is the typed decimal, never a float round-trip.
+  expect(source).toMatch(/const request = \{ asset, network: network\.code, toAddress: address\.trim\(\), amount: plain \}/);
+  // The 60-minute promise is shown before sending and after.
+  expect(source).toContain("t('withdraw.eta')");
+  expect(source).toContain("t('withdraw.doneEta')");
+  // Nothing is submitted while the address fails its network's check.
+  expect(source).toMatch(/const canSubmit = !!row && !!network && verdict === 'ok'/);
+});
+
 // Keep exact guards for the unchanged financial formatting/modal boundaries.
 // The five old whole-file pins superseded by approved account-read, catalogue,
 // managed-listing and auth changes now have explicit behavior checks below.
 test.each([
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
-  [wallet + 'WithdrawModal.tsx', '15873a49ea88eaefc7025d70b7eabb676b994d6511687327ef3a6196c7ec302b'],
   [wallet + 'TransferModal.tsx', '27eb01d9c3404b3134e9fbfe7622b4f6c2e69ffbd40d3e6824f919c8c7f856b3'],
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
   [wallet + 'TransactionHistory.tsx', 'b9b0b0c274bef595780cf7b748685b6486a72765af6af575a170f307a5b999b3'],

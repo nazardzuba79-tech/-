@@ -39,6 +39,14 @@ function semantic(source){
 }
 
 const read = name => readFileSync(resolve(__dirname, '../..',name),'utf8');
+function restoreAccountActions(source) {
+ // 2026-09-30: the account block gained «Вывести», a link to the Wallet's
+ // withdraw panel. Remove exactly that button; the rest stays frozen.
+ const added="        <button type=\"button\" onClick={() => navigate('/wallet?action=withdraw')} style={styles.actionBtn}>\n          {t('wallet.withdraw')}\n        </button>\n";
+ const text=source.replace(/\r\n/g,'\n');
+ expect(text.split(added).length-1).toBe(1);
+ return text.replace(added,'');
+}
 function restoreFormPresentation(source) {
  // Reverse only the approved details wrapper and repeated price-pick signal.
  // The original complete order payload, calculations and controls remain frozen.
@@ -411,7 +419,7 @@ test.each([
     // before, and no other function in this module changed.
     "698c91b891d7e62f5e8c526983687499b1fa1cc4e77532760747a9b182673519"
   ]
-])('%s matches the audited integration fingerprint',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
+])('%s matches the audited integration fingerprint',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : name === 'components/FuturesAccountSummary.tsx' ? restoreAccountActions(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{
  const css=read('pages/trade-terminal/FuturesTerminal.css');
  const selectors=[]; require('postcss').parse(css).walkRules(rule=>selectors.push(...rule.selectors));

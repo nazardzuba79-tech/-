@@ -593,6 +593,12 @@ model Withdrawal {
   txHash             String?
   rejectionReason    String?
   performedByAdminId String?   // admin who approved/sent/rejected this
+  /// True when the request moved `amount` from the spot balance's available
+  /// to locked, as every request before 2026-09-30 did. False for a request
+  /// from a Cross trading account whose balance lives in the trading
+  /// simulation (the owner's and the configured test accounts): nothing was
+  /// held, so approving, sending or rejecting it touches no Balance row.
+  balanceHeld        Boolean   @default(true)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
