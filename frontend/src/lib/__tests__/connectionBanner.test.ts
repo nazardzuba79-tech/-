@@ -66,3 +66,15 @@ test('Spot keeps its existing subscription, loss detection, recovery and cleanup
  await act(async()=>update('connected'));expect(host.textContent).toBe('');
  await render({connected:true});expect(release).toHaveBeenCalledTimes(1);
 });
+
+test('a healthy simulation feed ignores Kraken loss, but its own sustained failure is reported',async()=>{
+ await render({connected:true});
+ await advance(freshness.RECONNECT_GRACE_MS*2);
+ expect(subscribe).not.toHaveBeenCalled();expect(host.textContent).toBe('');
+ await render({connected:false});await advance(freshness.RECONNECT_GRACE_MS);
+ expect(host.querySelector('[role="status"]')).not.toBeNull();
+ await render({connected:true});expect(host.textContent).toBe('');
+ // Switching back to ordinary Spot restores the venue's loss detection.
+ await render();await advance(freshness.RECONNECT_GRACE_MS);
+ expect(subscribe).toHaveBeenCalledTimes(1);expect(host.textContent).toBe('connection.lost');
+});

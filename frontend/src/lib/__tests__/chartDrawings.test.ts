@@ -292,13 +292,21 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     // A tiny negative move still reads as negative.
     expect(lines[0]).toBe('-20.00%');
     const up = drawings.drawingRange({ time: 0, price: 100 }, { time: 900, price: 117.44 }, candles, 300, 0.01);
-    expect(drawings.drawingRangeLines(up, 'ru')[0]).toBe('+17.44%');
+    expect(drawings.drawingRangeLines(up, 'ru')[0]).toBe('+17,44%');
     expect(lines[1]).toBe('3 bars, 15m');
     // Volume of the bars inside the span only; the closing bar is not in it.
     expect(lines[2]).toBe('Vol 5.00K');
     expect(lines.join(' ')).not.toContain('Infinity');
     expect(drawings.drawingRangeLines(range, 'ru')[1]).toBe('3 столбцы, 15мин');
     expect(drawings.drawingRangeLines(range, 'en', { price: true, date: false })).toHaveLength(1);
+  });
+  test('large measurement percentages group thousands without changing the measured return', () => {
+    const range = drawings.drawingRange({ time: 0, price: 1 }, { time: 3600, price: 194.2766 }, [], 3600);
+    expect(range.pct).toBeCloseTo(19327.66, 8);
+    expect(drawings.drawingRangeLines(range, 'ru')[0]).toBe('+19\u00a0327,66%');
+    expect(drawings.drawingRangeLines(range, 'en')[0]).toBe('+19,327.66%');
+    expect(drawings.drawingRangeLines({ ...range, pct: null }, 'ru')[0]).toBe('—');
+    expect(drawings.drawingRangeLines({ ...range, pct: Infinity }, 'ru')[0]).toBe('—');
   });
   test('Spot text dialog has an accessible label, safe plain input, real actions and no native modal', () => {
     const html = renderToStaticMarkup(React.createElement(exports.DrawingDialog,
@@ -758,6 +766,10 @@ describe('every drawing kind paints and can be picked', () => {
     const label = g.prims.find((p) => p.t === 'label') as Extract<geometry.Primitive, { t: 'label' }>;
     expect(label.lines[0]).toBe('+10.00%');
     expect(label.lines[1]).toBe('3 bars, 15m');
+    expect(label.size).toBe(14);
+    const box = geometry.labelBox(label);
+    expect(box.w).toBeGreaterThan(geometry.labelBox({ ...label, size: 11 }).w);
+    expect(geometry.geometryDistance(g, { x: box.x + box.w - 1, y: box.y + 1 })).toBe(0);
   });
 });
 
