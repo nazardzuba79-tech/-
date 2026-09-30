@@ -1,60 +1,126 @@
 /* Support form panel. The launcher's base geometry is inline in
    SupportWidget.tsx; everything that needs media queries, dvh or pseudo
-   states lives here. */
+   states lives here.
+
+   2026-09-30 (owner, on a Bybit screenshot: «Зроби таку ж кнопку супорта, і
+   в середині якось покращ»): the launcher is Bybit's 50px circle with a thin
+   headset; inside, the topic comes first as four chips, name and email share
+   a row, the message counts its characters, and the result lines carry a
+   mark. The form, its fields and its one POST are unchanged. */
+.support-launcher { transition: transform .15s ease, filter .15s ease; }
+.support-launcher:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.support-launcher:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+
 .support-panel {
   position: fixed;
-  bottom: 92px;
+  bottom: 86px;
   right: 24px;
-  width: 360px;
+  width: 380px;
   max-width: calc(100vw - 32px);
   /* dvh where supported: the panel shrinks with the on-screen keyboard, and
      the footer with «Отправить» stays inside what is visible. */
-  max-height: calc(100vh - 140px);
-  max-height: calc(100dvh - 140px);
+  max-height: calc(100vh - 130px);
+  max-height: calc(100dvh - 130px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow-lg);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
   z-index: 999;
+  transform-origin: 100% 100%;
+  animation: support-panel-in .16s ease-out;
 }
+@keyframes support-panel-in { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .support-panel { animation: none; }
+  .support-launcher { transition: none; }
+}
+
 .support-panel-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 14px 12px 14px 16px;
   border-bottom: 1px solid var(--border);
-  background: var(--panel-alt);
   flex-shrink: 0;
 }
-.support-panel-title { font-size: 14px; font-weight: 800; color: var(--text-primary); }
-.support-panel-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.support-panel-avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: rgba(240, 201, 100, 0.12);
+}
+.support-panel-heading { flex: 1; min-width: 0; }
+.support-panel-title { font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 20px; }
+.support-panel-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 16px; }
 .support-panel-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: transparent;
   border: none;
+  border-radius: 8px;
   color: var(--text-secondary);
-  font-size: 14px;
   cursor: pointer;
-  padding: 4px;
 }
+.support-panel-close:hover { background: var(--panel-alt); color: var(--text-primary); }
+.support-panel-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+
 .support-form { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .support-form-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 14px;
+  padding: 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(132, 142, 156, .25) transparent;
 }
-.support-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.support-field > span { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-.support-field > small { font-size: 11px; color: var(--text-tertiary, var(--text-secondary)); }
+
+/* Topic: four chips, two by two. */
+.support-topics { margin: 0; padding: 0; border: 0; min-width: 0; }
+.support-topics > legend { padding: 0; margin-bottom: 8px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.support-topic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.support-topic { position: relative; display: block; min-width: 0; cursor: pointer; }
+.support-topic > input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.support-topic > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 16px;
+  color: var(--text-secondary);
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: color .12s, border-color .12s, background-color .12s;
+}
+.support-topic:hover > span { color: var(--text-primary); }
+.support-topic > input:checked + span { color: var(--text-primary); border-color: var(--accent); background: rgba(240, 201, 100, 0.08); }
+.support-topic > input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Name and email share a row. */
+.support-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.support-field { position: relative; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.support-field > span { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.support-hint { margin-top: -8px; font-size: 11px; color: var(--text-tertiary, var(--text-secondary)); }
 .support-field input,
-.support-field select,
 .support-field textarea {
   width: 100%;
   min-width: 0;
@@ -67,34 +133,44 @@
   color: var(--text-primary);
   font-size: 13px;
   font-family: inherit;
+  transition: border-color .12s;
 }
-.support-field textarea { resize: vertical; min-height: 96px; max-height: 40vh; line-height: 1.45; }
+.support-field input { height: 40px; }
+.support-field textarea { resize: vertical; min-height: 110px; max-height: 40vh; line-height: 1.45; padding-bottom: 24px; }
+.support-field input:hover,
+.support-field textarea:hover { border-color: var(--field-line, var(--border)); }
 .support-field input:focus,
-.support-field select:focus,
 .support-field textarea:focus { outline: none; border-color: var(--accent); }
+.support-count { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--text-tertiary, var(--text-secondary)); pointer-events: none; font-variant-numeric: tabular-nums; }
+
 .support-form-footer {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 16px 14px;
+  gap: 10px;
+  padding: 12px 16px 16px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--panel);
 }
-.support-result { border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.45; }
-.support-result-ok { display: flex; flex-direction: column; gap: 2px; background: var(--buy-dim, rgba(14, 203, 129, 0.12)); color: var(--text-primary); }
-.support-result-ok strong { color: var(--buy); font-size: 13px; }
-.support-result-error { background: var(--sell-dim); color: var(--sell); }
+.support-result { display: flex; align-items: flex-start; gap: 8px; border-radius: 8px; padding: 9px 10px; font-size: 12px; line-height: 1.45; }
+.support-result-mark { flex-shrink: 0; margin-top: 1px; }
+.support-result-ok { background: var(--buy-dim, rgba(14, 203, 129, 0.12)); color: var(--buy, #2ebd85); }
+.support-result-ok > div { display: flex; flex-direction: column; gap: 2px; color: var(--text-primary); }
+.support-result-ok strong { color: var(--buy, #2ebd85); font-size: 13px; font-weight: 600; }
+.support-result-error { background: var(--sell-dim, rgba(246, 70, 93, 0.12)); color: var(--sell, #f6465d); }
 .support-submit {
+  height: 44px;
   border: none;
-  border-radius: 24px;
-  padding: 11px 0;
+  border-radius: 8px;
   background: var(--accent);
   color: var(--on-accent);
-  font-weight: 800;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
+  transition: filter .12s;
 }
+.support-submit:hover:not(:disabled) { filter: brightness(1.06); }
+.support-submit:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
 .support-submit:disabled { opacity: 0.7; cursor: default; }
 /* Honeypot: out of sight and out of the accessibility tree. */
 .support-hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
@@ -122,8 +198,8 @@
     width: auto;
     max-width: none;
   }
+  .support-row { grid-template-columns: 1fr; }
   /* 16px text: iOS does not zoom the page when a field is focused. */
   .support-field input,
-  .support-field select,
   .support-field textarea { font-size: 16px; }
 }
