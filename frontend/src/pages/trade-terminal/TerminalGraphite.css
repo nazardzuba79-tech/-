@@ -1,0 +1,99 @@
+/* THE GRAPHITE FINISH ON THE LIVE TERMINAL (owner, 2026-09-30: «зі свого
+   дезайну добав … настройки графіка, більш акуратна форма для ордерів, і там
+   де маржа, і шрифт поправ, акуратний як у байбіт. І більш приглушений
+   стакан»). Taken from the approved «Графіт» concept and laid over the
+   archive terminal; loaded last, so it wins over the sheets before it at the
+   same ID weight. Presentation only: every figure, control and handler is
+   the one the form, the book and the chart already had. */
+
+/* ── Type ───────────────────────────────────────────────────────────────
+   IBM Plex Sans (self-hosted, TerminalFonts.css): an even, slightly narrow
+   grotesque whose figures line up in columns — the calm the owner pointed
+   at on Bybit. Figures (.mono) take the same face instead of a monospace,
+   and the chart's axis and labels follow through the chart token. The
+   global header keeps the face every other page has. */
+#archive-terminal-preview {
+  --font-family:'IBM Plex Sans Terminal','Inter Terminal',Inter,system-ui,sans-serif;
+  font-family:var(--font-family);
+}
+#archive-terminal-preview .terminal :is(.mono,.chart-tab,.chart-tool-btn,.voltex-plot-title) { font-family:var(--font-family); font-variant-numeric:tabular-nums; }
+#archive-terminal-preview .terminal-chart-shell { --voltex-chart-font:'IBM Plex Sans Terminal','Inter Terminal',Inter,Arial,sans-serif; }
+
+/* ── Chart: one header row ──────────────────────────────────────────────
+   The «График» row said what the panel is and held two words at its far
+   end; with it folded into the toolbar, the chart gains its height and the
+   toolbar lines up with the book's «Стакан / Сделки» row beside it. */
+#archive-terminal-preview .terminal-chart-shell.is-heading-folded .chart-toolbar { height:40px; min-height:40px; }
+/* Timeframes, then the chart's type and indicators right after them, and
+   the settings and the source switch closing the row at its far right. */
+#archive-terminal-preview .terminal-chart-shell .chart-toolbar .chart-tools { margin-left:0; }
+#archive-terminal-preview .chart-toolbar-end { display:flex; align-items:center; gap:8px; flex:none; margin-left:auto; padding-left:10px; border-left:1px solid rgba(255,255,255,.08); }
+#archive-terminal-preview .chart-toolbar-end .chart-settings-trigger { display:grid; place-items:center; width:28px; height:28px; padding:0; color:#a1a5ad; background:transparent; }
+#archive-terminal-preview .chart-toolbar-end .chart-settings-trigger:hover,
+#archive-terminal-preview .chart-toolbar-end .chart-settings-trigger[aria-expanded=true] { color:#eaecef; background:rgba(255,255,255,.06); }
+#archive-terminal-preview .terminal-chart-source { display:flex; align-items:center; gap:2px; padding:2px; border-radius:7px; background:rgba(255,255,255,.04); }
+#archive-terminal-preview .terminal-chart-source button { height:24px; padding:0 9px; border:0; border-radius:5px; background:transparent; color:#8b9098; font:500 11px/1 var(--font-family); cursor:pointer; transition:color .12s, background-color .12s; }
+#archive-terminal-preview .terminal-chart-source button:hover { color:#eaecef; }
+#archive-terminal-preview .terminal-chart-source button[aria-pressed=true] { color:#eaecef; background:rgba(255,255,255,.09); }
+/* The chosen timeframe as a quiet chip, like the switch beside it; gold is
+   left to the things that act (the order's side, its type, the accent). */
+#archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab { color:#8b9098; }
+#archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab:hover { color:#eaecef; }
+#archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab.active { color:#eaecef; background:rgba(255,255,255,.09); }
+
+/* ── Margin mode and leverage ───────────────────────────────────────────
+   Two equal quiet selects: 34px, an 8px corner, the value in regular white
+   13px. Leverage is a setting, not an alarm, so it is white like the mode;
+   only a leverage past the warning threshold turns red (.fo-mlHigh). */
+#archive-terminal-preview .fo-mlTrigger { height:34px; min-height:34px; padding:0 10px 0 12px; border-radius:8px; font-size:13px; font-weight:500; color:#eaecef; }
+#archive-terminal-preview .fo-mlTriggerLevBtn { color:#eaecef; }
+#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev { color:#eaecef; font-size:13px; font-weight:500; }
+#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev.fo-mlHigh { color:#f6465d; }
+/* The «▾» glyph is not in Plex and fell back to a stray arrow: the chevron
+   is drawn instead, the same one the other selects in the panel use. */
+#archive-terminal-preview .fo-mlTrigger .fo-mlChevron { flex:none; width:6px; height:6px; margin:0 3px 3px 8px; font-size:0; color:#6b6f77; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); }
+#archive-terminal-preview .fo-mlTrigger[aria-expanded=true] .fo-mlChevron { margin-bottom:-3px; transform:rotate(225deg); }
+#archive-terminal-preview .fo-mlRow { gap:8px; }
+
+/* ── Price and quantity: caption left, figure right ─────────────────────
+   One 40px line per field instead of a caption stacked over the figure:
+   the caption sits at the left in the muted tone, the figure is typed at
+   the right in 14px, and the trailing «Посл. цена» / unit sits after it
+   behind a hairline. The caption keeps its place in the label, so the
+   field's name, click target and refusal note are unchanged. */
+#archive-terminal-preview .fo-field { --fo-field-height:40px; --fo-caption-room:96px; }
+#archive-terminal-preview .fo-field > .fo-fieldCaption {
+  top:0; left:12px; height:var(--fo-field-height); display:flex; align-items:center;
+  font-size:12px; line-height:1; font-weight:400; color:#a1a5ad;
+}
+#archive-terminal-preview .fo-field .fo-fieldRow { border-radius:8px; min-height:var(--fo-field-height); }
+#archive-terminal-preview .fo-field :is(.fo-input,.fo-markPrice) {
+  padding:0 10px 0 var(--fo-caption-room); text-align:right;
+  font-size:14px; line-height:20px; font-weight:600; color:#eaecef;
+}
+#archive-terminal-preview .fo-field .fo-markPrice { align-items:center; justify-content:flex-end; color:#a1a5ad; font-weight:500; }
+#archive-terminal-preview .fo-field .fo-input::placeholder { color:#6b6f77; font-weight:400; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing { min-width:0; padding:0 12px 0 10px; margin-block:10px; border-left:1px solid rgba(255,255,255,.1); }
+#archive-terminal-preview .fo-field .fo-fieldTrailing:empty { padding:0; margin:0; border:0; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-unit { font-size:12px; font-weight:500; color:#a1a5ad; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn { font-size:12px; font-weight:500; color:#a1a5ad; text-decoration:none; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn:hover { color:#eaecef; text-decoration:none; }
+/* «Доступно» without the «+»: its figure closes the row on the right. */
+#archive-terminal-preview .fo-availRow { font-size:12px; }
+#archive-terminal-preview .fo-availValue { font-weight:500; }
+@media(max-width:900px) {
+  #archive-terminal-preview .fo-field { --fo-field-height:48px; }
+  #archive-terminal-preview .fo-field .fo-fieldTrailing { margin-block:12px; }
+}
+
+/* ── Order book: quieter ────────────────────────────────────────────────
+   The depth bars were painted at .30 (asks) and .18 (bids) and read as two
+   solid red and green slabs. Bybit's bars are a tint the figures sit on:
+   both sides at one weight, low enough that the price column — the only
+   coloured text — carries the side. The figures keep the white and the
+   13px the owner matched to Bybit on 2026-09-24. */
+#archive-terminal-preview .rb-row .rb-depth { inset:2px 0; border-radius:1px; }
+#archive-terminal-preview .rb-row.bid .rb-depth { background:rgba(46,189,133,.12); }
+#archive-terminal-preview .rb-row.ask .rb-depth { background:rgba(246,70,93,.12); }
+#archive-terminal-preview .rb-ratio[data-available=true] { background:rgba(246,70,93,.10); }
+#archive-terminal-preview .rb-ratio > i { background:rgba(46,189,133,.16); }

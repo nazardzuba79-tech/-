@@ -76,12 +76,11 @@ describe('«Доступно» above the price', () => {
     expect(t.text(row)).toContain('100,000.00 USDT');
   });
 
-  it('has a «+» only when the page gives it somewhere to go', async () => {
-    expect(byClass((await compactTicket()).render(), 'fo-availTransfer')).toHaveLength(0);
-    const onTransfer = jest.fn();
-    const t = await compactTicket({ onTransfer });
-    byClass(t.render(), 'fo-availTransfer')[0].props.onClick();
-    expect(onTransfer).toHaveBeenCalledTimes(1);
+  it('ends with the figure: no «+» beside it (owner, 2026-09-30)', async () => {
+    const t = await compactTicket();
+    const row = byClass(t.render(), 'fo-availRow')[0];
+    expect(byClass(row, 'fo-availTransfer')).toHaveLength(0);
+    expect(nodes(row).some((n: any) => n.type === 'button')).toBe(false);
   });
 });
 

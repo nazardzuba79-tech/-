@@ -74,7 +74,6 @@ export function FuturesOrderForm({
   symbol,
   onPlaced,
   onOpenTransfer,
-  onTransfer,
   pickedPrice,
   pickedPriceSequence,
   executionEnabled = true,
@@ -89,9 +88,6 @@ export function FuturesOrderForm({
   symbol: string;
   onPlaced: () => void;
   onOpenTransfer?: () => void;
-  /** The «+» beside «Доступно» on the compact ticket: move money into this
-   *  account. The page decides where that goes; without it no «+» renders. */
-  onTransfer?: () => void;
   /** A level clicked in the order book — fills the price field, the same
    *  affordance the spot terminal's form has. */
   pickedPrice?: string | null;
@@ -932,10 +928,6 @@ export function FuturesOrderForm({
               ? `${formatAmount(availableMargin!)} ${quoteAsset}`
               : account.balances.loading ? <span className="fo-availPending" aria-hidden="true" /> : '—'}
           </span>
-          {onTransfer && <button type="button" className="fo-availTransfer" onClick={onTransfer}
-            aria-label={t('futures.transferAction')} title={t('futures.transferAction')}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M5 1.5v7M1.5 5h7" /></svg>
-          </button>}
         </div>}
         {family === 'LIMIT' ? (
           <label className="fo-label fo-field fo-priceField">

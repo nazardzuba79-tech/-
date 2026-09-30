@@ -102,6 +102,8 @@ function mount(props: Record<string, unknown>) {
     if (name === '../lib/chartTrading') return chartTrading;
     if (name === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (name === './ChartToolbarMenus') return { ChartToolbarMenus: () => null };
+    if (name === './ChartSettingsDialog') return { ChartSettingsDialog: () => null };
+    if (name === '../lib/chartSettings') return require('../chartSettings');
     if (name === './ChartDrawingLayer') return drawingLayer();
     if (name === 'react-dom') return { createPortal: (c: unknown) => c };
     if (name.endsWith('.css')) return {};
