@@ -5091,3 +5091,27 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `node --test` browser-activity and idle-read tests: 53 passed.
   - `qa-browser-sleep.cjs` (candidate, 16 scenarios) and `qa-browser-sleep-native.cjs` (1440/390): PASS. These ran on local Chromium via a temporary copy with the `msedge` channel swapped for the local executable; CI runs the original.
 - Not run: the Windows/Postgres CI variant; production.
+
+## Claude — 2026-09-30 — Support: Bybit-style headset button and an improved form (preview first)
+
+- Base: main `1affc9a3`; branch `claude/peaceful-volta-h5zw7g-support`; commit: the commit containing this entry. No PR yet: the owner asked to see it before it is added.
+- Owner request: the same support button as on Bybit's screenshot (a 50px round yellow button with a thin headset), and a better form inside.
+- Files:
+  - `SupportWidget.tsx`:
+    - the launcher is now 50px, in the site gold, with a headset icon; the X when open is kept;
+    - the header gets a headset avatar and an icon close button;
+    - the topic is four radio chips under «Тема обращения», first in the form;
+    - name and email share a row (one column under 480px), with the email hint kept;
+    - the message shows an `N / 2000` counter;
+    - the success and failure lines carry a mark.
+  - `SupportWidget.css`: new layout.
+  - `scripts/qa-support-form.cjs`: picks the topic chip instead of `selectOption`.
+- Preserved:
+  - one POST per send, no timers, no storage, a single profile read to prefill;
+  - honeypot, field limits, i18n keys (no new keys);
+  - the terminal pages' docked status-bar launcher (its CSS overrides the size; only the icon changes there).
+- Checks run:
+  - `tsc`: PASS; `supportForm.test.ts`: 10 passed.
+  - `qa-support-form.cjs` against a local Worker: PASS. It covers guest send, provider refusal, 25 s idle, signed-in prefill, and layout at 320/360/390/430/1440 with a keyboard viewport. Screenshots went to scratch; `docs/qa/support-form` is untouched.
+- Preview: artifact «Кнопка підтримки VOLTEX» (Було / Стало). Send is answered by the page itself; nothing is emailed.
+- Next: open a PR only after the owner approves.
