@@ -400,7 +400,7 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     // futures chart's volume follows whatever candle colours are chosen.
     expect(CHART).toContain("useRef<[string, string]>(['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)'])");
     expect(CHART).toContain('color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1],');
-    expect(CHART).toContain('volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.35), rgbaOf(s.bodyDown, 0.35)];');
+    expect(CHART).toContain('volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.75), rgbaOf(s.bodyDown, 0.75)];');
     expect(CHART.toLowerCase()).not.toContain('#2962ff');
   });
 

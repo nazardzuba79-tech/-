@@ -5052,3 +5052,37 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - whether to keep the tiles;
   - whether Spot/CFD candles should also turn green/red.
 - **Not done:** no merge, no deploy.
+
+## Claude — 2026-09-30 — Futures terminal follow-up: Binance candles, Bybit form, darker tones
+
+- Branch `claude/peaceful-volta-h5zw7g-terminal-graphite` (PR #347). Commit: the one carrying this entry.
+- **Owner ask:**
+  - candles and volume by default «як у бінанс»;
+  - the order-form fields and margin selects «по контрасності і формі в точності як на байбіт»;
+  - three darker versions of the background;
+  - «+ TP / SL» looked changed.
+- **Changes**
+  - `PriceChart.tsx` (futures chart with settings only):
+    - opens on 120 bars instead of 300, so candles are wider (Binance density);
+    - volume uses the candle colours at .75 alpha (was .35).
+    - Candle colours were already Binance's, measured on the owner's screenshot: `#2ebd85` / `#f6465d`.
+  - `TerminalGraphite.css` (values sampled from the owner's Bybit screenshot):
+    - margin/leverage selects: `#232227` fill, no outline, 38px, 4px corner, white 14px/600, leverage in the accent, drawn triangle caret `#87888e`;
+    - price/quantity: 48px, 6px corner, floating label (placeholder-like in the middle while empty, 11px at the top when filled), value white 16px/600 left, «Последняя» in the accent;
+    - the numeric placeholder is not painted (`index.css` sets `-webkit-text-fill-color` on every placeholder, so that is overridden too);
+    - order-family and TP/SL level inputs take the same fill.
+    - My earlier inline-caption layout (40px) is replaced by this.
+  - `TerminalPanelTiles.css`: the tone is four tokens (`--tile-ground/-fill/-header/-bottom`), defaulting to Bybit's `#000000` / `#101014` / `#17181f` / `#101014`; a phone takes the tone without the tiles.
+  - «+ TP / SL» was not changed by this PR. The live preview simply ran an ordinary account, where the ticket has no TP/SL. The preview now emulates the simulation engine the owner's account uses.
+- **Preview (not in repo):** https://claude.ai/artifact/6aSCWuDDuFVFwccNzALZr7, a main build vs this build with a switch between three tones.
+  - Tone 1 (graphite gradient `#1c1e24`→`#0e0e11`, ground `#060608`), tone 2 (Bybit, the sheet default), tone 3 (`#070709`, ground `#000`).
+  - Tones 1 and 3 are preview-only overrides of the four tokens.
+  - The owner has not chosen yet.
+- **Tests updated:** `terminalGraphite`, `terminalPanelTiles`, `futuresVisualPolish` (volume alpha), `sharedHeaderStylesheetOwnership` (enumerated header override: background token only), `qa-order-panel-refinement.cjs` (48px fields).
+- **Checks actually run (local, fixture data):**
+  - Frontend `tsc -b` and build: PASS.
+  - `npx jest frontend/`: 167/168 at first, the one failure being the header-ownership enumeration; after adding the entry, that suite passes 11/11. The full frontend run was not repeated after that one-line test change.
+  - `qa-order-panel-refinement` PASS.
+  - `qa-futures-visual-polish` with assertions: first FAIL, «Изолированная» clipped by 2px at 1664; select padding 12/10px fixed it, then PASS.
+  - Preview page checked locally under a sub-path: TP/SL present in both builds at 1440/390, no page errors.
+- **Not done:** no merge, no deploy.

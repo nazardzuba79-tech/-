@@ -1,25 +1,35 @@
-/* PANELS AS TILES — a proposal (owner, 2026-09-30: «розділення цих панелей
-   чуть дешеві, що з ними можна зробити цікаве?»). Kept in its own sheet so
-   it can be taken back by deleting one import.
+/* PANELS AS TILES, ON A DARKER GROUND (owner, 2026-09-30: «розділення цих
+   панелей чуть дешеві, що з ними можна зробити цікаве?», then «зроби версію
+   з чуть чорнішим фоном … три версії»). Kept in its own sheet so it can be
+   taken back by deleting one import.
 
-   The panels were cut apart by 1px lines drawn over one gradient; a line
-   is the cheapest separator there is, and on a gradient it fades in and out
-   along its length. Here each panel is its own tile with a 6px corner,
-   standing on a near-black ground with 4px between tiles — the way Bybit's
-   current terminal is built. The gradient the owner approved stays: every
-   tile paints the SAME viewport-sized gradient (background-attachment:
-   fixed), so it still runs continuously from the header down, only broken
-   by the gaps. The bottom panel keeps its own #101014.
+   The panels were cut apart by 1px lines drawn over one gradient; a line is
+   the cheapest separator there is, and on a gradient it fades in and out
+   along its length. Here each panel is its own tile with a 6px corner on a
+   black ground with 4px between tiles — the way Bybit's terminal is built.
 
-   Desktop only: the phone layout has no side-by-side panels to separate. */
+   The tone is four tokens. Read off the owner's Bybit screenshot: tiles
+   #101014, the ground between them #000000, the header #17181f. The two
+   other tones the owner was shown (a darker graphite gradient, and a near
+   black) are these same four tokens with other values.
+
+   Desktop gets the tiles; a phone keeps its own layout and only takes the
+   tone. */
+#archive-terminal-preview {
+  --tile-ground:#000000;
+  --tile-fill:#101014;
+  --tile-header:#17181f;
+  --tile-bottom:#101014;
+  --border:rgba(255,255,255,.08);
+  background:var(--tile-fill) !important;
+}
+#archive-terminal-preview .global-header { background:var(--tile-header); --bg:var(--tile-header); }
+#archive-terminal-preview .bottom-panel { --panel:var(--tile-bottom); }
 @media (min-width:901px) {
-  #archive-terminal-preview {
-    --tile-ground:#060607;
-    --tile-fill:linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%);
-    --border:rgba(255,255,255,.08);
-    background:var(--tile-ground) !important;
-  }
+  #archive-terminal-preview { background:var(--tile-ground) !important; }
   #archive-terminal-preview .terminal { padding:4px; gap:4px; background:var(--tile-ground); }
+  /* `fixed`: a gradient tone is painted once across the viewport, so it
+     runs on from tile to tile instead of restarting in each. */
   #archive-terminal-preview :is(.ticker-bar,.chart-area,.orderbook-area,.order-form-area) {
     background:var(--tile-fill) fixed !important;
     border:0 !important; border-radius:6px;

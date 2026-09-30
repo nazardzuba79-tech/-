@@ -41,50 +41,64 @@
 #archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab:hover { color:#eaecef; }
 #archive-terminal-preview .terminal-chart-shell .chart-tabs .chart-tab.active { color:#eaecef; background:rgba(255,255,255,.09); }
 
-/* ── Margin mode and leverage ───────────────────────────────────────────
-   Two equal quiet selects: 34px, an 8px corner, the value in regular white
-   13px. Leverage is a setting, not an alarm, so it is white like the mode;
-   only a leverage past the warning threshold turns red (.fo-mlHigh). */
-#archive-terminal-preview .fo-mlTrigger { height:34px; min-height:34px; padding:0 10px 0 12px; border-radius:8px; font-size:13px; font-weight:500; color:#eaecef; }
-#archive-terminal-preview .fo-mlTriggerLevBtn { color:#eaecef; }
-#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev { color:#eaecef; font-size:13px; font-weight:500; }
+/* ── Margin mode, leverage, price and quantity: Bybit, to the pixel ─────
+   Owner, 2026-09-30, beside a Bybit screenshot: «зроби ці форми по
+   контрасності і формі в точності як на байбіт». Read off that screenshot:
+   filled #232227 boxes on the #101014 panel, no outline at rest, a 4px
+   corner on the two selects (38px) and a 6px corner on the two fields
+   (48px). The select text is white 14px; leverage is the accent (Bybit's
+   orange there — ours is the VOLTEX gold), red past the warning threshold;
+   the caret is a small filled triangle in #87888e. In the fields the
+   caption is a floating label: in the middle as a placeholder while the
+   field is empty, small at the top once it holds a figure; the figure is
+   white 16px at the left, «Последняя» in the accent and the unit in white
+   at the right. The approved outline logic stays: typing turns it gold, a
+   refused figure red. */
+#archive-terminal-preview .fo-mlRow { gap:12px; }
+#archive-terminal-preview .fo-mlTrigger { height:38px; min-height:38px; padding:0 10px 0 12px; border-radius:4px; font-size:14px; font-weight:600; color:#ffffff; }
+#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev { color:var(--accent); font-size:14px; font-weight:500; }
 #archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev.fo-mlHigh { color:#f6465d; }
-/* The «▾» glyph is not in Plex and fell back to a stray arrow: the chevron
-   is drawn instead, the same one the other selects in the panel use. */
-#archive-terminal-preview .fo-mlTrigger .fo-mlChevron { flex:none; width:6px; height:6px; margin:0 3px 3px 8px; font-size:0; color:#6b6f77; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(45deg); }
-#archive-terminal-preview .fo-mlTrigger[aria-expanded=true] .fo-mlChevron { margin-bottom:-3px; transform:rotate(225deg); }
-#archive-terminal-preview .fo-mlRow { gap:8px; }
+/* The «▾» glyph is not in Plex and fell back to a stray arrow: the caret is
+   drawn, as Bybit's filled triangle. */
+#archive-terminal-preview .fo-mlTrigger .fo-mlChevron { flex:none; box-sizing:content-box; width:0; height:0; margin:0 0 0 6px; padding:0; font-size:0; line-height:0; opacity:1; transform:none; border-style:solid; border-width:5px 4.5px 0; border-color:#87888e transparent transparent; transition:transform .12s; }
+#archive-terminal-preview .fo-mlTrigger[aria-expanded=true] .fo-mlChevron { transform:rotate(180deg); }
+#archive-terminal-preview :is(.fo-mlTrigger, .fo-priceInputRow, .fo-qtyInputRow, .order-family-input, .archive-protection-fields input) {
+  background:#232227 !important; border:1px solid transparent !important;
+}
+#archive-terminal-preview :is(.fo-mlTrigger:hover:not(:disabled), .fo-priceInputRow:hover, .fo-qtyInputRow:hover, .order-family-input:hover, .archive-protection-fields input:hover) {
+  background:#28272d !important; border-color:transparent !important;
+}
+#archive-terminal-preview :is(.order-family-input, .archive-protection-fields input) { border-radius:6px; }
+#archive-terminal-preview :is(.order-family-input:focus-within, .archive-protection-fields input:focus-visible) { border-color:var(--accent) !important; }
+#archive-terminal-preview :is(.fo-priceInputRow, .fo-qtyInputRow):focus-within,
+#archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] { border-color:var(--accent) !important; }
+#archive-terminal-preview :is(.fo-priceInputRow, .fo-qtyInputRow):has(.fo-input[aria-invalid="true"]) { border-color:var(--sell, #f6465d) !important; }
 
-/* ── Price and quantity: caption left, figure right ─────────────────────
-   One 40px line per field instead of a caption stacked over the figure:
-   the caption sits at the left in the muted tone, the figure is typed at
-   the right in 14px, and the trailing «Посл. цена» / unit sits after it
-   behind a hairline. The caption keeps its place in the label, so the
-   field's name, click target and refusal note are unchanged. */
-#archive-terminal-preview .fo-field { --fo-field-height:40px; --fo-caption-room:96px; }
+#archive-terminal-preview .fo-field { --fo-field-height:48px; }
+#archive-terminal-preview .fo-field .fo-fieldRow { border-radius:6px; min-height:var(--fo-field-height); }
 #archive-terminal-preview .fo-field > .fo-fieldCaption {
-  top:0; left:12px; height:var(--fo-field-height); display:flex; align-items:center;
-  font-size:12px; line-height:1; font-weight:400; color:#a1a5ad;
+  top:7px; left:13px; font-size:11px; line-height:14px; font-weight:400; color:#6d6e73;
+  transform:none; transition:top .12s ease, font-size .12s ease, transform .12s ease;
 }
-#archive-terminal-preview .fo-field .fo-fieldRow { border-radius:8px; min-height:var(--fo-field-height); }
+#archive-terminal-preview .fo-field:has(.fo-input:placeholder-shown):not(:focus-within) > .fo-fieldCaption {
+  top:calc(var(--fo-field-height) / 2); transform:translateY(-50%); font-size:14px;
+}
 #archive-terminal-preview .fo-field :is(.fo-input,.fo-markPrice) {
-  padding:0 10px 0 var(--fo-caption-room); text-align:right;
-  font-size:14px; line-height:20px; font-weight:600; color:#eaecef;
+  padding:21px 0 5px 13px; text-align:left;
+  font-size:16px; line-height:20px; font-weight:600; color:#ffffff;
 }
-#archive-terminal-preview .fo-field .fo-markPrice { align-items:center; justify-content:flex-end; color:#a1a5ad; font-weight:500; }
-#archive-terminal-preview .fo-field .fo-input::placeholder { color:#6b6f77; font-weight:400; }
-#archive-terminal-preview .fo-field .fo-fieldTrailing { min-width:0; padding:0 12px 0 10px; margin-block:10px; border-left:1px solid rgba(255,255,255,.1); }
-#archive-terminal-preview .fo-field .fo-fieldTrailing:empty { padding:0; margin:0; border:0; }
-#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-unit { font-size:12px; font-weight:500; color:#a1a5ad; }
-#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn { font-size:12px; font-weight:500; color:#a1a5ad; text-decoration:none; }
-#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn:hover { color:#eaecef; text-decoration:none; }
+#archive-terminal-preview .fo-field .fo-markPrice { align-items:flex-end; justify-content:flex-start; color:#a1a5ad; font-weight:500; }
+#archive-terminal-preview .fo-field .fo-input::placeholder { color:transparent; -webkit-text-fill-color:transparent; opacity:0; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing { min-width:0; padding:0 14px 0 10px; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-unit { font-size:14px; font-weight:600; color:#ffffff; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn { font-size:14px; font-weight:600; color:var(--accent); text-decoration:none; }
+#archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn:hover { color:var(--accent); text-decoration:underline; }
+@media (prefers-reduced-motion: reduce) {
+  #archive-terminal-preview .fo-field > .fo-fieldCaption, #archive-terminal-preview .fo-mlTrigger .fo-mlChevron { transition:none; }
+}
 /* «Доступно» without the «+»: its figure closes the row on the right. */
 #archive-terminal-preview .fo-availRow { font-size:12px; }
 #archive-terminal-preview .fo-availValue { font-weight:500; }
-@media(max-width:900px) {
-  #archive-terminal-preview .fo-field { --fo-field-height:48px; }
-  #archive-terminal-preview .fo-field .fo-fieldTrailing { margin-block:12px; }
-}
 
 /* ── Order book: quieter ────────────────────────────────────────────────
    The depth bars were painted at .30 (asks) and .18 (bids) and read as two

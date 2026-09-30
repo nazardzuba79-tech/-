@@ -123,14 +123,29 @@ describe('the Graphite sheet', () => {
     expect(read('frontend/public/fonts/ibm-plex-sans/OFL.txt')).toContain('SIL Open Font License');
   });
 
-  it('keeps leverage white, red only past the warning threshold', () => {
-    expect(css).toContain('#archive-terminal-preview .fo-mlTriggerLevBtn { color:#eaecef; }');
+  // Owner, 2026-09-30, with a Bybit screenshot: «зроби ці форми по
+  // контрасності і формі в точності як на байбіт». Values read off it.
+  it('draws the margin and leverage selects as Bybit does: filled, no outline, 38px, 4px corner', () => {
+    expect(css).toContain('#archive-terminal-preview .fo-mlTrigger { height:38px; min-height:38px; padding:0 10px 0 12px; border-radius:4px; font-size:14px; font-weight:600; color:#ffffff; }');
+    expect(css).toMatch(/:is\(\.fo-mlTrigger, \.fo-priceInputRow, \.fo-qtyInputRow[^)]*\) \{\n\s+background:#232227 !important; border:1px solid transparent !important;/);
+    // Leverage in the accent (Bybit's orange there), red past the warning threshold.
+    expect(css).toContain('#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev { color:var(--accent); font-size:14px; font-weight:500; }');
     expect(css).toContain('#archive-terminal-preview .fo-mlTrigger .fo-mlTriggerLev.fo-mlHigh { color:#f6465d; }');
   });
 
-  it('puts the price and quantity caption at the left of one 40px line', () => {
-    expect(css).toContain('#archive-terminal-preview .fo-field { --fo-field-height:40px; --fo-caption-room:96px; }');
-    expect(css).toMatch(/\.fo-field :is\(\.fo-input,\.fo-markPrice\) \{\n\s+padding:0 10px 0 var\(--fo-caption-room\); text-align:right;/);
+  it('gives price and quantity Bybit\'s 48px field with a floating label', () => {
+    expect(css).toContain('#archive-terminal-preview .fo-field { --fo-field-height:48px; }');
+    expect(css).toContain('#archive-terminal-preview .fo-field .fo-fieldRow { border-radius:6px; min-height:var(--fo-field-height); }');
+    // Empty: the caption stands in the middle as the placeholder, and the numeric placeholder is not painted.
+    expect(css).toMatch(/\.fo-field:has\(\.fo-input:placeholder-shown\):not\(:focus-within\) > \.fo-fieldCaption \{\n\s+top:calc\(var\(--fo-field-height\) \/ 2\); transform:translateY\(-50%\); font-size:14px;/);
+    expect(css).toContain('#archive-terminal-preview .fo-field .fo-input::placeholder { color:transparent; -webkit-text-fill-color:transparent; opacity:0; }');
+    // Filled: the figure white 16px at the left; «Последняя» in the accent.
+    expect(css).toMatch(/\.fo-field :is\(\.fo-input,\.fo-markPrice\) \{\n\s+padding:21px 0 5px 13px; text-align:left;\n\s+font-size:16px; line-height:20px; font-weight:600; color:#ffffff;/);
+    expect(css).toContain('.fo-fieldTrailing .fo-lastPriceBtn { font-size:14px; font-weight:600; color:var(--accent);');
+  });
+
+  it('leaves the TP / SL «+» exactly as the exchange has it', () => {
+    expect(css).not.toMatch(/fo-tpsl/);
   });
 
   it('quiets the order book: both sides\' bars at .12', () => {

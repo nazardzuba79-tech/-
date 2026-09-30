@@ -2,9 +2,10 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 /**
- * PANELS AS TILES — the proposal for «розділення цих панелей чуть дешеві»
- * (owner, 2026-09-30). One sheet, one import: taking it back is deleting the
- * import. Desktop only, and it keeps the approved gradient on the tiles.
+ * PANELS AS TILES, ON A DARKER GROUND — the owner's «розділення цих панелей
+ * чуть дешеві» and «три версії чорнішого» (2026-09-30). One sheet, one
+ * import: taking it back is deleting the import. The tone is four tokens,
+ * read off the owner's Bybit screenshot.
  */
 const root = resolve(__dirname, '../../../..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace(/\r\n/g, '\n');
@@ -15,19 +16,21 @@ it('is one sheet, imported last', () => {
   expect(order[order.length - 1]).toBe('TerminalPanelTiles');
 });
 
-it('applies on a desktop only', () => {
-  const body = css.replace(/\/\*[\s\S]*?\*\//g, '').trim();
-  expect(body.startsWith('@media (min-width:901px) {')).toBe(true);
-  expect(body.endsWith('}')).toBe(true);
+it('carries the tone as four tokens: Bybit\'s #101014 tiles on #000000, header #17181f', () => {
+  expect(css).toContain('--tile-ground:#000000;');
+  expect(css).toContain('--tile-fill:#101014;');
+  expect(css).toContain('--tile-header:#17181f;');
+  expect(css).toContain('--tile-bottom:#101014;');
+  expect(css).toContain('#archive-terminal-preview .global-header { background:var(--tile-header); --bg:var(--tile-header); }');
+  expect(css).toContain('#archive-terminal-preview .bottom-panel { --panel:var(--tile-bottom); }');
 });
 
-it('stands 6px-cornered tiles 4px apart on a near-black ground, the gradient painted once across them', () => {
-  expect(css).toContain('#archive-terminal-preview .terminal { padding:4px; gap:4px; background:var(--tile-ground); }');
-  expect(css).toContain('--tile-ground:#060607;');
-  expect(css).toContain('--tile-fill:linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%);');
-  // The same stops as the terminal's own gradient, so the tiles continue it.
-  expect(read('frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'))
-    .toContain('background: linear-gradient(180deg, #1f2229 0%, #1b1d24 22%, #15161b 50%, #101014 74%, #08080a 100%) !important;');
-  expect(css).toContain('background:var(--tile-fill) fixed !important;');
-  expect(css).toContain('border:0 !important; border-radius:6px;');
+it('tiles only on a desktop: 6px corners, 4px apart on the ground', () => {
+  const desktop = css.slice(css.indexOf('@media (min-width:901px) {'));
+  expect(desktop).toContain('#archive-terminal-preview .terminal { padding:4px; gap:4px; background:var(--tile-ground); }');
+  expect(desktop).toContain('background:var(--tile-fill) fixed !important;');
+  expect(desktop).toContain('border:0 !important; border-radius:6px;');
+  // The phone keeps its own layout and only takes the tone.
+  const phone = css.slice(0, css.indexOf('@media (min-width:901px) {'));
+  expect(phone).not.toMatch(/border-radius|gap:/);
 });

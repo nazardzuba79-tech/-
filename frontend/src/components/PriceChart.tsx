@@ -50,6 +50,11 @@ import { DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, subscribeChartSetting
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
+/** The futures chart (the one with the viewer's settings) opens on fewer,
+ *  wider bars — about Binance's density (owner, 2026-09-30: «якість як у
+ *  бінанс») — so each candle reads as a body and a wick rather than a hair.
+ *  Scrolling back still reaches every loaded bar. */
+const SETTINGS_VISIBLE_CANDLES = 120;
 // Fetch enough extra history that the MA200 line has a full 200-bar
 // warm-up BEFORE the window we actually show — otherwise the line only
 // starts partway across the visible chart (no average exists yet for the
@@ -595,7 +600,7 @@ export function PriceChart({
       crosshair: { vertLine: { color: s.crosshair === DEFAULT_CHART_SETTINGS.crosshair ? 'rgba(148, 163, 184, 0.35)' : rgbaOf(s.crosshair, 0.45) }, horzLine: { color: s.crosshair, labelBackgroundColor: s.crosshair } },
     });
     volume.applyOptions({ visible: s.volume });
-    volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.35), rgbaOf(s.bodyDown, 0.35)];
+    volumeColorsRef.current = [rgbaOf(s.bodyUp, 0.75), rgbaOf(s.bodyDown, 0.75)];
     const candles = candlesRef.current;
     if (candles?.length) volume.setData(candles.map(c => ({ time: c.time as any, value: c.volume, color: c.close >= c.open ? volumeColorsRef.current[0] : volumeColorsRef.current[1] })));
     const text = `${pair.includes('/') ? pair : pair.replace(/USDT$/, '/USDT')} · ${interval}`;
@@ -1027,12 +1032,13 @@ export function PriceChart({
 
         if (!hasSetInitialRange && chartRef.current) {
           hasSetInitialRange = true;
-          if (res.candles.length > VISIBLE_CANDLES) {
-            // Show only the most recent VISIBLE_CANDLES bars — every one
+          const visible = chartSettings ? SETTINGS_VISIBLE_CANDLES : VISIBLE_CANDLES;
+          if (res.candles.length > visible) {
+            // Show only the most recent `visible` bars — every one
             // of them sits past the MA's 200-bar warm-up, so the line
             // spans the full visible width instead of trailing off partway.
             chartRef.current.timeScale().setVisibleLogicalRange({
-              from: res.candles.length - VISIBLE_CANDLES,
+              from: res.candles.length - visible,
               to: res.candles.length - 1,
             });
           } else {
