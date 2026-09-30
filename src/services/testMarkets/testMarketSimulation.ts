@@ -43,6 +43,7 @@ import type { TestAssetConfig } from './testAssetConfig';
 import { normal, seededRandom } from './simulationRandom';
 import { REALISM_PROFILES, isSimulationProfile, realisticHour, realisticTicks, type CandleShape, type RealismParams } from './simulationRealism';
 import { cycleForHour, cycleHourTicks, cycleShockClose } from './simulationCycles';
+import { accumulationFactor, accumulationForHour, flushHourTicks, type AccumulationHour } from './simulationAccumulation';
 import { NATURAL_WICK_WINDOW_MS, naturalWickCandles, naturalWickLimit, naturalWickWindowAllowed, naturalWickWindowSelected,
   type NaturalWickCandle } from './simulationNaturalWicks';
 
@@ -281,6 +282,7 @@ export class TestMarketSimulation {
   private hourOpens: number[] = [];
   private closedCandles = new Map<number, SimCandle>();
   private cycleHours = new Map<number, HourPlan>();
+  private accumulationHours = new Map<number, HourPlan>();
   private naturalWindows = new Map<number, NaturalWickCandle[]>();
   /** The profile's parameters, or null for the legacy intra-hour path. */
   private readonly realism: RealismParams | null;
@@ -343,7 +345,66 @@ export class TestMarketSimulation {
     return { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}) };
   }
 
+  private accumulationOpen(hour: number, phase: AccumulationHour): number {
+    const config = this.asset.accumulationPhase!;
+    const anchor = this.hourOpen(phase.startHour);
+    if (phase.relativeHour === 0) return anchor;
+    if (phase.relativeHour <= config.accumulationHours) {
+      return anchor * accumulationFactor(this.asset.seed, config, phase.relativeHour - 1);
+    }
+    const finalStart = phase.startHour + config.accumulationHours + 1;
+    let price = anchor * accumulationFactor(this.asset.seed, config, config.accumulationHours);
+    for (let h = finalStart; h < hour; h++) {
+      price *= Math.exp(this.baselineHourPlan(h).logReturn);
+    }
+    return price;
+  }
+
+  private accumulationHourPlan(hour: number, phase: AccumulationHour): HourPlan {
+    const cached = this.accumulationHours.get(hour);
+    if (cached) return cached;
+    const config = this.asset.accumulationPhase!;
+    const open = this.accumulationOpen(hour, phase);
+    let plan: HourPlan;
+    if (phase.phase === 'flush') {
+      const baseline = this.baselineHourPlan(hour);
+      const original = Array.from({ length: CANDLES_PER_HOUR }, (_, slot) => this.baselineTicks(baseline, slot)).flat();
+      const phaseTicks = flushHourTicks(this.asset.seed, hour, open, config.flushFraction, original);
+      const boundaries = [open];
+      for (let slot = 0; slot < CANDLES_PER_HOUR; slot++) boundaries.push(phaseTicks[(slot + 1) * TICKS_PER_CANDLE - 1].price);
+      plan = { ...baseline, open, regime: 'pullback', logReturn: 0, boundaries, cycleTicks: phaseTicks, shapes: undefined };
+    } else if (phase.phase === 'accumulation') {
+      const anchor = this.hourOpen(phase.startHour);
+      const close = anchor * accumulationFactor(this.asset.seed, config, phase.relativeHour);
+      const logReturn = Math.log(close / open);
+      const regime: Regime = 'consolidation';
+      const cluster = clusterFactor(this.asset.seed, hour);
+      const sigma = candleSigma(regime, logReturn, cluster);
+      const realistic = this.realism ? realisticHour({
+        seed: this.asset.seed, offset: this.realismOffset, hour, regime, logReturn, sigma, params: this.realism,
+        trendStep: 0, previousRegime: 'consolidation', nextRegime: 'consolidation',
+      }) : null;
+      const steps = realistic ? realistic.steps : hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+      const boundaries = [open];
+      let logPrice = Math.log(open);
+      for (let k = 0; k < CANDLES_PER_HOUR; k++) {
+        logPrice += steps[k];
+        boundaries.push(k === CANDLES_PER_HOUR - 1 ? close : Math.exp(logPrice));
+      }
+      plan = { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}) };
+    } else {
+      const baseline = this.baselineHourPlan(hour);
+      const scale = open / baseline.open;
+      plan = { ...baseline, open, boundaries: baseline.boundaries.map((value) => value * scale) };
+    }
+    this.accumulationHours.set(hour, plan);
+    if (this.accumulationHours.size > 240) this.accumulationHours.delete(this.accumulationHours.keys().next().value as number);
+    return plan;
+  }
+
   hourPlan(hour: number): HourPlan {
+    const accumulation = accumulationForHour(this.asset.accumulationPhase, this.asset.listingAt, hour);
+    if (accumulation) return this.accumulationHourPlan(hour, accumulation);
     const cycle = cycleForHour(this.asset.cyclicImpulse, this.asset.listingAt, hour);
     if (!cycle) return this.baselineHourPlan(hour);
     const cached = this.cycleHours.get(hour);
@@ -622,7 +683,13 @@ const MAX_SIMULATIONS = 64;
 export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
   const cycle = asset.cyclicImpulse;
   const natural = asset.naturalWicks;
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycle ? `${cycle.anchorAt}:${cycle.notBefore}:${cycle.periodHours}` : 'no-cycle'}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${natural ? `${natural.historicalUntil ?? 'no-history'}:${natural.futureFrom}` : 'original-wicks'}`;
+  const accumulation = asset.accumulationPhase;
+  const cycleKey = cycle ? `${cycle.anchorAt}:${cycle.notBefore}:${cycle.periodHours}` : 'no-cycle';
+  const naturalKey = natural ? `${natural.historicalUntil ?? 'no-history'}:${natural.futureFrom}` : 'original-wicks';
+  const accumulationKey = accumulation
+    ? `${accumulation.anchorAt}:${accumulation.flushFraction}:${accumulation.accumulationHours}:${accumulation.minBandFraction}:${accumulation.maxBandFraction}`
+    : 'no-accumulation';
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);
