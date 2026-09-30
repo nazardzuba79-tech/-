@@ -5068,3 +5068,24 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Fixed abandoned read ownership in Futures, Spot, CFD, Copy, Wallet and Admin; stopped Admin deposit polling from restarting after unmount. Preserved write operations, financial math, approved UI, prior PR recovery work and Claude #353.
 - Builds pass. Backend routes/middleware: 619 passing, six DB-gated skipped. Final local frontend assertions: 2,897 passing; ten Windows path-sensitive baseline failures independently reproduced. See docs/qa/api-lifecycle-audit-20260930/README.md for exact commands, limits and test-first evidence.
 - No merge, deployment, production mutation, real order or credit. Final-head CI remains to be checked on PR; no live outage injection or new authenticated production browser walkthrough. Direct Cloudflare API authentication was unavailable; GitHub Pages check for current main passed.
+
+## Claude — 2026-09-30 — Futures terminal: proposal «Claude-чат» (the owner's design-system page)
+
+- Base: main `70379b5b`; branch `claude/peaceful-volta-h5zw7g-terminal-ds`; commit: the commit containing this entry. A proposal beside «Мій» (the owner said «свій, і його»): no PR, no merge, no deploy.
+- Source: the owner's page «VOLTEX — дизайн-система терминала» (a Claude chat artifact, and the same HTML uploaded to this session). Its values are applied verbatim to the futures page only:
+  - surfaces bg-0..3 and line #22282F;
+  - text #EAECEF/#8A93A0/#5C6470;
+  - brand #E5B42A only on «Депозит», the active underline and focus;
+  - long #21B37A and short #EE4B5A, with 14% book fills;
+  - Inter with tabular figures at 400/500/600;
+  - 13px nav; 32px Long/Short at radius 6; 40px fields;
+  - a grey MA and last-price label; no flag or nav glyphs;
+  - the return-tab notice as a thin bottom line.
+- Files:
+  - `FuturesLookSystem.css` (new, imported just before `TerminalPanelTiles.css`). Its tokens sit on `html #archive-terminal-preview` to outrank the older id-level token blocks.
+  - `PriceChart.tsx`: price line, crosshair, MA colour/width and the standard candle pair are read as tokens. Their fallbacks are today's colours, so other charts are unchanged.
+  - `futuresLookSystem.test.ts` (new).
+- Not applied: Spot/CFD; sentence-case button labels; 22px book rows (the book's row geometry is left alone).
+- Checks run:
+  - `tsc`: PASS; 28 chart/terminal Jest suites plus the new one and header ownership: PASS (2 skipped as on main).
+  - Local preview browser at 2000/1600/1440/390: no page errors, no overflow.
