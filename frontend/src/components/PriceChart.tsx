@@ -21,6 +21,7 @@ import {
   createTextWatermark,
   type ISeriesMarkersPluginApi,
   type SeriesMarker,
+  type LineWidth,
 } from 'lightweight-charts';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -46,7 +47,7 @@ import './DrawingTools.css';
 import { PrivatePositionLines } from './PrivatePositionLines';
 import { ChartToolbarMenus } from './ChartToolbarMenus';
 import { ChartSettingsDialog } from './ChartSettingsDialog';
-import { DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, subscribeChartSettings, type ChartSettings } from '../lib/chartSettings';
+import { CHART_PRESETS, DEFAULT_CHART_SETTINGS, getChartSettings, rgbaOf, subscribeChartSettings, type ChartSettings } from '../lib/chartSettings';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -219,7 +220,7 @@ export function PriceChart({
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => (chartSettings ? subscribeChartSettings(setViewSettings) : undefined), [chartSettings]);
   /** Paint the settings replace — kept so «as the terminal» can put it back. */
-  const basePaintRef = useRef<{ background: string } | null>(null);
+  const basePaintRef = useRef<{ background: string; crosshair: string; standard: readonly [string, string] | null } | null>(null);
   const watermarkRef = useRef<{ detach: () => void; applyOptions: (o: object) => void } | null>(null);
   /** Volume bars follow the candles' own colours. */
   const volumeColorsRef = useRef<[string, string]>(['rgba(234,236,239,0.5)', 'rgba(247,166,0,0.5)']);
@@ -383,7 +384,7 @@ export function PriceChart({
         ? {
             mode: CrosshairMode.Normal,
             vertLine: { color: 'rgba(148, 163, 184, 0.35)', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#1c2735' },
-            horzLine: { color: '#f0b90b', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#f0b90b' },
+            horzLine: { color: token('--voltex-crosshair', '#f0b90b'), width: 1, style: LineStyle.Dashed, labelBackgroundColor: token('--voltex-crosshair', '#f0b90b') },
           }
         : { mode: 0 },
     });
@@ -405,7 +406,7 @@ export function PriceChart({
       // reads as one deliberate "you are here" marker, rather than
       // blending into whichever candle color the last bar happens to be.
       ...(terminal
-        ? { priceLineVisible: true, priceLineWidth: 1, priceLineStyle: LineStyle.Dashed, priceLineColor: '#f0b90b' }
+        ? { priceLineVisible: true, priceLineWidth: 1, priceLineStyle: LineStyle.Dashed, priceLineColor: token('--voltex-price-line', '#f0b90b') }
         : {}),
     });
     chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: 0.3 } });
@@ -432,8 +433,8 @@ export function PriceChart({
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
     const maSeries = chart.addSeries(LineSeries, {
-      color: '#f7d51d',
-      lineWidth: 1,
+      color: token('--voltex-ma-color', '#f7d51d'),
+      lineWidth: (Number(token('--voltex-ma-width', '1')) || 1) as LineWidth,
       priceLineVisible: false,
       lastValueVisible: false,
       crosshairMarkerVisible: false,
@@ -486,7 +487,14 @@ export function PriceChart({
     macdLine.priceScale().applyOptions({ scaleMargins: { top: 0.78, bottom: 0.02 }, visible: false });
 
     chartRef.current = chart;
-    basePaintRef.current = { background: plotBackground || '#101014' };
+    const standardUp = token('--voltex-candle-standard-up', ''), standardDown = token('--voltex-candle-standard-down', '');
+    basePaintRef.current = {
+      background: plotBackground || '#101014',
+      crosshair: token('--voltex-crosshair', DEFAULT_CHART_SETTINGS.crosshair),
+      // A terminal's sheet may restate the «standard» preset's pair (the
+      // order book's own buy and sell) in its own signal colours.
+      standard: standardUp && standardDown ? [standardUp, standardDown] : null,
+    };
     seriesRef.current = series;
     lineSeriesRef.current = lineSeries;
     areaSeriesRef.current = areaSeries;
@@ -583,7 +591,17 @@ export function PriceChart({
   useEffect(() => {
     const chart = chartRef.current, series = seriesRef.current, volume = volumeSeriesRef.current;
     if (!viewSettings || !chart || !series || !volume) return;
-    const s = viewSettings, clear = 'rgba(0,0,0,0)';
+    const base = basePaintRef.current, clear = 'rgba(0,0,0,0)';
+    // Untouched defaults follow the terminal's own paint; any colour the
+    // viewer chose is kept as chosen.
+    const standard = base?.standard, preset = CHART_PRESETS.standard;
+    const tone = (color: string) => !standard || viewSettings.preset !== 'standard' ? color
+      : color === preset[0] ? standard[0] : color === preset[1] ? standard[1] : color;
+    const s = { ...viewSettings,
+      bodyUp: tone(viewSettings.bodyUp), bodyDown: tone(viewSettings.bodyDown),
+      borderUp: tone(viewSettings.borderUp), borderDown: tone(viewSettings.borderDown),
+      wickUp: tone(viewSettings.wickUp), wickDown: tone(viewSettings.wickDown),
+      crosshair: viewSettings.crosshair === DEFAULT_CHART_SETTINGS.crosshair && base ? base.crosshair : viewSettings.crosshair };
     series.applyOptions({
       upColor: s.body ? s.bodyUp : clear, downColor: s.body ? s.bodyDown : clear,
       borderVisible: s.border, borderUpColor: s.borderUp, borderDownColor: s.borderDown,
@@ -597,7 +615,7 @@ export function PriceChart({
         horzLines: { visible: s.grid === 'all' || s.grid === 'horizontal', color: s.gridColor },
       },
       // The default keeps the terminal's grey vertical and gold horizontal hair.
-      crosshair: { vertLine: { color: s.crosshair === DEFAULT_CHART_SETTINGS.crosshair ? 'rgba(148, 163, 184, 0.35)' : rgbaOf(s.crosshair, 0.45) }, horzLine: { color: s.crosshair, labelBackgroundColor: s.crosshair } },
+      crosshair: { vertLine: { color: viewSettings.crosshair === DEFAULT_CHART_SETTINGS.crosshair ? 'rgba(148, 163, 184, 0.35)' : rgbaOf(s.crosshair, 0.45) }, horzLine: { color: s.crosshair, labelBackgroundColor: s.crosshair } },
     });
     // Volume in its own strip under the candles, as Binance draws it (owner,
     // 2026-09-30: «обсяг … залазить на свічки … у Binance він в окремій смузі

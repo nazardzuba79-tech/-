@@ -1,0 +1,176 @@
+/* THE FUTURES TERMINAL ON ONE DESIGN SYSTEM (owner, 2026-09-30: the page
+   «VOLTEX — дизайн-система терминала» from Claude chat, asked for beside the
+   other proposal as «свій, і його»). Its values, verbatim:
+
+     surfaces  bg-0 #0B0E11 (page, chart) · bg-1 #12161B (panels)
+               bg-2 #181D23 (fields) · bg-3 #1F252C (active) · line #22282F
+     text      #EAECEF · #8A93A0 · #5C6470
+     accent    brand #E5B42A (logo, «Депозит», tab underline, focus only)
+     signals   long #21B37A · short #EE4B5A, their fills at 14%
+     type      Inter with tabular figures, weights 400/500/600 only;
+               nav 13px, panel titles 14/500, book and tables 12px
+     shape     radius 4px (fields, tags) / 6px (buttons, panels);
+               terminal buttons 32px
+
+   Scoped to the futures page. The tokens are restated on `html #…` so they
+   outrank the older sheets' own `#archive-terminal-preview` token blocks
+   whatever their order; subjects avoid the shared header's classes
+   (sharedHeaderStylesheetOwnership). One sheet: taking it back is deleting
+   its import. The chart reads its tokens at creation; their fallbacks in
+   PriceChart are the old colours, so every other chart is unchanged. */
+html #archive-terminal-preview {
+  --ds-bg-0:#0B0E11; --ds-bg-1:#12161B; --ds-bg-2:#181D23; --ds-bg-3:#1F252C; --ds-line:#22282F;
+  --ds-t1:#EAECEF; --ds-t2:#8A93A0; --ds-t3:#5C6470;
+  --ds-brand:#E5B42A; --ds-brand-hover:#F2C23F;
+  --ds-long:#21B37A; --ds-short:#EE4B5A; --ds-long-dim:rgba(33,179,122,.14); --ds-short-dim:rgba(238,75,90,.14);
+  /* The older sheets' names, pointed at the system. */
+  --tile-ground:var(--ds-bg-0); --tile-fill:var(--ds-bg-1); --tile-header:var(--ds-bg-0); --tile-bottom:var(--ds-bg-1);
+  --panel:var(--ds-bg-1); --terminal-panel:var(--ds-bg-1); --workspace-bg:var(--ds-bg-1);
+  --panel-alt:var(--ds-bg-2); --panel-alt-hover:var(--ds-bg-3); --control:var(--ds-bg-2); --control-hover:var(--ds-bg-3);
+  --border:var(--ds-line); --border-color:var(--ds-line); --panel-border:var(--ds-line); --field-line:var(--ds-line);
+  --text-primary:var(--ds-t1); --text-secondary:var(--ds-t2); --text-tertiary:var(--ds-t3);
+  --accent:var(--ds-t1); --accent-yellow:var(--ds-t1);
+  --buy:var(--ds-long); --color-buy:var(--ds-long); --sell:var(--ds-short); --color-sell:var(--ds-short);
+  --font-family:'Inter Terminal',Inter,system-ui,-apple-system,'Segoe UI',sans-serif;
+  /* Read by the chart when it is created (PriceChart). */
+  --voltex-plot-background:var(--ds-bg-0);
+  --voltex-price-line:var(--ds-bg-3);
+  --voltex-crosshair:#5C6470;
+  --voltex-ma-color:#8A93A0; --voltex-ma-width:2;
+  --voltex-candle-standard-up:#21B37A; --voltex-candle-standard-down:#EE4B5A;
+  background:var(--ds-bg-0) !important;
+}
+html #archive-terminal-preview .terminal-chart-shell { --voltex-chart-font:'Inter Terminal',Inter,system-ui,sans-serif; --voltex-axis-text:#8A93A0; }
+
+/* One face and tabular figures everywhere but the wordmark. */
+html #archive-terminal-preview :not(:where(.header-brand, .header-brand *)) {
+  font-family:var(--font-family); font-feature-settings:"tnum" 1; letter-spacing:0;
+}
+
+/* ── Header: grey 13px links, white for the page you are on ─────────── */
+html #archive-terminal-preview .global-header .top-nav-link { font-size:13px; font-weight:400; color:var(--ds-t2); }
+html #archive-terminal-preview .global-header .top-nav-link:hover,
+html #archive-terminal-preview .global-header .top-nav-link.is-active { color:var(--ds-t1); background:transparent; }
+html #archive-terminal-preview .global-header .top-nav-link.is-active::after { background:var(--ds-brand); }
+html #archive-terminal-preview .global-header .top-nav-link > svg:not(.nav-chevron) { display:none; }
+html #archive-terminal-preview .global-header .language-flag { display:none !important; }
+/* «Кошелёк» second, «Депозит» the one gold control, both 32px at radius 6. */
+html #archive-terminal-preview .global-header .nav-wallet-link {
+  height:32px; padding:0 12px; font-size:13px; font-weight:500; color:var(--ds-t1);
+  background:transparent; border:1px solid var(--ds-line); border-radius:6px;
+}
+html #archive-terminal-preview .global-header .nav-wallet-link:hover { background:var(--ds-bg-2); border-color:var(--ds-line); color:var(--ds-t1); }
+html #archive-terminal-preview .global-header .nav-wallet-link svg { display:none; }
+html #archive-terminal-preview .global-header .top-nav-fund-btn {
+  height:32px; padding:0 14px; font-size:13px; font-weight:500; color:#141414;
+  background:var(--ds-brand); border-radius:6px; box-shadow:none; transform:none;
+}
+html #archive-terminal-preview .global-header .top-nav-fund-btn:hover { background:var(--ds-brand-hover); box-shadow:none; transform:none; }
+html #archive-terminal-preview .global-header :is(.top-nav-pill-btn,.top-nav-profile-btn) { font-size:12px; font-weight:400; color:var(--ds-t2); }
+
+/* ── Panels: bg-1 on bg-0, one 1px line, radius 6; the chart on bg-0 ── */
+@media (min-width:901px) {
+  html #archive-terminal-preview :is(.ticker-bar,.orderbook-area,.order-form-area,.bottom-panel) {
+    background:var(--ds-bg-1) !important; border:1px solid var(--ds-line) !important; border-radius:6px;
+  }
+  html #archive-terminal-preview .chart-area { background:var(--ds-bg-0) !important; border:1px solid var(--ds-line) !important; border-radius:6px; }
+}
+html #archive-terminal-preview .chart-area :is(.chart-toolbar,.drawing-rail,.terminal-chart-heading) { background:var(--ds-bg-0); }
+
+/* ── Price header ────────────────────────────────────────────────────── */
+html #archive-terminal-preview .pair-name { font-size:14px; font-weight:500; color:var(--ds-t1); }
+html #archive-terminal-preview .ticker-bar .ticker-item .label { font-size:11px; font-weight:400; color:var(--ds-t3); }
+html #archive-terminal-preview .ticker-bar .ticker-item .value { font-size:12px; font-weight:500; color:var(--ds-t1); }
+html #archive-terminal-preview .ticker-bar .ticker-item .value.price { font-size:16px; font-weight:600; color:var(--ds-long); }
+html #archive-terminal-preview .ticker-bar .ticker-item .value.price.down,
+html #archive-terminal-preview .ticker-bar .ticker-item .value.down { color:var(--ds-short); }
+html #archive-terminal-preview .ticker-bar .ticker-item .value.up { color:var(--ds-long); }
+html #archive-terminal-preview .ticker-bar .futures-funding-values > :is(.value,.label) { font-size:12px; font-weight:500; color:var(--ds-t3) !important; }
+html #archive-terminal-preview .ticker-bar .futures-funding-values > .value.up { color:var(--ds-brand) !important; }
+
+/* ── Chart toolbar and rail: text-2, the active item white on bg-3 ──── */
+html #archive-terminal-preview .terminal-chart-shell :is(.chart-tab,.chart-tool-btn,.terminal-chart-source button) { font-size:12px; font-weight:400; color:var(--ds-t2); }
+html #archive-terminal-preview .terminal-chart-shell :is(.chart-tab.active,.chart-tool-btn.active,.terminal-chart-source button[aria-pressed="true"]) { color:var(--ds-t1); background:var(--ds-bg-3); }
+html #archive-terminal-preview .chart-menu-count { color:var(--ds-t2); background:var(--ds-bg-3); }
+html #archive-terminal-preview .drawing-rail .tool-btn { color:var(--ds-t2); }
+html #archive-terminal-preview .drawing-rail .tool-btn.active { color:var(--ds-t1); background:var(--ds-bg-3); }
+html #archive-terminal-preview .voltex-indicator-legend > div { font-size:11px; font-weight:500; color:var(--ds-t2); background:transparent; }
+html #archive-terminal-preview .voltex-indicator-legend span[style] { background:var(--ds-t2) !important; }
+
+/* ── Tabs everywhere: text-2; the active one white with the brand line ─ */
+html #archive-terminal-preview :is(.rb-tabs button,.order-family-tabs button,.bottom-tab) { font-size:13px; font-weight:400; color:var(--ds-t2); }
+html #archive-terminal-preview :is(.rb-tabs button.active,.rb-tabs button[aria-selected="true"],.order-family-tabs button.active,.bottom-tab.active) {
+  font-weight:500; color:var(--ds-t1); border-bottom-color:var(--ds-brand);
+}
+
+/* ── Order book: 12px, prices in the signal colours, the rest text-2 ── */
+html #archive-terminal-preview .rb-columns span { font-size:11px; font-weight:400; color:var(--ds-t3); }
+html #archive-terminal-preview .rb-row > span { font-size:12px; font-weight:400; }
+html #archive-terminal-preview .rb-row > span:not(:first-of-type) { color:var(--ds-t2); }
+html #archive-terminal-preview .rb-row.ask > span:first-of-type { color:var(--ds-short); font-weight:500; }
+html #archive-terminal-preview .rb-row.bid > span:first-of-type { color:var(--ds-long); font-weight:500; }
+html #archive-terminal-preview .rb-row.bid .rb-depth { background:var(--ds-long-dim); }
+html #archive-terminal-preview .rb-row.ask .rb-depth { background:var(--ds-short-dim); }
+html #archive-terminal-preview .rb-center :is(.rb-last,.rb-last *) { font-size:16px; font-weight:600; }
+html #archive-terminal-preview .rb-mark, html #archive-terminal-preview .rb-mark * { color:var(--ds-t3); }
+
+/* ── Order form ──────────────────────────────────────────────────────── */
+html #archive-terminal-preview .reference-order-heading { font-size:14px; font-weight:500; color:var(--ds-t1); }
+html #archive-terminal-preview .reference-order-heading::before { display:none; }
+html #archive-terminal-preview .fo-mlTrigger { background:var(--ds-bg-2); border:1px solid var(--ds-line); border-radius:4px; }
+html #archive-terminal-preview .fo-mlTrigger :is(.fo-mlTriggerText,.fo-mlTriggerLev) { font-size:13px; font-weight:500; color:var(--ds-t1); }
+html #archive-terminal-preview .fo-availLabel { font-size:12px; color:var(--ds-t2); }
+html #archive-terminal-preview .fo-availValue { font-size:12px; font-weight:500; color:var(--ds-t1); }
+html #archive-terminal-preview .fo-field { background:var(--ds-bg-2); border:1px solid var(--ds-line); border-radius:4px; box-shadow:none; }
+html #archive-terminal-preview .fo-field:focus-within { border-color:var(--ds-brand); box-shadow:none; }
+html #archive-terminal-preview .fo-field .fo-fieldCaption { font-size:11px; color:var(--ds-t3); }
+/* 40px fields with a 13px value at 500, the caption above it at 11px. */
+html #archive-terminal-preview .fo-field { --fo-field-height:40px; }
+html #archive-terminal-preview .fo-field .fo-fieldRow { border-radius:4px; }
+html #archive-terminal-preview .fo-field :is(.fo-input,.fo-markPrice) { padding:17px 0 3px 10px; font-size:13px; line-height:18px; font-weight:500; color:var(--ds-t1); }
+html #archive-terminal-preview .fo-field .fo-markPrice { color:var(--ds-t2); }
+html #archive-terminal-preview .fo-field input::placeholder { color:var(--ds-t3); }
+html #archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn { font-size:12px; font-weight:400; color:var(--ds-t2); }
+html #archive-terminal-preview .fo-field .fo-fieldTrailing .fo-lastPriceBtn:hover { color:var(--ds-t1); }
+html #archive-terminal-preview .percent-slider-track input::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--ds-t2) var(--size-percent),var(--ds-line) var(--size-percent)); }
+html #archive-terminal-preview .percent-slider-track input::-webkit-slider-thumb { background:var(--ds-t1); border:2px solid var(--ds-bg-1); box-shadow:0 0 0 1px var(--ds-t2); }
+html #archive-terminal-preview .percent-slider-track input::-moz-range-progress { background:var(--ds-t2); }
+html #archive-terminal-preview .percent-slider-track input::-moz-range-thumb { background:var(--ds-t1); border:2px solid var(--ds-bg-1); box-shadow:0 0 0 1px var(--ds-t2); }
+html #archive-terminal-preview .percent-slider-presets button { font-size:11px; font-weight:400; color:var(--ds-t3); }
+html #archive-terminal-preview .percent-slider-presets button:is(.active,[aria-pressed="true"]) { color:var(--ds-t1); }
+html #archive-terminal-preview :is(.fo-tpslToggle,.fo-reduceOnlyRow) { font-size:13px; color:var(--ds-t2); }
+html #archive-terminal-preview .fo-tpslToggle svg { color:var(--ds-t2); }
+html #archive-terminal-preview .fo-infoRow { font-size:12px; color:var(--ds-t2); }
+html #archive-terminal-preview .fo-infoRow > :last-child { color:var(--ds-t1); font-weight:500; }
+/* Long / short: the two full-strength signals, 32px, radius 6, 13px at 500. */
+html #archive-terminal-preview .fo-submitPair button { height:32px; min-height:32px; border-radius:6px; font-size:13px; font-weight:500; }
+html #archive-terminal-preview .fo-submitPair .buy { background:var(--ds-long); color:#fff; }
+html #archive-terminal-preview .fo-submitPair .sell { background:var(--ds-short); color:#fff; }
+html #archive-terminal-preview .archive-calculator-trigger { font-size:12px; color:var(--ds-t2); }
+
+/* ── Account block and contract details ──────────────────────────────── */
+html #archive-terminal-preview :is(.futures-account-heading span,.fcd-title) { font-size:14px; font-weight:500; color:var(--ds-t1); }
+html #archive-terminal-preview .futures-account-summary .fa-label { font-size:12px; font-weight:400; color:var(--ds-t2); }
+html #archive-terminal-preview .futures-account-summary .fa-value { font-size:12px; font-weight:500; }
+html #archive-terminal-preview .futures-account-actions button {
+  height:32px; font-size:13px; font-weight:500; color:var(--ds-t1);
+  background:transparent; border:1px solid var(--ds-line); border-radius:6px;
+}
+html #archive-terminal-preview .futures-account-actions button:hover { background:var(--ds-bg-2); }
+html #archive-terminal-preview :is(.fcd-label,.fo-tiersTitle) { font-size:12px; font-weight:400; color:var(--ds-t2); }
+
+/* ── Positions ───────────────────────────────────────────────────────── */
+html #archive-terminal-preview .futures-positions-table th { font-size:11px; font-weight:400; color:var(--ds-t3); background:var(--ds-bg-1); }
+html #archive-terminal-preview .futures-positions-table td { font-size:12px; }
+html #archive-terminal-preview :is(.futures-position-leverage,.futures-position-mode) { color:var(--ds-t2); }
+html #archive-terminal-preview :is(.futures-position-close,.fut-tpslTrigger) {
+  height:28px; font-size:12px; font-weight:500; color:var(--ds-t1);
+  background:var(--ds-bg-2); border:1px solid var(--ds-line); border-radius:4px;
+}
+
+/* ── The return-to-tab notice as a thin line along the bottom ────────── */
+body:has(#archive-terminal-preview) .browser-sleep-notice {
+  inset:auto 0 0 0; width:auto; max-width:none; margin:0; padding:3px 16px;
+  justify-content:center; font-size:11px; line-height:16px; color:var(--ds-t2, #8A93A0);
+  background:#12161B; border:0; border-top:1px solid #22282F; border-radius:0; box-shadow:none;
+}
