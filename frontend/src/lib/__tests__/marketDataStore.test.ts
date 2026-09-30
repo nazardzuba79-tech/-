@@ -102,7 +102,7 @@ describe('marketDataStore', () => {
     // The headline number: 100 components mounting together cost VOLTEX
     // one HTTP request, not 100.
     expect(getMarketSnapshot).toHaveBeenCalledTimes(1);
-    expect(getMarketSnapshot).toHaveBeenCalledWith('/api/v1/market/display/spot-snapshot', DISPLAY_REFRESH_MS);
+    expect(getMarketSnapshot).toHaveBeenCalledWith('/api/v1/market/display/spot-snapshot', DISPLAY_REFRESH_MS, expect.any(AbortSignal));
     expect(marketDataStore._timerCount).toBe(1);
     expect(marketDataStore._subscriberCount).toBe(100);
 

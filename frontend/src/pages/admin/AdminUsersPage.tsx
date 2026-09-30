@@ -104,30 +104,44 @@ export function AdminUsersPage() {
   // one hour while visible, nothing while hidden (see adminUserActivity.ts).
   const { activity, failed: activityFailed, receivedAt: activityReceivedAt, refresh: refreshActivity } = useAdminUserActivity();
   const usersInFlight = useRef(false);
+  const mounted = useRef(false);
+  const usersRequest = useRef<{ controller: AbortController; timer: ReturnType<typeof setTimeout> } | null>(null);
 
   const loadUsers = useCallback(() => {
     // One users read at a time: a signature change while one is running does not start a second.
-    if (usersInFlight.current) return;
+    if (!mounted.current || usersInFlight.current) return;
     usersInFlight.current = true;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ADMIN_USERS_TIMEOUT_MS);
-    getAdminUsersAbortable(controller.signal)
-      .then((next) => { setUsers(next.filter((user) => user.role === 'USER' && !user.isAdmin && !deletedIds.current.has(user.id))); setLoadError(false); })
-      .catch(() => setLoadError(true))
-      .finally(() => { clearTimeout(timer); usersInFlight.current = false; });
+    usersRequest.current = { controller, timer };
+    const usersRead = getAdminUsersAbortable(controller.signal)
+      .then((next) => { if (!controller.signal.aborted) { setUsers(next.filter((user) => user.role === 'USER' && !user.isAdmin && !deletedIds.current.has(user.id))); setLoadError(false); } })
+      .catch(() => { if (mounted.current && usersRequest.current?.controller === controller) setLoadError(true); });
     // The server returns only the newest deposit per user from the last 24h.
     // Do not download the full admin deposit history just to paint badges.
-    api
-      .getAdminRecentDepositsByUser()
+    const depositsRead = api
+      .getAdminRecentDepositsByUser(controller.signal)
       .then((deposits) => {
+        if (controller.signal.aborted) return;
         const map = new Map<string, { amount: string; asset: string; createdAt: string }>();
         for (const d of deposits) map.set(d.userId, { amount: d.amount, asset: d.asset, createdAt: d.createdAt });
         setRecentDeposits(map);
       })
       .catch(() => {});
+    void Promise.allSettled([usersRead, depositsRead]).then(() => {
+      clearTimeout(timer);
+      if (usersRequest.current?.controller === controller) { usersRequest.current = null; usersInFlight.current = false; }
+    });
   }, []);
 
-  useEffect(loadUsers, [loadUsers]);
+  useEffect(() => {
+    mounted.current = true; loadUsers();
+    return () => {
+      mounted.current = false;
+      if (usersRequest.current) { usersRequest.current.controller.abort(); clearTimeout(usersRequest.current.timer); }
+      usersRequest.current = null; usersInFlight.current = false;
+    };
+  }, [loadUsers]);
 
   // The user list is re-read only when the activity read says something the
   // loaded list cannot know: a new registration (total changed) or a package

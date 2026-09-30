@@ -122,6 +122,7 @@ class MarketDataStore {
   private timer: number | null = null;
   private currentIntervalMs = DEFAULT_INTERVAL_MS;
   private inFlight: Promise<void> | null = null;
+  private controller: AbortController | null = null;
 
   getState(): MarketState {
     return this.state;
@@ -152,8 +153,9 @@ class MarketDataStore {
 
     return () => {
       this.listeners.delete(key);
-      if (this.listeners.size === 0) {
-        this.stop();
+        if (this.listeners.size === 0) {
+          this.stop();
+          this.cancelRequest();
       } else {
         this.retimeAndStart();
       }
@@ -174,11 +176,15 @@ class MarketDataStore {
   refresh(): Promise<void> {
     if (typeof document !== 'undefined' && isBrowserInactive()) return Promise.resolve();
     if (this.inFlight) return this.inFlight;
+    const controller = new AbortController();
+    this.controller = controller;
     this.inFlight = readDisplayJson<MarketSnapshotResponse>(
       `${API_BASE}/market/display/spot-snapshot`,
       DISPLAY_REFRESH_MS,
-    ).then((snapshot) => this.apply(snapshot))
+      controller.signal,
+    ).then((snapshot) => { if (!controller.signal.aborted) this.apply(snapshot); })
       .catch(() => {
+        if (controller.signal.aborted) return;
         // A transport failure keeps whatever was last known good on
         // screen and flags the status — it never blanks the numbers and
         // never substitutes zeros. `loaded` becomes true so a view can
@@ -190,7 +196,7 @@ class MarketDataStore {
         });
       })
       .finally(() => {
-        this.inFlight = null;
+        if (this.controller === controller) { this.inFlight = null; this.controller = null; }
       });
     return this.inFlight;
   }
@@ -275,9 +281,16 @@ class MarketDataStore {
     }
   }
 
+  private cancelRequest(): void {
+    this.controller?.abort();
+    this.controller = null;
+    this.inFlight = null;
+  }
+
   /** Test seam — resets module state between cases. */
   _resetForTests(): void {
     this.stop();
+    this.cancelRequest();
     this.listeners.clear();
     this.state = { ...EMPTY_STATE, tickers: new Map() };
     this.inFlight = null;

@@ -55,6 +55,24 @@ const getFuturesPositions = api.getFuturesPositions as jest.Mock;
 const getMyFuturesOrders = api.getMyFuturesOrders as jest.Mock;
 const getFuturesPositionHistory = api.getFuturesPositionHistory as jest.Mock;
 
+test('navigation releases unneeded Futures reads and ignores their late replies after remount', async () => {
+  let finishOld!: (rows: typeof BALANCES_A) => void;
+  getFuturesBalances.mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve; }));
+  const offA = futuresAccountStore.subscribe(() => {}, { balances: 5000 });
+  const offB = futuresAccountStore.subscribe(() => {}, { balances: 5000 });
+  await flush();
+  const signal = getFuturesBalances.mock.calls[0][0] as AbortSignal;
+  offA(); expect(signal?.aborted).toBe(false);
+  offB(); expect(signal?.aborted).toBe(true);
+  getFuturesBalances.mockResolvedValueOnce(BALANCES_B);
+  const offC = futuresAccountStore.subscribe(() => {}, { balances: 5000 });
+  await flush();
+  expect(getFuturesBalances).toHaveBeenCalledTimes(2);
+  finishOld(BALANCES_A); await flush();
+  expect(futuresAccountStore.getState().balances.data).toEqual(BALANCES_B);
+  offC();
+});
+
 let visibilityDocument: EventTarget & { hidden: boolean };
 
 const BALANCES_A = [{ asset: 'USDT', available: '10000.00000000', locked: '250.00000000' }];
@@ -565,7 +583,9 @@ describe('order history isolation', () => {
     await flush();
     const historyOff = futuresAccountStore.subscribe(() => {}, { orderHistory: 0 });
     await flush();
-    expect(getMyFuturesOrders.mock.calls).toEqual([['OPEN,PARTIALLY_FILLED'], []]);
+    expect(getMyFuturesOrders.mock.calls).toEqual([
+      ['OPEN,PARTIALLY_FILLED', expect.any(AbortSignal)], [undefined, expect.any(AbortSignal)],
+    ]);
     expect(futuresAccountStore._intervalOf('orderHistory')).toBeNull();
     historyOff();
     off();

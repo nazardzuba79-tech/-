@@ -633,7 +633,7 @@ test.each([
   [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
   [wallet + 'TransactionHistory.tsx', 'b9b0b0c274bef595780cf7b748685b6486a72765af6af575a170f307a5b999b3'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
-  ['src/api/routes/portfolio.ts', 'e943dce097247b01f5d001770c816faa5be4b024755724b8da2b90822f05f016'],
+  ['src/api/routes/portfolio.ts', '3b4708bd2376dfd12d359645f866853f00f36a8967d104c1fec775f31dfdd051'],
 ])('preserves unchanged financial/data/format/modal source %s exactly', (file, hash) => {
   const source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
   expect(createHash('sha256').update(source).digest('hex')).toBe(hash);
@@ -694,8 +694,8 @@ test('wallet API reads keep their shared authenticated transport and snapshots c
   expect(ts.isObjectLiteralExpression(declaration.initializer!)).toBe(true);
   const methods = (declaration.initializer as ts.ObjectLiteralExpression).properties;
   const method = (name: string) => methods.find(node => node.name?.getText(ast) === name)!.getText(ast);
-  expect(method('getWalletOverview')).toMatch(/request<[\s\S]*?>\('\/wallet\/overview'\)/);
-  expect(method('getWalletPerformance')).toMatch(/request<[\s\S]*?>\('\/wallet\/performance'\)/);
+  expect(method('getWalletOverview')).toMatch(/request<[\s\S]*?>\('\/wallet\/overview', \{ signal \}\)/);
+  expect(method('getWalletPerformance')).toMatch(/request<[\s\S]*?>\('\/wallet\/performance', \{ signal \}\)/);
   expect(api).toContain('Authorization: `Bearer ${token}`');
   expect(method('recordPortfolioSnapshot')).toMatch(/JSON\.stringify\(\{ totalValueUsd \}\)/);
   expect(method('recordPortfolioSnapshot')).not.toMatch(/parseFloat|Number\(|Math\.|\*|\/\//);

@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { publicDisplayCache, DISPLAY_REFRESH_MS, SLOW_DISPLAY_REFRESH_MS } from '../middleware/publicDisplayCache';
 import { Router } from 'express';
 import { MarketDataGateway } from '../../services/marketData/MarketDataGateway';
@@ -246,14 +247,14 @@ export function marketDataRouter(
   });
 
   /** Executable VOLTEX markets. Explicitly separate from the catalogue. */
-  router.get('/market/tradable', async (_req, res) => {
+  router.get('/market/tradable', asyncRoute(async (_req, res) => {
     res.json(await gateway.getTradableMarkets());
-  });
+  }));
 
   /** One pair's ticker, with provenance and freshness. */
-  router.get('/market/ticker/:pair', async (req, res) => {
+  router.get('/market/ticker/:pair', asyncRoute(async (req, res) => {
     res.json(await gateway.getTicker(req.params.pair.replace('-', '/')));
-  });
+  }));
 
   /**
    * Gateway and provider status: circuit state per provider, the

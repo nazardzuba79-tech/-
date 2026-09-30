@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuthOrApiKey, ApiAuthedRequest } from '../middleware/apiKeyAuth';
@@ -10,7 +11,7 @@ import { requireAuthOrApiKey, ApiAuthedRequest } from '../middleware/apiKeyAuth'
 export function tradesRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/trades/me', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+  router.get('/trades/me', requireAuthOrApiKey(prisma), asyncRoute(async (req: ApiAuthedRequest, res) => {
     const pair = req.query.pair as string | undefined;
     const trades = await prisma.trade.findMany({
       where: {
@@ -32,7 +33,7 @@ export function tradesRouter(prisma: PrismaClient): Router {
         executedAt: t.executedAt,
       }))
     );
-  });
+  }));
 
   return router;
 }

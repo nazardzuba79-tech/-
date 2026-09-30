@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
@@ -141,7 +142,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
   // top-up, review or confirmations) and their amounts live in the admin
   // registry until an admin credits them; filtering here, not in CSS, is what
   // keeps them out of the client's history, exports and notifications.
-  router.get('/deposits/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/deposits/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const deposits = await prisma.deposit.findMany({
       where: { userId: req.userId, status: 'CREDITED' },
       orderBy: [{ creditedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
@@ -160,9 +161,9 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
         createdAt: d.creditedAt ?? d.createdAt,
       }))
     );
-  });
+  }));
 
-  router.post('/deposits/claim/:chain', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.post('/deposits/claim/:chain', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     let config: ChainConfig;
     try {
       config = await resolveChainConfig(treasuryWallets, req.params.chain);
@@ -200,7 +201,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
       console.error(err);
       res.status(500).json({ error: 'Failed to submit deposit claim' });
     }
-  });
+  }));
 
   return router;
 }

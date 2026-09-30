@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
@@ -18,7 +19,7 @@ export function withdrawalsRouter(prisma: PrismaClient): Router {
 
   // The account's own withdrawal-request history, scoped to the caller —
   // same pattern as GET /deposits/me.
-  router.get('/withdrawals/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/withdrawals/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const withdrawals = await prisma.withdrawal.findMany({
       where: { userId: req.userId },
       orderBy: { createdAt: 'desc' },
@@ -36,7 +37,7 @@ export function withdrawalsRouter(prisma: PrismaClient): Router {
         createdAt: w.createdAt,
       }))
     );
-  });
+  }));
 
   router.post('/withdrawals', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = requestSchema.safeParse(req.body);

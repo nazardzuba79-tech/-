@@ -724,7 +724,7 @@ export const api = {
    * `valuationComplete: false` means every total here is a floor, and an
    * interface showing the total has to say so.
    */
-  getWalletOverview: () =>
+  getWalletOverview: (signal?: AbortSignal) =>
     request<{
       real: {
         spot: RealBalance[];
@@ -736,10 +736,10 @@ export const api = {
       valuationComplete: boolean;
       unpricedAssets: string[];
       btcPriceUsd: number | null;
-    }>('/wallet/overview'),
+    }>('/wallet/overview', { signal }),
 
   /** 7D/30D/90D/1Y/all-time, all measured off one canonical daily series. */
-  getWalletPerformance: () =>
+  getWalletPerformance: (signal?: AbortSignal) =>
     request<{
       periods: Record<
         '7d' | '30d' | '90d' | '1y' | 'all',
@@ -757,7 +757,7 @@ export const api = {
       >;
       ageDays: number;
       startedOn: string | null;
-    }>('/wallet/performance'),
+    }>('/wallet/performance', { signal }),
 
   recordPortfolioSnapshot: (totalValueUsd: string) =>
     request<{ recorded: boolean }>('/wallet/portfolio-snapshot', {
@@ -1185,7 +1185,7 @@ export const api = {
     }>('/kyc/me'),
 
   // Admin: every client with their latest KYC submission (if any)
-  getAllClients: () =>
+  getAllClients: (signal?: AbortSignal) =>
     request<
       {
         id: string;
@@ -1204,7 +1204,7 @@ export const api = {
           createdAt: string;
         } | null;
       }[]
-    >('/admin/clients'),
+    >('/admin/clients', { signal }),
 
   getKycDocument: (submissionId: string) => requestBlobUrl(`/kyc/${submissionId}/document`),
 
@@ -1228,7 +1228,7 @@ export const api = {
 
   // Compact helper for the Users page. Returns only one recent deposit
   // badge row per user from the rolling last 24h — not full deposit history.
-  getAdminRecentDepositsByUser: () =>
+  getAdminRecentDepositsByUser: (signal?: AbortSignal) =>
     request<
       {
         userId: string;
@@ -1236,7 +1236,7 @@ export const api = {
         asset: string;
         createdAt: string;
       }[]
-    >('/admin/deposits/recent-by-user'),
+    >('/admin/deposits/recent-by-user', { signal }),
 
   getAdminIncomingDeposits: () =>
     request<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null }[]>(
@@ -1352,7 +1352,7 @@ export const api = {
 
   cancelFuturesOrder: (orderId: string) => request(`/futures/orders/${orderId}`, { method: 'DELETE' }),
 
-  getMyFuturesOrders: (status?: string) =>
+  getMyFuturesOrders: (status?: string, signal?: AbortSignal) =>
     request<
       {
         id: string;
@@ -1368,9 +1368,9 @@ export const api = {
         marginType: 'ISOLATED' | 'CROSS';
         createdAt: string;
       }[]
-    >(`/futures/orders/me${status ? `?status=${status}` : ''}`),
+    >(`/futures/orders/me${status ? `?status=${status}` : ''}`, { signal }),
 
-  getFuturesPositions: () =>
+  getFuturesPositions: (signal?: AbortSignal) =>
     request<
       {
         id: string;
@@ -1405,9 +1405,9 @@ export const api = {
           stopLoss: FuturesProtectionTrigger | null;
         };
       }[]
-    >('/futures/positions'),
+    >('/futures/positions', { signal }),
 
-  getFuturesPositionHistory: () =>
+  getFuturesPositionHistory: (signal?: AbortSignal) =>
     request<
       {
         id: string;
@@ -1421,7 +1421,7 @@ export const api = {
         openedAt: string;
         closedAt: string | null;
       }[]
-    >('/futures/positions/history'),
+    >('/futures/positions/history', { signal }),
 
   closeFuturesPosition: (positionId: string) => request(`/futures/positions/${positionId}/close`, { method: 'POST' }),
 
@@ -1442,7 +1442,7 @@ export const api = {
   clearFuturesPositionProtection: (positionId: string) =>
     request(`/futures/positions/${positionId}/protection`, { method: 'DELETE' }),
 
-  getFuturesBalances: () => request<{ asset: string; available: string; locked: string }[]>('/futures/balances'),
+  getFuturesBalances: (signal?: AbortSignal) => request<{ asset: string; available: string; locked: string }[]>('/futures/balances', { signal }),
 
   transferFuturesFunds: (asset: string, amount: string, direction: 'TO_FUTURES' | 'TO_SPOT') =>
     request<{ status: string }>('/futures/transfer', { method: 'POST', body: JSON.stringify({ asset, amount, direction }) }),

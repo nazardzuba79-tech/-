@@ -107,13 +107,13 @@ function emptyState(): FuturesAccountState {
  *  request storm, not a change to anyone's current rate. */
 const DEFAULT_INTERVAL_MS = 60_000;
 
-const FETCHERS: { [K in ResourceKey]: () => Promise<FuturesAccountState[K]['data']> } = {
-  balances: () => api.getFuturesBalances(),
-  positions: () => api.getFuturesPositions(),
-  orders: () => api.getMyFuturesOrders('OPEN,PARTIALLY_FILLED'),
+const FETCHERS: { [K in ResourceKey]: (signal: AbortSignal) => Promise<FuturesAccountState[K]['data']> } = {
+  balances: signal => api.getFuturesBalances(signal),
+  positions: signal => api.getFuturesPositions(signal),
+  orders: signal => api.getMyFuturesOrders('OPEN,PARTIALLY_FILLED', signal),
   // Same authenticated endpoint: latest 100 orders, including active ones.
-  orderHistory: () => api.getMyFuturesOrders(),
-  positionHistory: () => api.getFuturesPositionHistory(),
+  orderHistory: signal => api.getMyFuturesOrders(undefined, signal),
+  positionHistory: signal => api.getFuturesPositionHistory(signal),
 };
 
 type Listener = (state: FuturesAccountState) => void;
@@ -127,6 +127,7 @@ interface Subscriber {
 }
 
 interface ResourceRuntime {
+  controller?: AbortController;
   timer: ReturnType<typeof setInterval> | null;
   intervalMs: number;
   inFlight: Promise<void> | null;
@@ -208,7 +209,10 @@ class FuturesAccountStore {
 
     return () => {
       this.subscribers.delete(key);
-      for (const resource of Object.keys(wants) as ResourceKey[]) this.retime(resource);
+      for (const resource of Object.keys(wants) as ResourceKey[]) {
+        this.retime(resource);
+        if (!this.isWanted(resource)) this.cancelRequest(resource);
+      }
       if (this.subscribers.size === 0) this.stopVisibilityWatch();
     };
   }
@@ -248,18 +252,19 @@ class FuturesAccountStore {
     this.dirty.delete(resource);
 
     const generation = this.generation;
+    const controller = new AbortController(); runtime.controller = controller;
     runtime.inFlightGeneration = generation;
 
     const current = this.state[resource];
     this.patch(resource, current.data === null ? { loading: true } : { refreshing: true });
 
-    runtime.inFlight = trackBrowserRead((FETCHERS[resource]() as Promise<never[]>)
+    runtime.inFlight = trackBrowserRead((FETCHERS[resource](controller.signal) as Promise<never[]>)
       .then((data) => {
         // Two independent guards, both required. The generation catches a
         // logout/login that happened while this was in the air; the token
         // comparison catches a session change by any path that did not go
         // through the notifier at all.
-        if (generation !== this.generation || getToken() !== token) return;
+        if (controller.signal.aborted || generation !== this.generation || getToken() !== token) return;
         if (this.dirty.has(resource)) return; // superseded by a known mutation
         // A fallback can discover a server-side fill/close without a local
         // button click. Refresh dependent views once, not for mark/PnL ticks.
@@ -278,7 +283,7 @@ class FuturesAccountStore {
         if (exposureChanged && resource === 'positions') this.invalidate(['balances', 'positionHistory']);
       }))
       .catch(() => {
-        if (generation !== this.generation || getToken() !== token) return;
+        if (controller.signal.aborted || generation !== this.generation || getToken() !== token) return;
         // A failure keeps whatever was last known good on screen and flags
         // it stale. It never substitutes an empty array and never a zero:
         // `data` is left exactly as it was, which for a cold store is
@@ -286,8 +291,9 @@ class FuturesAccountStore {
         this.patch(resource, { loading: false, refreshing: false, failed: true, loaded: true });
       })
       .finally(() => {
-        if (generation !== this.generation) return;
+        if (controller.signal.aborted || generation !== this.generation) return;
         runtime.inFlight = null;
+        runtime.controller = undefined;
         if (this.dirty.has(resource) && this.isWanted(resource) && !this.isHidden()) void this.refresh(resource);
       });
 
@@ -309,6 +315,7 @@ class FuturesAccountStore {
         clearInterval(runtime.timer);
         runtime.timer = null;
       }
+      runtime.controller?.abort(); runtime.controller = undefined;
       runtime.inFlight = null;
     }
     this.state = emptyState();
@@ -324,6 +331,16 @@ class FuturesAccountStore {
 
   private isHidden(): boolean {
     return typeof document !== 'undefined' && isBrowserInactive();
+  }
+
+  private cancelRequest(resource: ResourceKey): void {
+    const runtime = this.runtime[resource];
+    if (!runtime.controller) return;
+    runtime.controller.abort();
+    runtime.controller = undefined;
+    runtime.inFlight = null;
+    this.dirty.add(resource);
+    this.state = { ...this.state, [resource]: { ...this.state[resource], loading: false, refreshing: false } };
   }
 
   private ensureVisibilityWatch(): void {
@@ -427,6 +444,7 @@ class FuturesAccountStore {
       const runtime = this.runtime[resource];
       if (runtime.timer !== null) clearInterval(runtime.timer);
       runtime.timer = null;
+      runtime.controller?.abort(); runtime.controller = undefined;
       runtime.inFlight = null;
       runtime.intervalMs = DEFAULT_INTERVAL_MS;
     }

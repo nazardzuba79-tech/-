@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
@@ -56,7 +57,7 @@ export function adminRouter(prisma: PrismaClient): Router {
 
   // Admin-only: every client, with their latest KYC submission (if any) —
   // the full client list, not just the pending-review queue.
-  router.get('/admin/clients', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+  router.get('/admin/clients', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     const [users, submissions] = await Promise.all([
       prisma.user.findMany({ orderBy: { createdAt: 'desc' } }),
       prisma.kycSubmission.findMany({ orderBy: { createdAt: 'desc' } }),
@@ -98,7 +99,7 @@ export function adminRouter(prisma: PrismaClient): Router {
         };
       })
     );
-  });
+  }));
 
   return router;
 }

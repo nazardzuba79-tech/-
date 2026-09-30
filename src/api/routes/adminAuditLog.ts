@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '../middleware/auth';
@@ -16,7 +17,7 @@ import { requireAdmin } from '../middleware/admin';
 export function adminAuditLogRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/admin/audit-log', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.get('/admin/audit-log', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const action = typeof req.query.action === 'string' ? req.query.action : undefined;
     const userId = typeof req.query.userId === 'string' ? req.query.userId : undefined;
 
@@ -55,7 +56,7 @@ export function adminAuditLogRouter(prisma: PrismaClient): Router {
         };
       })
     );
-  });
+  }));
 
   return router;
 }

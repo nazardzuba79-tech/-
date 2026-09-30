@@ -237,7 +237,7 @@ test('9. the page never uses the closed one-transfer credit or builds an amount'
   }
   // The confirmation request names the package; it never carries an amount.
   expect(drawer).not.toMatch(/amount:\s/);
-  expect(page).toContain('getAdminRecentDepositsByUser()');
+  expect(page).toContain('getAdminRecentDepositsByUser(controller.signal)');
   expect(page + client).not.toContain('setInterval');
   expect(client).toContain('/admin/user-activity');
 });

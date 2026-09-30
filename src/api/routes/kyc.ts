@@ -1,3 +1,4 @@
+import { asyncRoute } from '../asyncRoute';
 import express, { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Prisma, PrismaClient } from '@prisma/client';
@@ -88,7 +89,7 @@ function requireEdge(trust: KycEdgeTrust) {
   const raw = express.raw({ type: KYC_EDGE_BODY_TYPE, limit: '16kb' });
   return [
     raw,
-    async (req: RawRequest, res: Response, next: NextFunction) => {
+    asyncRoute(async (req: RawRequest, res: Response, next: NextFunction) => {
       res.set('Cache-Control', 'no-store');
       if (!Buffer.isBuffer(req.body)) return res.status(415).json({ error: 'Unsupported body', code: 'kyc_edge_body' });
       const verdict = await trust.verify(req.originalUrl.split('?')[0], req.body, req.get('x-voltex-kyc-edge-ts'), req.get('x-voltex-kyc-edge-sig'));
@@ -100,7 +101,7 @@ function requireEdge(trust: KycEdgeTrust) {
         return res.status(400).json({ error: 'Invalid body', code: 'kyc_bad_request' });
       }
       next();
-    },
+    }),
   ];
 }
 
@@ -113,7 +114,7 @@ export function kycRouter(prisma: PrismaClient, trust: KycEdgeTrust = new KycEdg
     res.status(410).json({ error: 'KYC upload moved to the KYC edge', code: 'kyc_upload_moved' });
   });
 
-  router.post('/internal/kyc/authorize', ...requireEdge(trust), requireAuth(prisma), async (req: RawRequest, res: Response) => {
+  router.post('/internal/kyc/authorize', ...requireEdge(trust), requireAuth(prisma), asyncRoute(async (req: RawRequest, res: Response) => {
     const parsed = authorizeSchema.safeParse(req.edgeBody);
     if (!parsed.success) return res.status(400).json({ error: 'Invalid submission', code: 'kyc_bad_request' });
 
@@ -133,7 +134,7 @@ export function kycRouter(prisma: PrismaClient, trust: KycEdgeTrust = new KycEdg
     if (!allowAuthorize(user.id)) return res.status(429).json({ error: 'Too many attempts', code: 'kyc_rate_limited' });
 
     res.json({ submissionId, userId: user.id, email: user.email, alreadySubmitted: false });
-  });
+  }));
 
   router.post('/internal/kyc/submission-confirmed', ...requireEdge(trust), async (req: RawRequest, res: Response) => {
     const parsed = confirmSchema.safeParse(req.edgeBody);
@@ -187,7 +188,7 @@ export function kycRouter(prisma: PrismaClient, trust: KycEdgeTrust = new KycEdg
     }
   });
 
-  router.get('/kyc/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
+  router.get('/kyc/me', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const [user, latest] = await Promise.all([
       prisma.user.findUnique({ where: { id: req.userId }, select: { kycStatus: true } }),
       prisma.kycSubmission.findFirst({ where: { userId: req.userId }, orderBy: { createdAt: 'desc' } }),
@@ -207,17 +208,17 @@ export function kycRouter(prisma: PrismaClient, trust: KycEdgeTrust = new KycEdg
           }
         : null,
     });
-  });
+  }));
 
   // Admin-only: where new submissions' documents go. Fixed server-side in
   // the edge (and its send binding); nothing here can change it.
-  router.get('/kyc/admin/delivery', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+  router.get('/kyc/admin/delivery', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
     res.set('Cache-Control', 'private, no-store').json({ mode: 'EDGE_EMAIL', configured: await trust.configured(), recipient: RECIPIENT_MASKED });
-  });
+  }));
 
   // Admin-only, LEGACY rows only: stream a document uploaded here before the
   // KYC edge. New submissions have no file on this server.
-  router.get('/kyc/:id/document', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
+  router.get('/kyc/:id/document', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req, res) => {
     const submission = await prisma.kycSubmission.findUnique({ where: { id: req.params.id } });
     if (!submission) return res.status(404).json({ error: 'Not found' });
     if (!submission.documentImagePath) return res.status(404).json({ error: 'Document delivered by email', code: 'kyc_document_emailed' });
@@ -225,9 +226,9 @@ export function kycRouter(prisma: PrismaClient, trust: KycEdgeTrust = new KycEdg
     res.sendFile(submission.documentImagePath, (err) => {
       if (err && !res.headersSent) res.status(404).json({ error: 'Document file missing' });
     });
-  });
+  }));
 
-  router.post('/kyc/:id/review', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/kyc/:id/review', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
     const parsed = reviewSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -250,7 +251,7 @@ export function kycRouter(prisma: PrismaClient, trust: KycEdgeTrust = new KycEdg
     });
 
     res.json({ status });
-  });
+  }));
 
   return router;
 }
