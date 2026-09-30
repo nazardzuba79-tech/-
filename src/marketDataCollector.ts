@@ -63,7 +63,12 @@ runtime.server.listen(Number(process.env.PORT || 10000), bindHost, () => {
   void runCfdDisplaySelfTest({
     getQuotes:()=>cfdDisplayRouter.getQuotes(),
     getOhlc:(symbol,interval,limit)=>cfdOhlc.getOhlc(symbol,interval,limit),
-    log:(result)=>console.log(JSON.stringify({event:'cfd_display_selftest',...result})),
+    log:(result)=>{
+      const failed = result.final && !result.passed;
+      const message = JSON.stringify({level:failed?'warn':'info',event:'cfd_display_selftest',...result});
+      if (failed) console.warn(message);
+      else console.log(message);
+    },
   });
 });
 let stopping = false;

@@ -87,6 +87,7 @@ export interface HomeMarket {
  * background. See homeMarketSnapshot.ts.
  */
 export const HOME_MARKET_REFRESH_MS = 6 * 60 * 60 * 1000;
+const HOME_MARKET_RETRY_MS = 60_000;
 const DEFAULT_HERO_PAIR = HOME_HERO_PAIR;
 const MARKET_EDGE_BASE='https://market.voltextech.net';
 const production=()=>typeof window!=='undefined'&&!!window.location&&(window.location.hostname==='voltextech.net'||window.location.hostname.endsWith('.voltextech.net'));
@@ -179,22 +180,22 @@ export function useHomeMarket(): HomeMarket {
     let cfdInFlight = false;
     const storage = browserStorage();
 
-    // Every loader is gated on "started less than six hours ago". Seeding the
-    // gate from the snapshot's observation time is what makes a fresh cache
-    // skip its request and a stale one issue it, with no second code path.
+    // Successful sections retain the six-hour budget. Failed sections retry
+    // at most once a minute while active, without reloading the healthy ones.
+    // A fresh stored observation seeds the same next-read deadline.
     const seed = (observedAt: number | null | undefined) =>
-      fresh(observedAt, Date.now()) ? (observedAt as number) : -Infinity;
-    let tickerStartedAt = seed(hydrated.tickers?.observedAt);
+      fresh(observedAt, Date.now()) ? (observedAt as number) + HOME_MARKET_REFRESH_MS : -Infinity;
+    let tickerNextAt = seed(hydrated.tickers?.observedAt);
     // A restored hero counts as observed only when all three of its parts
     // came back; one that lost a part on the way is painted as far as it
     // goes and asked for again now, whatever its age.
     const heroComplete = hydrated.hero !== null && hydrated.hero.book !== null
       && hydrated.hero.candles.length > 0 && hydrated.hero.trades.length > 0;
-    let heroStartedAt = heroComplete ? seed(hydrated.hero?.observedAt) : -Infinity;
-    let cfdStartedAt = seed(hydrated.cfd?.observedAt);
-    let rankingsStartedAt = seed(hydrated.rankings?.observedAt);
-    let globalStartedAt = seed(hydrated.global?.observedAt);
-    let futuresStartedAt = seed(hydrated.futures?.observedAt);
+    let heroNextAt = heroComplete ? seed(hydrated.hero?.observedAt) : -Infinity;
+    let cfdNextAt = seed(hydrated.cfd?.observedAt);
+    let rankingsNextAt = seed(hydrated.rankings?.observedAt);
+    let globalNextAt = seed(hydrated.global?.observedAt);
+    let futuresNextAt = seed(hydrated.futures?.observedAt);
     // A hero painted from an old snapshot stays marked stale until every one
     // of its three parts has been re-confirmed, not merely until the first
     // part lands.
@@ -223,9 +224,9 @@ export function useHomeMarket(): HomeMarket {
 
     async function loadCfd() {
       if (cancelled || isBrowserInactive() || !heroVisible || cfdInFlight
-        || Date.now() - cfdStartedAt < HOME_MARKET_REFRESH_MS) return;
+        || Date.now() < cfdNextAt) return;
       cfdInFlight = true;
-      cfdStartedAt = Date.now();
+      cfdNextAt = Date.now() + HOME_MARKET_REFRESH_MS;
       try {
         const res = await getDisplayCfdTickers();
         if (cancelled) return;
@@ -239,17 +240,21 @@ export function useHomeMarket(): HomeMarket {
         setCfdPriceHistory(history);
         persist();
       } catch {
-        if (!cancelled) setCfdStatus('error');
+        if (!cancelled) {
+          cfdNextAt = Date.now() + HOME_MARKET_RETRY_MS;
+          setCfdStatus('error');
+        }
       } finally {
         cfdInFlight = false;
+        armExpiry();
       }
     }
 
     async function loadHero() {
       if (cancelled || isBrowserInactive() || !heroVisible || !heroPair || heroInFlight
-        || Date.now() - heroStartedAt < HOME_MARKET_REFRESH_MS) return;
+        || Date.now() < heroNextAt) return;
       heroInFlight = true;
-      heroStartedAt = Date.now();
+      heroNextAt = Date.now() + HOME_MARKET_REFRESH_MS;
       const pair = heroPair;
       let receivedBook: HomeBook | null = null;
       let receivedCandles: HomeCandle[] = [];
@@ -297,18 +302,21 @@ export function useHomeMarket(): HomeMarket {
         heroSnapshotStale = false;
         committed.hero = { pair, book: receivedBook, candles: receivedCandles, trades: receivedTrades, observedAt: Date.now() };
         persist();
+      } else {
+        heroNextAt = Date.now() + HOME_MARKET_RETRY_MS;
       }
       setHero(previous => previous.pair === pair
         && previous.bookStatus === 'ok' && previous.candlesStatus === 'ok' && previous.tradesStatus === 'ok'
         ? { ...previous, stale: false, updatedAt: Date.now() }
         : previous);
+      armExpiry();
     }
 
     function loadTickers() {
       if (cancelled || isBrowserInactive() || tickerInFlight
-        || Date.now() - tickerStartedAt < HOME_MARKET_REFRESH_MS) return;
+        || Date.now() < tickerNextAt) return;
       tickerInFlight = true;
-      tickerStartedAt = Date.now();
+      tickerNextAt = Date.now() + HOME_MARKET_REFRESH_MS;
       getDisplayTickers().then(res => {
         if (cancelled) return;
         const rows: HomeTicker[] = res.tickers
@@ -341,10 +349,12 @@ export function useHomeMarket(): HomeMarket {
         persist();
       }).catch(() => {
         if (cancelled) return;
+        tickerNextAt = Date.now() + HOME_MARKET_RETRY_MS;
         setTickersStale(hasTickers);
         setTickersStatus(previous => previous === 'ok' ? 'ok' : 'error');
       }).finally(() => {
         tickerInFlight = false;
+        armExpiry();
       });
     }
 
@@ -356,18 +366,22 @@ export function useHomeMarket(): HomeMarket {
     function loadBootstrap() {
       if (cancelled || isBrowserInactive()) return;
       const at = Date.now();
-      if (at - rankingsStartedAt >= HOME_MARKET_REFRESH_MS) {
-        rankingsStartedAt = at;
+      if (at >= rankingsNextAt) {
+        rankingsNextAt = at + HOME_MARKET_REFRESH_MS;
         api.getExternalRankings().then(res => {
           if (cancelled) return;
           committed.rankings = { rows: res.rankings, observedAt: Date.now() };
           setRankings(res.rankings);
           setRankingsStatus('ok');
           persist();
-        }).catch(() => !cancelled && setRankingsStatus('error'));
+        }).catch(() => {
+          if (cancelled) return;
+          rankingsNextAt = Date.now() + HOME_MARKET_RETRY_MS;
+          setRankingsStatus('error');
+        }).finally(armExpiry);
       }
-      if (at - globalStartedAt >= HOME_MARKET_REFRESH_MS) {
-        globalStartedAt = at;
+      if (at >= globalNextAt) {
+        globalNextAt = at + HOME_MARKET_REFRESH_MS;
         api.getGlobalMarket().then(res => {
           if (cancelled) return;
           setGlobal(res.global);
@@ -377,11 +391,17 @@ export function useHomeMarket(): HomeMarket {
           if (ok) {
             committed.global = { global: res.global, fearGreed: res.fearGreed, observedAt: Date.now() };
             persist();
+          } else {
+            globalNextAt = Date.now() + HOME_MARKET_RETRY_MS;
           }
-        }).catch(() => !cancelled && setGlobalStatus('error'));
+        }).catch(() => {
+          if (cancelled) return;
+          globalNextAt = Date.now() + HOME_MARKET_RETRY_MS;
+          setGlobalStatus('error');
+        }).finally(armExpiry);
       }
-      if (at - futuresStartedAt >= HOME_MARKET_REFRESH_MS) {
-        futuresStartedAt = at;
+      if (at >= futuresNextAt) {
+        futuresNextAt = at + HOME_MARKET_REFRESH_MS;
         futuresConfigStore.load().then(res => {
           if (cancelled) return;
           setFuturesSymbols(res.symbols);
@@ -390,8 +410,14 @@ export function useHomeMarket(): HomeMarket {
           if (ok) {
             committed.futures = { symbols: res.symbols, observedAt: Date.now() };
             persist();
+          } else {
+            futuresNextAt = Date.now() + HOME_MARKET_RETRY_MS;
           }
-        }).catch(() => !cancelled && setFuturesStatus('error'));
+        }).catch(() => {
+          if (cancelled) return;
+          futuresNextAt = Date.now() + HOME_MARKET_RETRY_MS;
+          setFuturesStatus('error');
+        }).finally(armExpiry);
       }
     }
 
@@ -406,13 +432,14 @@ export function useHomeMarket(): HomeMarket {
     let expiry: number | null = null;
     function armExpiry() {
       if (expiry !== null) { window.clearTimeout(expiry); expiry = null; }
+      if (cancelled || isBrowserInactive()) return;
       const now = Date.now();
       // Only sections that are NOT yet due decide the delay: one that is
       // already due and still held by a gate must not hide the next real
       // expiry of the others behind a zero delay.
-      const pending = [tickerStartedAt, heroStartedAt, cfdStartedAt, rankingsStartedAt, globalStartedAt, futuresStartedAt]
+      const pending = [tickerNextAt, heroNextAt, cfdNextAt, rankingsNextAt, globalNextAt, futuresNextAt]
         .filter(Number.isFinite)
-        .map(startedAt => startedAt + HOME_MARKET_REFRESH_MS - now)
+        .map(nextAt => nextAt - now)
         .filter(delay => delay > 0);
       if (!pending.length) return;
       expiry = window.setTimeout(() => { expiry = null; refresh(); }, Math.min(...pending));

@@ -183,7 +183,11 @@ class MarketDataStore {
         // screen and flags the status — it never blanks the numbers and
         // never substitutes zeros. `loaded` becomes true so a view can
         // tell "failed" from "still loading".
-        this.emit({ ...this.state, status: 'error', loaded: true });
+        this.emit({
+          ...this.state, status: 'error', loaded: true,
+          tickersMeta: this.state.tickersMeta ? { ...this.state.tickersMeta, stale: true } : null,
+          overviewMeta: this.state.overviewMeta ? { ...this.state.overviewMeta, stale: true } : null,
+        });
       })
       .finally(() => {
         this.inFlight = null;
@@ -220,6 +224,10 @@ class MarketDataStore {
       // behaviour the pair list already had.
       next.tickers = new Map();
       next.tickersMeta = null;
+    } else if (next.tickersMeta) {
+      // Last-good values keep their original timestamp, but an unavailable
+      // current section must not leave them labelled as freshly confirmed.
+      next.tickersMeta = { ...next.tickersMeta, stale: true };
     }
 
     if (snapshot.overview.available) {
@@ -232,6 +240,8 @@ class MarketDataStore {
     } else if (!this.state.loaded) {
       next.overview = null;
       next.overviewMeta = null;
+    } else if (next.overviewMeta) {
+      next.overviewMeta = { ...next.overviewMeta, stale: true };
     }
 
     if (snapshot.sentiment.available) {

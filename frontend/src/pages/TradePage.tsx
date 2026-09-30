@@ -86,6 +86,7 @@ export function TradePage() {
     if (next && PAIR_PATTERN.test(next)) setPair(next);
   }, [searchParams]);
   const [book, setBook] = useState<{ pair: string; bids: any[]; asks: any[]; asOf?: number | null }>({ pair, bids: [], asks: [] });
+  const [bookFeed, setBookFeed] = useState({ pair, healthy: false });
   // Effects run after render: never expose the previous instrument's depth
   // during that first new-pair render or initialize grouping from its prices.
   const visibleBook = book.pair === pair ? book : { bids: [], asks: [] };
@@ -103,7 +104,7 @@ export function TradePage() {
   // ticker bar) or the listings catalogue — so a managed listing never fetches venue candles or depth.
   const venueSnapshot = useMarketData(3000);
   const pairResolving = !isTestMarketPair(pair) && !managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase());
-  const testMarket = useTestMarket(testPair ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
+  const testMarket = useTestMarket(testPair && searchParams.get('market') !== 'cfd' ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
   const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
@@ -125,7 +126,7 @@ export function TradePage() {
   const bookGenerationRef = useRef(0);
   const bookRequestRef = useRef(0);
   const bookWsVersionRef = useRef(0);
-  const bookPendingRef = useRef<{ generation: number; request: number } | null>(null);
+  const bookPendingRef = useRef<{ generation: number; request: number; abort: () => void } | null>(null);
   /** The pair the ladder on screen belongs to, so a remount can tell a real
    *  market change from a re-render and keep last-good in the second case. */
   const bookShownPairRef = useRef<string | null>(null);
@@ -183,17 +184,31 @@ export function TradePage() {
     // request settles; that old promise may not unlock the newer request.
     if (bookPendingRef.current?.generation === generation) return;
     const request = ++bookRequestRef.current;
-    const pending = { generation, request };
+    const controller = new AbortController();
+    let timedOut = false;
+    // Same twelve-second public-read deadline as PriceChart. A hung display
+    // request must release its lock so the next normal poll can recover.
+    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 12_000);
+    const pending = { generation, request, abort: () => { clearTimeout(timeout); controller.abort(); } };
     bookPendingRef.current = pending;
     const wsVersion = bookWsVersionRef.current;
-    readSpotPublicBook(pair)
+    readSpotPublicBook(pair, controller.signal)
       .then((res) => {
+        if (controller.signal.aborted) return;
         if (bookPairRef.current === pair && generation === bookGenerationRef.current && request === bookRequestRef.current && wsVersion === bookWsVersionRef.current) {
           setBook({ pair, bids: res.bids, asks: res.asks, asOf: res.asOf });
+          setBookFeed({ pair, healthy: res.status !== 'unavailable' });
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (controller.signal.aborted && !timedOut) return;
+        if (bookPairRef.current === pair && generation === bookGenerationRef.current && request === bookRequestRef.current && wsVersion === bookWsVersionRef.current) {
+          // Keep the last confirmed ladder and observation time visible.
+          setBookFeed({ pair, healthy: false });
+        }
+      })
       .finally(() => {
+        clearTimeout(timeout);
         if (bookPendingRef.current === pending) bookPendingRef.current = null;
       });
   }, [pair, marketType]);
@@ -208,9 +223,10 @@ export function TradePage() {
     if (marketType !== 'spot' || !bookLive || pairResolving) return;
     refreshBook();
     const timer=browserSetInterval(()=>{if(!isBrowserInactive())refreshBook();},testPair ? 10_000 : 60_000);
-    const visible=()=>{if(!isBrowserInactive())refreshBook();};
+    const stopRequest=()=>{bookGenerationRef.current++;const pending=bookPendingRef.current;bookPendingRef.current=null;pending?.abort();};
+    const visible=()=>{if(isBrowserInactive())stopRequest();else refreshBook();};
     addBrowserActivityListener(visible);
-    return()=>{bookGenerationRef.current+=1;browserClearInterval(timer);removeBrowserActivityListener(visible);};
+    return()=>{stopRequest();browserClearInterval(timer);removeBrowserActivityListener(visible);};
   }, [pair,marketType,refreshBook,bookLive,testPair,pairResolving]);
 
   function handleOrderPlaced() {
@@ -297,7 +313,7 @@ export function TradePage() {
     return (
       <div className="trade-terminal cfd-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
-        <ConnectionBanner />
+        <ConnectionBanner key={`cfd:${selectedCfdSymbol}`} connected={!cfdLoadError && cfdTicker?.price != null} />
         <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="cfd">
           <CfdTickerBar symbol={selectedCfdSymbol} ticker={cfdTicker} />
           {mobileTabs}
@@ -329,8 +345,8 @@ export function TradePage() {
   return (
     <div className="trade-terminal spot-terminal market-reference terminal-studio vx-terminal" data-premium-terminal-preview>
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
-      {/* Simulated listings have their own feed; Kraken loss says nothing about their availability. */}
-      <ConnectionBanner key={testPair ? pair : 'spot'} connected={testPair ? testMarket.loaded && !testMarket.error && !!testMarket.asset : undefined} />
+      {/* Each terminal reports its actual public feed, not an unused venue socket. */}
+      <ConnectionBanner key={pair} connected={testPair ? testMarket.loaded && !testMarket.error && !!testMarket.asset : bookFeed.pair === pair && bookFeed.healthy} />
 
       <div className="terminal" data-mobile-tab={mobileTab} data-mobile-pane={mobilePane} data-mobile-market="spot">
         <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={openPairSearch} />
