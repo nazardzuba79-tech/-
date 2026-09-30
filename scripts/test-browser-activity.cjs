@@ -194,6 +194,40 @@ test('session changes reject a late old-account read',async()=>{
 test('aborted dormant read does not fire on wake',async()=>{
   const s=setup();s.hidden(true);const c=new AbortController();const read=s.api.browserFetch('/old-route',{signal:c.signal});c.abort();await assert.rejects(read,/Aborted/);await s.advance(1800000);s.hidden(false);await flush();await s.advance(151);assert.equal(s.calls.length,0);s.stop();
 });
+test('hourly admin reads keep their successful freshness across repeated tab returns', async () => {
+  const s = setup(); let reads = 0;
+  const reader = s.createVisibleRead(async () => { reads++; }, 3_600_000, true, false);
+  await flush(); assert.equal(reads, 1);
+  for (let i = 0; i < 3; i++) {
+    s.hidden(true); await s.advance(1000); s.hidden(false); await s.wake();
+    assert.equal(reads, 1, 'fresh admin data was forced to reload on return');
+  }
+  assert.equal(s.validations, 3, 'session validation must still run on every return');
+  s.hidden(true); await reader.refresh(); s.hidden(false); await s.wake();
+  assert.equal(reads, 2, 'explicit invalidation must bypass freshness');
+  s.hidden(true); await s.advance(3_600_001); assert.equal(reads, 2);
+  s.hidden(false); await s.wake(); assert.equal(reads, 3, 'expired data must reload once');
+  reader.stop(); s.stop();
+});
+
+test('a failed explicit admin refresh is retried on return even within the previous success TTL', async () => {
+  const s = setup(); let reads = 0;
+  const reader = s.createVisibleRead(async () => { if (++reads === 2) throw new Error('offline'); }, 3_600_000, true, false);
+  await flush(); await reader.refresh(); assert.equal(reads, 2);
+  await s.advance(1000); assert.equal(reads, 2, 'failure must not start a retry loop');
+  s.hidden(true); s.hidden(false); await s.wake();
+  assert.equal(reads, 3); assert.equal(s.api.getBrowserPhase(), 'active');
+  reader.stop(); s.stop();
+});
+
+test('a failed initial hourly admin read is retried once on return', async () => {
+  const s = setup(); let reads = 0;
+  const reader = s.createVisibleRead(async () => { if (++reads === 1) throw new Error('offline'); }, 3_600_000, true, false);
+  await flush(); s.hidden(true); s.hidden(false); await s.wake();
+  assert.equal(reads, 2); assert.equal(s.api.getBrowserPhase(), 'active');
+  reader.stop(); s.stop();
+});
+
 test('validation failure keeps transports stopped with no automatic retry',async()=>{
   const s=setup({validate:async()=>{throw new Error('offline');}});s.api.sleepBrowser();await s.wake();assert.equal(s.api.getBrowserPhase(),'error');await s.advance(1800000);s.input('pointermove');assert.equal(s.validations,1);assert.equal(s.calls.length,0);s.stop();
 });
