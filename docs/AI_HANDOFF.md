@@ -5197,3 +5197,132 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Bug found and fixed: `index.css` paints every text input's typed text white via `color` + `-webkit-text-fill-color` at higher specificity than one class, the placeholder grey-blue, and every `<option>` dark. On the light search fields the typed text was `#F5F6F8` on `#FFFBF4` (reproduced in the browser by removing the override). Overrides scoped to `.vx-kb input.vx-kb-search`, `.vx-kb select option` and the phone section `<select>` chevron.
 - Checks run: frontend `tsc -b`; Vite build; full frontend Jest 192 suites / 3,382 pass (6 skipped); `scripts/qa-academy-help.cjs` PASS on a production-like build, now with the OS in dark mode for every page (`colorScheme: 'dark'`): computed colours identical with the OS light or dark; a contrast audit of every text node in the reading area (headings, cards, sidebar, tables, open FAQ, glossary, status, typed search text, placeholders, phone section list + options) at 1440 and 375 — no light-on-light, lowest 5.06:1; Chrome forced dark (`--blink-settings=forceDarkModeEnabled=true`): a control block is darkened while Academy/Help paint `#F7F1E8`/`#FFFBF4` pixel-exact and the header stays dark. Faded (inactive) glossary letters are reported separately, not counted.
 - Not done: no screenshot on a real Safari/iOS device or a real Android «darken websites» setting; the forced-dark proof is Chromium's flag. Browser extensions such as Dark Reader are not covered.
+
+## Claude — 2026-09-30 — Support: Bybit-style headset button and an improved form (preview first)
+
+- Base: main `1affc9a3`; branch `claude/peaceful-volta-h5zw7g-support`; commit: the commit containing this entry. No PR yet: the owner asked to see it before it is added.
+- Owner request: the same support button as on Bybit's screenshot (a 50px round yellow button with a thin headset), and a better form inside.
+- Files:
+  - `SupportWidget.tsx`:
+    - the launcher is now 50px, in the site gold, with a headset icon; the X when open is kept;
+    - the header gets a headset avatar and an icon close button;
+    - the topic is four radio chips under «Тема обращения», first in the form;
+    - name and email share a row (one column under 480px), with the email hint kept;
+    - the message shows an `N / 2000` counter;
+    - the success and failure lines carry a mark.
+  - `SupportWidget.css`: new layout.
+  - `scripts/qa-support-form.cjs`: picks the topic chip instead of `selectOption`.
+- Preserved:
+  - one POST per send, no timers, no storage, a single profile read to prefill;
+  - honeypot, field limits, i18n keys (no new keys);
+  - the terminal pages' docked status-bar launcher (its CSS overrides the size; only the icon changes there).
+- Checks run:
+  - `tsc`: PASS; `supportForm.test.ts`: 10 passed.
+  - `qa-support-form.cjs` against a local Worker: PASS. It covers guest send, provider refusal, 25 s idle, signed-in prefill, and layout at 320/360/390/430/1440 with a keyboard viewport. Screenshots went to scratch; `docs/qa/support-form` is untouched.
+- Preview: artifact «Кнопка підтримки VOLTEX» (Було / Стало). Send is answered by the page itself; nothing is emailed.
+- Next: open a PR only after the owner approves.
+
+## Claude — 2026-09-30 — Withdrawal works from every button and reaches the admin queue
+
+- Base: main `1b045ab3`; branch `claude/peaceful-volta-h5zw7g-withdraw`; commit: the commit containing this entry.
+- Owner's request: a withdraw panel that takes the coin, amount, address and network, says the withdrawal can take up to 60 minutes, and delivers the request to the admin panel.
+
+### Root causes (reproduced locally)
+- **Cross trading accounts** (the owner and `PRIVATE_TRADING_TEST_USER_IDS`) keep their funds in the trading simulation, not in spot `Balance`. The panel read spot `/balances` only, so a 37 500 USD account saw «На спотовом счёте нет средств для вывода». The Wallet marks those rows `spendable: false`.
+- **The Unified Trading strip** declared `onWithdraw` but drew no withdraw button.
+- **The Futures account block** had Deposit and Transfer only.
+- **Invisible typed text.** Every Wallet text input was white on white. The app-wide `input:not([type=checkbox]):not([type=radio])` rule sets `-webkit-text-fill-color` to the dark theme's white, and a utility `color` cannot beat it. This affected the withdraw address and amount and the Transfer amount.
+
+### Changes
+- **Server**
+  - `Withdrawal.balanceHeld` (Boolean, default `true`) and migration `20260930190000_withdrawal_balance_held` (additive; existing rows keep `true`).
+  - `WithdrawalService.requestUnheldWithdrawal` records a request from a Cross trading account without touching any `Balance` row.
+    - It is checked against that account's own withdrawable figure, less earlier unheld requests that are PENDING, APPROVED or SENT for the same asset.
+    - It runs under `SELECT … FOR UPDATE` on the user row.
+  - `markSent` and `reject` skip the balance update for unheld requests.
+  - `/withdrawals`: POST branches on `isSimulationOnlyUser`. The new `GET /withdrawals/options` returns what is withdrawable, exactly as the POST checks it.
+    - TRADING: the native wallet rows. USDT is capped by the account's free margin (`private-trading/native/withdrawable.ts`).
+    - SPOT: spot `available`, plus the futures funds that must be transferred first.
+  - Stricter body: asset `[A-Z0-9]{1,20}`, network up to 32 characters, address one token up to 128 characters, amount a plain decimal with up to 18 decimal places.
+  - The admin list returns `balanceHeld`.
+- **Client**
+  - `wallet-v3/WithdrawModal.tsx` rebuilt on `/withdrawals/options`:
+    - coin, network per coin (`lib/withdrawNetworks.ts`: USDT TRC20/ERC20/BEP20/TON/SOL, BTC, ETH, BNB, TRX, SOL, TON), address checked against the network's form, amount with Max;
+    - «Вывод может занимать до 60 минут.» before sending, and a confirmation screen after;
+    - a «Перевести» hand-off when the money sits on futures.
+  - A «Вывести» button in the Unified Trading strip and in the Futures account block (to `/wallet?action=withdraw`).
+  - A `wallet.css` ink rule for inputs in both Wallet themes.
+  - 31 `withdraw.*` keys in all seven locales.
+  - Admin «Выводы»: «ждёт N мин» (red past 60) and «торговый счёт · без блокировки».
+- **Tests**
+  - `withdrawals.test.ts`: +11. `WithdrawalService.test.ts`: +5. `nativeWithdrawable.test.ts` and `withdrawNetworks.test.ts` are new.
+  - `i18nLanguageChunks`: `withdraw.*` asserted by name.
+  - Fingerprint guards reversed by exact text (`futuresTickerHeader` for api.ts, `futuresUiPolish` for FuturesAccountSummary). The WithdrawModal whole-file pin was replaced by behaviour checks in `walletUxRefinement`.
+- **QA script**: `scripts/qa-withdrawal-request.cjs`. It uses a throwaway Postgres, `prisma migrate deploy`, the real routers, the real native engine and wallet projection in memory, and the real built frontend in Chromium.
+
+### Behaviour the owner must know
+A Cross trading account's balance is NOT reduced by a request or by «Отправлено». The trading simulation has no external cash-flow event. The request only reserves the amount against further requests. Debiting the simulation balance would need a new engine event and is not done.
+
+### Checks run (local)
+- Builds: root `tsc` and `npm run build --prefix frontend`: PASS.
+- Full frontend Jest (the `frontend-full-suite.yml` command): 175 suites, 2,933 tests passed, 0 failed, 0 skipped. This ran before the last CSS-only rule (no inner focus outline in Wallet modals); the wallet/header suites were re-run after it: 138 passed.
+- Full backend Jest (`jest src`):
+  - 14 failures in 6 CFD/market-data/copy-canonical suites. The same 14 fail on unchanged `origin/main` in this container.
+  - 13 Postgres-gated suites could not start without `DATABASE_URL`. This is environmental and not caused by this change.
+  - Withdrawal/native suites re-run after the final build: 143 passed.
+- `scripts/qa-withdrawal-request.cjs` (Chromium, throwaway Postgres 16 with every migration applied): 5/5 checks passed.
+  - Ordinary client: TRC20 by default; a wrong-network address is refused; over-available is refused; `120,5` is accepted. The row is PENDING with `balanceHeld: true`, and spot moved 500 → 379.5 available + 120.5 locked.
+  - Cross trading account: the Unified strip button; 2000 USDT requested, `balanceHeld: false`, no `Balance` row touched.
+  - A second request sees 10 500 left; the server refuses 11 000 on its own.
+  - At 390 px: no sideways scroll.
+  - Admin: approve → «Отправлено» with a txid → SENT, and the lock is released to 379.5/0. «Отклонить» on the unheld request → REJECTED, nothing returned.
+- "Before" shots were taken with the unchanged main build in the same harness: the trading account shows «На спотовом счёте нет средств для вывода».
+
+### Not run
+- Production, the Windows/Postgres CI variants, and the Futures page in a browser. The Futures «Вывести» button is covered by the `futuresUiPolish` restore (exactly one such button) and the `/wallet?action=withdraw` deep link, which was exercised in the browser.
+
+### Unresolved
+- Debiting the Cross trading account when a request is SENT needs a native engine event. Until then its displayed balance stays unchanged after a payout, and only further requests are limited.
+- No Telegram notification. The admin sees new requests through the existing «Выводы» alert.
+
+### Follow-up: `admin-gate` CI on PR #360 (Claude, 2026-10-01)
+- **Failure:** `scripts/qa-admin-gate.cjs` step 8b waited for `[data-browser-phase="sleeping"]` to be *visible*. Since #355 (`f0f155eb`), `BrowserSleepNotice` keeps that phase only as a hidden marker.
+- **Not caused by #360:** the same timeout reproduced locally on unchanged `origin/main` `1b045ab3`. The workflow last ran green on `c5afc07c`, before #355. #360 re-triggered it by touching `frontend/src/lib/api.ts`.
+- **Fix:** that one wait now uses `{ state: 'attached' }`. Every other assertion in the step is unchanged: no reads while asleep, the wake reads once, the failed wake keeps the data, and the visible `error` notice.
+- **Also changed:** the 30 s waiting-time ticker in `AdminWithdrawalsPage` now uses `browserSetInterval`, like other display timers. It does not tick while the tab sleeps and catches up on wake.
+- **Checks run (local):**
+  - `scripts/qa-admin-gate.cjs` (Chromium, QA_OUT in scratch): ALL PASS (26).
+  - Frontend `tsc`, `vite build`: PASS.
+  - Full frontend Jest: 175 suites, 2,933 tests passed.
+
+### Released in #363 and checked on production (Claude, 2026-10-01)
+- #357 (support button) and #360 (withdrawal) were closed unmerged and shipped inside the combined release #363 (`8abcde87`). The two entries above came from those branches; #363 did not carry them.
+- **Code comparison against `8abcde87`:**
+  - The withdrawal server, schema, migration, Wallet panel, Futures button, admin queue and `qa-admin-gate.cjs` match #360's head `e1e755c8` exactly.
+  - The support widget was rebuilt by #363 as «VOLTEX Assistant». It keeps #357's 50px headset launcher.
+- **Production, read-only:**
+  - The `https://voltextech.net` bundle `index-sXVgb8CQ.js` carries `/withdrawals/options` and «Вывод может занимать до 60 минут.».
+  - Its WalletPage chunk carries `wallet-action-withdraw`, and its AdminWithdrawalsPage chunk carries `balanceHeld`.
+  - On `https://api.voltextech.net`:
+    - `GET /api/v1/withdrawals/options` answers 401 «Missing bearer token»;
+    - an unknown path under `/api/v1/withdrawals/` answers 404;
+    - so the new route is deployed.
+  - Not done: no signed-in production walkthrough and no real request (it needs the owner's login), and no direct check of the database migration.
+
+## Claude — 2026-10-01 — PR #372 shared-wallet cutover: NO-GO at Gate 0, nothing stopped or merged
+
+- Owner instruction: run `docs/OTC_SHARED_WALLET_CUTOVER.md` for PR #372 (owner: «Немає угод, добавляй»), but verify access to every tool needed for backup/restore, hold, migration and audits BEFORE any stop, and not start the stop without the means to finish.
+- Fresh fetch: main `a457809f` (#373). PR #372 head `c7a9161e` = the verified head. On that head 31 check runs succeeded and `deploy` was skipped (PR event); GitHub reports the PR mergeable (clean). The PR branch does not contain `a457809f` as an ancestor, so a merge creates a new merge commit; the PR body records a conflict-free virtual integration with #373.
+- Production API `/health` (read-only GET): `commit a457809f`, branch main, started 2026-10-01 14:53:01Z.
+- Access check failed, so Gate 0 is NO-GO:
+  - no Render API key, so no way to turn AutoDeploy off, deploy the hold command, read deploy and instance-termination events, or start the new version;
+  - no Neon API key, so no backup or restore rehearsal;
+  - no production database credentials, so no privileged read-only session check (`pg_stat_activity`, prepared transactions), no READ ONLY audits (`OTC_AUDIT_DATABASE_URL`, `FUTURES_AUDIT_DATABASE_URL`) and no operator credentials for `prisma migrate deploy`;
+  - no Cloudflare token;
+  - no Render, Neon or Cloudflare connector is installed. Render and Neon APIs answer 401 without a key.
+- Not done: no AutoDeploy change, no hold deploy, no merge, no migration, no audit, no database connection, no production write. OTC config, balances, deposits and demo data untouched.
+- Deploy initiators found for the owner's Gate 1 list:
+  - Render auto-deploy, set in Render;
+  - Cloudflare Pages builds the frontend on every push to main;
+  - `deploy-kyc-edge.yml` and `support-form.yml` deploy Cloudflare Workers on push to main.
+- Also in this commit: the #357/#360 handoff entries from `claude/peaceful-volta-h5zw7g-handoff` that never reached main (#363 shipped the code, not the notes), appended verbatim above this entry. No code from #357/#360 was re-applied.
