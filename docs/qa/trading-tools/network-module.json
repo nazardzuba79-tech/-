@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T06:07:27.624Z",
+  "generatedAt": "2026-10-01T06:24:16.342Z",
   "scope": "module-only",
   "environment": {
     "node": "v24.21.0",
@@ -172,70 +172,70 @@
   "isolatedStaticRequests": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module",
+      "path": "http://127.0.0.1:6262/__qa/module",
       "type": "document",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.css",
+      "path": "http://127.0.0.1:6262/__qa/module.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.js",
+      "path": "http://127.0.0.1:6262/__qa/module.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
       "type": "font",
       "category": "static",
       "external": false
@@ -244,7 +244,7 @@
   "isolatedRequestInitiators": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module",
+      "path": "http://127.0.0.1:6262/__qa/module",
       "initiator": {
         "type": "other",
         "frames": []
@@ -252,7 +252,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.css",
+      "path": "http://127.0.0.1:6262/__qa/module.css",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -260,7 +260,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.js",
+      "path": "http://127.0.0.1:6262/__qa/module.js",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -268,7 +268,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -276,7 +276,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -284,7 +284,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -292,7 +292,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -300,7 +300,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -308,7 +308,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -316,7 +316,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
       "initiator": {
         "type": "parser",
         "frames": []

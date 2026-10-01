@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T06:07:27.624Z",
+  "generatedAt": "2026-10-01T06:24:16.342Z",
   "scope": "combined",
   "environment": {
     "node": "v24.21.0",
@@ -158,6 +158,13 @@
   ],
   "integratedRows": [
     {
+      "action": "integrated/desktop-keyboard-Trading-Tools",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 7
+    },
+    {
       "action": "integrated/pnl/example-edit-copy-method-reset",
       "calculator": 0,
       "shell": 0,
@@ -204,7 +211,7 @@
       "calculator": 0,
       "shell": 0,
       "static": 2,
-      "timersScheduled": 5
+      "timersScheduled": 4
     },
     {
       "action": "integrated/12h-virtual-idle-and-wake",
@@ -237,6 +244,13 @@
         "overlap": false,
         "position": "relative"
       },
+      "navigation": {
+        "desktop": false,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
+      },
       "pageErrors": []
     },
     {
@@ -260,6 +274,13 @@
         },
         "overlap": false,
         "position": "relative"
+      },
+      "navigation": {
+        "desktop": true,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
       },
       "pageErrors": []
     },
@@ -285,6 +306,13 @@
         "overlap": false,
         "position": "relative"
       },
+      "navigation": {
+        "desktop": true,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
+      },
       "pageErrors": []
     },
     {
@@ -308,6 +336,13 @@
         },
         "overlap": false,
         "position": "relative"
+      },
+      "navigation": {
+        "desktop": false,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
       },
       "pageErrors": []
     },
@@ -333,6 +368,13 @@
         "overlap": false,
         "position": "relative"
       },
+      "navigation": {
+        "desktop": false,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
+      },
       "pageErrors": []
     },
     {
@@ -356,6 +398,13 @@
         },
         "overlap": false,
         "position": "relative"
+      },
+      "navigation": {
+        "desktop": false,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
       },
       "pageErrors": []
     },
@@ -381,6 +430,13 @@
         "overlap": false,
         "position": "relative"
       },
+      "navigation": {
+        "desktop": false,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
+      },
       "pageErrors": []
     },
     {
@@ -404,6 +460,13 @@
         },
         "overlap": false,
         "position": "relative"
+      },
+      "navigation": {
+        "desktop": false,
+        "keyboardReachable": true,
+        "singleVisibleEntry": true,
+        "currentPage": true,
+        "arbitragePreserved": true
       },
       "pageErrors": []
     }
@@ -429,70 +492,70 @@
   "isolatedStaticRequests": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module",
+      "path": "http://127.0.0.1:6262/__qa/module",
       "type": "document",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.css",
+      "path": "http://127.0.0.1:6262/__qa/module.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.js",
+      "path": "http://127.0.0.1:6262/__qa/module.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
       "type": "font",
       "category": "static",
       "external": false
@@ -501,7 +564,7 @@
   "isolatedRequestInitiators": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module",
+      "path": "http://127.0.0.1:6262/__qa/module",
       "initiator": {
         "type": "other",
         "frames": []
@@ -509,7 +572,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.css",
+      "path": "http://127.0.0.1:6262/__qa/module.css",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -517,7 +580,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/__qa/module.js",
+      "path": "http://127.0.0.1:6262/__qa/module.js",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -525,7 +588,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -533,7 +596,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -541,7 +604,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -549,7 +612,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -557,7 +620,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -565,7 +628,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -573,7 +636,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -587,6 +650,13 @@
     "timers": 3,
     "copies": 0,
     "static": 49
+  },
+  "navigation": {
+    "desktop": true,
+    "keyboardReachable": true,
+    "singleVisibleEntry": true,
+    "currentPage": true,
+    "arbitragePreserved": true
   },
   "supportDock": {
     "tools": {
@@ -609,53 +679,53 @@
     {
       "kind": "fetch",
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "page": "/tools",
-      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+      "initiator": "    at record (http://127.0.0.1:6262/tools:7:137)\n    at window.fetch (http://127.0.0.1:6262/tools:12:7)\n    at Mm (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:4624)\n    at async E (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:14117)"
     },
     {
       "kind": "fetch",
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "page": "/tools",
-      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at DS (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8000)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2099"
+      "initiator": "    at record (http://127.0.0.1:6262/tools:7:137)\n    at window.fetch (http://127.0.0.1:6262/tools:12:7)\n    at DS (http://127.0.0.1:6262/assets/index-BdPevyJf.js:250:8000)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:2099"
     },
     {
       "kind": "fetch",
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "page": "/tools",
-      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+      "initiator": "    at record (http://127.0.0.1:6262/tools:7:137)\n    at window.fetch (http://127.0.0.1:6262/tools:12:7)\n    at Mm (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:4624)\n    at async E (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:14117)"
     },
     {
       "kind": "fetch",
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "page": "/tools",
-      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+      "initiator": "    at record (http://127.0.0.1:6262/tools:7:137)\n    at window.fetch (http://127.0.0.1:6262/tools:12:7)\n    at Mm (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:4624)\n    at async E (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:14117)"
     },
     {
       "kind": "fetch",
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "page": "/tools",
-      "initiator": "    at record (http://127.0.0.1:4782/tools?calc=pnl:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools?calc=pnl:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+      "initiator": "    at record (http://127.0.0.1:6262/tools?calc=pnl:7:137)\n    at window.fetch (http://127.0.0.1:6262/tools?calc=pnl:12:7)\n    at Mm (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:4624)\n    at async E (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:14117)"
     }
   ],
   "routeAwayTransports": [
     {
       "kind": "fetch",
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/market/display/spot-snapshot",
+      "path": "http://127.0.0.1:6262/api/v1/market/display/spot-snapshot",
       "page": "/legal/terms",
-      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)"
+      "initiator": "    at record (http://127.0.0.1:6262/tools:7:137)\n    at window.fetch (http://127.0.0.1:6262/tools:12:7)\n    at Mm (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:4624)"
     },
     {
       "kind": "fetch",
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "page": "/legal/terms",
-      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+      "initiator": "    at record (http://127.0.0.1:6262/tools:7:137)\n    at window.fetch (http://127.0.0.1:6262/tools:12:7)\n    at Mm (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:4624)\n    at async E (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:14117)"
     }
   ],
   "integratedTimers": [
@@ -663,1607 +733,1649 @@
       "kind": "setTimeout",
       "delay": 20000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/tools:146:9\n    at http://127.0.0.1:4782/tools:162:9"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at http://127.0.0.1:6262/tools:146:9\n    at http://127.0.0.1:6262/tools:162:9"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at D1 (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:5502)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8998"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at D1 (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:5502)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:250:8998"
     },
     {
       "kind": "setTimeout",
       "delay": 3000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/tools:145:50"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at http://127.0.0.1:6262/tools:145:50"
     },
     {
       "kind": "setTimeout",
       "delay": 299999,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 300000,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 299999,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
-    },
-    {
-      "kind": "setTimeout",
-      "delay": 299999,
-      "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 90000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at DS (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:7941)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2099\n    at ya (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2463)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at DS (http://127.0.0.1:6262/assets/index-BdPevyJf.js:250:7941)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:2099\n    at ya (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:2463)"
     },
     {
       "kind": "setTimeout",
       "delay": 3000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8648\n    at Gi (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:41:24250)\n    at An (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:41:42262)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:250:8648\n    at Gi (http://127.0.0.1:6262/assets/index-BdPevyJf.js:41:24250)\n    at An (http://127.0.0.1:6262/assets/index-BdPevyJf.js:41:42262)"
     },
     {
       "kind": "setTimeout",
       "delay": 150,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2200\n    at new Promise (<anonymous>)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2185"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:2200\n    at new Promise (<anonymous>)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:2185"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2410"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:2410"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setInterval",
       "delay": 60000,
       "page": "/legal/terms",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at c (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:3209)\n    at wu (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:3253)\n    at Lt.retimeAndStart (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:11693)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at c (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:3209)\n    at wu (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:3253)\n    at It.retimeAndStart (http://127.0.0.1:6262/assets/Nav-CRcaubhV.js:16:11693)"
     },
     {
       "kind": "setTimeout",
       "delay": 15000,
       "page": "/legal/terms",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at Oe (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:3363)\n    at Lt.refresh (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:9986)\n    at Lt.subscribe (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:9598)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at Pe (http://127.0.0.1:6262/assets/Nav-CRcaubhV.js:16:3363)\n    at It.refresh (http://127.0.0.1:6262/assets/Nav-CRcaubhV.js:16:9986)\n    at It.subscribe (http://127.0.0.1:6262/assets/Nav-CRcaubhV.js:16:9598)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at t (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:6127)"
     },
     {
       "kind": "setTimeout",
       "delay": 20000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools?calc=pnl:25:142)\n    at http://127.0.0.1:4782/tools?calc=pnl:146:9\n    at http://127.0.0.1:4782/tools?calc=pnl:162:9"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools?calc=pnl:25:142)\n    at http://127.0.0.1:6262/tools?calc=pnl:146:9\n    at http://127.0.0.1:6262/tools?calc=pnl:162:9"
     },
     {
       "kind": "setTimeout",
-      "delay": 299999,
+      "delay": 300000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools?calc=pnl:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at D1 (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:5502)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8998"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools?calc=pnl:25:142)\n    at kr (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:1347)\n    at D1 (http://127.0.0.1:6262/assets/index-BdPevyJf.js:247:5502)\n    at http://127.0.0.1:6262/assets/index-BdPevyJf.js:250:8998"
     },
     {
       "kind": "setTimeout",
       "delay": 3000,
       "page": "/tools",
-      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools?calc=pnl:25:142)\n    at http://127.0.0.1:4782/tools?calc=pnl:145:50"
+      "initiator": "    at window.<computed> (http://127.0.0.1:6262/tools?calc=pnl:25:142)\n    at http://127.0.0.1:6262/tools?calc=pnl:145:50"
     }
   ],
   "integratedStaticRequests": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/tools",
+      "path": "http://127.0.0.1:6262/tools",
       "type": "document",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "path": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
+      "path": "http://127.0.0.1:6262/assets/index-B__prgon.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-od1YDN4N.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "path": "http://127.0.0.1:6262/assets/Nav-CRcaubhV.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-BepRawIf.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-CT06_0CO.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "path": "http://127.0.0.1:6262/assets/Footer-CSzc8ASM.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "path": "http://127.0.0.1:6262/assets/calculator-BvfDzrdR.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "path": "http://127.0.0.1:6262/assets/info-B3vTvMbQ.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "path": "http://127.0.0.1:6262/assets/shield-check-B11XVmFs.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "path": "http://127.0.0.1:6262/assets/chart-column-DdBdVnlj.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "path": "http://127.0.0.1:6262/assets/rotate-ccw-DOWIWvcu.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "path": "http://127.0.0.1:6262/assets/check-CmYIJeR0.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-CVfnJYpI.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "type": "fetch",
       "category": "shell",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
-      "type": "font",
-      "category": "static",
-      "external": false
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
-      "type": "font",
-      "category": "static",
-      "external": false
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
-      "type": "font",
-      "category": "static",
-      "external": false
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
-      "type": "font",
-      "category": "static",
-      "external": false
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
-      "type": "font",
-      "category": "static",
-      "external": false
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
-      "type": "font",
-      "category": "static",
-      "external": false
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
-      "type": "font",
-      "category": "static",
-      "external": false
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BJ1CSAnx.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "path": "http://127.0.0.1:6262/assets/useVtaSpotAccount-C-p4ccY5.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "path": "http://127.0.0.1:6262/assets/visibleRead-DuVcVCgl.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-o04--IGe.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "path": "http://127.0.0.1:6262/assets/useFuturesAccount-BeEdPaXO.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-ChbuLmjS.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-C_xCka9A.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-CiRlBNqy.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "path": "http://127.0.0.1:6262/assets/star-DSe78J1c.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "path": "http://127.0.0.1:6262/assets/Skeleton-Ba1aMJNc.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-CP32HNnI.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-DUeCozDt.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BPnO3cHA.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-9k3jXxmo.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "path": "http://127.0.0.1:6262/assets/useVisibleAccountRead-BmY78n16.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "path": "http://127.0.0.1:6262/assets/nativeDemoApi-BaUuwbaf.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "path": "http://127.0.0.1:6262/assets/privateTradingError-D44Lvt3k.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "path": "http://127.0.0.1:6262/assets/search-CysJjeVg.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-DRpJpw7M.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-down-BMMbwCHm.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-down-Z0jHT9Zu.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "path": "http://127.0.0.1:6262/assets/crown-D3cVu-Ju.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-D5csrReO.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesPage-DMpAnaBW.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesStudio-rEQDfgZA.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "path": "http://127.0.0.1:6262/assets/useLiveMarket-WKUx__iP.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "path": "http://127.0.0.1:6262/assets/catalogueStore-CEZ0OS3J.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "type": "fetch",
       "category": "shell",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "type": "fetch",
       "category": "shell",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/LegalPage-CPQR85t-.js",
+      "path": "http://127.0.0.1:6262/assets/LegalPage-317-0iSc.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "type": "fetch",
       "category": "shell",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "type": "fetch",
       "category": "shell",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/tools",
+      "path": "http://127.0.0.1:6262/tools",
       "type": "document",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "path": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
+      "path": "http://127.0.0.1:6262/assets/index-B__prgon.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-od1YDN4N.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "path": "http://127.0.0.1:6262/assets/Nav-CRcaubhV.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-BepRawIf.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-CT06_0CO.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "path": "http://127.0.0.1:6262/assets/Footer-CSzc8ASM.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "path": "http://127.0.0.1:6262/assets/calculator-BvfDzrdR.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "path": "http://127.0.0.1:6262/assets/info-B3vTvMbQ.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "path": "http://127.0.0.1:6262/assets/shield-check-B11XVmFs.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "path": "http://127.0.0.1:6262/assets/chart-column-DdBdVnlj.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "path": "http://127.0.0.1:6262/assets/rotate-ccw-DOWIWvcu.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "path": "http://127.0.0.1:6262/assets/check-CmYIJeR0.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-CVfnJYpI.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "type": "fetch",
       "category": "shell",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
       "type": "font",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BJ1CSAnx.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "path": "http://127.0.0.1:6262/assets/useVtaSpotAccount-C-p4ccY5.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "path": "http://127.0.0.1:6262/assets/visibleRead-DuVcVCgl.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-o04--IGe.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "path": "http://127.0.0.1:6262/assets/useFuturesAccount-BeEdPaXO.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-ChbuLmjS.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-C_xCka9A.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-CiRlBNqy.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "path": "http://127.0.0.1:6262/assets/star-DSe78J1c.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "path": "http://127.0.0.1:6262/assets/Skeleton-Ba1aMJNc.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-CP32HNnI.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-DUeCozDt.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BPnO3cHA.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-9k3jXxmo.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "path": "http://127.0.0.1:6262/assets/useVisibleAccountRead-BmY78n16.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "path": "http://127.0.0.1:6262/assets/nativeDemoApi-BaUuwbaf.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "path": "http://127.0.0.1:6262/assets/privateTradingError-D44Lvt3k.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "path": "http://127.0.0.1:6262/assets/search-CysJjeVg.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-DRpJpw7M.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-down-BMMbwCHm.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-down-Z0jHT9Zu.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "path": "http://127.0.0.1:6262/assets/crown-D3cVu-Ju.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-D5csrReO.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesPage-DMpAnaBW.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesStudio-rEQDfgZA.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "path": "http://127.0.0.1:6262/assets/useLiveMarket-WKUx__iP.js",
       "type": "script",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "path": "http://127.0.0.1:6262/assets/catalogueStore-CEZ0OS3J.js",
       "type": "script",
       "category": "static",
       "external": false
@@ -2272,7 +2384,7 @@
   "integratedRequestInitiators": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/tools",
+      "path": "http://127.0.0.1:6262/tools",
       "initiator": {
         "type": "other",
         "frames": []
@@ -2280,7 +2392,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "path": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -2288,15 +2400,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "https://fonts.googleapis.com/css2",
+      "path": "http://127.0.0.1:6262/assets/index-B__prgon.css",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -2320,7 +2424,15 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-od1YDN4N.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2328,7 +2440,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "path": "http://127.0.0.1:6262/assets/Nav-CRcaubhV.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2336,7 +2448,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-BepRawIf.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2344,28 +2456,28 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-CT06_0CO.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
             "function": "_g",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 9
           }
         ]
@@ -2373,7 +2485,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "path": "http://127.0.0.1:6262/assets/Footer-CSzc8ASM.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2381,7 +2493,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "path": "http://127.0.0.1:6262/assets/calculator-BvfDzrdR.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2389,7 +2501,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "path": "http://127.0.0.1:6262/assets/info-B3vTvMbQ.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2397,7 +2509,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "path": "http://127.0.0.1:6262/assets/shield-check-B11XVmFs.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2405,7 +2517,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "path": "http://127.0.0.1:6262/assets/chart-column-DdBdVnlj.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2413,7 +2525,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "path": "http://127.0.0.1:6262/assets/rotate-ccw-DOWIWvcu.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2421,7 +2533,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "path": "http://127.0.0.1:6262/assets/check-CmYIJeR0.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2429,28 +2541,28 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-CVfnJYpI.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
             "function": "_g",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 9
           }
         ]
@@ -2458,18 +2570,74 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "window.fetch",
-            "file": "http://127.0.0.1:4782/tools",
+            "file": "http://127.0.0.1:6262/tools",
             "line": 13
           },
           {
             "function": "Mm",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           }
         ]
@@ -2477,63 +2645,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BJ1CSAnx.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2541,7 +2653,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "path": "http://127.0.0.1:6262/assets/useVtaSpotAccount-C-p4ccY5.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2549,7 +2661,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "path": "http://127.0.0.1:6262/assets/visibleRead-DuVcVCgl.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2557,7 +2669,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-o04--IGe.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2565,7 +2677,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "path": "http://127.0.0.1:6262/assets/useFuturesAccount-BeEdPaXO.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2573,23 +2685,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-ChbuLmjS.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -2602,7 +2714,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-C_xCka9A.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2610,23 +2722,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-CiRlBNqy.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -2639,7 +2751,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "path": "http://127.0.0.1:6262/assets/star-DSe78J1c.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2647,7 +2759,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "path": "http://127.0.0.1:6262/assets/Skeleton-Ba1aMJNc.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2655,7 +2767,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-CP32HNnI.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2663,23 +2775,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-DUeCozDt.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -2692,23 +2804,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BPnO3cHA.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -2721,7 +2833,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-9k3jXxmo.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2729,7 +2841,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "path": "http://127.0.0.1:6262/assets/useVisibleAccountRead-BmY78n16.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2737,7 +2849,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "path": "http://127.0.0.1:6262/assets/nativeDemoApi-BaUuwbaf.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2745,7 +2857,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "path": "http://127.0.0.1:6262/assets/privateTradingError-D44Lvt3k.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2753,7 +2865,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "path": "http://127.0.0.1:6262/assets/search-CysJjeVg.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2761,7 +2873,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-DRpJpw7M.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2769,7 +2881,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-down-BMMbwCHm.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2777,7 +2889,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-down-Z0jHT9Zu.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2785,7 +2897,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "path": "http://127.0.0.1:6262/assets/crown-D3cVu-Ju.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2793,23 +2905,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-D5csrReO.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -2822,18 +2934,18 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesPage-DMpAnaBW.js",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           }
         ]
@@ -2841,7 +2953,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesStudio-rEQDfgZA.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2849,7 +2961,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "path": "http://127.0.0.1:6262/assets/useLiveMarket-WKUx__iP.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2857,7 +2969,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "path": "http://127.0.0.1:6262/assets/catalogueStore-CEZ0OS3J.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2865,7 +2977,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -2873,7 +2985,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -2881,28 +2993,28 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "window.fetch",
-            "file": "http://127.0.0.1:4782/tools",
+            "file": "http://127.0.0.1:6262/tools",
             "line": 13
           },
           {
             "function": "DS",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 249
           },
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
             "function": "ya",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           }
         ]
@@ -2910,18 +3022,18 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "window.fetch",
-            "file": "http://127.0.0.1:4782/tools",
+            "file": "http://127.0.0.1:6262/tools",
             "line": 13
           },
           {
             "function": "Mm",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           }
         ]
@@ -2929,7 +3041,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/LegalPage-CPQR85t-.js",
+      "path": "http://127.0.0.1:6262/assets/LegalPage-317-0iSc.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -2937,18 +3049,18 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "window.fetch",
-            "file": "http://127.0.0.1:4782/tools",
+            "file": "http://127.0.0.1:6262/tools",
             "line": 13
           },
           {
             "function": "Mm",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           }
         ]
@@ -2956,18 +3068,18 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "window.fetch",
-            "file": "http://127.0.0.1:4782/tools",
+            "file": "http://127.0.0.1:6262/tools",
             "line": 13
           },
           {
             "function": "Mm",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           }
         ]
@@ -2975,7 +3087,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/tools",
+      "path": "http://127.0.0.1:6262/tools",
       "initiator": {
         "type": "other",
         "frames": []
@@ -2983,7 +3095,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "path": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -2991,15 +3103,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
-      "initiator": {
-        "type": "parser",
-        "frames": []
-      }
-    },
-    {
-      "method": "GET",
-      "path": "https://fonts.googleapis.com/css2",
+      "path": "http://127.0.0.1:6262/assets/index-B__prgon.css",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3023,7 +3127,15 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-od1YDN4N.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3031,7 +3143,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "path": "http://127.0.0.1:6262/assets/Nav-CRcaubhV.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3039,7 +3151,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-BepRawIf.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3047,28 +3159,28 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "path": "http://127.0.0.1:6262/assets/DepositModal-CT06_0CO.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
             "function": "_g",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 9
           }
         ]
@@ -3076,7 +3188,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "path": "http://127.0.0.1:6262/assets/Footer-CSzc8ASM.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3084,7 +3196,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "path": "http://127.0.0.1:6262/assets/calculator-BvfDzrdR.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3092,7 +3204,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "path": "http://127.0.0.1:6262/assets/info-B3vTvMbQ.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3100,7 +3212,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "path": "http://127.0.0.1:6262/assets/shield-check-B11XVmFs.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3108,7 +3220,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "path": "http://127.0.0.1:6262/assets/chart-column-DdBdVnlj.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3116,7 +3228,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "path": "http://127.0.0.1:6262/assets/rotate-ccw-DOWIWvcu.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3124,7 +3236,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "path": "http://127.0.0.1:6262/assets/check-CmYIJeR0.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3132,28 +3244,28 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "path": "http://127.0.0.1:6262/assets/TradingToolsPage-CVfnJYpI.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
             "function": "_g",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 9
           }
         ]
@@ -3161,18 +3273,18 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/api/v1/me",
+      "path": "http://127.0.0.1:6262/api/v1/me",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "window.fetch",
-            "file": "http://127.0.0.1:4782/tools",
+            "file": "http://127.0.0.1:6262/tools",
             "line": 13
           },
           {
             "function": "Mm",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           }
         ]
@@ -3180,7 +3292,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-700.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3188,7 +3300,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3196,7 +3308,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-400.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3204,7 +3316,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-600.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3212,7 +3324,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-500.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3220,7 +3332,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/latin-500.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3228,7 +3340,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "path": "http://127.0.0.1:6262/fonts/ibm-plex-sans/cyrillic-600.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -3236,7 +3348,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BJ1CSAnx.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3244,7 +3356,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "path": "http://127.0.0.1:6262/assets/useVtaSpotAccount-C-p4ccY5.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3252,7 +3364,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "path": "http://127.0.0.1:6262/assets/visibleRead-DuVcVCgl.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3260,7 +3372,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-o04--IGe.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3268,7 +3380,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "path": "http://127.0.0.1:6262/assets/useFuturesAccount-BeEdPaXO.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3276,23 +3388,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "path": "http://127.0.0.1:6262/assets/VoltexTerminalSystem-ChbuLmjS.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -3305,7 +3417,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-C_xCka9A.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3313,23 +3425,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "path": "http://127.0.0.1:6262/assets/TerminalPremium-CiRlBNqy.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -3342,7 +3454,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "path": "http://127.0.0.1:6262/assets/star-DSe78J1c.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3350,7 +3462,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "path": "http://127.0.0.1:6262/assets/Skeleton-Ba1aMJNc.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3358,7 +3470,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-CP32HNnI.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3366,23 +3478,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "path": "http://127.0.0.1:6262/assets/useCfdTickers-DUeCozDt.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -3395,23 +3507,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "path": "http://127.0.0.1:6262/assets/TradePage-BPnO3cHA.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -3424,7 +3536,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-9k3jXxmo.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3432,7 +3544,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "path": "http://127.0.0.1:6262/assets/useVisibleAccountRead-BmY78n16.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3440,7 +3552,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "path": "http://127.0.0.1:6262/assets/nativeDemoApi-BaUuwbaf.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3448,7 +3560,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "path": "http://127.0.0.1:6262/assets/privateTradingError-D44Lvt3k.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3456,7 +3568,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "path": "http://127.0.0.1:6262/assets/search-CysJjeVg.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3464,7 +3576,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-DRpJpw7M.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3472,7 +3584,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-down-BMMbwCHm.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3480,7 +3592,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "path": "http://127.0.0.1:6262/assets/arrow-up-down-Z0jHT9Zu.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3488,7 +3600,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "path": "http://127.0.0.1:6262/assets/crown-D3cVu-Ju.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3496,23 +3608,23 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "path": "http://127.0.0.1:6262/assets/WalletPage-D5csrReO.css",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "B",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           },
           {
             "function": "e",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
@@ -3525,18 +3637,18 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesPage-DMpAnaBW.js",
       "initiator": {
         "type": "script",
         "frames": [
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 246
           },
           {
             "function": "",
-            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "file": "http://127.0.0.1:6262/assets/index-BdPevyJf.js",
             "line": 40
           }
         ]
@@ -3544,7 +3656,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "path": "http://127.0.0.1:6262/assets/FuturesStudio-rEQDfgZA.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3552,7 +3664,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "path": "http://127.0.0.1:6262/assets/useLiveMarket-WKUx__iP.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3560,7 +3672,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "path": "http://127.0.0.1:6262/assets/catalogueStore-CEZ0OS3J.js",
       "initiator": {
         "type": "script",
         "frames": []
@@ -3571,37 +3683,37 @@
     {
       "path": "https://fonts.googleapis.com/css2",
       "directive": "style-src-elem",
-      "source": "http://127.0.0.1:4782/tools",
+      "source": "http://127.0.0.1:6262/tools",
       "line": 186
     },
     {
       "path": "https://fonts.googleapis.com/css2",
       "directive": "style-src-elem",
-      "source": "http://127.0.0.1:4782/tools",
+      "source": "http://127.0.0.1:6262/tools",
       "line": 192
     },
     {
       "path": "https://fonts.googleapis.com/css2",
       "directive": "style-src-elem",
-      "source": "http://127.0.0.1:4782/tools",
+      "source": "http://127.0.0.1:6262/tools",
       "line": 198
     },
     {
       "path": "https://fonts.googleapis.com/css2",
       "directive": "style-src-elem",
-      "source": "http://127.0.0.1:4782/tools",
+      "source": "http://127.0.0.1:6262/tools",
       "line": 186
     },
     {
       "path": "https://fonts.googleapis.com/css2",
       "directive": "style-src-elem",
-      "source": "http://127.0.0.1:4782/tools",
+      "source": "http://127.0.0.1:6262/tools",
       "line": 192
     },
     {
       "path": "https://fonts.googleapis.com/css2",
       "directive": "style-src-elem",
-      "source": "http://127.0.0.1:4782/tools",
+      "source": "http://127.0.0.1:6262/tools",
       "line": 198
     }
   ],
@@ -3613,72 +3725,72 @@
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:44.126Z"
+      "at": "2026-10-01T06:24:33.492Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:48.141Z"
+      "at": "2026-10-01T06:24:37.370Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:48.225Z"
+      "at": "2026-10-01T06:24:37.453Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:48.284Z"
+      "at": "2026-10-01T06:24:37.554Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:48.317Z"
+      "at": "2026-10-01T06:24:37.571Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:48.488Z"
+      "at": "2026-10-01T06:24:37.738Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:49.317Z"
+      "at": "2026-10-01T06:24:38.569Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:50.261Z"
+      "at": "2026-10-01T06:24:39.577Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:51.216Z"
+      "at": "2026-10-01T06:24:40.683Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:52.186Z"
+      "at": "2026-10-01T06:24:41.715Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:53.221Z"
+      "at": "2026-10-01T06:24:42.630Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:54.076Z"
+      "at": "2026-10-01T06:24:43.618Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:56.268Z"
+      "at": "2026-10-01T06:24:45.865Z"
     },
     {
       "method": "GET",
       "path": "/api/v1/me",
-      "at": "2026-10-01T06:07:57.271Z"
+      "at": "2026-10-01T06:24:46.868Z"
     }
   ]
 }

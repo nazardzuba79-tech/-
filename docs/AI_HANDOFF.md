@@ -5147,3 +5147,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Windows complete frontend snapshot: 3,285 pass / 9 failures. Same nine path-separator audit failures independently reproduced on untouched base (64 pass / 9 fail in the six affected suites). Assertions were not weakened; Linux complete-suite CI remains the publication review gate. Final math/route edits passed the targeted selection after that snapshot.
 - Detailed models, exact units/limits, source hashes, bundle deltas, reproducible commands, measurements, baseline diagnostics and desktop/mobile screenshots: `docs/qa/trading-tools/README.md` and sibling artifacts.
 - Boundaries: no production access, no merge, no deploy, no owner token credit/sale. No physical mobile keyboard, Safari/Firefox or actual 12-hour soak verification. Virtual clock tests and fixture browsers are explicitly labeled. Removing this feature must preserve the independent 500 deposit policy and unrelated main changes.
+
+
+### Trading Tools PR #364 — CI follow-up, 2026-10-01
+
+- Source head: `750926c53b0b7807596acee821dd68f7e18910f8`; evidence-only follow-up is recorded in PR metadata.
+- First Linux full frontend CI passed 3,298 tests / 183 suites. CI found a genuine 1440 px header fit regression (19 px clearance vs required 20): Tools now lives in the existing desktop Trading dropdown, preserving one mobile drawer entry. Local unchanged Futures fixture measures 125 px; two navigation regressions raise targeted Tools count to 179/179. Global styles and fit assertions are unchanged.
+- The new 500 deposit rule invalidated an existing 400 USDT READY fixture. It now uses 500; a new explicit 400 case stays awaiting top-up. All 7 admin customer tests pass; no runtime accounting change.
+- Final local frontend build passes; Tools browser 21 isolated + 9 integrated groups pass across eight widths. Refreshed reports/screenshots and source-matched bundle evidence. Final-head CI remains authoritative in PR #364; do not merge or deploy.

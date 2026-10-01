@@ -6,12 +6,12 @@ Review only. No merge, deployment, production database access, financial writes 
 
 - Original owner-specified starting point: `1b045ab34c09e2b95931dd46c5f3a1c5f54ad1c4`.
 - Fresh base used for this review: `8abcde87e039030a6bed57732153603a49bf561f` (`main`, including release #363).
-- Implementation head: `668cdde6b53e0d1c023953cc94c040d6016881bb`. The final documentation-only head is recorded in the PR description and completion report; `git rev-parse HEAD` identifies any downloaded checkout exactly.
+- Implementation head: `750926c53b0b7807596acee821dd68f7e18910f8`. The final documentation-only head is recorded in the PR description and completion report; `git rev-parse HEAD` identifies any downloaded checkout exactly.
 - Branch: `codex/trading-tools-20261001`.
 - The newer main's Arbitrage navigation, Assistant and withdrawal work are preserved. In particular, Arbitrage stays inside the Trading menu.
 - Owner's explicit follow-up changes the deposit minimum from $300 to **$500 and its cryptocurrency equivalent**. That policy change is included in this one PR; it is independent of the calculator models.
 
-Open `/tools` through the existing authenticated shell. The navigation entry is **Инструменты**. `?calc=` accepts only `pnl`, `size`, `liquidation`, `risk-reward`, `dca`, `fees`; it never contains financial inputs.
+Open `/tools` through the existing authenticated shell. Desktop navigation: **Торговля → Инструменты**; mobile: one **Инструменты** entry in the existing drawer. `?calc=` accepts only `pnl`, `size`, `liquidation`, `risk-reward`, `dca`, `fees`; it never contains financial inputs.
 
 Local fixture preview:
 
@@ -36,6 +36,7 @@ Then open `http://127.0.0.1:4274/tools`. The server is loopback-only and serves 
 | `src/config/limits.ts`, `frontend/src/lib/depositMinimum.ts` | Canonical server/client minimum changed to 500. Existing quote freshness and valuation rules retained. |
 | `adminUserActivity.ts`, `AdminDepositsPage.tsx` | Admin fallbacks use the same client constant instead of a stale literal 300. |
 | Deposit policy/API comments and deposit unit/browser fixtures | Boundary, equivalent-crypto, aggregation, credit idempotency, error and responsive regression checks. |
+| `adminCustomers.test.ts` | Customer KPI fixture updated to 500, with a new 400-under-minimum regression. No customer service behavior changed. |
 | `supportForm.test.ts` | Existing Assistant minimum-deposit answer now expects $500. Runtime Assistant already reads the canonical constant; no Assistant logic was changed. |
 | `scripts/qa-trading-tools.cjs`, `scripts/serve-trading-tools-review.cjs`, `docs/qa/trading-tools/*` | Local-only reproducible browser harness and measured review evidence. |
 
@@ -72,15 +73,17 @@ Environment: Windows, Node `24.21.0`, Jest 29, Chromium `151.0.7922.34`; Python 
 | Frontend TypeScript + production Vite build | PASS; existing shared-chunk size warning remains |
 | Pure math unit/golden/invariant tests | 160 PASS |
 | Rendered result regressions | 8 PASS |
-| Header/lazy-route/session integration unit tests | 9 PASS; combined final tools selection: 177 / 177 |
+| Header/lazy-route/session integration unit tests | 11 PASS; combined final tools selection: 179 / 179 |
 | Owner reference checked independently in Python | 42 / 42 PASS |
 | Final backend deposit service/API tests | 26 / 26 PASS |
+| Admin customer activity/KPI regression | 7 / 7 PASS, including 400 remaining below the new 500 minimum |
+| Linux full frontend CI, first published head 322cb471 | 3,298 / 3,298 PASS, 183 suites; later source adds two navigation regressions |
 | Complete existing deposit CI unit selection | 248 / 248 PASS, 19 suites; includes provider/auth/admin/wallet regressions |
 | Full frontend on Windows | 3,285 PASS, 9 FAIL / 3,294 tests, 183 suites; see baseline explanation below |
 | Local PostgreSQL deposit integration | 23 scenario groups + 7 viewport flows PASS |
 | Header + Wallet deposit UI | 303 checks PASS, 7 viewports per entry point, no console errors/external requests |
 | Isolated calculator browser actions | 21 measured groups PASS, including offline, DCA 50 rows, invalid/tiny/large/negative inputs and clipboard races |
-| Integrated browser actions | 8 groups PASS, including Back, disclosures, session reset, reload, route departure and support docking |
+| Integrated browser actions | 9 groups PASS, including Back, disclosures, session reset, reload, route departure, support docking and keyboard-accessible single navigation entry |
 | Responsive integrated screenshots | 320, 360, 390, 430, 768, 1366, 1440, 1920 px; zero horizontal overflow |
 
 Commands (the browser runner needs local Playwright + Chromium; deposit runners need local PostgreSQL/pg and jsQR):
@@ -90,7 +93,7 @@ npm run build
 npm run build --prefix frontend
 node node_modules/jest/bin/jest.js --runInBand --runTestsByPath frontend/src/pages/trading-tools/math/__tests__/math.test.ts frontend/src/pages/trading-tools/__tests__/presentation.test.ts frontend/src/lib/__tests__/tradingToolsShell.test.ts
 python frontend/src/pages/trading-tools/math/__tests__/oracle.py
-node node_modules/jest/bin/jest.js --runInBand --testPathPattern="DepositService|adminDeposits"
+node node_modules/jest/bin/jest.js --runInBand --runTestsByPath src/services/__tests__/DepositService.test.ts src/api/routes/__tests__/adminDeposits.test.ts src/api/routes/__tests__/adminCustomers.test.ts
 node node_modules/jest/bin/jest.js --runInBand --silent --testPathPattern=frontend/src
 node scripts/qa-trading-tools.cjs
 node scripts/qa-deposit-packages.cjs --browser
@@ -101,7 +104,9 @@ node scripts/qa-deposit-ui.cjs
 
 The deposit UI runner uses `QA_ORIGIN` and `QA_OUT` environment variables (set them with `$env:` in PowerShell); its configured browser dependencies can be supplied through `QA_PLAYWRIGHT_MODULE`, `QA_JSQR_MODULE`, and `QA_PNGJS_MODULE`. Full executed commands and actual fixture URLs are recorded in [deposit-minimum.json](deposit-minimum.json). The deposit unit selection emitted an existing React border/borderColor warning; no test failed. The database run deliberately injected an audit-write failure to prove atomic rollback and also emitted an existing pg concurrency deprecation warning.
 
-**Windows baseline:** all 9 failures are path-separator/source-audit failures in 6 unchanged suites. The same nine named failures reproduce on an untouched archive of `8abcde87` (64 pass / 9 fail in those suites). [windows-baseline.json](windows-baseline.json) preserves exact names and errors. These assertions were not skipped or weakened. The final Linux frontend CI status must be read from the PR; a failing local complete suite is not labeled green. The final new-math/route tests were rerun after the full Windows suite snapshot.
+**Windows baseline:** all 9 failures are path-separator/source-audit failures in 6 unchanged suites. The same nine named failures reproduce on an untouched archive of `8abcde87` (64 pass / 9 fail in those suites). [windows-baseline.json](windows-baseline.json) preserves exact names and errors. These assertions were not skipped or weakened. Linux CI on the first published head passed all 3,298 tests; the final-head CI status must be read from the PR. The local Windows complete suite is not labeled green. The final new-math/route tests were rerun after the full Windows suite snapshot.
+
+CI follow-up: the first header-fit run found only 19 px of clearance on `/markets` at 1440 px. Moving the single desktop Tools entry into the existing Trading menu restores 125 px, above the unchanged 20 px requirement; mobile retains one drawer entry. No global header CSS or assertion was weakened. The contained run blocked all non-local transports and retains known chart teardown errors in [header-fit.json](header-fit.json). An existing admin customer fixture expected a 400 USDT deposit to be ready; it now uses 500, and a separate 400 USDT case must remain awaiting top-up.
 
 Confirmed regressions addressed during verification: conservative position-budget division at extreme leverage/fees, DCA recurring-decimal equality, zero-cost chart bars, near-entry liquidation display precision, colliding entry/break-even SVG captions, stale clipboard completion after edits, and the support launcher covering a mobile selector.
 
@@ -120,7 +125,7 @@ See [network.json](network.json) and [network-module.json](network-module.json),
 
 Initial isolated render loads 10 local static resources including fonts. The primary integrated scenario has 5 existing `/api/v1/me` reads across initial load, wake, synthetic account change, re-entry and reload. Each independent viewport context additionally reads its synthetic session; consult `serverReads` for the complete harness count. Route departure to `/legal/terms` separately records that page's existing profile/ticker attempts; these are not calculator traffic. Global shell Google Fonts attempts are blocked by fixture CSP and listed separately from served assets. Existing shell activity timers remain visible in the integrated trace; the isolated calculator schedules none. This is not a claim that the whole exchange is network-free or offline-ready.
 
-[bundle.json](bundle.json) compares production assets against untouched fresh main. The main entry grows by **372 bytes raw / 100 bytes gzip** (617,085 → 617,457 raw). The lazy tools JS is **77,315 bytes raw / 26,512 gzip**; its CSS is **24,661 bytes raw / 4,510 gzip**, including reused local font declarations. The other existing `index-*` chunk stays 35,807 raw / 10,156 gzip. BigNumber belongs to the lazy route; no tools prefetch was added to shared startup. No millisecond performance claim is made.
+[bundle.json](bundle.json) compares production assets against untouched fresh main. The main entry grows by **372 bytes raw / 110 bytes gzip** (617,085 → 617,457 raw). The lazy tools JS is **77,315 bytes raw / 26,511 gzip**; its CSS is **24,661 bytes raw / 4,510 gzip**, including reused local font declarations. The other existing `index-*` chunk stays 35,807 raw / 10,156 gzip. BigNumber belongs to the lazy route; no tools prefetch was added to shared startup. No millisecond performance claim is made.
 
 ## Visual evidence and limitations
 
