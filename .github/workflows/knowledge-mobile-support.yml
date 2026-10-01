@@ -1,0 +1,49 @@
+name: Knowledge mobile support does not cover text
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/knowledge/**'
+      - 'frontend/src/components/SupportWidget*'
+      - 'frontend/src/lib/supportWidget.ts'
+      - 'frontend/src/lib/__tests__/knowledgeMobileSupport.test.ts'
+      - 'frontend/src/index.css'
+      - 'scripts/qa-knowledge-mobile-support.cjs'
+      - '.github/workflows/knowledge-mobile-support.yml'
+permissions:
+  contents: read
+jobs:
+  reading-support:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Reading and shared-support regressions
+        run: npx jest --runInBand --runTestsByPath frontend/src/lib/__tests__/knowledgeMobileSupport.test.ts frontend/src/lib/__tests__/academyHelpPages.test.ts frontend/src/lib/__tests__/academyHelpContent.test.ts frontend/src/lib/__tests__/academyReadingMode.test.ts
+      - name: Production frontend build without a production backend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build --prefix frontend
+      - name: Disposable browser tools
+        run: npm install --prefix /tmp/voltex-reading-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+      - run: node /tmp/voltex-reading-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual bundle, six widths, guest/account, navigation and support keyboard actions
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/voltex-reading-qa/node_modules/playwright
+          QA_DIST: frontend/dist
+          QA_OUT: output/knowledge-mobile-support
+        run: node scripts/qa-knowledge-mobile-support.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: knowledge-mobile-support-${{ github.sha }}
+          path: output/knowledge-mobile-support/
+          if-no-files-found: warn
+          retention-days: 7

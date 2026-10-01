@@ -7,6 +7,7 @@ import { Logo } from '../../components/Logo';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { TradingBotIcon } from '../../components/TradingBotIcon';
 import { Footer } from '../../components/Footer';
+import { KnowledgeMobileSupport } from './KnowledgeMobileSupport';
 import './knowledge.css';
 
 /** The guest header lists the same product sections as the homepage header. */
@@ -61,7 +62,7 @@ export function KnowledgeShell({ active, fallback, children }: { active: 'academ
         </nav>
       )}
       {fallback && <p className="vx-kb-ru-only" role="note" lang="en">{t('academy.ruOnly')}</p>}
-      <main className="vx-kb">{children}</main>
+      <main className="vx-kb"><KnowledgeMobileSupport />{children}</main>
       {/* The site footer expects a padded column around it, as on Markets. */}
       <div className="vx-kb-footer"><Footer /></div>
     </div>

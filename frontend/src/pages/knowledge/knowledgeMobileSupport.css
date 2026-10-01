@@ -1,0 +1,39 @@
+/* Reading pages only: support occupies a normal line on narrow screens.
+ * Padding under an article cannot prevent a fixed launcher covering its middle.
+ * The replacement must exist before the global launcher is hidden. The :has()
+ * condition also releases the launcher immediately after SPA navigation away.
+ * Open dialogs keep their existing close controls and viewport/keyboard rules.
+ */
+.vx-kb-mobile-support { display: none; }
+
+@media (max-width: 900px) {
+  .vx-kb .vx-kb-mobile-support {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 18px;
+    position: static;
+  }
+  .vx-kb-mobile-support button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--kb-gold-line);
+    border-radius: 10px;
+    background: var(--kb-sheet);
+    color: var(--kb-gold-ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+  }
+  .vx-kb-mobile-support button svg { flex: none; }
+  .vx-kb-mobile-support button:hover { background: var(--kb-gold-tint); }
+  body:has(.vx-kb-page [data-kb-inline-support]) .support-launcher[aria-expanded='false'] {
+    display: none !important;
+  }
+}
