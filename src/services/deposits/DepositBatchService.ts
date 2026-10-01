@@ -7,6 +7,7 @@ import { TransferProof } from '../deposit-verifiers/proof';
 import { buildPackage, DepositPackageView, minConfirmationsFor } from './DepositQueueService';
 import { isPackageEligible, meetsMinimum, packageToken, PriceSourceWithMeta, sumAmounts, valueInUsd } from './depositPolicy';
 import { assertSaneProof, proveTransfer, recipientFor } from './transferProof';
+import { pendingCopiesForCredit, resolveCopiesAfterCredit } from './depositCopyResolution';
 
 export class DepositBatchError extends Error {
   constructor(readonly code:
@@ -108,10 +109,17 @@ export class DepositBatchService {
       throw new DepositBatchError('BELOW_MINIMUM', `Сумма пакета ниже минимума ${MIN_DEPOSIT_USD} USD. Зачисление недоступно.`);
     }
 
+    // Capture only existing hints. This snapshot cannot select a beneficiary,
+    // supply an amount or make an ineligible transfer eligible. New copies
+    // arriving during the external proof step must remain pending.
+    const copySnapshot = await pendingCopiesForCredit(this.prisma, params.userId, params.chain, asset);
+
     // 3. Re-prove every transfer on chain. No DB transaction is open here.
     let config: ChainConfig;
     try { config = await this.resolveChain(params.chain); }
     catch { throw new DepositBatchError('CHAIN_UNAVAILABLE', 'Сеть не настроена.'); }
+    const recipientKey = (address: string) => config.type === 'evm' ? address.toLowerCase() : address;
+    const creditedRecipients = new Set<string>();
     const proofs = new Map<string, { proof: TransferProof; at: number }>();
     for (const row of eligible) {
       let proof: TransferProof;
@@ -119,6 +127,7 @@ export class DepositBatchService {
         const recipient = await recipientFor(this.prisma, config, row.recipientAddress);
         proof = await this.prove(config, row.txHash, asset, { recipient });
         assertSaneProof(proof);
+        creditedRecipients.add(recipientKey(recipient));
       } catch (error) {
         if (error instanceof ProviderUnavailableError || !(error instanceof DepositVerificationError)) {
           throw new DepositBatchError('PROVIDER_UNAVAILABLE', 'Проверка сети сейчас недоступна. Ничего не зачислено — повторите позже.', { txHash: row.txHash });
@@ -135,10 +144,11 @@ export class DepositBatchService {
       }
       proofs.set(row.id, { proof, at: Date.now() });
     }
+    const copyIds = copySnapshot.filter(copy => creditedRecipients.has(recipientKey(copy.addressSnapshot))).map(copy => copy.id);
 
     // 4. Atomic credit.
     try {
-      return await this.prisma.$transaction(async (tx) => this.credit(tx, params, asset, eligible, proofs, total, valuation), {
+      return await this.prisma.$transaction(async (tx) => this.credit(tx, params, asset, eligible, proofs, total, valuation, copyIds), {
         isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, maxWait: 10_000, timeout: 20_000,
       });
     } catch (error) {
@@ -153,7 +163,7 @@ export class DepositBatchService {
   private async credit(
     tx: Prisma.TransactionClient, params: Parameters<DepositBatchService['confirm']>[0], asset: string,
     eligible: Deposit[], proofs: Map<string, { proof: TransferProof; at: number }>, total: BigNumber,
-    valuation: Awaited<ReturnType<typeof valueInUsd>>,
+    valuation: Awaited<ReturnType<typeof valueInUsd>>, copyIds: string[],
   ): Promise<ConfirmResult> {
     const admin = await tx.user.findUnique({ where: { id: params.adminId }, select: { role: true } });
     if (admin?.role !== 'ADMIN') throw new DepositBatchError('NOT_ADMIN', 'Admin access required');
@@ -239,6 +249,8 @@ export class DepositBatchService {
         update: { available: { increment: rewardTotal.toFixed() } },
       });
     }
+    await resolveCopiesAfterCredit(tx, { ids: copyIds, userId: params.userId, chain: params.chain, asset,
+      adminId: params.adminId, batchId: batch.id });
     return { status: 'CREDITED', batchId: batch.id, userId: params.userId, chain: params.chain, asset,
       totalAmount: amount, depositIds: ids, replayed: false };
   }

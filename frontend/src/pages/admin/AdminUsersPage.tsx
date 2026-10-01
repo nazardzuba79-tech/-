@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { getAdminUsersAbortable } from '../../lib/adminReadApi';
-import { DepositCopyBell, type DepositCopyUserFields } from './DepositCopyBell';
+import { DepositCopyBell, DepositCopyTabBell, hasPendingCopy, type DepositCopyUserFields } from './DepositCopyBell';
+import { ignoreCopySignal } from './depositCopyReviewClient';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { SkeletonRow } from '../../components/Skeleton';
@@ -105,6 +106,7 @@ export function AdminUsersPage() {
   // one hour while visible, nothing while hidden (see adminUserActivity.ts).
   const { activity, failed: activityFailed, receivedAt: activityReceivedAt, refresh: refreshActivity } = useAdminUserActivity();
   const usersInFlight = useRef(false);
+  const usersRevision = useRef(0);
   const mounted = useRef(false);
   const usersRequest = useRef<{ controller: AbortController; timer: ReturnType<typeof setTimeout> } | null>(null);
 
@@ -112,12 +114,13 @@ export function AdminUsersPage() {
     // One users read at a time: a signature change while one is running does not start a second.
     if (!mounted.current || usersInFlight.current) return;
     usersInFlight.current = true;
+    const revision = usersRevision.current;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ADMIN_USERS_TIMEOUT_MS);
     usersRequest.current = { controller, timer };
     const usersRead = getAdminUsersAbortable(controller.signal)
-      .then((next) => { if (!controller.signal.aborted) { setUsers(next.filter((user) => user.role === 'USER' && !user.isAdmin && !deletedIds.current.has(user.id))); setLoadError(false); } })
-      .catch(() => { if (mounted.current && usersRequest.current?.controller === controller) setLoadError(true); });
+      .then((next) => { if (!controller.signal.aborted && revision === usersRevision.current) { setUsers(next.filter((user) => user.role === 'USER' && !user.isAdmin && !deletedIds.current.has(user.id))); setLoadError(false); } })
+      .catch(() => { if (mounted.current && usersRequest.current?.controller === controller && revision === usersRevision.current) setLoadError(true); });
     // The server returns only the newest deposit per user from the last 24h.
     // Do not download the full admin deposit history just to paint badges.
     const depositsRead = api
@@ -172,20 +175,23 @@ export function AdminUsersPage() {
 
   const now = Date.now();
   const isNew = (u: User) => now - new Date(u.createdAt).getTime() <= ONE_DAY_MS;
-  const hasPending = (u: User) => pendingByUser.has(u.id);
+  const hasPending = (u: User) => pendingByUser.has(u.id) || hasPendingCopy(u);
 
-  // Work first: packages ready for review, then packages awaiting a top-up,
-  // then new registrations, then everyone else — newest first inside each group.
+  // Unresolved copy signals first even without a deposit or recent login.
+  // Then preserve the released package/new-registration ordering. An explicit
+  // last-login sort is still available; the Deposits tab restores work order.
   const ordered = useMemo(() => {
     if (filter === 'lastLogin') {
       const loginAt = (u: User) => u.lastLoginAt ? Date.parse(u.lastLoginAt) || 0 : 0;
       return [...(users ?? [])].sort((a, b) => loginAt(b) - loginAt(a));
     }
     const rank = (u: User) => {
+      if (hasPendingCopy(u)) return -1;
       const pkgs = pendingByUser.get(u.id);
       return pkgs ? (pkgs.some((p) => p.state === 'READY') ? 0 : 1) : isNew(u) ? 2 : 3;
     };
     const at = (u: User) => {
+      if (hasPendingCopy(u)) return Date.parse(u.lastDepositCopy!.receivedAt) || 0;
       const pending = pendingByUser.get(u.id);
       return pending ? Math.max(...pending.map((p) => new Date(p.latestAt).getTime() || 0)) : new Date(u.createdAt).getTime();
     };
@@ -202,7 +208,9 @@ export function AdminUsersPage() {
     const all = users ?? [];
     return {
       new: all.filter(isNew).length,
-      deposits: all.filter((u) => pendingByUser.has(u.id)).length,
+      // Union of accounts, not copies + packages (no double counting).
+      deposits: all.filter((u) => pendingByUser.has(u.id) || hasPendingCopy(u)).length,
+      copies: all.filter(hasPendingCopy).length,
       kyc: all.filter((u) => u.kycStatus === 'PENDING').length,
     };
   }, [users, pendingByUser]);
@@ -233,6 +241,19 @@ export function AdminUsersPage() {
     void refreshActivity();
   }
 
+  async function ignoreCopy(u: User) {
+    if (!u.lastDepositCopy) return;
+    const eventId = u.lastDepositCopy.id;
+    const result = await ignoreCopySignal(u.id, eventId);
+    if (!mounted.current) return;
+    // An older users read must not resurrect an acknowledged signal. The
+    // response contains the next unresolved copy; newer/different signals stay.
+    usersRevision.current++;
+    setUsers(previous => previous?.map(row => row.id === u.id && row.lastDepositCopy?.id === eventId
+      ? { ...row, lastDepositCopy: result.lastDepositCopy, depositCopyLookupFailed: result.depositCopyLookupFailed }
+      : row) ?? previous);
+  }
+
   function openCredit(u: User) {
     const pending = pendingByUser.get(u.id);
     if (pending?.length) setCrediting({ pkg: pending[0], user: u });
@@ -249,7 +270,7 @@ export function AdminUsersPage() {
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: 'all', label: 'Все' },
     { key: 'new', label: 'Новые', count: counts.new },
-    { key: 'deposits', label: 'Пополнения', count: activityKnown ? counts.deposits : undefined },
+    { key: 'deposits', label: 'Пополнения', count: activityKnown && users?.every(u => !u.depositCopyLookupFailed) ? counts.deposits : undefined },
     { key: 'kyc', label: 'KYC', count: counts.kyc },
   ];
 
@@ -286,8 +307,9 @@ export function AdminUsersPage() {
             aria-selected={tab === t.key}
             data-user-tab={t.key}
             className={tab === t.key ? 'active' : undefined}
-            onClick={() => { setTab(t.key); setPage(1); }}
+            onClick={() => { setTab(t.key); setPage(1); if (t.key === 'deposits') setFilter(''); }}
           >
+            {t.key === 'deposits' && counts.copies > 0 && <DepositCopyTabBell />}
             {t.label}{t.count !== undefined && <span className="admin-user-tab-count">{t.count}</span>}
           </button>
         ))}
@@ -339,6 +361,7 @@ export function AdminUsersPage() {
             onOpen={() => navigate(`/admin/users/${u.id}`)}
             onCredit={openCredit}
             onDelete={setDeleting}
+            onIgnoreCopy={ignoreCopy}
           />
         ))}
         {users && list.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{tab === 'all' && !search && !filter ? 'Пользователей пока нет.' : 'Никого не найдено.'}</p>}
@@ -353,6 +376,7 @@ export function AdminUsersPage() {
             onOpen={() => navigate(`/admin/users/${u.id}`)}
             onCredit={openCredit}
             onDelete={setDeleting}
+            onIgnoreCopy={ignoreCopy}
           />
         ))}
       </div>
@@ -455,12 +479,14 @@ function UserRow({
   onOpen,
   onCredit,
   onDelete,
+  onIgnoreCopy,
 }: {
   user: User;
   events: UserEvents;
   onOpen: () => void;
   onCredit: (u: User) => void;
   onDelete: (u: User) => void;
+  onIgnoreCopy: (u: User) => Promise<void>;
 }) {
   const badge = KYC_LABEL[u.kycStatus] ?? KYC_LABEL.NOT_STARTED;
   return (
@@ -501,7 +527,7 @@ function UserRow({
         <Badge text={badge.text} color={badge.color} bg={badge.bg} />
       </span>
       <span className="mono" style={{ ...styles.balanceCell, fontSize: 12 }}>
-        <DepositCopyBell key={`${u.id}:${u.lastDepositCopy?.id ?? ''}`} event={u.lastDepositCopy} failed={u.depositCopyLookupFailed} />
+        <DepositCopyBell key={`${u.id}:${u.lastDepositCopy?.id ?? ''}`} event={u.lastDepositCopy} failed={u.depositCopyLookupFailed} onIgnore={() => onIgnoreCopy(u)} />
         <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{balanceSummary(u)}</span>
       </span>
       <span onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
@@ -518,12 +544,14 @@ function MobileUserCard({
   onOpen,
   onCredit,
   onDelete,
+  onIgnoreCopy,
 }: {
   user: User;
   events: UserEvents;
   onOpen: () => void;
   onCredit: (u: User) => void;
   onDelete: (u: User) => void;
+  onIgnoreCopy: (u: User) => Promise<void>;
 }) {
   const badge = KYC_LABEL[u.kycStatus] ?? KYC_LABEL.NOT_STARTED;
   return (
@@ -549,7 +577,7 @@ function MobileUserCard({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 12 }}>
         <LastSeenBadge lastLoginAt={u.lastLoginAt} />
         <span className="mono" style={{ ...styles.balanceCell, alignItems: 'flex-end' }}>
-          <DepositCopyBell key={`${u.id}:${u.lastDepositCopy?.id ?? ''}`} event={u.lastDepositCopy} failed={u.depositCopyLookupFailed} />
+          <DepositCopyBell key={`${u.id}:${u.lastDepositCopy?.id ?? ''}`} event={u.lastDepositCopy} failed={u.depositCopyLookupFailed} onIgnore={() => onIgnoreCopy(u)} />
           <span style={{ fontWeight: 600 }}>{balanceSummary(u)}</span>
         </span>
       </div>

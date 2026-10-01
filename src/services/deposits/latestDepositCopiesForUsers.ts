@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
+import { unresolvedCopy } from './depositCopyResolution';
 
 export interface LatestDepositCopy {
   id: string;
@@ -8,12 +9,12 @@ export interface LatestDepositCopy {
   clientCopiedAt: string | null;
 }
 
-/** Read-only decoration of the existing admin users response. One bounded
- * result per requested account, in one SQL round trip. The lateral lookup
- * uses the existing (userId, receivedAt) index instead of loading the journal
- * or doing an HTTP/SQL query for each row. No clock, polling, writes or credit.
+/** Latest UNRESOLVED copy per returned customer, in the existing users read.
+ * Resolution is an immutable, primary-key-indexed audit receipt. No expiry:
+ * the signal remains until explicit Ignore or successful manual credit.
+ * The original journal still contains the complete copy history.
  */
-export async function latestDepositCopiesForUsers(prisma: PrismaClient, userIds: string[]): Promise<{
+export async function latestDepositCopiesForUsers(prisma: Pick<PrismaClient, '$queryRaw'>, userIds: string[]): Promise<{
   byUser: Map<string, LatestDepositCopy>; failed: boolean;
 }> {
   const byUser = new Map<string, LatestDepositCopy>();
@@ -29,7 +30,7 @@ export async function latestDepositCopiesForUsers(prisma: PrismaClient, userIds:
       CROSS JOIN LATERAL (
         SELECT e."id", e."asset", e."network", e."receivedAt", e."clientCopiedAt"
         FROM "DepositAddressCopyEvent" e
-        WHERE e."userId" = u."id"
+        WHERE e."userId" = u."id" AND ${unresolvedCopy}
         ORDER BY e."receivedAt" DESC, e."id" DESC
         LIMIT 1
       ) c
@@ -46,8 +47,6 @@ export async function latestDepositCopiesForUsers(prisma: PrismaClient, userIds:
     }
     return { byUser, failed: false };
   } catch {
-    // A journal-read outage must neither remove the users/balances nor be
-    // represented as "nobody copied". The UI gets an explicit unknown state.
     return { byUser: new Map(), failed: true };
   }
 }

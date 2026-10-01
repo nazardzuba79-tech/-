@@ -1,0 +1,76 @@
+name: Deposit copy signals - durable resolution
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/deposit-copy-resolution.yml'
+      - 'src/services/deposits/**'
+      - 'src/api/routes/adminDepositCopyReview.ts'
+      - 'src/api/routes/depositAddressCopies.ts'
+      - 'src/api/routes/__tests__/depositCopyResolution.test.ts'
+      - 'frontend/src/pages/admin/AdminUsersPage.tsx'
+      - 'frontend/src/pages/admin/DepositCopyBell.tsx'
+      - 'frontend/src/pages/admin/depositCopyReviewClient.ts'
+      - 'frontend/src/lib/__tests__/adminDepositCopyResolution.test.ts'
+      - 'scripts/qa-deposit-copy-resolution.cjs'
+      - 'prisma/**'
+      - 'package*.json'
+permissions:
+  contents: read
+concurrency:
+  group: deposit-copy-resolution-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  resolution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: voltex
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: voltex_copy_resolution
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U voltex -d voltex_copy_resolution"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://voltex:local-test-only@127.0.0.1:5432/voltex_copy_resolution
+      DIRECT_URL: postgresql://voltex:local-test-only@127.0.0.1:5432/voltex_copy_resolution
+      COPY_RESOLUTION_QA: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Auth, signal lifecycle and rendered Users regressions
+        run: >-
+          npx jest --runInBand --runTestsByPath
+          src/api/routes/__tests__/depositCopyResolution.test.ts
+          src/api/routes/__tests__/adminDepositCopyBell.test.ts
+          src/api/routes/__tests__/adminUsers.test.ts
+          src/api/routes/__tests__/adminCustomers.test.ts
+          src/api/routes/__tests__/depositAddressCopies.test.ts
+          frontend/src/lib/__tests__/adminDepositCopyResolution.test.ts
+          frontend/src/lib/__tests__/adminDepositCopyBell.test.ts
+          frontend/src/lib/__tests__/adminUsersActivity.test.ts
+      - run: npm run build
+      - run: npx tsc -b frontend
+      - name: Prepare disposable local database only
+        run: npx prisma migrate deploy
+      - name: Actual PostgreSQL - Ignore, concurrent credit, rollback and replay
+        run: |
+          mkdir -p output/copy-resolution
+          node scripts/qa-deposit-copy-resolution.cjs | tee output/copy-resolution/postgres.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deposit-copy-resolution
+          path: output/copy-resolution/
+          retention-days: 7

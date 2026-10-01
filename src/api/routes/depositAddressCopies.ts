@@ -9,6 +9,7 @@ import { requireAdmin } from '../middleware/admin';
 import { DEPOSIT_RAILS, railKey, validAddress } from '../../services/depositCatalogue/registry';
 import { markWriteWithoutBackgroundWork } from '../../services/BackgroundWorkCoordinator';
 import { KNOWN_CHAINS } from './deposits';
+import { mountDepositCopyReview } from './adminDepositCopyReview';
 
 /**
  * «Копировали адрес»: a signed-in browser reports that its «Скопировать
@@ -16,9 +17,10 @@ import { KNOWN_CHAINS } from './deposits';
  *
  * The note proves nothing about money. Anyone signed in can send it, for any
  * address the dialog can show, as often as the limits allow; the transfer
- * that arrives later may be someone else's. So nothing here touches Deposit,
- * Balance, attribution or credit, and no credit path reads this table. The
- * admin reads it beside the real incoming transfers and decides by hand.
+ * that arrives later may be someone else's. Nothing here attributes or
+ * credits money. A successful manual credit may close older captured notes
+ * for its own user/rail; notes never determine the credit recipient/amount.
+ * The admin reads them beside the real incoming transfers and decides by hand.
  */
 
 export const DEPOSIT_COPY_PATH = '/deposit-address-copies';
@@ -108,6 +110,7 @@ const encodeCursor = (at: Date, id: string) => Buffer.from(`${at.toISOString()}|
 
 export function depositAddressCopiesRouter(prisma: PrismaClient): Router {
   const router = Router();
+  mountDepositCopyReview(router, prisma);
 
   // Its own small budgets, outside the app-wide 120/min: a copy note never
   // spends a trader's request budget, and a flood of notes stops here. The
