@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { getAdminUsersAbortable } from '../../lib/adminReadApi';
+import { DepositCopyBell, type DepositCopyUserFields } from './DepositCopyBell';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { SkeletonRow } from '../../components/Skeleton';
@@ -17,7 +18,7 @@ import { CreditDepositDrawer, addDecimalStrings } from './CreditDepositDrawer';
 import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { formatLastLoginAt } from './lastLoginLabel';
 
-type User = Awaited<ReturnType<typeof api.getAdminUsers>>[number];
+type User = Awaited<ReturnType<typeof api.getAdminUsers>>[number] & DepositCopyUserFields;
 
 const KYC_LABEL: Record<string, { text: string; color: string; bg: string }> = {
   NOT_STARTED: { text: 'Не начата', color: 'var(--text-secondary)', bg: 'var(--neutral-dim)' },
@@ -500,6 +501,7 @@ function UserRow({
         <Badge text={badge.text} color={badge.color} bg={badge.bg} />
       </span>
       <span className="mono" style={{ ...styles.balanceCell, fontSize: 12 }}>
+        <DepositCopyBell key={`${u.id}:${u.lastDepositCopy?.id ?? ''}`} event={u.lastDepositCopy} failed={u.depositCopyLookupFailed} />
         <span style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>{balanceSummary(u)}</span>
       </span>
       <span onClick={(e) => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
@@ -547,6 +549,7 @@ function MobileUserCard({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 12 }}>
         <LastSeenBadge lastLoginAt={u.lastLoginAt} />
         <span className="mono" style={{ ...styles.balanceCell, alignItems: 'flex-end' }}>
+          <DepositCopyBell key={`${u.id}:${u.lastDepositCopy?.id ?? ''}`} event={u.lastDepositCopy} failed={u.depositCopyLookupFailed} />
           <span style={{ fontWeight: 600 }}>{balanceSummary(u)}</span>
         </span>
       </div>

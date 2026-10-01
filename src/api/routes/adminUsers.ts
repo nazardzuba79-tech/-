@@ -8,6 +8,7 @@ import { requireAdmin } from '../middleware/admin';
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
 import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 import { decryptAdminPassword } from '../../services/AdminPasswordVault';
+import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
 
 /**
  * Admin's customer list — the registration data,
@@ -31,6 +32,8 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
       prisma.session.groupBy({ by: ['userId'], _max: { createdAt: true } }),
     ]);
 
+    // One read for all returned customers; no per-row requests and no new timer.
+    const copies = await latestDepositCopiesForUsers(prisma, users.map((u) => u.id));
     const ownerId = process.env.PRIVATE_TRADING_OWNER_ID;
     const passwordByUser = new Map<string, string>();
     if (ownerId && req.userId === ownerId && users.length > 0) {
@@ -71,6 +74,8 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
         createdAt: u.createdAt,
         registrationIp: null,
         lastLoginAt: lastLoginByUser.get(u.id) ?? null,
+        lastDepositCopy: copies.byUser.get(u.id) ?? null,
+        depositCopyLookupFailed: copies.failed,
         isBlocked: !!u.blockedAt,
         blockedAt: u.blockedAt,
         blockedReason: u.blockedReason,
