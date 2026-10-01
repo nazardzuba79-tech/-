@@ -159,7 +159,8 @@ test('workflow uploads only fresh evidence, checks exact head and clean cache, r
   assert.match(workflow, /ref: \$\{\{ github.event.pull_request.head.sha \}\}/);
   assert.match(workflow, /existsSync\('node_modules\/\.cache'\), false/);
   assert.match(workflow, /path: \$\{\{ steps.evidence.outputs.directory \}\}/);
-  for (const gate of ['--verify', '--otc', '--preservation', 'qa-otc-cash.cjs', 'adminUsers.test.ts']) assert.ok(workflow.includes(gate));
+  for (const gate of ['--verify', '--otc', '--preservation', '--cutover', 'qa-otc-cash.cjs', 'qa-otc-cash-legacy.cjs', 'vite.otc-legacy.config.ts', 'adminUsers.test.ts']) assert.ok(workflow.includes(gate));
+  assert.match(workflow, /git rev-parse a457809f2412da6b6074a6d398aa1ca9248c6ac1/);
   assert.match(workflow, /OTC_CI_STEPS: \$\{\{ toJSON\(steps\) \}\}/);
   const browser = fs.readFileSync(path.join(__dirname, 'qa-otc-cash.cjs'), 'utf8');
   assert.doesNotMatch(browser, /docs\/qa\/otc-cash/);

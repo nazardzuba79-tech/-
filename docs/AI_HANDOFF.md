@@ -5239,6 +5239,14 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Local preservation: 13 runner checks, 290 focused tests/13 suites (zero skipped), 20 wallet + 23 OTC PostgreSQL scenarios, 38 PostgreSQL preservation tests (zero skipped), backend and frontend production builds passed. Existing chunk-size warning remains. Relevant remote CI must run on the new head.
 - Minimal solution is an explicitly approved stopped-writer release: stdlib hold deployment, proven process/backend termination, additive migration, read-only audits, discrepancy decision, then exact new revision admission. Open risk positions/armed protections/ambiguous payouts are NO-GO for this procedure, not implicitly safe to pause. Production state and platform termination evidence remain unverified and require owner permission.
 - Preserved prior CI/bootstrap fixes, financial formulas, Academy/Help/#373, minimum deposit 500 USD and OTC disabled/empty allowlists. No navigation changes, production access/configuration/credentials, production migration/audit, merge, deploy or force push.
+
+## Codex — 2026-10-01 — OTC through existing specialist support
+
+- Base: fresh main `1aa8e21ad49bf1f108691a1dc9c78442068d85e8`; branch `codex/otc-support-handoff`. Evidence SHA: the commit containing this entry. Owner archive manifest and original page blob matched exactly; prepared OtcPage applied unchanged.
+- Runtime scope: OtcPage plus OTC Assistant answer/source references only. All CTA/category actions open the existing specialist form; exchange parameters remain manual, with no OTC reads/reserves. Existing identity prefill is unchanged. Old backend/tables/policy/admin/components and all financial assertions preserved, as are Academy/Help/#373 and minimum deposit 500 USD.
+- Tests: 142 focused Jest / 5 suites and 13 runner tests PASS; backend build and normal frontend TypeScript/build PASS. Public support and isolated legacy reserve/chat/admin browser scenarios PASS at 320/390/768/1440. Zero public financial/external requests and page errors. Existing Vite chunk warning only.
+- Supporting files: OTC unit/browser tests, test-only LegacyOtcPage/Vite bundle, OTC workflow and `OTC_SUPPORT_HANDOFF.md`. Historical mixed-version regression now pins actual pre-372 code; every financial CI gate and fresh evidence remains enabled. No financial test or component removed.
+- GitHub merge access and Pages main auto-deploy verified upfront. Publication must wait for this exact head's CI/review, use `[skip render]`, and verify production Pages SHA separately from unchanged API. No production writes/settings/migrations or new deployment yet. Fixtures/HTTP acceptance do not establish mailbox delivery; receipt remains unconfirmed.
 ## Claude — 2026-09-30 — Support: Bybit-style headset button and an improved form (preview first)
 
 - Base: main `1affc9a3`; branch `claude/peaceful-volta-h5zw7g-support`; commit: the commit containing this entry. No PR yet: the owner asked to see it before it is added.
@@ -5392,3 +5400,7 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
   - `scripts/qa-support-form.cjs` PASS: FAQ answers, guest send, provider refusal, 25 s idle, signed-in prefill, layout at 320–1920;
   - scratch contrast audit with the OS in dark mode on `/` and `/academy` at 1440 and 390, across initial, typed, all-questions and form states: no light-on-light text, lowest 5.21:1, typed text 15.82:1.
 - Also carried in this branch: the #357/#360 handoff notes and the PR #372 Gate 0 stop entries, as the owner asked, with no separate merge.
+
+### OTC support integration with concurrent main #374
+
+- Fresh fetch before push found main `54860c0298bd66c6981a2e181e99755a96169bcd` (white support panel). Ordinary merge preserves its stylesheet, guards, QA and every handoff entry. Only the append-only handoff conflicted; both histories were retained. The prepared OTC page and support behavior remain unchanged. CI and viewport QA must run again on this integrated head.

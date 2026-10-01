@@ -5,6 +5,7 @@ dist/
 uploads/
 *.tsbuildinfo
 frontend/dist-mobile-review/
+frontend/dist-otc-legacy/
 .ci-output/
 outputs/
 # Same category, singular: scripts/qa-*.cjs write regenerable browser-QA

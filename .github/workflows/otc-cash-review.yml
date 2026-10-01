@@ -19,6 +19,11 @@ on:
       - 'prisma/**'
       - 'frontend/src/pages/otc/**'
       - 'frontend/src/pages/OtcPage.tsx'
+      - 'frontend/vite.otc-legacy.config.ts'
+      - 'frontend/src/lib/supportAssistant.ts'
+      - 'frontend/src/lib/i18n/locales/assistantRu.ts'
+      - 'frontend/src/lib/__tests__/otcPage.test.ts'
+      - 'frontend/src/lib/__tests__/support*.test.ts'
       - 'frontend/src/pages/admin/AdminOtcCashPage.tsx'
       - 'frontend/src/lib/balanceInvalidation.ts'
       - 'scripts/*otc*'
@@ -74,6 +79,8 @@ jobs:
           frontend/src/pages/otc/__tests__/cashInteractions.test.ts
           frontend/src/lib/__tests__/otcPage.test.ts
           frontend/src/lib/__tests__/supportAssistant.test.ts
+          frontend/src/lib/__tests__/supportForm.test.ts
+          frontend/src/lib/__tests__/knowledgeMobileSupport.test.ts
           frontend/src/lib/__tests__/customerFacingErrors.test.ts
       - name: Install pinned disposable-only PostgreSQL and browser tools
         id: fixture_dependencies
@@ -84,12 +91,14 @@ jobs:
         run: node scripts/otc-ci-evidence.cjs run otc-postgres node scripts/diagnose-otc-balance-safety.cjs --otc
       - id: preservation_postgres
         run: node scripts/otc-ci-evidence.cjs run preservation-postgres node scripts/diagnose-otc-balance-safety.cjs --preservation
-      - name: Actual base/head overlap, stopped-writer migration and release audit
+      - name: Historical pre-372 overlap, stopped-writer migration and release audit
         id: cutover_postgres
         run: |
-          # checkout fetched current main as well as the exact PR head. Do not
-          # substitute a stale PR metadata base SHA for the current remote main.
-          $reviewBaseSha = git rev-parse refs/remotes/origin/main
+          # #372 is now in main. Retain its actual OLD/NEW race assertions using
+          # the exact pre-cutover main, not two post-cutover writers. This is
+          # disposable historical regression evidence, not a new release gate
+          # or an instruction to repeat the completed production migration.
+          $reviewBaseSha = git rev-parse a457809f2412da6b6074a6d398aa1ca9248c6ac1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node scripts/otc-ci-evidence.cjs run cutover-postgres node scripts/diagnose-otc-balance-safety.cjs --cutover --base $reviewBaseSha
           exit $LASTEXITCODE
@@ -97,14 +106,27 @@ jobs:
         id: frontend_build
         env:
           VITE_API_URL: /api/v1
+          VITE_SUPPORT_ENDPOINT: /api/support
         run: node scripts/otc-ci-evidence.cjs run frontend-build npm run build --prefix frontend
+      - name: Separate legacy-component fixture bundle (never published)
+        id: legacy_frontend_build
+        env:
+          VITE_API_URL: /api/v1
+          VITE_SUPPORT_ENDPOINT: /api/support
+        run: node scripts/otc-ci-evidence.cjs run legacy-frontend-build npm exec --prefix frontend -- vite build --config frontend/vite.otc-legacy.config.ts
       - id: browser_dependency
         run: node scripts/otc-ci-evidence.cjs run browser-dependency node node_modules/.cache/deposit-qa/node_modules/playwright/cli.js install chromium
-      - name: Client, chat, admin, keyboard and idle viewport checks
+      - name: Public manual support, failure, keyboard and idle viewport checks
         id: browser_qa
         run: |
           $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
           node scripts/otc-ci-evidence.cjs run browser-qa node scripts/qa-otc-cash.cjs
+          exit $LASTEXITCODE
+      - name: Preserved reserve, private chat, admin and consent viewport checks
+        id: legacy_browser_qa
+        run: |
+          $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
+          node scripts/otc-ci-evidence.cjs run legacy-browser-qa node scripts/qa-otc-cash-legacy.cjs
           exit $LASTEXITCODE
       - name: Record real step outcomes (including failures and skipped gates)
         if: always() && steps.evidence.outcome == 'success'
