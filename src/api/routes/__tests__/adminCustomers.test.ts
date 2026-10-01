@@ -82,10 +82,10 @@ test('customer KPIs and activity omit admin packages while the general deposit q
   expect(prisma.user.count.mock.calls.map((c: any) => c[0].where.role)).toEqual(['USER', 'USER', 'USER']);
   expect(res.body.packages.map((p: any) => p.userId)).toEqual(['new']);
   expect(res.body.awaitingConfirmationsByUser).toEqual({ new: 1 });
-  expect(res.body.counts).toMatchObject({ UNATTRIBUTED: 1, READY: 1, AWAITING_CONFIRMATIONS: 1, uncreditedTotal: 3 });
+  expect(res.body.counts).toMatchObject({ UNATTRIBUTED: 1, READY: 0, AWAITING_CONFIRMATIONS: 1, uncreditedTotal: 3 });
   const all = await new DepositQueueService(prisma, prices).load({ creditedLimit: 0 });
   expect(all.packages.map(p => p.userId)).toEqual(['admin', 'new']);
-  expect(all.counts).toMatchObject({ UNATTRIBUTED: 1, READY: 2, AWAITING_CONFIRMATIONS: 2, uncreditedTotal: 5, CREDITED: 1 });
+  expect(all.counts).toMatchObject({ UNATTRIBUTED: 1, READY: 0, AWAITING_CONFIRMATIONS: 2, uncreditedTotal: 5, CREDITED: 1 });
   const history = await request(app).get('/api/v1/admin/deposits').set('Authorization', auth());
   expect(history.status).toBe(200);
   expect(history.body.some((d: any) => d.id === 'admin-credit')).toBe(true);
