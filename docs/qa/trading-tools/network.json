@@ -1,0 +1,3684 @@
+{
+  "generatedAt": "2026-10-01T06:07:27.624Z",
+  "scope": "combined",
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "browser": "151.0.7922.34"
+  },
+  "measured": true,
+  "calculatorRows": [
+    {
+      "action": "module/StrictMode/pnl/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/size/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/liquidation/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/risk-reward/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/dca/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/StrictMode/fees/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/pnl/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/size/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/liquidation/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/risk-reward/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/dca/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/fees/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/DCA-50-rows",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/DCA-repeating-quantity-achieved-target",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/PnL-Futures-Spot-Futures",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/negative-tiny-long-invalid-insufficient-budget",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/Fees-Futures-Spot-Futures-zero-cost-bars",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/clipboard-edit-mode-unmount",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/visible/12h-virtual-idle",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/hidden/12h-virtual-idle",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/3s-real-idle",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    }
+  ],
+  "integratedRows": [
+    {
+      "action": "integrated/pnl/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 19
+    },
+    {
+      "action": "integrated/size/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 18
+    },
+    {
+      "action": "integrated/liquidation/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 19
+    },
+    {
+      "action": "integrated/risk-reward/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 18
+    },
+    {
+      "action": "integrated/dca/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 19
+    },
+    {
+      "action": "integrated/fees/example-edit-copy-method-reset",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 18
+    },
+    {
+      "action": "integrated/explicit-existing-support-open-close",
+      "calculator": 0,
+      "shell": 0,
+      "static": 2,
+      "timersScheduled": 5
+    },
+    {
+      "action": "integrated/12h-virtual-idle-and-wake",
+      "calculator": 0,
+      "shell": 1,
+      "static": 0,
+      "timersScheduled": 2
+    }
+  ],
+  "responsive": [
+    {
+      "width": 1366,
+      "height": 768,
+      "overflow": 0,
+      "toolWidth": 1366,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 68,
+          "width": 1366,
+          "height": 1646.859375
+        },
+        "launcher": {
+          "x": 1292,
+          "y": 1907.984375,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "overflow": 0,
+      "toolWidth": 1440,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 68,
+          "width": 1440,
+          "height": 1666.65625
+        },
+        "launcher": {
+          "x": 1366,
+          "y": 1927.78125,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "overflow": 0,
+      "toolWidth": 1920,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 68,
+          "width": 1920,
+          "height": 1681.640625
+        },
+        "launcher": {
+          "x": 1846,
+          "y": 1942.765625,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    },
+    {
+      "width": 320,
+      "height": 844,
+      "overflow": 0,
+      "toolWidth": 320,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 56,
+          "width": 320,
+          "height": 2597.046875
+        },
+        "launcher": {
+          "x": 246,
+          "y": 3025.53125,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    },
+    {
+      "width": 360,
+      "height": 844,
+      "overflow": 0,
+      "toolWidth": 360,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 56,
+          "width": 360,
+          "height": 2578.265625
+        },
+        "launcher": {
+          "x": 286,
+          "y": 2969.359375,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "toolWidth": 390,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 56,
+          "width": 390,
+          "height": 2595.21875
+        },
+        "launcher": {
+          "x": 316,
+          "y": 2968.71875,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "overflow": 0,
+      "toolWidth": 430,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 56,
+          "width": 430,
+          "height": 2582.640625
+        },
+        "launcher": {
+          "x": 356,
+          "y": 2956.140625,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "overflow": 0,
+      "toolWidth": 768,
+      "headerCount": 1,
+      "support": {
+        "tools": {
+          "x": 0,
+          "y": 56,
+          "width": 768,
+          "height": 2228.609375
+        },
+        "launcher": {
+          "x": 694,
+          "y": 2517.734375,
+          "width": 50,
+          "height": 50
+        },
+        "overlap": false,
+        "position": "relative"
+      },
+      "pageErrors": []
+    }
+  ],
+  "limitations": [
+    "Global Google Fonts requests are existing static shell dependencies and are blocked by the fixture CSP. Blocked resource attempts are reported separately from served static files. No production service is contacted.",
+    "The isolated development React fixture replays StrictMode effects; integrated screenshots use the production bundle.",
+    "The initial module fixture downloads include existing local terminal fonts. Static downloads are distinct from calculator business API calls.",
+    "Twelve-hour idle checks advance the browser virtual clock; only the separate three-second sample measures wall-clock idle.",
+    "Responsive QA uses headless Chromium viewports, not physical iOS or Android devices.",
+    "No asset selector exists: all quantities are manual base-asset units. Asset-switch scenarios are not applicable."
+  ],
+  "isolatedInitial": {
+    "calculator": 0,
+    "shell": 0,
+    "timers": 0,
+    "copies": 0,
+    "static": 10
+  },
+  "calculatorStorageUnchanged": true,
+  "isolatedTransports": [],
+  "isolatedTimers": [],
+  "isolatedStaticRequests": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/__qa/module",
+      "type": "document",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/__qa/module.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/__qa/module.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    }
+  ],
+  "isolatedRequestInitiators": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/__qa/module",
+      "initiator": {
+        "type": "other",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/__qa/module.css",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/__qa/module.js",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    }
+  ],
+  "isolatedBlockedResources": [],
+  "integratedInitial": {
+    "calculator": 0,
+    "shell": 1,
+    "timers": 3,
+    "copies": 0,
+    "static": 49
+  },
+  "supportDock": {
+    "tools": {
+      "x": 0,
+      "y": 68,
+      "width": 1440,
+      "height": 1233.84375
+    },
+    "launcher": {
+      "x": 1366,
+      "y": 1494.96875,
+      "width": 50,
+      "height": 50
+    },
+    "overlap": false,
+    "position": "relative"
+  },
+  "reloadClearsDrafts": true,
+  "integratedTransports": [
+    {
+      "kind": "fetch",
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "page": "/tools",
+      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+    },
+    {
+      "kind": "fetch",
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "page": "/tools",
+      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at DS (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8000)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2099"
+    },
+    {
+      "kind": "fetch",
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "page": "/tools",
+      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+    },
+    {
+      "kind": "fetch",
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "page": "/tools",
+      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+    },
+    {
+      "kind": "fetch",
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "page": "/tools",
+      "initiator": "    at record (http://127.0.0.1:4782/tools?calc=pnl:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools?calc=pnl:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+    }
+  ],
+  "routeAwayTransports": [
+    {
+      "kind": "fetch",
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/market/display/spot-snapshot",
+      "page": "/legal/terms",
+      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)"
+    },
+    {
+      "kind": "fetch",
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "page": "/legal/terms",
+      "initiator": "    at record (http://127.0.0.1:4782/tools:7:137)\n    at window.fetch (http://127.0.0.1:4782/tools:12:7)\n    at Mm (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:4624)\n    at async E (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:14117)"
+    }
+  ],
+  "integratedTimers": [
+    {
+      "kind": "setTimeout",
+      "delay": 20000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/tools:146:9\n    at http://127.0.0.1:4782/tools:162:9"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at D1 (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:5502)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8998"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 3000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/tools:145:50"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 299999,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 299999,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 299999,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 90000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at DS (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:7941)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2099\n    at ya (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2463)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 3000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8648\n    at Gi (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:41:24250)\n    at An (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:41:42262)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 150,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2200\n    at new Promise (<anonymous>)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2185"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:2410"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setInterval",
+      "delay": 60000,
+      "page": "/legal/terms",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at c (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:3209)\n    at wu (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:3253)\n    at Lt.retimeAndStart (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:11693)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 15000,
+      "page": "/legal/terms",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at Oe (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:3363)\n    at Lt.refresh (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:9986)\n    at Lt.subscribe (http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js:16:9598)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 300000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at t (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:6127)"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 20000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools?calc=pnl:25:142)\n    at http://127.0.0.1:4782/tools?calc=pnl:146:9\n    at http://127.0.0.1:4782/tools?calc=pnl:162:9"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 299999,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools?calc=pnl:25:142)\n    at kr (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:1347)\n    at D1 (http://127.0.0.1:4782/assets/index-BPBQmjRs.js:247:5502)\n    at http://127.0.0.1:4782/assets/index-BPBQmjRs.js:250:8998"
+    },
+    {
+      "kind": "setTimeout",
+      "delay": 3000,
+      "page": "/tools",
+      "initiator": "    at window.<computed> (http://127.0.0.1:4782/tools?calc=pnl:25:142)\n    at http://127.0.0.1:4782/tools?calc=pnl:145:50"
+    }
+  ],
+  "integratedStaticRequests": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/tools",
+      "type": "document",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "type": "fetch",
+      "category": "shell",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "type": "fetch",
+      "category": "shell",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "type": "fetch",
+      "category": "shell",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/LegalPage-CPQR85t-.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "type": "fetch",
+      "category": "shell",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "type": "fetch",
+      "category": "shell",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/tools",
+      "type": "document",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "type": "fetch",
+      "category": "shell",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "type": "stylesheet",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "type": "script",
+      "category": "static",
+      "external": false
+    }
+  ],
+  "integratedRequestInitiators": [
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/tools",
+      "initiator": {
+        "type": "other",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_g",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 9
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_g",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 9
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "window.fetch",
+            "file": "http://127.0.0.1:4782/tools",
+            "line": 13
+          },
+          {
+            "function": "Mm",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "window.fetch",
+            "file": "http://127.0.0.1:4782/tools",
+            "line": 13
+          },
+          {
+            "function": "DS",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 249
+          },
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "ya",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "window.fetch",
+            "file": "http://127.0.0.1:4782/tools",
+            "line": 13
+          },
+          {
+            "function": "Mm",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/LegalPage-CPQR85t-.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "window.fetch",
+            "file": "http://127.0.0.1:4782/tools",
+            "line": 13
+          },
+          {
+            "function": "Mm",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "window.fetch",
+            "file": "http://127.0.0.1:4782/tools",
+            "line": 13
+          },
+          {
+            "function": "Mm",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/tools",
+      "initiator": {
+        "type": "other",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/index-B__prgon.css",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "https://fonts.googleapis.com/css2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-DDma8HmV.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Nav-D6f1Vp2J.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-B0LD0dE8.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/DepositModal-CT06_0CO.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_g",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 9
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Footer-CAwCiqZ1.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/calculator-HZz6Jmu8.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/info-hCqktfSr.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/shield-check-S4NfExwq.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/chart-column-CKm1AhhR.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/rotate-ccw-ClstIGUJ.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/check-Dy7XLCxD.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradingToolsPage-CVfnJYpI.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_g",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 9
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/api/v1/me",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "window.fetch",
+            "file": "http://127.0.0.1:4782/tools",
+            "line": 13
+          },
+          {
+            "function": "Mm",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-cdsxcdWE.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVtaSpotAccount-BcXfAZIl.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/visibleRead-CFO1kjgo.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-Cs9Ah2lg.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useFuturesAccount-CWG8yvQu.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/VoltexTerminalSystem-ChbuLmjS.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-LqTEzQap.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TerminalPremium-CiRlBNqy.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/star-Bk1RxpPQ.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/Skeleton-B25sNJbX.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-D_5dqZd3.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useCfdTickers-DUeCozDt.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/TradePage-BPnO3cHA.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-1pdEMK-m.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useVisibleAccountRead-D1JEZwgy.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/nativeDemoApi-BJgHUM5-.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/privateTradingError-D2hXOwgv.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/search-DnuZ5p77.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-B-8e6Esw.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-down-BIVbjxDw.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/arrow-up-down-BCd1BBIW.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/crown-BrKVTSyT.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/WalletPage-D5csrReO.css",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "B",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          },
+          {
+            "function": "e",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "_callFirstTimer",
+            "file": "",
+            "line": 284
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesPage-mdteuXRK.js",
+      "initiator": {
+        "type": "script",
+        "frames": [
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 246
+          },
+          {
+            "function": "",
+            "file": "http://127.0.0.1:4782/assets/index-BPBQmjRs.js",
+            "line": 40
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/FuturesStudio-B-eUnER9.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/useLiveMarket-DwJ2f5SM.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/assets/catalogueStore-CnvZJQvc.js",
+      "initiator": {
+        "type": "script",
+        "frames": []
+      }
+    }
+  ],
+  "integratedBlockedResources": [
+    {
+      "path": "https://fonts.googleapis.com/css2",
+      "directive": "style-src-elem",
+      "source": "http://127.0.0.1:4782/tools",
+      "line": 186
+    },
+    {
+      "path": "https://fonts.googleapis.com/css2",
+      "directive": "style-src-elem",
+      "source": "http://127.0.0.1:4782/tools",
+      "line": 192
+    },
+    {
+      "path": "https://fonts.googleapis.com/css2",
+      "directive": "style-src-elem",
+      "source": "http://127.0.0.1:4782/tools",
+      "line": 198
+    },
+    {
+      "path": "https://fonts.googleapis.com/css2",
+      "directive": "style-src-elem",
+      "source": "http://127.0.0.1:4782/tools",
+      "line": 186
+    },
+    {
+      "path": "https://fonts.googleapis.com/css2",
+      "directive": "style-src-elem",
+      "source": "http://127.0.0.1:4782/tools",
+      "line": 192
+    },
+    {
+      "path": "https://fonts.googleapis.com/css2",
+      "directive": "style-src-elem",
+      "source": "http://127.0.0.1:4782/tools",
+      "line": 198
+    }
+  ],
+  "logout": {
+    "workspaceUnmounted": true,
+    "path": "/login"
+  },
+  "serverReads": [
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:44.126Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:48.141Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:48.225Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:48.284Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:48.317Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:48.488Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:49.317Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:50.261Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:51.216Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:52.186Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:53.221Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:54.076Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:56.268Z"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "at": "2026-10-01T06:07:57.271Z"
+    }
+  ]
+}

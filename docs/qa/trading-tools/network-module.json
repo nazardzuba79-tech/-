@@ -1,5 +1,6 @@
 {
-  "generatedAt": "2026-10-01T05:27:27.673Z",
+  "generatedAt": "2026-10-01T06:07:27.624Z",
+  "scope": "module-only",
   "environment": {
     "node": "v24.21.0",
     "platform": "win32",
@@ -99,6 +100,13 @@
       "timersScheduled": 0
     },
     {
+      "action": "module/offline/DCA-repeating-quantity-achieved-target",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
       "action": "module/offline/PnL-Futures-Spot-Futures",
       "calculator": 0,
       "shell": 0,
@@ -107,6 +115,20 @@
     },
     {
       "action": "module/offline/negative-tiny-long-invalid-insufficient-budget",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/Fees-Futures-Spot-Futures-zero-cost-bars",
+      "calculator": 0,
+      "shell": 0,
+      "static": 0,
+      "timersScheduled": 0
+    },
+    {
+      "action": "module/offline/clipboard-edit-mode-unmount",
       "calculator": 0,
       "shell": 0,
       "static": 0,
@@ -142,29 +164,79 @@
     "shell": 0,
     "timers": 0,
     "copies": 0,
-    "static": 3
+    "static": 10
   },
+  "calculatorStorageUnchanged": true,
   "isolatedTransports": [],
   "isolatedTimers": [],
   "isolatedStaticRequests": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:8422/__qa/module",
+      "path": "http://127.0.0.1:4782/__qa/module",
       "type": "document",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:8422/__qa/module.css",
+      "path": "http://127.0.0.1:4782/__qa/module.css",
       "type": "stylesheet",
       "category": "static",
       "external": false
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:8422/__qa/module.js",
+      "path": "http://127.0.0.1:4782/__qa/module.js",
       "type": "script",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "type": "font",
+      "category": "static",
+      "external": false
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
+      "type": "font",
       "category": "static",
       "external": false
     }
@@ -172,7 +244,7 @@
   "isolatedRequestInitiators": [
     {
       "method": "GET",
-      "path": "http://127.0.0.1:8422/__qa/module",
+      "path": "http://127.0.0.1:4782/__qa/module",
       "initiator": {
         "type": "other",
         "frames": []
@@ -180,7 +252,7 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:8422/__qa/module.css",
+      "path": "http://127.0.0.1:4782/__qa/module.css",
       "initiator": {
         "type": "parser",
         "frames": []
@@ -188,7 +260,63 @@
     },
     {
       "method": "GET",
-      "path": "http://127.0.0.1:8422/__qa/module.js",
+      "path": "http://127.0.0.1:4782/__qa/module.js",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-700.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-400.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-600.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/latin-500.woff2",
+      "initiator": {
+        "type": "parser",
+        "frames": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "http://127.0.0.1:4782/fonts/ibm-plex-sans/cyrillic-600.woff2",
       "initiator": {
         "type": "parser",
         "frames": []
