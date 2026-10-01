@@ -64,13 +64,34 @@ async function fill(){await change(host.querySelector('[aria-label="Страна
 async function confirm(){await click(button('Проверить параметры'));await click(host.querySelector('.otc-cash-confirm input[type="checkbox"]')!);}
 const posts=()=>calls.mock.calls.filter(([,options])=>options?.method==='POST');
 
-test('public OTC only opens support, without reads, reserve writes or draft prefilling',async()=>{
+test('public OTC collects and reviews parameters before support, with zero financial requests',async()=>{
   const {OtcPage}=load(resolve(frontend,'src/pages/OtcPage'));
   await act(async()=>{root.render(React.createElement(OtcPage));await flush();});
   expect(calls).not.toHaveBeenCalled();expect(openSupport).not.toHaveBeenCalled();
-  expect(host.querySelectorAll('input,textarea,form')).toHaveLength(0);
-  for(const el of Array.from(host.querySelectorAll('button')))await click(el);
-  expect(openSupport).toHaveBeenCalledTimes(4);
+  expect(host.querySelector('[aria-label="Параметры OTC-обмена"]')).not.toBeNull();
+  expect(field('Город','select').disabled).toBe(true);
+
+  const categories=Array.from(host.querySelectorAll('.otc-tier button'));
+  expect(categories).toHaveLength(3);
+  for(const el of categories)await click(el);
+  expect(openSupport).not.toHaveBeenCalled();
+  expect(calls).not.toHaveBeenCalled();
+
+  await change(host.querySelector('[aria-label="Страна"]')!,'UA');
+  await change(field('Город','select'),'geonames-703448');
+  await change(field('Количество'),'10000');
+  await change(field('Получаете','select'),'USD');
+  expect(openSupport).not.toHaveBeenCalled();expect(calls).not.toHaveBeenCalled();
+  expect(host.textContent).not.toContain('Продолжить в поддержку');
+
+  await click(button('Проверить параметры'));
+  expect(openSupport).not.toHaveBeenCalled();
+  expect(host.textContent).toContain('Украина, Киев');
+  expect(host.textContent).toContain('10000 USDT → USD наличными');
+  expect(host.textContent).toContain('Продолжить в поддержку');
+
+  await click(button('Продолжить в поддержку'));
+  expect(openSupport).toHaveBeenCalledTimes(1);
   expect(calls).not.toHaveBeenCalled();expect(globalThis.fetch).not.toHaveBeenCalled();
   expect(localStorage.length).toBe(0);
   await act(async()=>{jest.advanceTimersByTime(86400000);await flush();});
