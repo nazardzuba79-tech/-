@@ -764,6 +764,9 @@ export function FuturesPage() {
                    brought forward; `selectMobileTab` is a no-op on desktop,
                    where the chart is already visible. */
                 onSelectSymbol={(next) => { selectSymbol(next); selectMobileTab('chart', true); }}
+                /* «История позиций →» on the «Позиция закрыта» card opens
+                   this page's own Position History tab. */
+                onShowHistory={() => { setBottomTab('positionHistory'); accountPanel.reveal(); }}
                 onEditLeverage={nativeExecution?.ready ? (positionId) => {
                   const position = native.getState()?.positions.find(p => p.id === positionId && p.status === 'OPEN');
                   if (position && !native.busy) native.setDialog({ kind: 'leverage', position });
