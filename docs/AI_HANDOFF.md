@@ -5155,3 +5155,17 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - First Linux full frontend CI passed 3,298 tests / 183 suites. CI found a genuine 1440 px header fit regression (19 px clearance vs required 20): Tools now lives in the existing desktop Trading dropdown, preserving one mobile drawer entry. Local unchanged Futures fixture measures 125 px; two navigation regressions raise targeted Tools count to 179/179. Global styles and fit assertions are unchanged.
 - The new 500 deposit rule invalidated an existing 400 USDT READY fixture. It now uses 500; a new explicit 400 case stays awaiting top-up. All 7 admin customer tests pass; no runtime accounting change.
 - Final local frontend build passes; Tools browser 21 isolated + 9 integrated groups pass across eight widths. Refreshed reports/screenshots and source-matched bundle evidence. Final-head CI remains authoritative in PR #364; do not merge or deploy.
+
+## Codex — 2026-10-01 — Trading Tools light visual revision (local only)
+
+- Owner rejected the dark Tools design and requested an interesting light background. Fresh-fetched main at `355ce91f978426f1e1fb139bc87f1d3ca9f41693` (includes #364); isolated branch `codex/trading-tools-light-20261001`.
+- Scoped `.vx-trading-tools` light palette: warm ivory canvas with a faint static grid, white tool cards, gold active states, dark legible text, pale input/result surfaces, restrained borders/shadows. Added presentation headings for parameters and result. Desktop and mobile spacing retained within the same calculator structure.
+- No calculator math, defaults, draft lifecycle, transport, deposits, shared navigation or global theme changed. No new dependency, API, animation or polling.
+- Validation: frontend TypeScript/Vite build passes (existing >500 kB bundle warning); 19/19 existing presentation and shell regression tests pass. Local fixture browser exercised all six examples at 1440 px, and P&L Long/Short plus DCA at 390 px. No horizontal overflow at either width; positive/negative result colors verified. No production browser/account access.
+- Evidence: ignored `output/light-tools/` contains build/test logs, before desktop and after desktop/mobile JPEG screenshots. Running fixture preview: `http://127.0.0.1:4274/tools`. Browser viewport override reset after QA. No remote PR/CI run for this visual revision, no merge and no deploy.
+
+### Trading Tools light release authorization — 2026-10-01
+
+- Owner approved adding the reviewed light design to the exchange. Source commit `bf58fe6d98784969bd03b833bed30f1488d43115`; fresh `origin/main` remains `355ce91f978426f1e1fb139bc87f1d3ca9f41693`.
+- Publish only the scoped Tools stylesheet and two presentation headings through a dedicated PR after CI. Preserve the separate, unmerged Claude deposit-copy journal PR #365. No backend logic, infrastructure or balances changed.
+- Release/serving revision and any remaining deployment limitation must be verified from the PR and existing production deployment before reporting publication complete.
