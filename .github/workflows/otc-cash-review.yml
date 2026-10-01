@@ -86,9 +86,13 @@ jobs:
         run: node scripts/otc-ci-evidence.cjs run preservation-postgres node scripts/diagnose-otc-balance-safety.cjs --preservation
       - name: Actual base/head overlap, stopped-writer migration and release audit
         id: cutover_postgres
-        env:
-          REVIEW_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: node scripts/otc-ci-evidence.cjs run cutover-postgres node scripts/diagnose-otc-balance-safety.cjs --cutover --base $env:REVIEW_BASE_SHA
+        run: |
+          # checkout fetched current main as well as the exact PR head. Do not
+          # substitute a stale PR metadata base SHA for the current remote main.
+          $reviewBaseSha = git rev-parse refs/remotes/origin/main
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/otc-ci-evidence.cjs run cutover-postgres node scripts/diagnose-otc-balance-safety.cjs --cutover --base $reviewBaseSha
+          exit $LASTEXITCODE
       - name: Production bundle using loopback-only fixture API
         id: frontend_build
         env:
