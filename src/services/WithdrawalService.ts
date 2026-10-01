@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
+import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
 
 export class WithdrawalRequestError extends Error {}
 
@@ -53,21 +54,12 @@ export class WithdrawalService {
     }
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const balance = await tx.balance.findUnique({
-        where: { userId_asset: { userId: params.userId, asset: params.asset } },
-      });
-      const available = new BigNumber(balance?.available.toString() ?? '0');
-      if (available.isLessThan(amount)) {
-        throw new WithdrawalRequestError(`Insufficient ${params.asset} balance`);
+      try {
+        await mutateSpotBalance(tx, params.userId, params.asset, { available: amount.negated(), locked: amount });
+      } catch (error) {
+        if (error instanceof InsufficientWalletBalance) throw new WithdrawalRequestError(`Insufficient ${params.asset} balance`);
+        throw error;
       }
-
-      await tx.balance.update({
-        where: { userId_asset: { userId: params.userId, asset: params.asset } },
-        data: {
-          available: available.minus(amount).toString(),
-          locked: new BigNumber(balance!.locked.toString()).plus(amount).toString(),
-        },
-      });
 
       const withdrawal = await tx.withdrawal.create({
         data: {
@@ -207,14 +199,8 @@ export class WithdrawalService {
 
       // An unheld request moved nothing, so there is no lock to release.
       if (withdrawal.balanceHeld !== false) {
-        const balance = await tx.balance.findUnique({
-          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-        });
-        await tx.balance.update({
-          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-          data: {
-            locked: new BigNumber(balance!.locked.toString()).minus(withdrawal.amount.toString()).toString(),
-          },
+        await mutateSpotBalance(tx, withdrawal.userId, withdrawal.asset, {
+          locked: new BigNumber(withdrawal.amount.toString()).negated(),
         });
       }
 
@@ -248,16 +234,8 @@ export class WithdrawalService {
 
       // An unheld request moved nothing, so there is nothing to give back.
       if (withdrawal.balanceHeld !== false) {
-        const balance = await tx.balance.findUnique({
-          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-        });
-        await tx.balance.update({
-          where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
-          data: {
-            available: new BigNumber(balance!.available.toString()).plus(withdrawal.amount.toString()).toString(),
-            locked: new BigNumber(balance!.locked.toString()).minus(withdrawal.amount.toString()).toString(),
-          },
-        });
+        const amount = new BigNumber(withdrawal.amount.toString());
+        await mutateSpotBalance(tx, withdrawal.userId, withdrawal.asset, { available: amount, locked: amount.negated() });
       }
 
       const updated = await tx.withdrawal.update({
@@ -278,6 +256,7 @@ export class WithdrawalService {
   }
 
   private async requireStatus(tx: Prisma.TransactionClient, withdrawalId: string, allowed: string[]) {
+    await tx.$queryRaw`SELECT id FROM "Withdrawal" WHERE id = ${withdrawalId} FOR UPDATE`;
     const withdrawal = await tx.withdrawal.findUnique({ where: { id: withdrawalId } });
     if (!withdrawal) throw new WithdrawalRequestError('Withdrawal request not found');
     if (!withdrawal.userId) throw new WithdrawalRequestError('Historical withdrawal belongs to a deleted account');

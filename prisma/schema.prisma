@@ -20,6 +20,7 @@ datasource db {
 }
 
 model User {
+  otcCashRequests OtcCashRequest[]
   copyStrategyOwnerships CopyStrategyOwner[]
   privateTradingAccount PrivateTradingAccount?
   privateTradingLedger PrivateTradingLedger[]
@@ -147,6 +148,115 @@ model User {
   portfolioSnapshots PortfolioSnapshot[]
 
   @@index([email])
+}
+
+// OTC history is intentionally RESTRICT, never a cascading wallet deletion.
+// Closed requests also retain their owner until a separate reviewed retention
+// / anonymisation policy exists. No background worker consumes these tables.
+model OtcCashRequest {
+  id String @id @default(uuid())
+  number Int @unique @default(autoincrement())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  idempotencyKey String
+  fingerprint String
+  country String
+  cityId String
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  fiat String
+  tier String
+  policyVersion String
+  status String @default("RESERVED")
+  version Int @default(1)
+  offerVersion Int @default(0)
+  acceptedOfferVersion Int?
+  acceptedAt DateTime?
+  cancelRequested Boolean @default(false)
+  pickupRevision Int @default(0)
+  payoutReference String? @unique
+  completedBy String?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reservation OtcCashReservation?
+  offers OtcCashOffer[]
+  messages OtcCashMessage[]
+  commands OtcCashCommand[]
+  ledger OtcCashLedger[]
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt, id])
+  @@index([status, createdAt, id])
+}
+
+model OtcCashReservation {
+  requestId String @id
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  status String @default("HELD")
+  createdAt DateTime @default(now())
+  settledAt DateTime?
+}
+
+model OtcCashOffer {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  version Int
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  fiat String
+  rate Decimal @db.Decimal(36, 18)
+  gross Decimal @db.Decimal(36, 18)
+  fee Decimal @db.Decimal(36, 18)
+  net Decimal @db.Decimal(36, 18)
+  cashPrecision Int
+  expiresAt DateTime
+  createdBy String
+  createdAt DateTime @default(now())
+  acceptedAt DateTime?
+  @@unique([requestId, version])
+}
+
+model OtcCashMessage {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  authorId String
+  sender String
+  kind String @default("TEXT")
+  text String @db.Text
+  idempotencyKey String
+  fingerprint String
+  createdAt DateTime @default(now())
+  @@unique([requestId, authorId, idempotencyKey])
+  @@index([requestId, createdAt, id])
+}
+
+model OtcCashCommand {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  idempotencyKey String
+  actorId String
+  fingerprint String
+  result Json
+  createdAt DateTime @default(now())
+  @@unique([requestId, idempotencyKey])
+}
+
+model OtcCashLedger {
+  id String @id @default(uuid())
+  requestId String
+  request OtcCashRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  kind String
+  asset String
+  quantity Decimal @db.Decimal(36, 18)
+  availableAfter Decimal @db.Decimal(36, 18)
+  lockedAfter Decimal @db.Decimal(36, 18)
+  createdAt DateTime @default(now())
+  @@unique([requestId, kind])
 }
 
 model AdminPasswordVault {

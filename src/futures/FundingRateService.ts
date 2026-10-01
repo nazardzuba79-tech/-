@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { mutateFuturesBalance } from '../services/WalletMutation';
 import { MarkPriceService } from './MarkPriceService';
 import { CORE_FUTURES_SYMBOLS, FUNDING_INTERVAL_HOURS } from '../config/futuresConfig';
 
@@ -83,16 +84,7 @@ export class FundingRateService {
           data: { positionId: position.id, userId: position.userId, symbol, amount: amount.toString(), rate: rate.toString() },
         });
 
-        const balance = await tx.futuresBalance.upsert({
-          where: { userId_asset: { userId: position.userId, asset: quote } },
-          create: { userId: position.userId, asset: quote, available: '0', locked: '0' },
-          update: {},
-        });
-        const nextAvailable = new BigNumber(balance.available.toString()).plus(amount);
-        await tx.futuresBalance.update({
-          where: { userId_asset: { userId: position.userId, asset: quote } },
-          data: { available: nextAvailable.toString() },
-        });
+        await mutateFuturesBalance(tx, position.userId, quote, { available: amount });
       }
 
       return record;

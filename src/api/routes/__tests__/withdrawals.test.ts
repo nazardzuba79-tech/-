@@ -5,6 +5,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { withdrawalsRouter, type WithdrawalsRouterOptions } from '../withdrawals';
 import { PrivateTradingError } from '../../../private-trading/serviceTypes';
+import { walletDelegate } from '../../../test-utils/walletDelegate';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId, sid: `test-session:${userId}` }, process.env.JWT_SECRET!)}`;
@@ -20,21 +21,16 @@ function buildApp(prisma: any, options: WithdrawalsRouterOptions = {}) {
 }
 
 function makePrisma(opts: {
+  userId?: string;
   balance?: { available: string; locked: string } | null;
   withdrawals?: any[];
   claimed?: string | null;
   spot?: { asset: string; available: string }[];
   futures?: { asset: string; available: string }[];
 } = {}) {
-  const balanceState = opts.balance ? { ...opts.balance } : null;
+  const rows = new Map(opts.balance ? [[`${opts.userId ?? 'u1'}:USDT`, { ...opts.balance }]] : []);
   const tx = {
-    balance: {
-      findUnique: jest.fn().mockImplementation(() => Promise.resolve(balanceState)),
-      update: jest.fn().mockImplementation(({ data }: any) => {
-        if (balanceState) Object.assign(balanceState, data);
-        return Promise.resolve(balanceState);
-      }),
-    },
+    balance: walletDelegate(rows),
     withdrawal: {
       create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'w-new', ...data })),
       aggregate: jest.fn().mockResolvedValue({ _sum: { amount: opts.claimed ?? null } }),
@@ -43,6 +39,7 @@ function makePrisma(opts: {
     $queryRaw: jest.fn().mockResolvedValue([]),
   };
   return {
+    rows,
     tx,
     withdrawal: {
       findMany: jest.fn().mockResolvedValue(opts.withdrawals ?? []),
@@ -50,7 +47,12 @@ function makePrisma(opts: {
     },
     balance: { findMany: jest.fn().mockResolvedValue(opts.spot ?? []) },
     futuresBalance: { findMany: jest.fn().mockResolvedValue(opts.futures ?? []) },
-    $transaction: jest.fn(async (fn: any) => fn(tx)),
+    $transaction: jest.fn(async (fn: any) => {
+      const before = new Map([...rows].map(([key, row]) => [key, { ...row }]));
+      try { return await fn(tx); } catch (error) {
+        rows.clear(); before.forEach((row, key) => rows.set(key, row)); throw error;
+      }
+    }),
   } as any;
 }
 
@@ -82,7 +84,8 @@ describe('withdrawals routes', () => {
     });
 
     it('creates a PENDING withdrawal and locks the balance', async () => {
-      const app = buildApp(makePrisma({ balance: { available: '100', locked: '0' } }));
+      const prisma = makePrisma({ balance: { available: '100', locked: '0' } });
+      const app = buildApp(prisma);
       const res = await request(app)
         .post('/api/v1/withdrawals')
         .set('Authorization', authHeader('u1'))
@@ -90,6 +93,7 @@ describe('withdrawals routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ status: 'PENDING', amount: '10' });
+      expect(prisma.rows.get('u1:USDT')).toEqual({ available: '90', locked: '10' });
     });
   });
 
@@ -143,6 +147,8 @@ describe('withdrawals routes', () => {
       expect(prisma.tx.withdrawal.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ balanceHeld: false }) }));
       expect(prisma.tx.balance.findUnique).not.toHaveBeenCalled();
       expect(prisma.tx.balance.update).not.toHaveBeenCalled();
+      expect(prisma.tx.balance.updateMany).not.toHaveBeenCalled();
+      expect(prisma.tx.balance.upsert).not.toHaveBeenCalled();
       // The account's own identity reaches the reader, never one from the body.
       expect(options.tradingWallet).toHaveBeenCalledWith(expect.objectContaining({ userId: TRADER, sessionId: `test-session:${TRADER}` }));
     });
@@ -197,14 +203,18 @@ describe('withdrawals routes', () => {
     });
 
     it('falls back to the spot ledger while the trading account is not opened', async () => {
-      const prisma = makePrisma({ balance: { available: '100', locked: '0' } });
+      const prisma = makePrisma({ userId: TRADER, balance: { available: '100', locked: '0' } });
       const res = await request(buildApp(prisma, wallet(null)))
         .post('/api/v1/withdrawals')
         .set('Authorization', authHeader(TRADER))
         .send({ asset: 'USDT', network: 'TRC20', toAddress: 'TXYZ', amount: '10' });
       expect(res.status).toBe(200);
       expect(res.body.balanceHeld).toBe(true);
-      expect(prisma.tx.balance.update).toHaveBeenCalled();
+      expect(prisma.tx.balance.updateMany).toHaveBeenCalledWith({
+        where: { userId: TRADER, asset: 'USDT', available: { gte: '10' } },
+        data: { available: { increment: '-10' }, locked: { increment: '10' } },
+      });
+      expect(prisma.rows.get(`${TRADER}:USDT`)).toEqual({ available: '90', locked: '10' });
     });
   });
 

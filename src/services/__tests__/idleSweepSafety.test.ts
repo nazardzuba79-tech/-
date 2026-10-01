@@ -3,6 +3,7 @@ import { LiquidationEngine } from '../../futures/LiquidationEngine';
 import { OrderService } from '../OrderService';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
 import BigNumber from 'bignumber.js';
+import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 
 /**
  * The two properties the idle backoff depends on for safety.
@@ -77,6 +78,7 @@ describe('idle backoff: the wake fires after the commit, never inside it', () =>
    *  the transaction resolving. */
   function trackingPrisma(inner: (tx: any) => Promise<any>, log: string[]) {
     return {
+      $queryRaw: jest.fn(async () => [{ status: 'committed' }]),
       $transaction: jest.fn(async (fn: (tx: any) => Promise<any>) => {
         log.push('tx:start');
         const out = await fn(await inner({}));
@@ -90,8 +92,9 @@ describe('idle backoff: the wake fires after the commit, never inside it', () =>
     const log: string[] = [];
     const created: any[] = [];
     const tx = {
+      $queryRaw: jest.fn(async () => [{ id: '1' }]),
       order: { create: jest.fn(async (a: any) => { created.push(a); return a; }) },
-      balance: { findUnique: async () => ({ available: '999999', locked: '0' }), update: async () => ({}) },
+      balance: { findUnique: async () => ({ available: '999999', locked: '0' }), updateMany: async () => ({ count: 1 }) },
     };
     const prisma = trackingPrisma(async () => tx, log);
     const engine = { getBestBid: () => null, getBestAsk: () => null } as any;
@@ -113,23 +116,23 @@ describe('idle backoff: the wake fires after the commit, never inside it', () =>
   it('OrderService does NOT wake the price watcher for a plain order that rests on the book', async () => {
     const log: string[] = [];
     const tx = {
-      order: { create: jest.fn(async (a: any) => a), update: jest.fn(async (a: any) => a), findUnique: jest.fn(async () => null) },
-      balance: { findUnique: async () => ({ available: '999999', locked: '0' }), update: async () => ({}) },
+      $queryRaw: jest.fn(async () => [{ id: '1' }]),
+      order: { create: jest.fn(async (a: any) => a), update: jest.fn(async (a: any) => a), findUnique: jest.fn(async () => null), findMany: jest.fn(async () => []) },
+      balance: { findUnique: async () => ({ available: '999999', locked: '0' }), updateMany: async () => ({ count: 1 }) },
       trade: { create: jest.fn(async (a: any) => a) },
     };
     const prisma = trackingPrisma(async () => tx, log);
-    const engine = {
-      getBestBid: () => null, getBestAsk: () => null,
-      submitOrder: () => ({ trades: [], remainingQuantity: new BigNumber('1') }),
-    } as any;
+    const engine = new MatchingEngine();
     const svc = new OrderService(prisma, engine, { getTicker: async () => ({ lastPrice: '60000' }) } as any, () => log.push('wake'));
 
     await svc.placeOrder({
       userId: 'u1', pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT',
       price: new BigNumber('50000'), quantity: new BigNumber('1'),
-    } as any).catch(() => { /* settlement paths are not what this asserts */ });
+    } as any);
 
     // A LIMIT order goes to the matching engine, not to the price watcher.
     expect(log).not.toContain('wake');
+    expect(log).toContain('tx:commit');
+    expect(engine.getBook('BTC/USDT').getBook('BUY')).toHaveLength(1);
   });
 });

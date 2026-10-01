@@ -28,8 +28,8 @@ export const FIAT_CURRENCIES: readonly OtcCurrency[] = [
 
 export const CRYPTO_CURRENCIES: readonly OtcCurrency[] = ['USDT', 'USDC', 'BTC', 'ETH'].map((code) => ({ code, kind: 'crypto' as const }));
 
-/** «Отдаёте» — crypto and fiat. «Получаете» — fiat only. */
-export const FROM_CURRENCIES: readonly OtcCurrency[] = [...CRYPTO_CURRENCIES, ...FIAT_CURRENCIES];
+/** Cash OTC never accepts fiat on the debit side. Routes are server-approved. */
+export const FROM_CURRENCIES: readonly OtcCurrency[] = CRYPTO_CURRENCIES;
 export const TO_CURRENCIES: readonly OtcCurrency[] = FIAT_CURRENCIES;
 
 /** Pairs the form can express: every «from» against every other «to». */
@@ -63,7 +63,7 @@ export function countryName(code: string, locale: string): string {
   }
 }
 
-/** What every CTA hands to the deposit flow: the chosen parameters only. */
+/** Legacy presentation shape; monetary requests use the strict CashIntent contract. */
 export interface OtcRequest {
   tier: TierId;
   country?: string;

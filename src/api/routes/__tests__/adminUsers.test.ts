@@ -5,6 +5,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { adminUsersRouter } from '../adminUsers';
 import { encryptAdminPassword } from '../../../services/AdminPasswordVault';
+import { walletDelegate } from '../../../test-utils/walletDelegate';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId, sid: 'sid:' + userId }, process.env.JWT_SECRET!)}`;
@@ -51,18 +52,22 @@ function adminPrisma(overrides: any = {}) {
 }
 
 function withBalanceTransaction(prisma: any, opts: { balance?: { available: string; locked: string } | null } = {}) {
-  const balanceState = opts.balance ? { ...opts.balance } : null;
+  const rows = new Map(opts.balance ? [['user-1:USDT', { ...opts.balance }]] : []);
+  const audits: any[] = [];
   const tx = {
-    balance: {
-      findUnique: jest.fn().mockImplementation(() => Promise.resolve(balanceState)),
-      upsert: jest.fn().mockImplementation(({ create, update }: any) =>
-        Promise.resolve(balanceState ? { ...balanceState, ...update, asset: create.asset } : { ...create, locked: '0' })
-      ),
-    },
-    auditLog: { create: jest.fn() },
+    balance: walletDelegate(rows),
+    auditLog: { create: jest.fn(async ({ data }: any) => { audits.push(data); return data; }) },
   };
-  prisma.$transaction = jest.fn(async (fn: any) => fn(tx));
-  return { prisma, tx };
+  prisma.$transaction = jest.fn(async (fn: any) => {
+    const before = new Map([...rows].map(([key, row]) => [key, { ...row }]));
+    const auditCount = audits.length;
+    try { return await fn(tx); } catch (error) {
+      rows.clear(); before.forEach((row, key) => rows.set(key, row));
+      audits.length = auditCount;
+      throw error;
+    }
+  });
+  return { prisma, tx, rows, audits };
 }
 
 describe('admin users routes', () => {
@@ -243,7 +248,7 @@ describe('admin users routes', () => {
 
     it('400s when the adjustment would push the balance negative', async () => {
       const prisma = adminPrisma();
-      withBalanceTransaction(prisma, { balance: { available: '10', locked: '0' } });
+      const { tx, rows, audits } = withBalanceTransaction(prisma, { balance: { available: '10', locked: '0' } });
       const app = buildApp(prisma);
 
       const res = await request(app)
@@ -252,6 +257,61 @@ describe('admin users routes', () => {
         .send({ asset: 'USDT', amount: '-50', reason: 'oops' });
 
       expect(res.status).toBe(400);
+      expect(rows.get('user-1:USDT')).toEqual({ available: '10', locked: '0' });
+      expect(await tx.balance.updateMany.mock.results[0].value).toEqual({ count: 0 });
+      expect(audits).toEqual([]);
+    });
+
+    it('creates a missing balance and reads back the exact credit', async () => {
+      const { prisma, rows, audits } = withBalanceTransaction(adminPrisma());
+      const res = await request(buildApp(prisma)).post('/api/v1/admin/users/user-1/adjust-balance')
+        .set('Authorization', authHeader('admin-1')).send({ asset: 'USDT', amount: '0.25', reason: 'fixture credit' });
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ asset: 'USDT', available: '0.25', locked: '0' });
+      expect(rows.get('user-1:USDT')).toEqual({ available: '0.25', locked: '0' });
+      expect(audits).toHaveLength(1);
+      expect(audits[0].metadata.newAvailable).toBe('0.25');
+    });
+
+    it('applies successive deltas without overwriting locked funds or another account', async () => {
+      const { prisma, tx, rows } = withBalanceTransaction(adminPrisma(), { balance: { available: '100', locked: '40' } });
+      rows.set('other:USDT', { available: '7', locked: '9' });
+      const app = buildApp(prisma);
+      for (const [amount, expected] of [['25', '125'], ['-20', '105'], ['-105', '0']]) {
+        const res = await request(app).post('/api/v1/admin/users/user-1/adjust-balance')
+          .set('Authorization', authHeader('admin-1')).send({ asset: 'USDT', amount, reason: 'fixture delta' });
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ asset: 'USDT', available: expected, locked: '40' });
+        expect(rows.get('user-1:USDT')).toEqual({ available: expected, locked: '40' });
+      }
+      expect(rows.get('other:USDT')).toEqual({ available: '7', locked: '9' });
+      expect(await tx.balance.updateMany.mock.results[1].value).toEqual({ count: 1 });
+      const denied = await request(app).post('/api/v1/admin/users/user-1/adjust-balance')
+        .set('Authorization', authHeader('admin-1')).send({ asset: 'USDT', amount: '-1', reason: 'cannot spend locked' });
+      expect(denied.status).toBe(400);
+      expect(rows.get('user-1:USDT')).toEqual({ available: '0', locked: '40' });
+    });
+
+    it('does not create a missing row on an unsuccessful debit', async () => {
+      const { prisma, rows, audits } = withBalanceTransaction(adminPrisma());
+      const res = await request(buildApp(prisma)).post('/api/v1/admin/users/user-1/adjust-balance')
+        .set('Authorization', authHeader('admin-1')).send({ asset: 'USDT', amount: '-1', reason: 'fixture debit' });
+      expect(res.status).toBe(400);
+      expect(rows.size).toBe(0);
+      expect(audits).toEqual([]);
+    });
+
+    it.each([null, { available: '100', locked: '40' }])('rolls back the balance if audit persistence fails (%j)', async balance => {
+      const { prisma, tx, rows, audits } = withBalanceTransaction(adminPrisma(), { balance });
+      tx.auditLog.create.mockImplementationOnce(async ({ data }: any) => { audits.push(data); throw new Error('fixture audit failure'); });
+      const log = jest.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const res = await request(buildApp(prisma)).post('/api/v1/admin/users/user-1/adjust-balance')
+          .set('Authorization', authHeader('admin-1')).send({ asset: 'USDT', amount: '25', reason: 'fixture rollback' });
+        expect(res.status).toBe(500);
+        expect(rows.get('user-1:USDT')).toEqual(balance ?? undefined);
+        expect(audits).toEqual([]);
+      } finally { log.mockRestore(); }
     });
   });
 

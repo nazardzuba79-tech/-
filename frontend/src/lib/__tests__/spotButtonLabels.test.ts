@@ -38,6 +38,7 @@ const t = (lang: (typeof LOCALES)[number]) => (key: string, params?: Record<stri
 // feeds the button text — which is the point: the labels depend on the
 // side and the dictionary, and on nothing else.
 const stubs = (lang: (typeof LOCALES)[number]) => ({
+  '../lib/balanceInvalidation': { onSpendableBalancesChanged: () => () => {} },
   '../lib/api': { api: {} },
   '../lib/vtaSaleIntent': {},
   '../lib/useVtaSpotAccount': { useVtaSpotAccount: () => ({ snapshot: null, failed: false, loading: false }) },

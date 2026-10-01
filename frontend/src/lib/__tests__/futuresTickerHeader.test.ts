@@ -126,7 +126,9 @@ test.each([
   // handler bodies are byte-identical to f62d28da; only asyncRoute and the
   // local wrapped auth binding changed. Pin the complete reviewed file;
   // request failures are exercised by futuresAsyncErrors.test.ts.
-  ['src/api/routes/futures.ts', '271a1ec4f7d3fc96f1f27992504b455f1299809f591fd5e7644c3dc8cda93233'],
+  // OTC prerequisite: only /transfer delegates to guarded atomic wallet deltas;
+  // all other route handlers, authentication, margin and response contracts stay pinned.
+  ['src/api/routes/futures.ts', '1aafaa734a1c182031fbf0842b393ebadfc659cf193adc0b6c9f08c6b2fb9392'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,
@@ -278,6 +280,8 @@ test.each([
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    // Reuse the identical authenticated transport in the lazy OTC module.
+    .replace('export async function request<T>', 'async function request<T>')
     // Withdrawal requests (2026-09-30): the POST result names `balanceHeld`,
     // one read of what can be withdrawn, and the admin list's `balanceHeld`.
     // Removed here by exact text; every Futures/Spot method stays byte-pinned.

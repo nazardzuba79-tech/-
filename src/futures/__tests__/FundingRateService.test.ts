@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 import { FundingRateService, msUntilNextFundingBoundary } from '../FundingRateService';
 import { MarkPriceService } from '../MarkPriceService';
 
@@ -23,18 +24,7 @@ function makeFakePrisma(positions: any[], balances: Record<string, { available: 
         fundingPayments.push(data);
       }),
     },
-    futuresBalance: {
-      upsert: jest.fn(async ({ where: { userId_asset: { userId, asset } }, create }: any) => {
-        const key = `${userId}:${asset}`;
-        if (!balanceMap.has(key)) balanceMap.set(key, { available: create.available, locked: create.locked });
-        return { ...balanceMap.get(key)! };
-      }),
-      update: jest.fn(async ({ where: { userId_asset: { userId, asset } }, data }: any) => {
-        const key = `${userId}:${asset}`;
-        const existing = balanceMap.get(key)!;
-        balanceMap.set(key, { available: data.available, locked: existing.locked });
-      }),
-    },
+    futuresBalance: walletDelegate(balanceMap),
   };
 
   const prisma = { $transaction: jest.fn(async (fn: any) => fn(tx)) } as any;

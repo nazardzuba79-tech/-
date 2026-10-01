@@ -20,6 +20,7 @@ export class AdminUserDeletionService {
         await this.prisma.$transaction(async tx => {
           // Same lock as FuturesBookTransaction, before user/balance locks.
           await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended('futures-book', 0))::text`;
+          await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended('spot-book', 0))::text`;
           const users = await tx.$queryRaw<{ id: string; email: string; role: string }[]>`
             SELECT id, email, role FROM "User" WHERE id IN (${adminId}, ${userId}) ORDER BY id FOR UPDATE`;
           const admin = users.find(u => u.id === adminId);
@@ -28,6 +29,11 @@ export class AdminUserDeletionService {
           if (!target) throw new UserDeletionError(404, 'Пользователь не найден.');
           if (target.role !== 'USER' || target.id === adminId || target.email.trim().toLowerCase() === 'voltex.crypto@gmail.com') {
             throw new UserDeletionError(403, 'Удаление защищённого аккаунта запрещено.');
+          }
+          // Never cascade away a cash obligation or its historical receipt.
+          // Closed history needs a separate approved anonymisation policy too.
+          if (await tx.otcCashRequest.count({ where: { userId } }) > 0) {
+            throw new UserDeletionError(409, 'Аккаунт связан с OTC-заявками. Удаление запрещено до отдельной финансовой сверки и решения о хранении истории.');
           }
           const audit = await tx.auditLog.create({ data: { userId: null, action: 'USER_DELETED', metadata: {
             deletedUserId: userId, deletedUserEmail: target.email, performedByAdminId: adminId, timestamp: new Date().toISOString(),

@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
 
 export class PurchaseError extends Error {}
 
@@ -27,19 +28,12 @@ export class PurchaseService {
       }
 
       const price = new BigNumber(product.priceAmount.toString());
-      const balance = await tx.balance.findUnique({
-        where: { userId_asset: { userId, asset: product.priceAsset } },
-      });
-      const available = new BigNumber(balance?.available.toString() ?? '0');
-
-      if (available.isLessThan(price)) {
-        throw new PurchaseError(`Insufficient ${product.priceAsset} balance`);
+      try {
+        await mutateSpotBalance(tx, userId, product.priceAsset, { available: price.negated() });
+      } catch (error) {
+        if (error instanceof InsufficientWalletBalance) throw new PurchaseError(`Insufficient ${product.priceAsset} balance`);
+        throw error;
       }
-
-      await tx.balance.update({
-        where: { userId_asset: { userId, asset: product.priceAsset } },
-        data: { available: available.minus(price).toString() },
-      });
 
       const purchase = await tx.purchase.create({
         data: {
