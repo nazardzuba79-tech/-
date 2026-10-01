@@ -93,7 +93,7 @@ const styles:Record<string,React.CSSProperties>={
   logo:{display:'inline-flex',alignItems:'center',fontFamily:'var(--font-display)',fontSize:16,fontWeight:800,letterSpacing:'0.02em'},
   // Only the new Tools item is tightened on desktop: preserves the approved
   // shared header typography while restoring safe space before account actions.
-  toolsNavItem:{paddingLeft:7,paddingRight:7},
+  toolsNavItem:{paddingLeft:4,paddingRight:4,fontSize:13},
   tradeMenuItem:{display:'flex',flexDirection:'column',gap:2,padding:'7px 8px',borderRadius:5},tradeMenuItemTitle:{fontSize:13,fontWeight:600,color:'#e8ecf3'},tradeMenuItemDesc:{fontSize:12,color:'var(--h-text-3)'},
   mobileLink:{display:'flex',alignItems:'center',fontSize:13.5,fontWeight:500,color:'#d8dce6',padding:'11px 12px',borderRadius:6},mobileDivider:{height:1,background:'var(--border)',margin:'4px 0'},mobileRightExtra:{padding:'8px 0'},mobileLangRow:{padding:'10px 6px'},linkActive:{color:'#ffffff',background:'rgba(240,196,63,0.06)'},cardLink:{display:'flex',alignItems:'center',gap:8},adminBadge:{display:'flex',alignItems:'center',gap:8,background:'linear-gradient(180deg,#22203a,#1a1930)',border:'1px solid #3a3868',borderRadius:6,padding:'11px 12px',fontSize:13.5,fontWeight:500,color:'#c3c1ff'},adminBadgeActive:{background:'linear-gradient(180deg,#2b2849,#201e3b)',borderColor:'#4b4886',color:'#dcdbff'},logoutBtn:{display:'flex',alignItems:'center',justifyContent:'center',gap:7,background:'transparent',border:'1px solid var(--border)',color:'var(--text-secondary)',borderRadius:8,padding:'8px 16px',fontSize:12},
 };
