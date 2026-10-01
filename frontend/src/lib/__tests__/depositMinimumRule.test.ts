@@ -11,6 +11,7 @@ const NONE = { estimate: null, estimateExpiresAt: null };
 
 describe('deposit minimum shown in the deposit window', () => {
   it('is the rule the server enforces', () => {
+    expect(MIN_DEPOSIT_USD).toBe(500);
     expect(DEPOSIT_MINIMUM_USD).toBe(MIN_DEPOSIT_USD);
     expect([...DEPOSIT_USD_PEGGED]).toEqual([...DEPOSIT_USD_PEGGED_ASSETS]);
     expect(DEPOSIT_PRICE_MAX_AGE_MS).toBe(SERVER_PRICE_AGE);
@@ -19,19 +20,19 @@ describe('deposit minimum shown in the deposit window', () => {
   // The server's peg policy also covers USD and DAI when they are not listed
   // in the current catalogue; catalogue membership does not determine a peg.
   it.each(['USDT', 'USDC', 'USD', 'DAI'])('counts %s one to one, as the server counts it, whatever a quote says', asset => {
-    expect(depositMinimumView(asset)).toEqual({ usd: 300, equivalent: 300, pegged: true, ...NONE });
-    expect(depositMinimumView(asset, { price: '0.5', fetchedAt: 1_000, stale: false }, 1_000)).toEqual({ usd: 300, equivalent: 300, pegged: true, ...NONE });
+    expect(depositMinimumView(asset)).toEqual({ usd: 500, equivalent: 500, pegged: true, ...NONE });
+    expect(depositMinimumView(asset, { price: '0.5', fetchedAt: 1_000, stale: false }, 1_000)).toEqual({ usd: 500, equivalent: 500, pegged: true, ...NONE });
   });
 
   it.each(['BTC', 'ETH', 'BNB', 'SOL', 'POL', 'TON', 'UNKNOWN'])('states only the rule for %s without a price', asset => {
-    expect(depositMinimumView(asset)).toEqual({ usd: 300, equivalent: null, pegged: false, ...NONE });
+    expect(depositMinimumView(asset)).toEqual({ usd: 500, equivalent: null, pegged: false, ...NONE });
   });
 
   it('estimates a non-pegged asset from a live price, and says when that stops being current', () => {
     const now = 1_000_000_000;
     expect(depositMinimumView('BTC', { price: '100000', fetchedAt: now - 30_000, stale: false }, now))
-      .toEqual({ usd: 300, equivalent: null, pegged: false, estimate: 0.003, estimateExpiresAt: now - 30_000 + DEPOSIT_PRICE_MAX_AGE_MS });
-    expect(depositMinimumView('ETH', { price: 2500, fetchedAt: now, stale: false }, now).estimate).toBe(0.12);
+      .toEqual({ usd: 500, equivalent: null, pegged: false, estimate: 0.005, estimateExpiresAt: now - 30_000 + DEPOSIT_PRICE_MAX_AGE_MS });
+    expect(depositMinimumView('ETH', { price: 2500, fetchedAt: now, stale: false }, now).estimate).toBe(0.2);
   });
 
   it('never estimates from a warm-cache or stale-served, aged, future-dated or unusable price', () => {
@@ -44,6 +45,6 @@ describe('deposit minimum shown in the deposit window', () => {
       { price: '100000', fetchedAt: Number.NaN, stale: false },
       { price: '0', fetchedAt: now, stale: false }, { price: '-5', fetchedAt: now, stale: false },
       { price: 'abc', fetchedAt: now, stale: false }, { price: undefined, fetchedAt: now, stale: false },
-    ]) expect(depositMinimumView('BTC', quote, now)).toEqual({ usd: 300, equivalent: null, pegged: false, ...NONE });
+    ]) expect(depositMinimumView('BTC', quote, now)).toEqual({ usd: 500, equivalent: null, pegged: false, ...NONE });
   });
 });

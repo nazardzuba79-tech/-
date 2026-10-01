@@ -27,6 +27,8 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
     {to:'/banking',label:'Banking & Earn'},
     {to:'/wallet',label:t('nav.wallet')},
     {to:'/copy-trading',label:t('nav.copyTrading')},
+    // Trading Tools v1 uses an explicit Russian fallback, as its local copy does.
+    {to:'/tools',label:'Инструменты'},
   ];
   /**
    * The wallet lives in the right-hand money cluster on desktop, next to the

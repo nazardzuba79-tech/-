@@ -23,7 +23,7 @@ import { KNOWN_CHAINS, TX_HASH_PATTERN, resolveChainConfig } from './deposits';
  *     proven transfers, unattributed;
  *   - «Привязать к пользователю» sets the owner (audited, no balance change);
  *   - a user's package (one asset, one network, confirmed uncredited
- *     transfers) becomes reviewable at 300 USD;
+ *     transfers) becomes reviewable at the configured USD minimum;
  *   - only «Подтвердить зачисление» on a package credits, via
  *     DepositBatchService, which re-proves every transfer on chain.
  * The legacy one-transfer manual-credit endpoint is closed.
