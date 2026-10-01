@@ -3,7 +3,7 @@
     "1440px: 17 Academy/Help pages open with zero requests to api.voltextech.net and no sideways scroll",
     "375px: 17 Academy/Help pages open with zero requests to api.voltextech.net and no sideways scroll",
     "search, level filter, glossary search, FAQ accordion and «Напишите в поддержку» work; titles follow in-app moves",
-    "status: exactly one GET to the API /health and one to the market Worker /health per open; nothing shown while waiting; 200 → «Работает», 503 → «Проблемы»",
+    "status: one GET to the API /health and one to the market Worker /health per open; nothing shown while waiting; rows name only the server and market data (200 → «Отвечает», 503 → «Ответил с ошибкой», no answer → «Не удалось проверить»); «Опубликованных сообщений о сбоях нет»",
     "EN: labels in English, Russian text with the short note; a signed-in visitor also causes no API request",
     "«Академия» is a lit tab in the site header at 1440/1680/1920, guest and signed in, ≥20 px clear of the right cluster, no API request",
     "below 1440: guests see the Academy/Help row, signed-in visitors find Academy and Help in the site drawer",
@@ -442,9 +442,14 @@
     "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
     "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
     "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
+    "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap",
+    "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap",
+    "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap",
     "https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
   ],
   "health": [
+    "https://api.voltextech.net/health",
+    "https://market.voltextech.net/health",
     "https://api.voltextech.net/health",
     "https://market.voltextech.net/health",
     "https://api.voltextech.net/health",

@@ -7,7 +7,7 @@ import { localeOf, useLanguage } from '../../lib/i18n';
 import { MARKET_EDGE_BASE } from '../../lib/marketEdge';
 import { openSupportWidget } from '../../lib/supportWidget';
 import { faqGroups, pickLang } from '../../lib/content/academy';
-import { API_COMPONENTS, MARKET_COMPONENTS, apiHealthUrl, edgeHealthUrl, probe, type ProbeResult } from '../../lib/content/systemStatus';
+import { PROBES, apiHealthUrl, edgeHealthUrl, probe, type ProbeId, type ProbeResult } from '../../lib/content/systemStatus';
 import type { FeeRow, HelpContent } from '../../lib/content/types';
 import { usePageMeta } from '../../lib/content/usePageMeta';
 import { KnowledgeShell } from './KnowledgeShell';
@@ -193,36 +193,35 @@ function Rules({ content }: { content: HelpContent }) {
 
 function Status({ content }: { content: HelpContent }) {
   const { t } = useLanguage();
-  usePageMeta(`${t('help.tab.status')} — ${TITLE}`, 'Работают ли торговля, рыночные данные, пополнение, вывод и вход на VOLTEX.');
-  const [api, setApi] = useState<ProbeResult | null>(null);
-  const [market, setMarket] = useState<ProbeResult | null>(null);
+  usePageMeta(`${t('help.tab.status')} — ${TITLE}`, 'Отвечают ли сервер VOLTEX и рыночные данные; опубликованные сообщения о сбоях.');
+  const [results, setResults] = useState<Partial<Record<ProbeId, ProbeResult>>>({});
   useEffect(() => {
     // One check each, only now that the page is open; never repeated on a timer.
     const controller = new AbortController();
-    void probe(apiHealthUrl(API_BASE, window.location.origin), browserFetch, controller.signal).then(setApi, () => {});
-    void probe(edgeHealthUrl(MARKET_EDGE_BASE), browserFetch, controller.signal).then(setMarket, () => {});
+    const urls: Record<ProbeId, string> = { api: apiHealthUrl(API_BASE, window.location.origin), market: edgeHealthUrl(MARKET_EDGE_BASE) };
+    for (const id of PROBES) {
+      void probe(urls[id], browserFetch, controller.signal).then((result) => setResults((prev) => ({ ...prev, [id]: result })), () => {});
+    }
     return () => controller.abort();
   }, []);
-  const resultOf = (id: string) => (API_COMPONENTS.includes(id) ? api : MARKET_COMPONENTS.includes(id) ? market : null);
+  const label: Record<ProbeResult, string> = { ok: t('help.status.ok'), error: t('help.status.error'), unreachable: t('help.status.unreachable') };
+  const names = new Map(content.components.map((c) => [c.id, c.name]));
   return (
     <>
       <section className="vx-kb-block">
-        <h2 className="vx-kb-h2">{t('help.status.components')}</h2>
+        <h2 className="vx-kb-h2">{t('help.status.checks')}</h2>
         <ul className="vx-kb-status">
-          {content.components.map((c) => {
-            const result = resultOf(c.id);
+          {PROBES.map((id) => {
+            const result = results[id];
             return (
-              <li key={c.id} data-status-component={c.id}>
-                <span>{c.name}</span>
-                {result && (
-                  <span className={`vx-kb-pill is-${result}`} data-status={result}>
-                    {result === 'ok' ? t('help.status.ok') : t('help.status.problem')}
-                  </span>
-                )}
+              <li key={id} data-status-probe={id}>
+                <span>{t(`help.status.${id}`)}</span>
+                {result && <span className={`vx-kb-pill is-${result}`} data-status={result}>{label[result]}</span>}
               </li>
             );
           })}
         </ul>
+        <p className="vx-kb-text vx-kb-status-note">{t('help.status.note')}</p>
       </section>
       <section className="vx-kb-block">
         <h2 className="vx-kb-h2">{t('help.status.incidents')}</h2>
@@ -232,7 +231,7 @@ function Status({ content }: { content: HelpContent }) {
           <ul className="vx-kb-incidents">
             {content.incidents.map((incident, i) => (
               <li key={`${incident.date ?? ''}-${i}`}>
-                <p className="vx-kb-meta">{[incident.date, incident.status].filter(Boolean).join(' · ')}</p>
+                <p className="vx-kb-meta">{[incident.date, incident.status, ...(incident.components ?? []).map((id) => names.get(id) ?? id)].filter(Boolean).join(' · ')}</p>
                 {incident.title && <p className="vx-kb-card-title">{incident.title}</p>}
                 {incident.text && <p className="vx-kb-text">{incident.text}</p>}
               </li>

@@ -126,7 +126,8 @@ async function main() {
       await ctx.close();
     }
 
-    // Status: one check each, nothing on screen while waiting, then the answers.
+    // Status: one check each, nothing on screen while waiting, then only what
+    // the two checks prove (the API and the market Worker answered or not).
     for (const width of [1440, 375]) {
       let release;
       const gate = new Promise((done) => { release = done; });
@@ -135,13 +136,16 @@ async function main() {
       const start = report.health.length;
       const { ctx, page } = await context(width);
       await page.goto(origin + '/help/status', { waitUntil: 'domcontentloaded' });
-      await page.locator('[data-status-component="trading"]').waitFor();
+      await page.locator('[data-status-probe="api"]').waitFor();
       await page.waitForTimeout(1500);
       assert.equal(await page.locator('[data-status]').count(), 0, 'nothing shown while waiting');
-      assert.doesNotMatch(await page.locator('main').innerText(), /Провер|Ожида|Нет ответа/);
+      assert.doesNotMatch(await page.locator('main').innerText(), /Ожида|Нет ответа|Проверяем/);
       release();
-      await page.locator('[data-status-component="trading"] [data-status="ok"]').waitFor();
-      await page.locator('[data-status-component="market-data"] [data-status="ok"]').waitFor();
+      await page.locator('[data-status-probe="api"] [data-status="ok"]').waitFor();
+      await page.locator('[data-status-probe="market"] [data-status="ok"]').waitFor();
+      assert.equal(await page.locator('[data-status-component]').count(), 0, 'no per-operation badges');
+      assert.doesNotMatch(await page.locator('main').innerText(), /Работает/);
+      assert.match(await page.locator('main').innerText(), /Опубликованных сообщений о сбоях нет/);
       await page.waitForTimeout(3000);
       assert.deepEqual(report.health.slice(start).sort(), [`${API}/health`, `${EDGE}/health`]);
       await page.screenshot({ path: path.join(out, `help-status-${width}.png`), fullPage: width >= 600 });
@@ -153,11 +157,21 @@ async function main() {
     {
       const { ctx, page } = await context(1440);
       await page.goto(origin + '/help/status', { waitUntil: 'networkidle' });
-      await page.locator('[data-status-component="trading"] [data-status="problem"]').waitFor();
-      assert.equal(await page.locator('[data-status-component="trading"] [data-status]').textContent(), 'Проблемы');
+      await page.locator('[data-status-probe="api"] [data-status="error"]').waitFor();
+      assert.equal(await page.locator('[data-status-probe="api"] [data-status]').textContent(), 'Ответил с ошибкой');
+      assert.equal(await page.locator('[data-status-probe="market"] [data-status]').textContent(), 'Отвечает');
       await ctx.close();
     }
-    check('status: exactly one GET to the API /health and one to the market Worker /health per open; nothing shown while waiting; 200 → «Работает», 503 → «Проблемы»');
+    {
+      // No answer reaches the browser (blocked here like a network or CORS failure).
+      const { ctx, page } = await context(1440);
+      await page.route(`${API}/health`, (route) => { report.health.push(`${API}/health`); return route.abort(); });
+      await page.goto(origin + '/help/status', { waitUntil: 'networkidle' });
+      await page.locator('[data-status-probe="api"] [data-status="unreachable"]').waitFor();
+      assert.equal(await page.locator('[data-status-probe="api"] [data-status]').textContent(), 'Не удалось проверить');
+      await ctx.close();
+    }
+    check('status: one GET to the API /health and one to the market Worker /health per open; nothing shown while waiting; rows name only the server and market data (200 → «Отвечает», 503 → «Ответил с ошибкой», no answer → «Не удалось проверить»); «Опубликованных сообщений о сбоях нет»');
 
     // English and a signed-in visitor.
     {

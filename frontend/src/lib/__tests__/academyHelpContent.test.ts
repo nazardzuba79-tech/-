@@ -119,12 +119,28 @@ test('search, level filter, neighbours and FAQ groups', () => {
   expect(pickLang(compiled.academy, 'ru')).toEqual({ content: academy, fallback: false });
 });
 
-test('status: /health at the API host root and on the market Worker; a non-200 or an error is «problem»', async () => {
+test('status: /health at the API host root and on the market Worker; 200 answers, another status is an error, no answer is unknown', async () => {
   expect(apiHealthUrl('https://api.voltextech.net/api/v1', 'https://voltextech.net')).toBe('https://api.voltextech.net/health');
   expect(apiHealthUrl('/api/v1', 'https://voltextech.net')).toBe('https://voltextech.net/health');
   expect(edgeHealthUrl('https://market.voltextech.net/')).toBe('https://market.voltextech.net/health');
   const signal = new AbortController().signal;
   expect(await probe('u', (async () => ({ status: 200 })) as unknown as typeof fetch, signal)).toBe('ok');
-  expect(await probe('u', (async () => ({ status: 503 })) as unknown as typeof fetch, signal)).toBe('problem');
-  expect(await probe('u', (async () => { throw new TypeError('offline'); }) as unknown as typeof fetch, signal)).toBe('problem');
+  expect(await probe('u', (async () => ({ status: 503 })) as unknown as typeof fetch, signal)).toBe('error');
+  // A browser that got no answer (network, blocker, CORS) has proven nothing about the platform.
+  expect(await probe('u', (async () => { throw new TypeError('offline'); }) as unknown as typeof fetch, signal)).toBe('unreachable');
+});
+
+test('registration: no content promises an email-confirmation step the site does not have', () => {
+  // src/api/routes/auth.ts: registration returns a signed-in session at once;
+  // `emailVerifiedAt` stays null and nothing waits for a link.
+  const claim = /подтверд\S*\s+(?:свою\s+)?почт|ссылк\S*\s+из\s+письм|письм\S*\s+с\s+подтвержд(?!ением ждать не нужно)/i;
+  const offenders = Object.entries(files).filter(([, text]) => claim.test(text)).map(([path]) => path);
+  expect(offenders).toEqual([]);
+  const register = help.faq.find((item) => item.q === 'Как зарегистрироваться?')!;
+  expect(register.a).toContain('Аккаунт откроется сразу');
+});
+
+test('incident list: an empty file means no published reports, and editor notes stay off the page', () => {
+  expect(help.incidents).toEqual([]);
+  expect(JSON.stringify(help)).not.toContain('Сообщения о сбоях ведутся вручную');
 });

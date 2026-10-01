@@ -237,7 +237,7 @@ describe('translation integrity', () => {
         if (key?.startsWith('withdraw.')) return false;
         // `academy.*`, `help.*`, `nav.academy` and `nav.help` are the Academy
         // and Help pages (2026-10-01): `git diff --numstat` over the locales
-        // reports `52 0` per language, additions only. No key used either
+        // reports `56 0` per language, additions only. No key used either
         // prefix before them.
         if (key?.startsWith('academy.') || key?.startsWith('help.') || key === 'nav.academy' || key === 'nav.help') return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)

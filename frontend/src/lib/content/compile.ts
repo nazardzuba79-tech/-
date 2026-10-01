@@ -218,7 +218,7 @@ export function seoPages(content: CompiledContent): SeoPage[] {
     ['help/faq', 'Вопросы и ответы', 'Ответы на частые вопросы об аккаунте, пополнении, торговле и выводе на VOLTEX.'],
     ['help/fees', 'Комиссии', 'Торговые комиссии, пополнение и вывод на VOLTEX.'],
     ['help/rules', 'Правила торговли', 'Как работают ордера, маржа, ликвидация и ставка финансирования на VOLTEX.'],
-    ['help/status', 'Статус системы', 'Работают ли торговля, рыночные данные, пополнение, вывод и вход на VOLTEX.'],
+    ['help/status', 'Статус системы', 'Отвечают ли сервер VOLTEX и рыночные данные; опубликованные сообщения о сбоях.'],
   ];
   for (const [path, title, description] of help) pages.push({ path, title: `${title} — ${HELP_TITLE}`, description });
   return pages;

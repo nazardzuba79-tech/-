@@ -182,23 +182,36 @@ test('fees page: zero fees, the owner note stays hidden', async () => {
   expect(text()).not.toContain('_note');
 });
 
-test('status: one check each on open, nothing shown while waiting, then the answers; no timer', async () => {
+test('status: one check each on open, nothing shown while waiting, then only what the checks prove; no timer', async () => {
   jest.useFakeTimers({ doNotFake: ['setImmediate'] });
   const pending: Record<string, (value: any) => void> = {};
   answer = (url) => new Promise((done) => { pending[url] = done; });
   await open('/help/status');
   expect(requests.sort()).toEqual(['https://api.voltextech.net/health', 'https://market.voltextech.net/health']);
+  expect(Array.from(host.querySelectorAll('[data-status-probe]')).map((el) => el.getAttribute('data-status-probe'))).toEqual(['api', 'market']);
   expect(host.querySelectorAll('[data-status]').length).toBe(0);
-  expect(text()).not.toMatch(/Провер|Ожида|Нет ответа/);
+  expect(text()).not.toMatch(/Ожида|Нет ответа|Проверяем/);
   await act(async () => { jest.advanceTimersByTime(60_000); await flush(); });
   expect(host.querySelectorAll('[data-status]').length).toBe(0);
   await act(async () => { pending['https://api.voltextech.net/health']({ status: 200 }); pending['https://market.voltextech.net/health']({ status: 502 }); await flush(); await flush(); });
-  const state = (id: string) => host.querySelector(`[data-status-component="${id}"] [data-status]`)?.textContent;
-  expect(['trading', 'deposits', 'withdrawals', 'auth'].map(state)).toEqual(['Работает', 'Работает', 'Работает', 'Работает']);
-  expect(state('market-data')).toBe('Проблемы');
-  expect(host.querySelector('[data-no-incidents]')!.textContent).toBe('Инцидентов нет');
+  const state = (id: string) => host.querySelector(`[data-status-probe="${id}"] [data-status]`)?.textContent;
+  expect([state('api'), state('market')]).toEqual(['Отвечает', 'Ответил с ошибкой']);
+  // One 200 from /health is not shown as working trading, deposits, withdrawals or sign-in.
+  expect(host.querySelectorAll('[data-status-component]').length).toBe(0);
+  expect(text()).not.toMatch(/Работает|Торговля фьючерсами|Вывод.*Отвечает/);
+  expect(text()).toContain('Она не подтверждает, что каждая операция');
+  expect(host.querySelector('[data-no-incidents]')!.textContent).toBe('Опубликованных сообщений о сбоях нет');
   await act(async () => { jest.advanceTimersByTime(60 * 60_000); await flush(); });
   expect(requests).toHaveLength(2);
+});
+
+test('status: a request the browser could not complete reads «Не удалось проверить», not an outage', async () => {
+  answer = (url) => (url.includes('api.') ? Promise.reject(new TypeError('Failed to fetch')) : Promise.resolve({ status: 200 }));
+  await open('/help/status');
+  await act(async () => { await flush(); await flush(); });
+  const state = (id: string) => host.querySelector(`[data-status-probe="${id}"] [data-status]`)?.textContent;
+  expect([state('api'), state('market')]).toEqual(['Не удалось проверить', 'Отвечает']);
+  expect(text()).not.toMatch(/Проблемы|сбой платформы подтвержд/);
 });
 
 test('English: labels translate, the Russian text stays with a short note', async () => {
