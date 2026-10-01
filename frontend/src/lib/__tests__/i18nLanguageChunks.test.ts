@@ -223,7 +223,9 @@ describe('translation integrity', () => {
           'support.formSent', 'support.formSentHint', 'support.formFailed', 'support.formEmailHint', 'support.formCheck',
           // KYC edge (2026-09-26): the verification form's file-preparation
           // line and the edge's refusals; the existing KYC copy is unchanged.
-          'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed'];
+          'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed',
+          // «Позиция закрыта» card after a market close (2026-10-01, owner chose variant B).
+          'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
