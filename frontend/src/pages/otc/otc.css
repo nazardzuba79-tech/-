@@ -1,0 +1,390 @@
+/* OTC page, from the owner's approved design (OTC.zip, 2026-09-30).
+   The design commits to one look: a dark hero over the skyline, then light
+   sections (white, neutral-50, white). Its colours are fixed here rather
+   than taken from the app's theme tokens, so the page reads the same on a
+   dark and a light system setting — the design itself only holds together
+   in its light form. Everything is scoped under .vx-otc. */
+
+.vx-otc {
+  --otc-ink: #0a0a0a;
+  --otc-muted: #737373;
+  --otc-line: #e5e5e5;
+  --otc-soft: #f5f5f5;
+  --otc-n50: #fafafa;
+  --otc-n100: #f5f5f5;
+  --otc-n200: #e5e5e5;
+  --otc-n300: #d4d4d4;
+  --otc-n400: #a3a3a3;
+  --otc-n700: #404040;
+  --otc-n800: #262626;
+  --otc-orange: #f7931a;
+  --otc-orange-hover: #dd8416;
+  --otc-hero: #14161a;
+  --otc-ring: rgba(161, 161, 161, 0.5);
+  background: #0e0f11;
+  min-height: 100vh;
+}
+/* Phones: the footer stays clear of the fixed bottom tab bar, as
+   .page-mesh does for the other pages. */
+@media (max-width: 860px) { .vx-otc { padding-bottom: 64px; } }
+/* Resets in :where(), so they weigh nothing and every rule below wins. */
+:where(.vx-otc main) { display: block; }
+:where(.vx-otc main) *, :where(.vx-otc main) *::before, :where(.vx-otc main) *::after { box-sizing: border-box; }
+:where(.vx-otc main) :where(h1, h2, h3, p, ul, dl, dd) { margin: 0; padding: 0; }
+:where(.vx-otc main) ul { list-style: none; }
+/* The design sets everything, headings included, in one sans face. */
+.vx-otc main, .vx-otc main :is(h1, h2, h3, button, input, select) { font-family: var(--font-ui); }
+
+.otc-wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-inline: 16px;
+}
+@media (min-width: 640px) { .otc-wrap { padding-inline: 24px; } }
+@media (min-width: 1024px) { .otc-wrap { padding-inline: 32px; } }
+
+.otc-check { flex-shrink: 0; color: var(--otc-orange); }
+
+/* ---------- Hero ---------- */
+.otc-hero { position: relative; overflow: hidden; background: var(--otc-hero); color: #fff; }
+.otc-hero-bg { position: absolute; inset: 0; }
+.otc-hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; display: block; }
+.otc-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.25), var(--otc-hero));
+}
+.otc-hero-inner { position: relative; padding-top: 64px; padding-bottom: 64px; }
+@media (min-width: 640px) { .otc-hero-inner { padding-top: 80px; } }
+.otc-hero-head { max-width: 672px; margin: 0 auto; text-align: center; }
+.otc-hero h1 {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: #fff;
+  text-wrap: balance;
+}
+@media (min-width: 640px) { .otc-hero h1 { font-size: 48px; line-height: 1; } }
+.otc-hero-lead { margin-top: 16px; font-size: 16px; line-height: 24px; color: var(--otc-n300); text-wrap: pretty; }
+@media (min-width: 640px) { .otc-hero-lead { font-size: 18px; line-height: 28px; } }
+
+.otc-tiers { display: grid; gap: 16px; max-width: 1024px; margin: 40px auto 0; }
+@media (min-width: 640px) { .otc-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.otc-tier {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: border-color 0.15s;
+}
+.otc-tier:hover { border-color: rgba(255, 255, 255, 0.2); }
+.otc-tier.is-accent { border-color: rgba(247, 147, 26, 0.4); background: rgba(255, 255, 255, 0.1); }
+.otc-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  height: 20px;
+  padding: 2px 8px;
+  border-radius: 26px;
+  background: var(--otc-orange);
+  color: #fff;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+.otc-tier-head { display: flex; flex-direction: column; gap: 4px; }
+.otc-tier h3 { font-size: 20px; line-height: 28px; font-weight: 600; color: #fff; }
+.otc-tier-sub { font-size: 14px; line-height: 20px; color: var(--otc-n300); }
+.otc-tier ul { display: flex; flex-direction: column; gap: 8px; }
+.otc-tier li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 20px; color: var(--otc-n200); }
+.otc-tier li .otc-check { margin-top: 2px; }
+
+/* One button look, three fills. 32px tall and 10px round, as the design's
+   default button. */
+.otc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.otc-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--otc-ring); }
+.otc-btn:active { transform: translateY(1px); }
+.otc-btn-orange { background: var(--otc-orange); color: #fff; }
+.otc-btn-orange:hover { background: var(--otc-orange-hover); }
+.otc-btn-ghost { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.2); }
+.otc-btn-ghost:hover { background: rgba(255, 255, 255, 0.1); }
+.otc-tier .otc-btn { margin-top: auto; }
+
+.otc-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  max-width: 896px;
+  margin: 56px auto 0;
+}
+@media (min-width: 640px) { .otc-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.otc-stat { text-align: center; }
+.otc-stat-value { font-size: 24px; line-height: 32px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
+.otc-stat-label { margin-top: 4px; font-size: 12px; line-height: 16px; color: var(--otc-n400); }
+@media (min-width: 640px) {
+  .otc-stat-value { font-size: 30px; line-height: 36px; }
+  .otc-stat-label { font-size: 14px; line-height: 20px; }
+}
+.otc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Light sections ---------- */
+.otc-section {
+  color-scheme: light;
+  color: var(--otc-ink);
+  background: #fff;
+  border-top: 1px solid var(--otc-line);
+  padding-block: 64px;
+  /* The global header is sticky; a tier button's scroll lands below it. */
+  scroll-margin-top: 68px;
+}
+.otc-section.is-soft { background: var(--otc-n50); }
+@media (min-width: 640px) { .otc-section { padding-block: 96px; } }
+@media (max-width: 768px) { .otc-section { scroll-margin-top: 56px; } }
+.otc-grid { display: grid; align-items: center; gap: 48px; }
+.otc-grid > * { min-width: 0; }
+@media (min-width: 1024px) {
+  .otc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .otc-form-right { padding-left: 24px; }
+  .otc-form-left { padding-right: 24px; order: 1; }
+  .otc-copy-right { order: 2; }
+}
+@media (max-width: 1023px) {
+  .otc-form-left { order: 2; }
+  .otc-copy-right { order: 1; }
+}
+
+.otc-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.otc-section h2 { font-size: 24px; line-height: 32px; font-weight: 600; color: var(--otc-ink); }
+@media (min-width: 640px) { .otc-section h2 { font-size: 30px; line-height: 36px; } }
+.otc-chip {
+  border-radius: 999px;
+  border: 1px solid var(--otc-line);
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--otc-muted);
+}
+.otc-chip.is-orange { border-color: rgba(247, 147, 26, 0.4); background: rgba(247, 147, 26, 0.1); color: var(--otc-orange); }
+.otc-desc { margin-top: 12px; max-width: 448px; font-size: 14px; line-height: 20px; color: var(--otc-muted); }
+
+.otc-points { margin-top: 32px; display: flex; flex-direction: column; gap: 24px; }
+.otc-point { border-radius: 14px; border: 1px solid var(--otc-line); background: var(--otc-n50); padding: 16px; }
+.otc-section.is-soft .otc-point { background: #fff; }
+.otc-point h3 { font-size: 16px; line-height: 24px; font-weight: 500; color: var(--otc-ink); }
+.otc-point p { margin-top: 4px; font-size: 14px; line-height: 20px; color: var(--otc-muted); }
+.otc-point ul { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.otc-point li { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; color: var(--otc-n700); }
+
+.otc-figure {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 448px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--otc-line);
+  background: var(--otc-n100);
+}
+.otc-figure.is-wide { margin-top: 0; max-width: 100%; aspect-ratio: 4 / 3; border-radius: 18px; }
+.otc-figure img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.otc-list { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+.otc-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 20px; color: var(--otc-n800); }
+.otc-list li .otc-check { margin-top: 2px; }
+.otc-min { margin-top: 24px; font-size: 12px; line-height: 16px; color: var(--otc-muted); }
+.otc-private-cta { margin-top: 24px; }
+
+/* The app's own footer, on the page's dark ground below the last section. */
+.otc-footer { padding-bottom: 32px; }
+.otc-footer > footer { margin-top: 0 !important; border-top: 0 !important; padding-top: 40px !important; }
+
+/* ---------- Request form ---------- */
+.otc-form {
+  border-radius: 18px;
+  border: 1px solid var(--otc-line);
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+.otc-form-head { margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.otc-form-head h3 { font-size: 14px; line-height: 20px; font-weight: 600; color: var(--otc-ink); }
+.otc-form-badge {
+  border-radius: 999px;
+  background: var(--otc-soft);
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--otc-muted);
+}
+.otc-fields { display: flex; flex-direction: column; gap: 12px; }
+.otc-label { display: block; margin-bottom: 6px; font-size: 12px; line-height: 16px; color: var(--otc-muted); }
+
+.otc-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  width: 100%;
+  min-width: 0;
+  border-radius: 10px;
+  border: 1px solid var(--otc-line);
+  background: var(--otc-n50);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.otc-field:focus-within { border-color: #a1a1a1; box-shadow: 0 0 0 3px var(--otc-ring); }
+.otc-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  padding: 4px 6px 4px 10px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--otc-ink);
+  outline: none;
+}
+/* Three classes deep to outrank the app-wide text colour on inputs
+   (index.css, input:not([type=checkbox]):not([type=radio])), which is
+   white-on-dark and would vanish here. */
+.vx-otc .otc-field .otc-input { color: var(--otc-ink); -webkit-text-fill-color: var(--otc-ink); }
+.vx-otc .otc-field .otc-input:focus-visible { outline: none; }
+.vx-otc .otc-field .otc-input::placeholder { color: var(--otc-muted); -webkit-text-fill-color: var(--otc-muted); }
+.otc-field.is-pending { background: rgba(229, 229, 229, 0.5); }
+.vx-otc .otc-field.is-pending .otc-input { color: var(--otc-muted); -webkit-text-fill-color: var(--otc-muted); opacity: 0.5; cursor: not-allowed; }
+
+/* The currency picker: a native select, dressed as the design's trigger,
+   so every platform's own list, keyboard and screen reader apply. */
+.otc-asset {
+  flex-shrink: 0;
+  width: 92px;
+  height: 28px;
+  margin-right: 2px;
+  border: 0;
+  border-radius: 8px;
+  /* !important only to outrank the app-wide select chevron in index.css,
+     which is !important itself. */
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  padding: 0 10px;
+  padding-right: 28px !important;
+  font: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--otc-ink);
+  text-align: right;
+  text-align-last: right;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.otc-asset:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--otc-ring); }
+.otc-asset option { background: #fff; color: var(--otc-ink); }
+.otc-field.is-pending .otc-asset { color: var(--otc-muted); }
+
+.otc-swap { display: flex; justify-content: center; }
+.otc-swap span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--otc-line);
+  background: var(--otc-n100);
+  color: var(--otc-muted);
+}
+
+.otc-note { margin-top: 12px; display: flex; align-items: flex-start; gap: 6px; font-size: 12px; line-height: 16px; color: var(--otc-muted); }
+.otc-note svg { margin-top: 1px; flex-shrink: 0; }
+.otc-submit { margin-top: 16px; width: 100%; }
+
+/* ---------- Country combobox ---------- */
+.otc-combo { position: relative; }
+.otc-combo .otc-field input { padding-right: 4px; }
+.otc-combo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--otc-muted);
+  cursor: pointer;
+}
+.otc-combo-btn:hover { background: var(--otc-soft); color: var(--otc-ink); }
+.otc-combo-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--otc-ring); }
+.otc-combo-clear { opacity: 0.5; }
+.otc-combo-clear:hover { opacity: 1; }
+.otc-combo-list {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-height: 252px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+  scrollbar-width: thin;
+}
+.otc-combo-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 4px 32px 4px 6px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--otc-ink);
+  cursor: default;
+  user-select: none;
+}
+.otc-combo-option.is-active { background: var(--otc-soft); }
+.otc-combo-option svg { position: absolute; right: 8px; }
+.otc-combo-empty { padding: 8px; font-size: 14px; line-height: 20px; color: var(--otc-muted); text-align: center; }

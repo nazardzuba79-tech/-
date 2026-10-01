@@ -5092,6 +5092,50 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `qa-browser-sleep.cjs` (candidate, 16 scenarios) and `qa-browser-sleep-native.cjs` (1440/390): PASS. These ran on local Chromium via a temporary copy with the `msedge` channel swapped for the local executable; CI runs the original.
 - Not run: the Windows/Postgres CI variant; production.
 
+## Claude — 2026-09-30 — OTC page from the owner's OTC.zip
+
+- Base: main `1affc9a3`; branch `claude/peaceful-volta-h5zw7g-otc`; commit: the commit containing this entry. The owner asked «Розгорни дизайн у вкладці OTC» and sent OTC.zip (a Next/Tailwind/shadcn page). The ZIP is the visual source; nothing of Next, Tailwind or shadcn was added.
+- Material files:
+  - `frontend/src/pages/OtcPage.tsx`: rewritten from the one-card notice.
+    - Hero over the skyline with the three tier cards; a tier's button scrolls to its section.
+    - Figures row; then the OTC Convert, Cash Exchange and Private OTC sections.
+    - Keeps `<Nav active="/otc" />`, `<Footer />` and the `RequireAuth` route.
+  - `frontend/src/pages/otc/`:
+    - `otcConfig.ts`: tiers, 21 «from» and 17 «to» currencies, and a directory of 108 ISO country codes named through `Intl.DisplayNames`.
+    - `OtcExchangeForm.tsx`: «Пример заявки».
+    - `CountryCombobox.tsx`: an ARIA combobox with typeahead, arrows, Enter and Escape.
+    - `otc.css`: scoped to `.vx-otc` / `.otc-*`.
+  - Images as WebP in `frontend/public/media/otc/`. They are deliberately not in `/otc/`, so the SPA route never meets a static directory.
+  - 63 `otc.*` keys in all seven locales. Russian is verbatim from the ZIP; en/zh/es/hi/ja/ko are my own translations.
+- Deliberate deviations from the ZIP:
+  - «340+ валютных пар» instead of «350+». The number is counted from the lists the form offers (21×17 − 17).
+  - «100+ стран» is true because the directory holds 108 countries; the ZIP had 62.
+  - «Связаться с менеджером» opens the existing support form (`openSupportWidget`). In the ZIP it opens the deposit handler.
+  - «Оставить заявку» opens the real `DepositModal`, the ZIP's single `onDeposit` point. The chosen tier, currencies, amount and country are not sent anywhere yet.
+  - The light sections keep fixed colours on a dark system setting too. The ZIP's own dark mode breaks.
+  - «T+0» and «24/7» are kept as the design has them.
+- Preserved:
+  - The shared header and its ownership list; the footer; the deposit flow; support.
+  - The i18n chunk split. The locales are +63/−0 each, and the old `trade.otc*` keys are left in place, now unused.
+- Tests:
+  - New `otcPage.test.ts`: tiers, the counted figures, where the buttons lead, image files, the route guard, and that the stylesheet is scoped.
+  - `i18nLanguageChunks.test.ts`: the digest now excludes `otc.*` by prefix, and a new case asserts all 63 keys and their placeholders in every locale.
+- Checks run (local):
+  - `tsc -b` and `npm run build --prefix frontend`: PASS.
+  - Full frontend Jest, the same command as `frontend-full-suite.yml`: 174 suites / 2,918 tests passed, 0 failed, 0 skipped.
+  - Browser QA on local Chromium with a stubbed `/api/v1`, at 1440 and 390:
+    - no page errors and no horizontal scroll;
+    - tier button lands at the sticky header's edge (68 / 56 px);
+    - combobox filters «тур» to Туркменистан / Турция, then Enter picks and Escape keeps the pick;
+    - an unknown name shows «Страна не найдена»;
+    - the amount field keeps digits and dots only;
+    - the currency select changes;
+    - «Оставить заявку» opens the deposit window;
+    - an English render.
+  - Screenshots compared side by side with the ZIP's own render.
+- Not run: the Windows/Postgres CI variants and production. The deposit window was only seen against a stub, which shows its load-error state.
+- Unresolved: the request parameters are not delivered to a manager. They could go into the support form as a prefilled message if the owner wants that. The unused `trade.otc*` keys can be removed with a digest re-take.
+
 ## Claude — 2026-09-30 — Support: Bybit-style headset button and an improved form (preview first)
 
 - Base: main `1affc9a3`; branch `claude/peaceful-volta-h5zw7g-support`; commit: the commit containing this entry. No PR yet: the owner asked to see it before it is added.
