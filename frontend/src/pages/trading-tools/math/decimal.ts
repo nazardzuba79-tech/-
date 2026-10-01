@@ -61,7 +61,10 @@ export function formatDecimal(raw: string, options: { minDecimals?: number; maxD
   const min = Math.max(0, Math.min(24, options.minDecimals ?? 2));
   const max = Math.max(min, Math.min(60, options.maxDecimals ?? 8));
   const value = new Decimal(raw);
-  let text = value.toFixed(value.abs().gte(1) ? min : max, BigNumber.ROUND_HALF_UP);
+  // Money defaults to two decimals above one; prices and quantities can opt
+  // into their own precision without silently inheriting the money rounding.
+  const decimals = options.maxDecimals !== undefined ? max : value.abs().gte(1) ? min : max;
+  let text = value.toFixed(decimals, BigNumber.ROUND_HALF_UP);
   if (!value.isZero() && new Decimal(text).isZero()) {
     const threshold = max === 0 ? '1' : `0,${'0'.repeat(max - 1)}1`;
     return value.isNegative() ? `−<${threshold}` : `${options.signed ? '+' : ''}<${threshold}`;
@@ -73,7 +76,7 @@ export function formatDecimal(raw: string, options: { minDecimals?: number; maxD
   integer = integer.replace('-', '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   return sign + integer + (fraction ? ',' + fraction : '');
 }
-export function formatPercent(raw: string): string { return `${formatDecimal(raw, { minDecimals: 2, maxDecimals: 8 })}%`; }
+export function formatPercent(raw: string): string { return `${formatDecimal(raw, { minDecimals: 2 })}%`; }
 export function compareDecimal(left: string, right = '0'): -1 | 0 | 1 { return new Decimal(left).comparedTo(new Decimal(right)) as -1 | 0 | 1; }
 
 /** Coordinates are decimal strings bounded to [0,100]; only these may become SVG Numbers. */

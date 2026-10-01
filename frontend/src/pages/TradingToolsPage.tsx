@@ -5,6 +5,7 @@ import { Footer } from '../components/Footer';
 import { onSessionChange } from '../lib/api';
 import { TradingToolsWorkspace } from './trading-tools/TradingToolsWorkspace';
 import { TOOL_MODES, type ToolMode } from './trading-tools/types';
+import './trading-tools/TradingToolsShell.css';
 
 export function TradingToolsPage() {
   const [params, setParams] = useSearchParams();

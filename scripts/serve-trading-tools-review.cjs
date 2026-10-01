@@ -19,7 +19,7 @@ function probeSource(moduleOnly) {
     const attempts = [], timers = [], copies = [], blockedResources = [];
     const trace = () => String(new Error().stack || '').split('\n').slice(2, 6).join('\n');
     const safePath = value => { try { const u = new URL(String(value), location.href); return u.origin + u.pathname; } catch { return '<invalid-url>'; } };
-    const record = (kind, url, method = 'GET') => attempts.push({ kind, method, path: safePath(url), initiator: trace() });
+    const record = (kind, url, method = 'GET') => attempts.push({ kind, method, path: safePath(url), page:location.pathname, initiator: trace() });
     const actualFetch = window.fetch.bind(window);
     window.fetch = (input, init) => {
       const url = typeof input === 'string' || input instanceof URL ? String(input) : input.url;
@@ -37,7 +37,7 @@ function probeSource(moduleOnly) {
     Object.defineProperty(navigator, 'sendBeacon', { configurable: true, value: (url) => { record('sendBeacon', url, 'POST'); return false; } });
     for (const name of ['setTimeout', 'setInterval', 'requestAnimationFrame']) {
       const original = window[name].bind(window);
-      window[name] = (callback, delay, ...args) => { timers.push({ kind: name, delay: Number(delay) || 0, initiator: trace() }); return original(callback, delay, ...args); };
+      window[name] = (callback, delay, ...args) => { timers.push({ kind: name, delay: Number(delay) || 0, page:location.pathname, initiator: trace() }); return original(callback, delay, ...args); };
     }
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value) => { copies.push(String(value)); } } });
     document.addEventListener('securitypolicyviolation', event => blockedResources.push({ path:safePath(event.blockedURI), directive:event.effectiveDirective, source:event.sourceFile.split('?')[0], line:event.lineNumber }));
@@ -57,7 +57,7 @@ async function buildModule() {
         return <LanguageProvider><div className="trading-tools-page">{mounted&&<TradingToolsWorkspace mode={mode} onModeChange={setMode}/>}</div></LanguageProvider>;}
       createRoot(document.getElementById('root')).render(<React.StrictMode><Fixture/></React.StrictMode>);`,
       resolveDir: path.join(ROOT, 'frontend'), sourcefile: 'trading-tools-isolated-fixture.tsx', loader: 'tsx' },
-    outfile: 'module.js', bundle: true, write: false, platform: 'browser', format: 'esm',
+    outfile: 'module.js', bundle: true, write: false, platform: 'browser', format: 'esm', external:['/fonts/*'],
     // Development React deliberately replays StrictMode effects in this
     // isolated fixture; the integrated /tools route uses the production build.
     define: { 'process.env.NODE_ENV': '"development"' }, logLevel: 'silent',
@@ -87,7 +87,10 @@ async function createReviewServer(port = PORT) {
     if (url.pathname.startsWith('/api/')) {
       hits.push({ method: req.method, path: url.pathname, at: new Date().toISOString() });
       res.setHeader('Content-Type', 'application/json');
-      if (url.pathname === '/api/v1/me') return res.end(JSON.stringify({ id: 'tools-fixture', email: 'review@example.invalid', displayName: 'Review', isAdmin: false, role: 'USER', avatarUrl: null, emailVerified: true, kycStatus: 'NONE' }));
+      if (url.pathname === '/api/v1/me') {
+        const fixtureUser=req.headers.authorization==='Bearer tools-fixture-user-b'?'b':'a';
+        return res.end(JSON.stringify({ id: `tools-fixture-${fixtureUser}`, email: `review-${fixtureUser}@example.invalid`, displayName: 'Review', isAdmin: false, role: 'USER', avatarUrl: null, emailVerified: true, kycStatus: 'NONE' }));
+      }
       res.writeHead(403); return res.end(JSON.stringify({ error: 'No fixture or upstream for this endpoint' }));
     }
     let name;

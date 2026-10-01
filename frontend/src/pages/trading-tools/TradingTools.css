@@ -205,7 +205,7 @@
   .vx-trading-tools .tt-purchase > .tt-control { padding-right: 0; }
   .vx-trading-tools .tt-method { margin: 0 14px; }
   .vx-trading-tools .tt-method code { padding: 12px; font-size: 11px; }
-  .vx-trading-tools .tt-chart svg text { font-size: 14px; }
+  .vx-trading-tools .tt-chart svg text { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .vx-trading-tools *, .vx-trading-tools *::before, .vx-trading-tools *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

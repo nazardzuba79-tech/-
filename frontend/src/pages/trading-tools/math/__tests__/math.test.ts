@@ -4,6 +4,7 @@ import BigNumber from 'bignumber.js';
 import { computeDca, computeFees, computeLiquidation, computePnl, computePositionSize, computeRiskReward,
   formatDecimal, normalizeLevels, parseDecimal, type PnlInput, type PositionInput, type RiskRewardInput, type DcaInput, type FeesInput, type LiquidationInput } from '../index';
 import { Decimal } from '../decimal';
+import { execution } from '../execution';
 
 const oracle = JSON.parse(fs.readFileSync(path.join(__dirname, 'oracle.json'), 'utf8'));
 const calculators: Record<string, (input: any) => any> = { pnl: computePnl, position: computePositionSize, liquidation: computeLiquidation, riskReward: computeRiskReward, dca: computeDca, fees: computeFees };
@@ -18,19 +19,17 @@ function ready<T>(result: { ok: true; value: T } | { ok: false; errors: any }): 
   if (!result.ok) throw new Error(JSON.stringify(result.errors));
   return result.value;
 }
-function equalExpected(actual: any, expected: any): void {
+function equalExpected(actual: any, expected: any, approximate: string[] = [], field = ''): void {
   if (expected === null) { expect(actual).toBeNull(); return; }
   if (typeof expected === 'object') {
-    for (const key of Object.keys(expected)) equalExpected(actual[key], expected[key]);
+    for (const key of Object.keys(expected)) equalExpected(actual[key], expected[key], approximate, field ? `${field}.${key}` : key);
     return;
   }
   const target = new Decimal(expected); const observed = new Decimal(actual);
   expect(observed.isFinite()).toBe(true);
-  // Python uses 110 significant digits; the app uses 160 decimal places.
-  // A later ratio can terminate after an intermediate repeating division, so
-  // compare all oracle answers at relative 1e-80 precision. Zero stays exact.
-  // Exact input cost/fee conservation has separate equality regressions below.
-  if (target.isZero()) expect(observed.isZero()).toBe(true);
+  // Terminating results are exact. Repeating divisions use relative precision;
+  // explicitly marked averages also depend on a repeating amount/price input.
+  if (expected.length < 80 && !approximate.includes(field)) expect(observed.eq(target)).toBe(true);
   else expect(observed.minus(target).abs().lte(target.abs().times('1e-80'))).toBe(true);
 }
 
@@ -39,7 +38,38 @@ describe('independent Python Decimal golden vectors', () => {
   test.each(cases)('%s', (_name, fixture) => {
     const result = calculators[fixture.mode](fixture.input);
     expect(result.ok).toBe(true);
-    equalExpected(result.value, fixture.expected);
+    equalExpected(result.value, fixture.expected, fixture.approximate);
+  });
+});
+
+describe('all 42 preserved owner reference checks', () => {
+  const reference: { checks: { check: string; expected: string }[] } = JSON.parse(fs.readFileSync(path.join(__dirname, 'owner-reference.json'), 'utf8'));
+  const from = (name: string) => { const item = oracle.cases.find((item: any) => item.name === name); return ready<any>(calculators[item.mode](item.input)); };
+  const a = from('A Long'), b = from('B Short'), lev = from('A leverage 20'), size = from('E position step'), budget = from('E budget cap');
+  const reward = from('G costs'), bare = from('H bare average'), dcaFees = from('H fees and target'), target = from('H target average'), tradingFees = from('I fees');
+  const atBreakEven = (side: 'long' | 'short', value: any) => execution({ side, entry: new Decimal(60000), exit: new Decimal(value.breakEvenTarget), quantity: new Decimal('0.1'), feeEntry: new Decimal('0.0005'), feeExit: new Decimal('0.0005'), slipEntry: new Decimal(0), slipExit: new Decimal(0), funding: new Decimal(0), fixedCosts: new Decimal(0) }).netPnl.toFixed();
+  const checks: Record<string, string> = {
+    'P&L Long / notional': a.notional, 'P&L Long / margin': a.initialMargin, 'P&L Long / gross': a.grossPnl,
+    'P&L Long / feeEntry': a.feeOpen, 'P&L Long / feeExit': a.feeClose, 'P&L Long / net': a.netPnl, 'P&L Long / roi': a.roi,
+    'Leverage invariance / net': lev.netPnl, 'Leverage change / ROI': lev.roi, 'P&L Short / net': b.netPnl, 'P&L Short / ROI': b.roi,
+    'Long adverse slippage / net': from('C adverse Long').netPnl, 'Short adverse slippage / net': from('C adverse Short').netPnl,
+    'Losing Long / net': from('C losing Long').netPnl, 'Received funding / net improvement': new Decimal(from('C received funding').netPnl).minus(from('C losing Long').netPnl).toFixed(),
+    'Break-even substitution / direction 1': atBreakEven('long', a), 'Break-even substitution / direction -1': atBreakEven('short', b),
+    'Position size / quantity': size.quantity, 'Position size / planned loss': size.plannedLoss, 'Position size / margin': size.margin,
+    'Budget-limited size / quantity': budget.quantity, 'Budget-limited size / reserve': budget.reserved, 'Budget-limited size / loss': budget.plannedLoss,
+    'Liquidation entry-notional model / Long A=0': from('F Long').liquidationPrice, 'Liquidation entry-notional model / Short A=0': from('F Short').liquidationPrice,
+    'Liquidation entry-notional model / Long A=50': from('F Long extra margin').liquidationPrice, 'Liquidation entry-notional model / Short A=50': from('F Short extra margin').liquidationPrice,
+    'Risk/reward / risk': reward.risk, 'Risk/reward / reward': reward.reward, 'Risk/reward / ratio': reward.ratio, 'Risk/reward / break-even percent': reward.breakEvenWinRate,
+    'DCA / bare cost': bare.purchaseSum, 'DCA / cost basis': dcaFees.costBasis, 'DCA / net at target': dcaFees.exit.netAtTarget,
+    'DCA / exit break-even': dcaFees.exit.breakEven, 'DCA target-average / additional quantity': target.targetAverage.quantity,
+    'Fees / MM': tradingFees.combinations.MM, 'Fees / MT': tradingFees.combinations.MT, 'Fees / TM': tradingFees.combinations.TM, 'Fees / TT': tradingFees.combinations.TT,
+    'Funding / Long': from('I Long funding').fundingCost, 'Funding / Short': from('I Short funding').fundingCost,
+  };
+  test.each(reference.checks)('$check', ({ check, expected }) => {
+    const actual = new Decimal(checks[check]), wanted = new Decimal(expected);
+    if (check.startsWith('Break-even substitution')) expect(actual.abs().lte('1e-140')).toBe(true);
+    else if (['Risk/reward / ratio', 'Risk/reward / break-even percent', 'DCA / exit break-even'].includes(check)) expect(actual.minus(wanted).abs().lte(wanted.abs().times('1e-18'))).toBe(true);
+    else expect(actual.eq(wanted)).toBe(true);
   });
 });
 
@@ -64,6 +94,9 @@ describe('decimal parser and display', () => {
     expect(formatDecimal('-0')).toBe('0,00');
     expect(formatDecimal('0.0001', { minDecimals: 0, maxDecimals: 0 })).toBe('<1');
     expect(formatDecimal('Infinity')).toBe('—');
+    expect(formatDecimal('99.999999', { minDecimals: 0, maxDecimals: 24 })).toBe('99,999999');
+    expect(formatDecimal('100', { minDecimals: 0, maxDecimals: 24 })).toBe('100');
+    expect(formatDecimal('1.00001', { minDecimals: 0, maxDecimals: 24 })).toBe('1,00001');
   });
   test('rejects negative input rather than sanitizing away its sign', () => {
     expect(parseDecimal('-5', { positive: true })).toMatchObject({ ok: false, status: 'invalid' });
@@ -193,6 +226,50 @@ describe('risk size and liquidation boundaries', () => {
 });
 
 describe('risk/reward, DCA and fees edge cases', () => {
+  test('DCA amount/price repeating quantities preserve exact averages and already-achieved targets', () => {
+    const input: DcaInput = { rows: [{ mode: 'amount', price: '3', quantity: '', amount: '1', fee: '0' }], targetAverage: { price: '2', fee: '0', target: '3' } };
+    const value = ready(computeDca(input));
+    expect(value.averageBare).toBe('3'); expect(value.averageCost).toBe('3');
+    expect(value.targetAverage).toMatchObject({ state: 'achieved', quantity: '0', totalNewCost: '0', newAverage: '3' });
+    const withFee = ready(computeDca({ ...input, rows: [{ ...input.rows[0], fee: '0.1' }], targetAverage: { price: '2', fee: '0', target: '3.003' } }));
+    expect(withFee.averageCost).toBe('3.003'); expect(withFee.targetAverage?.state).toBe('achieved');
+    const atCost = ready(computeDca({ ...input, exit: { price: '3', fee: '0' } }));
+    expect(atCost.exit).toMatchObject({ valueBeforeExitFee: '1', netAtTarget: '0', breakEven: '3' });
+  });
+  test('DCA combines different repeating quantities before calculating cost or a target', () => {
+    const input: DcaInput = { rows: [
+      { mode: 'amount', price: '3', quantity: '', amount: '1', fee: '0.1' },
+      { mode: 'amount', price: '6', quantity: '', amount: '1', fee: '0.1' },
+    ], targetAverage: { price: '2', fee: '0', target: '3' }, exit: { price: '4.004', fee: '0' } };
+    const value = ready(computeDca(input));
+    expect(value.quantity).toBe('0.5'); expect(value.averageBare).toBe('4'); expect(value.averageCost).toBe('4.004');
+    expect(value.exit?.netAtTarget).toBe('0');
+    expect(value.targetAverage).toMatchObject({ state: 'ready', quantity: '0.502', totalNewCost: '1.004', newQuantity: '1.002', newAverage: '3' });
+    const reverse = ready(computeDca({ ...input, rows: [...input.rows].reverse() }));
+    expect(reverse.targetAverage).toEqual(value.targetAverage); expect(reverse.exit).toEqual(value.exit);
+  });
+  test('DCA does not round a genuinely tiny target shortfall to already achieved', () => {
+    const input: DcaInput = { rows: [{ mode: 'amount', price: '3', quantity: '', amount: '1', fee: '0' }],
+      targetAverage: { price: '2', fee: '0', target: '2.999999999999999999999999' } };
+    const target = ready(computeDca(input)).targetAverage!;
+    expect(target.state).toBe('ready'); expect(new Decimal(target.quantity!).gt(0)).toBe(true);
+    expect(new Decimal(target.quantity!).lt('0.000000000000000000000001')).toBe(true);
+    expect(target.newAverage).toBe(input.targetAverage!.target);
+    expect(ready(computeDca({ ...input, targetAverage: { ...input.targetAverage!, target: '3.000000000000000000000001' } })).targetAverage?.state).toBe('not_reduction');
+    const repeating = ready(computeDca({ ...input, targetAverage: { ...input.targetAverage!, target: '2.5' }, exit: { price: '3', fee: '10' } }));
+    expect(repeating.targetAverage?.newAverage).toBe('2.5'); expect(repeating.exit?.netAtTarget).toBe('-0.1');
+  });
+  test('DCA rational quantities remain bounded across the full 50-row input limit', () => {
+    const rows: DcaInput['rows'] = Array.from({ length: 50 }, (_, index) => ({ mode: 'amount',
+      price: `999999999999999999999999999999.${String(index + 1).padStart(24, '0')}`,
+      quantity: '', amount: '0.000000000000000000000001', fee: '0' }));
+    const value = ready(computeDca({ rows }));
+    expect(value.series).toHaveLength(50); expect(value.purchaseSum).toBe('0.00000000000000000000005');
+    expect(new Decimal(value.quantity).gt(0)).toBe(true);
+    for (const raw of [value.quantity, value.averageBare, value.averageCost, ...value.series.map(point => point.average)]) {
+      expect(new Decimal(raw).isFinite()).toBe(true); expect(raw.length).toBeLessThan(250);
+    }
+  });
   test('does not show a positive coefficient when the target fails to cover costs', () => {
     expect(ready(computeRiskReward({...rr,fixedCosts:'20'}))).toMatchObject({state:'target_not_profitable',ratio:null,breakEvenWinRate:null,reward:'-10.21'});
     for (const patch of [{stop:'100'},{target:'100'},{stop:'105'},{target:'90'}]) expect(computeRiskReward({...rr,...patch}).ok).toBe(false);

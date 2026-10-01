@@ -1,0 +1,259 @@
+{
+  "scope": "Independent Decimal arithmetic checks of the prompt's stated models; not application or production QA",
+  "date": "2026-09-30",
+  "checks_passed": 42,
+  "checks": [
+    {
+      "check": "P&L Long / notional",
+      "actual": "6000.0",
+      "expected": "6000",
+      "passed": true
+    },
+    {
+      "check": "P&L Long / margin",
+      "actual": "600.0",
+      "expected": "600",
+      "passed": true
+    },
+    {
+      "check": "P&L Long / gross",
+      "actual": "600.0",
+      "expected": "600",
+      "passed": true
+    },
+    {
+      "check": "P&L Long / feeEntry",
+      "actual": "3.00000",
+      "expected": "3",
+      "passed": true
+    },
+    {
+      "check": "P&L Long / feeExit",
+      "actual": "3.30000",
+      "expected": "3.3",
+      "passed": true
+    },
+    {
+      "check": "P&L Long / net",
+      "actual": "593.70000",
+      "expected": "593.7",
+      "passed": true
+    },
+    {
+      "check": "P&L Long / roi",
+      "actual": "98.9500",
+      "expected": "98.95",
+      "passed": true
+    },
+    {
+      "check": "Leverage invariance / net",
+      "actual": "593.70000",
+      "expected": "593.70000",
+      "passed": true
+    },
+    {
+      "check": "Leverage change / ROI",
+      "actual": "197.9000",
+      "expected": "197.9",
+      "passed": true
+    },
+    {
+      "check": "P&L Short / net",
+      "actual": "594.30000",
+      "expected": "594.3",
+      "passed": true
+    },
+    {
+      "check": "P&L Short / ROI",
+      "actual": "99.0500",
+      "expected": "99.05",
+      "passed": true
+    },
+    {
+      "check": "Long adverse slippage / net",
+      "actual": "76.90100",
+      "expected": "76.901",
+      "passed": true
+    },
+    {
+      "check": "Short adverse slippage / net",
+      "actual": "79.10100",
+      "expected": "79.101",
+      "passed": true
+    },
+    {
+      "check": "Losing Long / net",
+      "actual": "-101.900",
+      "expected": "-101.9",
+      "passed": true
+    },
+    {
+      "check": "Received funding / net improvement",
+      "actual": "2.000",
+      "expected": "2",
+      "passed": true
+    },
+    {
+      "check": "Break-even substitution / direction 1",
+      "actual": "-2.5E-68",
+      "expected": "0",
+      "passed": true
+    },
+    {
+      "check": "Break-even substitution / direction -1",
+      "actual": "2.5E-68",
+      "expected": "0",
+      "passed": true
+    },
+    {
+      "check": "Position size / quantity",
+      "actual": "19.24",
+      "expected": "19.24",
+      "passed": true
+    },
+    {
+      "check": "Position size / planned loss",
+      "actual": "99.95180",
+      "expected": "99.9518",
+      "passed": true
+    },
+    {
+      "check": "Position size / margin",
+      "actual": "384.80",
+      "expected": "384.8",
+      "passed": true
+    },
+    {
+      "check": "Budget-limited size / quantity",
+      "actual": "9.90",
+      "expected": "9.90",
+      "passed": true
+    },
+    {
+      "check": "Budget-limited size / reserve",
+      "actual": "199.93050",
+      "expected": "199.9305",
+      "passed": true
+    },
+    {
+      "check": "Budget-limited size / loss",
+      "actual": "51.43050",
+      "expected": "51.4305",
+      "passed": true
+    },
+    {
+      "check": "Liquidation entry-notional model / Long A=0",
+      "actual": "90.500",
+      "expected": "90.5",
+      "passed": true
+    },
+    {
+      "check": "Liquidation entry-notional model / Short A=0",
+      "actual": "109.500",
+      "expected": "109.5",
+      "passed": true
+    },
+    {
+      "check": "Liquidation entry-notional model / Long A=50",
+      "actual": "85.500",
+      "expected": "85.5",
+      "passed": true
+    },
+    {
+      "check": "Liquidation entry-notional model / Short A=50",
+      "actual": "114.500",
+      "expected": "114.5",
+      "passed": true
+    },
+    {
+      "check": "Risk/reward / risk",
+      "actual": "5.195",
+      "expected": "5.195",
+      "passed": true
+    },
+    {
+      "check": "Risk/reward / reward",
+      "actual": "9.790",
+      "expected": "9.79",
+      "passed": true
+    },
+    {
+      "check": "Risk/reward / ratio",
+      "actual": "1.884504331087584215591915303176130895091434071222329162656400384985563",
+      "expected": "1.88450433108758421559",
+      "passed": true
+    },
+    {
+      "check": "Risk/reward / break-even percent",
+      "actual": "34.66800133466800133466800133466800133466800133466800133466800133466800",
+      "expected": "34.66800133466800133467",
+      "passed": true
+    },
+    {
+      "check": "DCA / bare cost",
+      "actual": "50000",
+      "expected": "50000",
+      "passed": true
+    },
+    {
+      "check": "DCA / cost basis",
+      "actual": "50050.000",
+      "expected": "50050",
+      "passed": true
+    },
+    {
+      "check": "DCA / net at target",
+      "actual": "3896.000",
+      "expected": "3896",
+      "passed": true
+    },
+    {
+      "check": "DCA / exit break-even",
+      "actual": "16700.03336670003336670003336670003336670003336670003336670003336670003",
+      "expected": "16700.033366700033366700",
+      "passed": true
+    },
+    {
+      "check": "DCA target-average / additional quantity",
+      "actual": "1",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "check": "Fees / MM",
+      "actual": "2.5200",
+      "expected": "2.52",
+      "passed": true
+    },
+    {
+      "check": "Fees / MT",
+      "actual": "4.83000",
+      "expected": "4.83",
+      "passed": true
+    },
+    {
+      "check": "Fees / TM",
+      "actual": "4.62000",
+      "expected": "4.62",
+      "passed": true
+    },
+    {
+      "check": "Fees / TT",
+      "actual": "6.93000",
+      "expected": "6.93",
+      "passed": true
+    },
+    {
+      "check": "Funding / Long",
+      "actual": "1.8000",
+      "expected": "1.8",
+      "passed": true
+    },
+    {
+      "check": "Funding / Short",
+      "actual": "-1.8000",
+      "expected": "-1.8",
+      "passed": true
+    }
+  ]
+}

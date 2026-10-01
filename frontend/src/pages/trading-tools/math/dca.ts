@@ -1,5 +1,14 @@
 import { Decimal, exact, Reader } from './decimal';
+import type { DecimalValue } from './decimal';
 import type { DcaInput, DcaValue, Result } from './types';
+
+type Ratio = { numerator: DecimalValue; denominator: DecimalValue };
+const addRatio = (a: Ratio, b: Ratio): Ratio => ({
+  numerator: a.numerator.times(b.denominator).plus(b.numerator.times(a.denominator)),
+  denominator: a.denominator.times(b.denominator),
+});
+const divideRatio = (value: Ratio): DecimalValue => value.numerator.div(value.denominator);
+const average = (cost: DecimalValue, quantity: Ratio): DecimalValue => cost.times(quantity.denominator).div(quantity.numerator);
 
 export function computeDca(input: DcaInput): Result<DcaValue> {
   if (!input.rows.length) return { ok: false, status: 'incomplete', errors: { rows: 'Добавьте хотя бы одну покупку.' } };
@@ -20,38 +29,45 @@ export function computeDca(input: DcaInput): Result<DcaValue> {
     fee: r.rate('targetAverage.fee', input.targetAverage.fee), target: r.read('targetAverage.target', input.targetAverage.target, { positive: true }),
   } : null;
   const error = r.result(); if (error) return error;
-  let quantity = new Decimal(0); let purchaseSum = new Decimal(0); let entryFees = new Decimal(0);
+  let quantity: Ratio = { numerator: new Decimal(0), denominator: new Decimal(1) };
+  let purchaseSum = new Decimal(0); let entryFees = new Decimal(0);
   const series = rows.map((row, index) => {
-    const q = row.quantity ?? row.amount!.div(row.price);
-    // An entered amount is already exact; do not multiply an approximate quotient back into it.
-    const amount = row.amount ?? q.times(row.price);
-    quantity = quantity.plus(q); purchaseSum = purchaseSum.plus(amount); entryFees = entryFees.plus(amount.times(row.fee));
-    return { purchase: index + 1, average: exact(purchaseSum.plus(entryFees).div(quantity)) };
+    // Keep amount/price as a ratio: a rounded 1/3 must not create an artificial
+    // target shortfall or loss when selling the holding at its exact cost.
+    const q: Ratio = { numerator: row.quantity ?? row.amount!, denominator: row.quantity ? new Decimal(1) : row.price };
+    const amount = row.amount ?? row.quantity!.times(row.price);
+    quantity = addRatio(quantity, q); purchaseSum = purchaseSum.plus(amount); entryFees = entryFees.plus(amount.times(row.fee));
+    return { purchase: index + 1, average: exact(average(purchaseSum.plus(entryFees), quantity)) };
   });
   const costBasis = purchaseSum.plus(entryFees);
   let targetAverage: DcaValue['targetAverage'] = null;
   if (target) {
     const effective = target.price.times(new Decimal(1).plus(target.fee));
-    const difference = costBasis.minus(target.target.times(quantity));
+    const difference = costBasis.times(quantity.denominator).minus(target.target.times(quantity.numerator));
     const empty = { quantity: null, amountBeforeFee: null, totalNewCost: null, newQuantity: null, newAverage: null };
-    if (difference.isZero()) targetAverage = { ...empty, state: 'achieved', quantity: '0', amountBeforeFee: '0', totalNewCost: '0', newQuantity: exact(quantity), newAverage: exact(costBasis.div(quantity)) };
+    if (difference.isZero()) targetAverage = { ...empty, state: 'achieved', quantity: '0', amountBeforeFee: '0', totalNewCost: '0', newQuantity: exact(divideRatio(quantity)), newAverage: exact(average(costBasis, quantity)) };
     else if (difference.lt(0)) targetAverage = { ...empty, state: 'not_reduction' };
     else if (target.target.eq(effective)) targetAverage = { ...empty, state: 'no_finite_quantity' };
     else if (target.target.lt(effective)) targetAverage = { ...empty, state: 'unreachable' };
     else {
-      const qAdd = difference.div(target.target.minus(effective));
-      const amount = qAdd.times(target.price); const totalNewCost = qAdd.times(effective); const newQuantity = quantity.plus(qAdd);
-      targetAverage = { state: 'ready', quantity: exact(qAdd), amountBeforeFee: exact(amount), totalNewCost: exact(totalNewCost),
-        newQuantity: exact(newQuantity), newAverage: exact(costBasis.plus(totalNewCost).div(newQuantity)) };
+      const qAdd: Ratio = { numerator: difference, denominator: quantity.denominator.times(target.target.minus(effective)) };
+      const newQuantity = addRatio(quantity, qAdd);
+      const newCostNumerator = costBasis.times(qAdd.denominator).plus(qAdd.numerator.times(effective));
+      targetAverage = { state: 'ready', quantity: exact(divideRatio(qAdd)),
+        amountBeforeFee: exact(qAdd.numerator.times(target.price).div(qAdd.denominator)),
+        totalNewCost: exact(qAdd.numerator.times(effective).div(qAdd.denominator)),
+        newQuantity: exact(divideRatio(newQuantity)),
+        newAverage: exact(newCostNumerator.times(newQuantity.denominator).div(qAdd.denominator.times(newQuantity.numerator))) };
     }
   }
-  const valueBeforeExitFee = exit ? quantity.times(exit.price) : null;
-  const exitFee = exit ? valueBeforeExitFee!.times(exit.fee) : null;
+  const exitValueNumerator = exit ? quantity.numerator.times(exit.price) : null;
   return { ok: true, status: 'ready', value: {
-    quantity: exact(quantity), purchaseSum: exact(purchaseSum), entryFees: exact(entryFees), costBasis: exact(costBasis),
-    averageBare: exact(purchaseSum.div(quantity)), averageCost: exact(costBasis.div(quantity)),
-    exit: exit ? { valueBeforeExitFee: exact(valueBeforeExitFee!), exitFee: exact(exitFee!),
-      netAtTarget: exact(valueBeforeExitFee!.minus(exitFee!).minus(costBasis)), breakEven: exact(costBasis.div(quantity.times(new Decimal(1).minus(exit.fee)))) } : null,
+    quantity: exact(divideRatio(quantity)), purchaseSum: exact(purchaseSum), entryFees: exact(entryFees), costBasis: exact(costBasis),
+    averageBare: exact(average(purchaseSum, quantity)), averageCost: exact(average(costBasis, quantity)),
+    exit: exit ? { valueBeforeExitFee: exact(exitValueNumerator!.div(quantity.denominator)),
+      exitFee: exact(exitValueNumerator!.times(exit.fee).div(quantity.denominator)),
+      netAtTarget: exact(exitValueNumerator!.times(new Decimal(1).minus(exit.fee)).minus(costBasis.times(quantity.denominator)).div(quantity.denominator)),
+      breakEven: exact(costBasis.times(quantity.denominator).div(quantity.numerator.times(new Decimal(1).minus(exit.fee)))) } : null,
     targetAverage, series,
   } };
 }

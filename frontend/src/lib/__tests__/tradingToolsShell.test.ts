@@ -200,7 +200,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(warm?.getText(ast)).not.toMatch(/TradingToolsPage|trading-tools|\/tools/);
   });
 
-  test('only the new page subtree owns the new styles', () => {
+  test('the calculator stylesheet stays within its own page subtree', () => {
     const css = source('pages/trading-tools/TradingTools.css');
     expect(css).not.toMatch(/@import|@font-face|https?:\/\//);
     expect(css).not.toMatch(/(?:^|})\s*(?:body|html|:root|\.global-header|\.main-nav)\s*[{,]/m);

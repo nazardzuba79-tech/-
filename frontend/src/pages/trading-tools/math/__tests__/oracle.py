@@ -166,8 +166,9 @@ checks={
  'Fees / MM':fee['combinations']['MM'],'Fees / MT':fee['combinations']['MT'],'Fees / TM':fee['combinations']['TM'],'Fees / TT':fee['combinations']['TT'],
  'Funding / Long':fl['fundingCost'],'Funding / Short':fs['fundingCost'],
 }
-if len(sys.argv)>1:
-    reference=json.loads(Path(sys.argv[1]).read_text(encoding='utf-8-sig'))
+reference_path = Path(sys.argv[1]) if len(sys.argv)>1 else Path(__file__).with_name('owner-reference.json')
+if reference_path.exists():
+    reference=json.loads(reference_path.read_text(encoding='utf-8-sig'))
     assert len(checks)==len(reference['checks'])==42
     for item in reference['checks']:
         actual,expected=checks[item['check']],D(item['expected'])
@@ -176,5 +177,5 @@ if len(sys.argv)>1:
     print('Owner reference independently verified: 42/42; no numerical inconsistencies.')
 
 output=Path(__file__).with_name('oracle.json')
-output.write_text(json.dumps(dict(source='Python Decimal, precision 110; generated independently of TypeScript',relativeTolerance='1e-80',cases=cases),ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+output.write_text(json.dumps(dict(source='Python Decimal, precision 110; generated independently of TypeScript',relativeTolerance='1e-80',cases=cases),ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
 print(f'Wrote {len(cases)} independent fixture cases to {output.name}.')

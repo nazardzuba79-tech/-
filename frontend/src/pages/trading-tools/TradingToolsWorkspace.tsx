@@ -15,24 +15,28 @@ export function TradingToolsWorkspace({ mode, onModeChange }: { mode: ToolMode; 
   const [markets, setMarkets] = useState<Record<'pnl' | 'fees', Market>>({ pnl: 'futures', fees: 'futures' });
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const alive = useRef(true);
+  const copyGeneration = useRef(0);
   const tabs = useRef<HTMLDivElement>(null);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const market = mode === 'pnl' || mode === 'fees' ? markets[mode] : 'futures';
   const key = `${mode}:${market}`;
+  useEffect(() => { copyGeneration.current += 1; setCopyState('idle'); }, [key]);
   const fallback = useMemo(() => emptyDraft(), [key]);
   const draft = drafts[key] || fallback;
   const calculation = useMemo(() => calculateTool(mode, draft, market), [mode, draft, market]);
   const errors = calculation.result.ok ? {} : calculation.result.errors;
   const update: DraftUpdate = useCallback((name, value) => {
+    copyGeneration.current += 1;
     setCopyState('idle');
     setDrafts((current) => { const previous = current[key] || emptyDraft(); return { ...current, [key]: { ...previous, [name]: value, touched: [...new Set([...previous.touched, name])] } }; });
   }, [key]);
-  const replaceDraft = (value: Draft) => { setCopyState('idle'); setDrafts((current) => ({ ...current, [key]: value })); };
+  const replaceDraft = (value: Draft) => { copyGeneration.current += 1; setCopyState('idle'); setDrafts((current) => ({ ...current, [key]: value })); };
   const chooseMode = (next: ToolMode) => { setCopyState('idle'); onModeChange(next); };
   const copy = async () => {
     if (!calculation.result.ok) return;
-    try { await navigator.clipboard.writeText(exactResultText(calculation)); if (alive.current) setCopyState('copied'); }
-    catch { if (alive.current) setCopyState('failed'); }
+    const generation = ++copyGeneration.current;
+    try { await navigator.clipboard.writeText(exactResultText(calculation)); if (alive.current && generation === copyGeneration.current) setCopyState('copied'); }
+    catch { if (alive.current && generation === copyGeneration.current) setCopyState('failed'); }
   };
   const ActiveIcon = ICONS[mode];
   return <main className="vx-trading-tools" lang="ru" data-tools-workspace>
