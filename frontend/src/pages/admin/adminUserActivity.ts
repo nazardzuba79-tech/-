@@ -1,4 +1,5 @@
 import { browserFetch as fetch } from '../../lib/browserActivity';
+import { DEPOSIT_MINIMUM_USD } from '../../lib/depositMinimum';
 import { useState } from 'react';
 import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
 import { API_BASE, getToken } from '../../lib/api';
@@ -67,7 +68,7 @@ export async function getAdminUserActivity(signal?: AbortSignal): Promise<AdminU
     totalUsers,
     newUsers24h,
     pendingKyc,
-    minDepositUsd: Number(body.minDepositUsd) || 300,
+    minDepositUsd: Number(body.minDepositUsd) || DEPOSIT_MINIMUM_USD,
     packages: body.packages,
     counts: { UNATTRIBUTED, AWAITING_CONFIRMATIONS, AWAITING_TOPUP, READY, NEEDS_REVIEW },
     awaitingConfirmationsByUser: body.awaitingConfirmationsByUser && typeof body.awaitingConfirmationsByUser === 'object' ? body.awaitingConfirmationsByUser : {},

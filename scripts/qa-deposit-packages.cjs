@@ -227,22 +227,22 @@ async function main() {
       assert.equal(await balance(a), '0'); assert.equal(await balance(b), '0');
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_ATTRIBUTED' } }), 2);
       const pa = await pkgOf(a), pb = await pkgOf(b);
-      assert.equal(pa.state, 'AWAITING_TOPUP'); assert.equal(pa.total, '15'); assert.equal(pa.remaining, '285');
-      assert.equal(pb.state, 'AWAITING_TOPUP'); assert.equal(pb.total, '20'); assert.equal(pb.remaining, '280');
+      assert.equal(pa.state, 'AWAITING_TOPUP'); assert.equal(pa.total, '15'); assert.equal(pa.remaining, '485');
+      assert.equal(pb.state, 'AWAITING_TOPUP'); assert.equal(pb.total, '20'); assert.equal(pb.remaining, '480');
       // Moving an attributed transfer needs an explicit reassign.
       assert.equal((await attribute(1, b)).status, 409);
     });
 
-    await test('2/5/7. 15+285 and 20+280 reach READY; 300 and 500 single transfers READY; nothing auto-credits; clients never summed', async () => {
-      fixture.send(3, '285'); fixture.send(4, '280');
+    await test('2/5/7. 15+485 and 20+480 reach READY; 500 and 700 single transfers READY; nothing auto-credits; clients never summed', async () => {
+      fixture.send(3, '485'); fixture.send(4, '480');
       const e = await makeUser('e'), f = await makeUser('f');
-      fixture.send(5, '300'); fixture.send(6, '500');
+      fixture.send(5, '500'); fixture.send(6, '700');
       await scan();
       await attribute(3, users.a); await attribute(4, users.b); await attribute(5, e); await attribute(6, f);
       for (let i = 0; i < 3; i++) await scan(); // repeated discovery never credits
       const pa = await pkgOf(users.a), pb = await pkgOf(users.b), pe = await pkgOf(e), pf = await pkgOf(f);
-      assert.deepEqual([pa.state, pa.total], ['READY', '300']); assert.deepEqual([pb.state, pb.total], ['READY', '300']);
-      assert.deepEqual([pe.state, pe.total], ['READY', '300']); assert.deepEqual([pf.state, pf.total], ['READY', '500']);
+      assert.deepEqual([pa.state, pa.total], ['READY', '500']); assert.deepEqual([pb.state, pb.total], ['READY', '500']);
+      assert.deepEqual([pe.state, pe.total], ['READY', '500']); assert.deepEqual([pf.state, pf.total], ['READY', '700']);
       assert.equal(pa.transfers.length, 2); assert.ok(pa.transfers.every((t) => [hash(1), hash(3)].includes(t.txHash)));
       for (const id of [users.a, users.b, e, f]) assert.equal(await balance(id), '0');
       assert.equal(await prisma.depositBatch.count(), 0);
@@ -253,49 +253,49 @@ async function main() {
       const client = as(users.a);
       assert.deepEqual((await client.get('/deposits/me')).body, []);
       const bal = (await client.get('/balances')).body;
-      assert.ok(!JSON.stringify(bal).includes('285') && !JSON.stringify(bal).includes('300'), JSON.stringify(bal));
+      assert.ok(!JSON.stringify(bal).includes('485') && !JSON.stringify(bal).includes('500'), JSON.stringify(bal));
       const claim = await client.post('/deposits/claim/tron', { txHash: hash(3), asset: 'USDT' });
       assert.equal(claim.status, 202); assert.equal(claim.body.status, 'SUBMITTED');
-      assert.ok(!JSON.stringify(claim.body).includes('285')); assert.ok(!/зачисл(ен|ено)\b/i.test(claim.body.message.replace('после зачисления', '')));
+      assert.ok(!JSON.stringify(claim.body).includes('485')); assert.ok(!/зачисл(ен|ено)\b/i.test(claim.body.message.replace('после зачисления', '')));
     });
 
-    await test('3/15. 15+20+265 → Confirm credits exactly 300 once; audit + referral only at approval, exactly once', async () => {
+    await test('3/15. 15+20+465 → Confirm credits exactly 500 once; audit + referral only at approval, exactly once', async () => {
       const c = await makeUser('c', { referredById: REFERRER });
       fixture.send(7, '15'); fixture.send(8, '20'); await scan();
       await attribute(7, c); await attribute(8, c);
-      const p35 = await pkgOf(c); assert.equal(p35.total, '35'); assert.equal(p35.remaining, '265'); assert.equal(p35.state, 'AWAITING_TOPUP');
-      fixture.send(9, '265'); await scan(); await attribute(9, c);
+      const p35 = await pkgOf(c); assert.equal(p35.total, '35'); assert.equal(p35.remaining, '465'); assert.equal(p35.state, 'AWAITING_TOPUP');
+      fixture.send(9, '465'); await scan(); await attribute(9, c);
       assert.equal(await prisma.referralReward.count(), 0);
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_CREDITED' } }), 0);
       const p = await preview(c);
-      assert.equal(p.total, '300'); assert.equal(p.minimumReached, true); assert.equal(p.balanceAvailable, '0'); assert.equal(p.balanceAfter, '300');
+      assert.equal(p.total, '500'); assert.equal(p.minimumReached, true); assert.equal(p.balanceAvailable, '0'); assert.equal(p.balanceAfter, '500');
       const r = await confirm(p); assert.equal(r.status, 200, JSON.stringify(r.body));
-      assert.equal(r.body.totalAmount, '300'); assert.equal(await balance(c), '300');
+      assert.equal(r.body.totalAmount, '500'); assert.equal(await balance(c), '500');
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_CREDITED', userId: c } }), 3);
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_BATCH_CREDITED', userId: c } }), 1);
       assert.equal(await prisma.referralReward.count({ where: { referredUserId: c } }), 3);
-      assert.equal(await balance(REFERRER), '15');
+      assert.equal(await balance(REFERRER), '25');
       for (const n of [7, 8, 9]) { const d = await row(n); assert.equal(d.status, 'CREDITED'); assert.equal(d.batchId, r.body.batchId); assert.ok(d.creditedAt); }
       const client = as(c);
       const mine = (await client.get('/deposits/me')).body;
-      assert.equal(mine.length, 3); assert.equal(mine.reduce((s, d) => s.plus(d.amount), new BigNumber(0)).toString(), '300');
+      assert.equal(mine.length, 3); assert.equal(mine.reduce((s, d) => s.plus(d.amount), new BigNumber(0)).toString(), '500');
     });
 
-    await test('4. 15+300 → Confirm credits exactly 315', async () => {
+    await test('4. 15+500 → Confirm credits exactly 515', async () => {
       const d = await makeUser('d');
-      fixture.send(10, '15'); fixture.send(11, '300'); await scan(); await attribute(10, d); await attribute(11, d);
-      const p = await preview(d); assert.equal(p.total, '315');
-      assert.equal((await confirm(p)).status, 200); assert.equal(await balance(d), '315');
+      fixture.send(10, '15'); fixture.send(11, '500'); await scan(); await attribute(10, d); await attribute(11, d);
+      const p = await preview(d); assert.equal(p.total, '515');
+      assert.equal((await confirm(p)).status, 200); assert.equal(await balance(d), '515');
     });
 
-    await test('6/8. 299.999999 is below the minimum (UI and API); an old CREDITED package never counts toward a new one', async () => {
+    await test('6/8. 499.999999 is below the minimum (UI and API); an old CREDITED package never counts toward a new one', async () => {
       const g = await makeUser('g');
-      fixture.send(12, '299.999999'); await scan(); await attribute(12, g);
+      fixture.send(12, '499.999999'); await scan(); await attribute(12, g);
       const p = await preview(g); assert.equal(p.minimumReached, false); assert.equal(p.state, 'AWAITING_TOPUP'); assert.equal(p.remaining, '0.000001');
       const r = await confirm(p); assert.equal(r.status, 409); assert.equal(r.body.code, 'BELOW_MINIMUM'); assert.equal(await balance(g), '0');
       fixture.send(13, '15'); await scan(); await attribute(13, users.c);
       const pc = await preview(users.c); assert.equal(pc.total, '15'); assert.equal(pc.minimumReached, false);
-      assert.equal((await confirm(pc)).body.code, 'BELOW_MINIMUM'); assert.equal(await balance(users.c), '300');
+      assert.equal((await confirm(pc)).body.code, 'BELOW_MINIMUM'); assert.equal(await balance(users.c), '500');
     });
 
     await test('12. the legacy one-transfer manual-credit endpoint is closed (410) and credits nothing', async () => {
@@ -306,7 +306,7 @@ async function main() {
 
     await test('11. public claim / forged fields cannot take, lock, credit or bypass anything', async () => {
       const x = await makeUser('x'), y = await makeUser('y');
-      fixture.send(14, '400'); await scan();
+      fixture.send(14, '600'); await scan();
       for (const who of [x, y]) {
         const r = await as(who).post('/deposits/claim/tron', { txHash: hash(14), asset: 'USDT', userId: who, performedByAdminId: ADMIN, status: 'CREDITED', amount: '99999' });
         assert.equal(r.status, 202, JSON.stringify(r.body));
@@ -325,23 +325,23 @@ async function main() {
 
     await test('13. double submit, retry after timeout, two admins, overlapping confirms: exactly one financial effect', async () => {
       const h = await makeUser('h');
-      fixture.send(15, '120'); fixture.send(16, '230'); await scan(); await attribute(15, h); await attribute(16, h);
+      fixture.send(15, '120'); fixture.send(16, '430'); await scan(); await attribute(15, h); await attribute(16, h);
       const p = await preview(h); const key = crypto.randomUUID();
       const same = await Promise.all(Array.from({ length: 6 }, () => confirm(p, key)));
       for (const r of same) assert.equal(r.status, 200, JSON.stringify(r.body));
       assert.equal(new Set(same.map((r) => r.body.batchId)).size, 1);
-      assert.equal(await balance(h), '350');
-      const retry = await confirm(p, key); assert.equal(retry.status, 200); assert.equal(retry.body.replayed, true); assert.equal(await balance(h), '350');
-      const other = await confirm(p, crypto.randomUUID(), as(ADMIN_2)); assert.equal(other.status, 409); assert.equal(await balance(h), '350');
+      assert.equal(await balance(h), '550');
+      const retry = await confirm(p, key); assert.equal(retry.status, 200); assert.equal(retry.body.replayed, true); assert.equal(await balance(h), '550');
+      const other = await confirm(p, crypto.randomUUID(), as(ADMIN_2)); assert.equal(other.status, 409); assert.equal(await balance(h), '550');
       // Two different admins racing on a fresh package.
       const i = await makeUser('i');
-      fixture.send(17, '310'); await scan(); await attribute(17, i);
+      fixture.send(17, '510'); await scan(); await attribute(17, i);
       const pi = await preview(i);
       const race = await Promise.all([confirm(pi, crypto.randomUUID()), confirm(pi, crypto.randomUUID(), as(ADMIN_2)), confirm(pi, crypto.randomUUID())]);
       assert.equal(race.filter((r) => r.status === 200).length, 1, JSON.stringify(race.map((r) => [r.status, r.body.code])));
-      assert.equal(await balance(i), '310'); assert.equal(await prisma.depositBatch.count({ where: { userId: i } }), 1);
+      assert.equal(await balance(i), '510'); assert.equal(await prisma.depositBatch.count({ where: { userId: i } }), 1);
       // A key reused for another package is refused.
-      const j = await makeUser('j'); fixture.send(18, '301'); await scan(); await attribute(18, j);
+      const j = await makeUser('j'); fixture.send(18, '501'); await scan(); await attribute(18, j);
       const reuse = await confirm(await preview(j), key); assert.equal(reuse.status, 409); assert.equal(reuse.body.code, 'IDEMPOTENCY_MISMATCH');
     });
 
@@ -349,12 +349,12 @@ async function main() {
       const j = users.j; const before = await preview(j);
       fixture.send(19, '5'); await scan(); await attribute(19, j);
       const r = await confirm(before); assert.equal(r.status, 409); assert.equal(r.body.code, 'PACKAGE_CHANGED'); assert.equal(await balance(j), '0');
-      const again = await preview(j); assert.equal(again.total, '306');
-      assert.equal((await confirm(again)).status, 200); assert.equal(await balance(j), '306');
+      const again = await preview(j); assert.equal(again.total, '506');
+      assert.equal((await confirm(again)).status, 200); assert.equal(await balance(j), '506');
     });
 
     await test('14. a failure in the middle of the credit rolls everything back', async () => {
-      const k = await makeUser('k'); fixture.send(20, '300'); fixture.send(21, '50'); await scan(); await attribute(20, k); await attribute(21, k);
+      const k = await makeUser('k'); fixture.send(20, '500'); fixture.send(21, '50'); await scan(); await attribute(20, k); await attribute(21, k);
       await db.query(`CREATE FUNCTION qa_fail_batch_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'QA forced failure'; END $$;
         CREATE TRIGGER qa_fail_batch_audit BEFORE INSERT ON "AuditLog" FOR EACH ROW WHEN (NEW.action = 'DEPOSIT_BATCH_CREDITED') EXECUTE FUNCTION qa_fail_batch_audit();`);
       try { const r = await confirm(await preview(k)); assert.equal(r.status, 500); }
@@ -362,13 +362,13 @@ async function main() {
       assert.equal(await balance(k), '0'); assert.equal(await prisma.depositBatch.count({ where: { userId: k } }), 0);
       for (const n of [20, 21]) { const d = await row(n); assert.notEqual(d.status, 'CREDITED'); assert.equal(d.batchId, null); }
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_CREDITED', userId: k } }), 0);
-      assert.equal((await confirm(await preview(k))).status, 200); assert.equal(await balance(k), '350');
+      assert.equal((await confirm(await preview(k))).status, 200); assert.equal(await balance(k), '550');
     });
 
     await test('9/21. unattributed, unconfirmed, failed, wrong-contract, wrong-recipient and reorged transfers never make a package ready', async () => {
       const m = await makeUser('m');
-      fixture.send(22, '400');                                   // unattributed: no package at all
-      fixture.send(23, '250'); fixture.send(24, '100', { solidified: false, block: fixture.state.head - 2 }); // 250 confirmed + 100 not final
+      fixture.send(22, '600');                                   // above minimum but unattributed: no package at all
+      fixture.send(23, '450'); fixture.send(24, '100', { solidified: false, block: fixture.state.head - 2 }); // 450 confirmed + 100 not final
       fixture.send(25, '500', { success: false });               // failed on chain
       fixture.send(26, '500', { logs: [{ to: TREASURY, value: '500000000', contractHex: FAKE_TOKEN_HEX }] }); // listed as USDT, log from another contract
       fixture.send(27, '500', { listTo: TREASURY, logs: [{ to: OTHER, value: '500000000' }] }); // listed to us, paid elsewhere
@@ -379,10 +379,10 @@ async function main() {
       assert.equal(state(22), 'UNATTRIBUTED'); assert.equal(state(24), 'AWAITING_CONFIRMATIONS');
       for (const n of [25, 26, 27]) assert.equal(state(n), 'NEEDS_REVIEW', `${n}: ${JSON.stringify(q.rows.find((r) => r.txHash === hash(n)))}`);
       const pm = q.packages.find((p) => p.userId === m);
-      assert.equal(pm.total, '250'); assert.equal(pm.unconfirmedTotal, '100'); assert.equal(pm.state, 'AWAITING_TOPUP');
+      assert.equal(pm.total, '450'); assert.equal(pm.unconfirmedTotal, '100'); assert.equal(pm.state, 'AWAITING_TOPUP');
       assert.equal((await confirm(await preview(m))).body.code, 'BELOW_MINIMUM');
       // Reorg: a proven, final transfer that the chain no longer returns cannot be credited.
-      const r = await makeUser('r'); fixture.send(28, '300'); await scan(); await attribute(28, r);
+      const r = await makeUser('r'); fixture.send(28, '500'); await scan(); await attribute(28, r);
       const pr = await preview(r); assert.equal(pr.state, 'READY');
       fixture.state.txs.get(hash(28)).dropped = true;
       const res = await confirm(pr); assert.equal(res.status, 409); assert.equal(res.body.code, 'PROOF_FAILED'); assert.equal(await balance(r), '0');
@@ -391,18 +391,18 @@ async function main() {
       fixture.state.txs.get(hash(24)).solidified = true; fixture.state.txs.get(hash(24)).block = fixture.state.head - 25;
       await scan();
       const d24 = await row(24); assert.equal(d24.finalized, true); assert.equal(d24.confirmations, 26);
-      assert.equal((await pkgOf(m)).total, '350');
+      assert.equal((await pkgOf(m)).total, '550');
     });
 
     await test('20. several events in one TX are one transfer; a legacy CREDITED hash is never re-created or re-credited', async () => {
       const n = await makeUser('n');
-      fixture.send(29, '0', { logs: [{ to: TREASURY, value: '100000000' }, { to: TREASURY, value: '250000000' }, { to: OTHER, value: '999000000' }] });
+      fixture.send(29, '0', { logs: [{ to: TREASURY, value: '100000000' }, { to: TREASURY, value: '450000000' }, { to: OTHER, value: '999000000' }] });
       await prisma.deposit.create({ data: { chain: 'tron', txHash: hash(30), asset: 'USDT', amount: '700', status: 'CREDITED', userId: n, confirmations: 40, source: 'legacy' } });
       fixture.send(30, '700');
       const before = await balance(n);
       await scan();
       assert.equal(await prisma.deposit.count({ where: { txHash: hash(29) } }), 1);
-      const d = await row(29); assert.equal(d.amount.toString(), '350'); assert.ok(d.verifiedAt);
+      const d = await row(29); assert.equal(d.amount.toString(), '550'); assert.ok(d.verifiedAt);
       assert.equal(await prisma.deposit.count({ where: { txHash: hash(30) } }), 1);
       assert.equal((await row(30)).status, 'CREDITED'); assert.equal(await balance(n), before);
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_CREDITED', userId: n } }), 0);
@@ -464,13 +464,13 @@ async function main() {
       const t = await makeUser('t');
       fixture.send(50, '200'); await scan(); await attribute(50, t);
       await treasury.upsert('tron', TREASURY_2, ADMIN);
-      fixture.send(51, '150', { to: TREASURY_2 });
+      fixture.send(51, '350', { to: TREASURY_2 });
       await scan(); await scan(); await attribute(51, t);
       const cursors = await prisma.depositWatchCursor.findMany({ where: { chain: 'tron' } });
       assert.deepEqual(new Set(cursors.map((c) => c.address)), new Set([TREASURY, TREASURY_2]));
-      const p = await preview(t); assert.equal(p.total, '350');
+      const p = await preview(t); assert.equal(p.total, '550');
       assert.deepEqual(new Set(p.transfers.map((x) => x.recipientAddress)), new Set([TREASURY, TREASURY_2]));
-      assert.equal((await confirm(p)).status, 200); assert.equal(await balance(t), '350');
+      assert.equal((await confirm(p)).status, 200); assert.equal(await balance(t), '550');
       await treasury.upsert('tron', TREASURY, ADMIN);
     });
 
@@ -494,7 +494,7 @@ async function main() {
       assert.ok(!/deposit\.(update|updateMany|upsert|create|createMany)\([^;]*userId/.test(src), 'watcher must not write Deposit.userId');
     });
 
-    await test('Ignore + accumulation: old wallet transfer ignored/restored; 15 → 115 → 300 in one card; credit once; counters', async () => {
+    await test('Ignore + accumulation: old wallet transfer ignored/restored; 15 → 115 → 500 in one card; credit once; counters', async () => {
       const queue = async () => (await admin.get('/admin/deposit-queue')).body;
       const w = await makeUser('wallet15');
       const unattributedBefore = (await queue()).counts.UNATTRIBUTED;
@@ -529,28 +529,28 @@ async function main() {
       assert.equal(await prisma.auditLog.count({ where: { action: 'DEPOSIT_IGNORE_RESTORED' } }), 1);
       assert.equal(await balance(w), '0');
       await admin.post(`/admin/deposits/${old.id}/ignore`, { reason: 'OWN_TRANSFER' }); // back to ignored for the rest
-      // 5. 15 USDT → attach → Ожидает доплаты, remaining 285, balance unchanged.
+      // 5. 15 USDT → attach → Ожидает доплаты, remaining 485, balance unchanged.
       fixture.send(4001, '15'); await scan();
       assert.equal((await attribute(4001, w)).status, 200);
       let p = (await queue()).packages.find((x) => x.userId === w);
-      assert.deepEqual([p.state, p.total, p.remaining, p.transfers.length], ['AWAITING_TOPUP', '15', '285', 1]);
+      assert.deepEqual([p.state, p.total, p.remaining, p.transfers.length], ['AWAITING_TOPUP', '15', '485', 1]);
       assert.equal(await balance(w), '0');
       // An attributed transfer inside an active package cannot be ignored (detach first).
       assert.equal((await admin.post(`/admin/deposits/${(await row(4001)).id}/ignore`, { reason: 'OWN_TRANSFER' })).body.code, 'IN_PACKAGE');
-      // 6. +100 → 15 + 100 = 115, remaining 185; the 15 is still there.
+      // 6. +100 → 15 + 100 = 115, remaining 385; the 15 is still there.
       fixture.send(4002, '100'); await scan(); await attribute(4002, w);
       p = (await queue()).packages.find((x) => x.userId === w);
-      assert.deepEqual([p.state, p.total, p.remaining], ['AWAITING_TOPUP', '115', '185']);
+      assert.deepEqual([p.state, p.total, p.remaining], ['AWAITING_TOPUP', '115', '385']);
       assert.deepEqual(p.transfers.map((t) => t.amount).sort(), ['100', '15']);
       for (const t of p.transfers) { assert.ok(t.txHash && t.confirmations >= 19 && t.blockTimestamp && t.finalized); }
-      // 7. +185 → 300, READY; one card for user + network + asset.
-      fixture.send(4003, '185'); await scan(); await attribute(4003, w);
+      // 7. +385 → 500, READY; one card for user + network + asset.
+      fixture.send(4003, '385'); await scan(); await attribute(4003, w);
       q = await queue();
       const mine = q.packages.filter((x) => x.userId === w);
       assert.equal(mine.length, 1);
       p = mine[0];
-      assert.deepEqual([p.state, p.total, p.remaining, p.minimumReached], ['READY', '300', '0', true]);
-      assert.deepEqual(p.transfers.map((t) => t.amount).sort(), ['100', '15', '185']);
+      assert.deepEqual([p.state, p.total, p.remaining, p.minimumReached], ['READY', '500', '0', true]);
+      assert.deepEqual(p.transfers.map((t) => t.amount).sort(), ['100', '15', '385']);
       // 8. Before the admin's confirmation: balance unchanged.
       assert.equal(await balance(w), '0');
       // 12. Counters: packages, not transfers.
@@ -559,18 +559,18 @@ async function main() {
       assert.equal(q.counts.UNATTRIBUTED, q.rows.filter((r) => r.state === 'UNATTRIBUTED').length);
       assert.equal(q.counts.IGNORED, q.rows.filter((r) => r.state === 'IGNORED').length);
       assert.ok(!q.rows.some((r) => r.state === 'UNATTRIBUTED' && r.ignoredAt));
-      // 9–10. Confirm credits +300 exactly once; a double confirm adds nothing.
+      // 9–10. Confirm credits +500 exactly once; a double confirm adds nothing.
       const pv = await preview(w);
       const key = crypto.randomUUID();
       const [c1, c2] = await Promise.all([confirm(pv, key), confirm(pv, key)]);
       assert.equal(c1.status, 200); assert.equal(c2.status, 200); assert.equal(c1.body.batchId, c2.body.batchId);
-      assert.equal(await balance(w), '300');
+      assert.equal(await balance(w), '500');
       assert.equal((await confirm(pv, crypto.randomUUID())).status, 409);
-      assert.equal(await balance(w), '300');
+      assert.equal(await balance(w), '500');
       q = await queue();
       assert.ok(!q.packages.some((x) => x.userId === w));
       const batch = q.creditedBatches.find((b) => b.userId === w);
-      assert.equal(batch.totalAmount, '300'); assert.deepEqual(batch.transfers.map((t) => t.amount).sort(), ['100', '15', '185']);
+      assert.equal(batch.totalAmount, '500'); assert.deepEqual(batch.transfers.map((t) => t.amount).sort(), ['100', '15', '385']);
       for (const n of [4001, 4002, 4003]) assert.equal((await row(n)).status, 'CREDITED');
       // 11. A CREDITED transfer cannot be ignored; nothing about it changes.
       const credited = await row(4001);
@@ -583,8 +583,8 @@ async function main() {
       const needs = await admin.post(`/admin/deposits/${(await row(4004)).id}/ignore`, { reason: 'NOT_CLIENT_DEPOSIT' });
       assert.equal(needs.body.code, 'CONFIRM_ASSIGNED');
       assert.equal((await admin.post(`/admin/deposits/${(await row(4004)).id}/ignore`, { reason: 'NOT_CLIENT_DEPOSIT', confirmAssigned: true })).status, 200);
-      assert.equal(await balance(w), '300');
-      report.accumulation = { example: '15 → 115 → 300', credited: '300', ignoredOldTransfer: 'kept, restorable' };
+      assert.equal(await balance(w), '500');
+      report.accumulation = { example: '15 → 115 → 500', credited: '500', ignoredOldTransfer: 'kept, restorable' };
     });
 
     await test('Migration backfill: transfers hidden with the old «Игнорировать» stay out of Непривязанные (unattributed, uncredited only)', async () => {
@@ -652,7 +652,7 @@ async function main() {
       at(day0, 16, 50);
       assert.equal((await measure(() => prodWatch.runOnce('schedule'))).result, 'NOT_DUE:SLOT_DONE');
       // Render asleep through 20:00; a transfer at 21:00; waking at 23:00 does NOT catch up at night.
-      at(day0, 21, 0); fixture.send(3200, '285');
+      at(day0, 21, 0); fixture.send(3200, '485');
       at(day0, 23, 0);
       const lateWake = await measure(() => prodWatch.runOnce('schedule'));
       assert.equal(lateWake.result, 'NOT_DUE:NIGHT'); assert.equal(lateWake.providerCalls, 0);
@@ -697,7 +697,7 @@ async function main() {
       const batches = await prisma.depositBatch.findMany({ include: { deposits: true } });
       for (const b of batches) {
         assert.equal(b.deposits.reduce((s, d) => s.plus(d.amount.toString()), new BigNumber(0)).toString(), new BigNumber(b.totalAmount.toString()).toString());
-        assert.ok(new BigNumber(b.usdValue.toString()).gte(300));
+        assert.ok(new BigNumber(b.usdValue.toString()).gte(500));
       }
       report.reconciliation = { batches: batches.length, creditedTransfers: credited.length };
     });
@@ -766,21 +766,21 @@ async function browserQa(ctx) {
       await unattributed.getByRole('combobox').selectOption(client);
       await unattributed.getByRole('button', { name: 'Привязать к пользователю' }).click();
       await page.getByRole('status').filter({ hasText: 'Баланс не изменён' }).waitFor();
-      assert.equal(await balance(client), width === 1440 ? '0' : '300');
+      assert.equal(await balance(client), width === 1440 ? '0' : '500');
       await page.locator('[data-deposit-tab="topup"]').click();
       const card = page.locator(`[data-package$="|tron|USDT"]`).filter({ hasText: 'browser@deposit.invalid' });
-      await card.locator('[data-package-remaining]').filter({ hasText: '285 USDT' }).waitFor();
+      await card.locator('[data-package-remaining]').filter({ hasText: '485 USDT' }).waitFor();
       await card.locator('[data-package-credit="unavailable"]').waitFor();
       await page.screenshot({ path: path.join(output, `awaiting-topup-${width}.png`), fullPage: true });
       clock.t += 5 * 60_000; // the owner presses the button some minutes later
-      fixture.send(n + 1, '285');
+      fixture.send(n + 1, '485');
       await page.locator('[data-watcher-run]').click();
       await page.getByRole('status').filter({ hasText: 'Проверка выполнена' }).waitFor();
       await attribute(n + 1, client);
       await page.reload();
       await page.locator('[data-deposit-tab="ready"]').click();
       const ready = page.locator(`[data-package-state="READY"]`).filter({ hasText: 'browser@deposit.invalid' });
-      await ready.locator('[data-package-total]').filter({ hasText: '300 USDT' }).waitFor();
+      await ready.locator('[data-package-total]').filter({ hasText: '500 USDT' }).waitFor();
       await page.screenshot({ path: path.join(output, `ready-${width}.png`), fullPage: true });
       const before = await balance(client);
       await ready.getByRole('button', { name: 'Проверить и зачислить' }).click();
@@ -789,14 +789,14 @@ async function browserQa(ctx) {
       assert.equal(await balance(client), before);
       assert.equal(apiCalls.filter((c) => c.endsWith('/confirm')).length, 0);
       await ready.getByRole('button', { name: 'Проверить и зачислить' }).click();
-      await page.locator('[data-balance-after]').filter({ hasText: new BigNumber(before).plus(300).toString() }).waitFor();
+      await page.locator('[data-balance-after]').filter({ hasText: new BigNumber(before).plus(500).toString() }).waitFor();
       await page.screenshot({ path: path.join(output, `confirm-drawer-${width}.png`), fullPage: true });
       // Client, before Confirm: nothing pending is visible to them.
       const clientView = await request(app).get('/api/v1/deposits/me').set('Authorization', auth(client));
       assert.ok(!clientView.body.some((d) => d.txHash === hash(n) || d.txHash === hash(n + 1)));
       await page.locator('[data-confirm-credit]').dblclick();
-      await page.getByRole('status').filter({ hasText: 'Зачислено 300 USDT' }).waitFor();
-      assert.equal(await balance(client), new BigNumber(before).plus(300).toString());
+      await page.getByRole('status').filter({ hasText: 'Зачислено 500 USDT' }).waitFor();
+      assert.equal(await balance(client), new BigNumber(before).plus(500).toString());
       assert.equal(apiCalls.filter((c) => c.endsWith('/confirm')).length, 1, JSON.stringify(apiCalls));
       assert.equal(await prisma.depositBatch.count({ where: { userId: client } }), width === 1440 ? 1 : 2);
       const after = await request(app).get('/api/v1/deposits/me').set('Authorization', auth(client));
@@ -809,7 +809,7 @@ async function browserQa(ctx) {
       assert.equal(apiCalls.length, beforeHidden);
       const queueLoads = apiCalls.filter((c) => c === 'GET /api/v1/admin/deposit-queue').length;
       assert.deepEqual(errors, []);
-      report.browser.push({ width, attributeWithoutCredit: 'PASS', remaining285: 'PASS', ready300: 'PASS', cancelNoEffect: 'PASS', confirmOnce: 'PASS',
+      report.browser.push({ width, attributeWithoutCredit: 'PASS', remaining485: 'PASS', ready500: 'PASS', cancelNoEffect: 'PASS', confirmOnce: 'PASS',
         clientBeforeConfirm: 'nothing pending', clientAfterConfirm: 'credited visible', overflow: false, hiddenTabRequests: 0, queueLoads, consoleErrors: 0 });
       console.log(`PASS browser ${width}`);
       await context.close();

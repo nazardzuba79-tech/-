@@ -8,7 +8,7 @@ describe('Arbitrage navigation placement', () => {
   it('keeps Arbitrage inside Trade beside Spot/CFD, not as a primary product link', () => {
     expect(nav).not.toContain("{to:'/arbitrage',label:t('nav.arbitrage')}");
     expect(nav.match(/to="\/arbitrage"/g)).toHaveLength(2);
-    expect(nav).toContain("const tradeSectionActive = active === '/trade' || active === '/arbitrage';");
+    expect(nav).toContain("const tradeSectionActive = active === '/trade' || active === '/arbitrage' || active === '/tools';");
     expect(nav).toContain(">{t('trade.cfdTab')}</Link><Link to=\"/arbitrage\"");
     expect(nav).toContain("active==='/arbitrage'?styles.linkActive");
   });
