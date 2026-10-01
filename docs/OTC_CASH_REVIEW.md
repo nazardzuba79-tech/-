@@ -214,15 +214,22 @@ passing current test; do not run that old scenario against the new writers.
 
 ## Release prerequisites and rollback — NOT authorization to execute
 
+**Mandatory shared-wallet release procedure:**
+[OTC_SHARED_WALLET_CUTOVER.md](OTC_SHARED_WALLET_CUTOVER.md).
+Its gates apply before ANY new financial writer starts, even with OTC disabled.
+The actual current-main/PR PostgreSQL test reproduces stale writes during overlap;
+ordinary Render auto-deploy/maintenance UI does not provide a writer fence.
+
 1. Owner reviews this PR, concurrent wallet changes, CI and outstanding base
    failures. Separate explicit merge/deploy approval remains required.
 2. Confirm a real desk, settlement process, fiat precision and jurisdictional
    requirements; approve customers under an actual AML policy. Defaults remain
    **enabled:false, routes:[], approvedUserIds:[]**. A city dropdown never enables
    reserves. Directions/approvals require a separately reviewed server policy.
-3. Before admitting OTC, take the normal backup and apply the additive migration
-   under an approved release procedure. Stop/drain all older incompatible
-   wallet writers/workers; do not do mixed-version financial rolling operation.
+3. Before admitting ANY new wallet/Spot/background writer, establish the verified
+   writer-free hold deployment, then apply the additive migration and run the
+   read-only audits while still held, following the linked operator runbook.
+   Require an explicit discrepancy/admission decision; OTC off is insufficient.
    PostgreSQL must provide `pg_current_xact_id` / `pg_xact_status`.
 4. Run the manually invoked audit only with a separately authorized connection:
    `node dist/otc/auditReserves.js` requires **OTC_AUDIT_DATABASE_URL**, never falls
@@ -236,9 +243,9 @@ passing current test; do not run that old scenario against the new writers.
 6. Train operators: cash-outcome ambiguity means keep the hold and investigate;
    record a real unique payout reference only after actual cash issuance.
 
-Rollback: first disable **new admissions** while retaining routes/approvals
-needed to manage existing obligations, private support and operator access.
-Preserve all request/reservation/ledger/message tables and accounting backups.
-Never drop/reset the migration or re-enable stale absolute-balance writers with
-active obligations. Reconcile each held/payout-in-progress item, retain audit
-history, and obtain a separate approved rollback plan. No automatic refund.
+Failure/recovery follows the linked matrix: the last-good target is the stdlib
+hold process, NOT the old financial binary. A failed start can already have run
+background writers. Re-establish stopped-writer proof and audit actual outcomes.
+Preserve all balances/orders/fills/reserves/ledgers and backups, never reset the
+migration, automatically refund or retry ambiguous financial work. Managing
+existing obligations during an outage requires a separately approved plan.

@@ -1,6 +1,8 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { assertReserveCoverage } from './reserveCoverage';
 import { OtcError } from './policy';
+import BigNumber from 'bignumber.js';
+import { assertRestorableSpotOrder } from '../services/SpotBookTransaction';
 
 /** Operator-invoked, never scheduled. Requires the additive OTC migration.
  * One consistent SQL-enforced READ ONLY snapshot; no repair/cancel/write. */
@@ -16,6 +18,39 @@ export async function auditSpotReserves(db: PrismaClient) {
       UNION SELECT "userId", asset FROM "Withdrawal" WHERE "userId" IS NOT NULL AND "balanceHeld" AND status IN ('PENDING','APPROVED')
       UNION SELECT r."userId", s.asset FROM "OtcCashReservation" s JOIN "OtcCashRequest" r ON r.id=s."requestId" WHERE s.status='HELD'`;
     const issues: { userId: string; asset: string; category: string; activeOrderIds: string[] }[] = [];
+    // Run before admitting ANY shared-wallet/Spot writer, not just OTC. Reserve
+    // arithmetic alone misses e.g. a SELL maker with a null/negative limit price.
+    const orders = await tx.order.findMany({ where: { status: { in: ['OPEN','PARTIALLY_FILLED','PENDING_TRIGGER'] } } });
+    const trades = await tx.trade.findMany({ select: { id:true, makerOrderId:true, takerOrderId:true, quantity:true } });
+    const filled = new Map<string, BigNumber>();
+    for (const trade of trades) for (const id of [trade.makerOrderId, trade.takerOrderId])
+      filled.set(id, (filled.get(id) ?? new BigNumber(0)).plus(trade.quantity.toString()));
+    for (const order of orders) {
+      const [base, quote, extra] = order.pair.split('/');
+      let invalid = !base || !quote || !!extra || !['BUY','SELL'].includes(order.side);
+      if (order.status !== 'PENDING_TRIGGER') {
+        try { assertRestorableSpotOrder(order, filled.get(order.id) ?? new BigNumber(0)); }
+        catch { invalid = true; }
+      } else {
+        const positive = (value: { toString(): string } | null) => value !== null && new BigNumber(value.toString()).isFinite() && new BigNumber(value.toString()).gt(0);
+        invalid ||= !['STOP_LIMIT','STOP_MARKET','TAKE_PROFIT_LIMIT','TAKE_PROFIT_MARKET'].includes(order.type)
+          || !positive(order.triggerPrice) || !positive(order.lockedAmount)
+          || order.lockedAsset !== (order.side === 'BUY' ? quote : base)
+          || (order.type.endsWith('_LIMIT') && !positive(order.price))
+          || !positive(order.remainingQuantity)
+          || !new BigNumber(order.originalQuantity.toString()).minus(filled.get(order.id) ?? 0).eq(order.remainingQuantity.toString());
+      }
+      if (invalid) issues.push({ userId:order.userId, asset:order.side === 'BUY' ? quote ?? '' : base ?? '',
+        category:'LEGACY_ORDER_RECONCILIATION_REQUIRED', activeOrderIds:[order.id] });
+    }
+    // Include historical executions, not just fills still attached to active makers.
+    // IDs only: no account emails, credentials or automatic historical repair.
+    const invalidTrades = await tx.$queryRaw<{ id:string; makerOrderId:string; takerOrderId:string }[]>`
+      SELECT t.id, t."makerOrderId", t."takerOrderId" FROM "Trade" t
+      LEFT JOIN "Order" m ON m.id=t."makerOrderId" LEFT JOIN "Order" k ON k.id=t."takerOrderId"
+      WHERE m.id IS NULL OR k.id IS NULL OR m.id=k.id OR m.side=k.side
+        OR t.quantity<=0 OR t.price<=0 OR t.pair<>m.pair OR t.pair<>k.pair
+        OR t."makerUserId"<>m."userId" OR t."takerUserId"<>k."userId"`;
     for (const key of keys) {
       try { await assertReserveCoverage(tx, key.userId, key.asset, false); }
       catch (error) {
@@ -24,7 +59,10 @@ export async function auditSpotReserves(db: PrismaClient) {
         issues.push({ ...key, category:error.code, activeOrderIds:orders.map(o=>o.id) });
       }
     }
-    return { result:issues.length?'ISSUES_FOUND':'CLEAN', walletsExamined:keys.length, issues, readOnly:true, rowsChanged:0 };
+    const executionIssues = invalidTrades.map(t => ({ category:'LEGACY_TRADE_RECONCILIATION_REQUIRED',
+      tradeId:t.id, orderIds:[t.makerOrderId,t.takerOrderId] }));
+    return { result:issues.length || executionIssues.length?'ISSUES_FOUND':'CLEAN', walletsExamined:keys.length,
+      activeOrdersExamined:orders.length, tradesExamined:trades.length, issues:[...issues,...executionIssues], readOnly:true, rowsChanged:0 };
   }, { isolationLevel:Prisma.TransactionIsolationLevel.RepeatableRead, timeout:120000, maxWait:10000 });
 }
 

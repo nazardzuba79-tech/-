@@ -1,5 +1,5 @@
 /**
- * PRE-IMPLEMENTATION DIAGNOSTIC, not a production-readiness test.
+ * Disposable PostgreSQL runner; --baseline alone is a historical diagnostic.
  * Runs unmodified services against a NEW disposable loopback PostgreSQL cluster.
  * Exit 2 means a financial safety blocker was reproduced; exit 1 is harness failure.
  * Does not load .env, accept a database URL, migrate production, or start the app.
@@ -26,9 +26,13 @@ function cleanEnvironment() {
 }
 
 async function parent() {
-  if (!['--verify','--otc','--preservation','--baseline'].includes(process.argv[2])) {
+  if (!['--verify','--otc','--preservation','--cutover','--baseline'].includes(process.argv[2])) {
     throw new Error('Choose --verify, --otc or --preservation. --baseline reproduces the OLD implementation and is only valid at diagnostic commit 88d77ea; never run it as a current safety test.');
   }
+  const cutover = process.argv[2] === '--cutover';
+  const baseSha = cutover ? process.argv[process.argv.indexOf('--base') + 1] : undefined;
+  if (cutover && (!process.argv.includes('--base') || !/^[0-9a-f]{40}$/.test(baseSha)))
+    throw new Error('--cutover requires --base <exact fresh main SHA>, never a copied implementation');
   const bin = qa(process.platform === 'win32' ? '@embedded-postgres/windows-x64' : '@embedded-postgres/linux-x64');
   const probe = net.createServer().listen(0, '127.0.0.1');
   await once(probe, 'listening');
@@ -47,6 +51,19 @@ async function parent() {
   if (start.status !== 0) throw new Error('Disposable PostgreSQL startup failed');
   let sql;
   try {
+    fs.mkdirSync(path.join(root, 'node_modules/.cache'), { recursive: true });
+    const cache = fs.mkdtempSync(path.join(root, 'node_modules/.cache/otc-safety-'));
+    let baseRoot;
+    if (cutover) {
+      baseRoot = path.join(cache, 'actual-main'); fs.mkdirSync(baseRoot);
+      const archive = spawnSync('git', ['archive', '--format=tar', baseSha, 'src', 'prisma', 'tsconfig.json', 'package.json'],
+        { cwd:root, windowsHide:true, env, maxBuffer:64*1024*1024 });
+      if (archive.status !== 0) throw new Error('Cannot archive exact main: ' + archive.stderr?.toString());
+      const archivePath = path.join(cache, 'actual-main.tar'); fs.writeFileSync(archivePath, archive.stdout);
+      const extracted = spawnSync('tar', ['-xf', archivePath, '-C', baseRoot], { windowsHide:true, env, encoding:'utf8' });
+      if (extracted.status !== 0) throw new Error('Cannot extract exact main: ' + extracted.stderr);
+      console.log('MIXED VERSION BASE SHA:', baseSha);
+    }
     const Client = qa('pg').Client;
     sql = new Client({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres' });
     await sql.connect();
@@ -55,7 +72,7 @@ async function parent() {
     await sql.end();
     sql = new Client({ host: '127.0.0.1', port, user: 'postgres', database });
     await sql.connect();
-    const migrations = path.join(root, 'prisma/migrations');
+    const migrations = path.join(baseRoot || root, 'prisma/migrations');
     for (const name of fs.readdirSync(migrations).sort()) {
       const file = path.join(migrations, name, 'migration.sql');
       if (fs.existsSync(file)) await sql.query(fs.readFileSync(file, 'utf8'));
@@ -63,8 +80,6 @@ async function parent() {
     console.log('LOCAL PostgreSQL:', (await sql.query('SHOW server_version')).rows[0].server_version);
     console.log('LOCAL isolation:', (await sql.query('SHOW default_transaction_isolation')).rows[0].default_transaction_isolation);
     // Generate the current schema into a unique cache; never overwrite another worktree's client.
-    fs.mkdirSync(path.join(root, 'node_modules/.cache'), { recursive: true });
-    const cache = fs.mkdtempSync(path.join(root, 'node_modules/.cache/otc-safety-'));
     const schema = fs.readFileSync(path.join(root, 'prisma/schema.prisma'), 'utf8')
       .replace('provider = "prisma-client-js"', 'provider = "prisma-client-js"\n  output = "./client"');
     fs.writeFileSync(path.join(cache, 'schema.prisma'), schema);
@@ -73,12 +88,14 @@ async function parent() {
       cwd: cache, env: { ...env, DATABASE_URL: url, DIRECT_URL: url }, windowsHide: true, encoding: 'utf8',
     });
     if (generated.status !== 0) throw new Error(generated.stderr || generated.stdout || 'Isolated Prisma generation failed');
-    const entry = process.argv.includes('--preservation') ? path.join(__dirname, 'test-wallet-preservation-postgres.cjs')
+    const entry = cutover ? path.join(__dirname, 'test-otc-cutover-postgres.cjs')
+      : process.argv.includes('--preservation') ? path.join(__dirname, 'test-wallet-preservation-postgres.cjs')
       : process.argv.includes('--otc') ? path.join(__dirname, 'test-otc-cash-postgres.cjs')
       : process.argv.includes('--verify') ? path.join(__dirname, 'test-wallet-safety-postgres.cjs') : __filename;
     const child = spawnSync(process.execPath, [entry, '--local-child'], {
       cwd: root, windowsHide: true, stdio: 'inherit', timeout: 180000,
-      env: { ...env, OTC_DIAGNOSTIC_URL: url, OTC_DIAGNOSTIC_CLIENT: path.join(cache, 'client'), TS_NODE_PROJECT: path.join(root, 'tsconfig.json') },
+      env: { ...env, OTC_DIAGNOSTIC_URL: url, OTC_DIAGNOSTIC_CLIENT: path.join(cache, 'client'), TS_NODE_PROJECT: path.join(root, 'tsconfig.json'),
+        ...(cutover ? { OTC_CUTOVER_BASE_ROOT:baseRoot, OTC_CUTOVER_BASE_SHA:baseSha, TS_NODE_SKIP_IGNORE:'true' } : {}) },
     });
     process.exitCode = child.status ?? 1;
   } finally {

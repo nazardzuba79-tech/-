@@ -12,6 +12,10 @@ on:
       - 'src/api/routes/__tests__/adminWithdrawals.test.ts'
       - 'src/api/routes/__tests__/withdrawals.test.ts'
       - 'src/index.ts'
+      - 'src/serverBackground.ts'
+      - 'scripts/start-render-single-service.cjs'
+      - 'docs/OTC_SHARED_WALLET_CUTOVER.md'
+      - 'docs/OTC_CASH_REVIEW.md'
       - 'prisma/**'
       - 'frontend/src/pages/otc/**'
       - 'frontend/src/pages/OtcPage.tsx'
@@ -34,6 +38,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0 # actual current PR base sources for the mixed-version regression
       - uses: actions/setup-node@v4
         id: node
         with: { node-version: '22' }
@@ -79,6 +84,11 @@ jobs:
         run: node scripts/otc-ci-evidence.cjs run otc-postgres node scripts/diagnose-otc-balance-safety.cjs --otc
       - id: preservation_postgres
         run: node scripts/otc-ci-evidence.cjs run preservation-postgres node scripts/diagnose-otc-balance-safety.cjs --preservation
+      - name: Actual base/head overlap, stopped-writer migration and release audit
+        id: cutover_postgres
+        env:
+          REVIEW_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/otc-ci-evidence.cjs run cutover-postgres node scripts/diagnose-otc-balance-safety.cjs --cutover --base $env:REVIEW_BASE_SHA
       - name: Production bundle using loopback-only fixture API
         id: frontend_build
         env:

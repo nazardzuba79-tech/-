@@ -6,6 +6,20 @@ import { Order } from '../matching-engine/types';
 const queues = new WeakMap<MatchingEngine, Promise<void>>();
 const halted = new WeakSet<MatchingEngine>();
 
+/** The offline release audit must reject exactly the makers that book loading rejects. */
+export function assertRestorableSpotOrder(row: {
+  id: string; type: string; side: string; price: { toString(): string } | null;
+  originalQuantity: { toString(): string }; remainingQuantity: { toString(): string };
+}, filled: BigNumber) {
+  const remaining = new BigNumber(row.remainingQuantity.toString());
+  const original = new BigNumber(row.originalQuantity.toString());
+  if (row.type !== 'LIMIT' || !row.price || !new BigNumber(row.price.toString()).isGreaterThan(0)
+    || !remaining.isGreaterThan(0) || !original.minus(filled).eq(remaining)
+    || !['BUY', 'SELL'].includes(row.side)) {
+    throw new Error(`Invalid active Spot order ${row.id}; manual reconciliation required`);
+  }
+}
+
 /** Transaction-local matching; the live book is a committed projection only.
  * Global Spot lock orders all order/OCO/trigger/cancel state transitions across
  * instances. Balance writers in other products use conditional atomic deltas.
@@ -35,13 +49,9 @@ export class SpotBookTransaction {
     for (const row of rows) {
       const remaining = new BigNumber(row.remainingQuantity.toString());
       const original = new BigNumber(row.originalQuantity.toString());
-      if (row.type !== 'LIMIT' || !row.price || !new BigNumber(row.price.toString()).isGreaterThan(0)
-        || !remaining.isGreaterThan(0) || !original.minus(filled.get(row.id) ?? 0).eq(remaining)
-        || !['BUY', 'SELL'].includes(row.side)) {
-        throw new Error(`Invalid active Spot order ${row.id}; manual reconciliation required`);
-      }
+      assertRestorableSpotOrder(row, filled.get(row.id) ?? new BigNumber(0));
       staged.loadRestingOrder({ id: row.id, userId: row.userId, pair, side: row.side as Order['side'], type: 'LIMIT',
-        price: new BigNumber(row.price.toString()), originalQuantity: original, remainingQuantity: remaining,
+        price: new BigNumber(row.price!.toString()), originalQuantity: original, remainingQuantity: remaining,
         status: row.status as Order['status'], createdAt: row.createdAt.getTime(), updatedAt: row.updatedAt.getTime() });
     }
     this.books.set(pair, staged);
