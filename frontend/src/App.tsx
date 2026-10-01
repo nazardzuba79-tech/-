@@ -36,6 +36,7 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then((m
 const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })));
 const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) => ({ default: m.AdminKycPage })));
 const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
+const AdminOtcCashPage = lazy(() => import('./pages/admin/AdminOtcCashPage').then((m) => ({ default: m.AdminOtcCashPage })));
 const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
 const AdminListingsPage = lazy(() => import('./pages/admin/AdminListingsPage').then((m) => ({ default: m.AdminListingsPage })));
@@ -130,6 +131,7 @@ export function App() {
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="kyc" element={<AdminKycPage />} />
           <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
+          <Route path="otc" element={<AdminOtcCashPage />} />
           <Route path="deposits" element={<AdminDepositsPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
           <Route path="listings" element={<AdminListingsPage />} />

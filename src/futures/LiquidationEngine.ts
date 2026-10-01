@@ -1,5 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
+import { mutateFuturesBalance } from '../services/WalletMutation';
 import { MarkPriceService } from './MarkPriceService';
 import { InsuranceFundService } from './InsuranceFundService';
 import { computeUnrealizedPnl, PositionSide } from './marginMath';
@@ -165,17 +166,7 @@ export class LiquidationEngine {
   }
 
   private async adjustBalance(tx: TxClient, userId: string, asset: string, delta: { available?: BigNumber; locked?: BigNumber }) {
-    const existing = await tx.futuresBalance.upsert({
-      where: { userId_asset: { userId, asset } },
-      create: { userId, asset, available: '0', locked: '0' },
-      update: {},
-    });
-    const available = new BigNumber(existing.available.toString()).plus(delta.available ?? 0);
-    const locked = new BigNumber(existing.locked.toString()).plus(delta.locked ?? 0);
-    await tx.futuresBalance.update({
-      where: { userId_asset: { userId, asset } },
-      data: { available: available.toString(), locked: locked.toString() },
-    });
+    await mutateFuturesBalance(tx, userId, asset, delta);
   }
 
   startScheduler(intervalMs: number = LIQUIDATION_CHECK_INTERVAL_MS, options: { sleep?: IdleSleepOptions } = {}): void {

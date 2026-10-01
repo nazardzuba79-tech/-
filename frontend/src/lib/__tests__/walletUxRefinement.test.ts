@@ -17,7 +17,7 @@ function evaluate(file: string, imports: Record<string, unknown> = {}, suffix = 
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   } }).outputText;
   const output: Record<string, any> = {};
-  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : imports[name] ?? req(name));
+  new Function('exports', 'require', code)(output, (name: string) => name.endsWith('.css') ? {} : name.endsWith('/balanceInvalidation') ? { onSpendableBalancesChanged: () => () => {} } : imports[name] ?? req(name));
   return output;
 }
 // Read the actual seven dictionaries. No copy/number formatter is recreated.

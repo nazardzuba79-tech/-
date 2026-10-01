@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { MatchingEngine } from '../matching-engine/MatchingEngine';
 import { Order, OrderSide, OrderType } from '../matching-engine/types';
 import { assertSpotListingReady, spotPriceSource } from './testMarkets/nrxSpot';
+import { mutateSpotBalance } from './WalletMutation';
+import { SpotBookTransaction } from './SpotBookTransaction';
 
 export type ExtendedOrderType = OrderType | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET';
 
@@ -106,15 +108,23 @@ export class OrderService {
     } else if (params.side === 'SELL') {
       lockAmount = params.quantity;
     } else {
-      const bestAsk = this.engine.getBook(params.pair).bestAsk()?.price;
-      if (!bestAsk) throw new Error('No liquidity available for this market order');
-      lockAmount = params.quantity.times(bestAsk).times(1.02); // 2% slippage buffer
+      lockAmount = new BigNumber(0); // authoritative committed book is loaded inside the transaction
     }
 
-    const placed = await this.prisma.$transaction(async (tx: TxClient) => {
+    const placed = await SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
+      const staged = conditional ? undefined : await session.book(params.pair);
+      if (!conditional && params.type === 'MARKET' && params.side === 'BUY') {
+        const bestAsk = staged!.getBook(params.pair).bestAsk()?.price;
+        if (!bestAsk) throw new Error('No liquidity available for this market order');
+        lockAmount = params.quantity.times(bestAsk).times(1.02);
+      }
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
       const orderId = uuidv4();
+      let createdAt = Date.now();
+      if (staged) for (const side of ['BUY', 'SELL'] as const) for (const resting of staged.getBook(params.pair).getBook(side)) {
+        createdAt = Math.max(createdAt, resting.createdAt + 1);
+      }
       await tx.order.create({
         data: {
           id: orderId,
@@ -130,6 +140,7 @@ export class OrderService {
           originalQuantity: params.quantity.toString(),
           remainingQuantity: params.quantity.toString(),
           status: conditional ? 'PENDING_TRIGGER' : 'OPEN',
+          createdAt: new Date(createdAt),
         },
       });
 
@@ -165,11 +176,11 @@ export class OrderService {
         originalQuantity: params.quantity,
         remainingQuantity: params.quantity,
         status: 'OPEN',
-        createdAt: Date.now(),
+        createdAt,
         updatedAt: Date.now(),
       };
 
-      return this.matchAndSettle(tx, order, base, quote, lockAsset, lockAmount, params.price ?? null);
+      return this.matchAndSettle(tx, staged!, order, base, quote, lockAsset, lockAmount, params.price ?? null);
     });
     // After the commit, never inside it: a watcher woken before this row
     // is readable would query, find nothing and go back to sleep.
@@ -210,7 +221,7 @@ export class OrderService {
         ? BigNumber.maximum(params.takeProfitPrice.times(params.quantity), params.stopLimitPrice.times(params.quantity))
         : params.quantity;
 
-    const oco = await this.prisma.$transaction(async (tx: TxClient) => {
+    const oco = await SpotBookTransaction.run(this.prisma, this.engine, async tx => {
       await this.lockFunds(tx, params.userId, lockAsset, lockAmount);
 
       const ocoGroupId = uuidv4();
@@ -267,9 +278,10 @@ export class OrderService {
    * normal, expected race, not an error.
    */
   async triggerOrder(orderId: string) {
-    return this.prisma.$transaction(async (tx: TxClient) => {
+    return SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
       const row = await tx.order.findUnique({ where: { id: orderId } });
       if (!row || row.status !== 'PENDING_TRIGGER') return null;
+      const staged = await session.book(row.pair);
 
       const [base, quote] = row.pair.split('/');
       const effType = effectiveOrderType(row.type as ExtendedOrderType);
@@ -296,7 +308,7 @@ export class OrderService {
       // list, cancelOrder) once it's a live book order.
       await tx.order.update({ where: { id: row.id }, data: { type: effType } });
 
-      const result = await this.matchAndSettle(tx, order, base, quote, lockAsset, lockAmount, price);
+      const result = await this.matchAndSettle(tx, staged, order, base, quote, lockAsset, lockAmount, price);
 
       if (row.ocoGroupId) {
         const sibling = await tx.order.findFirst({
@@ -330,7 +342,11 @@ export class OrderService {
     orderId: string,
     updates: { triggerPrice?: BigNumber; price?: BigNumber }
   ) {
-    return this.prisma.$transaction(async (tx: TxClient) => {
+    const candidate = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!candidate || candidate.userId !== userId || candidate.status !== 'PENDING_TRIGGER') return null;
+    const ticker = await spotPriceSource(this.priceSource).getTicker(candidate.pair);
+    if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger price');
+    return SpotBookTransaction.run(this.prisma, this.engine, async tx => {
       const row = await tx.order.findUnique({ where: { id: orderId } });
       if (!row || row.userId !== userId || row.status !== 'PENDING_TRIGGER') return null;
 
@@ -338,8 +354,6 @@ export class OrderService {
       const newTriggerPrice = updates.triggerPrice ?? new BigNumber(row.triggerPrice!.toString());
       const newPrice = effType === 'LIMIT' ? updates.price ?? new BigNumber(row.price!.toString()) : null;
 
-      const ticker = await spotPriceSource(this.priceSource).getTicker(row.pair);
-      if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger price');
       const currentPrice = new BigNumber(ticker.lastPrice);
       this.validateTriggerDirection(row.type as ExtendedOrderType, row.side as OrderSide, newTriggerPrice, currentPrice);
 
@@ -390,7 +404,7 @@ export class OrderService {
         const sibling = await tx.order.findFirst({
           where: { ocoGroupId: row.ocoGroupId, id: { not: row.id }, status: 'PENDING_TRIGGER' },
         });
-        if (sibling && new BigNumber(sibling.lockedAmount!.toString()).isLessThan(newLockAmount)) {
+        if (sibling) {
           await tx.order.update({ where: { id: sibling.id }, data: { lockedAmount: newLockAmount.toString() } });
         }
       }
@@ -405,6 +419,7 @@ export class OrderService {
    * or isn't still backing a resting order. */
   private async matchAndSettle(
     tx: TxClient,
+    engine: MatchingEngine,
     order: Order,
     base: string,
     quote: string,
@@ -412,9 +427,16 @@ export class OrderService {
     lockAmount: BigNumber,
     limitPrice: BigNumber | null
   ) {
-    const { trades, order: finalOrder } = this.engine.submitOrder(order);
+    const makerRemaining = new Map<string, BigNumber>();
+    for (const side of ['BUY', 'SELL'] as const) for (const maker of engine.getBook(order.pair).getBook(side)) {
+      makerRemaining.set(maker.id, maker.remainingQuantity);
+    }
+    const { trades, order: finalOrder } = engine.submitOrder(order);
+    const changedMakers = new Set<string>();
 
     for (const trade of trades) {
+      makerRemaining.set(trade.makerOrderId, makerRemaining.get(trade.makerOrderId)!.minus(trade.quantity));
+      changedMakers.add(trade.makerOrderId);
       await tx.trade.create({
         data: {
           id: trade.id,
@@ -429,6 +451,12 @@ export class OrderService {
         },
       });
       await this.settleTrade(tx, trade, base, quote);
+    }
+    for (const id of changedMakers) {
+      const remaining = makerRemaining.get(id)!;
+      await tx.order.update({ where: { id }, data: {
+        remainingQuantity: remaining.toFixed(), status: remaining.isZero() ? 'FILLED' : 'PARTIALLY_FILLED',
+      } });
     }
 
     await tx.order.update({
@@ -491,18 +519,7 @@ export class OrderService {
   }
 
   private async lockFunds(tx: TxClient, userId: string, asset: string, amount: BigNumber) {
-    const balance = await tx.balance.findUnique({ where: { userId_asset: { userId, asset } } });
-    const available = new BigNumber(balance?.available.toString() ?? '0');
-    if (available.isLessThan(amount)) {
-      throw new Error(`Insufficient ${asset} balance`);
-    }
-    await tx.balance.update({
-      where: { userId_asset: { userId, asset } },
-      data: {
-        available: available.minus(amount).toString(),
-        locked: new BigNumber(balance!.locked.toString()).plus(amount).toString(),
-      },
-    });
+    await mutateSpotBalance(tx, userId, asset, { available: amount.negated(), locked: amount });
   }
 
   /**
@@ -512,10 +529,11 @@ export class OrderService {
    * route maps that to a 404/409 as appropriate.
    */
   async cancelOrder(userId: string, orderId: string) {
-    return this.prisma.$transaction(async (tx: TxClient) => {
+    return SpotBookTransaction.run(this.prisma, this.engine, async (tx, session) => {
       const order = await tx.order.findUnique({ where: { id: orderId } });
       if (!order || order.userId !== userId) return null;
       if (!['OPEN', 'PARTIALLY_FILLED', 'PENDING_TRIGGER'].includes(order.status)) return null;
+      const staged = order.status === 'PENDING_TRIGGER' ? undefined : await session.book(order.pair);
 
       await tx.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
 
@@ -537,7 +555,7 @@ export class OrderService {
         return order;
       }
 
-      this.engine.cancelOrder(order.pair, order.id);
+      if (!staged!.cancelOrder(order.pair, order.id)) throw new Error('Active Spot order missing from committed book');
       const [base, quote] = order.pair.split('/');
       const remaining = new BigNumber(order.remainingQuantity.toString());
       if (order.side === 'BUY') {
@@ -574,16 +592,6 @@ export class OrderService {
     asset: string,
     delta: { available?: BigNumber; locked?: BigNumber }
   ) {
-    const existing = await tx.balance.upsert({
-      where: { userId_asset: { userId, asset } },
-      create: { userId, asset, available: '0', locked: '0' },
-      update: {},
-    });
-    const available = new BigNumber(existing.available.toString()).plus(delta.available ?? 0);
-    const locked = new BigNumber(existing.locked.toString()).plus(delta.locked ?? 0);
-    await tx.balance.update({
-      where: { userId_asset: { userId, asset } },
-      data: { available: available.toString(), locked: locked.toString() },
-    });
+    await mutateSpotBalance(tx, userId, asset, delta);
   }
 }

@@ -1,6 +1,7 @@
 import { browserSetInterval, browserClearInterval } from '../lib/browserActivity';
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { api, ApiError, getToken, onSessionChange } from '../lib/api';
+import { onSpendableBalancesChanged } from '../lib/balanceInvalidation';
 import { readVtaIntent, prepareVtaIntent, clearVtaIntent, withVtaSaleLock } from '../lib/vtaSaleIntent';
 import { useVtaSpotAccount } from '../lib/useVtaSpotAccount';
 import { useMarketTicker } from '../lib/useMarketData';
@@ -75,6 +76,11 @@ export function OrderForm({
   const [balanceError, setBalanceError] = useState(false);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceVersion, setBalanceVersion] = useState(0);
+  useEffect(() => onSpendableBalancesChanged(() => {
+    if (privateVta) return;
+    setBalanceReady(false);
+    setBalanceVersion(version => version + 1);
+  }), [privateVta]);
   // An upcoming listing (VOLTORA) shows the whole form, like any pair, but
   // trading has not opened: a Buy/Sell answers with that and sends nothing.
   // The server refuses the pair on its own as well (OrderService).

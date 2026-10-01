@@ -277,7 +277,7 @@ describe('6. no customer-facing screen renders a server message directly', () =>
    * who need the server's own words, and issue #144 says so explicitly.
    */
   const SRC = resolve(__dirname, '../..');
-  const BOUNDARY = ['lib/customerError.ts', 'lib/futuresOrderErrors.ts', 'lib/privateTradingApi.ts'];
+  const BOUNDARY = ['lib/customerError.ts', 'lib/futuresOrderErrors.ts', 'lib/privateTradingApi.ts', 'pages/otc/cashApi.ts'];
   const READS_MESSAGE = /\b(?:err|error|e)\.message\b/;
 
   const walk = (dir: string): string[] =>

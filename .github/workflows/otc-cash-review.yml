@@ -1,0 +1,120 @@
+name: OTC cash reserve safety (fixtures only)
+on:
+  pull_request:
+    paths:
+      - 'src/otc/**'
+      - 'src/services/**'
+      - 'src/futures/**'
+      - 'src/cfd/**'
+      - 'src/api/routes/otcCash.ts'
+      - 'src/api/routes/futures.ts'
+      - 'src/api/routes/__tests__/adminUsers.test.ts'
+      - 'src/api/routes/__tests__/adminWithdrawals.test.ts'
+      - 'src/api/routes/__tests__/withdrawals.test.ts'
+      - 'src/index.ts'
+      - 'src/serverBackground.ts'
+      - 'scripts/start-render-single-service.cjs'
+      - 'docs/OTC_SHARED_WALLET_CUTOVER.md'
+      - 'docs/OTC_CASH_REVIEW.md'
+      - 'prisma/**'
+      - 'frontend/src/pages/otc/**'
+      - 'frontend/src/pages/OtcPage.tsx'
+      - 'frontend/src/pages/admin/AdminOtcCashPage.tsx'
+      - 'frontend/src/lib/balanceInvalidation.ts'
+      - 'scripts/*otc*'
+      - 'scripts/test-wallet-*'
+      - 'scripts/verify-review.cjs'
+      - 'scripts/fixtures/**'
+      - '.github/workflows/otc-cash-review.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-review:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        id: checkout
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0 # actual current PR base sources for the mixed-version regression
+      - uses: actions/setup-node@v4
+        id: node
+        with: { node-version: '22' }
+      - name: Initialize new evidence directory for this exact head and attempt
+        id: evidence
+        run: node scripts/otc-ci-evidence.cjs init
+      - id: backend_dependencies
+        run: node scripts/otc-ci-evidence.cjs run backend-dependencies npm ci --ignore-scripts --no-audit --no-fund
+      - id: frontend_dependencies
+        run: node scripts/otc-ci-evidence.cjs run frontend-dependencies npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Runner bootstrap, failure propagation and stale artifact regressions
+        id: runner_tests
+        run: node scripts/otc-ci-evidence.cjs run runner-tests node --test scripts/test-otc-review-runners.cjs
+      - name: Assert genuinely empty review cache after clean npm ci
+        id: clean_cache
+        run: node scripts/otc-ci-evidence.cjs run clean-cache node -e "require('node:assert/strict').equal(require('node:fs').existsSync('node_modules/.cache'), false)"
+      - name: Backend typecheck and build with isolated generated client
+        id: backend_build
+        run: node scripts/otc-ci-evidence.cjs run backend-build node scripts/verify-review.cjs build
+      - name: OTC, actual wallet writer mocks and relevant frontend regressions
+        id: unit_tests
+        run: >-
+          node scripts/otc-ci-evidence.cjs run unit-tests node scripts/verify-review.cjs test
+          src/otc
+          src/api/routes/__tests__/adminUsers.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
+          src/services/__tests__/OrderService.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/PurchaseService.test.ts
+          src/services/__tests__/BalanceAdjustmentService.test.ts
+          src/services/__tests__/idleSweepSafety.test.ts
+          frontend/src/pages/otc/__tests__/cashInteractions.test.ts
+          frontend/src/lib/__tests__/otcPage.test.ts
+          frontend/src/lib/__tests__/supportAssistant.test.ts
+          frontend/src/lib/__tests__/customerFacingErrors.test.ts
+      - name: Install pinned disposable-only PostgreSQL and browser tools
+        id: fixture_dependencies
+        run: node scripts/otc-ci-evidence.cjs run fixture-dependencies npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - id: wallet_postgres
+        run: node scripts/otc-ci-evidence.cjs run wallet-postgres node scripts/diagnose-otc-balance-safety.cjs --verify
+      - id: otc_postgres
+        run: node scripts/otc-ci-evidence.cjs run otc-postgres node scripts/diagnose-otc-balance-safety.cjs --otc
+      - id: preservation_postgres
+        run: node scripts/otc-ci-evidence.cjs run preservation-postgres node scripts/diagnose-otc-balance-safety.cjs --preservation
+      - name: Actual base/head overlap, stopped-writer migration and release audit
+        id: cutover_postgres
+        run: |
+          # checkout fetched current main as well as the exact PR head. Do not
+          # substitute a stale PR metadata base SHA for the current remote main.
+          $reviewBaseSha = git rev-parse refs/remotes/origin/main
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/otc-ci-evidence.cjs run cutover-postgres node scripts/diagnose-otc-balance-safety.cjs --cutover --base $reviewBaseSha
+          exit $LASTEXITCODE
+      - name: Production bundle using loopback-only fixture API
+        id: frontend_build
+        env:
+          VITE_API_URL: /api/v1
+        run: node scripts/otc-ci-evidence.cjs run frontend-build npm run build --prefix frontend
+      - id: browser_dependency
+        run: node scripts/otc-ci-evidence.cjs run browser-dependency node node_modules/.cache/deposit-qa/node_modules/playwright/cli.js install chromium
+      - name: Client, chat, admin, keyboard and idle viewport checks
+        id: browser_qa
+        run: |
+          $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
+          node scripts/otc-ci-evidence.cjs run browser-qa node scripts/qa-otc-cash.cjs
+          exit $LASTEXITCODE
+      - name: Record real step outcomes (including failures and skipped gates)
+        if: always() && steps.evidence.outcome == 'success'
+        env:
+          OTC_CI_STEPS: ${{ toJSON(steps) }}
+        run: node scripts/otc-ci-evidence.cjs finalize
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: otc-cash-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.evidence.outputs.directory }}/
+          if-no-files-found: error
+          retention-days: 7
