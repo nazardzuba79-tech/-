@@ -1,0 +1,56 @@
+/* «Позиция закрыта» card after a market close (owner, 2026-10-01, variant B).
+   Bottom right, above the toast stack's place and clear of the support
+   launcher; on a phone it spans the width above the bottom navigation. */
+.futures-closed-card {
+  position: fixed;
+  right: 20px;
+  bottom: 92px;
+  z-index: 1001;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-lg, 0 14px 36px rgba(0, 0, 0, 0.5));
+  font-size: 12.5px;
+  line-height: 1.45;
+  animation: futures-closed-card-in 0.22s ease-out;
+}
+@keyframes futures-closed-card-in { from { opacity: 0; transform: translateY(10px); } }
+.futures-closed-card-head { display: flex; align-items: center; gap: 9px; padding: 11px 10px 2px 12px; }
+.futures-closed-card-icon { color: var(--buy); flex-shrink: 0; }
+.futures-closed-card.is-failed .futures-closed-card-icon { color: var(--sell); }
+.futures-closed-card-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; }
+.futures-closed-card-x {
+  display: grid; place-items: center; width: 26px; height: 26px; flex-shrink: 0;
+  border: 0; border-radius: 6px; background: transparent; color: var(--text-tertiary); cursor: pointer;
+}
+.futures-closed-card-x:hover { background: var(--panel-alt); color: var(--text-primary); }
+.futures-closed-card-x:focus-visible, .futures-closed-card-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.futures-closed-card-contract { padding: 0 12px 8px 40px; color: var(--text-secondary); font-size: 12px; }
+.futures-closed-card-rows { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: 0; padding: 4px 12px 10px; }
+.futures-closed-card-rows dt { color: var(--text-tertiary); }
+.futures-closed-card-rows dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.futures-closed-card-reason { margin: 0; padding: 0 12px 11px 40px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.futures-closed-card-link {
+  display: block; width: 100%; padding: 9px 12px; border: 0; border-top: 1px solid var(--border);
+  background: transparent; color: var(--accent); font: inherit; font-size: 12.5px; font-weight: 600; text-align: left; cursor: pointer;
+}
+.futures-closed-card-link:hover { background: var(--panel-alt); }
+/* The countdown, drained over the six seconds; frozen while paused. */
+.futures-closed-card-bar { height: 2px; background: var(--buy); transform-origin: 0 50%; animation: futures-closed-card-drain 6s linear forwards; }
+.futures-closed-card.is-failed .futures-closed-card-bar { background: var(--sell); animation-duration: 8s; }
+.futures-closed-card.is-paused .futures-closed-card-bar { animation-play-state: paused; }
+@keyframes futures-closed-card-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (max-width: 640px) {
+  .futures-closed-card { left: 16px; right: 16px; width: auto; max-width: none; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  /* Over the bottom navigation the support launcher sits at 72–122px:
+     the card takes the support panel's lane above it instead. */
+  body:has(.bottom-nav) .futures-closed-card { bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .futures-closed-card { animation: none; }
+  .futures-closed-card-bar { animation: none; transform: scaleX(0); }
+}
