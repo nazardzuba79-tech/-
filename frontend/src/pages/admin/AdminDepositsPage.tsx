@@ -6,6 +6,7 @@ import { styles } from './adminStyles';
 import { CopyValue, RailLabel } from './AdminPrimitives';
 import { Skeleton } from '../../components/Skeleton';
 import { CreditDepositDrawer } from './CreditDepositDrawer';
+import { DepositCopiesSection } from './DepositCopiesSection';
 import {
   adminDepositApi, AdminDepositApiError, STATE_LABEL, IGNORE_REASON_LABEL,
   type CreditedBatch, type DepositPackage, type DepositQueue, type DepositQueueRow, type IgnoreReason, type WatcherStatus,
@@ -49,6 +50,11 @@ export function AdminDepositsPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [crediting, setCrediting] = useState<DepositPackage | null>(null);
+  // «Копировали адрес» mounts on first open and then stays, hidden, so a
+  // return shows its last list; it has its own reads, none on a timer.
+  const [view, setView] = useState<'queue' | 'copies'>(hash === '#copies' ? 'copies' : 'queue');
+  const [copiesOpened, setCopiesOpened] = useState(hash === '#copies');
+  const openView = (next: 'queue' | 'copies') => { setView(next); if (next === 'copies') setCopiesOpened(true); };
   const loading = useRef<Promise<void> | null>(null);
 
   // One read at a time. A reload requested while one is in flight is not
@@ -110,7 +116,8 @@ export function AdminDepositsPage() {
   }, [reload]);
 
   useEffect(() => {
-    if (hash === '#unattributed') setTab('unattributed');
+    if (hash === '#unattributed') { setTab('unattributed'); setView('queue'); }
+    if (hash === '#copies') { setView('copies'); setCopiesOpened(true); }
   }, [hash]);
 
   const lists = useMemo(() => {
@@ -168,6 +175,19 @@ export function AdminDepositsPage() {
         Зачисление — только вручную, пакетом: переводы одного пользователя в одном активе и одной сети суммируются.
         Пакет становится доступным для проверки от {queue?.minDepositUsd ?? 300} USD; ниже минимума зачислить нельзя.
       </p>
+      <div className="admin-user-tabs deposit-view-switch" role="tablist" aria-label="Раздел пополнений">
+        <button type="button" role="tab" aria-selected={view === 'queue'} data-deposit-view="queue"
+          className={view === 'queue' ? 'active' : undefined} onClick={() => openView('queue')}>Поступления</button>
+        <button type="button" role="tab" aria-selected={view === 'copies'} data-deposit-view="copies"
+          className={view === 'copies' ? 'active' : undefined} onClick={() => openView('copies')}>Копировали адрес</button>
+      </div>
+      {copiesOpened && (
+        <div hidden={view !== 'copies'}>
+          <DepositCopiesSection onOpenQueue={() => { openView('queue'); setTab('unattributed'); }} />
+        </div>
+      )}
+
+      <div hidden={view !== 'queue'}>
       {error && <div role="alert" style={{ ...styles.errorBox, marginBottom: 12 }}>{error}</div>}
       {message && <p role="status" style={{ ...styles.successBox, marginBottom: 12 }}>{message}</p>}
       {loadError && <div role="alert" style={{ ...styles.errorBox, marginBottom: 12 }}>Не удалось загрузить очередь пополнений. Сохранённые данные не изменены — повторите позже.</div>}
@@ -237,6 +257,7 @@ export function AdminDepositsPage() {
       )}
 
       <OtherNetworksFeed onDone={reload} />
+      </div>
 
       {crediting && (
         <CreditDepositDrawer

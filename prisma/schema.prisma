@@ -126,6 +126,7 @@ model User {
   orders        Order[]
   deposits      Deposit[]
   withdrawals   Withdrawal[]
+  depositAddressCopies DepositAddressCopyEvent[]
   wallets       Wallet[]
   purchases     Purchase[]
   kycSubmissions KycSubmission[]
@@ -406,6 +407,38 @@ model DepositClaim {
 
   @@unique([userId, chain, txHash])
   @@index([chain, txHash])
+}
+
+/// A signed-in browser reported that it copied this deposit address with the
+/// dialog's «Скопировать адрес» button. That is all it means: not a payment,
+/// not a claim on any transfer, and no credit path reads it. The admin reads
+/// it in Пополнения → «Копировали адрес» to reconcile by hand.
+///
+/// `userId` comes from the verified session only. asset/network/address are
+/// the client's context, checked for shape against the deposit rail registry
+/// (no RPC). `receivedAt` is the server's clock; `clientCopiedAt` is the
+/// device's, untrusted, for display only. `eventId` is the client's retry key:
+/// one row per (user, eventId). Deleted with the account.
+model DepositAddressCopyEvent {
+  id              String    @id @default(uuid())
+  eventId         String
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset           String
+  network         String
+  /// The catalogue rail (`assetId:networkId`) or legacy chain the dialog showed.
+  destinationId   String?
+  addressSnapshot String
+  /// Only when the destination has a Memo/Tag: it tells two recipients apart.
+  memoSnapshot    String?
+  /// Where the dialog was opened: wallet | header | otc | support.
+  source          String
+  receivedAt      DateTime  @default(now())
+  clientCopiedAt  DateTime?
+
+  @@unique([userId, eventId])
+  @@index([receivedAt(sort: Desc), id(sort: Desc)])
+  @@index([userId, receivedAt(sort: Desc)])
 }
 
 /// Every treasury address a chain has used, so a transfer to a retired

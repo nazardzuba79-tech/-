@@ -12,6 +12,7 @@ import { startBrowserActivity } from './lib/browserActivity';
 import { validateBrowserSession } from './lib/browserSession';
 import { getToken, onSessionChange } from './lib/api';
 import { BrowserSleepNotice } from './components/BrowserSleepNotice';
+import { startDepositCopyLog } from './lib/depositCopyLog';
 
 startBrowserActivity({
   validate: validateBrowserSession,
@@ -20,6 +21,9 @@ startBrowserActivity({
   // access. A brief tab switch is not a full idle wake; trading stays unchanged.
   briefReturnScope: () => /^\/admin(?:\/|$)/.test(window.location.pathname) ? window.location.pathname : null,
 });
+
+// «Копировали адрес»: one more try for a note a closed tab left behind.
+startDepositCopyLog();
 
 function SessionContent() {
   const token = React.useSyncExternalStore(onSessionChange, getToken);

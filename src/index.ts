@@ -18,6 +18,7 @@ import { TreasuryWalletService } from './services/TreasuryWalletService';
 import { adminWalletsRouter } from './api/routes/adminWallets';
 import { depositCatalogueRouter } from './api/routes/depositCatalogue';
 import { DepositCatalogue } from './services/depositCatalogue/service';
+import { depositAddressCopiesRouter, isDepositCopyEventRequest } from './api/routes/depositAddressCopies';
 import { catalogueStoreFromEnvironment } from './services/depositCatalogue/store';
 import { withdrawalsRouter } from './api/routes/withdrawals';
 import { adminWithdrawalsRouter } from './api/routes/adminWithdrawals';
@@ -218,6 +219,8 @@ app.use(
     limit: 120,
     standardHeaders: true,
     legacyHeaders: false,
+    // The deposit-address copy note has its own, smaller limits.
+    skip: isDepositCopyEventRequest,
   })
 );
 // Every successful write re-checks the sleeping background loops (rate
@@ -273,6 +276,7 @@ app.use('/api/v1', adminListingsRouter(prisma, listingStoreFromEnvironment(), {
 // One read at boot so the restricted-asset guards know published listings; afterwards
 // only on demand (orders, valuations), at most once a minute. Unconfigured = no request.
 void managedListingRegistry.ensureFresh(0);
+app.use('/api/v1', depositAddressCopiesRouter(prisma));
 app.use('/api/v1', depositCatalogueRouter(prisma, new DepositCatalogue(catalogueStoreFromEnvironment(), () => coinGeckoService.getRankings())));
 app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: nativeWithdrawableRows(prisma, privateTradingService) }));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));

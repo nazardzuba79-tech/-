@@ -1,0 +1,41 @@
+/* Пополнения → «Копировали адрес». Admin light tokens; thin borders, no motion. */
+.deposit-copies { display: grid; gap: 10px; }
+.deposit-copies-warning { margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--admin-brand); border-radius: 8px; background: var(--panel); color: var(--text-primary); font-size: 13px; font-weight: 600; }
+.deposit-copies-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.deposit-copies-filters label { display: grid; gap: 4px; min-width: 0; flex: 1 1 200px; font-size: 11px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.04em; text-transform: uppercase; }
+.deposit-copies-filters label input { width: 100%; min-width: 0; box-sizing: border-box; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.deposit-copies-filter-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.deposit-copies-meta { margin: 0; font-size: 12px; color: var(--text-tertiary); }
+.deposit-copies-empty { margin: 0; padding: 18px 12px; border: 1px dashed var(--border); border-radius: 9px; color: var(--text-secondary); text-align: center; }
+.deposit-copies-table { border: 1px solid var(--border); border-radius: 9px; background: var(--panel); overflow: hidden; }
+.deposit-copies-head, .deposit-copies-row {
+  display: grid; gap: 10px; padding: 10px 12px; align-items: start;
+  grid-template-columns: minmax(170px, 1.5fr) minmax(90px, 0.6fr) minmax(110px, 0.9fr) minmax(190px, 1.3fr) minmax(170px, 1.3fr) minmax(150px, auto);
+}
+.deposit-copies-head { padding-block: 9px; background: var(--panel-alt); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; }
+.deposit-copies-row + .deposit-copies-row { border-top: 1px solid var(--border); }
+.deposit-copies-row > span { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.deposit-copies-row small { font-size: 11.5px; color: var(--text-tertiary); font-weight: 500; }
+.deposit-copies-user strong { font-weight: 700; }
+.deposit-copies-email { color: var(--text-secondary); }
+.deposit-copies-uid { display: flex !important; align-items: center; gap: 6px; }
+.deposit-copies-asset { display: flex !important; align-items: center; gap: 6px; }
+.deposit-copies-time .num { font-variant-numeric: tabular-nums; font-weight: 600; }
+.deposit-copies-delayed { color: var(--sell) !important; font-weight: 600 !important; }
+.deposit-copies-full { word-break: break-all; }
+.deposit-copies-address-actions { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.deposit-copies-link { padding: 0; border: 0; background: none; color: var(--admin-brand); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.deposit-copies-actions { display: flex !important; flex-direction: column; align-items: flex-start; gap: 6px; }
+.deposit-copies-action { padding: 4px 10px; border: 1px solid var(--admin-brand); border-radius: 999px; background: var(--admin-brand-dim); color: var(--admin-brand); font: inherit; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; white-space: nowrap; }
+.deposit-copies-pager { display: flex; justify-content: flex-end; gap: 8px; }
+.deposit-copies-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.deposit-view-switch { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 12px; }
+
+/* Phones and narrow panes: one card per note, labels inline. */
+@media (max-width: 900px) {
+  .deposit-copies-head { display: none; }
+  .deposit-copies-row { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px; }
+  .deposit-copies-row > span[data-label]::before { content: attr(data-label); font-size: 10.5px; font-weight: 700; color: var(--text-tertiary); letter-spacing: 0.05em; text-transform: uppercase; }
+  .deposit-copies-asset[data-label]::before { margin-right: 4px; }
+  .deposit-copies-actions { flex-direction: row; flex-wrap: wrap; }
+}

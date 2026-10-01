@@ -213,7 +213,7 @@ export function SupportWidget() {
         </div>
       </form>}
     </div>}
-    {depositOpen && <Suspense fallback={<div role="status" className="support-opening">{copy.openDeposit}</div>}><DepositModal onClose={() => setDepositOpen(false)} /></Suspense>}
+    {depositOpen && <Suspense fallback={<div role="status" className="support-opening">{copy.openDeposit}</div>}><DepositModal onClose={() => setDepositOpen(false)} source="support" /></Suspense>}
   </>;
 }
 

@@ -167,7 +167,7 @@ export function OtcPage() {
         </section>
       </main>
       <div className="otc-wrap otc-footer"><Footer /></div>
-      {depositOpen && <DepositModal onClose={() => setDepositOpen(false)} />}
+      {depositOpen && <DepositModal onClose={() => setDepositOpen(false)} source="otc" />}
     </div>
   );
 }

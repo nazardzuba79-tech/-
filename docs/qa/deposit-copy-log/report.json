@@ -1,0 +1,166 @@
+{
+  "scope": "Throwaway Postgres + synthetic TronGrid fixture + local build. Not production.",
+  "checks": [
+    "A1 a signed-in copy is one row, authored by the session — status 201",
+    "A1 the row holds exactly the copied rail and address",
+    "A1 receivedAt is the server clock in UTC (Postgres runs in Europe/Kyiv) — 2026-10-01T06:59:55.741Z",
+    "A1 the device time is kept separately",
+    "A2 a retried eventId adds nothing and keeps the first time",
+    "A3 the same eventId with another payload is refused",
+    "A4 the same eventId from another account is that account's own note",
+    "A5 a body naming a user is refused",
+    "A5 no token, no note",
+    "A6 a memo rail keeps its tag",
+    "A7 the copy notes changed no deposit, claim, batch, balance or audit row",
+    "A8 a copy note does not re-check the sleeping loops",
+    "A8 an ordinary write still re-checks them — claim 202, nudges 1",
+    "A9 the 31st note of one account in 10 minutes is refused (429) — 201,429,429",
+    "A9 the notes did not spend the app-wide budget — remaining 598 of 600",
+    "A10 clients cannot read the journal",
+    "A10 pages of 25/25/10, newest first, nothing lost or repeated",
+    "A10 each page is one journal SELECT joined with the account (no per-row lookups) — auth + role + 1 SELECT per page",
+    "A10 rows carry the account and the network name",
+    "A11 filters by email, UID and coin",
+    "A11 a % in the filter is a character, not a wildcard",
+    "B0 detected transfers start unattributed and change no balance",
+    "B1 the client list the picker uses includes every account",
+    "B1 attribution alone credits nothing",
+    "B2 each preview is that user's own package",
+    "B2 the preview shows the balance before and after",
+    "B3 below the minimum: refused, nothing credited",
+    "B4 a new account: its Balance row is created with the exact amount",
+    "B5 a double click (same key, at once) credits once",
+    "B5 an existing account: only available grows; locked and other assets stay",
+    "B6 the referral reward is paid once, 5 % of each transfer",
+    "B7 a retry after a lost answer (same key) returns the first result, no second credit",
+    "B8 the credited package cannot be credited again",
+    "B9 every credit has its audit rows",
+    "B10 the top-up joins the package: exactly 300",
+    "B10 two admins at once: one credit, the other refused",
+    "B11 a transfer to another address is not recorded",
+    "B11 a fake token contract is not recorded",
+    "B12 too few confirmations: not in the package",
+    "B13 the chain check unavailable at confirm: refused, nothing credited",
+    "B14 a transfer that joined after the preview: re-review required",
+    "B14 after a fresh preview it credits exactly 550 more",
+    "B15 a client or a guest cannot attribute or credit",
+    "B15 a client claim takes nothing",
+    "B16 a credit needs no copy note, and a copy note attributes nothing",
+    "B17 the client's spot balance shows the credit",
+    "B18 deleting an account deletes its copy notes, and only those",
+    "B18 a deleted account cannot receive a transfer",
+    "B19 a plain DELETE of a user cascades its notes (older code keeps working)",
+    "B19 the migration only creates the new table, its indexes and its key — 5 statements",
+    "C1 the copy itself is unchanged: «Адрес скопирован»",
+    "C1 one copy = one note, from the Wallet, the address that was copied",
+    "C1 one copy, cross-origin: one CORS preflight + one POST, no other API request — {\"preflight\":1,\"post\":1,\"otherApiRequests\":0}",
+    "C2 two presses in a row: one note",
+    "C3 QR, coin change and Memo copy add no note",
+    "C4 copy, close and navigate away at once: the note still lands",
+    "C5 a refused clipboard: error shown, no note",
+    "C6 offline: kept on the device, sent once when the network returns",
+    "C6 the outbox is empty after delivery",
+    "C7 an account switch drops the waiting note: nothing sent as the new account",
+    "C8 a guest page sends no note",
+    "C9 journal at 1440px: rows, Kyiv time, no sideways scroll — overflow 0",
+    "C10 12 hours with the journal open: no read of its own — reads 1",
+    "C10 «Обновить» reads once — reads 2, phase active",
+    "C9 1440px: no page errors",
+    "C9 journal at 390px: rows, Kyiv time, no sideways scroll — overflow 0",
+    "C9 390px: no page errors",
+    "C9 journal at 320px: rows, Kyiv time, no sideways scroll — overflow 0",
+    "C9 320px: no page errors",
+    "C11 the drawer names the test account and its exact package",
+    "C11 confirmed in the browser: exactly 300 USDT on the chosen account"
+  ],
+  "sql": {
+    "copy note: first delivery": {
+      "count": 2,
+      "statements": [
+        "SELECT \"public\".\"Session\".\"id\", \"public\".\"Session\".\"userId\", \"public\".\"Session\".\"revokedAt\", \"public\".\"Session\".\"lastSeenAt\" FROM \"public\".\"Session\" WHERE (\"pub",
+        " INSERT INTO \"DepositAddressCopyEvent\" (\"id\", \"eventId\", \"userId\", \"asset\", \"network\", \"destinationId\", \"addressSnapshot\", \"memoSnapshot\", \"source\", \"receivedAt"
+      ]
+    },
+    "copy note: same eventId again": {
+      "count": 3,
+      "statements": [
+        "SELECT \"public\".\"Session\".\"id\", \"public\".\"Session\".\"userId\", \"public\".\"Session\".\"revokedAt\", \"public\".\"Session\".\"lastSeenAt\" FROM \"public\".\"Session\" WHERE (\"pub",
+        " INSERT INTO \"DepositAddressCopyEvent\" (\"id\", \"eventId\", \"userId\", \"asset\", \"network\", \"destinationId\", \"addressSnapshot\", \"memoSnapshot\", \"source\", \"receivedAt",
+        "SELECT \"public\".\"DepositAddressCopyEvent\".\"id\", \"public\".\"DepositAddressCopyEvent\".\"asset\", \"public\".\"DepositAddressCopyEvent\".\"network\", \"public\".\"DepositAddre"
+      ]
+    },
+    "copy note: eventId reused for another address": {
+      "count": 3,
+      "statements": [
+        "SELECT \"public\".\"Session\".\"id\", \"public\".\"Session\".\"userId\", \"public\".\"Session\".\"revokedAt\", \"public\".\"Session\".\"lastSeenAt\" FROM \"public\".\"Session\" WHERE (\"pub",
+        " INSERT INTO \"DepositAddressCopyEvent\" (\"id\", \"eventId\", \"userId\", \"asset\", \"network\", \"destinationId\", \"addressSnapshot\", \"memoSnapshot\", \"source\", \"receivedAt",
+        "SELECT \"public\".\"DepositAddressCopyEvent\".\"id\", \"public\".\"DepositAddressCopyEvent\".\"asset\", \"public\".\"DepositAddressCopyEvent\".\"network\", \"public\".\"DepositAddre"
+      ]
+    },
+    "admin journal: page 1": {
+      "count": 3,
+      "statements": [
+        "SELECT \"public\".\"Session\".\"id\", \"public\".\"Session\".\"userId\", \"public\".\"Session\".\"revokedAt\", \"public\".\"Session\".\"lastSeenAt\" FROM \"public\".\"Session\" WHERE (\"pub",
+        "SELECT \"public\".\"User\".\"id\", \"public\".\"User\".\"role\"::text FROM \"public\".\"User\" WHERE (\"public\".\"User\".\"id\" = $1 AND 1=1) LIMIT $2 OFFSET $3",
+        " SELECT e.\"id\", e.\"userId\", e.\"asset\", e.\"network\", e.\"destinationId\", e.\"addressSnapshot\", e.\"memoSnapshot\", e.\"source\", e.\"receivedAt\", e.\"clientCopiedAt\", u."
+      ]
+    },
+    "admin journal: page 2": {
+      "count": 3,
+      "statements": [
+        "SELECT \"public\".\"Session\".\"id\", \"public\".\"Session\".\"userId\", \"public\".\"Session\".\"revokedAt\", \"public\".\"Session\".\"lastSeenAt\" FROM \"public\".\"Session\" WHERE (\"pub",
+        "SELECT \"public\".\"User\".\"id\", \"public\".\"User\".\"role\"::text FROM \"public\".\"User\" WHERE (\"public\".\"User\".\"id\" = $1 AND 1=1) LIMIT $2 OFFSET $3",
+        " SELECT e.\"id\", e.\"userId\", e.\"asset\", e.\"network\", e.\"destinationId\", e.\"addressSnapshot\", e.\"memoSnapshot\", e.\"source\", e.\"receivedAt\", e.\"clientCopiedAt\", u."
+      ]
+    },
+    "admin journal: page 3": {
+      "count": 3,
+      "statements": [
+        "SELECT \"public\".\"Session\".\"id\", \"public\".\"Session\".\"userId\", \"public\".\"Session\".\"revokedAt\", \"public\".\"Session\".\"lastSeenAt\" FROM \"public\".\"Session\" WHERE (\"pub",
+        "SELECT \"public\".\"User\".\"id\", \"public\".\"User\".\"role\"::text FROM \"public\".\"User\" WHERE (\"public\".\"User\".\"id\" = $1 AND 1=1) LIMIT $2 OFFSET $3",
+        " SELECT e.\"id\", e.\"userId\", e.\"asset\", e.\"network\", e.\"destinationId\", e.\"addressSnapshot\", e.\"memoSnapshot\", e.\"source\", e.\"receivedAt\", e.\"clientCopiedAt\", u."
+      ]
+    },
+    "credit: confirm one package": {
+      "count": 19,
+      "statements": [
+        "SELECT \"public\".\"Session\".\"id\", \"public\".\"Session\".\"userId\", \"public\".\"Session\".\"revokedAt\", \"public\".\"Session\".\"lastSeenAt\" FROM \"public\".\"Session\" WHERE (\"pub",
+        "SELECT \"public\".\"User\".\"id\", \"public\".\"User\".\"role\"::text FROM \"public\".\"User\" WHERE (\"public\".\"User\".\"id\" = $1 AND 1=1) LIMIT $2 OFFSET $3",
+        "SELECT \"public\".\"DepositBatch\".\"id\", \"public\".\"DepositBatch\".\"userId\", \"public\".\"DepositBatch\".\"chain\", \"public\".\"DepositBatch\".\"asset\", \"public\".\"DepositBatch\"",
+        "SELECT \"public\".\"Deposit\".\"id\", \"public\".\"Deposit\".\"userId\", \"public\".\"Deposit\".\"deletedUserId\", \"public\".\"Deposit\".\"asset\", \"public\".\"Deposit\".\"chain\", \"public",
+        "SELECT \"public\".\"User\".\"id\", \"public\".\"User\".\"email\" FROM \"public\".\"User\" WHERE \"public\".\"User\".\"id\" IN ($1) OFFSET $2",
+        "SELECT \"public\".\"TreasuryWallet\".\"id\", \"public\".\"TreasuryWallet\".\"chain\", \"public\".\"TreasuryWallet\".\"address\", \"public\".\"TreasuryWallet\".\"updatedByAdminId\", \"pu",
+        "SELECT \"public\".\"TreasuryAddressHistory\".\"id\", \"public\".\"TreasuryAddressHistory\".\"chain\", \"public\".\"TreasuryAddressHistory\".\"address\", \"public\".\"TreasuryAddress",
+        "SET TRANSACTION ISOLATION LEVEL READ COMMITTED",
+        "SELECT \"public\".\"User\".\"id\", \"public\".\"User\".\"role\"::text FROM \"public\".\"User\" WHERE (\"public\".\"User\".\"id\" = $1 AND 1=1) LIMIT $2 OFFSET $3",
+        "SELECT id FROM \"Deposit\" WHERE id IN ($1) ORDER BY id FOR UPDATE",
+        "SELECT \"public\".\"DepositBatch\".\"id\", \"public\".\"DepositBatch\".\"userId\", \"public\".\"DepositBatch\".\"chain\", \"public\".\"DepositBatch\".\"asset\", \"public\".\"DepositBatch\"",
+        "SELECT \"public\".\"Deposit\".\"id\", \"public\".\"Deposit\".\"userId\", \"public\".\"Deposit\".\"deletedUserId\", \"public\".\"Deposit\".\"asset\", \"public\".\"Deposit\".\"chain\", \"public",
+        "SELECT \"public\".\"Deposit\".\"id\", \"public\".\"Deposit\".\"revision\", \"public\".\"Deposit\".\"amount\", \"public\".\"Deposit\".\"status\", \"public\".\"Deposit\".\"verifiedAt\", \"publi",
+        "INSERT INTO \"public\".\"DepositBatch\" (\"id\",\"userId\",\"chain\",\"asset\",\"totalAmount\",\"depositCount\",\"usdValue\",\"usdPolicy\",\"priceUsd\",\"pricedAt\",\"approvedByAdminId\"",
+        "UPDATE \"public\".\"Deposit\" SET \"status\" = $1, \"batchId\" = $2, \"creditedAt\" = $3, \"confirmations\" = $4, \"finalized\" = $5, \"verifiedAt\" = $6, \"revision\" = (\"public",
+        "INSERT INTO \"public\".\"Balance\" (\"id\",\"userId\",\"asset\",\"available\",\"locked\",\"updatedAt\") VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (\"userId\",\"asset\") DO UPDATE SET ",
+        "INSERT INTO \"public\".\"AuditLog\" (\"id\",\"userId\",\"action\",\"metadata\",\"createdAt\") VALUES ($1,$2,$3,$4,$5) RETURNING \"public\".\"AuditLog\".\"id\", \"public\".\"AuditLog\".",
+        "INSERT INTO \"public\".\"AuditLog\" (\"id\",\"userId\",\"action\",\"metadata\",\"createdAt\") VALUES ($1,$2,$3,$4,$5) RETURNING \"public\".\"AuditLog\".\"id\", \"public\".\"AuditLog\".",
+        "SELECT \"public\".\"User\".\"id\", \"public\".\"User\".\"referredById\" FROM \"public\".\"User\" WHERE (\"public\".\"User\".\"id\" = $1 AND 1=1) LIMIT $2 OFFSET $3"
+      ]
+    }
+  },
+  "http": {
+    "options": 82,
+    "copyOptions": 3,
+    "copyPosts": 44,
+    "copyAdminReads": 12,
+    "other": 130
+  },
+  "notes": [
+    "A blocked account (blockedAt set) can still be attributed and credited: attribute → 200. No such rule exists in the credit path; not changed here.",
+    "After 12 h the admin tab was «sleeping»; one click woke it before «Обновить»."
+  ],
+  "migrations": 41,
+  "oneCopy": {
+    "preflight": 1,
+    "post": 1,
+    "otherApiRequests": 0
+  }
+}
