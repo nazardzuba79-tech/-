@@ -5404,3 +5404,39 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 ### OTC support integration with concurrent main #374
 
 - Fresh fetch before push found main `54860c0298bd66c6981a2e181e99755a96169bcd` (white support panel). Ordinary merge preserves its stylesheet, guards, QA and every handoff entry. Only the append-only handoff conflicted; both histories were retained. The prepared OTC page and support behavior remain unchanged. CI and viewport QA must run again on this integrated head.
+
+## Claude — 2026-10-01 — «Позиция закрыта» card after a market close (variant B)
+
+- Owner request: after closing a position, show a confirmation. Three variants were shown; the owner chose B: a card bottom right with the contract, filled quantity, close price, realized P&L and «История позиций →». It stays 6 s, pauses on hover/focus, and closes with ×.
+- Base: main `c39927e9`; branch `claude/peaceful-volta-h5zw7g-close-card`.
+- Every figure is reported by the engine, none is estimated:
+  - close price and quantity are the volume-weighted fills of THIS close:
+    - REAL engine: the `trades` in the `POST /futures/positions/:id/close` response;
+    - NATIVE engine: the CLOSE journal events the close added (earlier partial closes excluded).
+    - No fill reported → no price line.
+  - realized P&L is the position-history row with the same id. While the card waits for it, the panel also wants `positionHistory` (one load, no timer) and the line reads «…». A history that answered without the row, or failed, hides the line.
+- Material files:
+  - new `frontend/src/lib/futuresCloseFill.ts`;
+  - new `frontend/src/components/FuturesPositionClosedCard.tsx` and `.css`;
+  - `FuturesPositionsPanel.tsx`: card state and `onShowHistory` prop;
+  - `futuresExecution.tsx`: `closePosition` now resolves `FuturesCloseFill | void`;
+  - `useNativeFuturesExecution.ts`: the close loop moved unchanged into `closeUntilFlat`;
+  - `FuturesPage.tsx`: one prop, opening the page's Position History tab;
+  - 3 i18n keys in 7 locales;
+  - tests: `futuresCloseFill`, `futuresPositionClosedCard`, a `nativeReduceTarget` case, and harness allowances. The FuturesPage fingerprint was retaken with a note.
+- A refused close shows the same card in red (`role="alert"`, 8 s) with the reason. The inline panel error is kept.
+- «Закрыть все» is unchanged: one summary, no per-position card. Limit closes are unchanged.
+- Preserved:
+  - close/refresh order, error wording (`futuresOrderErrors`), and the native close loop and its refusals;
+  - `api.ts` untouched.
+- Checks run:
+  - frontend `tsc -b`, Vite build;
+  - full frontend Jest as CI runs it (`jest frontend/src`): 197 suites, 3,422 passed, 0 failed, 0 skipped;
+  - scratch browser QA on a local copy of `preview-archive-terminal.cjs` with a local close fixture (no upstream writes):
+    - text, «…» then P&L, colour, placement;
+    - auto-hide 6.4 s, hover pause, ×, history link opens Position History;
+    - red card with a named reason;
+    - phone 390: 16 px gutters, no overflow, clear of the support launcher.
+- Screenshots and the QA table: `docs/qa/close-card/`.
+- Known trade-off, reported to the owner: on 1366–1536 px laptops the card covers «Открыть Лонг/Шорт» while it is shown (6 s, closable).
+- Not run: backend suites (not touched); a real close on any live account.

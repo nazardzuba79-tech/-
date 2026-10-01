@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import { useLanguage } from '../lib/i18n';
@@ -10,6 +10,7 @@ import { ExternalLink } from 'lucide-react';
 import { ArchivePositionCard } from './ArchiveTerminalDialogs';
 import { FuturesLimitCloseDialog } from './FuturesLimitCloseDialog';
 import { FuturesUnrealizedPnl } from './FuturesUnrealizedPnl';
+import { FuturesPositionClosedCard, type ClosedPositionNotice } from './FuturesPositionClosedCard';
 import type { FuturesPosition } from '../lib/futuresAccountStore';
 import './FuturesPositionParity.css';
 
@@ -59,6 +60,7 @@ export function FuturesPositionsPanel({
   archive = false,
   symbolFilter,
   onSelectSymbol,
+  onShowHistory,
 }: {
   archive?: boolean;
   symbolFilter?: string;
@@ -68,6 +70,9 @@ export function FuturesPositionsPanel({
    *  the panel is standalone and the ticker stays plain text rather than a
    *  button that does nothing. */
   onSelectSymbol?: (symbol: string) => void;
+  /** «История позиций →» on the «Позиция закрыта» card. Absent: the card
+   *  has no link (a standalone panel switches its own tab instead). */
+  onShowHistory?: () => void;
   refreshKey: number;
   /** Optional native position editor; the order form only configures new orders. */
   onEditLeverage?: (positionId: string) => void;
@@ -116,6 +121,14 @@ export function FuturesPositionsPanel({
   /** The position «Лимитный» was pressed on: the limit-close dialog is open
    *  for it. It closes itself once the account no longer lists that row. */
   const [limitClose, setLimitClose] = useState<FuturesPosition | null>(null);
+  /**
+   * The «Позиция закрыта» card for the last market close (owner, variant B).
+   * `positionId` + `quote` find its realized P&L in the position history,
+   * which is the only place the engine reports it; until that row arrives
+   * the line reads «…», and it never shows an estimate instead.
+   */
+  const [closed, setClosed] = useState<(Omit<ClosedPositionNotice, 'pnl'> & { positionId: string; quote: string; closedAt: number }) | null>(null);
+  const noticeSeq = useRef(0);
 
   // Open positions keep the 4s cadence this panel always polled at — it is
   // the fastest any component asks for, and the shared store honours the
@@ -125,7 +138,11 @@ export function FuturesPositionsPanel({
   // to the store: no timer is ever created for it. It changes only when a
   // position closes, so it is loaded when its tab becomes active and
   // refreshed explicitly on the events that can change it.
-  const account = useFuturesAccount(tab === 'open' ? { positions: 10_000 } : { positionHistory: 0 });
+  // While a close card waits for its realized P&L, the history is wanted
+  // too: one load (histories have no timer), released with the card.
+  const account = useFuturesAccount(tab === 'open'
+    ? (closed?.kind === 'closed' ? { positions: 10_000, positionHistory: 0 } : { positions: 10_000 })
+    : { positionHistory: 0 });
   const execution = useFuturesExecution();
 
   /** `null` = not known yet, or the request failed. It is deliberately NOT
@@ -198,6 +215,17 @@ export function FuturesPositionsPanel({
     // The region is (re)mounted with the rows and the tab; sizes are the observer's.
   }, [positions, tab, archive]);
   const history = account.positionHistory.data;
+  const dismissClosed = useCallback(() => setClosed(null), []);
+  const closedRow = closed?.kind === 'closed' ? history?.find(row => row.id === closed.positionId) ?? null : null;
+  const closedPnl: ClosedPositionNotice['pnl'] = closed?.kind !== 'closed' ? null
+    : closedRow ? (() => {
+      const value = parseFloat(closedRow.realizedPnl);
+      return Number.isFinite(value) ? { text: `${value > 0 ? '+' : ''}${group(value, 2)} ${closed.quote}`.trim(), positive: value >= 0 } : null;
+    })()
+    // A history read that finished after the close without this position,
+    // or a failed one, has nothing to report: the line is left out rather
+    // than filled with an estimate. Before that answer it waits («…»).
+    : account.positionHistory.failed || account.positionHistory.fetchedAt >= closed.closedAt ? null : undefined;
   const activeResource = tab === 'open' ? account.positions : account.positionHistory;
 
   // The one history load, on tab activation.
@@ -225,15 +253,38 @@ export function FuturesPositionsPanel({
   async function handleClose(positionId: string) {
     setError(null);
     setClosingId(positionId);
+    // What the row said before the close: the card names this position even
+    // after the row has left the list.
+    const position = account.positions.data?.find(p => p.id === positionId) ?? null;
+    const contract = position
+      ? `${position.symbol.replace('/', '')} · ${position.side === 'LONG' ? t('futures.long') : t('futures.short')} ${Number(position.leverage).toFixed(2)}x`
+      : '';
     try {
-      await execution.closePosition(positionId);
+      const fill = await execution.closePosition(positionId);
       // A close changes the open list, the history AND the margin the
       // position was holding, so all three are refreshed at once instead of
       // only this panel's own list.
       execution.refresh(['positions', 'positionHistory', 'balances']);
+      if (position) {
+        const base = position.symbol.split('/')[0] ?? '';
+        const size = fill ? fill.quantity : position.size;
+        setClosed({
+          id: ++noticeSeq.current,
+          kind: 'closed',
+          positionId,
+          quote: position.symbol.split('/')[1] ?? '',
+          contract,
+          quantity: `${groupQuantity(formatPositionQuantity(size, position.symbol))} ${base}`.trim(),
+          // The fill's own price, or no price line at all.
+          price: fill ? formatPrice(Number(fill.averagePrice)) : null,
+          closedAt: Date.now(),
+        });
+      }
     } catch (err) {
       // Our sentence, not the server's — see futuresOrderErrors.ts.
-      setError(futuresOrderErrorMessage(err, t, t('futures.closePositionError')));
+      const reason = futuresOrderErrorMessage(err, t, t('futures.closePositionError'));
+      setError(reason);
+      setClosed({ id: ++noticeSeq.current, kind: 'failed', positionId, quote: '', contract, quantity: null, price: null, reason, closedAt: Date.now() });
     } finally {
       setClosingId(null);
     }
@@ -318,6 +369,11 @@ export function FuturesPositionsPanel({
         rules={currentSymbol !== undefined && currentSymbol === limitClose.symbol ? execution.contract : null}
         onClose={() => setLimitClose(null)}
         onPlaced={() => { setLimitClose(null); execution.refresh(['positions', 'orders', 'balances']); }}
+      />}
+      {closed && <FuturesPositionClosedCard
+        notice={{ ...closed, pnl: closedPnl }}
+        onDismiss={dismissClosed}
+        onShowHistory={onShowHistory ?? (controlledTab === undefined ? () => setTab('history') : undefined)}
       />}
       {controlledTab === undefined && <div style={styles.tabs}>
         <button
