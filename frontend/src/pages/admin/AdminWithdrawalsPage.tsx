@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { browserClearInterval, browserSetInterval } from '../../lib/browserActivity';
 import { CopyValue, RailLabel } from './AdminPrimitives';
 import { styles } from './adminStyles';
 
@@ -41,12 +42,12 @@ export function AdminWithdrawalsPage() {
   }
 
   useEffect(reload, []);
-  // The waiting time ticks while the page is open; the queue itself is
-  // re-read by the admin alert that brought the admin here.
+  // The waiting time ticks while the page is open and catches up on wake;
+  // the queue itself is re-read by the admin alert that brought the admin here.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
-    return () => window.clearInterval(timer);
+    const timer = browserSetInterval(() => setNow(Date.now()), 30_000);
+    return () => browserClearInterval(timer);
   }, []);
 
   async function handleApprove(id: string) {

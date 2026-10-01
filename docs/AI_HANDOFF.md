@@ -5198,3 +5198,13 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 ### Unresolved
 - Debiting the Cross trading account when a request is SENT needs a native engine event. Until then its displayed balance stays unchanged after a payout, and only further requests are limited.
 - No Telegram notification. The admin sees new requests through the existing «Выводы» alert.
+
+### Follow-up: `admin-gate` CI on PR #360 (Claude, 2026-10-01)
+- **Failure:** `scripts/qa-admin-gate.cjs` step 8b waited for `[data-browser-phase="sleeping"]` to be *visible*. Since #355 (`f0f155eb`), `BrowserSleepNotice` keeps that phase only as a hidden marker.
+- **Not caused by #360:** the same timeout reproduced locally on unchanged `origin/main` `1b045ab3`. The workflow last ran green on `c5afc07c`, before #355. #360 re-triggered it by touching `frontend/src/lib/api.ts`.
+- **Fix:** that one wait now uses `{ state: 'attached' }`. Every other assertion in the step is unchanged: no reads while asleep, the wake reads once, the failed wake keeps the data, and the visible `error` notice.
+- **Also changed:** the 30 s waiting-time ticker in `AdminWithdrawalsPage` now uses `browserSetInterval`, like other display timers. It does not tick while the tab sleeps and catches up on wake.
+- **Checks run (local):**
+  - `scripts/qa-admin-gate.cjs` (Chromium, QA_OUT in scratch): ALL PASS (26).
+  - Frontend `tsc`, `vite build`: PASS.
+  - Full frontend Jest: 175 suites, 2,933 tests passed.
