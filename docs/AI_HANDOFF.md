@@ -5371,3 +5371,24 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
   - Fresh state: main and PR head unchanged (`a457809f`, `c7a9161e`).
   - `api.voltextech.net/health` still reports `a457809f` started 14:53:01Z. `exchange-api-mo5g.onrender.com` answers 503 with `x-render-routing: suspend-by-user`.
   - The session still has no Render, Neon, database or Cloudflare credentials, so AutoDeploy, hold deploy, session proof, inventory, backup, migration and audits cannot be performed or verified. Nothing changed.
+
+## Claude — 2026-10-01 — Support panel («VOLTEX Assistant») is white on every page
+
+- Owner request: the support panel was dark with muted text; make it light everywhere. A first warm «book» version (paper, serif, ribbon) was rejected by the owner («краще білий, цей не виглядає професійно»). The shipped version is a clean white panel.
+- Base: main `1aa8e21a` (#372 merged); branch `claude/peaceful-volta-h5zw7g-assistant-light`.
+- Material files:
+  - `frontend/src/components/SupportWidget.css` (colours only; geometry, media queries and terminal docking unchanged);
+  - new guard `frontend/src/lib/__tests__/supportWidgetLight.test.ts`;
+  - refreshed `docs/qa/support-form/` screenshots and report, plus `light-contrast-audit.json`.
+- Palette: white panel, text `#1e2329`/`#2b3139`, secondary `#5e6673`, hairlines `#eaecef`/`#d5d9de`, gold `#f0b90b` buttons and active tab, gold text `#8a6400`, `color-scheme: only light`. The gold launcher is unchanged.
+- Same white-text trap as Academy: `index.css` paints typed text with a white `-webkit-text-fill-color`. The composer, name, email and message fields and placeholders now set their own dark ink, including autofill. The composer also drops the site's inner focus ring.
+- Preserved:
+  - `SupportWidget.tsx` behaviour, Worker transport and i18n;
+  - #373's phone reading-page inline action;
+  - the futures/studio docking overrides.
+- Checks run:
+  - frontend `tsc -b`, Vite build;
+  - full frontend Jest: 195 suites, 3,404 passed;
+  - `scripts/qa-support-form.cjs` PASS: FAQ answers, guest send, provider refusal, 25 s idle, signed-in prefill, layout at 320–1920;
+  - scratch contrast audit with the OS in dark mode on `/` and `/academy` at 1440 and 390, across initial, typed, all-questions and form states: no light-on-light text, lowest 5.21:1, typed text 15.82:1.
+- Also carried in this branch: the #357/#360 handoff notes and the PR #372 Gate 0 stop entries, as the owner asked, with no separate merge.
