@@ -77,7 +77,7 @@ it('uses current numeric configuration instead of divergent FAQ literals', () =>
 
 it('describes the manual OTC support enquiry without promising a reservation', () => {
   const answer = assistantAnswer('otc_how');
-  expect(answer).toContain('Оформить обмен через поддержку');
+  expect(answer).toContain('Продолжить в поддержку');
   expect(answer).toContain('самостоятельно напишите страну, город, криптовалюту и сумму');
   expect(answer).toContain('не резервирует и не списывает средства');
   expect(answer).toContain('на указанный email');
