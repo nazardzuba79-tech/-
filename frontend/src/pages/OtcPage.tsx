@@ -1,31 +1,75 @@
-import { useState, useSyncExternalStore } from 'react';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
-import { DepositModal } from '../components/DepositModal';
-import { getToken, onSessionChange } from '../lib/api';
-import { OtcExchangeForm, savedDraft } from './otc/OtcExchangeForm';
-import { CashList, CashDetailPanel } from './otc/OtcCashDesk';
+import { openSupportWidget } from '../lib/supportWidget';
 import { TIERS } from './otc/otcConfig';
-import type { CashSummary } from './otc/cashApi';
-import { cashDraftKey, CASH_STATUSES } from './otc/cashApi';
 import './otc/otc.css';
 import './otc/otc-cash.css';
 
-export function OtcPage(){const token=useSyncExternalStore(onSessionChange,getToken,()=>null);return <OtcContent key={token} token={token}/>;}
-function OtcContent({token}:{token:string|null}){
-  const [tier,setTier]=useState(()=>savedDraft(cashDraftKey(token)).draft.tier),[deposit,setDeposit]=useState(false),[list,setList]=useState(false),[selected,setSelected]=useState<string|null>(null),[created,setCreated]=useState<CashSummary|null>(null);
-  return <div className="vx-otc"><Nav active="/otc"/><main>
-    <section className="otc-hero"><div className="otc-hero-bg" aria-hidden="true"><img src="/media/otc/hero-skyline.webp" alt="" width="1408" height="768"/></div>
-      <div className="otc-wrap otc-hero-inner"><div className="otc-hero-head"><h1>Обмен криптовалюты на наличные</h1><p className="otc-hero-lead">Ваш реальный баланс. Согласованные условия. Приватная поддержка по каждой заявке.</p></div>
-        <div className="otc-tiers">{TIERS.map(t=><div key={t.id} className={`otc-tier${tier===t.id?' is-accent':''}`}><h3>{t.name}</h3><p>Объём обмена от ${t.minUsd.toLocaleString('ru-RU')}</p><p>Криптовалюта → наличные<br/>Одна процедура, разные уровни объёма.</p><button className="otc-btn otc-btn-ghost" onClick={()=>{setTier(t.id);document.getElementById('otc-create')?.scrollIntoView({behavior:'smooth'});}}>Выбрать категорию</button></div>)}</div>
-      </div>
-    </section>
-    <section className="otc-section"><div className="otc-wrap"><ol className="otc-cash-steps"><li>Выберите страну и город получения.</li><li>Укажите криптовалюту, сумму обмена и валюту наличных.</li><li>Подтвердите заявку — указанная сумма будет зарезервирована на вашем балансе.</li><li>Согласуйте курс, комиссию и время с поддержкой. Точный адрес кассы появится в переписке по заявке.</li></ol>
-      <div id="otc-create"><OtcExchangeForm token={token} tier={tier} onDeposit={()=>setDeposit(true)} onCreated={row=>{setCreated(row);setList(true);setSelected(row.id);}}/></div>
-      {created&&<div className="otc-cash-notice" role="status">Заявка {created.number} подтверждена сервером: {CASH_STATUSES[created.status]}. {['RESERVED','OFFERED','ACCEPTED','PICKUP_READY','PAYOUT_IN_PROGRESS'].includes(created.status)&&`В резерве: ${created.quantity} ${created.asset}. Поддержка согласует условия и сообщит адрес кассы.`}</div>}
-      <div className="otc-cash-row"><button className="otc-btn otc-btn-orange" onClick={()=>{setList(true);setSelected(null);}}>Мои заявки</button>{created&&<button onClick={()=>setSelected(created.id)}>Открыть поддержку по заявке</button>}</div>
-      {selected?<CashDetailPanel key={selected} id={selected} onClose={()=>setSelected(null)}/>:list&&<CashList onOpen={setSelected}/>}
-      <p className="otc-cash-geography">Справочник: GeoNames, CC BY 4.0. География не подтверждает наличие кассы или юридическую доступность обслуживания. Доступные направления подтверждаются оператором отдельно.</p>
-    </div></section>
-  </main><Footer/>{deposit&&<DepositModal onClose={()=>setDeposit(false)}/>}</div>;
+/** The public OTC flow is an enquiry to the existing support form, not a
+ * financial instruction. No wallet reads, reserve mutations or draft prefill. */
+export function OtcPage() {
+  return (
+    <div className="vx-otc">
+      <Nav active="/otc" />
+      <main>
+        <section className="otc-hero">
+          <div className="otc-hero-bg" aria-hidden="true">
+            <img src="/media/otc/hero-skyline.webp" alt="" width="1408" height="768" />
+          </div>
+          <div className="otc-wrap otc-hero-inner">
+            <div className="otc-hero-head">
+              <h1>Обмен криптовалюты на наличные</h1>
+              <p className="otc-hero-lead">
+                Обсудите обмен с поддержкой. Доступность направления, курс и условия подтверждает оператор.
+              </p>
+            </div>
+            <div className="otc-tiers">
+              {TIERS.map(tier => (
+                <div key={tier.id} className={`otc-tier${tier.accent ? ' is-accent' : ''}`}>
+                  <h3>{tier.name}</h3>
+                  <p>Объём обмена от ${tier.minUsd.toLocaleString('ru-RU')}</p>
+                  <p>Криптовалюта → наличные<br />Условия согласовываются с поддержкой.</p>
+                  <button
+                    type="button"
+                    className="otc-btn otc-btn-ghost"
+                    aria-label={`Обсудить ${tier.name} с поддержкой`}
+                    onClick={openSupportWidget}
+                  >
+                    Связаться с поддержкой
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="otc-section">
+          <div className="otc-wrap">
+            <section id="otc-support" className="otc-cash-panel" aria-labelledby="otc-support-title">
+              <h2 id="otc-support-title">Обмен через поддержку</h2>
+              <p>
+                Для обмена напишите в поддержку страну, город, криптовалюту и сумму.
+                Оператор уточнит доступность и согласует условия.
+              </p>
+              <div className="otc-cash-row">
+                <button type="button" className="otc-btn otc-btn-orange" onClick={openSupportWidget}>
+                  Оформить обмен через поддержку
+                </button>
+              </div>
+              <p className="otc-cash-notice">
+                Обращение в поддержку не резервирует и не списывает средства.
+              </p>
+              <h3>Как это работает</h3>
+              <ol className="otc-cash-steps">
+                <li>Откройте форму поддержки кнопкой выше.</li>
+                <li>Напишите параметры обмена и укажите email для ответа.</li>
+                <li>Отправьте обращение. Оператор уточнит возможность обмена и дальнейшие действия.</li>
+              </ol>
+              <p>Ответ оператора придёт на email, указанный в обращении.</p>
+            </section>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
 }

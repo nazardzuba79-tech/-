@@ -8,7 +8,7 @@ import ts from 'typescript';
 const frontend=resolve(__dirname,'../../../..'), req=createRequire(resolve(frontend,'package.json'));
 const React=req('react'), {act}=React, {JSDOM}=req('jsdom');
 const modules=new Map<string,any>(), sessionListeners=new Set<()=>void>();
-let dom:any,root:any,host:HTMLElement,token:string|null,calls:jest.Mock,errorLog:jest.SpyInstance;
+let dom:any,root:any,host:HTMLElement,token:string|null,calls:jest.Mock,openSupport:jest.Mock,errorLog:jest.SpyInstance;
 const tokenFor=(id:string)=>`fixture.${Buffer.from(JSON.stringify({sub:id})).toString('base64url')}.not-a-signature`;
 class ApiError extends Error { constructor(public status:number,message:string){super(message);} }
 const config={enabled:true,routes:[{country:'RU',cityId:'geonames-524901',asset:'USDT',fiat:'USD',cashPrecision:2},{country:'UA',cityId:'geonames-703448',asset:'USDT',fiat:'EUR',cashPrecision:2}]};
@@ -24,7 +24,7 @@ function load(file:string):any{
     if(name.endsWith('.css'))return {};
     if(name.endsWith('/Nav'))return {Nav:()=>null};if(name.endsWith('/Footer'))return {Footer:()=>null};
     if(name.endsWith('/DepositModal'))return {DepositModal:()=>React.createElement('div',{'data-testid':'deposit'},'Обычный депозит')};
-    if(name.endsWith('/supportWidget'))return {openSupportWidget:jest.fn()};
+    if(name.endsWith('/supportWidget'))return {openSupportWidget:openSupport};
     if(name.endsWith('/CountryCombobox'))return {CountryCombobox:({value,onChange}:any)=>React.createElement('select',{'aria-label':'Страна',value:value??'',onChange:(e:any)=>onChange(e.target.value)},['','RU','UA'].map(v=>React.createElement('option',{key:v,value:v},v)))};
     if(name.endsWith('/api'))return {getToken:()=>token,onSessionChange:(fn:()=>void)=>{sessionListeners.add(fn);return()=>sessionListeners.delete(fn);},request:calls,ApiError};
     return name.startsWith('.')?load(resolve(dirname(file),name)):req(name);
@@ -39,7 +39,7 @@ beforeEach(()=>{
   dom=new JSDOM('<div id="root"></div>',{url:'http://localhost/otc',pretendToBeVisual:true});
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,localStorage:dom.window.localStorage,HTMLElement:dom.window.HTMLElement,Node:dom.window.Node,Event:dom.window.Event,IS_REACT_ACT_ENVIRONMENT:true});
   host=document.getElementById('root')!;root=req('react-dom/client').createRoot(host);token=tokenFor('user-a');modules.clear();sessionListeners.clear();
-  calls=jest.fn(async(path:string)=>{
+  openSupport=jest.fn();calls=jest.fn(async(path:string)=>{
     if(path==='/otc/config')return config;if(path==='/otc/balances')return {eligible:true,balances:[{asset:'USDT',available:'20000'}]};
     if(path.includes('/messages'))return {rows:[],hasMore:false};
     if(path.includes('?page='))return {rows:[summary],hasMore:false};
@@ -57,10 +57,25 @@ const button=(text:string)=>{const el=Array.from(host.querySelectorAll('button')
 const field=(label:string,tag='input')=>{const el=Array.from(host.querySelectorAll('label')).find(e=>e.textContent?.startsWith(label))?.querySelector(tag);if(!el)throw Error('Missing field '+label);return el as HTMLInputElement;};
 async function click(el:Element){await act(async()=>{el.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true}));await flush();});}
 async function change(el:HTMLInputElement|HTMLSelectElement,value:string){await act(async()=>{const prototype=el.tagName==='SELECT'?dom.window.HTMLSelectElement.prototype:el.tagName==='TEXTAREA'?dom.window.HTMLTextAreaElement.prototype:dom.window.HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(prototype,'value')!.set!.call(el,value);el.dispatchEvent(new dom.window.Event(el.tagName==='SELECT'?'change':'input',{bubbles:true}));await flush();});}
-async function mountPage(){const {OtcPage}=load(resolve(frontend,'src/pages/OtcPage'));await act(async()=>{root.render(React.createElement(OtcPage));await flush();});}
+// Former public composition remains test-only; all financial assertions below
+// still exercise the unchanged real components, including account remounts.
+async function mountPage(){const {OtcPage}=load(resolve(frontend,'src/pages/otc/__fixtures__/LegacyOtcPage'));await act(async()=>{root.render(React.createElement(OtcPage));await flush();});}
 async function fill(){await change(host.querySelector('[aria-label="Страна"]')!,'RU');await change(field('Город','select'),'geonames-524901');await change(field('Количество'),'10000');await change(field('Получаете','select'),'USD');}
 async function confirm(){await click(button('Проверить параметры'));await click(host.querySelector('.otc-cash-confirm input[type="checkbox"]')!);}
 const posts=()=>calls.mock.calls.filter(([,options])=>options?.method==='POST');
+
+test('public OTC only opens support, without reads, reserve writes or draft prefilling',async()=>{
+  const {OtcPage}=load(resolve(frontend,'src/pages/OtcPage'));
+  await act(async()=>{root.render(React.createElement(OtcPage));await flush();});
+  expect(calls).not.toHaveBeenCalled();expect(openSupport).not.toHaveBeenCalled();
+  expect(host.querySelectorAll('input,textarea,form')).toHaveLength(0);
+  for(const el of Array.from(host.querySelectorAll('button')))await click(el);
+  expect(openSupport).toHaveBeenCalledTimes(4);
+  expect(calls).not.toHaveBeenCalled();expect(globalThis.fetch).not.toHaveBeenCalled();
+  expect(localStorage.length).toBe(0);
+  await act(async()=>{jest.advanceTimersByTime(86400000);await flush();});
+  expect(calls).not.toHaveBeenCalled();expect(globalThis.fetch).not.toHaveBeenCalled();
+});
 
 test('country reset and all edits remain local; no reserve before both confirmations; idle day has no own requests',async()=>{
   await mountPage();expect(calls).toHaveBeenCalledTimes(2);expect(field('Город','select').disabled).toBe(true);

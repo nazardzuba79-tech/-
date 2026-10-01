@@ -75,6 +75,15 @@ it('uses current numeric configuration instead of divergent FAQ literals', () =>
   expect(assistantAnswer('copy_trading_how')).not.toMatch(/автоматически|гарантирован/i);
 });
 
+it('describes the manual OTC support enquiry without promising a reservation', () => {
+  const answer = assistantAnswer('otc_how');
+  expect(answer).toContain('Оформить обмен через поддержку');
+  expect(answer).toContain('самостоятельно напишите страну, город, криптовалюту и сумму');
+  expect(answer).toContain('не резервирует и не списывает средства');
+  expect(answer).toContain('на указанный email');
+  expect(answer).not.toMatch(/Резерв создаётся|приватной переписке по заявке/);
+});
+
 it('bounds memory and has no storage, network, timers, model or dynamic actions', () => {
   let turns: AssistantTurn[] = [];
   for (let id = 0; id < 50; id++) turns = appendAssistantTurn(turns, { id, question: 'test', intent: null });

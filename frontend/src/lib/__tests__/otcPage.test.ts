@@ -32,14 +32,19 @@ describe('OTC page', () => {
     for (const code of COUNTRY_CODES) expect(countryName(code, 'en-US')).not.toBe(code);
   });
 
-  it('creates a real cash request; deposit is a separate insufficient-funds action', () => {
+  it('opens existing support without mounting any financial request flow', () => {
     const page = read('frontend/src/pages/OtcPage.tsx');
-    expect(page).toContain("import { DepositModal } from '../components/DepositModal'");
+    expect(page).toContain("import { openSupportWidget } from '../lib/supportWidget'");
+    expect(page.match(/onClick=\{openSupportWidget\}/g)).toHaveLength(2);
+    expect(page).toContain('Оформить обмен через поддержку');
+    expect(page).toContain('не резервирует и не списывает средства');
+    expect(page).toContain('страну, город, криптовалюту и сумму');
+    expect(page).not.toMatch(/OtcExchangeForm|CashList|CashDetailPanel|DepositModal|cashRequest|cashDraftKey|savedDraft|\/otc\/(balances|requests)|fetch\(|useEffect|localStorage/);
+    // Legacy components are retained and tested in their isolated fixture.
     const form = read('frontend/src/pages/otc/OtcExchangeForm.tsx');
     expect(form).toContain('onClick={openSupportWidget}');
     expect(form).toContain("cashRequest<CashSummary>('/otc/requests',candidate)");
     expect(form).toContain('onClick={onDeposit}');
-    expect(page).toContain('onDeposit={()=>setDeposit(true)}');
     expect(page).not.toMatch(/24\/7|T\+0|350\+|340\+/);
     expect(page).toMatch(/<Nav active="\/otc"\s*\/>/);
     expect(page).not.toMatch(/navigate\(|href="\/(deposit|otc)/);
