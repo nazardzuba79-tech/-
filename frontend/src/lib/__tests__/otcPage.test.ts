@@ -32,13 +32,20 @@ describe('OTC page', () => {
     for (const code of COUNTRY_CODES) expect(countryName(code, 'en-US')).not.toBe(code);
   });
 
-  it('opens existing support without mounting any financial request flow', () => {
+  it('collects and reviews exchange parameters before opening existing support, without financial requests', () => {
     const page = read('frontend/src/pages/OtcPage.tsx');
     expect(page).toContain("import { openSupportWidget } from '../lib/supportWidget'");
-    expect(page.match(/onClick=\{openSupportWidget\}/g)).toHaveLength(2);
-    expect(page).toContain('Оформить обмен через поддержку');
-    expect(page).toContain('не резервирует и не списывает средства');
-    expect(page).toContain('страну, город, криптовалюту и сумму');
+    expect(page).toContain("import { CountryCombobox } from './otc/CountryCombobox'");
+    expect(page).toContain('Параметры OTC-обмена');
+    expect(page).toContain('Страна получения');
+    expect(page).toContain('Город получения');
+    expect(page).toContain('Количество, {asset}');
+    expect(page).toContain('Получаете наличными');
+    expect(page).toContain('Проверить параметры');
+    expect(page).toContain('Продолжить в поддержку');
+    expect(page).toContain('Ничего не отправляется автоматически');
+    expect(page).toMatch(/onClick=\{openSupportWidget\}/);
+    expect(page.indexOf('Проверить параметры')).toBeLessThan(page.indexOf('Продолжить в поддержку'));
     expect(page).not.toMatch(/OtcExchangeForm|CashList|CashDetailPanel|DepositModal|cashRequest|cashDraftKey|savedDraft|\/otc\/(balances|requests)|fetch\(|useEffect|localStorage/);
     // Legacy components are retained and tested in their isolated fixture.
     const form = read('frontend/src/pages/otc/OtcExchangeForm.tsx');
@@ -48,6 +55,8 @@ describe('OTC page', () => {
     expect(page).not.toMatch(/24\/7|T\+0|350\+|340\+/);
     expect(page).toMatch(/<Nav active="\/otc"\s*\/>/);
     expect(page).not.toMatch(/navigate\(|href="\/(deposit|otc)/);
+    expect(page).toContain('FIAT_CURRENCIES');
+    expect(page).toContain('CRYPTO_CURRENCIES');
     for (const image of ['hero-skyline']) {
       expect(page).toContain(`/media/otc/${image}.webp`);
       expect(existsSync(join(root, `frontend/public/media/otc/${image}.webp`))).toBe(true);
