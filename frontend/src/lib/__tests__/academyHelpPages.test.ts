@@ -55,6 +55,8 @@ function load(file: string): any {
       };
     }
     if (name.endsWith('/LanguageSwitcher')) return { LanguageSwitcher: () => null };
+    // The site's own header for signed-in visitors; its props are what matters here.
+    if (name.endsWith('/components/Nav')) return { Nav: (props: any) => React.createElement('nav', { 'data-site-nav': props.active, 'data-read-profile': String(props.readProfile), 'data-hide-ticker': String(props.hideTicker) }) };
     if (name.endsWith('/Logo')) return { Logo: () => null };
     if (name.endsWith('/lib/supportWidget')) return { openSupportWidget: supportOpened };
     if (name.endsWith('/lib/tradingMode')) return { defaultTradingPath: () => '/futures' };
@@ -207,9 +209,23 @@ test('English: labels translate, the Russian text stays with a short note', asyn
   expect(text()).toContain('Как зарегистрироваться?');
 });
 
-test('signed in or not, the header reads nothing from the API', async () => {
-  token = 'header.eyJzdWIiOiJ1c2VyLTEifQ.sig';
+test('«Академия» is a tab of the site header: lit for guests, and the signed-in Nav runs without its API reads', async () => {
   await open('/academy');
-  expect(host.querySelector('.vx-kb-header a[href="/futures"]')).not.toBeNull();
+  const tab = host.querySelector('.global-header a[href="/academy"]')!;
+  expect(tab.className).toContain('nav-active');
+  expect(Array.from(host.querySelectorAll('.global-header .main-nav a')).map((a) => a.getAttribute('href'))).toEqual(['/markets', '/trade', '/futures', '/copy-trading', '/card', '/otc', '/trading-bots', '/academy']);
+  await act(async () => root.unmount());
+  root = req('react-dom/client').createRoot(host);
+  token = 'header.eyJzdWIiOiJ1c2VyLTEifQ.sig';
+  await open('/academy/glossary');
+  const nav = host.querySelector('[data-site-nav]')!;
+  expect([nav.getAttribute('data-site-nav'), nav.getAttribute('data-read-profile'), nav.getAttribute('data-hide-ticker')]).toEqual(['/academy', 'false', 'true']);
+  expect(host.querySelector('.vx-kb-guest-header')).toBeNull();
   expect(requests).toEqual([]);
+});
+
+test('Nav skips its profile read when asked, and only then', () => {
+  const nav = readFileSync(resolve(frontend, 'src/components/Nav.tsx'), 'utf8');
+  expect(nav).toContain('readProfile=true}');
+  expect(nav).toContain('if(!getToken()||!readProfile)return;api.getMe()');
 });

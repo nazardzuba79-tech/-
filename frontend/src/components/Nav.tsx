@@ -13,7 +13,7 @@ import { TopGainersTicker } from './TopGainersTicker';
 import type { LiveQuote } from '../lib/liveMarketTypes';
 import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
 
-export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference,quoteAsset}:{active:string;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>;quoteAsset?:string}) {
+export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference,quoteAsset,readProfile=true}:{active:string;readProfile?:boolean;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>;quoteAsset?:string}) {
   const navigate=useNavigate(),location=useLocation(),{t,lang}=useLanguage();
   const[mobileOpen,setMobileOpen]=useState(false),[isAdmin,setIsAdmin]=useState(false),[avatarUrl,setAvatarUrl]=useState<string|null>(null),[showDeposit,setShowDeposit]=useState(false),[tradeMenuOpen,setTradeMenuOpen]=useState(false),[profileMenuOpen,setProfileMenuOpen]=useState(false);
   const tradeMenuCloseTimer=useRef<number|null>(null),profileMenuRef=useRef<HTMLDivElement>(null);
@@ -43,7 +43,9 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
   const DESKTOP_LINKS=LINKS.filter(l=>l.to!=='/wallet'&&l.to!=='/tools');
   useEffect(()=>()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);},[]);
   useEffect(()=>setMobileOpen(false),[location.pathname]);
-  useEffect(()=>{if(!getToken())return;api.getMe().then(me=>{setIsAdmin(me.isAdmin);setAvatarUrl(me.avatarUrl);}).catch(()=>{});},[]);
+  // Academy and Help promise no API request on open, so they pass
+  // readProfile={false}: the menu then shows the plain avatar and no admin link.
+  useEffect(()=>{if(!getToken()||!readProfile)return;api.getMe().then(me=>{setIsAdmin(me.isAdmin);setAvatarUrl(me.avatarUrl);}).catch(()=>{});},[]);
   useEffect(()=>{if(!profileMenuOpen)return;function handler(e:MouseEvent){if(profileMenuRef.current&&!profileMenuRef.current.contains(e.target as Node))setProfileMenuOpen(false);}document.addEventListener('mousedown',handler);return()=>document.removeEventListener('mousedown',handler);},[profileMenuOpen]);
   function handleLogout(){clearToken();navigate('/');}
   return <>

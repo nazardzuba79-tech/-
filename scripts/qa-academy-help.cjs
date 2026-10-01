@@ -173,6 +173,47 @@ async function main() {
       await ctx.close();
     }
 
+    // «Академия» is a tab of the site header, for guests and signed-in visitors.
+    for (const width of [1440, 1680, 1920]) {
+      for (const token of [null, 'qa.eyJzdWIiOiJxYSJ9.qa']) {
+        const { ctx, page } = await context(width, { token });
+        const before = report.external.length;
+        await page.goto(origin + '/academy', { waitUntil: 'networkidle' });
+        await page.locator('main.vx-kb').waitFor();
+        const tab = page.locator('.global-header .main-nav a[href="/academy"]');
+        assert.equal(await tab.isVisible(), true, `Academy tab visible at ${width} (${token ? 'signed in' : 'guest'})`);
+        assert.match(await tab.getAttribute('class'), /nav-active/);
+        const gap = await page.evaluate(() => {
+          const links = [...document.querySelectorAll('.global-header .main-nav > *')].filter((el) => el.getBoundingClientRect().width > 0);
+          const right = Math.max(...links.map((el) => el.getBoundingClientRect().right));
+          const actions = document.querySelector('.global-header .header-actions').getBoundingClientRect().left;
+          return Math.round(actions - right);
+        });
+        report.headerClearance = [...(report.headerClearance ?? []), { width, signedIn: !!token, clearance: gap }];
+        assert.ok(gap >= 20, `header clearance ${gap}px at ${width} (${token ? 'signed in' : 'guest'})`);
+        assert.equal(report.external.slice(before).filter((u) => u.startsWith(API)).length, 0);
+        if (width === 1440) await page.screenshot({ path: path.join(out, `academy-header-${token ? 'signed-in' : 'guest'}-1440.png`), clip: { x: 0, y: 0, width: 1440, height: 420 } });
+        await ctx.close();
+      }
+    }
+    check('«Академия» is a lit tab in the site header at 1440/1680/1920, guest and signed in, ≥20 px clear of the right cluster, no API request');
+    // Below 1440 the site folds its sections into the drawer (signed in) —
+    // Academy is in it — and guests get the Academy/Help row under the header.
+    for (const width of [1280, 375]) {
+      const guest = await context(width);
+      await guest.page.goto(origin + '/academy', { waitUntil: 'networkidle' });
+      assert.equal(await guest.page.locator('.vx-kb-guest-tabs a[href="/academy"][aria-current="page"]').isVisible(), true);
+      await guest.ctx.close();
+      const member = await context(width, { token: 'qa.eyJzdWIiOiJxYSJ9.qa' });
+      await member.page.goto(origin + '/academy', { waitUntil: 'networkidle' });
+      await member.page.locator('.global-header .nav-burger').click();
+      assert.equal(await member.page.locator('.nav-mobile-menu a[href="/academy"]').isVisible(), true);
+      assert.equal(await member.page.locator('.nav-mobile-menu a[href="/help/faq"]').isVisible(), true);
+      if (width === 375) await member.page.screenshot({ path: path.join(out, 'academy-menu-signed-in-375.png') });
+      await member.ctx.close();
+    }
+    check('below 1440: guests see the Academy/Help row, signed-in visitors find Academy and Help in the site drawer');
+
     // Static heads for search engines.
     const raw = await (await fetch(`${origin}/academy/osnovy/stablecoins`)).text();
     assert.match(raw, /<title>Стейблкоины[^<]*— Академия VOLTEX<\/title>/);
