@@ -29,7 +29,7 @@ export const ASSISTANT_KNOWLEDGE: readonly Entry[] = [
   entry('position_partial_close', 'trading', ['futures', 'specialist'], 'frontend/src/components/FuturesPositionsPanel.tsx#FuturesPositionsPanel', 'frontend/src/components/FuturesLimitCloseDialog.tsx#FuturesLimitCloseDialog'),
   entry('pnl_location', 'trading', ['futures'], 'frontend/src/components/FuturesPositionsPanel.tsx#FuturesPositionsPanel'),
   entry('copy_trading_how', 'trading', ['copy', 'specialist'], 'frontend/src/pages/copy-trading-bolt/components.tsx#CopyButton', 'frontend/src/pages/copy-trading-bolt/useCopyLists.ts#useFollowing', 'src/api/routes/copyPerformance.ts#copyPerformanceRouter'),
-  entry('otc_how', 'deposits', ['otc', 'specialist'], 'frontend/src/pages/otc/otcConfig.ts#TIERS', 'frontend/src/pages/OtcPage.tsx#openDeposit'),
+  entry('otc_how', 'deposits', ['otc', 'specialist'], 'frontend/src/pages/otc/otcConfig.ts#TIERS', 'frontend/src/pages/otc/OtcExchangeForm.tsx#OtcExchangeForm', 'src/otc/OtcCashService.ts#OtcCashService'),
   entry('kyc_how', 'account', ['verification'], 'frontend/src/pages/SettingsPage.tsx#TABS', 'frontend/src/pages/settings-arctic/VerificationSection.tsx#VerificationSection'),
   entry('login_problem', 'account', ['login', 'specialist'], 'frontend/src/pages/AuthPage.tsx#AuthPage', 'frontend/src/lib/supportWidget.ts#openSupportWidget'),
   entry('forgot_password', 'account', ['specialist'], 'frontend/src/pages/AuthPage.tsx#AuthPage', 'frontend/src/lib/supportWidget.ts#openSupportWidget'),

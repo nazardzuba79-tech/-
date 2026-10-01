@@ -18,6 +18,7 @@ import {
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 import { isSimulationOnlyUser } from '../../private-trading/access';
 import { asyncRoute } from '../asyncRoute';
+import { transferWalletBalance } from '../../services/WalletTransferService';
 
 const placeOrderSchema = z
   .object({
@@ -430,40 +431,7 @@ export function futuresRouter(
     const transferAmount = new BigNumber(amount);
 
     try {
-      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const fromBalance =
-          direction === 'TO_FUTURES'
-            ? await tx.balance.findUnique({ where: { userId_asset: { userId, asset } } })
-            : await tx.futuresBalance.findUnique({ where: { userId_asset: { userId, asset } } });
-        const fromAvailable = new BigNumber(fromBalance?.available.toString() ?? '0');
-        if (fromAvailable.isLessThan(transferAmount)) {
-          throw new Error(`Insufficient ${asset} balance to transfer`);
-        }
-        const nextFromAvailable = fromAvailable.minus(transferAmount).toString();
-        if (direction === 'TO_FUTURES') {
-          await tx.balance.update({ where: { userId_asset: { userId, asset } }, data: { available: nextFromAvailable } });
-        } else {
-          await tx.futuresBalance.update({ where: { userId_asset: { userId, asset } }, data: { available: nextFromAvailable } });
-        }
-
-        if (direction === 'TO_FUTURES') {
-          const toBalance = await tx.futuresBalance.upsert({
-            where: { userId_asset: { userId, asset } },
-            create: { userId, asset, available: '0', locked: '0' },
-            update: {},
-          });
-          const toAvailable = new BigNumber(toBalance.available.toString()).plus(transferAmount);
-          await tx.futuresBalance.update({ where: { userId_asset: { userId, asset } }, data: { available: toAvailable.toString() } });
-        } else {
-          const toBalance = await tx.balance.upsert({
-            where: { userId_asset: { userId, asset } },
-            create: { userId, asset, available: '0', locked: '0' },
-            update: {},
-          });
-          const toAvailable = new BigNumber(toBalance.available.toString()).plus(transferAmount);
-          await tx.balance.update({ where: { userId_asset: { userId, asset } }, data: { available: toAvailable.toString() } });
-        }
-      });
+      await transferWalletBalance(prisma, userId, asset, transferAmount, direction);
       res.json({ status: 'ok' });
     } catch (err: any) {
       res.status(400).json({ error: err.message });

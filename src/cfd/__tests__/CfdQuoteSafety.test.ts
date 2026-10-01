@@ -38,8 +38,8 @@ test.each([0,60000,Infinity,NaN,-1,249,10001])('rejects unsafe max quote age %s'
 function source(q:CfdQuote):CfdQuoteSource {return {maxQuoteAgeMs:5000,isConfigured:()=>true,getFreshQuote:async()=>q,getQuotes:async()=>[q]};}
 function db() {
   const position={id:'p',userId:'u',symbol:'XAUUSD',status:'OPEN',side:'LONG',size:'1',entryPrice:'2000',initialMargin:'200',liquidationPrice:'1810'};
-  const tx={user:{findUnique:jest.fn(async()=>({createdAt:new Date(at-365*86400000)}))},
-    futuresBalance:{findUnique:jest.fn(async()=>({available:'9800',locked:'200'})),update:jest.fn(),upsert:jest.fn()},
+  const tx={$queryRaw:jest.fn(async()=>[]),user:{findUnique:jest.fn(async()=>({createdAt:new Date(at-365*86400000)}))},
+    futuresBalance:{findUnique:jest.fn(async()=>({available:'9800',locked:'200'})),update:jest.fn(),updateMany:jest.fn(),upsert:jest.fn()},
     cfdPosition:{findUnique:jest.fn(async()=>position),findFirst:jest.fn(async()=>null),create:jest.fn(),update:jest.fn()}};
   const prisma={cfdPosition:{findMany:async()=>[position]},$transaction:jest.fn(async(fn:any)=>fn(tx))};return {tx,prisma:prisma as any};
 }
@@ -49,15 +49,18 @@ test.each(invalidRisk)('open, close and liquidation make no financial writes on 
   await expect(service.close({userId:'u',positionId:'p'})).rejects.toThrow();
   expect(await new CfdLiquidationEngine(prisma,data).checkAndLiquidate()).toBe(0);
   expect(tx.futuresBalance.update).not.toHaveBeenCalled();expect(tx.futuresBalance.upsert).not.toHaveBeenCalled();expect(tx.cfdPosition.update).not.toHaveBeenCalled();
+  expect(tx.futuresBalance.updateMany).not.toHaveBeenCalled();
   expect(tx.cfdPosition.create).not.toHaveBeenCalled();
 });
 test.each(['open','close','liquidation'])('%s revalidates after database wait before money writes',async(kind)=>{
   const {tx,prisma}=db(),data=source(quote());
-  tx.futuresBalance.findUnique.mockImplementation(async()=>{jest.setSystemTime(at+6000);return {available:'9800',locked:'200'};});
+  tx.$queryRaw.mockImplementation(async()=>{jest.setSystemTime(at+6000);return [];});
   const service=new CfdPositionService(prisma,data);
   const action=kind==='open'?service.open({userId:'u',symbol:'XAUUSD',side:'BUY',quantity:new BigNumber(1),leverage:10})
     :kind==='close'?service.close({userId:'u',positionId:'p'}):new CfdLiquidationEngine(prisma,data).liquidatePosition('p',quote());
-  await expect(action).rejects.toThrow('temporarily unavailable');expect(tx.futuresBalance.update).not.toHaveBeenCalled();expect(tx.futuresBalance.upsert).not.toHaveBeenCalled();
+  if(kind==='liquidation') await expect(action).resolves.toBe(false);
+  else await expect(action).rejects.toThrow('temporarily unavailable');
+  expect(tx.futuresBalance.updateMany).not.toHaveBeenCalled();expect(tx.futuresBalance.update).not.toHaveBeenCalled();expect(tx.futuresBalance.upsert).not.toHaveBeenCalled();
 });
 
 function adapter(raw:unknown,options:any={}){

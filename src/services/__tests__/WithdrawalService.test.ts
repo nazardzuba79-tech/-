@@ -1,18 +1,12 @@
 import { WithdrawalService, WithdrawalRequestError } from '../WithdrawalService';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 
 function makePrisma(opts: {
   balance?: { available: string; locked: string } | null;
   withdrawal?: { id: string; userId: string; asset: string; amount: string; status: string; balanceHeld?: boolean } | null;
   claimed?: string | null;
 }) {
-  const balanceState = opts.balance ? { ...opts.balance } : null;
-  const balance = {
-    findUnique: jest.fn().mockImplementation(() => Promise.resolve(balanceState)),
-    update: jest.fn().mockImplementation(({ data }: any) => {
-      if (balanceState) Object.assign(balanceState, data);
-      return Promise.resolve(balanceState);
-    }),
-  };
+  const balance = walletDelegate(new Map(opts.balance ? [['u1:USDT', { ...opts.balance }]] : []));
   const withdrawalCreated: any = { id: 'w-new', status: 'PENDING' };
   const withdrawal = {
     create: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ ...withdrawalCreated, ...data })),
@@ -48,8 +42,9 @@ describe('WithdrawalService', () => {
       });
 
       expect(result.status).toBe('PENDING');
-      expect(prisma.balance.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { available: '60', locked: '40' } })
+      expect(prisma.balance.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'u1', asset: 'USDT', available: { gte: '40' } },
+          data: { available: { increment: '-40' }, locked: { increment: '40' } } })
       );
       expect(prisma.withdrawal.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ status: 'PENDING', amount: '40' }) })
@@ -139,7 +134,7 @@ describe('WithdrawalService', () => {
 
       expect(result.status).toBe('SENT');
       expect(result.txHash).toBe('abc123');
-      expect(prisma.balance.update).toHaveBeenCalledWith(expect.objectContaining({ data: { locked: '0' } }));
+      expect(prisma.balance.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { available: { increment: '0' }, locked: { increment: '-40' } } }));
       expect(prisma.auditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ action: 'WITHDRAWAL_SENT', metadata: expect.objectContaining({ txHash: 'abc123' }) }) })
       );
@@ -173,8 +168,8 @@ describe('WithdrawalService', () => {
       });
 
       expect(result.status).toBe('REJECTED');
-      expect(prisma.balance.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { available: '100', locked: '0' } })
+      expect(prisma.balance.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { available: { increment: '40' }, locked: { increment: '-40' } } })
       );
       expect(prisma.withdrawal.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ rejectionReason: 'wrong address format' }) })

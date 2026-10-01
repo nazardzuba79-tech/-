@@ -1,0 +1,406 @@
+{
+  "checks": [
+    {
+      "width": 320,
+      "client": true,
+      "chat": true,
+      "admin": true,
+      "idleOtcRequests": 0,
+      "localEditRequests": 0,
+      "keyboardConfirmation": true
+    },
+    {
+      "width": 390,
+      "client": true,
+      "chat": true,
+      "admin": true,
+      "idleOtcRequests": 0,
+      "localEditRequests": 0,
+      "keyboardConfirmation": true
+    },
+    {
+      "width": 768,
+      "client": true,
+      "chat": true,
+      "admin": true,
+      "idleOtcRequests": 0,
+      "localEditRequests": 0,
+      "keyboardConfirmation": true
+    },
+    {
+      "width": 1440,
+      "client": true,
+      "chat": true,
+      "admin": true,
+      "idleOtcRequests": 0,
+      "localEditRequests": 0,
+      "keyboardConfirmation": true
+    }
+  ],
+  "errors": [],
+  "external": [],
+  "unexpected": [],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/otc/requests",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/alerts-summary",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/otc/requests",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/alerts-summary",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/otc/requests",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/alerts-summary",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/market/display/spot-snapshot",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/otc/requests",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/config",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/balances",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/otc/requests/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc",
+      "search": "?page=0"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/alerts-summary",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/otc/0e997edf-1b9a-47d2-aaed-ef2c3c287f97/messages",
+      "search": "?page=0"
+    }
+  ],
+  "productionAccess": false
+}

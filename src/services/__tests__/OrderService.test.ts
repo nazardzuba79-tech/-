@@ -1,6 +1,7 @@
 import BigNumber from 'bignumber.js';
 import { OrderService } from '../OrderService';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 
 /**
  * In-memory fake standing in for PrismaClient, tracking balances/orders the
@@ -15,28 +16,18 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
   const trades: any[] = [];
 
   const tx = {
-    balance: {
-      findUnique: jest.fn(async ({ where: { userId_asset: { userId, asset } } }: any) => {
-        const b = balances.get(`${userId}:${asset}`);
-        return b ? { ...b } : null;
-      }),
-      update: jest.fn(async ({ where: { userId_asset: { userId, asset } }, data }: any) => {
-        balances.set(`${userId}:${asset}`, { available: data.available, locked: data.locked });
-      }),
-      upsert: jest.fn(async ({ where: { userId_asset: { userId, asset } }, create }: any) => {
-        const key = `${userId}:${asset}`;
-        if (!balances.has(key)) balances.set(key, { available: create.available, locked: create.locked });
-        return { ...balances.get(key)! };
-      }),
-    },
+    $queryRaw: jest.fn(async () => [{ id: '1' }]),
+    balance: walletDelegate(balances),
     order: {
       create: jest.fn(async ({ data }: any) => {
-        orders.set(data.id, { createdAt: new Date(), ...data });
+        orders.set(data.id, { createdAt: new Date(), updatedAt: new Date(), ...data });
       }),
       update: jest.fn(async ({ where: { id }, data }: any) => {
         Object.assign(orders.get(id), data);
       }),
       findUnique: jest.fn(async ({ where: { id } }: any) => (orders.has(id) ? { ...orders.get(id) } : null)),
+      findMany: jest.fn(async ({ where }: any) => [...orders.values()].filter(row => row.pair === where.pair
+        && where.status.in.includes(row.status)).map(row => ({ ...row }))),
       findFirst: jest.fn(async ({ where }: any) => {
         for (const o of orders.values()) {
           if (
@@ -51,13 +42,22 @@ function makeFakePrisma(seed: Record<string, { available: string; locked: string
       }),
     },
     trade: {
+      findMany: jest.fn(async ({ where }: any) => trades.filter(row => where.OR.some((clause: any) =>
+        Object.entries(clause).some(([key, value]: any) => value.in.includes(row[key]))))),
       create: jest.fn(async ({ data }: any) => {
         trades.push(data);
       }),
     },
   };
 
-  const prisma = { $transaction: jest.fn(async (fn: any) => fn(tx)) } as any;
+  const prisma = { order: tx.order, $queryRaw: jest.fn(async () => [{ status: 'committed' }]), $transaction: jest.fn(async (fn: any) => {
+    const saved = [balances, orders].map(map => structuredClone([...map.entries()]));
+    const tradeCount = trades.length;
+    try { return await fn(tx); } catch (error) {
+      [balances, orders].forEach((map, i) => { map.clear(); for (const [key, value] of saved[i]) map.set(key, value); });
+      trades.length = tradeCount; throw error;
+    }
+  }) } as any;
   return { prisma, balances, orders, trades };
 }
 

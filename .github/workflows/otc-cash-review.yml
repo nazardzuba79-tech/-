@@ -1,0 +1,71 @@
+name: OTC cash reserve safety (fixtures only)
+on:
+  pull_request:
+    paths:
+      - 'src/otc/**'
+      - 'src/services/**'
+      - 'src/futures/**'
+      - 'src/cfd/**'
+      - 'src/api/routes/otcCash.ts'
+      - 'src/api/routes/futures.ts'
+      - 'src/index.ts'
+      - 'prisma/**'
+      - 'frontend/src/pages/otc/**'
+      - 'frontend/src/pages/OtcPage.tsx'
+      - 'frontend/src/pages/admin/AdminOtcCashPage.tsx'
+      - 'frontend/src/lib/balanceInvalidation.ts'
+      - 'scripts/*otc*'
+      - 'scripts/test-wallet-*'
+      - 'scripts/verify-review.cjs'
+      - 'scripts/fixtures/no-dotenv.cjs'
+      - '.github/workflows/otc-cash-review.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-review:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Backend typecheck and build with isolated generated client
+        run: node scripts/verify-review.cjs build
+      - name: OTC, actual wallet writer mocks and relevant frontend regressions
+        run: >-
+          node scripts/verify-review.cjs test
+          src/otc
+          src/services/__tests__/OrderService.test.ts
+          src/services/__tests__/WithdrawalService.test.ts
+          src/services/__tests__/PurchaseService.test.ts
+          src/services/__tests__/BalanceAdjustmentService.test.ts
+          src/services/__tests__/idleSweepSafety.test.ts
+          frontend/src/pages/otc/__tests__/cashInteractions.test.ts
+          frontend/src/lib/__tests__/otcPage.test.ts
+          frontend/src/lib/__tests__/supportAssistant.test.ts
+          frontend/src/lib/__tests__/customerFacingErrors.test.ts
+      - name: Install pinned disposable-only PostgreSQL and browser tools
+        run: npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - run: node scripts/diagnose-otc-balance-safety.cjs --verify
+      - run: node scripts/diagnose-otc-balance-safety.cjs --otc
+      - run: node scripts/diagnose-otc-balance-safety.cjs --preservation
+      - name: Production bundle using loopback-only fixture API
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build
+      - run: node node_modules/.cache/deposit-qa/node_modules/playwright/cli.js install chromium
+      - name: Client, chat, admin, keyboard and idle viewport checks
+        run: |
+          $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
+          node scripts/qa-otc-cash.cjs
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: otc-cash-fixture-qa
+          path: docs/qa/otc-cash/
+          retention-days: 7

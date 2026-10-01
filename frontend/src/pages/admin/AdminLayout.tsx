@@ -23,6 +23,7 @@ const SECTIONS = [
   { to: '/admin/wallets', label: 'Адреса пополнения', icon: WalletIcon, group: 'Средства' },
   { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon, group: 'Средства' },
   { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon, group: 'Средства' },
+  { to: '/admin/otc', label: 'OTC-заявки', icon: ArrowUpCircleIcon, group: 'Средства' },
   { to: '/admin/kyc', label: 'Верификация · KYC', icon: ShieldCheckIcon, group: 'Комплаенс' },
   { to: '/admin/listings', label: 'Листинги', icon: BoxesIcon, group: 'Рынки' },
 ];

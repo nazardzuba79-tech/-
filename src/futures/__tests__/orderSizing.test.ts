@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 import express from 'express';
 import request from 'supertest';
 import { v4 as uuidv4 } from 'uuid';
@@ -81,20 +82,7 @@ function makeFakePrisma(available: string) {
     $queryRaw: jest.fn(async (q: any) =>
       q.strings.join('').includes('pg_current_xact_id') ? [{ id: '1' }] : [{ locked: null }]),
     user: { findUnique: jest.fn(async () => ({ id: 'u', createdAt: new Date(Date.now() - 365 * 864e5) })) },
-    futuresBalance: {
-      findUnique: jest.fn(async ({ where: { userId_asset: { userId, asset } } }: any) => {
-        const row = balances.get(`${userId}:${asset}`);
-        return row ? { ...row } : null;
-      }),
-      update: jest.fn(async ({ where: { userId_asset: { userId, asset } }, data }: any) => {
-        balances.set(`${userId}:${asset}`, { available: data.available, locked: data.locked });
-      }),
-      upsert: jest.fn(async ({ where: { userId_asset: { userId, asset } }, create }: any) => {
-        const key = `${userId}:${asset}`;
-        if (!balances.has(key)) balances.set(key, { available: create.available, locked: create.locked });
-        return { ...balances.get(key)! };
-      }),
-    },
+    futuresBalance: walletDelegate(balances),
     futuresOrder: {
       create: jest.fn(async ({ data }: any) => { orders.set(data.id, { createdAt: new Date(), ...data }); }),
       update: jest.fn(async ({ where: { id }, data }: any) => { Object.assign(orders.get(id), data); }),

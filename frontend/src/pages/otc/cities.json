@@ -1,0 +1,2823 @@
+{
+  "RU": [
+    {
+      "id": "geonames-524901",
+      "name": "Москва",
+      "timezone": "Europe/Moscow"
+    },
+    {
+      "id": "geonames-498817",
+      "name": "Санкт-Петербург",
+      "timezone": "Europe/Moscow"
+    },
+    {
+      "id": "geonames-1496747",
+      "name": "Новосибирск",
+      "timezone": "Asia/Novosibirsk"
+    },
+    {
+      "id": "geonames-1486209",
+      "name": "Екатеринбург",
+      "timezone": "Asia/Yekaterinburg"
+    },
+    {
+      "id": "geonames-551487",
+      "name": "Казань",
+      "timezone": "Europe/Moscow"
+    }
+  ],
+  "KZ": [
+    {
+      "id": "geonames-1526384",
+      "name": "Алматы",
+      "timezone": "Asia/Almaty"
+    },
+    {
+      "id": "geonames-1526273",
+      "name": "Астана",
+      "timezone": "Asia/Almaty"
+    },
+    {
+      "id": "geonames-1518980",
+      "name": "Шымкент",
+      "timezone": "Asia/Almaty"
+    },
+    {
+      "id": "geonames-610611",
+      "name": "Актобе",
+      "timezone": "Asia/Aqtobe"
+    },
+    {
+      "id": "geonames-609655",
+      "name": "Караганда",
+      "timezone": "Asia/Almaty"
+    }
+  ],
+  "UA": [
+    {
+      "id": "geonames-703448",
+      "name": "Киев",
+      "timezone": "Europe/Kyiv"
+    },
+    {
+      "id": "geonames-702550",
+      "name": "Львов",
+      "timezone": "Europe/Kyiv"
+    },
+    {
+      "id": "geonames-698740",
+      "name": "Одесса",
+      "timezone": "Europe/Kyiv"
+    },
+    {
+      "id": "geonames-709930",
+      "name": "Днепр",
+      "timezone": "Europe/Kyiv"
+    },
+    {
+      "id": "geonames-706483",
+      "name": "Харьков",
+      "timezone": "Europe/Kyiv"
+    }
+  ],
+  "BY": [
+    {
+      "id": "geonames-625144",
+      "name": "Минск",
+      "timezone": "Europe/Minsk"
+    },
+    {
+      "id": "geonames-627907",
+      "name": "Гомель",
+      "timezone": "Europe/Minsk"
+    },
+    {
+      "id": "geonames-625665",
+      "name": "Могилёв",
+      "timezone": "Europe/Minsk"
+    },
+    {
+      "id": "geonames-620127",
+      "name": "Витебск",
+      "timezone": "Europe/Minsk"
+    },
+    {
+      "id": "geonames-627904",
+      "name": "Гродно",
+      "timezone": "Europe/Minsk"
+    }
+  ],
+  "CH": [
+    {
+      "id": "geonames-2657896",
+      "name": "Цюрих",
+      "timezone": "Europe/Zurich"
+    },
+    {
+      "id": "geonames-2660646",
+      "name": "Женева",
+      "timezone": "Europe/Zurich"
+    },
+    {
+      "id": "geonames-2661604",
+      "name": "Базель",
+      "timezone": "Europe/Zurich"
+    },
+    {
+      "id": "geonames-2659994",
+      "name": "Лозанна",
+      "timezone": "Europe/Zurich"
+    },
+    {
+      "id": "geonames-2661552",
+      "name": "Берн",
+      "timezone": "Europe/Zurich"
+    }
+  ],
+  "AE": [
+    {
+      "id": "geonames-292223",
+      "name": "Дубай",
+      "timezone": "Asia/Dubai"
+    },
+    {
+      "id": "geonames-292968",
+      "name": "Абу-Даби",
+      "timezone": "Asia/Dubai"
+    },
+    {
+      "id": "geonames-292672",
+      "name": "Шарджа",
+      "timezone": "Asia/Dubai"
+    },
+    {
+      "id": "geonames-292913",
+      "name": "Эль-Айн",
+      "timezone": "Asia/Dubai"
+    },
+    {
+      "id": "geonames-292932",
+      "name": "Аджман",
+      "timezone": "Asia/Dubai"
+    }
+  ],
+  "TR": [
+    {
+      "id": "geonames-745044",
+      "name": "Стамбул",
+      "timezone": "Europe/Istanbul"
+    },
+    {
+      "id": "geonames-323786",
+      "name": "Анкара",
+      "timezone": "Europe/Istanbul"
+    },
+    {
+      "id": "geonames-750269",
+      "name": "Бурса",
+      "timezone": "Europe/Istanbul"
+    },
+    {
+      "id": "geonames-311046",
+      "name": "Измир",
+      "timezone": "Europe/Istanbul"
+    },
+    {
+      "id": "geonames-314830",
+      "name": "Газиантеп",
+      "timezone": "Europe/Istanbul"
+    }
+  ],
+  "PL": [
+    {
+      "id": "geonames-756135",
+      "name": "Варшава",
+      "timezone": "Europe/Warsaw"
+    },
+    {
+      "id": "geonames-3094802",
+      "name": "Краков",
+      "timezone": "Europe/Warsaw"
+    },
+    {
+      "id": "geonames-3081368",
+      "name": "Вроцлав",
+      "timezone": "Europe/Warsaw"
+    },
+    {
+      "id": "geonames-3093133",
+      "name": "Лодзь",
+      "timezone": "Europe/Warsaw"
+    },
+    {
+      "id": "geonames-3088171",
+      "name": "Познань",
+      "timezone": "Europe/Warsaw"
+    }
+  ],
+  "DE": [
+    {
+      "id": "geonames-2950159",
+      "name": "Берлин",
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "id": "geonames-2911298",
+      "name": "Гамбург",
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "id": "geonames-2867714",
+      "name": "Мюнхен",
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "id": "geonames-2886242",
+      "name": "Кёльн",
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "id": "geonames-2925533",
+      "name": "Франкфурт-на-Майне",
+      "timezone": "Europe/Berlin"
+    }
+  ],
+  "FR": [
+    {
+      "id": "geonames-2988507",
+      "name": "Париж",
+      "timezone": "Europe/Paris"
+    },
+    {
+      "id": "geonames-2995469",
+      "name": "Марсель",
+      "timezone": "Europe/Paris"
+    },
+    {
+      "id": "geonames-2996944",
+      "name": "Лион",
+      "timezone": "Europe/Paris"
+    },
+    {
+      "id": "geonames-2972315",
+      "name": "Тулуза",
+      "timezone": "Europe/Paris"
+    },
+    {
+      "id": "geonames-2990440",
+      "name": "Ницца",
+      "timezone": "Europe/Paris"
+    }
+  ],
+  "IT": [
+    {
+      "id": "geonames-3169070",
+      "name": "Рим",
+      "timezone": "Europe/Rome"
+    },
+    {
+      "id": "geonames-3173435",
+      "name": "Милан",
+      "timezone": "Europe/Rome"
+    },
+    {
+      "id": "geonames-3172394",
+      "name": "Неаполь",
+      "timezone": "Europe/Rome"
+    },
+    {
+      "id": "geonames-3165524",
+      "name": "Турин",
+      "timezone": "Europe/Rome"
+    },
+    {
+      "id": "geonames-2523920",
+      "name": "Палермо",
+      "timezone": "Europe/Rome"
+    }
+  ],
+  "ES": [
+    {
+      "id": "geonames-3117735",
+      "name": "Мадрид",
+      "timezone": "Europe/Madrid"
+    },
+    {
+      "id": "geonames-3128760",
+      "name": "Барселона",
+      "timezone": "Europe/Madrid"
+    },
+    {
+      "id": "geonames-2509954",
+      "name": "Валенсия",
+      "timezone": "Europe/Madrid"
+    },
+    {
+      "id": "geonames-3104324",
+      "name": "Сарагоса",
+      "timezone": "Europe/Madrid"
+    },
+    {
+      "id": "geonames-2510911",
+      "name": "Севилья",
+      "timezone": "Europe/Madrid"
+    }
+  ],
+  "GB": [
+    {
+      "id": "geonames-2643743",
+      "name": "Лондон",
+      "timezone": "Europe/London"
+    },
+    {
+      "id": "geonames-2655603",
+      "name": "Бирмингем",
+      "timezone": "Europe/London"
+    },
+    {
+      "id": "geonames-2648579",
+      "name": "Глазго",
+      "timezone": "Europe/London"
+    },
+    {
+      "id": "geonames-2643123",
+      "name": "Манчестер",
+      "timezone": "Europe/London"
+    },
+    {
+      "id": "geonames-2638077",
+      "name": "Шеффилд",
+      "timezone": "Europe/London"
+    }
+  ],
+  "CZ": [
+    {
+      "id": "geonames-3067696",
+      "name": "Прага",
+      "timezone": "Europe/Prague"
+    },
+    {
+      "id": "geonames-3078610",
+      "name": "Брно",
+      "timezone": "Europe/Prague"
+    },
+    {
+      "id": "geonames-3068799",
+      "name": "Острава",
+      "timezone": "Europe/Prague"
+    },
+    {
+      "id": "geonames-3068160",
+      "name": "Пльзень",
+      "timezone": "Europe/Prague"
+    },
+    {
+      "id": "geonames-3071961",
+      "name": "Либерец",
+      "timezone": "Europe/Prague"
+    }
+  ],
+  "AT": [
+    {
+      "id": "geonames-2761369",
+      "name": "Вена",
+      "timezone": "Europe/Vienna"
+    },
+    {
+      "id": "geonames-2778067",
+      "name": "Грац",
+      "timezone": "Europe/Vienna"
+    },
+    {
+      "id": "geonames-2772400",
+      "name": "Линц",
+      "timezone": "Europe/Vienna"
+    },
+    {
+      "id": "geonames-2766824",
+      "name": "Зальцбург",
+      "timezone": "Europe/Vienna"
+    },
+    {
+      "id": "geonames-2775220",
+      "name": "Инсбрук",
+      "timezone": "Europe/Vienna"
+    }
+  ],
+  "NL": [
+    {
+      "id": "geonames-2759794",
+      "name": "Амстердам",
+      "timezone": "Europe/Amsterdam"
+    },
+    {
+      "id": "geonames-2747891",
+      "name": "Роттердам",
+      "timezone": "Europe/Amsterdam"
+    },
+    {
+      "id": "geonames-2747373",
+      "name": "Гаага",
+      "timezone": "Europe/Amsterdam"
+    },
+    {
+      "id": "geonames-2745912",
+      "name": "Утрехт",
+      "timezone": "Europe/Amsterdam"
+    },
+    {
+      "id": "geonames-2756253",
+      "name": "Эйндховен",
+      "timezone": "Europe/Amsterdam"
+    }
+  ],
+  "PT": [
+    {
+      "id": "geonames-2267057",
+      "name": "Лиссабон",
+      "timezone": "Europe/Lisbon"
+    },
+    {
+      "id": "geonames-2735943",
+      "name": "Порту",
+      "timezone": "Europe/Lisbon"
+    },
+    {
+      "id": "geonames-2742032",
+      "name": "Брага",
+      "timezone": "Europe/Lisbon"
+    },
+    {
+      "id": "geonames-2271772",
+      "name": "Амадора",
+      "timezone": "Europe/Lisbon"
+    },
+    {
+      "id": "geonames-2740637",
+      "name": "Коимбра",
+      "timezone": "Europe/Lisbon"
+    }
+  ],
+  "GR": [
+    {
+      "id": "geonames-264371",
+      "name": "Афины",
+      "timezone": "Europe/Athens"
+    },
+    {
+      "id": "geonames-734077",
+      "name": "Салоники",
+      "timezone": "Europe/Athens"
+    },
+    {
+      "id": "geonames-255683",
+      "name": "Патра",
+      "timezone": "Europe/Athens"
+    },
+    {
+      "id": "geonames-255274",
+      "name": "Пирей",
+      "timezone": "Europe/Athens"
+    },
+    {
+      "id": "geonames-258576",
+      "name": "Лариса",
+      "timezone": "Europe/Athens"
+    }
+  ],
+  "CY": [
+    {
+      "id": "geonames-146268",
+      "name": "Никосия",
+      "timezone": "Asia/Nicosia"
+    },
+    {
+      "id": "geonames-146384",
+      "name": "Лимасол",
+      "timezone": "Asia/Nicosia"
+    },
+    {
+      "id": "geonames-146400",
+      "name": "Ларнака",
+      "timezone": "Asia/Nicosia"
+    },
+    {
+      "id": "geonames-146054",
+      "name": "Строволос",
+      "timezone": "Asia/Nicosia"
+    },
+    {
+      "id": "geonames-146617",
+      "name": "Фамагуста",
+      "timezone": "Asia/Famagusta"
+    }
+  ],
+  "RO": [
+    {
+      "id": "geonames-683506",
+      "name": "Бухарест",
+      "timezone": "Europe/Bucharest"
+    },
+    {
+      "id": "geonames-675810",
+      "name": "Яссы",
+      "timezone": "Europe/Bucharest"
+    },
+    {
+      "id": "geonames-680963",
+      "name": "Констанца",
+      "timezone": "Europe/Bucharest"
+    },
+    {
+      "id": "geonames-681290",
+      "name": "Клуж-Напока",
+      "timezone": "Europe/Bucharest"
+    },
+    {
+      "id": "geonames-683844",
+      "name": "Брашов",
+      "timezone": "Europe/Bucharest"
+    }
+  ],
+  "BG": [
+    {
+      "id": "geonames-727011",
+      "name": "София",
+      "timezone": "Europe/Sofia"
+    },
+    {
+      "id": "geonames-728193",
+      "name": "Пловдив",
+      "timezone": "Europe/Sofia"
+    },
+    {
+      "id": "geonames-726050",
+      "name": "Варна",
+      "timezone": "Europe/Sofia"
+    },
+    {
+      "id": "geonames-732770",
+      "name": "Бургас",
+      "timezone": "Europe/Sofia"
+    },
+    {
+      "id": "geonames-726848",
+      "name": "Стара-Загора",
+      "timezone": "Europe/Sofia"
+    }
+  ],
+  "MD": [
+    {
+      "id": "geonames-618426",
+      "name": "Кишинёв",
+      "timezone": "Europe/Chisinau"
+    },
+    {
+      "id": "geonames-617239",
+      "name": "Тирасполь",
+      "timezone": "Europe/Chisinau"
+    },
+    {
+      "id": "geonames-618605",
+      "name": "Бельцы",
+      "timezone": "Europe/Chisinau"
+    },
+    {
+      "id": "geonames-618577",
+      "name": "Бендеры",
+      "timezone": "Europe/Chisinau"
+    },
+    {
+      "id": "geonames-617486",
+      "name": "Рыбница",
+      "timezone": "Europe/Chisinau"
+    }
+  ],
+  "GE": [
+    {
+      "id": "geonames-611717",
+      "name": "Тбилиси",
+      "timezone": "Asia/Tbilisi"
+    },
+    {
+      "id": "geonames-615532",
+      "name": "Батуми",
+      "timezone": "Asia/Tbilisi"
+    },
+    {
+      "id": "geonames-613607",
+      "name": "Кутаиси",
+      "timezone": "Asia/Tbilisi"
+    },
+    {
+      "id": "geonames-612287",
+      "name": "Рустави",
+      "timezone": "Asia/Tbilisi"
+    },
+    {
+      "id": "geonames-611847",
+      "name": "Сухум",
+      "timezone": "Europe/Moscow"
+    }
+  ],
+  "AM": [
+    {
+      "id": "geonames-616052",
+      "name": "Ереван",
+      "timezone": "Asia/Yerevan"
+    },
+    {
+      "id": "geonames-616635",
+      "name": "Гюмри",
+      "timezone": "Asia/Yerevan"
+    },
+    {
+      "id": "geonames-616530",
+      "name": "Ванадзор",
+      "timezone": "Asia/Yerevan"
+    },
+    {
+      "id": "geonames-617026",
+      "name": "Абовян",
+      "timezone": "Asia/Yerevan"
+    },
+    {
+      "id": "geonames-616629",
+      "name": "Раздан",
+      "timezone": "Asia/Yerevan"
+    }
+  ],
+  "AZ": [
+    {
+      "id": "geonames-587084",
+      "name": "Баку",
+      "timezone": "Asia/Baku"
+    },
+    {
+      "id": "geonames-584923",
+      "name": "Сумгаит",
+      "timezone": "Asia/Baku"
+    },
+    {
+      "id": "geonames-586523",
+      "name": "Гянджа",
+      "timezone": "Asia/Baku"
+    },
+    {
+      "id": "geonames-585915",
+      "name": "Хырдалан",
+      "timezone": "Asia/Baku"
+    },
+    {
+      "id": "geonames-584649",
+      "name": "Евлах",
+      "timezone": "Asia/Baku"
+    }
+  ],
+  "UZ": [
+    {
+      "id": "geonames-1512569",
+      "name": "Ташкент",
+      "timezone": "Asia/Tashkent"
+    },
+    {
+      "id": "geonames-1514588",
+      "name": "Андижан",
+      "timezone": "Asia/Tashkent"
+    },
+    {
+      "id": "geonames-1513157",
+      "name": "Наманган",
+      "timezone": "Asia/Tashkent"
+    },
+    {
+      "id": "geonames-1216265",
+      "name": "Самарканд",
+      "timezone": "Asia/Samarkand"
+    },
+    {
+      "id": "geonames-601294",
+      "name": "Нукус",
+      "timezone": "Asia/Samarkand"
+    }
+  ],
+  "KG": [
+    {
+      "id": "geonames-1528675",
+      "name": "Бишкек",
+      "timezone": "Asia/Bishkek"
+    },
+    {
+      "id": "geonames-1527534",
+      "name": "Ош",
+      "timezone": "Asia/Bishkek"
+    },
+    {
+      "id": "geonames-1528249",
+      "name": "Джалал-Абад",
+      "timezone": "Asia/Bishkek"
+    },
+    {
+      "id": "geonames-1528121",
+      "name": "Каракол",
+      "timezone": "Asia/Bishkek"
+    },
+    {
+      "id": "geonames-1527199",
+      "name": "Токмак",
+      "timezone": "Asia/Bishkek"
+    }
+  ],
+  "US": [
+    {
+      "id": "geonames-5128581",
+      "name": "Нью-Йорк",
+      "timezone": "America/New_York"
+    },
+    {
+      "id": "geonames-5368361",
+      "name": "Лос-Анджелес",
+      "timezone": "America/Los_Angeles"
+    },
+    {
+      "id": "geonames-4887398",
+      "name": "Чикаго",
+      "timezone": "America/Chicago"
+    },
+    {
+      "id": "geonames-4699066",
+      "name": "Хьюстон",
+      "timezone": "America/Chicago"
+    },
+    {
+      "id": "geonames-5308655",
+      "name": "Финикс",
+      "timezone": "America/Phoenix"
+    }
+  ],
+  "CA": [
+    {
+      "id": "geonames-6167865",
+      "name": "Торонто",
+      "timezone": "America/Toronto"
+    },
+    {
+      "id": "geonames-6077243",
+      "name": "Монреаль",
+      "timezone": "America/Toronto"
+    },
+    {
+      "id": "geonames-5913490",
+      "name": "Калгари",
+      "timezone": "America/Edmonton"
+    },
+    {
+      "id": "geonames-6094817",
+      "name": "Оттава",
+      "timezone": "America/Toronto"
+    },
+    {
+      "id": "geonames-5946768",
+      "name": "Эдмонтон",
+      "timezone": "America/Edmonton"
+    }
+  ],
+  "AU": [
+    {
+      "id": "geonames-2147714",
+      "name": "Сидней",
+      "timezone": "Australia/Sydney"
+    },
+    {
+      "id": "geonames-2158177",
+      "name": "Мельбурн",
+      "timezone": "Australia/Melbourne"
+    },
+    {
+      "id": "geonames-2174003",
+      "name": "Брисбен",
+      "timezone": "Australia/Brisbane"
+    },
+    {
+      "id": "geonames-2063523",
+      "name": "Перт",
+      "timezone": "Australia/Perth"
+    },
+    {
+      "id": "geonames-2078025",
+      "name": "Аделаида",
+      "timezone": "Australia/Adelaide"
+    }
+  ],
+  "SG": [
+    {
+      "id": "geonames-1880252",
+      "name": "Сингапур",
+      "timezone": "Asia/Singapore"
+    }
+  ],
+  "TH": [
+    {
+      "id": "geonames-1609350",
+      "name": "Бангкок",
+      "timezone": "Asia/Bangkok"
+    },
+    {
+      "id": "geonames-1606590",
+      "name": "Самутпракан",
+      "timezone": "Asia/Bangkok"
+    },
+    {
+      "id": "geonames-1608133",
+      "name": "Нонтхабури",
+      "timezone": "Asia/Bangkok"
+    },
+    {
+      "id": "geonames-1611110",
+      "name": "Чонбури",
+      "timezone": "Asia/Bangkok"
+    },
+    {
+      "id": "geonames-1607508",
+      "name": "Пра Прадаенг",
+      "timezone": "Asia/Bangkok"
+    }
+  ],
+  "ID": [
+    {
+      "id": "geonames-1642911",
+      "name": "Джакарта",
+      "timezone": "Asia/Jakarta"
+    },
+    {
+      "id": "geonames-1625822",
+      "name": "Сурабая",
+      "timezone": "Asia/Jakarta"
+    },
+    {
+      "id": "geonames-1649378",
+      "name": "Бекаси",
+      "timezone": "Asia/Jakarta"
+    },
+    {
+      "id": "geonames-1650357",
+      "name": "Бандунг",
+      "timezone": "Asia/Jakarta"
+    },
+    {
+      "id": "geonames-1214520",
+      "name": "Медан",
+      "timezone": "Asia/Jakarta"
+    }
+  ],
+  "MY": [
+    {
+      "id": "geonames-1735161",
+      "name": "Куала-Лумпур",
+      "timezone": "Asia/Kuala_Lumpur"
+    },
+    {
+      "id": "geonames-1732752",
+      "name": "Джохор-Бару",
+      "timezone": "Asia/Kuala_Lumpur"
+    },
+    {
+      "id": "geonames-1734634",
+      "name": "Ипо",
+      "timezone": "Asia/Kuala_Lumpur"
+    },
+    {
+      "id": "geonames-1735106",
+      "name": "Джорджтаун",
+      "timezone": "Asia/Kuala_Lumpur"
+    },
+    {
+      "id": "geonames-1732903",
+      "name": "Шах-Алам",
+      "timezone": "Asia/Kuala_Lumpur"
+    }
+  ],
+  "CN": [
+    {
+      "id": "geonames-1796236",
+      "name": "Шанхай",
+      "timezone": "Asia/Shanghai"
+    },
+    {
+      "id": "geonames-1814906",
+      "name": "Чунцин",
+      "timezone": "Asia/Shanghai"
+    },
+    {
+      "id": "geonames-1815286",
+      "name": "Чэнду",
+      "timezone": "Asia/Shanghai"
+    },
+    {
+      "id": "geonames-1816670",
+      "name": "Пекин",
+      "timezone": "Asia/Shanghai"
+    },
+    {
+      "id": "geonames-1809858",
+      "name": "Гуанчжоу",
+      "timezone": "Asia/Shanghai"
+    }
+  ],
+  "HK": [
+    {
+      "id": "geonames-1819729",
+      "name": "Гонконг",
+      "timezone": "Asia/Hong_Kong"
+    }
+  ],
+  "JP": [
+    {
+      "id": "geonames-1850147",
+      "name": "Токио",
+      "timezone": "Asia/Tokyo"
+    },
+    {
+      "id": "geonames-1848354",
+      "name": "Иокогама",
+      "timezone": "Asia/Tokyo"
+    },
+    {
+      "id": "geonames-1853909",
+      "name": "Осака",
+      "timezone": "Asia/Tokyo"
+    },
+    {
+      "id": "geonames-1856057",
+      "name": "Нагоя",
+      "timezone": "Asia/Tokyo"
+    },
+    {
+      "id": "geonames-2128295",
+      "name": "Саппоро",
+      "timezone": "Asia/Tokyo"
+    }
+  ],
+  "KR": [
+    {
+      "id": "geonames-1835848",
+      "name": "Сеул",
+      "timezone": "Asia/Seoul"
+    },
+    {
+      "id": "geonames-1838524",
+      "name": "Пусан",
+      "timezone": "Asia/Seoul"
+    },
+    {
+      "id": "geonames-1843564",
+      "name": "Инчхон",
+      "timezone": "Asia/Seoul"
+    },
+    {
+      "id": "geonames-1835329",
+      "name": "Тэгу",
+      "timezone": "Asia/Seoul"
+    },
+    {
+      "id": "geonames-1835235",
+      "name": "Тэджон",
+      "timezone": "Asia/Seoul"
+    }
+  ],
+  "VN": [
+    {
+      "id": "geonames-1566083",
+      "name": "Хошимин",
+      "timezone": "Asia/Ho_Chi_Minh"
+    },
+    {
+      "id": "geonames-1581130",
+      "name": "Ханой",
+      "timezone": "Asia/Bangkok"
+    },
+    {
+      "id": "geonames-1581298",
+      "name": "Хайфон",
+      "timezone": "Asia/Bangkok"
+    },
+    {
+      "id": "geonames-1586203",
+      "name": "Кан Тхо",
+      "timezone": "Asia/Ho_Chi_Minh"
+    },
+    {
+      "id": "geonames-1580240",
+      "name": "Хюэ",
+      "timezone": "Asia/Bangkok"
+    }
+  ],
+  "PH": [
+    {
+      "id": "geonames-1692192",
+      "name": "Кесон-Сити",
+      "timezone": "Asia/Manila"
+    },
+    {
+      "id": "geonames-1715348",
+      "name": "Давао",
+      "timezone": "Asia/Manila"
+    },
+    {
+      "id": "geonames-1720151",
+      "name": "Калоокан",
+      "timezone": "Asia/Manila"
+    },
+    {
+      "id": "geonames-1701668",
+      "name": "Манила",
+      "timezone": "Asia/Manila"
+    },
+    {
+      "id": "geonames-1684308",
+      "name": "Тагиг",
+      "timezone": "Asia/Manila"
+    }
+  ],
+  "IN": [
+    {
+      "id": "geonames-1275339",
+      "name": "Мумбаи",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "geonames-1273294",
+      "name": "Дели",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "geonames-1277333",
+      "name": "Бангалор",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "geonames-1269843",
+      "name": "Хайдарабад",
+      "timezone": "Asia/Kolkata"
+    },
+    {
+      "id": "geonames-1279233",
+      "name": "Ахмадабад",
+      "timezone": "Asia/Kolkata"
+    }
+  ],
+  "PK": [
+    {
+      "id": "geonames-1172451",
+      "name": "Лахор",
+      "timezone": "Asia/Karachi"
+    },
+    {
+      "id": "geonames-1174872",
+      "name": "Карачи",
+      "timezone": "Asia/Karachi"
+    },
+    {
+      "id": "geonames-1168197",
+      "name": "Пешавар",
+      "timezone": "Asia/Karachi"
+    },
+    {
+      "id": "geonames-1179400",
+      "name": "Фейсалабад",
+      "timezone": "Asia/Karachi"
+    },
+    {
+      "id": "geonames-1166993",
+      "name": "Равалпинди",
+      "timezone": "Asia/Karachi"
+    }
+  ],
+  "BD": [
+    {
+      "id": "geonames-1185241",
+      "name": "Дакка",
+      "timezone": "Asia/Dhaka"
+    },
+    {
+      "id": "geonames-1205733",
+      "name": "Читтагонг",
+      "timezone": "Asia/Dhaka"
+    },
+    {
+      "id": "geonames-1200109",
+      "name": "Газипур",
+      "timezone": "Asia/Dhaka"
+    },
+    {
+      "id": "geonames-1336135",
+      "name": "Кхулна",
+      "timezone": "Asia/Dhaka"
+    },
+    {
+      "id": "geonames-1185188",
+      "name": "Рангпур",
+      "timezone": "Asia/Dhaka"
+    }
+  ],
+  "LK": [
+    {
+      "id": "geonames-1248991",
+      "name": "Коломбо",
+      "timezone": "Asia/Colombo"
+    },
+    {
+      "id": "geonames-1234569",
+      "name": "Дехивала-Маунт-Лавиния",
+      "timezone": "Asia/Colombo"
+    },
+    {
+      "id": "geonames-1236854",
+      "name": "Махарагама",
+      "timezone": "Asia/Colombo"
+    },
+    {
+      "id": "geonames-1242833",
+      "name": "Джафна",
+      "timezone": "Asia/Colombo"
+    },
+    {
+      "id": "geonames-1234633",
+      "name": "Моратува",
+      "timezone": "Asia/Colombo"
+    }
+  ],
+  "NP": [
+    {
+      "id": "geonames-1283240",
+      "name": "Катманду",
+      "timezone": "Asia/Kathmandu"
+    },
+    {
+      "id": "geonames-1282898",
+      "name": "Покхара",
+      "timezone": "Asia/Kathmandu"
+    },
+    {
+      "id": "geonames-1283613",
+      "name": "Бхаратпур",
+      "timezone": "Asia/Kathmandu"
+    },
+    {
+      "id": "geonames-1282931",
+      "name": "Лалитпур",
+      "timezone": "Asia/Kathmandu"
+    },
+    {
+      "id": "geonames-1283581",
+      "name": "Биргандж",
+      "timezone": "Asia/Kathmandu"
+    }
+  ],
+  "MN": [
+    {
+      "id": "geonames-2028462",
+      "name": "Улан-Батор",
+      "timezone": "Asia/Ulaanbaatar"
+    },
+    {
+      "id": "geonames-2031405",
+      "name": "Эрдэнэт",
+      "timezone": "Asia/Ulaanbaatar"
+    },
+    {
+      "id": "geonames-2031964",
+      "name": "Дархан",
+      "timezone": "Asia/Ulaanbaatar"
+    },
+    {
+      "id": "geonames-2032054",
+      "name": "Чойбалсан",
+      "timezone": "Asia/Ulaanbaatar"
+    },
+    {
+      "id": "geonames-2029945",
+      "name": "Мурэн",
+      "timezone": "Asia/Ulaanbaatar"
+    }
+  ],
+  "TW": [
+    {
+      "id": "geonames-1668341",
+      "name": "Тайбэй",
+      "timezone": "Asia/Taipei"
+    },
+    {
+      "id": "geonames-12908892",
+      "name": "Новый Тайбэй",
+      "timezone": "Asia/Taipei"
+    },
+    {
+      "id": "geonames-1668399",
+      "name": "Тайчжун",
+      "timezone": "Asia/Taipei"
+    },
+    {
+      "id": "geonames-1673820",
+      "name": "Гаосюн",
+      "timezone": "Asia/Taipei"
+    },
+    {
+      "id": "geonames-1668355",
+      "name": "Тайнань",
+      "timezone": "Asia/Taipei"
+    }
+  ],
+  "KH": [
+    {
+      "id": "geonames-1821306",
+      "name": "Пномпень",
+      "timezone": "Asia/Phnom_Penh"
+    },
+    {
+      "id": "geonames-1821940",
+      "name": "Такео",
+      "timezone": "Asia/Phnom_Penh"
+    },
+    {
+      "id": "geonames-1822214",
+      "name": "Сием-Реап",
+      "timezone": "Asia/Phnom_Penh"
+    },
+    {
+      "id": "geonames-1831797",
+      "name": "Баттамбанг",
+      "timezone": "Asia/Phnom_Penh"
+    },
+    {
+      "id": "geonames-1830194",
+      "name": "Пойпет",
+      "timezone": "Asia/Phnom_Penh"
+    }
+  ],
+  "LA": [
+    {
+      "id": "geonames-1651944",
+      "name": "Вьентьян",
+      "timezone": "Asia/Vientiane"
+    },
+    {
+      "id": "geonames-1653316",
+      "name": "Саваннакхет",
+      "timezone": "Asia/Vientiane"
+    },
+    {
+      "id": "geonames-1655199",
+      "name": "Такхек",
+      "timezone": "Asia/Vientiane"
+    },
+    {
+      "id": "geonames-1654379",
+      "name": "Паксе",
+      "timezone": "Asia/Vientiane"
+    },
+    {
+      "id": "geonames-1655559",
+      "name": "Луангпхабанг",
+      "timezone": "Asia/Vientiane"
+    }
+  ],
+  "MM": [
+    {
+      "id": "geonames-1298824",
+      "name": "Янгон",
+      "timezone": "Asia/Yangon"
+    },
+    {
+      "id": "geonames-1311874",
+      "name": "Мандалай",
+      "timezone": "Asia/Yangon"
+    },
+    {
+      "id": "geonames-6611854",
+      "name": "Нейпьидо",
+      "timezone": "Asia/Yangon"
+    },
+    {
+      "id": "geonames-1308465",
+      "name": "Моламьяйн",
+      "timezone": "Asia/Yangon"
+    },
+    {
+      "id": "geonames-1300466",
+      "name": "Баго",
+      "timezone": "Asia/Yangon"
+    }
+  ],
+  "BN": [
+    {
+      "id": "geonames-1820906",
+      "name": "Бандар-Сери-Бегаван",
+      "timezone": "Asia/Brunei"
+    },
+    {
+      "id": "geonames-1820491",
+      "name": "Куала-Белайт",
+      "timezone": "Asia/Brunei"
+    },
+    {
+      "id": "geonames-1820187",
+      "name": "Серия",
+      "timezone": "Asia/Brunei"
+    },
+    {
+      "id": "geonames-1820071",
+      "name": "Тутонг",
+      "timezone": "Asia/Brunei"
+    }
+  ],
+  "SA": [
+    {
+      "id": "geonames-105343",
+      "name": "Джидда",
+      "timezone": "Asia/Riyadh"
+    },
+    {
+      "id": "geonames-108410",
+      "name": "Эр-Рияд",
+      "timezone": "Asia/Riyadh"
+    },
+    {
+      "id": "geonames-104515",
+      "name": "Мекка",
+      "timezone": "Asia/Riyadh"
+    },
+    {
+      "id": "geonames-109223",
+      "name": "Медина",
+      "timezone": "Asia/Riyadh"
+    },
+    {
+      "id": "geonames-110336",
+      "name": "Даммам",
+      "timezone": "Asia/Riyadh"
+    }
+  ],
+  "QA": [
+    {
+      "id": "geonames-290030",
+      "name": "Доха",
+      "timezone": "Asia/Qatar"
+    },
+    {
+      "id": "geonames-289888",
+      "name": "Ар-Райян",
+      "timezone": "Asia/Qatar"
+    },
+    {
+      "id": "geonames-13512674",
+      "name": "Лусаил",
+      "timezone": "Asia/Qatar"
+    },
+    {
+      "id": "geonames-289915",
+      "name": "Аль-Вакра",
+      "timezone": "Asia/Qatar"
+    },
+    {
+      "id": "geonames-289962",
+      "name": "Аль-Хаур",
+      "timezone": "Asia/Qatar"
+    }
+  ],
+  "KW": [
+    {
+      "id": "geonames-285787",
+      "name": "Эль-Кувейт",
+      "timezone": "Asia/Kuwait"
+    },
+    {
+      "id": "geonames-285839",
+      "name": "Эль-Ахмади",
+      "timezone": "Asia/Kuwait"
+    },
+    {
+      "id": "geonames-285799",
+      "name": "Эль-Джахра",
+      "timezone": "Asia/Kuwait"
+    }
+  ],
+  "BH": [
+    {
+      "id": "geonames-290332",
+      "name": "Аль-Мухаррак",
+      "timezone": "Asia/Bahrain"
+    },
+    {
+      "id": "geonames-290340",
+      "name": "Манама",
+      "timezone": "Asia/Bahrain"
+    },
+    {
+      "id": "geonames-290247",
+      "name": "Хамад",
+      "timezone": "Asia/Bahrain"
+    },
+    {
+      "id": "geonames-385038",
+      "name": "Риффа",
+      "timezone": "Asia/Bahrain"
+    },
+    {
+      "id": "geonames-290104",
+      "name": "Ситра",
+      "timezone": "Asia/Bahrain"
+    }
+  ],
+  "OM": [
+    {
+      "id": "geonames-287286",
+      "name": "Маскат",
+      "timezone": "Asia/Muscat"
+    },
+    {
+      "id": "geonames-286621",
+      "name": "Салала",
+      "timezone": "Asia/Muscat"
+    },
+    {
+      "id": "geonames-286282",
+      "name": "Сухар",
+      "timezone": "Asia/Muscat"
+    },
+    {
+      "id": "geonames-286987",
+      "name": "Низва",
+      "timezone": "Asia/Muscat"
+    },
+    {
+      "id": "geonames-286245",
+      "name": "Сур",
+      "timezone": "Asia/Muscat"
+    }
+  ],
+  "JO": [
+    {
+      "id": "geonames-250441",
+      "name": "Амман",
+      "timezone": "Asia/Amman"
+    },
+    {
+      "id": "geonames-250090",
+      "name": "Эз-Зарка",
+      "timezone": "Asia/Amman"
+    },
+    {
+      "id": "geonames-248946",
+      "name": "Ирбид",
+      "timezone": "Asia/Amman"
+    },
+    {
+      "id": "geonames-7838895",
+      "name": "Ар-Русайфа",
+      "timezone": "Asia/Amman"
+    },
+    {
+      "id": "geonames-250774",
+      "name": "Акаба",
+      "timezone": "Asia/Amman"
+    }
+  ],
+  "LB": [
+    {
+      "id": "geonames-276781",
+      "name": "Бейрут",
+      "timezone": "Asia/Beirut"
+    },
+    {
+      "id": "geonames-266826",
+      "name": "Триполи",
+      "timezone": "Asia/Beirut"
+    },
+    {
+      "id": "geonames-268064",
+      "name": "Сайда",
+      "timezone": "Asia/Beirut"
+    },
+    {
+      "id": "geonames-267008",
+      "name": "Тир",
+      "timezone": "Asia/Beirut"
+    },
+    {
+      "id": "geonames-280425",
+      "name": "Алайх",
+      "timezone": "Asia/Beirut"
+    }
+  ],
+  "IL": [
+    {
+      "id": "geonames-281184",
+      "name": "Иерусалим",
+      "timezone": "Asia/Jerusalem"
+    },
+    {
+      "id": "geonames-293397",
+      "name": "Тель-Авив",
+      "timezone": "Asia/Jerusalem"
+    },
+    {
+      "id": "geonames-294801",
+      "name": "Хайфа",
+      "timezone": "Asia/Jerusalem"
+    },
+    {
+      "id": "geonames-293703",
+      "name": "Ришон-ле-Цион",
+      "timezone": "Asia/Jerusalem"
+    },
+    {
+      "id": "geonames-293918",
+      "name": "Петах-Тиква",
+      "timezone": "Asia/Jerusalem"
+    }
+  ],
+  "IQ": [
+    {
+      "id": "geonames-98182",
+      "name": "Багдад",
+      "timezone": "Asia/Baghdad"
+    },
+    {
+      "id": "geonames-99072",
+      "name": "Мосул",
+      "timezone": "Asia/Baghdad"
+    },
+    {
+      "id": "geonames-95446",
+      "name": "Эрбиль",
+      "timezone": "Asia/Baghdad"
+    },
+    {
+      "id": "geonames-99532",
+      "name": "Басра",
+      "timezone": "Asia/Baghdad"
+    },
+    {
+      "id": "geonames-94824",
+      "name": "Кербела",
+      "timezone": "Asia/Baghdad"
+    }
+  ],
+  "YE": [
+    {
+      "id": "geonames-71137",
+      "name": "Сана",
+      "timezone": "Asia/Aden"
+    },
+    {
+      "id": "geonames-415189",
+      "name": "Аден",
+      "timezone": "Asia/Aden"
+    },
+    {
+      "id": "geonames-70225",
+      "name": "Таиз",
+      "timezone": "Asia/Aden"
+    },
+    {
+      "id": "geonames-74477",
+      "name": "Ибб",
+      "timezone": "Asia/Aden"
+    },
+    {
+      "id": "geonames-79415",
+      "name": "Эль-Худайда",
+      "timezone": "Asia/Aden"
+    }
+  ],
+  "EG": [
+    {
+      "id": "geonames-360630",
+      "name": "Каир",
+      "timezone": "Africa/Cairo"
+    },
+    {
+      "id": "geonames-361058",
+      "name": "Александрия",
+      "timezone": "Africa/Cairo"
+    },
+    {
+      "id": "geonames-360995",
+      "name": "Гиза",
+      "timezone": "Africa/Cairo"
+    },
+    {
+      "id": "geonames-349076",
+      "name": "Шубра-Эль-Хейма",
+      "timezone": "Africa/Cairo"
+    },
+    {
+      "id": "geonames-358619",
+      "name": "Порт-Саид",
+      "timezone": "Africa/Cairo"
+    }
+  ],
+  "BE": [
+    {
+      "id": "geonames-2800866",
+      "name": "Брюссель",
+      "timezone": "Europe/Brussels"
+    },
+    {
+      "id": "geonames-2803138",
+      "name": "Антверпен",
+      "timezone": "Europe/Brussels"
+    },
+    {
+      "id": "geonames-2797656",
+      "name": "Гент",
+      "timezone": "Europe/Brussels"
+    },
+    {
+      "id": "geonames-2800481",
+      "name": "Шарлеруа",
+      "timezone": "Europe/Brussels"
+    },
+    {
+      "id": "geonames-2792413",
+      "name": "Льеж",
+      "timezone": "Europe/Brussels"
+    }
+  ],
+  "SE": [
+    {
+      "id": "geonames-2673730",
+      "name": "Стокгольм",
+      "timezone": "Europe/Stockholm"
+    },
+    {
+      "id": "geonames-2711537",
+      "name": "Гётеборг",
+      "timezone": "Europe/Stockholm"
+    },
+    {
+      "id": "geonames-2692969",
+      "name": "Мальмё",
+      "timezone": "Europe/Stockholm"
+    },
+    {
+      "id": "geonames-2666199",
+      "name": "Уппсала",
+      "timezone": "Europe/Stockholm"
+    },
+    {
+      "id": "geonames-2694762",
+      "name": "Линчёпинг",
+      "timezone": "Europe/Stockholm"
+    }
+  ],
+  "NO": [
+    {
+      "id": "geonames-3143244",
+      "name": "Осло",
+      "timezone": "Europe/Oslo"
+    },
+    {
+      "id": "geonames-3161732",
+      "name": "Берген",
+      "timezone": "Europe/Oslo"
+    },
+    {
+      "id": "geonames-3133880",
+      "name": "Тронхейм",
+      "timezone": "Europe/Oslo"
+    },
+    {
+      "id": "geonames-3137115",
+      "name": "Ставангер",
+      "timezone": "Europe/Oslo"
+    },
+    {
+      "id": "geonames-3149318",
+      "name": "Кристиансанн",
+      "timezone": "Europe/Oslo"
+    }
+  ],
+  "DK": [
+    {
+      "id": "geonames-2618425",
+      "name": "Копенгаген",
+      "timezone": "Europe/Copenhagen"
+    },
+    {
+      "id": "geonames-2624652",
+      "name": "Орхус",
+      "timezone": "Europe/Copenhagen"
+    },
+    {
+      "id": "geonames-2615876",
+      "name": "Оденсе",
+      "timezone": "Europe/Copenhagen"
+    },
+    {
+      "id": "geonames-2624886",
+      "name": "Ольборг",
+      "timezone": "Europe/Copenhagen"
+    },
+    {
+      "id": "geonames-2621942",
+      "name": "Фредериксберг",
+      "timezone": "Europe/Copenhagen"
+    }
+  ],
+  "FI": [
+    {
+      "id": "geonames-658225",
+      "name": "Хельсинки",
+      "timezone": "Europe/Helsinki"
+    },
+    {
+      "id": "geonames-660158",
+      "name": "Эспоо",
+      "timezone": "Europe/Helsinki"
+    },
+    {
+      "id": "geonames-634963",
+      "name": "Тампере",
+      "timezone": "Europe/Helsinki"
+    },
+    {
+      "id": "geonames-632453",
+      "name": "Вантаа",
+      "timezone": "Europe/Helsinki"
+    },
+    {
+      "id": "geonames-643492",
+      "name": "Оулу",
+      "timezone": "Europe/Helsinki"
+    }
+  ],
+  "IE": [
+    {
+      "id": "geonames-2964574",
+      "name": "Дублин",
+      "timezone": "Europe/Dublin"
+    },
+    {
+      "id": "geonames-2965140",
+      "name": "Корк",
+      "timezone": "Europe/Dublin"
+    },
+    {
+      "id": "geonames-2962943",
+      "name": "Лимерик",
+      "timezone": "Europe/Dublin"
+    },
+    {
+      "id": "geonames-2964180",
+      "name": "Голуэй",
+      "timezone": "Europe/Dublin"
+    },
+    {
+      "id": "geonames-2960992",
+      "name": "Уотерфорд",
+      "timezone": "Europe/Dublin"
+    }
+  ],
+  "LU": [
+    {
+      "id": "geonames-2960316",
+      "name": "Люксембург",
+      "timezone": "Europe/Luxembourg"
+    },
+    {
+      "id": "geonames-2960596",
+      "name": "Эш-сюр-Алзетте",
+      "timezone": "Europe/Luxembourg"
+    },
+    {
+      "id": "geonames-2960651",
+      "name": "Дифферданж",
+      "timezone": "Europe/Luxembourg"
+    },
+    {
+      "id": "geonames-2960634",
+      "name": "Дюделанж",
+      "timezone": "Europe/Luxembourg"
+    },
+    {
+      "id": "geonames-2960657",
+      "name": "Дикирх",
+      "timezone": "Europe/Luxembourg"
+    }
+  ],
+  "HU": [
+    {
+      "id": "geonames-3054643",
+      "name": "Будапешт",
+      "timezone": "Europe/Budapest"
+    },
+    {
+      "id": "geonames-721472",
+      "name": "Дебрецен",
+      "timezone": "Europe/Budapest"
+    },
+    {
+      "id": "geonames-715429",
+      "name": "Сегед",
+      "timezone": "Europe/Budapest"
+    },
+    {
+      "id": "geonames-717582",
+      "name": "Мишкольц",
+      "timezone": "Europe/Budapest"
+    },
+    {
+      "id": "geonames-3046526",
+      "name": "Печ",
+      "timezone": "Europe/Budapest"
+    }
+  ],
+  "SK": [
+    {
+      "id": "geonames-3060972",
+      "name": "Братислава",
+      "timezone": "Europe/Bratislava"
+    },
+    {
+      "id": "geonames-724443",
+      "name": "Кошице",
+      "timezone": "Europe/Bratislava"
+    },
+    {
+      "id": "geonames-723819",
+      "name": "Прешов",
+      "timezone": "Europe/Bratislava"
+    },
+    {
+      "id": "geonames-3058531",
+      "name": "Нитра",
+      "timezone": "Europe/Bratislava"
+    },
+    {
+      "id": "geonames-3056508",
+      "name": "Жилина",
+      "timezone": "Europe/Bratislava"
+    }
+  ],
+  "SI": [
+    {
+      "id": "geonames-3196359",
+      "name": "Любляна",
+      "timezone": "Europe/Ljubljana"
+    },
+    {
+      "id": "geonames-3195506",
+      "name": "Марибор",
+      "timezone": "Europe/Ljubljana"
+    },
+    {
+      "id": "geonames-3202781",
+      "name": "Целе",
+      "timezone": "Europe/Ljubljana"
+    },
+    {
+      "id": "geonames-3197378",
+      "name": "Крань",
+      "timezone": "Europe/Ljubljana"
+    },
+    {
+      "id": "geonames-3197753",
+      "name": "Копер",
+      "timezone": "Europe/Ljubljana"
+    }
+  ],
+  "HR": [
+    {
+      "id": "geonames-3186886",
+      "name": "Загреб",
+      "timezone": "Europe/Zagreb"
+    },
+    {
+      "id": "geonames-3190261",
+      "name": "Сплит",
+      "timezone": "Europe/Zagreb"
+    },
+    {
+      "id": "geonames-3191648",
+      "name": "Риека",
+      "timezone": "Europe/Zagreb"
+    },
+    {
+      "id": "geonames-3193935",
+      "name": "Осиек",
+      "timezone": "Europe/Zagreb"
+    },
+    {
+      "id": "geonames-3186952",
+      "name": "Задар",
+      "timezone": "Europe/Zagreb"
+    }
+  ],
+  "RS": [
+    {
+      "id": "geonames-792680",
+      "name": "Белград",
+      "timezone": "Europe/Belgrade"
+    },
+    {
+      "id": "geonames-3194360",
+      "name": "Нови-Сад",
+      "timezone": "Europe/Belgrade"
+    },
+    {
+      "id": "geonames-787657",
+      "name": "Ниш",
+      "timezone": "Europe/Belgrade"
+    },
+    {
+      "id": "geonames-789128",
+      "name": "Крагуевац",
+      "timezone": "Europe/Belgrade"
+    },
+    {
+      "id": "geonames-3189595",
+      "name": "Суботица",
+      "timezone": "Europe/Belgrade"
+    }
+  ],
+  "EE": [
+    {
+      "id": "geonames-588409",
+      "name": "Таллин",
+      "timezone": "Europe/Tallinn"
+    },
+    {
+      "id": "geonames-588335",
+      "name": "Тарту",
+      "timezone": "Europe/Tallinn"
+    },
+    {
+      "id": "geonames-590031",
+      "name": "Нарва",
+      "timezone": "Europe/Tallinn"
+    },
+    {
+      "id": "geonames-589580",
+      "name": "Пярну",
+      "timezone": "Europe/Tallinn"
+    },
+    {
+      "id": "geonames-591260",
+      "name": "Кохтла-Ярве",
+      "timezone": "Europe/Tallinn"
+    }
+  ],
+  "LV": [
+    {
+      "id": "geonames-456172",
+      "name": "Рига",
+      "timezone": "Europe/Riga"
+    },
+    {
+      "id": "geonames-460413",
+      "name": "Даугавпилс",
+      "timezone": "Europe/Riga"
+    },
+    {
+      "id": "geonames-457954",
+      "name": "Лиепая",
+      "timezone": "Europe/Riga"
+    },
+    {
+      "id": "geonames-459279",
+      "name": "Елгава",
+      "timezone": "Europe/Riga"
+    },
+    {
+      "id": "geonames-459201",
+      "name": "Юрмала",
+      "timezone": "Europe/Riga"
+    }
+  ],
+  "LT": [
+    {
+      "id": "geonames-593116",
+      "name": "Вильнюс",
+      "timezone": "Europe/Vilnius"
+    },
+    {
+      "id": "geonames-598316",
+      "name": "Каунас",
+      "timezone": "Europe/Vilnius"
+    },
+    {
+      "id": "geonames-598098",
+      "name": "Клайпеда",
+      "timezone": "Europe/Vilnius"
+    },
+    {
+      "id": "geonames-594739",
+      "name": "Шяуляй",
+      "timezone": "Europe/Vilnius"
+    },
+    {
+      "id": "geonames-596128",
+      "name": "Паневежис",
+      "timezone": "Europe/Vilnius"
+    }
+  ],
+  "IS": [
+    {
+      "id": "geonames-3413829",
+      "name": "Рейкьявик",
+      "timezone": "Atlantic/Reykjavik"
+    },
+    {
+      "id": "geonames-3415212",
+      "name": "Коупавогюр",
+      "timezone": "Atlantic/Reykjavik"
+    },
+    {
+      "id": "geonames-3416706",
+      "name": "Хабнарфьордюр",
+      "timezone": "Atlantic/Reykjavik"
+    },
+    {
+      "id": "geonames-2633274",
+      "name": "Акюрейри",
+      "timezone": "Atlantic/Reykjavik"
+    },
+    {
+      "id": "geonames-3415496",
+      "name": "Кефлавик",
+      "timezone": "Atlantic/Reykjavik"
+    }
+  ],
+  "MT": [
+    {
+      "id": "geonames-2562541",
+      "name": "Сан-Паул иль-Бахар",
+      "timezone": "Europe/Malta"
+    },
+    {
+      "id": "geonames-2563191",
+      "name": "Биркиркара",
+      "timezone": "Europe/Malta"
+    },
+    {
+      "id": "geonames-2562704",
+      "name": "Моста",
+      "timezone": "Europe/Malta"
+    },
+    {
+      "id": "geonames-2562501",
+      "name": "Слима",
+      "timezone": "Europe/Malta"
+    },
+    {
+      "id": "geonames-2562629",
+      "name": "Корми",
+      "timezone": "Europe/Malta"
+    }
+  ],
+  "ME": [
+    {
+      "id": "geonames-3193044",
+      "name": "Подгорица",
+      "timezone": "Europe/Podgorica"
+    },
+    {
+      "id": "geonames-3194494",
+      "name": "Никшич",
+      "timezone": "Europe/Podgorica"
+    },
+    {
+      "id": "geonames-3199394",
+      "name": "Херцег-Нови",
+      "timezone": "Europe/Podgorica"
+    },
+    {
+      "id": "geonames-3193161",
+      "name": "Плевля",
+      "timezone": "Europe/Podgorica"
+    },
+    {
+      "id": "geonames-3203106",
+      "name": "Будва",
+      "timezone": "Europe/Podgorica"
+    }
+  ],
+  "AL": [
+    {
+      "id": "geonames-3183875",
+      "name": "Тирана",
+      "timezone": "Europe/Tirane"
+    },
+    {
+      "id": "geonames-3185728",
+      "name": "Дуррес",
+      "timezone": "Europe/Tirane"
+    },
+    {
+      "id": "geonames-3183719",
+      "name": "Влёра",
+      "timezone": "Europe/Tirane"
+    },
+    {
+      "id": "geonames-783263",
+      "name": "Эльбасан",
+      "timezone": "Europe/Tirane"
+    },
+    {
+      "id": "geonames-3184081",
+      "name": "Шкодер",
+      "timezone": "Europe/Tirane"
+    }
+  ],
+  "MK": [
+    {
+      "id": "geonames-785842",
+      "name": "Скопье",
+      "timezone": "Europe/Skopje"
+    },
+    {
+      "id": "geonames-788886",
+      "name": "Куманово",
+      "timezone": "Europe/Skopje"
+    },
+    {
+      "id": "geonames-786735",
+      "name": "Прилеп",
+      "timezone": "Europe/Skopje"
+    },
+    {
+      "id": "geonames-792578",
+      "name": "Битола",
+      "timezone": "Europe/Skopje"
+    },
+    {
+      "id": "geonames-785082",
+      "name": "Тетово",
+      "timezone": "Europe/Skopje"
+    }
+  ],
+  "BA": [
+    {
+      "id": "geonames-3191281",
+      "name": "Сараево",
+      "timezone": "Europe/Sarajevo"
+    },
+    {
+      "id": "geonames-3204541",
+      "name": "Баня-Лука",
+      "timezone": "Europe/Sarajevo"
+    },
+    {
+      "id": "geonames-3186573",
+      "name": "Зеница",
+      "timezone": "Europe/Sarajevo"
+    },
+    {
+      "id": "geonames-3188582",
+      "name": "Тузла",
+      "timezone": "Europe/Sarajevo"
+    },
+    {
+      "id": "geonames-3194828",
+      "name": "Мостар",
+      "timezone": "Europe/Sarajevo"
+    }
+  ],
+  "MC": [
+    {
+      "id": "geonames-2993458",
+      "name": "Монако",
+      "timezone": "Europe/Monaco"
+    }
+  ],
+  "LI": [
+    {
+      "id": "geonames-3042041",
+      "name": "Шаан",
+      "timezone": "Europe/Vaduz"
+    },
+    {
+      "id": "geonames-3042035",
+      "name": "Тризен",
+      "timezone": "Europe/Vaduz"
+    },
+    {
+      "id": "geonames-3042030",
+      "name": "Вадуц",
+      "timezone": "Europe/Vaduz"
+    },
+    {
+      "id": "geonames-3042073",
+      "name": "Бальцерс",
+      "timezone": "Europe/Vaduz"
+    },
+    {
+      "id": "geonames-3042068",
+      "name": "Эшен",
+      "timezone": "Europe/Vaduz"
+    }
+  ],
+  "AD": [
+    {
+      "id": "geonames-3041563",
+      "name": "Андорра-ла-Велья",
+      "timezone": "Europe/Andorra"
+    },
+    {
+      "id": "geonames-3040051",
+      "name": "Эскальдес-Энджордани",
+      "timezone": "Europe/Andorra"
+    },
+    {
+      "id": "geonames-3040686",
+      "name": "Энкам",
+      "timezone": "Europe/Andorra"
+    },
+    {
+      "id": "geonames-3039163",
+      "name": "Сант-Жулия-де-Лория",
+      "timezone": "Europe/Andorra"
+    },
+    {
+      "id": "geonames-3040132",
+      "name": "Ла-Массана",
+      "timezone": "Europe/Andorra"
+    }
+  ],
+  "TJ": [
+    {
+      "id": "geonames-1221874",
+      "name": "Душанбе",
+      "timezone": "Asia/Dushanbe"
+    },
+    {
+      "id": "geonames-1514879",
+      "name": "Худжанд",
+      "timezone": "Asia/Dushanbe"
+    },
+    {
+      "id": "geonames-1221194",
+      "name": "Куляб",
+      "timezone": "Asia/Dushanbe"
+    },
+    {
+      "id": "geonames-1220747",
+      "name": "Бохтар",
+      "timezone": "Asia/Dushanbe"
+    },
+    {
+      "id": "geonames-1220253",
+      "name": "Истаравшан",
+      "timezone": "Asia/Dushanbe"
+    }
+  ],
+  "TM": [
+    {
+      "id": "geonames-162183",
+      "name": "Ашхабад",
+      "timezone": "Asia/Ashgabat"
+    },
+    {
+      "id": "geonames-1219649",
+      "name": "Туркменабад",
+      "timezone": "Asia/Ashgabat"
+    },
+    {
+      "id": "geonames-601734",
+      "name": "Дашогуз",
+      "timezone": "Asia/Ashgabat"
+    },
+    {
+      "id": "geonames-1218667",
+      "name": "Мары",
+      "timezone": "Asia/Ashgabat"
+    },
+    {
+      "id": "geonames-601594",
+      "name": "Туркменбашы",
+      "timezone": "Asia/Ashgabat"
+    }
+  ],
+  "MX": [
+    {
+      "id": "geonames-3530597",
+      "name": "Мехико",
+      "timezone": "America/Mexico_City"
+    },
+    {
+      "id": "geonames-3981609",
+      "name": "Тихуана",
+      "timezone": "America/Tijuana"
+    },
+    {
+      "id": "geonames-4005539",
+      "name": "Гвадалахара",
+      "timezone": "America/Mexico_City"
+    },
+    {
+      "id": "geonames-3521081",
+      "name": "Пуэбла-де-Сарагоса",
+      "timezone": "America/Mexico_City"
+    },
+    {
+      "id": "geonames-3995465",
+      "name": "Монтеррей",
+      "timezone": "America/Monterrey"
+    }
+  ],
+  "BR": [
+    {
+      "id": "geonames-3448439",
+      "name": "Сан-Паулу",
+      "timezone": "America/Sao_Paulo"
+    },
+    {
+      "id": "geonames-3451190",
+      "name": "Рио-де-Жанейро",
+      "timezone": "America/Sao_Paulo"
+    },
+    {
+      "id": "geonames-3470127",
+      "name": "Белу-Оризонти",
+      "timezone": "America/Sao_Paulo"
+    },
+    {
+      "id": "geonames-3450554",
+      "name": "Салвадор",
+      "timezone": "America/Bahia"
+    },
+    {
+      "id": "geonames-3399415",
+      "name": "Форталеза",
+      "timezone": "America/Fortaleza"
+    }
+  ],
+  "AR": [
+    {
+      "id": "geonames-3435910",
+      "name": "Буэнос-Айрес",
+      "timezone": "America/Argentina/Buenos_Aires"
+    },
+    {
+      "id": "geonames-3860259",
+      "name": "Кордова",
+      "timezone": "America/Argentina/Cordoba"
+    },
+    {
+      "id": "geonames-3838583",
+      "name": "Росарио",
+      "timezone": "America/Argentina/Cordoba"
+    },
+    {
+      "id": "geonames-3430863",
+      "name": "Мар-дель-Плата",
+      "timezone": "America/Argentina/Buenos_Aires"
+    },
+    {
+      "id": "geonames-3836873",
+      "name": "Сан-Мигель-де-Тукуман",
+      "timezone": "America/Argentina/Tucuman"
+    }
+  ],
+  "CL": [
+    {
+      "id": "geonames-3871336",
+      "name": "Сантьяго",
+      "timezone": "America/Santiago"
+    },
+    {
+      "id": "geonames-3868626",
+      "name": "Вальпараисо",
+      "timezone": "America/Santiago"
+    },
+    {
+      "id": "geonames-3893894",
+      "name": "Консепсьон",
+      "timezone": "America/Santiago"
+    },
+    {
+      "id": "geonames-3899539",
+      "name": "Антофагаста",
+      "timezone": "America/Santiago"
+    },
+    {
+      "id": "geonames-3884373",
+      "name": "Ла-Серена",
+      "timezone": "America/Santiago"
+    }
+  ],
+  "CO": [
+    {
+      "id": "geonames-3688689",
+      "name": "Богота",
+      "timezone": "America/Bogota"
+    },
+    {
+      "id": "geonames-3687925",
+      "name": "Кали",
+      "timezone": "America/Bogota"
+    },
+    {
+      "id": "geonames-3674962",
+      "name": "Медельин",
+      "timezone": "America/Bogota"
+    },
+    {
+      "id": "geonames-3689147",
+      "name": "Барранкилья",
+      "timezone": "America/Bogota"
+    },
+    {
+      "id": "geonames-3687238",
+      "name": "Картахена",
+      "timezone": "America/Bogota"
+    }
+  ],
+  "PE": [
+    {
+      "id": "geonames-3936456",
+      "name": "Лима",
+      "timezone": "America/Lima"
+    },
+    {
+      "id": "geonames-3946083",
+      "name": "Кальяо",
+      "timezone": "America/Lima"
+    },
+    {
+      "id": "geonames-3947322",
+      "name": "Арекипа",
+      "timezone": "America/Lima"
+    },
+    {
+      "id": "geonames-3691175",
+      "name": "Трухильо",
+      "timezone": "America/Lima"
+    },
+    {
+      "id": "geonames-3693528",
+      "name": "Пиура",
+      "timezone": "America/Lima"
+    }
+  ],
+  "UY": [
+    {
+      "id": "geonames-3441575",
+      "name": "Монтевидео",
+      "timezone": "America/Montevideo"
+    },
+    {
+      "id": "geonames-3440714",
+      "name": "Сальто",
+      "timezone": "America/Montevideo"
+    },
+    {
+      "id": "geonames-3441894",
+      "name": "Мальдонадо",
+      "timezone": "America/Montevideo"
+    },
+    {
+      "id": "geonames-3440781",
+      "name": "Ривера",
+      "timezone": "America/Montevideo"
+    },
+    {
+      "id": "geonames-3441243",
+      "name": "Пайсанду",
+      "timezone": "America/Montevideo"
+    }
+  ],
+  "PA": [
+    {
+      "id": "geonames-3703443",
+      "name": "Панама",
+      "timezone": "America/Panama"
+    },
+    {
+      "id": "geonames-3701329",
+      "name": "Сан-Мигелито",
+      "timezone": "America/Panama"
+    },
+    {
+      "id": "geonames-3711668",
+      "name": "Дэвид",
+      "timezone": "America/Panama"
+    },
+    {
+      "id": "geonames-3712076",
+      "name": "Колон",
+      "timezone": "America/Panama"
+    },
+    {
+      "id": "geonames-3701117",
+      "name": "Сантьяго-де-Веррагус",
+      "timezone": "America/Panama"
+    }
+  ],
+  "CR": [
+    {
+      "id": "geonames-3621849",
+      "name": "Сан-Хосе",
+      "timezone": "America/Costa_Rica"
+    },
+    {
+      "id": "geonames-3622247",
+      "name": "Пуэрто-Лимон",
+      "timezone": "America/Costa_Rica"
+    },
+    {
+      "id": "geonames-3624955",
+      "name": "Алахуэла",
+      "timezone": "America/Costa_Rica"
+    },
+    {
+      "id": "geonames-3623076",
+      "name": "Либерия",
+      "timezone": "America/Costa_Rica"
+    },
+    {
+      "id": "geonames-3622547",
+      "name": "Параисо",
+      "timezone": "America/Costa_Rica"
+    }
+  ],
+  "DO": [
+    {
+      "id": "geonames-3492908",
+      "name": "Санто-Доминго",
+      "timezone": "America/Santo_Domingo"
+    },
+    {
+      "id": "geonames-3492914",
+      "name": "Сантьяго-де-лос-Кабальерос",
+      "timezone": "America/Santo_Domingo"
+    },
+    {
+      "id": "geonames-7874116",
+      "name": "Санто Доминго Оесте",
+      "timezone": "America/Santo_Domingo"
+    },
+    {
+      "id": "geonames-8601412",
+      "name": "Санто-Доминго-Эсте",
+      "timezone": "America/Santo_Domingo"
+    },
+    {
+      "id": "geonames-3493032",
+      "name": "Сан-Педро-де-Макорис",
+      "timezone": "America/Santo_Domingo"
+    }
+  ],
+  "NZ": [
+    {
+      "id": "geonames-2193733",
+      "name": "Окленд",
+      "timezone": "Pacific/Auckland"
+    },
+    {
+      "id": "geonames-2192362",
+      "name": "Крайстчёрч",
+      "timezone": "Pacific/Auckland"
+    },
+    {
+      "id": "geonames-2179537",
+      "name": "Веллингтон",
+      "timezone": "Pacific/Auckland"
+    },
+    {
+      "id": "geonames-2190324",
+      "name": "Гамильтон",
+      "timezone": "Pacific/Auckland"
+    },
+    {
+      "id": "geonames-2208032",
+      "name": "Тауранга",
+      "timezone": "Pacific/Auckland"
+    }
+  ],
+  "ZA": [
+    {
+      "id": "geonames-993800",
+      "name": "Йоханнесбург",
+      "timezone": "Africa/Johannesburg"
+    },
+    {
+      "id": "geonames-3369157",
+      "name": "Кейптаун",
+      "timezone": "Africa/Johannesburg"
+    },
+    {
+      "id": "geonames-1007311",
+      "name": "Дурбан",
+      "timezone": "Africa/Johannesburg"
+    },
+    {
+      "id": "geonames-964137",
+      "name": "Претория",
+      "timezone": "Africa/Johannesburg"
+    },
+    {
+      "id": "geonames-964420",
+      "name": "Гкеберха",
+      "timezone": "Africa/Johannesburg"
+    }
+  ],
+  "NG": [
+    {
+      "id": "geonames-2332459",
+      "name": "Лагос",
+      "timezone": "Africa/Lagos"
+    },
+    {
+      "id": "geonames-2335204",
+      "name": "Кано",
+      "timezone": "Africa/Lagos"
+    },
+    {
+      "id": "geonames-2339354",
+      "name": "Ибадан",
+      "timezone": "Africa/Lagos"
+    },
+    {
+      "id": "geonames-2352778",
+      "name": "Абуджа",
+      "timezone": "Africa/Lagos"
+    },
+    {
+      "id": "geonames-2324774",
+      "name": "Порт-Харкорт",
+      "timezone": "Africa/Lagos"
+    }
+  ],
+  "KE": [
+    {
+      "id": "geonames-184745",
+      "name": "Найроби",
+      "timezone": "Africa/Nairobi"
+    },
+    {
+      "id": "geonames-195272",
+      "name": "Какамега",
+      "timezone": "Africa/Nairobi"
+    },
+    {
+      "id": "geonames-186301",
+      "name": "Момбаса",
+      "timezone": "Africa/Nairobi"
+    },
+    {
+      "id": "geonames-184622",
+      "name": "Накуру",
+      "timezone": "Africa/Nairobi"
+    },
+    {
+      "id": "geonames-181032",
+      "name": "Руиру",
+      "timezone": "Africa/Nairobi"
+    }
+  ],
+  "MA": [
+    {
+      "id": "geonames-2553604",
+      "name": "Касабланка",
+      "timezone": "Africa/Casablanca"
+    },
+    {
+      "id": "geonames-2538475",
+      "name": "Рабат",
+      "timezone": "Africa/Casablanca"
+    },
+    {
+      "id": "geonames-2548885",
+      "name": "Фес",
+      "timezone": "Africa/Casablanca"
+    },
+    {
+      "id": "geonames-2530335",
+      "name": "Танжер",
+      "timezone": "Africa/Casablanca"
+    },
+    {
+      "id": "geonames-2542997",
+      "name": "Марракеш",
+      "timezone": "Africa/Casablanca"
+    }
+  ],
+  "TN": [
+    {
+      "id": "geonames-2464470",
+      "name": "Тунис",
+      "timezone": "Africa/Tunis"
+    },
+    {
+      "id": "geonames-2467454",
+      "name": "Сфакс",
+      "timezone": "Africa/Tunis"
+    },
+    {
+      "id": "geonames-2464915",
+      "name": "Сусс",
+      "timezone": "Africa/Tunis"
+    },
+    {
+      "id": "geonames-2473449",
+      "name": "Кайруан",
+      "timezone": "Africa/Tunis"
+    },
+    {
+      "id": "geonames-2472706",
+      "name": "Бизерта",
+      "timezone": "Africa/Tunis"
+    }
+  ],
+  "GH": [
+    {
+      "id": "geonames-2298890",
+      "name": "Кумаси",
+      "timezone": "Africa/Accra"
+    },
+    {
+      "id": "geonames-2306104",
+      "name": "Аккра",
+      "timezone": "Africa/Accra"
+    },
+    {
+      "id": "geonames-2294877",
+      "name": "Тамале",
+      "timezone": "Africa/Accra"
+    },
+    {
+      "id": "geonames-2294915",
+      "name": "Такоради",
+      "timezone": "Africa/Accra"
+    },
+    {
+      "id": "geonames-11808941",
+      "name": "Секонди",
+      "timezone": "Africa/Accra"
+    }
+  ],
+  "MV": [
+    {
+      "id": "geonames-1282027",
+      "name": "Мале",
+      "timezone": "Indian/Maldives"
+    },
+    {
+      "id": "geonames-1337611",
+      "name": "Фувахмула",
+      "timezone": "Indian/Maldives"
+    },
+    {
+      "id": "geonames-1282256",
+      "name": "Хитхаду",
+      "timezone": "Indian/Maldives"
+    },
+    {
+      "id": "geonames-1337613",
+      "name": "Кулхудуффуши",
+      "timezone": "Indian/Maldives"
+    },
+    {
+      "id": "geonames-1337610",
+      "name": "Тхинаду",
+      "timezone": "Indian/Maldives"
+    }
+  ],
+  "MU": [
+    {
+      "id": "geonames-934154",
+      "name": "Порт-Луи",
+      "timezone": "Indian/Mauritius"
+    },
+    {
+      "id": "geonames-933945",
+      "name": "Вакоас",
+      "timezone": "Indian/Mauritius"
+    },
+    {
+      "id": "geonames-934765",
+      "name": "Бо Бассен-Роз Хилл",
+      "timezone": "Indian/Mauritius"
+    },
+    {
+      "id": "geonames-934570",
+      "name": "Кюрпип",
+      "timezone": "Indian/Mauritius"
+    },
+    {
+      "id": "geonames-934131",
+      "name": "Катр-Борн",
+      "timezone": "Indian/Mauritius"
+    }
+  ],
+  "SC": [
+    {
+      "id": "geonames-241131",
+      "name": "Виктория",
+      "timezone": "Indian/Mahe"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { api, getToken } from '../../lib/api';
 import { isBrowserInactive } from '../../lib/browserActivity';
 import { useVisibleAccountRead } from '../../lib/useVisibleAccountRead';
 import { createVisibleRead } from '../../lib/visibleRead';
+import { onSpendableBalancesChanged } from '../../lib/balanceInvalidation';
 import { CoinRanking } from '../../lib/pairList';
 import { nativeDemoApi, type NativeWallet } from '../../lib/nativeDemoApi';
 
@@ -354,6 +355,11 @@ export function useWalletData() {
     loadUnified();
     loadPerformance();
   }, [loadOverview, loadUnified, loadPerformance]);
+  useEffect(() => onSpendableBalancesChanged(() => {
+    setOverview(null);
+    setOverviewState('loading');
+    void loadOverview();
+  }), [loadOverview]);
 
   return {
     overview,

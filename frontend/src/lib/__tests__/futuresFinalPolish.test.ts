@@ -230,6 +230,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       const component = components[label] ?? (components[label] = () => null);
       return { [label]: component };
     }
+    if (name.endsWith('/balanceInvalidation')) return { onSpendableBalancesChanged: () => () => {} };
     return req(name);
   }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false),
     scrollY: overrides.scrollY ?? 0, scrollTo: overrides.scrollTo ?? jest.fn(),

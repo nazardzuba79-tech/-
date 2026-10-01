@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { isTestAssetPairOrSymbol, TEST_ASSET_NOT_TRADABLE_MESSAGE } from './testMarkets/testAssetConfig';
+import { InsufficientWalletBalance, mutateSpotBalance } from './WalletMutation';
 
 export class BalanceAdjustmentError extends Error {}
 
@@ -42,20 +43,14 @@ export class BalanceAdjustmentService {
     }
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const existing = await tx.balance.findUnique({
-        where: { userId_asset: { userId: params.userId, asset: params.asset } },
-      });
-      const currentAvailable = new BigNumber(existing?.available.toString() ?? '0');
-      const newAvailable = currentAvailable.plus(delta);
-      if (newAvailable.isNegative()) {
-        throw new BalanceAdjustmentError('Adjustment would make the available balance negative');
+      try {
+        await mutateSpotBalance(tx, params.userId, params.asset, { available: delta });
+      } catch (error) {
+        if (error instanceof InsufficientWalletBalance) throw new BalanceAdjustmentError('Adjustment would make the available balance negative');
+        throw error;
       }
-
-      const updated = await tx.balance.upsert({
-        where: { userId_asset: { userId: params.userId, asset: params.asset } },
-        create: { userId: params.userId, asset: params.asset, available: newAvailable.toString() },
-        update: { available: newAvailable.toString() },
-      });
+      const updated = await tx.balance.findUniqueOrThrow({ where: { userId_asset: { userId: params.userId, asset: params.asset } } });
+      const newAvailable = new BigNumber(updated.available.toString());
 
       await tx.auditLog.create({
         data: {

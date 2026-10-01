@@ -21,12 +21,10 @@ describe('OTC page', () => {
   });
 
   it('counts the pairs and countries it claims under the hero', () => {
-    // «340+ валютных пар»: 21 «from» (4 crypto + 17 fiat) against 17 fiat
-    // «to», less the 17 same-currency pairs. The design said 350+; the page
-    // shows what the form can actually express.
-    expect(FROM_CURRENCIES).toHaveLength(21);
+    // Crypto-to-cash only. The geographic directory is not a desk network.
+    expect(FROM_CURRENCIES.map(c=>c.code)).toEqual(['USDT','USDC','BTC','ETH']);
     expect(TO_CURRENCIES).toHaveLength(17);
-    expect(PAIR_COUNT).toBe(340);
+    expect(PAIR_COUNT).toBe(68);
     // «100+ стран в справочнике» and «Более 100 стран»: the directory holds
     // more than a hundred distinct, real ISO regions.
     expect(new Set(COUNTRY_CODES).size).toBe(COUNTRY_CODES.length);
@@ -34,13 +32,18 @@ describe('OTC page', () => {
     for (const code of COUNTRY_CODES) expect(countryName(code, 'en-US')).not.toBe(code);
   });
 
-  it('opens the real deposit window and the support form, not invented routes', () => {
+  it('creates a real cash request; deposit is a separate insufficient-funds action', () => {
     const page = read('frontend/src/pages/OtcPage.tsx');
     expect(page).toContain("import { DepositModal } from '../components/DepositModal'");
-    expect(page).toContain('onClick={openSupportWidget}');
-    expect(page).toContain('<Nav active="/otc" />');
+    const form = read('frontend/src/pages/otc/OtcExchangeForm.tsx');
+    expect(form).toContain('onClick={openSupportWidget}');
+    expect(form).toContain("cashRequest<CashSummary>('/otc/requests',candidate)");
+    expect(form).toContain('onClick={onDeposit}');
+    expect(page).toContain('onDeposit={()=>setDeposit(true)}');
+    expect(page).not.toMatch(/24\/7|T\+0|350\+|340\+/);
+    expect(page).toMatch(/<Nav active="\/otc"\s*\/>/);
     expect(page).not.toMatch(/navigate\(|href="\/(deposit|otc)/);
-    for (const image of ['hero-skyline', 'convert-orbit', 'currency-globe', 'private-network']) {
+    for (const image of ['hero-skyline']) {
       expect(page).toContain(`/media/otc/${image}.webp`);
       expect(existsSync(join(root, `frontend/public/media/otc/${image}.webp`))).toBe(true);
     }

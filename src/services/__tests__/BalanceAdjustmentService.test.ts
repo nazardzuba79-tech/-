@@ -1,14 +1,8 @@
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../BalanceAdjustmentService';
+import { walletDelegate } from '../../test-utils/walletDelegate';
 
 function makePrisma(opts: { balance?: { available: string; locked: string } | null }) {
-  const balanceState = opts.balance ? { ...opts.balance } : null;
-  const balance = {
-    findUnique: jest.fn().mockImplementation(() => Promise.resolve(balanceState)),
-    upsert: jest.fn().mockImplementation(({ create, update }: any) => {
-      const row = balanceState ? { ...balanceState, ...update, asset: create.asset } : { ...create, locked: '0' };
-      return Promise.resolve(row);
-    }),
-  };
+  const balance = walletDelegate(new Map(opts.balance ? [['u1:USDT', { ...opts.balance }]] : []));
   const auditLog = { create: jest.fn() };
   const tx = { balance, auditLog };
   return {

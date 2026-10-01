@@ -26,6 +26,9 @@ function cleanEnvironment() {
 }
 
 async function parent() {
+  if (!['--verify','--otc','--preservation','--baseline'].includes(process.argv[2])) {
+    throw new Error('Choose --verify, --otc or --preservation. --baseline reproduces the OLD implementation and is only valid at diagnostic commit 88d77ea; never run it as a current safety test.');
+  }
   const bin = qa(process.platform === 'win32' ? '@embedded-postgres/windows-x64' : '@embedded-postgres/linux-x64');
   const probe = net.createServer().listen(0, '127.0.0.1');
   await once(probe, 'listening');
@@ -47,9 +50,10 @@ async function parent() {
     const Client = qa('pg').Client;
     sql = new Client({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres' });
     await sql.connect();
-    await sql.query('CREATE DATABASE voltex_otc_safety_test');
+    const database = process.argv.includes('--preservation') ? 'voltex_nrx_test' : 'voltex_otc_safety_test';
+    await sql.query(`CREATE DATABASE ${database}`);
     await sql.end();
-    sql = new Client({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_otc_safety_test' });
+    sql = new Client({ host: '127.0.0.1', port, user: 'postgres', database });
     await sql.connect();
     const migrations = path.join(root, 'prisma/migrations');
     for (const name of fs.readdirSync(migrations).sort()) {
@@ -63,13 +67,16 @@ async function parent() {
     const schema = fs.readFileSync(path.join(root, 'prisma/schema.prisma'), 'utf8')
       .replace('provider = "prisma-client-js"', 'provider = "prisma-client-js"\n  output = "./client"');
     fs.writeFileSync(path.join(cache, 'schema.prisma'), schema);
-    const url = `postgresql://postgres@127.0.0.1:${port}/voltex_otc_safety_test`;
+    const url = `postgresql://postgres@127.0.0.1:${port}/${database}`;
     const generated = spawnSync(process.execPath, [path.join(root, 'node_modules/prisma/build/index.js'), 'generate', '--schema', path.join(cache, 'schema.prisma')], {
       cwd: cache, env: { ...env, DATABASE_URL: url, DIRECT_URL: url }, windowsHide: true, encoding: 'utf8',
     });
     if (generated.status !== 0) throw new Error(generated.stderr || generated.stdout || 'Isolated Prisma generation failed');
-    const child = spawnSync(process.execPath, [__filename, '--local-child'], {
-      cwd: root, windowsHide: true, stdio: 'inherit', timeout: 90000,
+    const entry = process.argv.includes('--preservation') ? path.join(__dirname, 'test-wallet-preservation-postgres.cjs')
+      : process.argv.includes('--otc') ? path.join(__dirname, 'test-otc-cash-postgres.cjs')
+      : process.argv.includes('--verify') ? path.join(__dirname, 'test-wallet-safety-postgres.cjs') : __filename;
+    const child = spawnSync(process.execPath, [entry, '--local-child'], {
+      cwd: root, windowsHide: true, stdio: 'inherit', timeout: 180000,
       env: { ...env, OTC_DIAGNOSTIC_URL: url, OTC_DIAGNOSTIC_CLIENT: path.join(cache, 'client'), TS_NODE_PROJECT: path.join(root, 'tsconfig.json') },
     });
     process.exitCode = child.status ?? 1;
