@@ -5326,3 +5326,7 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
   - Cloudflare Pages builds the frontend on every push to main;
   - `deploy-kyc-edge.yml` and `support-form.yml` deploy Cloudflare Workers on push to main.
 - Also in this commit: the #357/#360 handoff entries from `claude/peaceful-volta-h5zw7g-handoff` that never reached main (#363 shipped the code, not the notes), appended verbatim above this entry. No code from #357/#360 was re-applied.
+- Retry (owner: old `exchange-api` srv-da467nn40ujc73cumjqg suspended; go ahead on `voltex-api` srv-daplu7g473hc73c6mlt0): stopped again before step 4.
+  - Fresh state: main and PR head unchanged (`a457809f`, `c7a9161e`).
+  - `api.voltextech.net/health` still reports `a457809f` started 14:53:01Z. `exchange-api-mo5g.onrender.com` answers 503 with `x-render-routing: suspend-by-user`.
+  - The session still has no Render, Neon, database or Cloudflare credentials, so AutoDeploy, hold deploy, session proof, inventory, backup, migration and audits cannot be performed or verified. Nothing changed.
