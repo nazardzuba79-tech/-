@@ -71,6 +71,7 @@ test('generation failure remains nonzero and retains diagnostic', t => {
 test('disposable service imports share the isolated client without a generated default client', t => {
   const dir = temporary(t);
   put(dir, 'scripts/fixtures/isolated-prisma.cjs', fs.readFileSync(path.join(__dirname, 'fixtures/isolated-prisma.cjs')));
+  put(dir, 'scripts/fixtures/register-isolated-prisma.cjs', fs.readFileSync(path.join(__dirname, 'fixtures/register-isolated-prisma.cjs')));
   const defaultModule = "throw new Error('ungenerated default client must never load');";
   put(dir, 'node_modules/@prisma/client/index.js', defaultModule);
   put(dir, 'generated/index.js', "module.exports={PrismaClient:class IsolatedClient{},Prisma:{TransactionIsolationLevel:{ReadCommitted:'ReadCommitted'}}};");
@@ -84,6 +85,13 @@ test('disposable service imports share the isolated client without a generated d
   `);
   const result = spawnSync(process.execPath, [path.join(dir, 'check.cjs')], { encoding: 'utf8', windowsHide: true });
   assert.equal(result.status, 0, result.stderr);
+  // Module caches do not cross process boundaries: the nested audit CLI needs
+  // its own explicit preload, and must still execute the real CLI as main.
+  put(dir, 'cli.cjs', "const assert=require('node:assert/strict');assert.equal(require.main,module);assert.equal(require('@prisma/client').PrismaClient.name,'IsolatedClient');");
+  const nested = spawnSync(process.execPath, ['-r', path.join(dir, 'scripts/fixtures/register-isolated-prisma.cjs'), path.join(dir, 'cli.cjs')], {
+    encoding: 'utf8', windowsHide: true, env: { ...process.env, OTC_DIAGNOSTIC_CLIENT: path.join(dir, 'generated') },
+  });
+  assert.equal(nested.status, 0, nested.stderr);
   assert.equal(fs.readFileSync(path.join(dir, 'node_modules/@prisma/client/index.js'), 'utf8'), defaultModule);
 });
 test('compilation failure cannot be reported as PASS', t => {

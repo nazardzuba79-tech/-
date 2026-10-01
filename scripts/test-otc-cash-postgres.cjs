@@ -64,7 +64,7 @@ async function run() {
     });
     await test('operator audit is SQL READ ONLY, clean on empty fixture and cannot fall back to DATABASE_URL',async()=>{
       const result=await auditSpotReserves(db);assert.equal(result.result,'CLEAN');assert.equal(result.readOnly,true);
-      const child=require('node:child_process').spawnSync(process.execPath,['-r','ts-node/register/transpile-only','src/otc/auditReserves.ts'],{
+      const child=require('node:child_process').spawnSync(process.execPath,['-r','./scripts/fixtures/register-isolated-prisma.cjs','-r','ts-node/register/transpile-only','src/otc/auditReserves.ts'],{
         cwd:require('node:path').resolve(__dirname,'..'),windowsHide:true,encoding:'utf8',env:{...process.env,DATABASE_URL:'postgresql://must-not-connect@127.0.0.1:1/forbidden',OTC_AUDIT_DATABASE_URL:''}});
       assert.equal(child.status,1);assert.match(child.stderr,/OTC_AUDIT_DATABASE_URL_REQUIRED/);assert.ok(!child.stderr.includes('must-not-connect'));
       await assert.rejects(()=>db.$transaction(async tx=>{await tx.$executeRaw`SET TRANSACTION READ ONLY`;await tx.balance.updateMany({data:{available:'123'}});}));
