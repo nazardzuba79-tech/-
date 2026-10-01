@@ -5195,6 +5195,8 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `scripts/qa-deposit-copy-log.cjs`: 71/71, re-run after merging `main` `355ce91f`. It uses a throwaway Postgres 16 in Europe/Kyiv, the real routers, a local TronGrid fixture and the catalogue-mode production build in Chromium on two origins. Screenshots and the report are in `docs/qa/deposit-copy-log/`.
   - Codex's `scripts/qa-deposit-packages.cjs --browser` on local Postgres: exit 0, before and after the merge.
   - After the merge: full frontend Jest 186 suites / 3,327 tests; backend deposit/idle/auth suites 127 tests.
+  - CI fix: Codex's `scripts/qa-deposit-catalogue.cjs` fixture refused the new copy note (405, counted as a forbidden write). It now records the note without persisting and asserts exactly one note (address copy, none for memo) with asset, network, destination, address, memo and source.
+  - Locally after that fix: `qa-deposit-catalogue.cjs` PASS (full 60 s idle), `qa-deposit-catalogue-edge.cjs` PASS (its token is not a JWT, so no note is sent), `repro-deposit-picker.cjs` exit 0 and `qa-deposit-ui.cjs` PASS, 303 checks (the preview has no token). Outputs went to scratch; the one tracked screenshot the picker rewrote was restored.
 - **Not done / limits:**
   - No production, Render or Neon.
   - The legacy (non-catalogue) deposit modals are not instrumented; production runs the catalogue.
