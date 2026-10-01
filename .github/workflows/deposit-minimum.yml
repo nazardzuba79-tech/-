@@ -14,6 +14,16 @@ on:
       - 'src/services/__tests__/TreasuryWalletService.test.ts'
       - 'src/api/routes/*Deposits*'
       - 'src/api/routes/deposits.ts'
+      - 'src/api/routes/depositAddressCopies.ts'
+      - 'src/api/routes/__tests__/depositAddressCopies.test.ts'
+      - 'frontend/src/lib/depositCopyLog.ts'
+      - 'frontend/src/lib/__tests__/depositCopyLog.test.ts'
+      - 'frontend/src/components/DepositCatalogueDialog.tsx'
+      - 'frontend/src/pages/admin/DepositCopiesSection.tsx'
+      - 'frontend/src/pages/admin/depositCopies.css'
+      - 'frontend/src/lib/__tests__/adminDepositCopies.test.ts'
+      - 'frontend/src/lib/__tests__/creditDepositDrawerOutcome.test.ts'
+      - 'scripts/qa-deposit-copy-log.cjs'
       - 'src/api/routes/__tests__/*eposits*'
       - 'src/config/limits.ts'
       - 'src/config/chains.ts'
@@ -58,6 +68,7 @@ jobs:
           src/services/__tests__/DepositService.test.ts
           src/api/routes/__tests__/adminDeposits.test.ts
           src/api/routes/__tests__/deposits.test.ts
+          src/api/routes/__tests__/depositAddressCopies.test.ts
           src/services/__tests__/TreasuryWalletService.test.ts
           src/api/routes/__tests__/adminOverview.test.ts
           src/config/__tests__/chains.test.ts
@@ -72,6 +83,9 @@ jobs:
           frontend/src/lib/__tests__/walletUnifiedAccount.test.ts
           frontend/src/lib/__tests__/adminDepositRails.test.ts
           frontend/src/lib/__tests__/adminConsoleInteractions.test.ts
+          frontend/src/lib/__tests__/depositCopyLog.test.ts
+          frontend/src/lib/__tests__/adminDepositCopies.test.ts
+          frontend/src/lib/__tests__/creditDepositDrawerOutcome.test.ts
           frontend/src/lib/__tests__/adminUsersActivity.test.ts
           frontend/src/lib/__tests__/renderBandwidthBudget.test.ts
       - name: Install isolated PostgreSQL and browser tools

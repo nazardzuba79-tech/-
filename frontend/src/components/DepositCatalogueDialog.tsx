@@ -4,11 +4,13 @@ import { Check, ChevronDown, Copy, Info, QrCode, Search, X } from 'lucide-react'
 import QRCode from 'qrcode';
 import { localeOf, useLanguage } from '../lib/i18n';
 import { useDepositSelection, useDepositWallets } from '../lib/useDepositOptions';
+import { getToken } from '../lib/api';
 import { CryptoIcon } from './CryptoIcon';
 import { depositAssetMetadata } from '../lib/depositAssetMetadata';
 import { depositMinimumView, type HeldQuote } from '../lib/depositMinimum';
 import { marketDataStore } from '../lib/marketDataStore';
 import { orderDepositDestinations } from '../lib/depositOrder';
+import { reportDepositAddressCopy, type DepositCopySource } from '../lib/depositCopyLog';
 import './DepositCatalogueDialog.css';
 
 /** The asset's price as the page already holds it — read, never fetched or
@@ -22,7 +24,7 @@ function heldQuote(asset: string): HeldQuote | null {
 type Step = 'address' | 'qr';
 
 /** One address-only UI for both entrypoints. No trading/balance API is used. */
-export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () => void; initialAsset?: string }) {
+export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header' }: { onClose: () => void; initialAsset?: string; source?: DepositCopySource }) {
   const { t, lang } = useLanguage();
   const [retry, setRetry] = useState(0);
   const { loaded, wallets, error } = useDepositWallets(true, retry);
@@ -38,7 +40,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
   const assetTrigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
-  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId(), network: useId() };
+  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId() , network: useId() };
   const [copyState, setCopyState] = useState<{ field: string; ok: boolean } | null>(null);
   const copyGeneration = useRef(0);
   const panel = useRef<HTMLDivElement>(null);
@@ -105,14 +107,30 @@ export function DepositCatalogueDialog({ onClose, initialAsset }: { onClose: () 
     if (!value) return;
     const key = destinationKey;
     const generation = ++copyGeneration.current;
+    // Capture the session before the asynchronous clipboard operation. A
+    // sign-in, sign-out or account switch during it must not relabel this copy.
+    let copySessionToken: string | null = null;
+    try { copySessionToken = getToken(); } catch { /* copying must still work */ }
+    // The destination this press copies, fixed before anything awaits: a coin
+    // switched while the clipboard works does not change what was copied.
+    const copied = field === 'address' && wallet ? {
+      asset, network: wallet.chain.split(':').pop() ?? wallet.chain, destinationId: wallet.chain,
+      address: value, memo: wallet.memo?.trim() || undefined, source,
+    } : null;
     setCopyState(null);
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(value);
-      if (generation === copyGeneration.current && key === currentDestination.current) setCopyState({ field, ok: true });
     } catch {
       if (generation === copyGeneration.current && key === currentDestination.current) setCopyState({ field, ok: false });
+      return;
     }
+    if (generation === copyGeneration.current && key === currentDestination.current) setCopyState({ field, ok: true });
+    // Only a copied ADDRESS is noted, after the clipboard said yes. Do not
+    // gate on mount state: closing this dialog in the same session is safe.
+    try {
+      if (copied && copySessionToken && getToken() === copySessionToken) reportDepositAddressCopy(copied);
+    } catch { /* a missing note must never undo a successful clipboard copy */ }
   };
   const icon = (symbol: string, size: number) => {
     const item = depositAssetMetadata[symbol];
