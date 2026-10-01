@@ -5135,3 +5135,49 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - Screenshots compared side by side with the ZIP's own render.
 - Not run: the Windows/Postgres CI variants and production. The deposit window was only seen against a stub, which shows its load-error state.
 - Unresolved: the request parameters are not delivered to a manager. They could go into the support form as a prefilled message if the owner wants that. The unused `trade.otc*` keys can be removed with a digest re-take.
+
+## Claude — 2026-10-01 — Deposit «Копировали адрес» journal + manual-credit audit
+
+- **Task:** the owner's spec (no «Я оплатил», no amounts or TXID from users, no notifications, no auto-matching): record which signed-in user copied which deposit address, in which network and when, for manual reconciliation in Admin → Пополнения; and audit the existing manual credit for ordinary users. Base `main` `8abcde87`; implementation commit `737ddeac`.
+- **Material files:**
+  - Server: `prisma/schema.prisma` + additive migration `20261001120000_deposit_address_copy_event`; `src/api/routes/depositAddressCopies.ts` (new); `src/index.ts` (mount + app-wide limiter skip for that one POST); `src/services/BackgroundWorkCoordinator.ts` (`markWriteWithoutBackgroundWork`).
+  - Client: `frontend/src/lib/depositCopyLog.ts` (new); `components/DepositCatalogueDialog.tsx` (note after a successful ADDRESS copy only); `components/DepositModal.tsx`, `pages/wallet-v3/DepositModal.tsx`, `OtcPage.tsx`, `SupportWidget.tsx` (a `source` prop only); `main.tsx` (one outbox try at start).
+  - Admin: `pages/admin/DepositCopiesSection.tsx` + `depositCopies.css` (new); `AdminDepositsPage.tsx` («Поступления | Копировали адрес»).
+  - Credit fix: `pages/admin/CreditDepositDrawer.tsx`.
+- **Credit audit result:**
+  - The server path (preview → token + idempotency key → re-prove on chain → locks → Balance upsert + audit + referral) held for three ordinary users on a real Postgres:
+    - a new account with no Balance row;
+    - an existing account (locked, BTC and futures untouched);
+    - 6-decimal amounts;
+    - below-minimum → top-up;
+    - double click, two admins at once, retry after a lost answer;
+    - provider outage, package changed;
+    - client and guest refused;
+    - a deleted account.
+  - Two client-side defects were fixed in the drawer, each with a regression test (`creditDepositDrawerOutcome.test.ts`):
+    1. A lost answer (network, gateway 502/504, 500 after commit) printed «Ничего не зачислено». It now says the outcome is unknown and re-checks with the same idempotency key.
+    2. Another package named while a preview was loading could show, or confirm, the previous user's transfers under the new name.
+  - The server credit logic is unchanged.
+- **Preserved:**
+  - Codex's deposit registry, packages, watcher, minimum and the dialog's copy/generation guard (the note is added after it).
+  - The existing queue reads of Пополнения (the journal adds one read on first open and none on a timer).
+  - The account-deletion service (the new table cascades by FK; the service is untouched).
+- **Measured locally:**
+  - One copy is one CORS preflight plus one POST, cross-origin.
+  - SQL per note: session lookup + one INSERT, plus one SELECT for a duplicate or conflict; an extra session `lastSeenAt` UPDATE is possible when last seen more than 5 min ago.
+  - SQL per journal page: session + role + one SELECT.
+  - A note re-checks no sleeping loop; an ordinary write still does.
+  - 12 h with the journal open (Playwright clock): no read of its own.
+- **Checks run:**
+  - `tsc` (root, frontend) and the frontend build.
+  - Full frontend Jest: 183 suites / 3,148 tests.
+  - Backend deposit/idle/auth suites: 126 tests.
+  - `scripts/qa-deposit-copy-log.cjs`: 71/71. It uses a throwaway Postgres 16 in Europe/Kyiv, the real routers, a local TronGrid fixture and the catalogue-mode production build in Chromium on two origins. Screenshots and the report are in `docs/qa/deposit-copy-log/`.
+  - Codex's `scripts/qa-deposit-packages.cjs --browser` on local Postgres: exit 0.
+- **Not done / limits:**
+  - No production, Render or Neon.
+  - The legacy (non-catalogue) deposit modals are not instrumented; production runs the catalogue.
+  - Delivery is best-effort: keepalive, one retry, at most 20 notes for 24 h.
+  - A note never identifies the payer.
+  - A blocked account can still be attributed and credited, as before.
+  - Open Codex PR #364 (minimum → $500) touches the same deposit area. This branch does not touch the minimum; merge order may need a handoff/test rebase.
