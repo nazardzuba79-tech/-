@@ -202,6 +202,13 @@ The disposable parent requires `pg@8.23.0` and the platform's
 `node_modules/.cache/deposit-qa`. Browser QA requires a built frontend and
 Playwright; `QA_PLAYWRIGHT_MODULE` can point at its isolated installation.
 The new `otc-cash-review.yml` runs these gates without secrets or deployment.
+It checks out the exact PR head, asserts `.cache` is absent after clean installs,
+and verifies that `verify-review` creates its isolated client without a warm cache.
+Runner failure/stale-artifact regressions use `node --test scripts/test-otc-review-runners.cjs`.
+Each CI attempt gets a new temporary evidence directory with checkout SHA/run ID,
+step outcomes, full stdout/stderr logs, Jest JSON and browser artifacts generated
+in that run only. Failed/skipped steps remain failed/skipped; the always-upload
+step never copies the checked-in historical `docs/qa/otc-cash/` reports.
 The original `--baseline` diagnostic is historical evidence at `88d77ea`, not a
 passing current test; do not run that old scenario against the new writers.
 

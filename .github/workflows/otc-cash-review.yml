@@ -8,6 +8,9 @@ on:
       - 'src/cfd/**'
       - 'src/api/routes/otcCash.ts'
       - 'src/api/routes/futures.ts'
+      - 'src/api/routes/__tests__/adminUsers.test.ts'
+      - 'src/api/routes/__tests__/adminWithdrawals.test.ts'
+      - 'src/api/routes/__tests__/withdrawals.test.ts'
       - 'src/index.ts'
       - 'prisma/**'
       - 'frontend/src/pages/otc/**'
@@ -27,17 +30,37 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with: { persist-credentials: false }
+        id: checkout
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/setup-node@v4
+        id: node
         with: { node-version: '22' }
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Initialize new evidence directory for this exact head and attempt
+        id: evidence
+        run: node scripts/otc-ci-evidence.cjs init
+      - id: backend_dependencies
+        run: node scripts/otc-ci-evidence.cjs run backend-dependencies npm ci --ignore-scripts --no-audit --no-fund
+      - id: frontend_dependencies
+        run: node scripts/otc-ci-evidence.cjs run frontend-dependencies npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Runner bootstrap, failure propagation and stale artifact regressions
+        id: runner_tests
+        run: node scripts/otc-ci-evidence.cjs run runner-tests node --test scripts/test-otc-review-runners.cjs
+      - name: Assert genuinely empty review cache after clean npm ci
+        id: clean_cache
+        run: node scripts/otc-ci-evidence.cjs run clean-cache node -e "require('node:assert/strict').equal(require('node:fs').existsSync('node_modules/.cache'), false)"
       - name: Backend typecheck and build with isolated generated client
-        run: node scripts/verify-review.cjs build
+        id: backend_build
+        run: node scripts/otc-ci-evidence.cjs run backend-build node scripts/verify-review.cjs build
       - name: OTC, actual wallet writer mocks and relevant frontend regressions
+        id: unit_tests
         run: >-
-          node scripts/verify-review.cjs test
+          node scripts/otc-ci-evidence.cjs run unit-tests node scripts/verify-review.cjs test
           src/otc
+          src/api/routes/__tests__/adminUsers.test.ts
+          src/api/routes/__tests__/adminWithdrawals.test.ts
+          src/api/routes/__tests__/withdrawals.test.ts
           src/services/__tests__/OrderService.test.ts
           src/services/__tests__/WithdrawalService.test.ts
           src/services/__tests__/PurchaseService.test.ts
@@ -48,24 +71,36 @@ jobs:
           frontend/src/lib/__tests__/supportAssistant.test.ts
           frontend/src/lib/__tests__/customerFacingErrors.test.ts
       - name: Install pinned disposable-only PostgreSQL and browser tools
-        run: npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
-      - run: node scripts/diagnose-otc-balance-safety.cjs --verify
-      - run: node scripts/diagnose-otc-balance-safety.cjs --otc
-      - run: node scripts/diagnose-otc-balance-safety.cjs --preservation
+        id: fixture_dependencies
+        run: node scripts/otc-ci-evidence.cjs run fixture-dependencies npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - id: wallet_postgres
+        run: node scripts/otc-ci-evidence.cjs run wallet-postgres node scripts/diagnose-otc-balance-safety.cjs --verify
+      - id: otc_postgres
+        run: node scripts/otc-ci-evidence.cjs run otc-postgres node scripts/diagnose-otc-balance-safety.cjs --otc
+      - id: preservation_postgres
+        run: node scripts/otc-ci-evidence.cjs run preservation-postgres node scripts/diagnose-otc-balance-safety.cjs --preservation
       - name: Production bundle using loopback-only fixture API
-        working-directory: frontend
+        id: frontend_build
         env:
           VITE_API_URL: /api/v1
-        run: npm run build
-      - run: node node_modules/.cache/deposit-qa/node_modules/playwright/cli.js install chromium
+        run: node scripts/otc-ci-evidence.cjs run frontend-build npm run build --prefix frontend
+      - id: browser_dependency
+        run: node scripts/otc-ci-evidence.cjs run browser-dependency node node_modules/.cache/deposit-qa/node_modules/playwright/cli.js install chromium
       - name: Client, chat, admin, keyboard and idle viewport checks
+        id: browser_qa
         run: |
           $env:QA_PLAYWRIGHT_MODULE = (Resolve-Path node_modules/.cache/deposit-qa/node_modules/playwright).Path
-          node scripts/qa-otc-cash.cjs
+          node scripts/otc-ci-evidence.cjs run browser-qa node scripts/qa-otc-cash.cjs
           exit $LASTEXITCODE
+      - name: Record real step outcomes (including failures and skipped gates)
+        if: always() && steps.evidence.outcome == 'success'
+        env:
+          OTC_CI_STEPS: ${{ toJSON(steps) }}
+        run: node scripts/otc-ci-evidence.cjs finalize
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.evidence.outcome == 'success'
         with:
-          name: otc-cash-fixture-qa
-          path: docs/qa/otc-cash/
+          name: otc-cash-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.evidence.outputs.directory }}/
+          if-no-files-found: error
           retention-days: 7

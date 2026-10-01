@@ -5,6 +5,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 process.chdir(root);
+fs.mkdirSync(path.join(root, 'node_modules/.cache'), { recursive: true });
 const cache = fs.mkdtempSync(path.join(root, 'node_modules/.cache/review-client-'));
 const schema = fs.readFileSync(path.join(root, 'prisma/schema.prisma'), 'utf8')
   .replace('provider = "prisma-client-js"', 'provider = "prisma-client-js"\n  output = "./client"');
@@ -15,7 +16,7 @@ for (const key of Object.keys(process.env)) {
 process.env.DATABASE_URL = 'postgresql://fixture:fixture@127.0.0.1:1/review_unavailable';
 process.env.NODE_ENV = 'test';
 const generated = spawnSync(process.execPath, ['node_modules/prisma/build/index.js', 'generate', '--schema', path.join(cache, 'schema.prisma')], { stdio: 'pipe', windowsHide: true });
-if (generated.status !== 0) { console.error('Isolated Prisma generation failed:', generated.stderr.toString()); process.exit(1); }
+if (generated.status !== 0) { console.error('Isolated Prisma generation failed:', generated.error || generated.stderr?.toString()); process.exit(generated.status || 1); }
 const client = path.join(cache, 'client');
 const ts = require('typescript');
 const mode = process.argv[2];
@@ -44,9 +45,9 @@ if (mode === 'typecheck' || mode === 'build') {
   };
   require('jest').runCLI({ config: JSON.stringify(config), runInBand: true, _: process.argv.slice(3), $0: 'jest' }, [root])
     .then(({ results }) => {
-      const report = path.join(cache, 'results.json');
+      const report = path.join(process.env.OTC_CI_EVIDENCE_DIR || cache, 'jest-results.json');
       fs.writeFileSync(report, JSON.stringify(results, null, 2));
       console.log(`Full test results: ${report}`);
       process.exitCode = results.success ? 0 : 1;
-    });
+    }).catch(error => { console.error(error); process.exitCode = 1; });
 } else { console.error('Usage: node scripts/verify-review.cjs typecheck|build|test [test paths]'); process.exitCode = 1; }

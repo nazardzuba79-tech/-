@@ -2,7 +2,12 @@
 // blockchain or real financial operations. POSTs change this process's fixtures.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {once}=require('node:events'),{chromium}=require(process.env.QA_PLAYWRIGHT_MODULE||'playwright');
-const ROOT=path.resolve(__dirname,'..'),DIST=path.join(ROOT,'frontend/dist'),OUT=path.join(ROOT,'docs/qa/otc-cash');
+const ROOT=path.resolve(__dirname,'..'),DIST=path.join(ROOT,'frontend/dist');
+// CI must use its fresh per-run artifact directory, never checked-in historical QA.
+if(process.env.CI && !process.env.OTC_CI_EVIDENCE_DIR) throw new Error('CI requires fresh OTC_CI_EVIDENCE_DIR');
+const outputParent=process.env.OTC_CI_EVIDENCE_DIR||path.join(ROOT,'output/otc-cash');
+fs.mkdirSync(outputParent,{recursive:true});
+const OUT=fs.mkdtempSync(path.join(outputParent,'browser-'));
 const id='0e997edf-1b9a-47d2-aaed-ef2c3c287f97';
 const date='2026-10-01T10:00:00Z';
 const token=who=>`fixture.${Buffer.from(JSON.stringify({sub:who})).toString('base64url')}.NOT_A_VALID_SIGNATURE`;
