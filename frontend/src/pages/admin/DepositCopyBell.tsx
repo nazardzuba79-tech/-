@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 export interface DepositCopyNotice {
   id: string;
@@ -8,9 +8,11 @@ export interface DepositCopyNotice {
   clientCopiedAt: string | null;
 }
 export interface DepositCopyUserFields {
+  /** Latest unresolved copy, not the latest historical journal entry. */
   lastDepositCopy?: DepositCopyNotice | null;
   depositCopyLookupFailed?: boolean;
 }
+export const hasPendingCopy = (user: DepositCopyUserFields) => !user.depositCopyLookupFailed && !!user.lastDepositCopy;
 
 const TIME_ZONE = (() => {
   for (const zone of ['Europe/Kyiv', 'Europe/Kiev']) {
@@ -38,15 +40,29 @@ export function depositCopyLabel(event: DepositCopyNotice) {
 function Bell() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>;
 }
+export function DepositCopyTabBell() {
+  return <span data-copy-tab-bell aria-label="Есть необработанные копирования адреса" title="Копировали адрес — требуется ручная проверка" style={{ display: 'inline-flex', color: '#94600e', marginRight: 4, verticalAlign: 'middle' }}><Bell/></span>;
+}
 
-/** The users list already delivered this snapshot. Opening this bell is
- * purely local; it does not acknowledge a payment, fetch, write or credit.
- * The badge is not removed after 60 minutes: an older copy is still useful
- * for manual review. A fresh server snapshot comes with the existing users
- * read (re-open/reload), not a new polling loop.
- */
-export function DepositCopyBell({ event, failed = false }: { event?: DepositCopyNotice | null; failed?: boolean }) {
+/** Expand/collapse is local and never acknowledges anything. Only the explicit
+ * Ignore callback sends a request. The parent replaces data after server success;
+ * rejected/lost replies leave the signal visible and safe to retry. */
+export function DepositCopyBell({ event, failed = false, onIgnore }: {
+  event?: DepositCopyNotice | null; failed?: boolean; onIgnore?: () => Promise<void>;
+}) {
   const [expanded, setExpanded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  async function ignore() {
+    if (!onIgnore || inFlight.current) return;
+    inFlight.current = true; setBusy(true); setError(null);
+    try { await onIgnore(); }
+    catch (err) { if (mounted.current) setError(err instanceof Error ? err.message : 'Не удалось скрыть сигнал. Повторите.'); }
+    finally { inFlight.current = false; if (mounted.current) setBusy(false); }
+  }
   if (failed) return <span data-deposit-copy-unknown title="Журнал копирований не загрузился. Откройте «Пополнения → Копировали адрес» или обновите страницу." aria-label="Данные о копировании адреса недоступны" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--text-tertiary)', fontWeight: 400 }}><Bell/>?</span>;
   if (!event) return null;
   const label = depositCopyLabel(event);
@@ -63,6 +79,8 @@ export function DepositCopyBell({ event, failed = false }: { event?: DepositCopy
       <span>Копирование не подтверждает оплату.</span>
       <a href="/admin/deposits#copies" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Открыть журнал</a>
       <a href="/admin/deposits#unattributed" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Проверить поступления</a>
+      {onIgnore && <button type="button" data-ignore-deposit-copy={event.id} style={{ ...button, minHeight: 36, background: 'var(--surface, #fff)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }} disabled={busy} onClick={() => void ignore()} title="Скрыть этот сигнал и более ранние копирования этого же адреса. Баланс не изменится.">{busy ? 'Сохраняем…' : 'Игнорировать'}</button>}
+      {error && <span role="alert" style={{ color: 'var(--sell)' }}>{error}</span>}
     </span>}
   </span>;
 }
