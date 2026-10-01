@@ -145,10 +145,41 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('.header-brand [data-real-logo-slot]')).not.toBeNull();
     expect(document.querySelector('.nav-wallet-link')?.getAttribute('href')).toBe('/wallet');
     expect(Array.from(document.querySelectorAll('a[href="/banking"]')).map(node => node.textContent)).toEqual(['Banking & Earn', 'Banking & Earn']);
-    expect(document.querySelector('a[href="/tools"].nav-active')).not.toBeNull();
+    expect(document.querySelector('.nav-desktop-links a[href="/trade"].nav-active')).not.toBeNull();
     expect(document.querySelector('a[href="/futures"]')).not.toBeNull();
     expect(document.querySelector('a[href="/trade?market=cfd"]')).not.toBeNull();
     expect(document.querySelector('a[href="/otc"]')).not.toBeNull();
+  });
+
+  test('desktop Tools uses the keyboard-accessible Trading dropdown without adding header width', async () => {
+    await mount();
+    expect(document.querySelector('.nav-desktop-links > a[href="/tools"]')).toBeNull();
+    expect(document.querySelector('.nav-dropdown')).toBeNull();
+    const trigger = document.querySelector('.nav-desktop-links a[href="/trade"]') as HTMLElement;
+    await React.act(async () => trigger.focus());
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    const links = document.querySelectorAll('.nav-dropdown a[href="/tools"]');
+    expect(links).toHaveLength(1);
+    expect(links[0].textContent).toBe('Инструменты');
+    expect(links[0].getAttribute('aria-current')).toBe('page');
+    expect(document.querySelector('.nav-dropdown a[href="/arbitrage"]')).not.toBeNull();
+    await React.act(async () => {
+      (links[0] as HTMLElement).focus();
+      links[0].dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(document.querySelector('.nav-dropdown')).toBeNull();
+  });
+
+  test('mobile drawer retains one active Tools entry and the existing Arbitrage entry', async () => {
+    await mount();
+    await click('.nav-burger');
+    expect(document.querySelector('.nav-mobile-menu.open')).not.toBeNull();
+    const links = document.querySelectorAll('.nav-mobile-menu a[href="/tools"]');
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute('aria-current')).toBe('page');
+    expect(document.querySelectorAll('.nav-mobile-menu a[href="/arbitrage"]')).toHaveLength(1);
+    await click('.nav-burger');
+    expect(document.querySelector('.nav-mobile-menu.open')).toBeNull();
   });
 
   test('deposit remains the existing user-opened modal; no automatic prefetch', async () => {

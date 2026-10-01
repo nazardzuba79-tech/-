@@ -66,6 +66,38 @@ async function example(page) {
   await page.locator('[data-tools-status="ready"]').waitFor();
 }
 
+async function verifyToolsNavigation(page) {
+  const desktop = await page.locator('.nav-desktop-links').isVisible();
+  if (desktop) {
+    assert.equal(await page.locator('.nav-desktop-links > a[href="/tools"]').count(),0,'Tools does not consume another desktop header slot');
+    const trading=page.locator('.nav-desktop-links .nav-item-wrap > a[href="/trade"]');
+    assert.ok((await trading.getAttribute('class')).includes('nav-active'),'Trading is active on /tools');
+    await trading.focus();
+    await page.locator('.nav-dropdown a[href="/tools"]').waitFor();
+    assert.equal(await page.locator('a[href="/tools"]:visible').count(),1,'desktop presents exactly one visible Tools entry');
+    assert.equal(await page.locator('.nav-dropdown a[href="/arbitrage"]').count(),1,'existing Arbitrage stays in Trading');
+    for(let index=0;index<4;index++) await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('href')),'/tools','keyboard Tab reaches Tools after the existing trading entries');
+    assert.equal(await page.locator('.nav-dropdown a[href="/tools"]').getAttribute('aria-current'),'page');
+    await page.keyboard.press('Enter');
+    assert.equal(new URL(page.url()).pathname,'/tools');
+    await page.keyboard.press('Escape');
+    await page.locator('.nav-dropdown').waitFor({state:'detached'});
+  } else {
+    const burger=page.locator('.nav-burger');
+    await burger.focus();await page.keyboard.press('Enter');
+    await page.locator('.nav-mobile-menu.open').waitFor();
+    assert.equal(await page.locator('a[href="/tools"]:visible').count(),1,'mobile presents exactly one visible Tools entry');
+    const tools=page.locator('.nav-mobile-menu a[href="/tools"]');
+    assert.equal(await tools.getAttribute('aria-current'),'page');
+    assert.equal(await page.locator('.nav-mobile-menu a[href="/arbitrage"]').count(),1);
+    await tools.focus();await page.keyboard.press('Enter');
+    assert.equal(new URL(page.url()).pathname,'/tools');
+    if(await page.locator('.nav-mobile-menu.open').count()) { await burger.focus();await page.keyboard.press('Enter'); }
+  }
+  return { desktop, keyboardReachable:true, singleVisibleEntry:true, currentPage:true, arbitragePreserved:true };
+}
+
 async function exerciseModes(page, requests, prefix, rows, screenshots = false) {
   for (const mode of MODES) {
     const before = await snapshot(page, requests);
@@ -308,6 +340,10 @@ async function main() {
     const integrated = await makePage(browser, base);
     report.integratedInitial = await snapshot(integrated.page, integrated.requests);
     assert.equal(report.integratedInitial.calculator, 0);
+    const beforeNavigation=await snapshot(integrated.page,integrated.requests);
+    report.navigation=await verifyToolsNavigation(integrated.page);
+    const afterNavigation=await snapshot(integrated.page,integrated.requests);
+    report.integratedRows.push({action:'integrated/desktop-keyboard-Trading-Tools',calculator:afterNavigation.calculator-beforeNavigation.calculator,shell:afterNavigation.shell-beforeNavigation.shell,static:afterNavigation.static-beforeNavigation.static,timersScheduled:afterNavigation.timers-beforeNavigation.timers});
     await exerciseModes(integrated.page, integrated.requests, 'integrated', report.integratedRows, true);
     report.supportDock=await supportGeometry(integrated.page);
     assert.equal(report.supportDock.overlap,false,'support launcher stays outside all calculator data and controls');
@@ -374,6 +410,7 @@ async function main() {
 
     for (const [width,height] of WIDTHS) {
       const state = await makePage(browser, base, false, { width,height });
+      const navigation=await verifyToolsNavigation(state.page);
       await example(state.page);
       const geometry = await state.page.evaluate(() => ({ overflow:Math.max(0,document.documentElement.scrollWidth-innerWidth), toolWidth:document.querySelector('.vx-trading-tools').getBoundingClientRect().width, headerCount:document.querySelectorAll('header.global-header').length }));
       assert.equal(geometry.overflow,0, `no horizontal overflow at ${width}`);
@@ -400,7 +437,7 @@ async function main() {
         assert.equal(await state.page.evaluate(()=>Math.max(0,document.documentElement.scrollWidth-innerWidth)),0,'long financial output fits phone');
         await capture(state.page,'large-numbers-390.jpg');
       }
-      report.responsive.push({ width,height,...geometry,support, pageErrors:state.errors });
+      report.responsive.push({ width,height,...geometry,support,navigation, pageErrors:state.errors });
       await state.context.close();
     }
     report.serverReads = fixture.hits;
