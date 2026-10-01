@@ -70,6 +70,7 @@ async function main(){
       assert.ok(await form.locator('.otc-combo-btn svg').first().evaluate(el=>el.getBoundingClientRect().width>=14),'country clear icon remains visible');
       await form.getByRole('button',{name:'Проверить параметры',exact:true}).click();
       assert.equal(await form.getByRole('button',{name:'Создать заявку и зарезервировать 10000 USDT'}).isDisabled(),true);
+      assert.ok(await form.getByRole('button',{name:'Создать заявку и зарезервировать 10000 USDT'}).evaluate(el=>el.scrollHeight<=el.clientHeight),'long reserve button never clips or overlaps the following text');
       await componentShot(form,`client-${width}.jpg`);
       assert.ok((await overflow(page)).width<=width,`client overflow ${width}`);
       const idle=count();await page.clock.fastForward(86400000);assert.equal(count(),idle,'idle day adds no OTC requests');

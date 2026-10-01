@@ -7,6 +7,7 @@
 .otc-cash-panel button,.otc-admin-desk button,.vx-otc .otc-section button:not(.otc-combo-btn){cursor:pointer;border:1px solid #d3d8df;border-radius:9px;padding:10px 16px;background:#fff;color:#17212d;font:inherit;white-space:normal;max-width:100%}
 .otc-cash-panel button:disabled{opacity:.5;cursor:not-allowed}
 .otc-cash-panel button[aria-pressed=true],.vx-otc .otc-section button.otc-btn-orange{background:#f7931a;color:#131313;border-color:#f7931a}
+.vx-otc .otc-cash-panel button.otc-btn{height:auto;min-height:44px;line-height:1.5;display:inline-block}
 .otc-cash-panel button:focus-visible,.otc-cash-panel input:focus-visible,.otc-cash-panel select:focus-visible,.otc-cash-panel textarea:focus-visible{outline:3px solid #a05b0b;outline-offset:3px}
 .otc-cash-panel fieldset{border:0;margin:0;padding:0}
 .otc-cash-panel label{display:grid;gap:7px;margin:12px 0;font-weight:600}
