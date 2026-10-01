@@ -1,5 +1,6 @@
 import { addBrowserActivityListener, removeBrowserActivityListener, isBrowserInactive, waitUntilActive } from '../../lib/browserActivity';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DEPOSIT_MINIMUM_USD } from '../../lib/depositMinimum';
 import { useLocation } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
@@ -38,7 +39,7 @@ function lagLabel(ms: number): string {
 
 /**
  * Пополнения — the deposit registry and the only place a package is credited.
- * Detection, attribution, the 300 USD minimum and the credit are separate
+ * Detection, attribution, the USD minimum and the credit are separate
  * steps; the state of every transfer is computed by the server.
  */
 export function AdminDepositsPage() {
@@ -173,7 +174,7 @@ export function AdminDepositsPage() {
       <h1 style={styles.title}>Пополнения</h1>
       <p style={styles.hint}>
         Зачисление — только вручную, пакетом: переводы одного пользователя в одном активе и одной сети суммируются.
-        Пакет становится доступным для проверки от {queue?.minDepositUsd ?? 300} USD; ниже минимума зачислить нельзя.
+        Пакет становится доступным для проверки от {queue?.minDepositUsd ?? DEPOSIT_MINIMUM_USD} USD; ниже минимума зачислить нельзя.
       </p>
       <div className="admin-user-tabs deposit-view-switch" role="tablist" aria-label="Раздел пополнений">
         <button type="button" role="tab" aria-selected={view === 'queue'} data-deposit-view="queue"

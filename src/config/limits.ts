@@ -3,7 +3,7 @@
 // package reviewable; every credit still requires an admin's confirmation,
 // and below it confirmation is refused by the server. deposit-chains?
 // includeConfig=true supplies this to both UIs.
-export const MIN_DEPOSIT_USD = 300;
+export const MIN_DEPOSIT_USD = 500;
 // Minimum-evaluation POLICY, not a market-rate claim: these assets count
 // 1 unit = 1 USD when checking the minimum. Other assets need a fresh price.
 export const DEPOSIT_USD_PEGGED_ASSETS = ['USDT', 'USDC', 'USD', 'DAI'] as const;

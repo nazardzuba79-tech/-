@@ -1,0 +1,9 @@
+/* Keep the existing global support button in document flow on this route.
+ * A fixed launcher otherwise covers calculator fields on narrow screens.
+ * This selector changes neither the shared header nor any other route, and
+ * automatically stops matching when the tools workspace unmounts. */
+#root:has(.vx-trading-tools) > .support-launcher {
+  position: relative !important;
+  inset: auto !important;
+  margin: 16px 24px calc(88px + env(safe-area-inset-bottom, 0px)) auto;
+}

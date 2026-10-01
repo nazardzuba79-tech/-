@@ -1,0 +1,206 @@
+{
+  "scope": "Local synthetic fixtures only; fresh disposable localhost PostgreSQL; no production data, account or funds access.",
+  "minimum": {
+    "usd": "500",
+    "boundaryBelowUsdt": "499.999999",
+    "btcExample": {
+      "priceUsdt": "100000",
+      "minimumBtc": "0.005"
+    }
+  },
+  "backendBuild": "PASS",
+  "reproduction": {
+    "workingDirectory": "repository root",
+    "runnerCommand": "node scripts/qa-deposit-ui.cjs",
+    "runnerArguments": [],
+    "fixtureUrl": "http://127.0.0.1:4275/qa/deposit-preview.html",
+    "viteEnvironment": {
+      "VITE_MANUAL_DEPOSIT_CATALOGUE": "true"
+    },
+    "viteCommand": "npm.cmd run dev --prefix frontend -- --host 127.0.0.1 --port 4275 --strictPort",
+    "runnerEnvironment": {
+      "QA_ORIGIN": "http://127.0.0.1:4275",
+      "QA_OUT": "output/deposit-ui-500",
+      "QA_PLAYWRIGHT_MODULE": "<local-runtime-node-modules>/playwright",
+      "QA_PNGJS_MODULE": "<local-runtime-node-modules>/pngjs",
+      "QA_JSQR_MODULE": "<worktree>/output/trading-tools-pg/node_modules/jsqr"
+    },
+    "modulePathNote": "Replace the two local path placeholders with installed local dependency paths. They are filesystem modules, not remote services. Playwright uses a local Chromium installation. Run Vite in a separate terminal with the recorded environment before the runner; no CLI arguments are required.",
+    "packageCommand": "node scripts/qa-deposit-packages.cjs --browser",
+    "packageEnvironment": {
+      "NODE_PATH": "<worktree>/output/trading-tools-pg/node_modules",
+      "QA_PLAYWRIGHT_MODULE": "<local-runtime-node-modules>/playwright",
+      "QA_PG_ADMIN_URL": "unset"
+    },
+    "databaseNote": "The package runner starts embedded PostgreSQL on localhost in a fresh temporary cluster when QA_PG_ADMIN_URL is unset. The local module directory contains pg and @embedded-postgres/windows-x64. Build backend and frontend before running it."
+  },
+  "packageAcceptance": {
+    "status": "PASS",
+    "scenarioCount": 23,
+    "scenarios": [
+      "1/10. 15 and 20 are stored unattributed; attribution is audited and changes no balance",
+      "2/5/7. 15+485 and 20+480 reach READY; 500 and 700 single transfers READY; nothing auto-credits; clients never summed",
+      "16. before Confirm: no pending row, amount or balance in client APIs; claim answer is neutral",
+      "3/15. 15+20+465 → Confirm credits exactly 500 once; audit + referral only at approval, exactly once",
+      "4. 15+500 → Confirm credits exactly 515",
+      "6/8. 499.999999 is below the minimum (UI and API); an old CREDITED package never counts toward a new one",
+      "12. the legacy one-transfer manual-credit endpoint is closed (410) and credits nothing",
+      "11. public claim / forged fields cannot take, lock, credit or bypass anything",
+      "13. double submit, retry after timeout, two admins, overlapping confirms: exactly one financial effect",
+      "13b. a transfer arriving between Preview and Confirm is never silently added: re-review required",
+      "14. a failure in the middle of the credit rolls everything back",
+      "9/21. unattributed, unconfirmed, failed, wrong-contract, wrong-recipient and reorged transfers never make a package ready",
+      "20. several events in one TX are one transfer; a legacy CREDITED hash is never re-created or re-credited",
+      "17/18. >20 transfers between scans: paged, resumable after a crash between pages and inside a page write; none lost or doubled",
+      "19. provider outage and rate limit are errors, never an empty success; stored queue stays readable",
+      "22. treasury address change keeps the old queue, its proof and its own checkpoint",
+      "23. watcher credentials run a scan only: no admin route, no credit, no balance",
+      "Ignore + accumulation: old wallet transfer ignored/restored; 15 → 115 → 500 in one card; credit once; counters",
+      "Migration backfill: transfers hidden with the old «Игнорировать» stay out of Непривязанные (unattributed, uncredited only)",
+      "Daytime schedule (Kyiv): first admin open after 07:00, 12/16/20 slots, no night scans, no night catch-up, dedupe; manual always; load",
+      "Reconciliation: every CREDITED row has one admin audit; balances equal credited sums",
+      "Notifications: committed rows only, overlap/recovery never emits duplicate deposit IDs",
+      "Notifications: real publisher performs zero Prisma queries; delivery outage cannot roll back discovery"
+    ],
+    "browserFlowCount": 7,
+    "browserFlows": [
+      {
+        "width": 1440,
+        "attributeWithoutCredit": "PASS",
+        "remaining485": "PASS",
+        "ready500": "PASS",
+        "cancelNoEffect": "PASS",
+        "confirmOnce": "PASS",
+        "clientBeforeConfirm": "nothing pending",
+        "clientAfterConfirm": "credited visible",
+        "overflow": false,
+        "hiddenTabRequests": 0,
+        "queueLoads": 5,
+        "consoleErrors": 0
+      },
+      {
+        "width": 390,
+        "attributeWithoutCredit": "PASS",
+        "remaining485": "PASS",
+        "ready500": "PASS",
+        "cancelNoEffect": "PASS",
+        "confirmOnce": "PASS",
+        "clientBeforeConfirm": "nothing pending",
+        "clientAfterConfirm": "credited visible",
+        "overflow": false,
+        "hiddenTabRequests": 0,
+        "queueLoads": 5,
+        "consoleErrors": 0
+      },
+      {
+        "width": 320,
+        "ignoreModal": "PASS",
+        "ignoredTab": "PASS",
+        "restore": "PASS",
+        "overflow": false
+      },
+      {
+        "width": 360,
+        "ignoreModal": "PASS",
+        "ignoredTab": "PASS",
+        "restore": "PASS",
+        "overflow": false
+      },
+      {
+        "width": 390,
+        "ignoreModal": "PASS",
+        "ignoredTab": "PASS",
+        "restore": "PASS",
+        "overflow": false
+      },
+      {
+        "width": 430,
+        "ignoreModal": "PASS",
+        "ignoredTab": "PASS",
+        "restore": "PASS",
+        "overflow": false
+      },
+      {
+        "width": 1440,
+        "ignoreModal": "PASS",
+        "ignoredTab": "PASS",
+        "restore": "PASS",
+        "overflow": false
+      }
+    ],
+    "reconciliation": {
+      "batches": 10,
+      "creditedTransfers": 21
+    },
+    "accumulation": {
+      "example": "15 → 115 → 500",
+      "credited": "500",
+      "ignoredOldTransfer": "kept, restorable"
+    }
+  },
+  "depositUi": {
+    "status": "PASS",
+    "checkCount": 303,
+    "layoutSnapshots": 44,
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "width": 1920,
+        "height": 1080
+      },
+      {
+        "width": 430,
+        "height": 932
+      },
+      {
+        "width": 390,
+        "height": 844
+      },
+      {
+        "width": 360,
+        "height": 800
+      },
+      {
+        "width": 320,
+        "height": 568
+      },
+      {
+        "width": 1440,
+        "height": 480
+      }
+    ],
+    "errors": [],
+    "requests": {
+      "Header": {
+        "initialOpen": 1,
+        "interactions": 0,
+        "retry": 1,
+        "idle60s": 0
+      },
+      "Wallet": {
+        "initialOpen": 1,
+        "interactions": 0,
+        "retry": 1,
+        "idle60s": 0
+      }
+    },
+    "idleMs": 60100
+  },
+  "expectedDiagnostics": [
+    "Forced audit-write failure is intentionally injected to verify atomic rollback.",
+    "Existing pg concurrent-query deprecation warning does not fail the acceptance run."
+  ],
+  "sources": [
+    {
+      "path": "output/deposit-packages/report.json",
+      "sha256": "23366f39f5e9b20d0575688ed0749397ed9d530cd6894a0796781ee7b53627b7"
+    },
+    {
+      "path": "output/deposit-ui-500/browser-results.json",
+      "sha256": "0c3cf6f127bced5b837931dcb4bb3688b758c190a78b30f19c0d55ce5bffd591"
+    }
+  ]
+}

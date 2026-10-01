@@ -108,9 +108,9 @@ describe('admin deposits routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers['cache-control']).toBe('private, no-store');
-      expect(res.body).toMatchObject({ totalUsers: 42, newUsers24h: 3, pendingKyc: 2, minDepositUsd: 300 });
+      expect(res.body).toMatchObject({ totalUsers: 42, newUsers24h: 3, pendingKyc: 2, minDepositUsd: 500 });
       expect(res.body.packages).toEqual([expect.objectContaining({
-        userId: 'u1', chain: 'tron', asset: 'USDT', state: 'AWAITING_TOPUP', total: '35', remaining: '265', transferCount: 2, minimumReached: false,
+        userId: 'u1', chain: 'tron', asset: 'USDT', state: 'AWAITING_TOPUP', total: '35', remaining: '465', transferCount: 2, minimumReached: false,
       })]);
       expect(res.body.counts).toMatchObject({ UNATTRIBUTED: 1, AWAITING_TOPUP: 2, READY: 0, uncreditedTotal: 3 });
       expect(prisma.$queryRaw).not.toHaveBeenCalled();

@@ -5136,6 +5136,26 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Not run: the Windows/Postgres CI variants and production. The deposit window was only seen against a stub, which shows its load-error state.
 - Unresolved: the request parameters are not delivered to a manager. They could go into the support form as a prefilled message if the owner wants that. The unused `trade.otc*` keys can be removed with a digest re-take.
 
+## Codex — 2026-10-01 — Trading Tools and minimum deposit 500 (review only)
+
+- Fresh base: `8abcde87e039030a6bed57732153603a49bf561f`, including release #363. Branch: `codex/trading-tools-20261001`; implementation head: `668cdde6b53e0d1c023953cc94c040d6016881bb` (following commit contains evidence only).
+- Owner requested one PR, no merge/deploy, based on `PROMPT_CODEX_VOLTEX_TRADING_TOOLS.md`, its ZIP design and JSON arithmetic oracle. Explicit follow-up raises the deposit minimum from $300 to $500 and equivalent crypto.
+- Added authenticated lazy `/tools` and one `Инструменты` item in the existing Nav. Preserves newer main's Arbitrage-in-Trading menu, Assistant and withdrawal work. Six local decimal calculators: P&L, position size, isolated liquidation estimate, risk/reward, DCA and fees. No calculator API/socket/polling/server execution, no live tariffs, no financial writes. Drafts are memory-only and reset on logout/account change. Russian local fallback; shared shell unchanged.
+- Deposit server/client constants now 500; stale admin literals use the canonical constant. Existing valuation freshness, confirmation, aggregation, ledger and duplicate-credit behavior retained. Assistant already reads that constant, so only its expected-answer test changed.
+- Added fixture-only browser runner and local preview server (`node scripts/serve-trading-tools-review.cjs`, `127.0.0.1:4274/tools`). Same global support launcher moves into normal flow only while tools is mounted, avoiding mobile control overlap; existing widget and other routes retain their behavior.
+- Validation: frontend/backend builds pass; math 160, rendered UI 8, shell 9 = 177 targeted checks pass; independent Python verifies all 42 owner values. Existing deposit CI selection: 248 tests / 19 suites pass. Disposable local PostgreSQL: 23 scenario groups + 7 viewport flows pass; Header/Wallet deposit UI: 303 checks pass. Trading Tools browser: 21 isolated + 8 integrated action groups and 8 widths pass, zero calculator transport/timer activity; existing shell reads separately recorded.
+- Windows complete frontend snapshot: 3,285 pass / 9 failures. Same nine path-separator audit failures independently reproduced on untouched base (64 pass / 9 fail in the six affected suites). Assertions were not weakened; Linux complete-suite CI remains the publication review gate. Final math/route edits passed the targeted selection after that snapshot.
+- Detailed models, exact units/limits, source hashes, bundle deltas, reproducible commands, measurements, baseline diagnostics and desktop/mobile screenshots: `docs/qa/trading-tools/README.md` and sibling artifacts.
+- Boundaries: no production access, no merge, no deploy, no owner token credit/sale. No physical mobile keyboard, Safari/Firefox or actual 12-hour soak verification. Virtual clock tests and fixture browsers are explicitly labeled. Removing this feature must preserve the independent 500 deposit policy and unrelated main changes.
+
+
+### Trading Tools PR #364 — CI follow-up, 2026-10-01
+
+- Source head: `750926c53b0b7807596acee821dd68f7e18910f8`; evidence-only follow-up is recorded in PR metadata.
+- First Linux full frontend CI passed 3,298 tests / 183 suites. CI found a genuine 1440 px header fit regression (19 px clearance vs required 20): Tools now lives in the existing desktop Trading dropdown, preserving one mobile drawer entry. Local unchanged Futures fixture measures 125 px; two navigation regressions raise targeted Tools count to 179/179. Global styles and fit assertions are unchanged.
+- The new 500 deposit rule invalidated an existing 400 USDT READY fixture. It now uses 500; a new explicit 400 case stays awaiting top-up. All 7 admin customer tests pass; no runtime accounting change.
+- Final local frontend build passes; Tools browser 21 isolated + 9 integrated groups pass across eight widths. Refreshed reports/screenshots and source-matched bundle evidence. Final-head CI remains authoritative in PR #364; do not merge or deploy.
+
 ## Claude — 2026-10-01 — Deposit «Копировали адрес» journal + manual-credit audit
 
 - **Task:** the owner's spec (no «Я оплатил», no amounts or TXID from users, no notifications, no auto-matching): record which signed-in user copied which deposit address, in which network and when, for manual reconciliation in Admin → Пополнения; and audit the existing manual credit for ordinary users. Base `main` `8abcde87`; implementation commit `737ddeac`.
@@ -5172,12 +5192,13 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
   - `tsc` (root, frontend) and the frontend build.
   - Full frontend Jest: 183 suites / 3,148 tests.
   - Backend deposit/idle/auth suites: 126 tests.
-  - `scripts/qa-deposit-copy-log.cjs`: 71/71. It uses a throwaway Postgres 16 in Europe/Kyiv, the real routers, a local TronGrid fixture and the catalogue-mode production build in Chromium on two origins. Screenshots and the report are in `docs/qa/deposit-copy-log/`.
-  - Codex's `scripts/qa-deposit-packages.cjs --browser` on local Postgres: exit 0.
+  - `scripts/qa-deposit-copy-log.cjs`: 71/71, re-run after merging `main` `355ce91f`. It uses a throwaway Postgres 16 in Europe/Kyiv, the real routers, a local TronGrid fixture and the catalogue-mode production build in Chromium on two origins. Screenshots and the report are in `docs/qa/deposit-copy-log/`.
+  - Codex's `scripts/qa-deposit-packages.cjs --browser` on local Postgres: exit 0, before and after the merge.
+  - After the merge: full frontend Jest 186 suites / 3,327 tests; backend deposit/idle/auth suites 127 tests.
 - **Not done / limits:**
   - No production, Render or Neon.
   - The legacy (non-catalogue) deposit modals are not instrumented; production runs the catalogue.
   - Delivery is best-effort: keepalive, one retry, at most 20 notes for 24 h.
   - A note never identifies the payer.
   - A blocked account can still be attributed and credited, as before.
-  - Open Codex PR #364 (minimum → $500) touches the same deposit area. This branch does not touch the minimum; merge order may need a handoff/test rebase.
+  - Codex #364 (minimum → $500) was merged into `main` while this PR was open. `main` `355ce91f` was merged into this branch; only this file conflicted (both entries kept). The QA script's amounts now follow the 500 minimum; this branch does not change the minimum.

@@ -39,8 +39,8 @@ const pickAsset = async (page, symbol, method = 'click') => {
 };
 const address = page => page.getByTestId('deposit-address').innerText();
 /** The minimum is on screen for this destination, ABOVE the address, in two
- *  lines (owner, 2026-09-29): «Минимальное пополнение — 300 USDT» for a
- *  USD-pegged coin, «… — 300 USDT или эквивалент в BTC» for any other, then one
+ *  lines (owner, 2026-09-29): «Минимальное пополнение — 500 USDT» for a
+ *  USD-pegged coin, «… — 500 USDT или эквивалент в BTC» for any other, then one
  *  short sentence. «(≈ X BTC)» only from a live, current price. */
 async function minimumShown(page, entry, symbol, priced = false) {
   const box = page.getByTestId('deposit-minimum');
@@ -48,7 +48,7 @@ async function minimumShown(page, entry, symbol, priced = false) {
   const minY = (await box.boundingBox()).y, addressY = (await page.getByTestId('deposit-address').boundingBox()).y;
   const equivalent = await page.getByTestId('deposit-minimum-equivalent').count();
   const pegged = symbol === 'USDT' || symbol === 'USDC';
-  const line = pegged ? `Минимальное пополнение — 300 ${symbol}` : `Минимальное пополнение — 300 USDT или эквивалент в ${symbol}`;
+  const line = pegged ? `Минимальное пополнение — 500 ${symbol}` : `Минимальное пополнение — 500 USDT или эквивалент в ${symbol}`;
   check(`${entry}: ${symbol} minimum in two lines before the address`, text.startsWith(line)
     && text.includes('Несколько переводов в одном активе и сети суммируются.') && text.split('\n').filter(Boolean).length === 2 && minY < addressY);
   check(`${entry}: ${symbol} ${priced ? 'shows' : 'has no'} ≈ estimate`, equivalent === (priced && !pegged ? 1 : 0));
@@ -109,7 +109,7 @@ async function entryChecks(entry) {
     await screenshot(page, entry.toLowerCase() + '-btc-no-price');
     await setPagePrices(page, { BTC: '100000', ETH: '2500' });
     await minimumShown(page, entry, 'BTC', true);
-    check(entry + ': live BTC price gives (≈ 0,003 BTC)', (await page.getByTestId('deposit-minimum-equivalent').innerText()).trim() === '(≈ 0,003 BTC)');
+    check(entry + ': live BTC price gives (≈ 0,005 BTC)', (await page.getByTestId('deposit-minimum-equivalent').innerText()).trim() === '(≈ 0,005 BTC)');
     await screenshot(page, entry.toLowerCase() + '-btc-estimate');
     await pickAsset(page, 'ETH'); await minimumShown(page, entry, 'ETH', true);
     await pickAsset(page, 'BTC');

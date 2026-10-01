@@ -293,7 +293,7 @@ it('FAQ opens with four suggestions, all 14 questions, no profile read and no ti
   jest.useFakeTimers();
   const timeout = jest.spyOn(global, 'setTimeout');
   act(() => (h.host.querySelector('[data-assistant-intent="deposit_minimum"]') as HTMLButtonElement).click());
-  expect(h.host.querySelector('.support-assistant-message')!.textContent).toContain('$300');
+  expect(h.host.querySelector('.support-assistant-message')!.textContent).toContain('$500');
   expect(timeout).not.toHaveBeenCalled();
   act(() => jest.advanceTimersByTime(86_400_000));
   expect(h.fetches).toHaveLength(0);

@@ -315,9 +315,10 @@ async function main() {
       userId: p.userId, chain: 'tron', asset: 'USDT', depositIds: p.transfers.map((t) => t.id), token: p.token, idempotencyKey: key });
     const bal = async (userId, asset = 'USDT') => prisma.balance.findUnique({ where: { userId_asset: { userId, asset } } });
 
-    fixture.send(101, '300.123456');               // U1, new account
-    fixture.send(102, '150'); fixture.send(103, '200'); // U2, existing account, referred
-    fixture.send(104, '299.999999');                // U3, below the minimum, then topped up
+    // Amounts follow the current minimum (MIN_DEPOSIT_USD = 500).
+    fixture.send(101, '500.123456');               // U1, new account
+    fixture.send(102, '250'); fixture.send(103, '300'); // U2, existing account, referred
+    fixture.send(104, '499.999999');                // U3, below the minimum, then topped up
     for (const n of [101, 102, 103, 104]) await recorded(n);
     check('B0 detected transfers start unattributed and change no balance', (await prisma.deposit.count({ where: { userId: null } })) === 4 && !(await bal(ids.u1)));
     // Admin picks each client by UID from the full client list.
@@ -327,36 +328,36 @@ async function main() {
     check('B1 attribution alone credits nothing', !(await bal(ids.u1)) && (await bal(ids.u2)).available.toString() === '10');
 
     const p1 = await preview(ids.u1), p2 = await preview(ids.u2), p3 = await preview(ids.u3);
-    check('B2 each preview is that user\'s own package', p1.userId === ids.u1 && p1.total === '300.123456' && p1.transfers.length === 1
-      && p2.total === '350' && p2.transfers.length === 2 && p3.total === '299.999999' && !p3.minimumReached);
-    check('B2 the preview shows the balance before and after', p1.balanceAvailable === '0' && p1.balanceAfter === '300.123456' && p2.balanceAvailable === '10' && p2.balanceAfter === '360');
+    check('B2 each preview is that user\'s own package', p1.userId === ids.u1 && p1.total === '500.123456' && p1.transfers.length === 1
+      && p2.total === '550' && p2.transfers.length === 2 && p3.total === '499.999999' && !p3.minimumReached);
+    check('B2 the preview shows the balance before and after', p1.balanceAvailable === '0' && p1.balanceAfter === '500.123456' && p2.balanceAvailable === '10' && p2.balanceAfter === '560');
     const below = await confirm(p3);
     check('B3 below the minimum: refused, nothing credited', below.status === 409 && below.body.code === 'BELOW_MINIMUM' && (await bal(ids.u3)).available.toString() === '1');
 
     const c1 = await measure('credit: confirm one package', () => confirm(p1));
-    check('B4 a new account: its Balance row is created with the exact amount', c1.status === 200 && (await bal(ids.u1)).available.toString() === '300.123456' && (await bal(ids.u1)).locked.toString() === '0');
+    check('B4 a new account: its Balance row is created with the exact amount', c1.status === 200 && (await bal(ids.u1)).available.toString() === '500.123456' && (await bal(ids.u1)).locked.toString() === '0');
     const key2 = randomUUID();
     const [d1, d2] = await Promise.all([confirm(p2, key2), confirm(p2, key2)]);
     const u2After = await bal(ids.u2);
     check('B5 a double click (same key, at once) credits once', d1.status === 200 && d2.status === 200 && [d1.body.replayed, d2.body.replayed].filter(Boolean).length <= 1
-      && d1.body.batchId === d2.body.batchId && u2After.available.toString() === '360');
+      && d1.body.batchId === d2.body.batchId && u2After.available.toString() === '560');
     check('B5 an existing account: only available grows; locked and other assets stay', u2After.locked.toString() === '5'
       && (await bal(ids.u2, 'BTC')).available.toString() === '0.5' && (await prisma.futuresBalance.findFirst({ where: { userId: ids.u2 } })).available.toString() === '70');
     const refBal = await bal(ids.ref);
-    check('B6 the referral reward is paid once, 5 % of each transfer', refBal.available.toString() === '17.5' && (await prisma.referralReward.count({ where: { referrerId: ids.ref } })) === 2);
+    check('B6 the referral reward is paid once, 5 % of each transfer', refBal.available.toString() === '27.5' && (await prisma.referralReward.count({ where: { referrerId: ids.ref } })) === 2);
     const late = await confirm(p2, key2);
     check('B7 a retry after a lost answer (same key) returns the first result, no second credit', late.status === 200 && late.body.replayed === true
-      && (await bal(ids.u2)).available.toString() === '360' && (await bal(ids.ref)).available.toString() === '17.5');
+      && (await bal(ids.u2)).available.toString() === '560' && (await bal(ids.ref)).available.toString() === '27.5');
     const stale = await confirm(p2);
-    check('B8 the credited package cannot be credited again', stale.status === 409 && (await bal(ids.u2)).available.toString() === '360');
+    check('B8 the credited package cannot be credited again', stale.status === 409 && (await bal(ids.u2)).available.toString() === '560');
     check('B9 every credit has its audit rows', (await prisma.auditLog.count({ where: { action: 'DEPOSIT_BATCH_CREDITED' } })) === 2);
 
     // U3: top up past the minimum; two admins at once with different keys.
     fixture.send(105, '0.000001'); await recorded(105); await attribute(105, ids.u3);
     const p3b = await preview(ids.u3);
-    check('B10 the top-up joins the package: exactly 300', p3b.total === '300' && p3b.minimumReached);
+    check('B10 the top-up joins the package: exactly 500', p3b.total === '500' && p3b.minimumReached);
     const [r1, r2] = await Promise.all([confirm(p3b, randomUUID(), 'admin'), confirm(p3b, randomUUID(), 'admin2')]);
-    check('B10 two admins at once: one credit, the other refused', [r1.status, r2.status].sort().join() === '200,409' && (await bal(ids.u3)).available.toString() === '301');
+    check('B10 two admins at once: one credit, the other refused', [r1.status, r2.status].sort().join() === '200,409' && (await bal(ids.u3)).available.toString() === '501');
 
     // Refusals that must leave money untouched.
     fixture.send(106, '400', { to: OTHER });
@@ -374,12 +375,12 @@ async function main() {
     fixture.state.outage = true;
     const down = await confirm(p1c);
     fixture.state.outage = false;
-    check('B13 the chain check unavailable at confirm: refused, nothing credited', down.status === 503 && (await bal(ids.u1)).available.toString() === '300.123456');
+    check('B13 the chain check unavailable at confirm: refused, nothing credited', down.status === 503 && (await bal(ids.u1)).available.toString() === '500.123456');
     fixture.send(109, '50'); await recorded(109); await attribute(109, ids.u1);
     const changed = await confirm(p1c);
     check('B14 a transfer that joined after the preview: re-review required', changed.status === 409 && changed.body.code === 'PACKAGE_CHANGED');
     const ok1 = await confirm(await preview(ids.u1));
-    check('B14 after a fresh preview it credits exactly 550 more', ok1.status === 200 && (await bal(ids.u1)).available.toString() === '850.123456');
+    check('B14 after a fresh preview it credits exactly 550 more', ok1.status === 200 && (await bal(ids.u1)).available.toString() === '1050.123456');
 
     // Who may do what.
     fixture.send(110, '400'); await recorded(110);
@@ -389,7 +390,7 @@ async function main() {
     const clientConfirm = await confirm(await preview(ids.u2), randomUUID(), 'u2');
     check('B15 a client or a guest cannot attribute or credit', asClient.status === 403 && asGuest.status === 401 && clientConfirm.status === 403);
     const selfClaim = await as('u2').post('/deposits/claim/tron', { txHash: hash(110), asset: 'USDT' });
-    check('B15 a client claim takes nothing', selfClaim.status < 500 && (await depositOf(110)).userId === null && (await bal(ids.u2)).available.toString() === '360');
+    check('B15 a client claim takes nothing', selfClaim.status < 500 && (await depositOf(110)).userId === null && (await bal(ids.u2)).available.toString() === '560');
     await prisma.user.update({ where: { id: ids.u3 }, data: { blockedAt: new Date(), blockedReason: 'QA' } });
     const blocked = await attribute(110, ids.u3);
     report.notes.push(`A blocked account (blockedAt set) can still be attributed and credited: attribute → ${blocked.status}. No such rule exists in the credit path; not changed here.`);
@@ -398,7 +399,7 @@ async function main() {
     check('B16 a credit needs no copy note, and a copy note attributes nothing', (await prisma.depositAddressCopyEvent.count({ where: { userId: ids.u2, receivedAt: { gt: new Date(Date.now() - 60_000) } } })) === 0
       && (await depositOf(110)).userId === null);
     const wallet = (await as('u1').get('/balances')).body;
-    check('B17 the client\'s spot balance shows the credit', wallet.some((b) => b.asset === 'USDT' && b.available === '850.123456'));
+    check('B17 the client\'s spot balance shows the credit', wallet.some((b) => b.asset === 'USDT' && b.available === '1050.123456'));
 
     // Account deletion: copy notes go with the account; nothing financial is rewritten.
     const goneSession = tokens.gone;
@@ -425,7 +426,7 @@ async function main() {
 
     // ── C. Browser: the real build, two origins ───────────────────────────
     // A READY package for a fresh test account, credited in the browser below.
-    fixture.send(111, '300'); await recorded(111); await attribute(111, ids.u4);
+    fixture.send(111, '500'); await recorded(111); await attribute(111, ids.u4);
     if (FRONTEND) await browserPart({ express, prisma, tokens, ids, http, check, report, sql });
     else report.notes.push('QA_FRONTEND_DIST not set: browser part skipped.');
 
@@ -602,16 +603,16 @@ async function main() {
     await s.page.screenshot({ path: path.join(OUT, 'admin-credit-drawer-1440.png') });
     const drawerText = await s.page.locator('[data-credit-drawer]').innerText();
     check('C11 the drawer names the test account and its exact package', drawerText.includes('maria@example.invalid') && drawerText.includes(ids.u4)
-      && (await s.page.locator('[data-credit-drawer] [data-package-total]').innerText()).startsWith('300') && (await s.page.locator('[data-credit-drawer] [data-balance-after]').innerText()) === '300');
+      && (await s.page.locator('[data-credit-drawer] [data-package-total]').innerText()).startsWith('500') && (await s.page.locator('[data-credit-drawer] [data-balance-after]').innerText()) === '500');
     await s.page.locator('[data-confirm-credit]').click();
-    await s.page.getByText(/Зачислено 300 USDT/).waitFor();
+    await s.page.getByText(/Зачислено 500 USDT/).waitFor();
     await s.page.screenshot({ path: path.join(OUT, 'admin-credit-done-1440.png') });
     const u4 = await prisma.balance.findUnique({ where: { userId_asset: { userId: ids.u4, asset: 'USDT' } } });
-    check('C11 confirmed in the browser: exactly 300 USDT on the chosen account', u4?.available.toString() === '300' && u4.locked.toString() === '0');
+    check('C11 confirmed in the browser: exactly 500 USDT on the chosen account', u4?.available.toString() === '500' && u4.locked.toString() === '0');
     await s.context.close();
     s = await open('u4', { width: 1440, height: 900 });
     await s.page.goto(origin + '/wallet');
-    await s.page.getByText('300', { exact: false }).first().waitFor();
+    await s.page.getByText('500', { exact: false }).first().waitFor();
     await s.page.screenshot({ path: path.join(OUT, 'client-wallet-after-credit-1440.png') });
     await s.context.close();
   }

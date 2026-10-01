@@ -3,7 +3,7 @@
   "checks": [
     "A1 a signed-in copy is one row, authored by the session — status 201",
     "A1 the row holds exactly the copied rail and address",
-    "A1 receivedAt is the server clock in UTC (Postgres runs in Europe/Kyiv) — 2026-10-01T06:59:55.741Z",
+    "A1 receivedAt is the server clock in UTC (Postgres runs in Europe/Kyiv) — 2026-10-01T07:10:57.043Z",
     "A1 the device time is kept separately",
     "A2 a retried eventId adds nothing and keeps the first time",
     "A3 the same eventId with another payload is refused",
@@ -35,7 +35,7 @@
     "B7 a retry after a lost answer (same key) returns the first result, no second credit",
     "B8 the credited package cannot be credited again",
     "B9 every credit has its audit rows",
-    "B10 the top-up joins the package: exactly 300",
+    "B10 the top-up joins the package: exactly 500",
     "B10 two admins at once: one credit, the other refused",
     "B11 a transfer to another address is not recorded",
     "B11 a fake token contract is not recorded",
@@ -71,7 +71,7 @@
     "C9 journal at 320px: rows, Kyiv time, no sideways scroll — overflow 0",
     "C9 320px: no page errors",
     "C11 the drawer names the test account and its exact package",
-    "C11 confirmed in the browser: exactly 300 USDT on the chosen account"
+    "C11 confirmed in the browser: exactly 500 USDT on the chosen account"
   ],
   "sql": {
     "copy note: first delivery": {
