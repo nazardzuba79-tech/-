@@ -3,6 +3,7 @@ import { useDepositWallets, useDepositSelection } from '../lib/useDepositOptions
 import { MANUAL_DEPOSIT_CATALOGUE } from '../lib/depositCatalogue';
 import { useLanguage } from '../lib/i18n';
 import { DepositCatalogueDialog } from './DepositCatalogueDialog';
+import type { DepositCopySource } from '../lib/depositCopyLog';
 
 /**
  * Deposit is now purely "here's the address" — no tx-hash entry. An admin
@@ -15,8 +16,8 @@ import { DepositCatalogueDialog } from './DepositCatalogueDialog';
  * of them is what the user has to reach. Each card names the exact assets
  * that chain will credit, because the address alone does not say that.
  */
-export function DepositModal({ onClose }: { onClose: () => void }) {
-  return MANUAL_DEPOSIT_CATALOGUE ? <DepositCatalogueDialog onClose={onClose}/> : <LegacyDepositModal onClose={onClose}/>;
+export function DepositModal({ onClose, source = 'header' }: { onClose: () => void; source?: DepositCopySource }) {
+  return MANUAL_DEPOSIT_CATALOGUE ? <DepositCatalogueDialog onClose={onClose} source={source}/> : <LegacyDepositModal onClose={onClose}/>;
 }
 
 function LegacyDepositModal({ onClose }: { onClose: () => void }) {

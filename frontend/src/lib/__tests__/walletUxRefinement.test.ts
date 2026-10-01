@@ -699,7 +699,8 @@ test('the current deposit entry point forwards explicit asset selection and neve
   expect(DepositModal({ open: false, onClose, initialAsset: 'BTC' })).toBeNull();
   const open = DepositModal({ open: true, onClose, initialAsset: 'BTC' });
   expect(open.type).toBe(Dialog);
-  expect(open.props).toEqual({ onClose, initialAsset: 'BTC' });
+  // The Wallet names itself as the source of a «Копировали адрес» note.
+  expect(open.props).toEqual({ onClose, initialAsset: 'BTC', source: 'wallet' });
   expect(onClose).not.toHaveBeenCalled();
 });
 

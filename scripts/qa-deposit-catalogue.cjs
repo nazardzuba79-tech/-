@@ -37,6 +37,10 @@ app.get('/api/v1/private-trading/native/wallet', (_, res) => res.status(404).jso
 // Existing Wallet page effect, unrelated to Deposit. Preserve and report it;
 // this fixture acknowledges without persisting anything.
 app.post('/api/v1/wallet/portfolio-snapshot', (_, res) => res.json({ recorded: false }));
+// Deposit «Копировали адрес» journal (2026-10-01): one note per successful
+// address copy, none for memo. The fixture records it without persisting.
+const copyNotes = [];
+app.post('/api/v1/deposit-address-copies', (req, res) => { copyNotes.push(req.body); res.status(201).json({ id: 'qa-copy-note', receivedAt: new Date().toISOString(), duplicate: false }); });
 app.get('/api/v1/market/external/rankings', (_, res) => res.json({ source: 'synthetic', rankings: [] }));
 app.get('/api/v1/support/conversations/mine', (_, res) => res.json({ conversation: null, messages: [] }));
 app.get('/api/v1/admin/alerts/summary', (_, res) => res.json({ depositId: null, withdrawalId: null, kycId: null }));
@@ -93,6 +97,10 @@ async function main() {
     await pick('deposit-asset', 'XRP'); await page.getByText('123456', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Копировать адрес', exact: true }).click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), xrp);
     await page.getByRole('button', { name: 'Копировать memo', exact: true }).click(); assert.equal(await page.evaluate(() => navigator.clipboard.readText()), '123456');
+    for (let i = 0; i < 50 && !copyNotes.length; i++) await page.waitForTimeout(100);
+    assert.equal(copyNotes.length, 1, 'one copy note for the address, none for memo');
+    assert.deepEqual({ ...copyNotes[0], eventId: undefined, clientCopiedAt: undefined }, { eventId: undefined, clientCopiedAt: undefined, asset: 'XRP', network: 'xrp', destinationId: 'ripple:xrp', address: xrp, memo: '123456', source: 'wallet' });
+    report.copyNotes = copyNotes;
     report.requests.selectAndCopy = delta(before); assert.equal(report.requests.selectAndCopy.featureRequests, 0); assert.equal(report.requests.selectAndCopy.storeWrites, 0);
     await page.getByRole('button', { name: /^Актив / }).click(); const offered = await page.getByRole('option').locator('strong').allTextContents();
     assert.ok(!offered.includes('SOL')); assert.ok(!offered.includes('USDC')); await page.keyboard.press('Escape'); report.checks.push('disabled/unconfigured excluded; address + memo copy');

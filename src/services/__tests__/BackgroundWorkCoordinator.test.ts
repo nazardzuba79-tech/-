@@ -1,6 +1,6 @@
 import express from 'express';
 import request from 'supertest';
-import { BackgroundWorkCoordinator, type SleepingWatcher } from '../BackgroundWorkCoordinator';
+import { BackgroundWorkCoordinator, markWriteWithoutBackgroundWork, type SleepingWatcher } from '../BackgroundWorkCoordinator';
 
 function watcher(name: string, asleep = true) {
   const w = { name, asleep, nudges: 0, nudge() { this.nudges++; } };
@@ -94,6 +94,27 @@ describe('BackgroundWorkCoordinator', () => {
     expect(w.nudges).toBe(0);
     await request(app).post('/write');
     expect(w.nudges).toBe(1);
+    co.stop();
+  });
+
+  it('a write its route marks as creating no work skips the re-check; every other write keeps it', async () => {
+    const w = watcher('loop');
+    const co = new BackgroundWorkCoordinator([w], { activityCooldownMs: 0 });
+    co.start();
+    const app = express();
+    app.use(express.json());
+    app.use(co.middleware());
+    app.post('/note', (_req, res) => { markWriteWithoutBackgroundWork(res); res.status(201).json({ ok: true }); });
+    app.post('/money', (_req, res) => res.status(200).json({ ok: true }));
+    // Nothing the client sends can set the marker.
+    await request(app).post('/money').set('X-No-Background-Work', '1').send({ markWriteWithoutBackgroundWork: true, locals: { notWork: true } });
+    expect(w.nudges).toBe(1);
+    await request(app).post('/note');
+    await request(app).post('/note');
+    expect(w.nudges).toBe(1);
+    await request(app).post('/money');
+    expect(w.nudges).toBe(2);
+    expect(co.stats.activityRechecks).toBe(2);
     co.stop();
   });
 });
