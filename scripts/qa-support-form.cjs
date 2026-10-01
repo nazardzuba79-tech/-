@@ -96,6 +96,7 @@ function walk(dir, files = []) {
 
   // ── The site, with a read-only API fixture ────────────────────────────────
   const apiLog = [];
+  const blockedOrigins = new Set();
   const app = express();
   app.use('/api/v1', (req, _res, next) => { apiLog.push({ method: req.method, path: req.path, at: Date.now() }); next(); });
   app.get('/api/v1/me', (req, res) => {
@@ -115,11 +116,18 @@ function walk(dir, files = []) {
   let browser;
   try {
     browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-    async function openPage(width, token, height) {
-      const context = await browser.newContext({ viewport: { width, height: height ?? (width <= 430 ? 844 : 900) }, locale: 'ru-RU', isMobile: width <= 430, hasTouch: width <= 430 });
-      await context.addInitScript(([t]) => {
-        try { localStorage.setItem('exchange_lang', 'ru'); if (t && !sessionStorage.getItem('qa-token')) { localStorage.setItem('exchange_token', t); sessionStorage.setItem('qa-token', '1'); } } catch {}
-      }, [token]);
+    async function openPage(width, token, height, language = 'ru') {
+      const context = await browser.newContext({ viewport: { width, height: height ?? (width <= 430 ? 844 : 900) }, locale: language === 'ru' ? 'ru-RU' : 'en-US', isMobile: width <= 430, hasTouch: width <= 430, serviceWorkers: 'block' });
+      // No unmocked network access, including background sockets, is allowed.
+      await context.route('**/*', route => {
+        const origin = new URL(route.request().url()).origin;
+        if (origin === appOrigin || origin === `http://127.0.0.1:${WORKER_PORT}`) return route.continue();
+        blockedOrigins.add(origin); return route.abort('blockedbyclient');
+      });
+      await context.routeWebSocket('**/*', socket => socket.close());
+      await context.addInitScript(([t, language]) => {
+        try { localStorage.setItem('exchange_lang', language); if (t && !sessionStorage.getItem('qa-token')) { localStorage.setItem('exchange_token', t); sessionStorage.setItem('qa-token', '1'); } } catch {}
+      }, [token, language]);
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', (e) => errors.push(String(e)));
@@ -129,8 +137,59 @@ function walk(dir, files = []) {
     async function fill(panel, v) {
       if (v.name !== undefined) await panel.getByLabel('Имя').fill(v.name);
       if (v.email !== undefined) await panel.getByLabel('Email').fill(v.email);
-      if (v.subject) await panel.getByLabel('Тема обращения').selectOption(v.subject);
+      if (v.subject) await panel.locator(`input[name="support-subject"][value="${v.subject}"]`).check();
       if (v.message !== undefined) await panel.getByLabel('Сообщение').fill(v.message);
+    }
+
+    // Local assistant: non-Russian site/input, all 14 answers, no API or Worker.
+    {
+      const { context, page, errors } = await openPage(1440, MEMBER_TOKEN, 900, 'en');
+      await page.goto(`${appOrigin}/legal/terms`, { waitUntil: 'networkidle' });
+      const before = { api: apiLog.length, worker: workerLog.length };
+      await page.locator('.support-launcher').click();
+      const panel = panelOf(page);
+      await panel.getByText('Помощник по бирже').waitFor();
+      assert.equal(await panel.getAttribute('lang'), 'ru');
+      assert.equal(await panel.locator('.support-suggestions button').count(), 4);
+      await page.screenshot({ path: path.join(out, 'assistant-initial-1440.png') });
+      await panel.getByRole('button', { name: 'Все вопросы', exact: true }).click();
+      const ids = await panel.locator('#support-questions [data-assistant-intent]').evaluateAll(els => els.map(el => el.dataset.assistantIntent));
+      assert.equal(ids.length, 14);
+      for (const id of ids) {
+        if (!await panel.locator('#support-questions').count()) await panel.getByRole('button', { name: 'Все вопросы', exact: true }).click();
+        await panel.locator(`#support-questions [data-assistant-intent="${id}"]`).click();
+        assert.ok(await panel.locator('.support-assistant-message').last().isVisible());
+      }
+      await panel.getByRole('button', { name: 'Очистить диалог' }).click();
+      await panel.getByLabel('Напишите вопрос…').fill('Не прийшов депозит');
+      await panel.getByLabel('Напишите вопрос…').press('Enter');
+      assert.ok((await panel.locator('.support-assistant-message').innerText()).includes('Проверьте'));
+      assert.ok(!/[іїєґ]/i.test(await panel.locator('.support-assistant-message').innerText()));
+      await page.screenshot({ path: path.join(out, 'assistant-answer-1440.png') });
+      await page.waitForTimeout(1500);
+      assert.deepEqual({ api: apiLog.length, worker: workerLog.length }, before, 'FAQ added API/Worker requests');
+      report.faq = { topics: 14, apiRequests: 0, workerRequests: 0, language: 'Russian on English site and Ukrainian question' };
+      report.fixtureSession = await page.evaluate(() => ({ tokenPresent: !!localStorage.getItem('exchange_token'), language: localStorage.getItem('exchange_lang'), visibility: document.visibilityState }));
+      await panel.getByRole('button', { name: 'Написать специалисту', exact: true }).click();
+      await panel.getByLabel('Email').waitFor();
+      await page.screenshot({ path: path.join(out, 'assistant-handoff-before-prefill-1440.png') });
+      await page.waitForFunction(() => document.querySelector('.support-panel input[type="email"]')?.value === 'member@example.com', null, { timeout: 5000 });
+      assert.equal(await panel.getByLabel('Сообщение').inputValue(), 'Не прийшов депозит');
+      assert.equal(workerLog.length, before.worker, 'handoff sent without confirmation');
+      assert.equal(apiLog.length - before.api, 1, 'handoff should only prefill once');
+      await page.screenshot({ path: path.join(out, 'assistant-handoff-1440.png') });
+      await panel.getByRole('button', { name: 'Помощник', exact: true }).click();
+      await panel.getByLabel('Напишите вопрос…').fill('Как работает стейкинг?');
+      await panel.getByLabel('Напишите вопрос…').press('Enter');
+      assert.equal(await panel.getByLabel('Сообщение').inputValue(), 'Как работает стейкинг?');
+      assert.equal(apiLog.length - before.api, 1);
+      assert.equal(workerLog.length, before.worker);
+      await page.keyboard.press('Escape');
+      assert.equal(await panel.count(), 0);
+      assert.ok(await page.locator('.support-launcher').evaluate(el => el === document.activeElement));
+      assert.deepEqual(errors, []);
+      step('14 local Russian answers: zero API/Worker requests; Ukrainian intent and English locale; handoff one prefill, zero POST');
+      await context.close();
     }
 
     // ── 1. Guest, desktop: one click → one POST → one email ─────────────────
@@ -144,11 +203,12 @@ function walk(dir, files = []) {
       const panel = panelOf(page);
       await panel.waitFor();
       assert.equal(workerLog.length, beforeOpen, 'opening the form must not call anything');
+      await panel.getByRole('button', { name: 'Специалист', exact: true }).click();
       await fill(panel, { name: 'VOLTEX Support QA', email: 'qa-support@example.invalid', subject: 'TECHNICAL', message: 'Production support form test.\nNo action required.' });
       const before = supportPosts();
-      await panel.getByRole('button', { name: 'Отправить' }).dblclick();
-      await panel.getByText('Сообщение отправлено').waitFor({ timeout: 8000 });
-      await panel.getByText('Мы ответим вам на указанную электронную почту.').waitFor();
+      await panel.getByRole('button', { name: 'Отправить специалисту', exact: true }).dblclick();
+      await panel.getByText('Обращение отправлено').waitFor({ timeout: 8000 });
+      await panel.getByText('Ответ специалиста придёт на указанный email.').waitFor();
       await page.waitForTimeout(400);
       assert.equal(supportPosts() - before, 1, 'a double click must be one POST');
       assert.equal(mail.sent.length, 1);
@@ -167,9 +227,9 @@ function walk(dir, files = []) {
       // ── 2. Provider refuses: failure text, draft kept, never success ──────
       mail.refuse = true;
       await fill(panel, { message: 'Second question.' });
-      await panel.getByRole('button', { name: 'Отправить' }).click();
+      await panel.getByRole('button', { name: 'Отправить специалисту', exact: true }).click();
       await panel.getByText('Не удалось отправить сообщение. Попробуйте ещё раз позже.').waitFor({ timeout: 8000 });
-      assert.equal(await panel.getByText('Сообщение отправлено').count(), 0);
+      assert.equal(await panel.getByText('Обращение отправлено').count(), 0);
       assert.equal(await panel.getByLabel('Сообщение').inputValue(), 'Second question.');
       assert.equal(mail.sent.length, 1);
       mail.refuse = false;
@@ -199,12 +259,13 @@ function walk(dir, files = []) {
       await page.locator('.support-launcher').click();
       const panel = panelOf(page);
       await panel.waitFor();
+      await panel.getByRole('button', { name: 'Специалист', exact: true }).click();
       await page.waitForFunction(() => document.querySelector('.support-panel input[type="email"]')?.value === 'member@example.com', null, { timeout: 5000 });
       assert.equal(await panel.getByLabel('Имя').inputValue(), 'QA Member');
       assert.ok(apiLog.filter((r) => r.path === '/me').length - meBefore <= 1, 'prefill must be one profile read at most');
       await fill(panel, { message: 'Signed-in user question.' });
-      await panel.getByRole('button', { name: 'Отправить' }).click();
-      await panel.getByText('Сообщение отправлено').waitFor({ timeout: 8000 });
+      await panel.getByRole('button', { name: 'Отправить специалисту', exact: true }).click();
+      await panel.getByText('Обращение отправлено').waitFor({ timeout: 8000 });
       assert.equal(mail.sent.at(-1).replyTo, 'member@example.com');
       await page.screenshot({ path: path.join(out, 'member-prefilled-390.png') });
       step('signed-in user: name and email prefilled, visible and editable; sent with Reply-To = profile email');
@@ -213,7 +274,7 @@ function walk(dir, files = []) {
     }
 
     // ── 4. Layout at five widths, plus a keyboard-sized viewport ────────────
-    for (const width of [320, 360, 390, 430, 1440]) {
+    for (const width of [320, 360, 390, 430, 1366, 1440, 1920]) {
       const { context, page, errors } = await openPage(width, MEMBER_TOKEN);
       await page.goto(`${appOrigin}/markets`, { waitUntil: 'domcontentloaded' });
       const launcher = page.locator('.support-launcher');
@@ -227,13 +288,16 @@ function walk(dir, files = []) {
       await launcher.click();
       const panel = panelOf(page);
       await panel.waitFor();
+      await page.screenshot({ path: path.join(out, `assistant-${width}.png`) });
+      await panel.getByRole('button', { name: 'Специалист', exact: true }).click();
       const vw = await page.evaluate(() => document.documentElement.clientWidth);
       const vh = await page.evaluate(() => window.innerHeight);
       const pb = await panel.boundingBox();
-      assert.ok(pb.x >= 0 && pb.x + pb.width <= vw + 1, `@${width} panel outside the viewport horizontally`);
+      const panelStyle = await panel.evaluate(el => { const s = getComputedStyle(el); return { width: s.width, minWidth: s.minWidth, left: s.left, right: s.right, boxSizing: s.boxSizing, padding: s.padding }; });
+      assert.ok(pb.x >= 0 && pb.x + pb.width <= vw + 1, `@${width} panel outside the viewport horizontally: ${JSON.stringify({ pb, vw, panelStyle })}`);
       assert.ok(pb.y >= 0 && pb.y + pb.height <= vh + 1, `@${width} panel outside the viewport vertically`);
       if (navBox) assert.ok(pb.y + pb.height <= navBox.y + 1, `@${width} panel under the tab bar`);
-      const send = panel.getByRole('button', { name: 'Отправить' });
+      const send = panel.getByRole('button', { name: 'Отправить специалисту', exact: true });
       const sb = await send.boundingBox();
       assert.ok(sb && sb.y >= 0 && sb.y + sb.height <= (navBox ? navBox.y : vh) + 1, `@${width} «Отправить» not visible`);
       // A long message scrolls inside the textarea; the page does not widen.
@@ -255,12 +319,17 @@ function walk(dir, files = []) {
         keyboard = { panelBottom: Math.round(kb.y + kb.height), sendBottom: Math.round(ks.y + ks.height) };
         assert.ok(ks.y >= 0 && ks.y + ks.height <= 430 + 1, `@${width} «Отправить» hidden with a keyboard-sized viewport`);
         await page.screenshot({ path: path.join(out, `form-${width}-keyboard.png`) });
+        await panel.getByRole('button', { name: 'Помощник', exact: true }).click();
+        await panel.getByLabel('Напишите вопрос…').fill('Не пришел депозит');
+        const composer = await panel.locator('.support-composer').boundingBox();
+        assert.ok(composer.y >= 0 && composer.y + composer.height <= 431, `@${width} FAQ composer hidden by keyboard`);
+        await page.screenshot({ path: path.join(out, `assistant-${width}-keyboard.png`) });
       }
       report.widths.push({ width, panel: { x: Math.round(pb.x), w: Math.round(pb.width), bottom: Math.round(pb.y + pb.height) }, tabBarTop: navBox ? Math.round(navBox.y) : null, sendBottom: Math.round(sb.y + sb.height), keyboard, errors });
       assert.deepEqual(errors, []);
       await context.close();
     }
-    step('layout: panel and «Отправить» inside the viewport and above the tab bar at 320/360/390/430/1440, also with a keyboard-sized viewport; textarea scrolls; no page overflow');
+    step('layout: FAQ/form at 320/360/390/430/1366/1440/1920; keyboard-sized mobile viewport; textarea scrolls; no overflow');
 
     report.totals = { workerPosts: supportPosts(), emails: mail.sent.length, supportApiRequests: apiLog.filter((r) => /support/.test(r.path)).length };
     assert.equal(report.totals.supportApiRequests, 0, 'something still called a /support API route');
@@ -270,6 +339,8 @@ function walk(dir, files = []) {
     report.error = String(error && error.stack || error);
     throw error;
   } finally {
+    report.fixtureRequests = apiLog.map(({ method, path }) => ({ method, path }));
+    report.blockedOrigins = [...blockedOrigins];
     fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
     if (browser) await browser.close();
     server.close();

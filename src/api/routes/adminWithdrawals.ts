@@ -38,6 +38,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
         txHash: w.txHash,
         rejectionReason: w.rejectionReason,
         performedByAdminId: w.performedByAdminId,
+        balanceHeld: w.balanceHeld,
         createdAt: w.createdAt,
         updatedAt: w.updatedAt,
       }))

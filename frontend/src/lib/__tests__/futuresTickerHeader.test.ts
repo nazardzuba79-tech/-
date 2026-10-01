@@ -278,6 +278,12 @@ test.each([
   // Deposit-only contract additions are approved separately. Restore their
   // exact text here so every Futures/Spot API method remains byte-pinned.
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
+    // Withdrawal requests (2026-09-30): the POST result names `balanceHeld`,
+    // one read of what can be withdrawn, and the admin list's `balanceHeld`.
+    // Removed here by exact text; every Futures/Spot method stays byte-pinned.
+    .replace("status: string; balanceHeld: boolean }>(\n      '/withdrawals',", "status: string }>(\n      '/withdrawals',")
+    .replace("\n  /** What the caller can withdraw, per asset, exactly as the server checks it.\n   * TRADING = the Cross trading account; SPOT = the spot ledger, with\n   * `futures` naming what would have to be transferred first. */\n  getWithdrawalOptions: () =>\n    request<{\n      source: 'TRADING' | 'SPOT';\n      assets: { asset: string; available: string }[];\n      futures: { asset: string; available: string }[];\n    }>('/withdrawals/options'),\n", '')
+    .replace("        rejectionReason: string | null;\n        balanceHeld: boolean;\n        createdAt: string;", "        rejectionReason: string | null;\n        createdAt: string;")
     // NRX public reads alone use Cloudflare; byte-pin all existing transports,
     // especially index/funding/internal OI and every account write, as before.
     .replace("import { fetchNrxPublic, isNrxPair } from './nrxMarket';\n", '')

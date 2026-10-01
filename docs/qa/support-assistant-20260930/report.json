@@ -1,0 +1,416 @@
+{
+  "environment": "production frontend bundle + real Worker code (local adapter, recorded mail binding) + read-only API fixture",
+  "steps": [
+    {
+      "name": "bundle: Worker endpoint present; no mail configuration or tokens; no chat API"
+    },
+    {
+      "name": "14 local Russian answers: zero API/Worker requests; Ukrainian intent and English locale; handoff one prefill, zero POST"
+    },
+    {
+      "name": "guest: one POST on a double click, one email to the fixed recipient, Reply-To = typed address, success text, message cleared",
+      "subject": "VOLTEX Support — Техническая проблема — VOLTEX Support QA"
+    },
+    {
+      "name": "provider refusal: failure text, draft kept, no success shown"
+    },
+    {
+      "name": "idle 25 s with the form open: 0 Worker requests, 0 support API requests"
+    },
+    {
+      "name": "signed-in user: name and email prefilled, visible and editable; sent with Reply-To = profile email"
+    },
+    {
+      "name": "layout: FAQ/form at 320/360/390/430/1366/1440/1920; keyboard-sized mobile viewport; textarea scrolls; no overflow"
+    }
+  ],
+  "widths": [
+    {
+      "width": 320,
+      "panel": {
+        "x": 8,
+        "w": 304,
+        "bottom": 712
+      },
+      "tabBarTop": 821,
+      "sendBottom": 695,
+      "keyboard": {
+        "panelBottom": 298,
+        "sendBottom": 281
+      },
+      "errors": []
+    },
+    {
+      "width": 360,
+      "panel": {
+        "x": 8,
+        "w": 344,
+        "bottom": 712
+      },
+      "tabBarTop": 789,
+      "sendBottom": 695,
+      "keyboard": {
+        "panelBottom": 298,
+        "sendBottom": 281
+      },
+      "errors": []
+    },
+    {
+      "width": 390,
+      "panel": {
+        "x": 8,
+        "w": 374,
+        "bottom": 712
+      },
+      "tabBarTop": 789,
+      "sendBottom": 695,
+      "keyboard": {
+        "panelBottom": 298,
+        "sendBottom": 281
+      },
+      "errors": []
+    },
+    {
+      "width": 430,
+      "panel": {
+        "x": 8,
+        "w": 414,
+        "bottom": 712
+      },
+      "tabBarTop": 789,
+      "sendBottom": 695,
+      "keyboard": {
+        "panelBottom": 298,
+        "sendBottom": 281
+      },
+      "errors": []
+    },
+    {
+      "width": 1366,
+      "panel": {
+        "x": 930,
+        "w": 412,
+        "bottom": 814
+      },
+      "tabBarTop": null,
+      "sendBottom": 797,
+      "keyboard": null,
+      "errors": []
+    },
+    {
+      "width": 1440,
+      "panel": {
+        "x": 1004,
+        "w": 412,
+        "bottom": 814
+      },
+      "tabBarTop": null,
+      "sendBottom": 797,
+      "keyboard": null,
+      "errors": []
+    },
+    {
+      "width": 1920,
+      "panel": {
+        "x": 1484,
+        "w": 412,
+        "bottom": 814
+      },
+      "tabBarTop": null,
+      "sendBottom": 797,
+      "keyboard": null,
+      "errors": []
+    }
+  ],
+  "faq": {
+    "topics": 14,
+    "apiRequests": 0,
+    "workerRequests": 0,
+    "language": "Russian on English site and Ukrainian question"
+  },
+  "fixtureSession": {
+    "tokenPresent": true,
+    "language": "en",
+    "visibility": "visible"
+  },
+  "totals": {
+    "workerPosts": 3,
+    "emails": 2,
+    "supportApiRequests": 0
+  },
+  "status": "PASS",
+  "fixtureRequests": [
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display/spot-snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    },
+    {
+      "method": "GET",
+      "path": "/market/test-assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/assets"
+    },
+    {
+      "method": "GET",
+      "path": "/market/display"
+    },
+    {
+      "method": "GET",
+      "path": "/futures/config"
+    },
+    {
+      "method": "GET",
+      "path": "/market/external/rankings"
+    },
+    {
+      "method": "GET",
+      "path": "/me"
+    }
+  ],
+  "blockedOrigins": [
+    "https://fonts.googleapis.com",
+    "https://market.voltextech.net"
+  ]
+}

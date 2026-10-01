@@ -214,6 +214,28 @@
   margin: 0;
 }
 
+/* Typed text. The app-wide input rule in index.css
+   (input:not([type='checkbox']):not([type='radio'])) sets BOTH `color` and
+   `-webkit-text-fill-color` to the dark exchange's near-white, and the fill
+   colour wins over any `color` a utility class sets. On the Wallet's light
+   panels every typed address and amount was white on white. One step more
+   specific, the Wallet's own ink — in both Wallet themes. */
+.vx-wallet input:not([type='checkbox']):not([type='radio']),
+.vx-wallet-modal-root input:not([type='checkbox']):not([type='radio']) {
+  color: var(--w-ink);
+  -webkit-text-fill-color: var(--w-ink);
+}
+/* The field's own border already turns gold on focus (focus-within); the
+   app-wide :focus-visible outline drew a second box inside it. */
+.vx-wallet-modal-root input:not([type='checkbox']):not([type='radio']):focus-visible {
+  outline: none;
+}
+.vx-wallet input:not([type='checkbox']):not([type='radio'])::placeholder,
+.vx-wallet-modal-root input:not([type='checkbox']):not([type='radio'])::placeholder {
+  color: var(--w-ink-4);
+  -webkit-text-fill-color: var(--w-ink-4);
+}
+
 /* Native <select> popups do not reliably inherit the Wallet's light theme.
    The app-wide fallback intentionally styles options for the dark exchange,
    while wallet-v3's shared Select gives each option a white background.

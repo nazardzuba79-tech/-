@@ -19,14 +19,14 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
   const tradeMenuCloseTimer=useRef<number|null>(null),profileMenuRef=useRef<HTMLDivElement>(null);
   const terminalCopy = active === '/trade' || active === '/futures';
   const terminalLabels = terminalNavCopy(lang);
+  const tradeSectionActive = active === '/trade' || active === '/arbitrage';
   const LINKS=[
     {to:'/markets',label:t('nav.markets')},
     {to:'/trade',label:t('nav.trade')},
     {to:'/futures',label:t('nav.futures')},
-    {to:'/banking',label:terminalCopy?terminalLabels.earn:'Banking & Earn'},
+    {to:'/banking',label:'Banking & Earn'},
     {to:'/wallet',label:t('nav.wallet')},
     {to:'/copy-trading',label:t('nav.copyTrading')},
-    {to:'/arbitrage',label:t('nav.arbitrage')},
   ];
   /**
    * The wallet lives in the right-hand money cluster on desktop, next to the
@@ -49,8 +49,8 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         <Link to="/trade" className="header-brand" style={styles.logo}><Logo/></Link><span className="brand-separator top-nav-divider" aria-hidden="true"/>
         <nav className="main-nav nav-desktop-links" aria-label={t('nav.menu')}>
           {DESKTOP_LINKS.map(l=>l.to==='/trade'?<div key={l.to} className="nav-item-wrap" onFocus={()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);setTradeMenuOpen(true);}} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setTradeMenuOpen(false);}} onKeyDown={e=>{if(e.key==='Escape')setTradeMenuOpen(false);}} onMouseEnter={()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);setTradeMenuOpen(true);}} onMouseLeave={()=>{tradeMenuCloseTimer.current=window.setTimeout(()=>setTradeMenuOpen(false),250);}}>
-            <Link to={l.to} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`} aria-haspopup="menu" aria-expanded={tradeMenuOpen}>{l.label}<ChevronDown size={12} className={`nav-chevron${tradeMenuOpen?' nav-chevron-open':''}`}/></Link>
-            {tradeMenuOpen&&<div className="nav-dropdown" role="menu"><Link to="/trade" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span></Link><Link to="/trade?market=cfd" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.cfdTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeCfdDesc')}</span></Link></div>}
+            <Link to={l.to} className={`nav-item top-nav-link${tradeSectionActive?' nav-active is-active':''}`} aria-haspopup="menu" aria-expanded={tradeMenuOpen}>{l.label}<ChevronDown size={12} className={`nav-chevron${tradeMenuOpen?' nav-chevron-open':''}`}/></Link>
+            {tradeMenuOpen&&<div className="nav-dropdown" role="menu"><Link to="/trade" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span></Link><Link to="/trade?market=cfd" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.cfdTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeCfdDesc')}</span></Link><Link to="/arbitrage" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('nav.arbitrage')}</span><span style={styles.tradeMenuItemDesc}>{t('arbitrage.title')}</span></Link></div>}
           </div>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}
           <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
           <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active==='/otc'?' nav-active is-active':''}`}>{t('nav.otc')}</Link>
@@ -74,7 +74,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
       </div>
       <div className={`nav-mobile-menu${mobileOpen?' open':''}`}>
         <button className="deposit-button" onPointerDown={prefetchDepositConfig} onClick={()=>{setShowDeposit(true);setMobileOpen(false);}} style={{justifyContent:'center',marginBottom:4}}>{t('wallet.deposit')}</button>
-        {LINKS.map(l=><Fragment key={l.to}><Link to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} style={{...styles.mobileLink,...(active===l.to?styles.linkActive:{})}}>{l.label}</Link>{l.to==='/trade'&&<Link to="/trade?market=cfd" style={{...styles.mobileLink,paddingLeft:20,fontSize:13}}>{t('trade.cfdTab')}</Link>}</Fragment>)}
+        {LINKS.map(l=><Fragment key={l.to}><Link to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} style={{...styles.mobileLink,...((l.to==='/trade'?tradeSectionActive:active===l.to)?styles.linkActive:{})}}>{l.label}</Link>{l.to==='/trade'&&<><Link to="/trade?market=cfd" style={{...styles.mobileLink,paddingLeft:20,fontSize:13}}>{t('trade.cfdTab')}</Link><Link to="/arbitrage" style={{...styles.mobileLink,paddingLeft:20,fontSize:13,...(active==='/arbitrage'?styles.linkActive:{})}}>{t('nav.arbitrage')}</Link></>}</Fragment>)}
         <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
         <Link to="/otc" style={{...styles.mobileLink,...(active==='/otc'?styles.linkActive:{})}}>{t('nav.otc')}</Link>
         <Link to="/trading-bots" style={{...styles.mobileLink,...styles.cardLink,...(active==='/trading-bots'?styles.linkActive:{})}}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>

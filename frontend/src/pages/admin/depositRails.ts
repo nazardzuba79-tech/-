@@ -7,7 +7,7 @@ const NETWORKS: Record<string, { name: string; standard: string; native: string 
   solana: { name: 'Solana', standard: 'SPL', native: 'SOL' },
   ton: { name: 'TON', standard: 'Jetton', native: 'TON' },
 };
-const ALIASES: Record<string, string> = { trc20: 'tron', erc20: 'ethereum', bep20: 'bsc', spl: 'solana', jetton: 'ton', btc: 'bitcoin', eth: 'ethereum' };
+const ALIASES: Record<string, string> = { trc20: 'tron', erc20: 'ethereum', bep20: 'bsc', spl: 'solana', sol: 'solana', jetton: 'ton', btc: 'bitcoin', eth: 'ethereum' };
 export function networkKey(value: string): string {
   const key = value.trim().toLowerCase();
   return ALIASES[key.replace(/[- ]/g, '')] ?? key;
