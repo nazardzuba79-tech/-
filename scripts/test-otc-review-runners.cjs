@@ -68,6 +68,24 @@ test('generation failure remains nonzero and retains diagnostic', t => {
   const result = verify(fixture(t, { generationExit: 7 }), 'build');
   assert.equal(result.status, 7); assert.match(result.stderr, /fixture generation failure/);
 });
+test('disposable service imports share the isolated client without a generated default client', t => {
+  const dir = temporary(t);
+  put(dir, 'scripts/fixtures/isolated-prisma.cjs', fs.readFileSync(path.join(__dirname, 'fixtures/isolated-prisma.cjs')));
+  const defaultModule = "throw new Error('ungenerated default client must never load');";
+  put(dir, 'node_modules/@prisma/client/index.js', defaultModule);
+  put(dir, 'generated/index.js', "module.exports={PrismaClient:class IsolatedClient{},Prisma:{TransactionIsolationLevel:{ReadCommitted:'ReadCommitted'}}};");
+  put(dir, 'service.cjs', "module.exports=require('@prisma/client');");
+  put(dir, 'check.cjs', `
+    const assert=require('node:assert/strict');
+    const isolated=require('./scripts/fixtures/isolated-prisma.cjs')(require.resolve('./generated'));
+    assert.strictEqual(require('./service.cjs'),isolated);
+    assert.strictEqual(require('./service.cjs').PrismaClient,isolated.PrismaClient);
+    assert.equal(isolated.Prisma.TransactionIsolationLevel.ReadCommitted,'ReadCommitted');
+  `);
+  const result = spawnSync(process.execPath, [path.join(dir, 'check.cjs')], { encoding: 'utf8', windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(fs.readFileSync(path.join(dir, 'node_modules/@prisma/client/index.js'), 'utf8'), defaultModule);
+});
 test('compilation failure cannot be reported as PASS', t => {
   const result = verify(fixture(t, { diagnostics: [{}] }), 'build');
   assert.equal(result.status, 1); assert.match(result.stderr, /fixture type error/);

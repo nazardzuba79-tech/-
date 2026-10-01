@@ -8,7 +8,7 @@ async function run() {
   global.fetch=async()=>{throw Error('External network forbidden');};
   process.env.JWT_SECRET='fixture-only-otc-jwt-not-a-production-secret';
   require('ts-node/register/transpile-only');
-  const { PrismaClient }=require(process.env.OTC_DIAGNOSTIC_CLIENT);
+  const { PrismaClient }=require('./fixtures/isolated-prisma.cjs')(process.env.OTC_DIAGNOSTIC_CLIENT);
   const { OtcCashService }=require('../src/otc/OtcCashService');
   const { auditSpotReserves }=require('../src/otc/auditReserves');
   const { OrderService }=require('../src/services/OrderService');

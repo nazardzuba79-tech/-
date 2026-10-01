@@ -63,6 +63,7 @@ async function parent() {
     console.log('LOCAL PostgreSQL:', (await sql.query('SHOW server_version')).rows[0].server_version);
     console.log('LOCAL isolation:', (await sql.query('SHOW default_transaction_isolation')).rows[0].default_transaction_isolation);
     // Generate the current schema into a unique cache; never overwrite another worktree's client.
+    fs.mkdirSync(path.join(root, 'node_modules/.cache'), { recursive: true });
     const cache = fs.mkdtempSync(path.join(root, 'node_modules/.cache/otc-safety-'));
     const schema = fs.readFileSync(path.join(root, 'prisma/schema.prisma'), 'utf8')
       .replace('provider = "prisma-client-js"', 'provider = "prisma-client-js"\n  output = "./client"');
@@ -97,7 +98,7 @@ async function child() {
   // The child has no provider secrets/config. All fetch attempts are errors, not live API calls.
   global.fetch = async () => { throw new Error('External network forbidden in OTC diagnostic'); };
   require('ts-node/register/transpile-only');
-  const { PrismaClient } = require(process.env.OTC_DIAGNOSTIC_CLIENT);
+  const { PrismaClient } = require('./fixtures/isolated-prisma.cjs')(process.env.OTC_DIAGNOSTIC_CLIENT);
   const { WithdrawalService } = require('../src/services/WithdrawalService');
   const { OrderService } = require('../src/services/OrderService');
   const { MatchingEngine } = require('../src/matching-engine/MatchingEngine');

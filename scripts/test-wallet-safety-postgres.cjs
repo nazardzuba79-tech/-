@@ -7,7 +7,7 @@ async function run() {
   assert.equal(url.hostname, '127.0.0.1'); assert.equal(url.pathname, '/voltex_otc_safety_test'); assert.ok(url.port);
   global.fetch = async () => { throw new Error('External network forbidden'); };
   require('ts-node/register/transpile-only');
-  const { PrismaClient } = require(process.env.OTC_DIAGNOSTIC_CLIENT);
+  const { PrismaClient } = require('./fixtures/isolated-prisma.cjs')(process.env.OTC_DIAGNOSTIC_CLIENT);
   const { WithdrawalService } = require('../src/services/WithdrawalService');
   const { OrderService } = require('../src/services/OrderService');
   const { MatchingEngine } = require('../src/matching-engine/MatchingEngine');

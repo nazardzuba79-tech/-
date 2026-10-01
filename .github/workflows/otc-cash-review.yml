@@ -20,7 +20,7 @@ on:
       - 'scripts/*otc*'
       - 'scripts/test-wallet-*'
       - 'scripts/verify-review.cjs'
-      - 'scripts/fixtures/no-dotenv.cjs'
+      - 'scripts/fixtures/**'
       - '.github/workflows/otc-cash-review.yml'
 permissions:
   contents: read
