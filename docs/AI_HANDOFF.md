@@ -5156,51 +5156,16 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - The new 500 deposit rule invalidated an existing 400 USDT READY fixture. It now uses 500; a new explicit 400 case stays awaiting top-up. All 7 admin customer tests pass; no runtime accounting change.
 - Final local frontend build passes; Tools browser 21 isolated + 9 integrated groups pass across eight widths. Refreshed reports/screenshots and source-matched bundle evidence. Final-head CI remains authoritative in PR #364; do not merge or deploy.
 
-## Claude — 2026-10-01 — Deposit «Копировали адрес» journal + manual-credit audit
+## Codex — 2026-10-01 — Trading Tools light visual revision (local only)
 
-- **Task:** the owner's spec (no «Я оплатил», no amounts or TXID from users, no notifications, no auto-matching): record which signed-in user copied which deposit address, in which network and when, for manual reconciliation in Admin → Пополнения; and audit the existing manual credit for ordinary users. Base `main` `8abcde87`; implementation commit `737ddeac`.
-- **Material files:**
-  - Server: `prisma/schema.prisma` + additive migration `20261001120000_deposit_address_copy_event`; `src/api/routes/depositAddressCopies.ts` (new); `src/index.ts` (mount + app-wide limiter skip for that one POST); `src/services/BackgroundWorkCoordinator.ts` (`markWriteWithoutBackgroundWork`).
-  - Client: `frontend/src/lib/depositCopyLog.ts` (new); `components/DepositCatalogueDialog.tsx` (note after a successful ADDRESS copy only); `components/DepositModal.tsx`, `pages/wallet-v3/DepositModal.tsx`, `OtcPage.tsx`, `SupportWidget.tsx` (a `source` prop only); `main.tsx` (one outbox try at start).
-  - Admin: `pages/admin/DepositCopiesSection.tsx` + `depositCopies.css` (new); `AdminDepositsPage.tsx` («Поступления | Копировали адрес»).
-  - Credit fix: `pages/admin/CreditDepositDrawer.tsx`.
-- **Credit audit result:**
-  - The server path (preview → token + idempotency key → re-prove on chain → locks → Balance upsert + audit + referral) held for three ordinary users on a real Postgres:
-    - a new account with no Balance row;
-    - an existing account (locked, BTC and futures untouched);
-    - 6-decimal amounts;
-    - below-minimum → top-up;
-    - double click, two admins at once, retry after a lost answer;
-    - provider outage, package changed;
-    - client and guest refused;
-    - a deleted account.
-  - Two client-side defects were fixed in the drawer, each with a regression test (`creditDepositDrawerOutcome.test.ts`):
-    1. A lost answer (network, gateway 502/504, 500 after commit) printed «Ничего не зачислено». It now says the outcome is unknown and re-checks with the same idempotency key.
-    2. Another package named while a preview was loading could show, or confirm, the previous user's transfers under the new name.
-  - The server credit logic is unchanged.
-- **Preserved:**
-  - Codex's deposit registry, packages, watcher, minimum and the dialog's copy/generation guard (the note is added after it).
-  - The existing queue reads of Пополнения (the journal adds one read on first open and none on a timer).
-  - The account-deletion service (the new table cascades by FK; the service is untouched).
-- **Measured locally:**
-  - One copy is one CORS preflight plus one POST, cross-origin.
-  - SQL per note: session lookup + one INSERT, plus one SELECT for a duplicate or conflict; an extra session `lastSeenAt` UPDATE is possible when last seen more than 5 min ago.
-  - SQL per journal page: session + role + one SELECT.
-  - A note re-checks no sleeping loop; an ordinary write still does.
-  - 12 h with the journal open (Playwright clock): no read of its own.
-- **Checks run:**
-  - `tsc` (root, frontend) and the frontend build.
-  - Full frontend Jest: 183 suites / 3,148 tests.
-  - Backend deposit/idle/auth suites: 126 tests.
-  - `scripts/qa-deposit-copy-log.cjs`: 71/71, re-run after merging `main` `355ce91f`. It uses a throwaway Postgres 16 in Europe/Kyiv, the real routers, a local TronGrid fixture and the catalogue-mode production build in Chromium on two origins. Screenshots and the report are in `docs/qa/deposit-copy-log/`.
-  - Codex's `scripts/qa-deposit-packages.cjs --browser` on local Postgres: exit 0, before and after the merge.
-  - After the merge: full frontend Jest 186 suites / 3,327 tests; backend deposit/idle/auth suites 127 tests.
-  - CI fix: Codex's `scripts/qa-deposit-catalogue.cjs` fixture refused the new copy note (405, counted as a forbidden write). It now records the note without persisting and asserts exactly one note (address copy, none for memo) with asset, network, destination, address, memo and source.
-  - Locally after that fix: `qa-deposit-catalogue.cjs` PASS (full 60 s idle), `qa-deposit-catalogue-edge.cjs` PASS (its token is not a JWT, so no note is sent), `repro-deposit-picker.cjs` exit 0 and `qa-deposit-ui.cjs` PASS, 303 checks (the preview has no token). Outputs went to scratch; the one tracked screenshot the picker rewrote was restored.
-- **Not done / limits:**
-  - No production, Render or Neon.
-  - The legacy (non-catalogue) deposit modals are not instrumented; production runs the catalogue.
-  - Delivery is best-effort: keepalive, one retry, at most 20 notes for 24 h.
-  - A note never identifies the payer.
-  - A blocked account can still be attributed and credited, as before.
-  - Codex #364 (minimum → $500) was merged into `main` while this PR was open. `main` `355ce91f` was merged into this branch; only this file conflicted (both entries kept). The QA script's amounts now follow the 500 minimum; this branch does not change the minimum.
+- Owner rejected the dark Tools design and requested an interesting light background. Fresh-fetched main at `355ce91f978426f1e1fb139bc87f1d3ca9f41693` (includes #364); isolated branch `codex/trading-tools-light-20261001`.
+- Scoped `.vx-trading-tools` light palette: warm ivory canvas with a faint static grid, white tool cards, gold active states, dark legible text, pale input/result surfaces, restrained borders/shadows. Added presentation headings for parameters and result. Desktop and mobile spacing retained within the same calculator structure.
+- No calculator math, defaults, draft lifecycle, transport, deposits, shared navigation or global theme changed. No new dependency, API, animation or polling.
+- Validation: frontend TypeScript/Vite build passes (existing >500 kB bundle warning); 19/19 existing presentation and shell regression tests pass. Local fixture browser exercised all six examples at 1440 px, and P&L Long/Short plus DCA at 390 px. No horizontal overflow at either width; positive/negative result colors verified. No production browser/account access.
+- Evidence: ignored `output/light-tools/` contains build/test logs, before desktop and after desktop/mobile JPEG screenshots. Running fixture preview: `http://127.0.0.1:4274/tools`. Browser viewport override reset after QA. No remote PR/CI run for this visual revision, no merge and no deploy.
+
+### Trading Tools light release authorization — 2026-10-01
+
+- Owner approved adding the reviewed light design to the exchange. Source commit `bf58fe6d98784969bd03b833bed30f1488d43115`; fresh `origin/main` remains `355ce91f978426f1e1fb139bc87f1d3ca9f41693`.
+- Publish only the scoped Tools stylesheet and two presentation headings through a dedicated PR after CI. Preserve the separate, unmerged Claude deposit-copy journal PR #365. No backend logic, infrastructure or balances changed.
+- Release/serving revision and any remaining deployment limitation must be verified from the PR and existing production deployment before reporting publication complete.
