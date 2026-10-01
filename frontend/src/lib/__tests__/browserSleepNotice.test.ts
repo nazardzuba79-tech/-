@@ -29,12 +29,6 @@ const positions = api.getFuturesPositions as jest.Mock;
 const OLD_BALANCES = [{ asset: 'USDT', available: '1234.5678', locked: '25' }];
 const NEW_BALANCES = [{ asset: 'USDT', available: '1250.8765', locked: '25' }];
 const OLD_POSITIONS = [{ id: 'fixture-position', symbol: 'BTC/USDT', size: '0.05', unrealizedPnl: '11.75', roe: '2.26' }];
-const messages: Record<string, string> = {
-  browserSleeping: 'Updates paused. Data may be out of date.',
-  browserContinue: 'Continue', browserSyncing: 'Updating data',
-  browserSyncError: 'Could not refresh. Showing the last received values.',
-};
-
 function loadNotice() {
   const source = readFileSync(resolve(frontend, 'src/components/BrowserSleepNotice.tsx'), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: {
@@ -44,8 +38,6 @@ function loadNotice() {
   const imports: Record<string, unknown> = {
     react: React, 'react/jsx-runtime': req('react/jsx-runtime'),
     '../lib/browserActivity': activity,
-    '../lib/i18n': { useLanguage: () => ({ t: (key: string) => messages[key] ?? key }) },
-    './BrowserSleepNotice.css': {},
   };
   new Function('exports', 'require', code)(output, (name: string) => {
     if (!(name in imports)) throw new Error(`Unexpected import: ${name}`);
@@ -136,7 +128,7 @@ describe('a paused browser has no Continue UI and retains known account values',
     expect(document.querySelector('[data-browser-phase]')).toBeNull();
   });
 
-  test('validation and synchronization are passive status only once slow; the last good values are not blanked', async () => {
+  test('validation and synchronization stay completely silent; the last good values are not blanked', async () => {
     await mount();
     const validation = deferred<void>(), nextBalance = deferred<typeof NEW_BALANCES>();
     validate.mockImplementationOnce(() => validation.promise);
@@ -144,11 +136,15 @@ describe('a paused browser has no Continue UI and retains known account values',
     await React.act(async () => { activity.sleepBrowser(); void activity.resumeBrowser(); });
     expect(activity.getBrowserPhase()).toBe('validating'); expectNoControls();
     expect(document.querySelector('[role="status"]')).toBeNull();
-    await tick(3_000);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe(messages.browserSyncing);
+    await tick(30_000);
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    expect(document.getElementById('root')!.textContent).toBe('');
+    expect(document.querySelector('[data-browser-phase="validating"]')?.hasAttribute('hidden')).toBe(true);
     expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
     await React.act(async () => { validation.resolve(); await flush(); });
     expect(activity.getBrowserPhase()).toBe('syncing'); expectNoControls();
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    expect(document.querySelector('[data-browser-phase="syncing"]')?.hasAttribute('hidden')).toBe(true);
     expect(futuresAccountStore.getState().balances).toMatchObject({ data: OLD_BALANCES, loading: false, refreshing: true });
     expect(futuresAccountStore.getState().positions.data).toEqual(OLD_POSITIONS);
     await React.act(async () => { nextBalance.resolve(NEW_BALANCES); await flush(); });
@@ -158,12 +154,14 @@ describe('a paused browser has no Continue UI and retains known account values',
     expect(document.querySelector('[role="status"]')).toBeNull(); expectNoControls();
   });
 
-  test('a real refresh failure stays visible without adding a retry button or clearing received data', async () => {
+  test('a real global refresh failure stays silent and keeps received data', async () => {
     await mount();
     validate.mockRejectedValueOnce(new Error('Fixture validation outage'));
     await React.act(async () => { activity.sleepBrowser(); await activity.resumeBrowser(); });
     expect(activity.getBrowserPhase()).toBe('error');
-    expect(document.querySelector('[role="status"]')?.textContent).toBe(messages.browserSyncError);
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    expect(document.getElementById('root')!.textContent).toBe('');
+    expect(document.querySelector('[data-browser-phase="error"]')?.hasAttribute('hidden')).toBe(true);
     expectNoControls();
     expect(futuresAccountStore.getState().balances.data).toEqual(OLD_BALANCES);
     expect(futuresAccountStore.getState().positions.data).toEqual(OLD_POSITIONS);
