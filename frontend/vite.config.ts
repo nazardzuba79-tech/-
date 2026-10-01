@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolveCatalogueEdge } from './src/lib/depositCatalogueEdge';
+import { voltexContent } from './contentPlugin';
 
 // Deposit catalogue activation is chosen at build time and never falls back
 // at runtime, so a malformed origin must stop the build rather than ship a
@@ -14,7 +15,8 @@ if (process.env.VITE_MANUAL_DEPOSIT_CATALOGUE === 'true' && !depositEdge?.trim()
 }
 
 export default defineConfig({
-  plugins: [react()],
+  // Academy and Help pages are compiled from frontend/content/ at build time.
+  plugins: [react(), ...voltexContent()],
   // The market edge origin (lib/marketEdge.ts). Empty = production default.
   // A compile-time constant rather than import.meta, so modules that read it
   // stay importable from the CommonJS Jest suites.

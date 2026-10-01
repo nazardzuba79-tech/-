@@ -140,6 +140,18 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
         text = text.replace(current, original);
       }
     }
+    if (file === 'frontend/src/components/Footer.tsx' || file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // Academy and Help (2026-10-01) add footer links and point «Центр
+      // помощи» at /help. Only these exact additions are undone; every
+      // other byte keeps the original digest.
+      const helpLinks: [string, string][] = file === 'frontend/src/components/Footer.tsx'
+        ? [["          <Link to=\"/academy\" style={styles.link}>\n            {t('nav.academy')}\n          </Link>\n          <Link to=\"/help/faq\" style={styles.link}>\n            {t('nav.help')}\n          </Link>\n", '']]
+        : [["    links: [\n      { labelKey: 'home.footer.helpCenter', to: '/help/faq' },\n      { labelKey: 'nav.academy', to: '/academy' },\n    ],", "    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],"]];
+      for (const [current, original] of helpLinks) {
+        expect(text.split(current)).toHaveLength(2);
+        text = text.replace(current, original);
+      }
+    }
     expect({ file, sha256: digest(text) }).toEqual({ file, sha256: expected });
   }
   expect(source('frontend/src/App.tsx')).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
