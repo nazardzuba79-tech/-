@@ -65,9 +65,11 @@ jobs:
       - name: Prepare disposable local database only
         run: npx prisma migrate deploy
       - name: Actual PostgreSQL - Ignore, concurrent credit, rollback and replay
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p output/copy-resolution
-          node scripts/qa-deposit-copy-resolution.cjs | tee output/copy-resolution/postgres.log
+          node scripts/qa-deposit-copy-resolution.cjs 2>&1 | tee output/copy-resolution/postgres.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

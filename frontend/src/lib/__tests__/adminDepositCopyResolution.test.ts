@@ -30,7 +30,7 @@ function load(file: string): any {
 const json = (body: any, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) });
 const row = (id: string, extra: any = {}) => ({ id, email: `${id}@example.invalid`, role: 'USER', isAdmin: false,
   createdAt: '2025-01-01T00:00:00Z', lastLoginAt: null, kycStatus: 'NOT_STARTED', balances: [], ...extra });
-const rows = () => [...document.querySelectorAll('[data-user-row]')].map(r => r.getAttribute('data-user-row'));
+const rows = () => Array.from(document.querySelectorAll('[data-user-row]')).map(r => r.getAttribute('data-user-row'));
 const copyOwner = () => document.querySelector('[data-user-row="copy-owner"]')!;
 const depositsTab = () => document.querySelector('[data-user-tab="deposits"]')!;
 const posts = () => fetchMock.mock.calls.filter((c: any[]) => c[1]?.method === 'POST');
