@@ -42,10 +42,16 @@ async function mount() {
   const { AdminUsersPage } = load(resolve(frontend, 'src/pages/admin/AdminUsersPage'));
   const { MemoryRouter } = req('react-router-dom');
   await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminUsersPage))); await flush(); await flush(); });
+  // This fixture represents an open, visible page. The real activity hook
+  // must perform its initial read before assertions about deposit packages.
+  expect(fetchMock.mock.calls.filter((c: any[]) => String(c[0]).endsWith('/admin/user-activity'))).toHaveLength(1);
 }
 beforeEach(() => {
   dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://example.invalid/admin/users' });
   Object.defineProperty(dom.window.document, 'visibilityState', { configurable: true, value: 'visible' });
+  // JSDOM defaults to hidden=true; setting visibilityState alone does not
+  // change that. Match both browser properties without bypassing idle logic.
+  Object.defineProperty(dom.window.document, 'hidden', { configurable: true, value: false });
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
   root = req('react-dom/client').createRoot(document.getElementById('root'));
   token = 'same-admin-token'; ignoreFails = false; ignoreGate = null; nextCopy = null;
