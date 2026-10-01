@@ -5169,3 +5169,11 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - Owner approved adding the reviewed light design to the exchange. Source commit `bf58fe6d98784969bd03b833bed30f1488d43115`; fresh `origin/main` remains `355ce91f978426f1e1fb139bc87f1d3ca9f41693`.
 - Publish only the scoped Tools stylesheet and two presentation headings through a dedicated PR after CI. Preserve the separate, unmerged Claude deposit-copy journal PR #365. No backend logic, infrastructure or balances changed.
 - Release/serving revision and any remaining deployment limitation must be verified from the PR and existing production deployment before reporting publication complete.
+
+## Codex — 2026-10-01 — OTC real-reserve prerequisite blocked
+
+- Fresh main/base SHA: `46456d61b6114dbd8edb80fdc3a5e962053f4f15`; isolated branch `codex/otc-cash-safety-review`. Evidence commit: the commit containing this entry. Main re-fetched and unchanged after reproduction.
+- Owner brief requires a concrete blocker if a safe OTC reserve needs broader trading-accounting changes. Five controlled real-PostgreSQL reproductions show stale reserve overwrites (withdrawal/Spot), duplicate releases (withdrawal rejection/Spot cancel), and book/database divergence when a naive SERIALIZABLE mitigation aborts after matching.
+- Material files: standalone `scripts/diagnose-otc-balance-safety.cjs`; `docs/qa/otc-cash-safety-blocker-20261001.md`; this handoff. No application/schema/migration/UI changes. Prior Claude OTC design, Assistant, Tools, deposit-copy journal and all financial services preserved.
+- Two complete disposable PostgreSQL 18.4 runs reproduce all five findings, expected exit 2 = BLOCKED (not passing safety tests); syntax/whitespace checks pass. No full product suites/build/browser QA claimed. Both local clusters stopped; no production credentials, database, account, order or funds accessed.
+- OTC lifecycle/reservation/chat is NOT implemented or production-ready. No finished-feature PR, merge or deploy. Next: owner approval for the cross-product financial-safety prerequisite described in the report, then OTC and its full validation.
