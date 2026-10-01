@@ -4,6 +4,7 @@ import { Check, ChevronDown, Copy, Info, QrCode, Search, X } from 'lucide-react'
 import QRCode from 'qrcode';
 import { localeOf, useLanguage } from '../lib/i18n';
 import { useDepositSelection, useDepositWallets } from '../lib/useDepositOptions';
+import { getToken } from '../lib/api';
 import { CryptoIcon } from './CryptoIcon';
 import { depositAssetMetadata } from '../lib/depositAssetMetadata';
 import { depositMinimumView, type HeldQuote } from '../lib/depositMinimum';
@@ -39,7 +40,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
   const assetTrigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
-  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId(), network: useId() };
+  const ids = { asset: useId(), assetValue: useId(), menu: useId(), menuTitle: useId() , network: useId() };
   const [copyState, setCopyState] = useState<{ field: string; ok: boolean } | null>(null);
   const copyGeneration = useRef(0);
   const panel = useRef<HTMLDivElement>(null);
@@ -106,6 +107,10 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
     if (!value) return;
     const key = destinationKey;
     const generation = ++copyGeneration.current;
+    // Capture the session before the asynchronous clipboard operation. A
+    // sign-in, sign-out or account switch during it must not relabel this copy.
+    let copySessionToken: string | null = null;
+    try { copySessionToken = getToken(); } catch { /* copying must still work */ }
     // The destination this press copies, fixed before anything awaits: a coin
     // switched while the clipboard works does not change what was copied.
     const copied = field === 'address' && wallet ? {
@@ -121,9 +126,11 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
       return;
     }
     if (generation === copyGeneration.current && key === currentDestination.current) setCopyState({ field, ok: true });
-    // Only a copied ADDRESS is noted, after the clipboard said yes. The note
-    // runs on its own: its outcome never reaches this button.
-    if (copied) reportDepositAddressCopy(copied);
+    // Only a copied ADDRESS is noted, after the clipboard said yes. Do not
+    // gate on mount state: closing this dialog in the same session is safe.
+    try {
+      if (copied && copySessionToken && getToken() === copySessionToken) reportDepositAddressCopy(copied);
+    } catch { /* a missing note must never undo a successful clipboard copy */ }
   };
   const icon = (symbol: string, size: number) => {
     const item = depositAssetMetadata[symbol];
