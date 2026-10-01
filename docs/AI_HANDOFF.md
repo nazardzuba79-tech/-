@@ -5163,3 +5163,9 @@ PR #269 CI follow-up: refreshed the two audited UI fingerprints for the approved
 - No calculator math, defaults, draft lifecycle, transport, deposits, shared navigation or global theme changed. No new dependency, API, animation or polling.
 - Validation: frontend TypeScript/Vite build passes (existing >500 kB bundle warning); 19/19 existing presentation and shell regression tests pass. Local fixture browser exercised all six examples at 1440 px, and P&L Long/Short plus DCA at 390 px. No horizontal overflow at either width; positive/negative result colors verified. No production browser/account access.
 - Evidence: ignored `output/light-tools/` contains build/test logs, before desktop and after desktop/mobile JPEG screenshots. Running fixture preview: `http://127.0.0.1:4274/tools`. Browser viewport override reset after QA. No remote PR/CI run for this visual revision, no merge and no deploy.
+
+### Trading Tools light release authorization — 2026-10-01
+
+- Owner approved adding the reviewed light design to the exchange. Source commit `bf58fe6d98784969bd03b833bed30f1488d43115`; fresh `origin/main` remains `355ce91f978426f1e1fb139bc87f1d3ca9f41693`.
+- Publish only the scoped Tools stylesheet and two presentation headings through a dedicated PR after CI. Preserve the separate, unmerged Claude deposit-copy journal PR #365. No backend logic, infrastructure or balances changed.
+- Release/serving revision and any remaining deployment limitation must be verified from the PR and existing production deployment before reporting publication complete.
