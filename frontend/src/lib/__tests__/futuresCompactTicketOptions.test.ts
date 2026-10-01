@@ -427,6 +427,8 @@ function nativeExecutionHook() {
     if (id === './nativeFuturesAdapter') return { nativeAccountState: () => null };
     if (id === './nativeReduceTarget') return { nativeOrderDraft: () => null };
     if (id === './privateTradingError') return { PrivateTradingError: Error };
+    // Pure fill arithmetic for the «Позиция закрыта» card; no I/O.
+    if (id === './futuresCloseFill') return require('../futuresCloseFill');
     throw new Error(`Unexpected runtime import: ${id}`);
   });
   return exports.useNativeFuturesExecution;

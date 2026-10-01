@@ -370,7 +370,10 @@ test.each([
     // transfer on the simulation one (where the account panel already goes).
     // 2026-09-30: that `onTransfer` is gone with the «+»; the chart gets
     // `chartSettings` and, on a desktop archive terminal, `foldHeading`.
-    "cbe78d01d9fbee5c2d4c4b73e3028f04b14788fa511ccfdcaaf5060b5dda914b"
+    // 2026-10-01: ONE prop added — the positions panel gets `onShowHistory`,
+    // so «История позиций →» on the «Позиция закрыта» card opens this page's
+    // Position History tab. No order, execution, account or layout byte changed.
+    "72ba83a065c731db3ac225fbdda43d23c586d8c48d402c8c564ead6f02c8393d"
   ],
   [
     "components/FuturesPairList.tsx",

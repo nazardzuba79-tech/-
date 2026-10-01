@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
+import { closeFillFromResponse, type FuturesCloseFill } from './futuresCloseFill';
 import { api } from './api';
 import type { FuturesAccountState } from './futuresAccountStore';
 import { refreshFuturesAccount } from './useFuturesAccount';
@@ -196,7 +197,10 @@ export interface FuturesExecution {
     protection?: { takeProfit: string | null; stopLoss: string | null };
   }): Promise<void>;
   cancelOrder(orderId: string): Promise<void>;
-  closePosition(positionId: string): Promise<void>;
+  /** Resolves with what the close filled when the engine reports it
+   *  (price and quantity for the «Позиция закрыта» card); `void` when it
+   *  does not, and the card then shows no price rather than a guessed one. */
+  closePosition(positionId: string): Promise<FuturesCloseFill | void>;
   setProtection(positionId: string, body: { takeProfit: string | null; stopLoss: string | null }): Promise<void>;
   clearProtection(positionId: string): Promise<void>;
   /** Open this position's P&L card. Absent where no card service exists,
@@ -225,7 +229,7 @@ export const REAL_FUTURES_EXECUTION: FuturesExecution = {
     await api.placeFuturesOrder(params);
   },
   cancelOrder: async (orderId) => { await api.cancelFuturesOrder(orderId); },
-  closePosition: async (positionId) => { await api.closeFuturesPosition(positionId); },
+  closePosition: async (positionId) => closeFillFromResponse(await api.closeFuturesPosition(positionId)),
   setProtection: async (positionId, body) => { await api.setFuturesPositionProtection(positionId, body); },
   clearProtection: async (positionId) => { await api.clearFuturesPositionProtection(positionId); },
   refresh: (resources) => refreshFuturesAccount(resources),
