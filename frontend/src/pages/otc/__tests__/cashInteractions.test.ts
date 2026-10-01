@@ -38,6 +38,7 @@ beforeEach(()=>{
   jest.useFakeTimers();errorLog=jest.spyOn(console,'error').mockImplementation(()=>{});
   dom=new JSDOM('<div id="root"></div>',{url:'http://localhost/otc',pretendToBeVisual:true});
   Object.assign(globalThis,{window:dom.window,document:dom.window.document,localStorage:dom.window.localStorage,HTMLElement:dom.window.HTMLElement,Node:dom.window.Node,Event:dom.window.Event,IS_REACT_ACT_ENVIRONMENT:true});
+  dom.window.HTMLElement.prototype.scrollIntoView=()=>{};
   host=document.getElementById('root')!;root=req('react-dom/client').createRoot(host);token=tokenFor('user-a');modules.clear();sessionListeners.clear();
   openSupport=jest.fn();calls=jest.fn(async(path:string)=>{
     if(path==='/otc/config')return config;if(path==='/otc/balances')return {eligible:true,balances:[{asset:'USDT',available:'20000'}]};
