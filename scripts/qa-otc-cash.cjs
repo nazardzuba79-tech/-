@@ -62,21 +62,39 @@ async function main() {
       assert.equal(submissions.length,initialSubmissions,'opening OTC never sends');
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`page overflow ${width}`);
       await page.screenshot({path:path.join(OUT,`page-${width}.png`),fullPage:true});
-      const cta=page.getByRole('button',{name:'Оформить обмен через поддержку',exact:true});
-      await cta.focus(); await page.keyboard.press('Enter');
-      const dialog=page.getByRole('dialog'); await dialog.waitFor();
+
+      const dialog=page.getByRole('dialog');
+      assert.equal(await dialog.count(),0,'support is not the first OTC step');
+      assert.equal(await page.getByRole('button',{name:'Продолжить в поддержку',exact:true}).count(),0,'final support action is hidden before review');
+
+      const categoryButtons=page.getByRole('button',{name:'Выбрать категорию',exact:true});
+      await categoryButtons.nth(1).click();
+      assert.equal(await dialog.count(),0,'choosing a category must not open support');
+
+      const form=page.getByRole('region',{name:'Параметры OTC-обмена'}).or(page.locator('[aria-label="Параметры OTC-обмена"]'));
+      await page.locator('#otc-country').fill('Украина'); await page.keyboard.press('Enter');
+      await form.getByLabel('Город получения').selectOption('geonames-703448');
+      await form.getByLabel('Отдаёте').selectOption('USDT');
+      await form.getByLabel('Количество, USDT').fill('10000');
+      await form.getByLabel('Получаете наличными').selectOption('USD');
+      assert.equal(submissions.length,initialSubmissions,'editing exchange parameters never sends');
+      assert.equal(await dialog.count(),0,'support stays closed while entering parameters');
+
+      const reviewButton=form.getByRole('button',{name:'Проверить параметры',exact:true});
+      await reviewButton.click();
+      await form.getByText('Cash Exchange',{exact:true}).first().waitFor();
+      await form.getByText('Украина, Киев',{exact:false}).waitFor();
+      await form.getByText('10000 USDT → USD наличными',{exact:false}).waitFor();
+      assert.equal(await dialog.count(),0,'review still does not open support');
+
+      const cta=form.getByRole('button',{name:'Продолжить в поддержку',exact:true});
+      await cta.focus(); await page.keyboard.press('Enter'); await dialog.waitFor();
       assert.equal(await dialog.getByRole('button',{name:'Специалист',exact:true}).getAttribute('aria-pressed'),'true');
-      assert.equal(await dialog.getByLabel('Сообщение',{exact:true}).inputValue(),'','no OTC parameter prefill');
+      assert.equal(await dialog.getByLabel('Сообщение',{exact:true}).inputValue(),'','no automatic OTC parameter prefill');
       assert.equal(submissions.length,initialSubmissions);
       await page.keyboard.press('Escape'); await dialog.waitFor({state:'detached'});
-      assert.equal(await cta.evaluate(el=>el===document.activeElement),true,'Escape returns focus to CTA');
-      for(const name of ['OTC Convert','Cash Exchange','Private OTC']) {
-        const tier=page.getByRole('button',{name:`Обсудить ${name} с поддержкой`,exact:true});
-        await tier.focus(); await page.keyboard.press('Enter'); await dialog.waitFor();
-        assert.equal(await dialog.getByLabel('Сообщение',{exact:true}).inputValue(),'');
-        await page.keyboard.press('Escape'); await dialog.waitFor({state:'detached'});
-        assert.equal(await tier.evaluate(el=>el===document.activeElement),true);
-      }
+      assert.equal(await cta.evaluate(el=>el===document.activeElement),true,'Escape returns focus to final CTA');
+
       await cta.click(); await dialog.waitFor();
       const message='SYNTHETIC FIXTURE ONLY — страна: Украина; город: Киев; криптовалюта: USDT; сумма: 10000. Не выполнять обмен.';
       await dialog.getByLabel('Имя',{exact:true}).fill('Fixture Tester');
@@ -114,7 +132,7 @@ async function main() {
       await page.clock.fastForward(86400000);
       assert.equal(submissions.length,initialSubmissions+2,'idle day adds no retry or polling');
       assert.deepEqual(calls.slice(initialCalls).filter(c=>!['/api/v1/me','/api/v1/market/display/spot-snapshot','/api/support'].includes(c.path)),[],'no OTC, balances, deposit or other financial requests');
-      checks.push({width,manualSupport:true,focusReturn:true,allCategories:true,fixturePosts:2,duplicatePosts:0,financialRequests:0,errorRetainsInput:true,idleSupportRequests:0});
+      checks.push({width,guidedParameters:true,reviewBeforeSupport:true,manualSupport:true,focusReturn:true,fixturePosts:2,duplicatePosts:0,financialRequests:0,errorRetainsInput:true,idleSupportRequests:0});
       await context.close();
     }
     assert.deepEqual(errors,[]);assert.deepEqual(external,[]);assert.deepEqual(unexpected,[]);
