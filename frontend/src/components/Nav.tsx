@@ -59,6 +59,7 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
           <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
           <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active==='/otc'?' nav-active is-active':''}`}>{t('nav.otc')}</Link>
           <Link to="/trading-bots" className={`nav-item top-nav-link${active==='/trading-bots'?' nav-active is-active':''}`}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
+          <Link to="/academy" className={`nav-item nav-secondary top-nav-link${active==='/academy'?' nav-active is-active':''}`}>{t('nav.academy')}</Link>
           {/* Админка is NOT a product section. It used to sit here, after
               OTC, reading as one more place to trade and getting lost
               between Crypto Card and the wallet. It now renders once, in
@@ -82,6 +83,8 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
         <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
         <Link to="/otc" style={{...styles.mobileLink,...(active==='/otc'?styles.linkActive:{})}}>{t('nav.otc')}</Link>
         <Link to="/trading-bots" style={{...styles.mobileLink,...styles.cardLink,...(active==='/trading-bots'?styles.linkActive:{})}}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
+        <Link to="/academy" style={styles.mobileLink}>{t('nav.academy')}</Link>
+        <Link to="/help/faq" style={styles.mobileLink}>{t('nav.help')}</Link>
         {isAdmin&&<Link to="/admin" style={{...styles.mobileLink,...styles.adminBadge,...(active==='/admin'?styles.adminBadgeActive:{})}}><Landmark size={14}/>{t('nav.admin')}</Link>}
         <div style={styles.mobileDivider}/><Link to="/settings" style={{...styles.mobileLink,...styles.cardLink,...(active==='/settings'?styles.linkActive:{})}}><UserRound size={15}/>{t('nav.profile')}</Link>
         {rightExtra&&<div style={styles.mobileRightExtra}>{rightExtra}</div>}<div style={styles.mobileLangRow}><LanguageSwitcher/></div><button onClick={handleLogout} style={{...styles.logoutBtn,width:'100%'}}><LogOut size={14}/>{t('nav.logout')}</button>

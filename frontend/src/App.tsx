@@ -26,6 +26,8 @@ const CopyTradingPage = lazy(() => {
 const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
 const TradingToolsPage = lazy(() => import('./pages/TradingToolsPage').then((m) => ({ default: m.TradingToolsPage })));
 const TradingBotsPage = lazy(() => import('./pages/TradingBotsPage').then((m) => ({ default: m.TradingBotsPage })));
+const AcademyPage = lazy(() => import('./pages/knowledge/AcademyPage').then((m) => ({ default: m.AcademyPage })));
+const HelpPage = lazy(() => import('./pages/knowledge/HelpPage').then((m) => ({ default: m.HelpPage })));
 const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
 const ReferralRedirectPage = lazy(() => import('./pages/ReferralRedirectPage').then((m) => ({ default: m.ReferralRedirectPage })));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
@@ -111,6 +113,13 @@ export function App() {
         <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
+        {/* Academy and Help: public and static (frontend/content/), no API reads. */}
+        <Route path="/academy" element={<AcademyPage />} />
+        <Route path="/academy/glossary" element={<AcademyPage glossary />} />
+        <Route path="/academy/:section" element={<AcademyPage />} />
+        <Route path="/academy/:section/:slug" element={<AcademyPage />} />
+        <Route path="/help" element={<Navigate to="/help/faq" replace />} />
+        <Route path="/help/:tab" element={<HelpPage />} />
         <Route path="/:code" element={<ReferralRedirectPage />} />
         <Route path="/admin" element={<AdminLayout />}>
           {/* No overview step: the console opens on the list an operator

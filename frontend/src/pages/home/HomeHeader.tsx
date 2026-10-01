@@ -30,6 +30,7 @@ const LINKS: { to: string; labelKey: Key }[] = [
   { to: '/arbitrage', labelKey: 'nav.arbitrage' },
   { to: '/card', labelKey: 'nav.card' },
   { to: '/otc', labelKey: 'nav.otc' },
+  { to: '/academy', labelKey: 'nav.academy' },
 ];
 
 export function HomeHeader() {

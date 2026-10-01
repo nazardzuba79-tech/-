@@ -18,6 +18,12 @@ export function Footer() {
       <div style={styles.top}>
         <Logo />
         <nav style={styles.links}>
+          <Link to="/academy" style={styles.link}>
+            {t('nav.academy')}
+          </Link>
+          <Link to="/help/faq" style={styles.link}>
+            {t('nav.help')}
+          </Link>
           <Link to="/legal/about" style={styles.link}>
             {t('footer.about')}
           </Link>

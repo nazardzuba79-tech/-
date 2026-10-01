@@ -235,6 +235,11 @@ describe('translation integrity', () => {
         // --numstat` over the locales reports `31 0` per language; asserted
         // by name below. The older `wallet.withdraw*` lines are unchanged.
         if (key?.startsWith('withdraw.')) return false;
+        // `academy.*`, `help.*`, `nav.academy` and `nav.help` are the Academy
+        // and Help pages (2026-10-01): `git diff --numstat` over the locales
+        // reports `52 0` per language, additions only. No key used either
+        // prefix before them.
+        if (key?.startsWith('academy.') || key?.startsWith('help.') || key === 'nav.academy' || key === 'nav.help') return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
