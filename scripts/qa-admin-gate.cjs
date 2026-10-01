@@ -272,7 +272,8 @@ async function main() {
     await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
     const activityBeforeSleep = state.calls.activity;
     await s.page.clock.fastForward(5 * 60_000 + 1);
-    await s.page.waitForSelector('[data-browser-phase="sleeping"]');
+    // Since #355 the sleeping phase keeps only a hidden marker, no notice.
+    await s.page.waitForSelector('[data-browser-phase="sleeping"]', { state: 'attached' });
     const beforeSleep = { ...state.calls };
     await s.page.clock.fastForward(HOUR);
     assert.deepEqual(state.calls, beforeSleep, 'idle tab issued a scheduled account read');

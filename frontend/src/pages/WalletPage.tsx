@@ -231,7 +231,7 @@ export function WalletPage() {
       </main>
 
       <DepositModal open={modal === 'deposit'} onClose={() => setModal(null)} />
-      <WithdrawModal open={modal === 'withdraw'} onClose={() => setModal(null)} onSubmitted={refresh} />
+      <WithdrawModal open={modal === 'withdraw'} onClose={() => setModal(null)} onSubmitted={refresh} onTransfer={() => setModal('transfer')} />
       <TransferModal open={modal === 'transfer'} onClose={() => setModal(null)} onSubmitted={refresh} />
     </div>
   );

@@ -1,0 +1,324 @@
+/* The archive's palette and reset stay within this route and its portal. */
+.arbitrage-page,
+.arbitrage-dialog-scope {
+  --arb-bg: #f4f6f9;
+  --arb-panel: #fff;
+  --arb-text: #182334;
+  --arb-muted: #687587;
+  --arb-border: #e0e5ec;
+  --arb-gold: #e9bd58;
+  --arb-gold-ink: #876116;
+  --arb-positive: #087f55;
+  --arb-negative: #c33d4c;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--arb-text);
+  color-scheme: light;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.arbitrage-page *, .arbitrage-dialog-scope * { box-sizing: border-box; }
+.arbitrage-page { background: var(--arb-bg); min-height: 80vh; }
+.arbitrage-page button, .arbitrage-page input, .arbitrage-page select,
+.arbitrage-dialog-scope button { font: inherit; }
+/* The shared dark-form rules also paint glyphs through text-fill and autofill.
+   Override those properties here without changing any other exchange screen. */
+.arbitrage-page input:not([type='checkbox']):not([type='radio']) {
+  -webkit-text-fill-color: var(--arb-text);
+  caret-color: var(--arb-text);
+}
+.arbitrage-page input::placeholder {
+  color: #7f8a98;
+  -webkit-text-fill-color: #7f8a98;
+  opacity: 1;
+}
+.arbitrage-page input:-webkit-autofill,
+.arbitrage-page input:-webkit-autofill:hover,
+.arbitrage-page input:-webkit-autofill:focus,
+.arbitrage-page input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--arb-text) !important;
+  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
+  box-shadow: 0 0 0 1000px #f8fafc inset !important;
+  caret-color: var(--arb-text);
+}
+.arbitrage-page select option { color: var(--arb-text); background: #fff; }
+.arbitrage-page button, .arbitrage-page select, .arbitrage-dialog-scope button { cursor: pointer; }
+.arbitrage-page button, .arbitrage-dialog-scope button { margin: 0; }
+.arbitrage-page :is(button, input, select):focus-visible,
+.arbitrage-dialog-scope :is(button, [tabindex]):focus-visible { outline: 2px solid #af7b15; outline-offset: 3px; }
+.arbitrage-page :is(h1, h2, h3, p), .arbitrage-dialog-scope :is(h2, h3, p) { margin: 0; }
+.arbitrage-page svg, .arbitrage-dialog-scope svg { flex-shrink: 0; }
+.arbitrage-page .arb-container { max-width: 1512px; padding: 28px 28px 44px; margin: 0 auto; }
+.arbitrage-page .arb-hero { position: relative; isolation: isolate; overflow: hidden; min-height: 250px; padding: 38px 38px 34px; border-radius: 14px; background: #102033; margin-bottom: 24px; }
+.arbitrage-page .arb-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #102033 1%, rgba(16,32,51,.97) 39%, rgba(16,32,51,.1) 100%); }
+.arbitrage-page .arb-hero-globe { position: absolute; right: 0; top: 0; width: 61%; height: 100%; object-fit: cover; object-position: center; z-index: -2; opacity: .9; }
+.arbitrage-page .arb-hero-copy { max-width: 880px; }
+.arbitrage-page .arb-eyebrow, .arbitrage-dialog-scope .arb-eyebrow { color: var(--arb-gold-ink); font-size: 11px; font-weight: 650; letter-spacing: .12em; }
+.arbitrage-page .arb-hero .arb-eyebrow { color: #e9c577; }
+.arbitrage-page .arb-hero h1 { font-size: clamp(30px, 3vw, 42px); line-height: 1.18; letter-spacing: -.035em; color: #fff; font-weight: 650; margin: 10px 0 12px; }
+.arbitrage-page .arb-hero p { font-size: 15px; line-height: 1.7; color: #c4cfdb; }
+.arbitrage-page .arb-benefits { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 24px; }
+.arbitrage-page .arb-benefits span { display: flex; align-items: center; gap: 8px; color: #d9e1e9; font-size: 12px; }
+.arbitrage-page .arb-benefits svg { color: #e9c577; }
+.arbitrage-page .arb-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 406px; gap: 20px; align-items: start; }
+.arbitrage-page .arb-panel { min-width: 0; background: var(--arb-panel); border: 1px solid var(--arb-border); border-radius: 12px; box-shadow: 0 3px 10px #23334b04; overflow: hidden; }
+.arbitrage-page .arb-panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 21px 22px 19px; }
+.arbitrage-page .arb-panel h2, .arbitrage-page .arb-section-heading h2, .arbitrage-page .arb-how h2 { font-size: 19px; line-height: 1.3; font-weight: 650; letter-spacing: -.025em; color: var(--arb-text); }
+.arbitrage-page .arb-panel-heading p, .arbitrage-page .arb-section-heading p { color: var(--arb-muted); font-size: 12px; margin-top: 5px; }
+.arbitrage-page .arb-budget-note { color: var(--arb-muted); font-size: 11px; text-align: right; }
+.arbitrage-page .arb-budget-note strong { display: block; color: var(--arb-text); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.arbitrage-page .arb-table-tools { display: flex; gap: 10px; padding: 0 22px 15px; }
+.arbitrage-page .arb-search { display: flex; align-items: center; gap: 8px; color: #8390a0; background: #f7f9fb; border: 1px solid var(--arb-border); border-radius: 7px; flex: 1; min-width: 0; padding: 0 12px; }
+.arbitrage-page .arb-search input { border: 0; background: transparent; color: var(--arb-text); min-width: 0; width: 100%; height: 38px; padding: 0; font-size: 12px; border-radius: 0; box-shadow: none; }
+.arbitrage-page .arb-search input::placeholder { color: #7f8a98; }
+.arbitrage-page .arb-search:focus-within { outline: 2px solid #af7b15; outline-offset: 2px; }
+.arbitrage-page .arb-search input:focus-visible { outline: 0; }
+.arbitrage-page .arb-sort { display: flex; align-items: center; position: relative; gap: 8px; padding: 0 11px; border: 1px solid var(--arb-border); border-radius: 7px; background: #fff; color: var(--arb-muted); }
+.arbitrage-page .arb-sort select { appearance: none; border: 0; box-shadow: none; background: transparent; background-image: none !important; color: #465468; font-size: 12px; border-radius: 0; height: 38px; padding: 0 16px 0 0; max-width: 150px; }
+.arbitrage-page .arb-sort > svg:last-child { position: absolute; right: 8px; pointer-events: none; }
+.arbitrage-page .arb-filters { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 22px 16px; border-bottom: 1px solid var(--arb-border); }
+.arbitrage-page .arb-filters button { border: 1px solid transparent; padding: 6px 10px; border-radius: 5px; background: #f5f7f9; color: #647083; font-size: 11px; font-weight: 500; }
+.arbitrage-page .arb-filters button.is-active { color: #71520f; background: #fff6df; border-color: #e9d6a3; }
+.arbitrage-page .arb-filters button:hover { border-color: #d8be83; }
+.arbitrage-page .arb-desktop-table table { width: 100%; border-collapse: collapse; border-spacing: 0; table-layout: auto; }
+.arbitrage-page .arb-desktop-table thead { background: #fafbfc; }
+.arbitrage-page .arb-desktop-table th { text-align: left; }
+.arbitrage-page .arb-desktop-table thead th { color: #748092; font-size: 11px; font-weight: 500; white-space: nowrap; padding: 11px 10px; border-bottom: 1px solid #e7ebf0; }
+.arbitrage-page .arb-desktop-table :is(td, tbody th) { padding: 14px 10px; font-size: 12px; border-bottom: 1px solid #edf0f4; color: #36445a; white-space: nowrap; }
+.arbitrage-page .arb-desktop-table :is(th, td):first-child { padding-left: 22px; }
+.arbitrage-page .arb-desktop-table :is(th, td):last-child { padding-right: 18px; }
+.arbitrage-page .arb-desktop-table td strong { display: block; font-weight: 600; }
+.arbitrage-page .arb-desktop-table td small { display: block; font-size: 11px; color: #7b8795; margin-top: 3px; }
+.arbitrage-page .arb-desktop-table tbody tr { cursor: pointer; }
+.arbitrage-page .arb-desktop-table tbody tr:hover { background: #fafbfd; }
+.arbitrage-page .arb-desktop-table tbody tr.is-selected { background: #fffbef; }
+.arbitrage-page .arb-desktop-table tbody tr.is-selected th { box-shadow: inset 3px 0 0 #d6a73e; }
+.arbitrage-page .arb-pair-button { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--arb-text); padding: 5px 0; text-align: left; font-size: 12px; font-weight: 650; }
+.arbitrage-page .arb-pair-button small { display: block; color: #84909e; font-size: 11px; font-weight: 400; }
+.arbitrage-page .arb-coin { width: 26px; height: 26px; border-radius: 50%; background: #415d82; color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 650; flex-shrink: 0; }
+.arbitrage-page .arb-coin-btc { background: #f49c27; font-size: 19px; }
+.arbitrage-page .arb-coin-eth { background: #6975c7; font-size: 21px; }
+.arbitrage-page .arb-coin-sol { background: #273847; color: #99dcc8; }
+.arbitrage-page .arb-coin-xrp { background: #313e4d; }
+.arbitrage-page .arb-coin-ton { background: #209dcc; }
+.arbitrage-page .arb-coin-doge { background: #b49848; }
+.arbitrage-page .arb-coin-avax { background: #de5b60; }
+.arbitrage-page .arb-coin-link { background: #356dc7; }
+.arbitrage-page .arb-selected-check { color: #9b751c; }
+.arbitrage-page .arb-number, .arbitrage-page .arb-result, .arbitrage-page .arb-field input,
+.arbitrage-dialog-scope :is(dd, .arb-result, .arb-dialog-route) { font-variant-numeric: tabular-nums; }
+.arbitrage-page .arb-positive, .arbitrage-dialog-scope .arb-positive { color: var(--arb-positive) !important; }
+.arbitrage-page .arb-negative, .arbitrage-dialog-scope .arb-negative { color: var(--arb-negative) !important; }
+.arbitrage-page .arb-row-detail { display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid #dce1e8; background: #fff; border-radius: 5px; color: #4b596e; font-size: 11px; font-weight: 500; padding: 7px 8px; white-space: nowrap; }
+.arbitrage-page .arb-row-detail:hover { border-color: #bf9950; color: #876116; }
+.arbitrage-page .arb-scenario-cards { display: none; }
+.arbitrage-page .arb-table-foot { display: flex; justify-content: space-between; gap: 10px; padding: 14px 22px; font-size: 11px; color: #8893a1; }
+.arbitrage-page .arb-table-insight { display: flex; gap: 11px; padding: 17px 22px; border-top: 1px solid var(--arb-border); color: #aa8434; background: #fafbfc; }
+.arbitrage-page .arb-table-insight p { font-size: 11px; color: #758194; line-height: 1.7; }
+.arbitrage-page .arb-table-insight strong { display: block; color: #425065; font-weight: 600; }
+.arbitrage-page .arb-icon-button, .arbitrage-dialog-scope .arb-icon-button { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--arb-border); border-radius: 7px; background: #fff; color: #738094; flex-shrink: 0; }
+.arbitrage-page .arb-icon-button:hover, .arbitrage-dialog-scope .arb-icon-button:hover { background: #f7f9fb; color: var(--arb-text); }
+.arbitrage-page .arb-calculator .arb-panel-heading { border-bottom: 1px solid var(--arb-border); padding: 20px 20px 18px; }
+.arbitrage-page .arb-calculator h2 { font-size: 18px; }
+.arbitrage-page .arb-calculator-body { padding: 19px 20px 18px; }
+.arbitrage-page .arb-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px 12px; }
+.arbitrage-page .arb-field { min-width: 0; display: flex; flex-direction: column; gap: 6px; color: #546277; font-size: 11px; font-weight: 450; }
+.arbitrage-page .arb-field > span:first-child { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 3px 5px; }
+.arbitrage-page .arb-field > span:first-child small { font-size: 11px; color: #8691a0; }
+.arbitrage-page .arb-field select, .arbitrage-page .arb-input-wrap { min-width: 0; width: 100%; height: 41px; background: #f8fafc; border: 1px solid #dfe4eb; border-radius: 6px; color: var(--arb-text); }
+.arbitrage-page .arb-field select { font-size: 12px; padding: 0 10px; }
+.arbitrage-page .arb-input-wrap { position: relative; display: flex; align-items: center; }
+.arbitrage-page .arb-input-wrap input { width: 100%; min-width: 0; font-size: 13px; font-weight: 500; padding: 9px 42px 9px 10px; border: 0; border-radius: 6px; outline: 0; box-shadow: none; background: transparent; color: var(--arb-text); height: 100%; }
+.arbitrage-page .arb-input-wrap > span { position: absolute; right: 9px; color: #8792a0; pointer-events: none; font-size: 11px; }
+.arbitrage-page .arb-input-wrap:focus-within { border-color: #b3892e; outline: 2px solid #e9d5a377; outline-offset: 0; }
+.arbitrage-page .arb-input-wrap input:focus-visible { outline: none; }
+.arbitrage-page .arb-field.has-error .arb-input-wrap { border-color: #d2878e; background: #fffafa; }
+.arbitrage-page .arb-field-error { color: #b23443; font-size: 11px; font-weight: 400; line-height: 1.35; }
+.arbitrage-page .arb-quick-budgets { display: flex; gap: 6px; margin: 10px 0 17px; }
+.arbitrage-page .arb-quick-budgets button { flex: 1; min-width: 0; border: 1px solid #e5e9ef; border-radius: 4px; color: #718095; background: #fff; font-size: 11px; line-height: 1.4; padding: 5px 2px; }
+.arbitrage-page .arb-quick-budgets button[aria-pressed="true"] { background: #fff7e5; color: #906b21; border-color: #e8d09a; }
+.arbitrage-page .arb-quick-budgets button:hover { border-color: #c8aa70; }
+.arbitrage-page .arb-cost-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 19px 0 12px; padding-top: 17px; border-top: 1px solid #e9edf2; }
+.arbitrage-page .arb-cost-heading h3 { font-size: 12px; font-weight: 600; color: #334155; }
+.arbitrage-page .arb-cost-heading > span { color: #919baa; font-size: 11px; }
+.arbitrage-page .arb-calculator-body > .arb-field { margin-top: 13px; }
+.arbitrage-page .arb-result, .arbitrage-dialog-scope .arb-result { margin-top: 19px; padding: 15px; background: #f0f8f4; border: 1px solid #d5e9de; border-radius: 7px; min-width: 0; }
+.arbitrage-page .arb-result.is-negative, .arbitrage-dialog-scope .arb-result.is-negative { background: #fdf4f4; border-color: #f1dadd; }
+.arbitrage-page .arb-result.is-invalid { background: #f5f7fa; border-color: #e2e7ee; }
+.arbitrage-page .arb-result > span, .arbitrage-dialog-scope .arb-result > span { color: #637869; font-size: 11px; }
+.arbitrage-page .arb-result.is-negative > span, .arbitrage-dialog-scope .arb-result.is-negative > span { color: #856770; }
+.arbitrage-page .arb-result-main, .arbitrage-dialog-scope .arb-result-main { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; margin: 4px 0 12px; }
+.arbitrage-page .arb-result-main > strong, .arbitrage-dialog-scope .arb-result-main > strong { font-size: 24px; line-height: 1.4; letter-spacing: -.035em; font-weight: 650; min-width: 0; overflow-wrap: anywhere; }
+.arbitrage-page .arb-result-main strong small, .arbitrage-dialog-scope .arb-result-main strong small { font-size: 11px; letter-spacing: 0; font-weight: 500; }
+.arbitrage-page .arb-result-main > span, .arbitrage-dialog-scope .arb-result-main > span { font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.arbitrage-page .arb-result-total, .arbitrage-dialog-scope .arb-result-total { display: flex; align-items: baseline; flex-wrap: wrap; justify-content: space-between; gap: 6px 10px; border-top: 1px solid #8eac971f; padding-top: 10px; font-size: 11px; color: #758176; }
+.arbitrage-page .arb-result-total strong, .arbitrage-dialog-scope .arb-result-total strong { font-size: 12px; color: #364c41; font-weight: 600; overflow-wrap: anywhere; min-width: 0; }
+.arbitrage-page .arb-result > p { font-size: 11px; color: #97626a; margin-top: 8px; }
+.arbitrage-page .arb-primary-button { width: 100%; border: 1px solid #d8aa43; background: #efc766; color: #322a18; display: flex; align-items: center; justify-content: center; gap: 9px; border-radius: 6px; font-size: 12px; font-weight: 600; padding: 11px; margin-top: 13px; }
+.arbitrage-page .arb-primary-button:hover { background: #e9bd58; }
+.arbitrage-page .arb-primary-button:disabled { cursor: not-allowed; background: #f0ede5; border-color: #e1ddd3; color: #969080; }
+.arbitrage-page .arb-calculator-note { margin-top: 11px; font-size: 11px; line-height: 1.6; color: #8b94a1; }
+.arbitrage-page .arb-empty { display: flex; align-items: center; flex-direction: column; justify-content: center; gap: 8px; text-align: center; min-height: 210px; padding: 30px 18px; color: #8893a1; }
+.arbitrage-page .arb-empty strong { color: #415168; font-size: 14px; }
+.arbitrage-page .arb-empty p { font-size: 12px; }
+.arbitrage-page .arb-text-button { border: 0; background: transparent; padding: 5px 0; color: #9a701d; font-size: 12px; }
+.arbitrage-page .arb-strategy-section { margin-top: 30px; }
+.arbitrage-page .arb-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.arbitrage-page .arb-strategy-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.arbitrage-page .arb-strategy-card { padding: 23px; background: #fff; border: 1px solid var(--arb-border); border-radius: 11px; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.arbitrage-page .arb-strategy-icon { display: grid; place-items: center; width: 39px; height: 39px; color: #a57d28; background: #fff6e1; border-radius: 9px; margin-bottom: 13px; }
+.arbitrage-page .arb-strategy-card h3 { font-size: 16px; font-weight: 650; letter-spacing: -.025em; color: #263447; margin-bottom: 7px; }
+.arbitrage-page .arb-strategy-card p { color: #788495; font-size: 12px; line-height: 1.7; }
+.arbitrage-page .arb-strategy-scheme { color: #9a762a; background: #fcfaf5; border: 1px solid #eee7d7; border-radius: 5px; padding: 8px 12px; margin: 19px 0 12px; width: 100%; font-size: 12px; font-weight: 500; }
+.arbitrage-page .arb-strategy-card > small { font-size: 11px; line-height: 1.6; color: #8994a1; }
+.arbitrage-page .arb-strategy-link { display: flex; align-items: center; gap: 9px; margin-top: 19px; color: #8a661d; font-size: 12px; font-weight: 500; border: 0; background: transparent; padding: 0; }
+.arbitrage-page .arb-strategy-link:hover { color: #543b08; }
+.arbitrage-page .arb-how { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 32px; padding-top: 30px; }
+.arbitrage-page .arb-how h2 { font-size: 18px; }
+.arbitrage-page .arb-steps { padding: 0; margin: 20px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; list-style: none; }
+.arbitrage-page .arb-steps li { display: flex; align-items: center; gap: 9px; }
+.arbitrage-page .arb-steps span { display: grid; place-items: center; border: 1px solid #daceb3; border-radius: 50%; width: 30px; height: 30px; flex-shrink: 0; color: #ad8a3e; font-size: 11px; }
+.arbitrage-page .arb-steps strong { font-size: 11px; font-weight: 500; color: #606e80; }
+.arbitrage-page .arb-how aside { display: flex; gap: 12px; padding: 17px 18px; border: 1px solid #dee4ec; border-radius: 9px; background: #eef2f6; color: #ad8a3e; }
+.arbitrage-page .arb-how aside strong { font-size: 12px; font-weight: 600; color: #4c5c70; }
+.arbitrage-page .arb-how aside p { color: #8590a0; font-size: 11px; line-height: 1.7; margin-top: 5px; }
+.arbitrage-page .arb-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.arbitrage-dialog-scope { position: fixed; z-index: 10000; inset: 0; background: #0a142bb8; display: flex; align-items: center; justify-content: center; padding: 24px; overflow-y: auto; }
+.arbitrage-dialog-scope .arb-dialog { position: relative; width: min(580px, 100%); max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; padding: 30px; background: #fff; border: 1px solid #e0e5ec; border-radius: 14px; box-shadow: 0 24px 90px #0004; outline: none; }
+.arbitrage-dialog-scope .arb-dialog-close { position: absolute; right: 17px; top: 17px; }
+.arbitrage-dialog-scope .arb-dialog h2 { font-size: 26px; font-weight: 650; letter-spacing: -.03em; margin: 7px 30px 7px 0; }
+.arbitrage-dialog-scope .arb-dialog h3 { font-size: 13px; font-weight: 600; padding-top: 15px; border-top: 1px solid #e7ebf1; margin-top: 17px; }
+.arbitrage-dialog-scope .arb-dialog-description { font-size: 12px; color: #7a8594; overflow-wrap: anywhere; }
+.arbitrage-dialog-scope .arb-dialog-route { display: grid; grid-template-columns: minmax(0,1fr) 20px minmax(0,1fr); align-items: center; gap: 14px; padding: 15px; background: #f7f9fc; border: 1px solid #e7ebf1; border-radius: 8px; margin: 20px 0 16px; }
+.arbitrage-dialog-scope .arb-dialog-route span { color: #8792a0; display: block; font-size: 11px; }
+.arbitrage-dialog-scope .arb-dialog-route strong { font-size: 15px; display: block; margin-top: 5px; overflow-wrap: anywhere; }
+.arbitrage-dialog-scope .arb-dialog-route small { font-size: 11px; font-weight: 450; color: #8590a0; }
+.arbitrage-dialog-scope .arb-dialog-route svg { color: #ad8a3e; }
+.arbitrage-dialog-scope .arb-breakdown { margin: 10px 0 0; }
+.arbitrage-dialog-scope .arb-breakdown > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); gap: 12px; padding: 7px 0; font-size: 11px; }
+.arbitrage-dialog-scope .arb-breakdown dt { color: #738095; }
+.arbitrage-dialog-scope .arb-breakdown dt small { display: inline-block; margin-left: 5px; color: #929caa; font-size: 11px; }
+.arbitrage-dialog-scope .arb-breakdown dd { text-align: right; margin: 0; color: #39475a; font-weight: 500; overflow-wrap: anywhere; }
+.arbitrage-dialog-scope .arb-breakdown-total { border-top: 1px solid #e7ebf1; margin-top: 7px; }
+.arbitrage-dialog-scope .arb-breakdown-total :is(dt,dd) { color: #35455a; font-weight: 600; }
+.arbitrage-dialog-scope .arb-dialog-note { margin-top: 15px; color: #8792a0; font-size: 11px; line-height: 1.7; }
+.arbitrage-dialog-scope .arb-dialog-done { background: #f4f6f9; color: #4b5b6e; border: 1px solid #dfe5ec; border-radius: 6px; width: 100%; padding: 10px; margin-top: 20px; font-size: 12px; font-weight: 500; }
+.arbitrage-dialog-scope .arb-dialog-scheme { margin-top: 23px; background: #fff8e8; color: #937020; border: 1px solid #efdfba; border-radius: 7px; padding: 12px; font-size: 14px; text-align: center; }
+.arbitrage-dialog-scope .arb-strategy-steps { padding-left: 20px; margin: 22px 0; color: #536276; font-size: 13px; line-height: 1.8; }
+.arbitrage-dialog-scope .arb-strategy-steps li { padding-left: 4px; margin-bottom: 12px; }
+@media (min-width: 1550px) {
+  .arbitrage-page .arb-workspace { grid-template-columns: minmax(0, 1fr) 426px; }
+  .arbitrage-page .arb-desktop-table :is(td, tbody th) { padding-top: 16px; padding-bottom: 16px; font-size: 13px; }
+  .arbitrage-page .arb-calculator-body { padding: 21px 22px; }
+}
+@media (max-width: 1199px) {
+  .arbitrage-page .arb-container { padding: 22px 18px 34px; }
+  .arbitrage-page .arb-workspace { grid-template-columns: minmax(0,1fr) 356px; gap: 14px; }
+  .arbitrage-page .arb-panel-heading, .arbitrage-page .arb-calculator .arb-panel-heading { padding: 18px 16px; }
+  .arbitrage-page .arb-desktop-table { display: none; }
+  .arbitrage-page .arb-scenario-cards { display: block; }
+  .arbitrage-page .arb-table-tools { padding: 0 16px 13px; }
+  .arbitrage-page .arb-filters { padding: 0 16px 13px; }
+  .arbitrage-page .arb-scenario-card { padding: 16px; border-bottom: 1px solid #e8edf2; }
+  .arbitrage-page .arb-scenario-card.is-selected { background: #fffcf2; box-shadow: inset 3px 0 #d6a73e; }
+  .arbitrage-page .arb-card-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .arbitrage-page .arb-card-result { text-align: right; font-variant-numeric: tabular-nums; }
+  .arbitrage-page .arb-card-result > small { display: block; color: #8b95a3; font-size: 11px; }
+  .arbitrage-page .arb-card-result > strong { font-size: 15px; font-weight: 600; }
+  .arbitrage-page .arb-card-result strong span { font-size: 11px; font-weight: 400; }
+  .arbitrage-page .arb-card-prices { display: grid; grid-template-columns: minmax(0,1fr) 16px minmax(0,1fr); gap: 12px; align-items: center; padding: 14px 0; }
+  .arbitrage-page .arb-card-prices > div:last-child { text-align: right; }
+  .arbitrage-page .arb-card-prices span { color: #8a95a2; display: block; font-size: 11px; }
+  .arbitrage-page .arb-card-prices strong { display: block; font-size: 13px; color: #3c4c62; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: 3px; }
+  .arbitrage-page .arb-card-prices strong small { font-size: 11px; color: #8a95a2; }
+  .arbitrage-page .arb-card-prices > svg { color: #b7a070; }
+  .arbitrage-page .arb-card-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid #e7ebf0; padding-top: 11px; font-size: 11px; color: #8994a1; }
+  .arbitrage-page .arb-card-bottom strong { font-size: 11px; margin-left: 5px; font-weight: 500; }
+  .arbitrage-page .arb-table-foot { padding: 12px 16px; }
+  .arbitrage-page .arb-table-foot > span:last-child { display: none; }
+  .arbitrage-page .arb-how { grid-template-columns: 1fr; gap: 22px; }
+}
+@media (max-width: 900px) {
+  .arbitrage-page .arb-workspace { grid-template-columns: 1fr; }
+  .arbitrage-page .arb-hero { padding: 30px; }
+  .arbitrage-page .arb-hero h1 { font-size: 34px; }
+  .arbitrage-page .arb-hero-globe { width: 80%; right: -15%; }
+  .arbitrage-page .arb-benefits { gap: 17px; }
+  .arbitrage-page .arb-strategy-grid { gap: 12px; }
+  .arbitrage-page .arb-strategy-card { padding: 17px; }
+  .arbitrage-page .arb-strategy-scheme { font-size: 11px; padding: 7px; }
+  .arbitrage-page .arb-calculator-body { padding: 20px; }
+  .arbitrage-page .arb-input-grid { gap: 15px; }
+  .arbitrage-page .arb-field { font-size: 12px; }
+  .arbitrage-page .arb-field > span:first-child small { font-size: 11px; }
+  .arbitrage-page .arb-input-wrap input, .arbitrage-page .arb-search input, .arbitrage-page .arb-field select, .arbitrage-page .arb-sort select { font-size: 16px; }
+  .arbitrage-page .arb-result-main > strong { font-size: 28px; }
+}
+@media (max-width: 600px) {
+  .arbitrage-page .arb-container { padding: 14px 12px 28px; }
+  .arbitrage-page .arb-hero { padding: 26px 21px; min-height: 278px; border-radius: 11px; margin-bottom: 16px; }
+  .arbitrage-page .arb-hero h1 { font-size: 29px; max-width: 270px; margin: 10px 0; }
+  .arbitrage-page .arb-hero p { font-size: 12px; max-width: 280px; }
+  .arbitrage-page .arb-hero-globe { width: 100%; right: -30%; object-position: 35% center; opacity: .55; }
+  .arbitrage-page .arb-hero::after { background: linear-gradient(90deg,#102033 10%,#102033cc 50%,#10203340); }
+  .arbitrage-page .arb-benefits { display: grid; gap: 8px; margin-top: 19px; }
+  .arbitrage-page .arb-benefits span { font-size: 11px; }
+  .arbitrage-page .arb-benefits svg { width: 14px; height: 14px; }
+  .arbitrage-page .arb-eyebrow { font-size: 11px; }
+  .arbitrage-page .arb-panel-heading { gap: 9px; padding: 17px 15px; }
+  .arbitrage-page .arb-panel h2 { font-size: 17px; }
+  .arbitrage-page .arb-panel-heading p { font-size: 11px; }
+  .arbitrage-page .arb-budget-note { font-size: 11px; }
+  .arbitrage-page .arb-budget-note strong { font-size: 11px; }
+  .arbitrage-page .arb-table-tools { flex-wrap: wrap; padding: 0 15px 12px; gap: 8px; }
+  .arbitrage-page .arb-search { flex-basis: 100%; }
+  .arbitrage-page .arb-search input { font-size: 16px; height: 42px; }
+  .arbitrage-page .arb-sort { width: 100%; }
+  .arbitrage-page .arb-sort select { width: 100%; max-width: none; font-size: 16px; height: 40px; }
+  .arbitrage-page .arb-filters { gap: 5px; padding: 0 15px 12px; }
+  .arbitrage-page .arb-filters button { font-size: 11px; padding: 6px 7px; }
+  .arbitrage-page .arb-scenario-card { padding: 13px 15px; }
+  .arbitrage-page .arb-pair-button { font-size: 12px; gap: 7px; }
+  .arbitrage-page .arb-card-result > strong { font-size: 14px; }
+  .arbitrage-page .arb-card-result > small { font-size: 11px; }
+  .arbitrage-page .arb-coin { width: 25px; height: 25px; }
+  .arbitrage-page .arb-card-prices { padding: 12px 0; gap: 7px; }
+  .arbitrage-page .arb-card-prices strong { font-size: 12px; }
+  .arbitrage-page .arb-card-prices span { font-size: 11px; }
+  .arbitrage-page .arb-card-bottom { padding-top: 10px; }
+  .arbitrage-page .arb-card-bottom > span { font-size: 11px; }
+  .arbitrage-page .arb-card-bottom strong { font-size: 11px; }
+  .arbitrage-page .arb-table-insight { padding: 15px; }
+  .arbitrage-page .arb-table-insight p { font-size: 11px; }
+  .arbitrage-page .arb-calculator-body { padding: 17px 15px; }
+  .arbitrage-page .arb-input-grid { gap: 12px 10px; }
+  .arbitrage-page .arb-field { font-size: 11px; }
+  .arbitrage-page .arb-field > span:first-child small { font-size: 11px; }
+  .arbitrage-page .arb-input-wrap input { font-size: 16px; }
+  .arbitrage-page .arb-price-fields .arb-field > span:first-child { display: block; }
+  .arbitrage-page .arb-price-fields .arb-field > span:first-child small { display: block; margin-top: 2px; }
+  .arbitrage-page .arb-cost-heading h3 { font-size: 12px; }
+  .arbitrage-page .arb-cost-heading > span { font-size: 11px; }
+  .arbitrage-page .arb-strategy-section { margin-top: 26px; }
+  .arbitrage-page .arb-section-heading { display: block; margin-bottom: 13px; }
+  .arbitrage-page .arb-section-heading h2 { font-size: 18px; }
+  .arbitrage-page .arb-section-heading p { font-size: 11px; }
+  .arbitrage-page .arb-strategy-grid { grid-template-columns: 1fr; }
+  .arbitrage-page .arb-strategy-card { padding: 21px; }
+  .arbitrage-page .arb-strategy-scheme { font-size: 12px; padding: 9px 12px; margin: 16px 0 10px; }
+  .arbitrage-page .arb-strategy-card > small { font-size: 11px; }
+  .arbitrage-page .arb-how { padding: 25px 3px 0; }
+  .arbitrage-page .arb-steps { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 12px; }
+  .arbitrage-page .arb-steps strong { font-size: 11px; }
+  .arbitrage-dialog-scope { padding: 12px; }
+  .arbitrage-dialog-scope .arb-dialog { padding: 23px 18px; max-height: calc(100dvh - 24px); border-radius: 11px; }
+  .arbitrage-dialog-scope .arb-dialog h2 { font-size: 23px; }
+  .arbitrage-dialog-scope .arb-dialog-description { font-size: 11px; }
+  .arbitrage-dialog-scope .arb-dialog-route { padding: 12px; gap: 8px; }
+  .arbitrage-dialog-scope .arb-dialog-route strong { font-size: 12px; }
+  .arbitrage-dialog-scope .arb-dialog-route span { font-size: 11px; }
+  .arbitrage-dialog-scope .arb-breakdown > div { font-size: 11px; gap: 10px; }
+  .arbitrage-dialog-scope .arb-breakdown dt small { margin-left: 0; display: block; }
+  .arbitrage-dialog-scope .arb-result { padding: 13px; }
+  .arbitrage-dialog-scope .arb-result-main > strong { font-size: 24px; }
+}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { browserClearInterval, browserSetInterval } from '../../lib/browserActivity';
 import { CopyValue, RailLabel } from './AdminPrimitives';
 import { styles } from './adminStyles';
 
@@ -19,7 +20,12 @@ function statusBadge(status: string) {
   return STATUS_LABEL[status] ?? { text: status, color: 'var(--text-secondary)', bg: 'var(--neutral-dim)' };
 }
 
-const GRID = '1.1fr 155px 1fr 0.7fr 90px 100px 180px';
+const GRID = '1.1fr 155px 1fr 0.8fr 90px 120px 180px';
+
+/** Minutes a request has been waiting. The client is told «до 60 минут». */
+function waitingMinutes(createdAt: string, now: number): number {
+  return Math.max(0, Math.floor((now - new Date(createdAt).getTime()) / 60_000));
+}
 
 /** Вывод криптовалюты — очередь заявок: одобрить, затем отметить
  * отправленным с txid, либо отклонить с причиной. История всех обработанных
@@ -36,6 +42,13 @@ export function AdminWithdrawalsPage() {
   }
 
   useEffect(reload, []);
+  // The waiting time ticks while the page is open and catches up on wake;
+  // the queue itself is re-read by the admin alert that brought the admin here.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = browserSetInterval(() => setNow(Date.now()), 30_000);
+    return () => browserClearInterval(timer);
+  }, []);
 
   async function handleApprove(id: string) {
     setError(null);
@@ -105,14 +118,27 @@ export function AdminWithdrawalsPage() {
             <span style={{ fontSize: 12 }}>{w.userEmail}</span>
             <RailLabel asset={w.asset} chain={w.network} />
             <CopyValue value={w.toAddress} label="адрес назначения" />
-            <span className="mono" style={{ textAlign: 'right' }}>{w.amount}</span>
+            <span style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+              <span className="mono">{w.amount}</span>
+              {!w.balanceHeld && (
+                <small style={{ fontSize: 10, color: 'var(--text-tertiary)' }} title="Заявка с торгового (Cross) счёта: сумма не заблокирована в балансе, одобрение и отклонение баланс не меняют.">
+                  торговый счёт · без блокировки
+                </small>
+              )}
+            </span>
             <span>
               {(() => {
                 const b = statusBadge(w.status);
                 return <span style={{ color: b.color, background: b.bg, borderRadius: 20, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>{b.text}</span>;
               })()}
             </span>
-            <span style={{ fontSize: 11 }}>{new Date(w.createdAt).toLocaleString('ru-RU')}</span>
+            <span style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {new Date(w.createdAt).toLocaleString('ru-RU')}
+              {(() => {
+                const minutes = waitingMinutes(w.createdAt, now);
+                return <small style={{ fontSize: 10, fontWeight: 600, color: minutes >= 60 ? 'var(--sell)' : 'var(--text-tertiary)' }}>ждёт {minutes} мин{minutes >= 60 ? ' · больше 60' : ''}</small>;
+              })()}
+            </span>
             <div style={{ display: 'flex', gap: 6 }}>
               {w.status === 'PENDING' && (
                 <button disabled={busyId === w.id} onClick={() => handleApprove(w.id)} style={styles.approveBtn}>

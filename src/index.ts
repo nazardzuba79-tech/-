@@ -70,6 +70,7 @@ import { createNativeLimitPass } from './private-trading/native/limitPass';
 import { PrivateTradingService } from './private-trading/service';
 import { PrivateTradingStore } from './private-trading/store';
 import { PrivateTradingMarketData } from './private-trading/marketData';
+import { nativeWithdrawableRows } from './private-trading/native/withdrawable';
 import { portfolioRouter } from './api/routes/portfolio';
 import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
@@ -273,7 +274,7 @@ app.use('/api/v1', adminListingsRouter(prisma, listingStoreFromEnvironment(), {
 // only on demand (orders, valuations), at most once a minute. Unconfigured = no request.
 void managedListingRegistry.ensureFresh(0);
 app.use('/api/v1', depositCatalogueRouter(prisma, new DepositCatalogue(catalogueStoreFromEnvironment(), () => coinGeckoService.getRankings())));
-app.use('/api/v1', withdrawalsRouter(prisma));
+app.use('/api/v1', withdrawalsRouter(prisma, { tradingWallet: nativeWithdrawableRows(prisma, privateTradingService) }));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));
 app.use('/api/v1', authRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));

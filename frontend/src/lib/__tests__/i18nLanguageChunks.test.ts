@@ -231,6 +231,10 @@ describe('translation integrity', () => {
         // `git diff --numstat` over the locales directory reports `63 0` for
         // every language, additions only; asserted by name below.
         if (key?.startsWith('otc.')) return false;
+        // `withdraw.*` is the withdrawal panel (2026-09-30): `git diff
+        // --numstat` over the locales reports `31 0` per language; asserted
+        // by name below. The older `wallet.withdraw*` lines are unchanged.
+        if (key?.startsWith('withdraw.')) return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
@@ -262,6 +266,20 @@ describe('translation integrity', () => {
     expect(dicts.ru['otc.form.submit']).toBe('Оставить заявку');
     expect(dicts.ru['otc.cash.p1Text']).toBe('Выберите страну получения из справочника — точная доступность подтверждается менеджером по заявке.');
     expect(new Set(LOCALES.map(code => dicts[code]['otc.heroTitle'])).size).toBe(LOCALES.length);
+  });
+
+  it('carries the withdrawal panel in every language, with its placeholders and the 60-minute promise', () => {
+    const keys = Object.keys(dicts.ru).filter(key => key.startsWith('withdraw.'));
+    expect(keys.length).toBe(31);
+    for (const code of LOCALES) {
+      for (const key of keys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
+      expect(dicts[code]['withdraw.amountTooMuch']).toContain('{amount}');
+      expect(dicts[code]['withdraw.amountTooMuch']).toContain('{asset}');
+      expect(dicts[code]['withdraw.addressWrongNetwork']).toContain('{network}');
+      expect(dicts[code]['withdraw.eta']).toContain('60');
+      expect(dicts[code]['withdraw.doneEta']).toContain('60');
+    }
+    expect(dicts.ru['withdraw.eta']).toBe('Вывод может занимать до 60 минут.');
   });
 
   it('localizes the neutral manual-catalogue note without changing legacy deposit copy', () => {
