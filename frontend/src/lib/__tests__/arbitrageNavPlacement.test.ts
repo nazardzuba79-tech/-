@@ -22,8 +22,8 @@ describe('Arbitrage navigation placement', () => {
   });
 
   it('shows OTC exchange and Arbitrage as sibling tabs inside the OTC area', () => {
-    expect(tabs).toContain('<Link to="/otc"');
-    expect(tabs).toContain('<Link to="/arbitrage"');
+    expect(tabs).toContain('<a href="/otc"');
+    expect(tabs).toContain('<a href="/arbitrage"');
     expect(otc).toContain('<OtcProductTabs active="otc" />');
     expect(arbitrage).toContain('<OtcProductTabs active="arbitrage" />');
   });
