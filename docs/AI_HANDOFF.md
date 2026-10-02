@@ -5448,3 +5448,12 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Preserved current market-data architecture, provider selection, trade execution, accounting and all Claude UI changes.
 - Wider check: 97 passed / 4 failed; all four CfdQuoteSafety failures reproduce on the unchanged production image (84 passed / 4 failed). Existing assumptions about six-symbol batches, entitlement-only display, and dropping stale display data differ from current adapter; execution freshness refusal still passes. No unrelated financial behavior changed.
 - Remote integration/claude-codex is absent after fresh fetch; isolated review branch uses current main 6e2ad9002e8b2b834a3318c11935fba9437465b6. No merge, Render deploy, DNS change or cutover. Hetzner isolated candidate verification continues.
+
+### Codex — 2026-10-02 — Deriv integer subscription request IDs
+- Base main: 5df1b144e8c2816f9c361b9cdcee909b4b7aebc8; code commit: 2ec522a57b40b79793b30dffd46292a2750d7468.
+- Public Deriv returned InputValidationFailed / Expected integer - got string for the old tick:SYMBOL request ID; the same public subscription with an integer returned a live tick.
+- Narrow change: numeric subscription IDs distinct from discovery ID 1. Tick routing, provider priority, entitlement/execution guards, CFD accounting and shutdown handling are unchanged.
+- Files: DerivPublicStreamQuoteSource.ts, new CfdDerivRequestId.test.ts, and cfd-display-only.yml (run the new contract tests and existing shutdown tests in CI).
+- Reproduction: all 4 integer-ID regression cases failed before the fix; after the fix, 17 focused request-ID/shutdown/display tests passed. Cases cover initial connection, reconnect and stop/start; accepted reference quotes remain blocked for execution without entitlement.
+- Full CFD suite: 129 passed / 5 failed. The exact same 5 failures reproduce on unchanged main (125 passed / 5 failed): four existing CfdQuoteSafety expectations plus the CfdQuoteRoutes configured-display expectation. No unrelated test expectations or provider behavior changed.
+- Remaining release gates: exact-head remote CI, full build, live subscription and collector/API verification on the isolated Hetzner candidate, then owner-authorized merge and post-merge readiness. No DNS cutover or Render/Neon changes authorized.
