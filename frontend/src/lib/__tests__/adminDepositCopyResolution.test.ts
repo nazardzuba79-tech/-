@@ -78,6 +78,7 @@ it('places an old-account/old-copy signal on page one without sorting by recent 
   await mount();
   expect(rows()[0]).toBe('copy-owner'); expect(rows()).toHaveLength(20);
   expect(copyOwner().querySelector('[data-deposit-copy-bell]')).not.toBeNull();
+  expect(copyOwner().querySelector('[data-ignore-deposit-copy]')?.textContent).toBe('Обработано');
   expect(depositsTab().textContent).toBe('Пополнения1');
   expect(depositsTab().querySelector('[data-copy-tab-bell]')).not.toBeNull();
   expect(copyOwner().querySelector('[data-credit-user]')).toBeNull();
