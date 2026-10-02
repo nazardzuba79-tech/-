@@ -1,0 +1,44 @@
+.otc-product-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: min(100%, 1180px);
+  margin: 16px auto 0;
+  padding: 0 20px;
+}
+
+.otc-product-tabs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 8px;
+  color: var(--text-secondary, #aeb4c0);
+  background: rgba(255,255,255,.03);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.otc-product-tabs a:hover {
+  color: #fff;
+  border-color: rgba(240,185,11,.38);
+}
+
+.otc-product-tabs a[aria-current="page"] {
+  color: #151719;
+  background: #f0b90b;
+  border-color: #f0b90b;
+}
+
+@media (max-width: 640px) {
+  .otc-product-tabs {
+    margin-top: 10px;
+    padding: 0 12px;
+  }
+  .otc-product-tabs a {
+    flex: 1;
+    justify-content: center;
+  }
+}
