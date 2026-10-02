@@ -158,3 +158,11 @@ it('the mutation and bell introduce no recurring transport or expiry timer', () 
   expect(page).toContain('revision === usersRevision.current');
   expect(page).toContain('row.lastDepositCopy?.id === eventId');
 });
+
+test('copy journal exposes Ignore and removes resolved rows from the working list', () => {
+  const source = require('fs').readFileSync(require('path').resolve(__dirname, '../../pages/admin/DepositCopiesSection.tsx'), 'utf8');
+  expect(source).toContain("import { ignoreCopySignal } from './depositCopyReviewClient'");
+  expect(source).toContain('data-ignore-copy-row={row.id}');
+  expect(source).toContain('await ignoreCopySignal(row.userId, row.id)');
+  expect(source).toContain('current.page.items.filter(item => item.id !== row.id)');
+});
