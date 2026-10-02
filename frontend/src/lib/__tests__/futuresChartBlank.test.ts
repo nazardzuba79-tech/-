@@ -332,14 +332,23 @@ describe('futures chart never goes blank on a loader or binding change', () => {
 
   // 10
   test('an interval switch wipes first, so only the new interval is shown', async () => {
-    const hourly = jest.fn().mockResolvedValue({ candles: CANDLES });
-    const quarter = jest.fn().mockResolvedValue({ candles: [bar(4), bar(5)] });
-    const chart = mount({ ...FUTURES, candleLoader: hourly });
-    chart.render();
+    const loader = jest.fn((_pair: string, requestedInterval: string) => Promise.resolve({
+      candles: requestedInterval === '15m' ? [bar(4), bar(5)] : CANDLES,
+    }));
+    const chart = mount({ ...FUTURES, candleLoader: loader });
+    const tree = chart.render();
     await flushAll();
     expect(lastPaint(chart)).toHaveLength(3);
-    chart.render({ interval: '15m', candleLoader: quarter });
+
+    // Drive the component's real interval state. Passing an `interval` prop
+    // is not an interval switch: PriceChart owns this state internally.
+    const quarter = nodes(tree).find(node => node.type === 'button' && node.props?.children === '15m');
+    expect(quarter).toBeTruthy();
+    quarter.props.onClick();
+    chart.render();
     await flushAll();
+
+    expect(loader.mock.calls.at(-1)?.[1]).toBe('15m');
     expect(paintedCounts(chart)).toContain(0);
     expect(lastPaint(chart)).toHaveLength(2);
     chart.unmount();
