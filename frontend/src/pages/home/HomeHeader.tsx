@@ -27,7 +27,6 @@ const LINKS: { to: string; labelKey: Key }[] = [
   { to: '/trade', labelKey: 'nav.trade' },
   { to: '/futures', labelKey: 'nav.futures' },
   { to: '/copy-trading', labelKey: 'nav.copyTrading' },
-  { to: '/arbitrage', labelKey: 'nav.arbitrage' },
   { to: '/card', labelKey: 'nav.card' },
   { to: '/otc', labelKey: 'nav.otc' },
   { to: '/academy', labelKey: 'nav.academy' },
