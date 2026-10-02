@@ -967,6 +967,9 @@ export function PriceChart({
     let suppressBackfill = false;
     let backfillTimer: ReturnType<typeof setTimeout> | undefined;
     const privateMode = !!privateTrading?.enabled && !!candleLoader;
+    // Ordinary Futures should page backward on demand just like the private
+    // replay chart. This is user-driven only: no extra idle polling.
+    const historyEnabled = privateMode || (market === 'futures' && !!candleLoader);
     const clearSeries = () => {
       for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef,maSeriesRef,bollUpperRef,bollMiddleRef,bollLowerRef,rsiSeriesRef,macdLineRef,macdSignalRef,macdHistRef]) ref.current?.setData([]);
       candlesRef.current=[];
@@ -1083,7 +1086,7 @@ export function PriceChart({
         // `controller` is the newest request. If it is no longer this one, a
         // later request owns the chart and this answer is history.
         if (cancelled || controller !== requestController) return;
-        display(privateMode ? { candles: mergeChartCandles(candlesRef.current, res.candles) } : res);
+        display(historyEnabled ? { candles: mergeChartCandles(candlesRef.current, res.candles, privateMode ? 10000 : Number.MAX_SAFE_INTEGER) } : res);
         setLoadFailed(false);
       } catch {
         // A superseded or cleanup-aborted request is not evidence of anything.
@@ -1102,7 +1105,7 @@ export function PriceChart({
     }
 
     async function history(targetTime?: number) {
-      if (!privateMode || !candleLoader || cancelled || !chartRef.current) return;
+      if (!historyEnabled || !candleLoader || cancelled || !chartRef.current) return;
       const scale = chartRef.current.timeScale();
       if (targetTime !== undefined) {
         const existing = chartEventBar(candlesRef.current, targetTime, interval);
@@ -1114,7 +1117,7 @@ export function PriceChart({
           return;
         }
         historyController?.abort();
-      } else if (historyLoading || historyEnd || !candlesRef.current.length || candlesRef.current.length >= 10000) {
+      } else if (historyLoading || historyEnd || !candlesRef.current.length || (privateMode && candlesRef.current.length >= 10000)) {
         return;
       }
       controller?.abort();
@@ -1129,7 +1132,9 @@ export function PriceChart({
         const res = await candleLoader(pair, interval, CANDLE_FETCH_LIMIT, requestController.signal, endTime);
         if (cancelled || requestController.signal.aborted) return;
         if (!res.candles.length) { historyEnd = true; return; }
-        const data = targetTime === undefined ? mergeChartCandles(res.candles, candlesRef.current) : res.candles;
+        const data = targetTime === undefined
+          ? mergeChartCandles(res.candles, candlesRef.current, privateMode ? 10000 : Number.MAX_SAFE_INTEGER)
+          : res.candles;
         const added = firstTime === undefined ? 0 : data.filter(candle => candle.time < firstTime).length;
         if (targetTime === undefined && added === 0) { historyEnd = true; return; }
         suppressBackfill = true;
@@ -1153,7 +1158,7 @@ export function PriceChart({
       }
     }
     const onRangeChange = (range: { from: number; to: number } | null) => {
-      if (!privateMode || !range || range.from > 30 || !hasSetInitialRange || suppressBackfill || historyLoading || loading || historyEnd) return;
+      if (!historyEnabled || !range || range.from > 30 || !hasSetInitialRange || suppressBackfill || historyLoading || loading || historyEnd) return;
       clearTimeout(backfillTimer);
       backfillTimer = setTimeout(() => { void history(); }, 180);
     };
@@ -1162,8 +1167,8 @@ export function PriceChart({
         if (time === 0) { historicalWindow = false; hasSetInitialRange = false; historyEnd = false; historyController?.abort(); historyLoading = false; clearSeries(); await load(); }
         else await history(time);
       };
-      chartRef.current?.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
     }
+    if (historyEnabled) chartRef.current?.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
 
     retryCandlesRef.current = () => { setLoadFailed(false); void load(); };
     load();
@@ -1174,13 +1179,11 @@ export function PriceChart({
       controller?.abort();
       historyController?.abort();
       clearTimeout(backfillTimer);
-      if (privateMode) {
-        privateHistoryRef.current = null;
-        chartRef.current?.timeScale().unsubscribeVisibleLogicalRangeChange(onRangeChange);
-      }
+      if (privateMode) privateHistoryRef.current = null;
+      if (historyEnabled) chartRef.current?.timeScale().unsubscribeVisibleLogicalRangeChange(onRangeChange);
       browserClearInterval(poll);
     };
-  }, [pair, interval, drawingToolsOn, spotChartRefinements, candleLoader, privateTrading?.enabled]);
+  }, [pair, interval, market, drawingToolsOn, spotChartRefinements, candleLoader, privateTrading?.enabled]);
 
   useEffect(() => {
     if (!privateTrading?.enabled || !privateTrading.focus || !chartReady) return;
