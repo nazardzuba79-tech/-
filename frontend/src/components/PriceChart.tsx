@@ -1086,7 +1086,7 @@ export function PriceChart({
         // `controller` is the newest request. If it is no longer this one, a
         // later request owns the chart and this answer is history.
         if (cancelled || controller !== requestController) return;
-        display(historyEnabled ? { candles: mergeChartCandles(candlesRef.current, res.candles) } : res);
+        display(historyEnabled ? { candles: mergeChartCandles(candlesRef.current, res.candles, privateMode ? 10000 : Number.MAX_SAFE_INTEGER) } : res);
         setLoadFailed(false);
       } catch {
         // A superseded or cleanup-aborted request is not evidence of anything.
@@ -1132,7 +1132,9 @@ export function PriceChart({
         const res = await candleLoader(pair, interval, CANDLE_FETCH_LIMIT, requestController.signal, endTime);
         if (cancelled || requestController.signal.aborted) return;
         if (!res.candles.length) { historyEnd = true; return; }
-        const data = targetTime === undefined ? mergeChartCandles(res.candles, candlesRef.current) : res.candles;
+        const data = targetTime === undefined
+          ? mergeChartCandles(res.candles, candlesRef.current, privateMode ? 10000 : Number.MAX_SAFE_INTEGER)
+          : res.candles;
         const added = firstTime === undefined ? 0 : data.filter(candle => candle.time < firstTime).length;
         if (targetTime === undefined && added === 0) { historyEnd = true; return; }
         suppressBackfill = true;
