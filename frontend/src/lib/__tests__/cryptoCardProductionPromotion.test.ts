@@ -141,11 +141,11 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
       }
     }
     if (file === 'frontend/src/components/Footer.tsx' || file === 'frontend/src/pages/home/HomeFooter.tsx') {
-      // Academy and Help (2026-10-01) add footer links and point «Центр
-      // помощи» at /help. Only these exact additions are undone; every
+      // The knowledge hub adds footer links. Only these exact additions are
+      // undone here so the older card-design digest remains comparable; every
       // other byte keeps the original digest.
       const helpLinks: [string, string][] = file === 'frontend/src/components/Footer.tsx'
-        ? [["          <Link to=\"/academy\" style={styles.link}>\n            {t('nav.academy')}\n          </Link>\n          <Link to=\"/help/faq\" style={styles.link}>\n            {t('nav.help')}\n          </Link>\n", '']]
+        ? [["          <Link to=\"/academy\" style={styles.link}>\n            {t('nav.academy')}\n          </Link>\n          <Link to=\"/academy/faq\" style={styles.link}>\n            {t('help.tab.faq')}\n          </Link>\n", '']]
         : [["    links: [\n      { labelKey: 'home.footer.helpCenter', to: '/help/faq' },\n      { labelKey: 'nav.academy', to: '/academy' },\n    ],", "    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],"]];
       for (const [current, original] of helpLinks) {
         expect(text.split(current)).toHaveLength(2);
