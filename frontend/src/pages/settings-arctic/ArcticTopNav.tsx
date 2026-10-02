@@ -35,7 +35,6 @@ const NAV_ITEMS = [
   { to: '/futures', key: 'nav.futures' },
   { to: '/wallet', key: 'nav.wallet' },
   { to: '/copy-trading', key: 'nav.copyTrading' },
-  { to: '/arbitrage', key: 'nav.arbitrage' },
   { to: '/card', key: 'nav.card' },
   { to: '/otc', key: 'nav.otc' },
 ] as const;
