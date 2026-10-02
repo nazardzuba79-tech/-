@@ -44,6 +44,8 @@ const defaultDisplaySource = new CfdDisplayQuoteRouter([
 ], {providerWaitMs:3_200,freshAgeMs:120_000});
 let displayStarted=false;
 function ensureDisplayFeeds(){if(displayStarted)return;displayStarted=true;derivDisplay.start();}
+/** Release the route-owned stream when its host (including disposable QA) ends. */
+export function stopCfdDisplayFeeds():void{derivDisplay.stop();displayStarted=false;}
 
 const openSchema = z.object({
   symbol: z.enum(CFD_SYMBOLS), side: z.enum(['BUY', 'SELL']),

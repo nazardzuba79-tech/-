@@ -5,7 +5,7 @@ const fs=require('node:fs');const path=require('node:path');const express=requir
 const{randomBytes}=require('node:crypto');const{chromium}=require(process.env.CFD_QA_PLAYWRIGHT||'playwright');
 const{waitForCfdBrowserReadiness}=require('./cfd-browser-readiness.cjs');
 process.env.JWT_SECRET||=randomBytes(48).toString('hex');process.env.API_KEY_ENCRYPTION_SECRET||=randomBytes(32).toString('hex');process.env.NODE_ENV='production';
-const{CfdMarketDataService}=require('../dist/services/CfdMarketDataService');const{cfdRouter}=require('../dist/api/routes/cfd');
+const{CfdMarketDataService}=require('../dist/services/CfdMarketDataService');const{cfdRouter,stopCfdDisplayFeeds}=require('../dist/api/routes/cfd');
 const OUT=path.resolve('docs/qa/cfd-display-browser');fs.mkdirSync(OUT,{recursive:true});
 const report={revision:process.env.GITHUB_SHA||null,environment:'disposable loopback CI; real public display providers; no DB writes',startedAt:new Date().toISOString(),readiness:[],scenarios:[],pageErrors:[],findings:[],blockedWrites:0,blockedExternalHosts:[]};
 const denied=new Set();let server,browser,activePage;
@@ -76,4 +76,4 @@ function fixture(pathname){
  if(report.blockedWrites!==0)report.findings.push(`Unexpected browser/API writes attempted: ${report.blockedWrites}`);if(report.pageErrors.length)report.findings.push(`Browser errors: ${report.pageErrors.length}`);
 })().catch(async error=>{
  report.findings.push(error instanceof Error?error.message:'QA failed');if(activePage&&!activePage.isClosed())try{report.failedPage=await activePage.evaluate(()=>({title:document.title,chart:document.querySelector('.cfd-owned-chart')?.getAttribute('data-chart-status'),rows:[...document.querySelectorAll('.cfd-option')].map(e=>e.textContent)}));await activePage.screenshot({path:path.join(OUT,'failure.png'),fullPage:true,timeout:3000});}catch{}process.exitCode=1;
-}).finally(async()=>{if(browser)await browser.close();if(server)await new Promise(r=>server.close(r));report.blockedExternalHosts=[...denied].sort();report.completedAt=new Date().toISOString();fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log('CFD_WORKING_TERMINAL_REPORT '+JSON.stringify(report));if(report.findings.length)process.exitCode=1;});
+}).finally(async()=>{try{if(browser)await browser.close();if(server)await new Promise(r=>server.close(r));}finally{stopCfdDisplayFeeds();}report.blockedExternalHosts=[...denied].sort();report.completedAt=new Date().toISOString();fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));console.log('CFD_WORKING_TERMINAL_REPORT '+JSON.stringify(report));if(report.findings.length)process.exitCode=1;});
