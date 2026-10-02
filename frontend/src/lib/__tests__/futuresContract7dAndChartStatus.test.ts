@@ -43,7 +43,8 @@ describe('the chart stops narrating its own history', () => {
     expect(chart).toContain('if (historyEnabled) chartRef.current?.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange)');
     expect(chart).toContain('(privateMode && candlesRef.current.length >= 10000)');
     expect(chart).not.toContain('historyLoading || historyEnd || !candlesRef.current.length || candlesRef.current.length >= 10000');
-    expect(chart).toContain('display(historyEnabled ? { candles: mergeChartCandles(candlesRef.current, res.candles) } : res)');
+    expect(chart).toContain('mergeChartCandles(candlesRef.current, res.candles, privateMode ? 10000 : Number.MAX_SAFE_INTEGER)');
+    expect(chart).toContain('mergeChartCandles(res.candles, candlesRef.current, privateMode ? 10000 : Number.MAX_SAFE_INTEGER)');
   });
 
   it('keeps no internal history-availability state to render', () => {
