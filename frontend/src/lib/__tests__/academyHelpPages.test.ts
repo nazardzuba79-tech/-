@@ -121,13 +121,24 @@ test.each(['/academy', '/academy/learn', '/academy/futures', '/academy/futures/p
   expect(requests).toEqual([]);
 });
 
-test('Academy home: sections in order with counts, «С чего начать», search and level filter', async () => {
+test('Academy home is the five-tab knowledge hub entry', async () => {
   await open('/academy');
-  const sections = Array.from(host.querySelectorAll('[data-section]')).map((el) => el.getAttribute('data-section'));
-  expect(sections).toEqual(['osnovy', 'futures', 'risk', 'orders', 'ta', 'security', 'glossary']);
-  expect(host.querySelector('[data-section="osnovy"]')!.textContent).toContain('Статей: 4');
+  expect(Array.from(host.querySelectorAll('[data-academy-hub-tab]')).map((el) => el.textContent)).toEqual([
+    'Главная', 'Обучение', 'База знаний', 'Вопросы и ответы', 'Глоссарий',
+  ]);
+  expect(host.querySelector('[data-academy-hub-tab="home"]')?.getAttribute('aria-current')).toBe('page');
+  expect(host.querySelectorAll('[data-academy-home-card]')).toHaveLength(4);
   expect(text()).toContain('С чего начать');
   expect(document.title).toBe('Академия VOLTEX');
+  expect(host.querySelector('[data-academy-search]')).toBeNull();
+});
+
+test('Academy learning keeps sections, counts, search and level filter', async () => {
+  await open('/academy/learn');
+  const sections = Array.from(host.querySelectorAll('[data-section]')).map((el) => el.getAttribute('data-section'));
+  expect(sections).toEqual(['osnovy', 'futures', 'risk', 'orders', 'ta', 'security']);
+  expect(host.querySelector('[data-section="osnovy"]')!.textContent).toContain('Статей: 4');
+  expect(host.querySelector('[data-academy-hub-tab="learn"]')?.getAttribute('aria-current')).toBe('page');
   await type('[data-academy-search]', 'стейбл');
   expect(Array.from(host.querySelectorAll('[data-article]')).map((el) => el.getAttribute('data-article'))).toContain('stablecoins');
   await type('[data-academy-search]', '');
