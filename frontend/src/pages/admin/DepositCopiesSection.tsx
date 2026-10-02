@@ -242,7 +242,7 @@ function CopyRow({ row, onOpenQueue, onIgnore }: { row: DepositCopyRow; onOpenQu
           setIgnoring(true); setIgnoreError(null);
           try { await onIgnore(); }
           catch { setIgnoreError('Не удалось скрыть. Повторите.'); setIgnoring(false); }
-        }}>{ignoring ? 'Сохраняем…' : 'Игнорировать'}</button>
+        }}>{ignoring ? 'Сохраняем…' : 'Обработано'}</button>
         {ignoreError && <small role="alert">{ignoreError}</small>}
       </span>
     </div>
