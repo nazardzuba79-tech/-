@@ -59,7 +59,7 @@ export function HelpPage({ view }: { view?: HelpView } = {}) {
   );
 }
 
-function Faq({ content }: { content: HelpContent }) {
+export function Faq({ content, meta = true }: { content: HelpContent; meta?: boolean }) {
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState<Set<string>>(() => new Set());
@@ -168,7 +168,7 @@ function KnowledgeBase({ content, lang }: { content: HelpContent; lang: string }
   );
 }
 
-function Fees({ content, lang }: { content: HelpContent; lang: string }) {
+export function Fees({ content, lang, meta = true }: { content: HelpContent; lang: string; meta?: boolean }) {
   const { t } = useLanguage();
   const { fees } = content;
   const markets: [string, { maker: string; taker: string } | undefined][] = [
@@ -207,7 +207,7 @@ function Fees({ content, lang }: { content: HelpContent; lang: string }) {
   );
 }
 
-function Rules({ content }: { content: HelpContent }) {
+export function Rules({ content, meta = true }: { content: HelpContent; meta?: boolean }) {
   const { t } = useLanguage();
   return (
     <div className="vx-kb-rules">
