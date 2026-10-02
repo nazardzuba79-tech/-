@@ -139,7 +139,16 @@ export class DerivPublicStreamQuoteSource implements CfdQuoteSource {
   }
   stop(): void {
     this.stopped=true; if(this.reconnectTimer) clearTimeout(this.reconnectTimer); this.reconnectTimer=null;
-    const socket=this.socket; this.socket=null; if(socket){try{socket.removeAllListeners();socket.close();}catch{}}
+    const socket=this.socket; this.socket=null;
+    if(socket){
+      // ws emits an asynchronous error when close() aborts a pending handshake.
+      // Keep our error listener: its stopped/stale-socket guard makes that event
+      // terminal without reconnecting or terminating a replacement connection.
+      socket.removeAllListeners('open');
+      socket.removeAllListeners('message');
+      socket.removeAllListeners('close');
+      try{socket.close();}catch{}
+    }
   }
   private connect(): void {
     if(this.stopped||this.socket)return;

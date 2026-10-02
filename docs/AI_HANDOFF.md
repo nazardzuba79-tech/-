@@ -5440,3 +5440,11 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Screenshots and the QA table: `docs/qa/close-card/`.
 - Known trade-off, reported to the owner: on 1366–1536 px laptops the card covers «Открыть Лонг/Шорт» while it is shown (6 s, closable).
 - Not run: backend suites (not touched); a real close on any live account.
+
+### Codex — 2026-10-02 — Hetzner collector shutdown readiness
+- Code commit: 1399a7aa7a3edc2f9f5cfec5ff8adc1143279e6c.
+- Files: DerivPublicStreamQuoteSource.ts and CfdDerivShutdown.test.ts.
+- Reproduced asynchronous ws handshake-abort error after stop removed the error listener (4 failing / 2 passing new tests before fix); preserve guarded error listener through shutdown. Six regression cases pass, including real loopback WebSocket child processes.
+- Preserved current market-data architecture, provider selection, trade execution, accounting and all Claude UI changes.
+- Wider check: 97 passed / 4 failed; all four CfdQuoteSafety failures reproduce on the unchanged production image (84 passed / 4 failed). Existing assumptions about six-symbol batches, entitlement-only display, and dropping stale display data differ from current adapter; execution freshness refusal still passes. No unrelated financial behavior changed.
+- Remote integration/claude-codex is absent after fresh fetch; isolated review branch uses current main 6e2ad9002e8b2b834a3318c11935fba9437465b6. No merge, Render deploy, DNS change or cutover. Hetzner isolated candidate verification continues.
