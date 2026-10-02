@@ -208,9 +208,8 @@ describe('the data contract is untouched', () => {
     expect(code).not.toContain("t('trade.bookStale')");
     expect(code).not.toContain("t('trade.bookUnavailable')");
     expect(code).not.toContain('className="rb-feed"');
-    // Freshness is still represented in the rendered contract.
-    expect(code).toContain("status === 'stale'");
-    expect(code).toContain("status === 'unavailable'");
+    // Freshness is still represented in the rendered contract for QA.
+    expect(code).toContain('data-book-state={status}');
     expect(code).toContain('data-stale=');
     expect(code).toContain('data-sampled-book=');
   });
