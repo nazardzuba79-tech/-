@@ -2,7 +2,6 @@ import { isBrowserInactive, addBrowserActivityListener, removeBrowserActivityLis
 import { useEffect, useRef, useState } from 'react';
 import { krakenSocket, SocketStatus } from '../lib/krakenSocket';
 import { RECONNECT_GRACE_MS } from '../lib/bookFreshness';
-import { useLanguage } from '../lib/i18n';
 
 /**
  * How long a connection may be down before anyone is told.
@@ -22,7 +21,6 @@ import { useLanguage } from '../lib/i18n';
 const SHOW_AFTER_MS = RECONNECT_GRACE_MS;
 
 export function ConnectionBanner({connected}:{connected?:boolean}={}) {
-  const { t } = useLanguage();
   const [status, setStatus] = useState<SocketStatus>(krakenSocket.getStatus());
   const [show, setShow] = useState(false);
 
@@ -78,31 +76,7 @@ export function ConnectionBanner({connected}:{connected?:boolean}={}) {
 
   if (!show) return null;
 
-  return (
-    <div style={styles.banner} role="status">
-      <span style={styles.dot} />
-      {status === 'connecting' ? t('connection.reconnecting') : t('connection.lost')}
-    </div>
-  );
+  // Connection recovery is transport plumbing, not customer-facing copy.
+  // Keep a hidden diagnostic marker for QA while the UI stays silent.
+  return <span hidden aria-hidden="true" data-connection-state={status} />;
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  banner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '6px 14px',
-    background: 'var(--sell-dim)',
-    color: 'var(--sell)',
-    fontSize: 12,
-    fontWeight: 600,
-    flexShrink: 0,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: '50%',
-    background: 'var(--sell)',
-    flexShrink: 0,
-  },
-};
