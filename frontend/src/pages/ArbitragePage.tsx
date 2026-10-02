@@ -6,6 +6,7 @@ import { ArbitrageWorkspace } from './arbitrage/ArbitrageWorkspace';
 import { ArbitrageDialog } from './arbitrage/ArbitrageDialog';
 import { ArbitrageEducation, type Strategy } from './arbitrage/ArbitrageEducation';
 import { computeArbitrage, createForm, resetForm, selectPair, type FormState, type NumericField, type Scenario } from './arbitrage/model';
+import { OtcProductTabs } from './otc/OtcProductTabs';
 import './arbitrage/arbitrage.css';
 
 /** Local comparison workspace. Shared Nav/auth is retained; no market feed is mounted. */
@@ -25,6 +26,7 @@ export function ArbitragePage() {
   return <>
     <Nav active="/arbitrage" hideTicker />
     <main className="arbitrage-page" data-testid="arbitrage-page" lang="ru">
+      <OtcProductTabs active="arbitrage" />
       <div className="arb-container">
         <section className="arb-hero" aria-labelledby="arb-title">
           <img className="arb-hero-globe" src="/arbitrage/voltex-globe.webp" alt="" width="1376" height="768" />
