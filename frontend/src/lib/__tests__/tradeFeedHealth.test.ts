@@ -165,7 +165,8 @@ test('a hung public book read reaches its deadline, releases the lock and recove
   await advance(12_000);
   expect(hungSignal?.aborted).toBe(true);
   await advance(freshness.RECONNECT_GRACE_MS);
-  expect(host.querySelector('[role="status"]')).not.toBeNull();
+  expect(host.querySelector('[role="status"]')).toBeNull();
+  expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
   await advance(60_000 - 12_000 - freshness.RECONNECT_GRACE_MS);
   expect(readBook).toHaveBeenCalledTimes(3);
   expect(host.querySelector('[role="status"]')).toBeNull();
