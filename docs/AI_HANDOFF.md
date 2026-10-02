@@ -5440,3 +5440,20 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Screenshots and the QA table: `docs/qa/close-card/`.
 - Known trade-off, reported to the owner: on 1366–1536 px laptops the card covers «Открыть Лонг/Шорт» while it is shown (6 s, closable).
 - Not run: backend suites (not touched); a real close on any live account.
+
+## Claude — 2026-10-02 — VOLTEX Assistant: deposits are credited within 60 minutes
+
+- Owner request: the assistant's minimum-deposit answer ended with «Достижение минимума само по себе не означает мгновенное зачисление». The owner said this reads as if nobody gets credited, and the answer must say the deposit is credited within 60 minutes.
+- Base: main `abb4a2a0`; branch `claude/peaceful-volta-h5zw7g-deposit-60min`.
+- Material files:
+  - `frontend/src/lib/i18n/locales/assistantRu.ts`, two answers:
+    - `deposit_minimum`: the last sentence is now «Депозит от минимальной суммы будет зачислен на баланс в течение 60 минут.»;
+    - `deposit_wait_time` («Когда зачислят пополнение»): it had the same discouraging wording and no time. It now says «…в течение 60 минут. Если прошло больше 60 минут, напишите специалисту…», plus coin, network, amount and TXID.
+  - `frontend/src/lib/__tests__/supportAssistant.test.ts`: one test pins the 60-minute sentence and the absence of the old wording.
+- Preserved:
+  - the minimum (`DEPOSIT_MINIMUM_USD`), the threshold rules and every other answer;
+  - the deposit dialog's own «Депозит будет зачислен в течение 30-60 минут» (`deposit.manualCreditNote`).
+- Checks run:
+  - `tsc -b`, Vite build;
+  - full frontend Jest (`jest frontend/src`): 197 suites, 3,417 passed and 0 failed. 6 tests were skipped because there was no build yet. Those three build-dependent suites then passed after the build: 36 tests.
+- Noticed, not touched: the owner's screenshot of `/admin/users` shows a «ПАРОЛЬ» column with readable user passwords. Reported to the owner as a security concern; no code was inspected or changed for it in this task.
