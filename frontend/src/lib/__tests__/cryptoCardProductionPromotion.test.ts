@@ -140,6 +140,14 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
         text = text.replace(current, original);
       }
     }
+    if (file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // Arbitrage moved under OTC. Restore the former product-link line only
+      // for this historical card-design fingerprint comparison.
+      const current = "      { labelKey: 'nav.copyTrading', to: '/copy-trading' },\n      { labelKey: 'nav.card', to: '/card' },";
+      const original = "      { labelKey: 'nav.copyTrading', to: '/copy-trading' },\n      { labelKey: 'nav.arbitrage', to: '/arbitrage' },\n      { labelKey: 'nav.card', to: '/card' },";
+      expect(text.split(current)).toHaveLength(2);
+      text = text.replace(current, original);
+    }
     if (file === 'frontend/src/components/Footer.tsx' || file === 'frontend/src/pages/home/HomeFooter.tsx') {
       // Academy and Help (2026-10-01) add footer links and point «Центр
       // помощи» at /help. Only these exact additions are undone; every
