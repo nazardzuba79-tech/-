@@ -55,10 +55,11 @@ export function KnowledgeShell({ active, fallback, children }: { active: 'academ
         </header>
       )}
       {!signedIn && (
-        // Below 1440 px the header's sections fold away; keep the two pages reachable.
+        // Below 1440 px the product row folds away. Academy is the one
+        // public knowledge entry; system status remains a separate service page.
         <nav className="vx-kb-guest-tabs" aria-label={t('nav.menu')}>
           <Link to="/academy" aria-current={active === 'academy' ? 'page' : undefined}>{t('nav.academy')}</Link>
-          <Link to="/help/faq" aria-current={active === 'help' ? 'page' : undefined}>{t('nav.help')}</Link>
+          {active === 'help' && <Link to="/help/status" aria-current="page">{t('help.tab.status')}</Link>}
         </nav>
       )}
       {fallback && <p className="vx-kb-ru-only" role="note" lang="en">{t('academy.ruOnly')}</p>}
