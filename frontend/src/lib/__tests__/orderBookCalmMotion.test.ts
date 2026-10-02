@@ -191,8 +191,8 @@ describe('depth bars are muted and settle between publishes', () => {
 });
 
 /**
- * None of the above may touch what the panel is allowed to say, or how the
- * book itself is maintained. The visual work stops at the DOM.
+ * Freshness remains an internal data contract, while transport copy stays
+ * out of the customer-facing ladder.
  */
 describe('the data contract is untouched', () => {
   /**
