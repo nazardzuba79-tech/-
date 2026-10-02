@@ -71,9 +71,13 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
       await page.screenshot({ path: path.join(out, `vta-${width}.png`), fullPage: true });
       failed = true;
       for (let i = 0; i < 10; i++) { await page.clock.runFor(5000); await page.waitForTimeout(30); }
-      assert.equal(await banner.count(), 1, 'VTA own sustained failure must remain visible');
+      assert.equal(await banner.count(), 0, 'VTA sustained failure stays silent in customer copy');
+      const diagnostic = page.locator('[data-connection-state]');
+      assert.equal(await diagnostic.count(), 1, 'VTA sustained failure keeps a hidden diagnostic state');
+      assert.equal(await diagnostic.getAttribute('hidden'), '', 'VTA diagnostic marker must remain hidden');
       failed = false; await page.clock.runFor(5000); await page.waitForTimeout(100);
-      assert.equal(await banner.count(), 0, 'healthy VTA clears its warning');
+      assert.equal(await banner.count(), 0, 'healthy VTA remains silent');
+      assert.equal(await diagnostic.count(), 0, 'healthy VTA clears its diagnostic marker');
       if (width === 390) await page.locator('#mobile-trade-trade').click();
       for (const side of ['buy', 'sell']) {
         await page.locator(`.order-form-tab.${side}`).click();
