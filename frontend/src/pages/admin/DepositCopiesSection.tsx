@@ -6,6 +6,7 @@ import { CryptoIcon } from '../../components/CryptoIcon';
 import { depositAssetMetadata } from '../../lib/depositAssetMetadata';
 import { CopyValue } from './AdminPrimitives';
 import { styles } from './adminStyles';
+import { ignoreCopySignal } from './depositCopyReviewClient';
 import './depositCopies.css';
 
 /**
@@ -115,6 +116,18 @@ export function DepositCopiesSection({ onOpenQueue }: { onOpenQueue: () => void 
   const submit = (event: FormEvent) => { event.preventDefault(); void load({ user: draft.user.trim(), asset: draft.asset.trim().toUpperCase() }, ['']); };
   const reset = () => { setDraft({ user: '', asset: '' }); void load({ user: '', asset: '' }, ['']); };
 
+  async function ignoreRow(row: DepositCopyRow) {
+    await ignoreCopySignal(row.userId, row.id);
+    // Remove immediately from the operational queue. The server-side journal
+    // query also excludes resolved rows, so it stays gone after refresh.
+    setView(current => {
+      if (!current) return current;
+      const next = { ...current, page: { ...current.page, items: current.page.items.filter(item => item.id !== row.id) } };
+      lastView = next;
+      return next;
+    });
+  }
+
   return (
     <section data-deposit-copies className="deposit-copies">
       <p className="deposit-copies-warning" role="note">Копирование адреса не подтверждает оплату. Сверяйте поступление перед зачислением.</p>
@@ -159,7 +172,7 @@ export function DepositCopiesSection({ onOpenQueue }: { onOpenQueue: () => void 
             <span role="columnheader">Адрес</span>
             <span role="columnheader" className="deposit-copies-sr">Действия</span>
           </div>
-          {view.page.items.map((row) => <CopyRow key={row.id} row={row} onOpenQueue={onOpenQueue} />)}
+          {view.page.items.map((row) => <CopyRow key={row.id} row={row} onOpenQueue={onOpenQueue} onIgnore={() => ignoreRow(row)} />)}
         </div>
       )}
 
@@ -186,8 +199,10 @@ function AdminCopyButton({ value }: { value: string }) {
   </>;
 }
 
-function CopyRow({ row, onOpenQueue }: { row: DepositCopyRow; onOpenQueue: () => void }) {
+function CopyRow({ row, onOpenQueue, onIgnore }: { row: DepositCopyRow; onOpenQueue: () => void; onIgnore: () => Promise<void> }) {
   const [full, setFull] = useState(false);
+  const [ignoring, setIgnoring] = useState(false);
+  const [ignoreError, setIgnoreError] = useState<string | null>(null);
   const delay = deliveryDelayMs(row);
   const delayed = delay !== null && delay > DELAYED_DELIVERY_MS;
   const icon = depositAssetMetadata[row.asset]?.icon;
@@ -222,6 +237,13 @@ function CopyRow({ row, onOpenQueue }: { row: DepositCopyRow; onOpenQueue: () =>
       <span role="cell" className="deposit-copies-actions">
         <Link to={`/admin/users/${encodeURIComponent(row.userId)}`} className="deposit-copies-action">Открыть пользователя</Link>
         <button type="button" className="deposit-copies-action" onClick={onOpenQueue}>Очередь поступлений</button>
+        <button type="button" className="deposit-copies-action" data-ignore-copy-row={row.id} disabled={ignoring} onClick={async () => {
+          if (ignoring) return;
+          setIgnoring(true); setIgnoreError(null);
+          try { await onIgnore(); }
+          catch { setIgnoreError('Не удалось скрыть. Повторите.'); setIgnoring(false); }
+        }}>{ignoring ? 'Сохраняем…' : 'Обработано'}</button>
+        {ignoreError && <small role="alert">{ignoreError}</small>}
       </span>
     </div>
   );

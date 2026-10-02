@@ -68,9 +68,13 @@ export function DepositCopyBell({ event, failed = false, onIgnore }: {
   const label = depositCopyLabel(event);
   const description = `Копировали адрес: ${event.asset} · ${event.network} · ${label.fullTime} (${label.zone}). Копирование не подтверждает оплату.`;
   return <span style={shell} data-deposit-copy-event={event.id} onClick={e => e.stopPropagation()} onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape') setExpanded(false); }}>
-    <button type="button" data-deposit-copy-bell aria-label={description} aria-expanded={expanded} title={description} style={button} onClick={() => setExpanded(value => !value)}>
-      <Bell/><span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{event.asset} · {label.time}</span>
-    </button>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, maxWidth: '100%', flexWrap: 'wrap' }}>
+      <button type="button" data-deposit-copy-bell aria-label={description} aria-expanded={expanded} title={description} style={button} onClick={() => setExpanded(value => !value)}>
+        <Bell/><span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>{event.asset} · {label.time}</span>
+      </button>
+      {onIgnore && <button type="button" data-ignore-deposit-copy={event.id} style={processedButton} disabled={busy} onClick={() => void ignore()} title="Отметить этот сигнал обработанным. Баланс и история перевода не изменятся.">{busy ? 'Сохраняем…' : 'Обработано'}</button>}
+    </span>
+    {error && <span role="alert" style={{ color: 'var(--sell)' }}>{error}</span>}
     {expanded && <span role="region" aria-label="Последнее копирование адреса" style={detail}>
       <strong style={{ fontSize: 11 }}>Копировали адрес</strong>
       <span>{event.asset} · {event.network}</span>
@@ -79,12 +83,11 @@ export function DepositCopyBell({ event, failed = false, onIgnore }: {
       <span>Копирование не подтверждает оплату.</span>
       <a href="/admin/deposits#copies" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Открыть журнал</a>
       <a href="/admin/deposits#unattributed" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Проверить поступления</a>
-      {onIgnore && <button type="button" data-ignore-deposit-copy={event.id} style={{ ...button, minHeight: 36, background: 'var(--surface, #fff)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }} disabled={busy} onClick={() => void ignore()} title="Скрыть этот сигнал и более ранние копирования этого же адреса. Баланс не изменится.">{busy ? 'Сохраняем…' : 'Игнорировать'}</button>}
-      {error && <span role="alert" style={{ color: 'var(--sell)' }}>{error}</span>}
     </span>}
   </span>;
 }
 
 const shell: CSSProperties = { display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 5, maxWidth: '100%', marginBottom: 4, fontFamily: 'inherit', fontWeight: 400 };
 const button: CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 5, maxWidth: '100%', minHeight: 32, padding: '4px 6px', border: '1px solid #e5c478', borderRadius: 6, color: '#78530d', background: '#fff8e6', fontSize: 11, fontFamily: 'inherit', lineHeight: 1.4, fontWeight: 600, textAlign: 'left', cursor: 'pointer' };
+const processedButton: CSSProperties = { ...button, minHeight: 32, background: 'var(--surface, #fff)', color: 'var(--text-secondary)', borderColor: 'var(--border)', whiteSpace: 'nowrap' };
 const detail: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, maxWidth: '100%', fontSize: 11, lineHeight: 1.5, color: 'var(--text-secondary)', overflowWrap: 'anywhere', paddingBottom: 4 };

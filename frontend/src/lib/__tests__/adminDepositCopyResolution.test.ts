@@ -78,6 +78,7 @@ it('places an old-account/old-copy signal on page one without sorting by recent 
   await mount();
   expect(rows()[0]).toBe('copy-owner'); expect(rows()).toHaveLength(20);
   expect(copyOwner().querySelector('[data-deposit-copy-bell]')).not.toBeNull();
+  expect(copyOwner().querySelector('[data-ignore-deposit-copy]')?.textContent).toBe('Обработано');
   expect(depositsTab().textContent).toBe('Пополнения1');
   expect(depositsTab().querySelector('[data-copy-tab-bell]')).not.toBeNull();
   expect(copyOwner().querySelector('[data-credit-user]')).toBeNull();
@@ -157,4 +158,12 @@ it('the mutation and bell introduce no recurring transport or expiry timer', () 
   const page = readFileSync(resolve(frontend, 'src/pages/admin/AdminUsersPage.tsx'), 'utf8');
   expect(page).toContain('revision === usersRevision.current');
   expect(page).toContain('row.lastDepositCopy?.id === eventId');
+});
+
+test('copy journal exposes Ignore and removes resolved rows from the working list', () => {
+  const source = require('fs').readFileSync(require('path').resolve(__dirname, '../../pages/admin/DepositCopiesSection.tsx'), 'utf8');
+  expect(source).toContain("import { ignoreCopySignal } from './depositCopyReviewClient'");
+  expect(source).toContain('data-ignore-copy-row={row.id}');
+  expect(source).toContain('await ignoreCopySignal(row.userId, row.id)');
+  expect(source).toContain('current.page.items.filter(item => item.id !== row.id)');
 });
