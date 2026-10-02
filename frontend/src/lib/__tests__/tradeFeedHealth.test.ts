@@ -115,7 +115,8 @@ test('healthy HTTP Spot does not report an unused Kraken socket; real loss retai
   readBook.mockRejectedValue(new Error('fixture book unavailable'));
   await advance(60_000 - freshness.RECONNECT_GRACE_MS);
   await advance(freshness.RECONNECT_GRACE_MS);
-  expect(host.querySelector('[role="status"]')).not.toBeNull();
+  expect(host.querySelector('[role="status"]')).toBeNull();
+  expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
   expect(renderedBook.bids).toBe(lastGood);
   readBook.mockImplementation((pair: string) => Promise.resolve(ordinaryBook(pair)));
   await advance(60_000 - freshness.RECONNECT_GRACE_MS);
@@ -131,7 +132,8 @@ test('CFD connection warning follows the selected quote feed and its actual reco
   expect(readBook).not.toHaveBeenCalled();
   cfdFeed = { ...cfdFeed, loadError: true };
   await render(); await advance(freshness.RECONNECT_GRACE_MS);
-  expect(host.querySelector('[role="status"]')).not.toBeNull();
+  expect(host.querySelector('[role="status"]')).toBeNull();
+  expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
   expect(cfdFeed.tickers[0].price).toBe('2400');
   cfdFeed = { ...cfdFeed, loadError: false };
   await render();
