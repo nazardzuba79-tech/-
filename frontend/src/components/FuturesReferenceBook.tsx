@@ -125,9 +125,10 @@ export function FuturesReferenceBook({ bids: liveBids, asks: liveAsks, pair, onP
    * this line speaks then. Note what is NOT done here: the levels are not
    * hidden, not cleared and not dimmed — only the sentence is withheld.
    */
-  const feed = status === 'stale' && !waiting ? t('trade.bookStale')
-    : status === 'unavailable' ? t('trade.bookUnavailable')
-    : null;
+  // Feed freshness remains part of the data contract, but the customer UI
+  // stays quiet. Last-good levels remain visible; unavailable data renders
+  // the existing placeholder ladder without transport/status sentences.
+  const feed = null;
 
   useEffect(() => {
     if (!body.current || typeof ResizeObserver === 'undefined') return;
