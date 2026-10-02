@@ -172,7 +172,7 @@ export function FuturesReferenceBook({ bids: liveBids, asks: liveAsks, pair, onP
 
   const mark = markPrice !== undefined && markPrice !== null && Number.isFinite(markPrice) && markPrice > 0 ? markPrice : null;
 
-  return <div data-sampled-book={status === 'sampled' || undefined} className="reference-book" style={{'--book-row-height': `${rowHeight}px`, '--book-center-height': `${centerHeight}px`} as React.CSSProperties}>
+  return <div data-sampled-book={status === 'sampled' || undefined} data-book-state={status} className="reference-book" style={{'--book-row-height': `${rowHeight}px`, '--book-center-height': `${centerHeight}px`} as React.CSSProperties}>
     <div className="rb-tabs" role="tablist" aria-label={t('trade.orderBook')}>
       <button type="button" role="tab" aria-selected={tab === 'book'} onClick={() => setTab('book')}>{t('trade.orderBook')}</button>
       <button type="button" role="tab" aria-selected={tab === 'trades'} onClick={() => setTab('trades')}>{t('trade.trades')}</button>
