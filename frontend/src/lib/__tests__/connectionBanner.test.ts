@@ -17,17 +17,17 @@ beforeEach(()=>{
  dom.window.setTimeout=setTimeout;dom.window.clearTimeout=clearTimeout;
  host=document.getElementById('root')!;root=req('react-dom/client').createRoot(host);subscribe.mockClear();release.mockClear();
  const output:any={};const code=ts.transpileModule(readFileSync(resolve(frontend,'src/components/ConnectionBanner.tsx'),'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS}}).outputText;
- new Function('exports','require',code)(output,(name:string)=>name.endsWith('/browserActivity')?browserActivity:name.endsWith('/i18n')?{useLanguage:()=>({t:(k:string)=>k})}:name.endsWith('/krakenSocket')?{krakenSocket:{getStatus:()=> 'disconnected',subscribeStatus:subscribe}}:name.endsWith('/bookFreshness')?freshness:req(name));Banner=output.ConnectionBanner;
+ new Function('exports','require',code)(output,(name:string)=>name.endsWith('/browserActivity')?browserActivity:name.endsWith('/krakenSocket')?{krakenSocket:{getStatus:()=> 'disconnected',subscribeStatus:subscribe}}:name.endsWith('/bookFreshness')?freshness:req(name));Banner=output.ConnectionBanner;
 });
 afterEach(async()=>{await act(async()=>root.unmount());dom.window.close();jest.useRealTimers();});
 async function render(props:any={}){await act(async()=>root.render(React.createElement(Banner,props)));}
 async function advance(ms:number){await act(async()=>jest.advanceTimersByTime(ms));}
-test('Futures observes its supplied stream, reports sustained loss and clears on recovery',async()=>{
+test('Futures observes its supplied stream silently and clears diagnostics on recovery',async()=>{
  await render({connected:true});await advance(3000);expect(host.textContent).toBe('');expect(subscribe).not.toHaveBeenCalled();
  // The boundary is read from the shared rules, not retyped: the grace has
  // to stay longer than one refresh cycle, and a literal here would let the
  // two drift apart silently.
- await render({connected:false});await advance(freshness.RECONNECT_GRACE_MS-1);expect(host.textContent).toBe('');await advance(1);expect(host.querySelector('[role="status"]')).not.toBeNull();
+ await render({connected:false});await advance(freshness.RECONNECT_GRACE_MS-1);expect(host.textContent).toBe('');await advance(1);expect(host.textContent).toBe('');expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
  await render({connected:true});expect(host.textContent).toBe('');await advance(3000);expect(host.textContent).toBe('');
 });
 test('a brief Futures reconnect does not flash a banner',async()=>{
@@ -43,7 +43,7 @@ test('coming back to the tab takes a banner down instead of raising one',async()
  // A banner raised while the tab was in the background describes a socket
  // the BROWSER suspended. Presenting that on return as a live fault is the
  // false alarm this change exists to remove.
- await render();await advance(freshness.RECONNECT_GRACE_MS);expect(host.textContent).toBe('connection.lost');
+ await render();await advance(freshness.RECONNECT_GRACE_MS);expect(host.textContent).toBe('');expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
  // A real hidden transition clears the stale disconnect warning and its timer.
  await act(async()=>{
   Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
@@ -59,10 +59,10 @@ test('coming back to the tab takes a banner down instead of raising one',async()
  });
  expect(host.textContent).toBe('');
  // And if the feed really is still down, it is reported again in its own time.
- await advance(freshness.RECONNECT_GRACE_MS);expect(host.textContent).toBe('connection.lost');
+ await advance(freshness.RECONNECT_GRACE_MS);expect(host.textContent).toBe('');expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
 });
 test('Spot keeps its existing subscription, loss detection, recovery and cleanup',async()=>{
- await render();expect(subscribe).toHaveBeenCalledTimes(1);await advance(freshness.RECONNECT_GRACE_MS);expect(host.textContent).toBe('connection.lost');
+ await render();expect(subscribe).toHaveBeenCalledTimes(1);await advance(freshness.RECONNECT_GRACE_MS);expect(host.textContent).toBe('');expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
  await act(async()=>update('connected'));expect(host.textContent).toBe('');
  await render({connected:true});expect(release).toHaveBeenCalledTimes(1);
 });
@@ -72,9 +72,9 @@ test('a healthy simulation feed ignores Kraken loss, but its own sustained failu
  await advance(freshness.RECONNECT_GRACE_MS*2);
  expect(subscribe).not.toHaveBeenCalled();expect(host.textContent).toBe('');
  await render({connected:false});await advance(freshness.RECONNECT_GRACE_MS);
- expect(host.querySelector('[role="status"]')).not.toBeNull();
+ expect(host.textContent).toBe('');expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
  await render({connected:true});expect(host.textContent).toBe('');
  // Switching back to ordinary Spot restores the venue's loss detection.
  await render();await advance(freshness.RECONNECT_GRACE_MS);
- expect(subscribe).toHaveBeenCalledTimes(1);expect(host.textContent).toBe('connection.lost');
+ expect(subscribe).toHaveBeenCalledTimes(1);expect(host.textContent).toBe('');expect(host.querySelector('[data-connection-state]')?.hasAttribute('hidden')).toBe(true);
 });
