@@ -8,21 +8,65 @@ import {
 } from '../../lib/content/academy';
 import type { AcademyContent, Article } from '../../lib/content/types';
 import { usePageMeta } from '../../lib/content/usePageMeta';
+import { AcademyHubNav } from './AcademyHubNav';
 import { KnowledgeShell } from './KnowledgeShell';
 
 const TITLE = 'Академия VOLTEX';
 const GLOSSARY = 'glossary';
 
-/** /academy, /academy/:section, /academy/:section/:slug and /academy/glossary. */
-export function AcademyPage({ glossary = false }: { glossary?: boolean }) {
+/** Academy hub plus the existing article routes. */
+export function AcademyPage({ glossary = false, home = false }: { glossary?: boolean; home?: boolean }) {
   const { section, slug } = useParams();
   const { lang } = useLanguage();
   const { content, fallback } = pickLang(academy, lang);
+  const hub = home ? 'home' : glossary ? 'glossary' : 'learn';
   let body;
-  if (glossary) body = <GlossaryView content={content} />;
+  if (home) body = <AcademyHome content={content} />;
+  else if (glossary) body = <GlossaryView content={content} />;
   else if (section && slug) body = <ArticleView content={content} sectionId={section} slug={slug} />;
   else body = <AcademyIndex content={content} sectionId={section ?? null} />;
-  return <KnowledgeShell active="academy" fallback={fallback}>{body}</KnowledgeShell>;
+  return <KnowledgeShell active="academy" fallback={fallback}><AcademyHubNav active={hub} />{body}</KnowledgeShell>;
+}
+
+
+function AcademyHome({ content }: { content: AcademyContent }) {
+  const { t } = useLanguage();
+  usePageMeta(TITLE, t('academy.subtitle'));
+  const first = content.sections.find((s) => s.id !== GLOSSARY);
+  const starters = first ? sectionArticles(content, first.id).slice(0, 3) : [];
+  const glossary = content.sections.find((s) => s.id === GLOSSARY);
+  const cards = [
+    { to: '/academy/learn', title: t('academy.hub.learn'), text: t('academy.subtitle') },
+    { to: '/academy/knowledge', title: t('academy.hub.knowledge'), text: `${t('help.tab.fees')} · ${t('help.tab.rules')}` },
+    { to: '/academy/faq', title: t('help.tab.faq'), text: t('help.faqSearch') },
+    { to: '/academy/glossary', title: t('academy.glossary'), text: glossary?.description ?? t('academy.glossarySearch') },
+  ];
+  return (
+    <>
+      <header className="vx-kb-intro">
+        <h1 className="vx-kb-title">{t('nav.academy')}</h1>
+        <p className="vx-kb-lead">{t('academy.subtitle')}</p>
+      </header>
+      <section className="vx-kb-block">
+        <h2 className="vx-kb-h2">{t('academy.sections')}</h2>
+        <div className="vx-kb-grid">
+          {cards.map((card) => (
+            <Link key={card.to} to={card.to} className="vx-kb-card" data-academy-home-card>
+              <span className="vx-kb-card-title">{card.title}</span>
+              <span className="vx-kb-card-text">{card.text}</span>
+              <span className="vx-kb-read">{t('academy.read')} →</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+      {starters.length > 0 && (
+        <section className="vx-kb-block">
+          <h2 className="vx-kb-h2">{t('academy.startHere')}</h2>
+          <div className="vx-kb-grid">{starters.map((a) => <ArticleCard key={a.slug} article={a} />)}</div>
+        </section>
+      )}
+    </>
+  );
 }
 
 function NotFound() {
@@ -31,7 +75,7 @@ function NotFound() {
   return (
     <div className="vx-kb-empty">
       <h1 className="vx-kb-title">{t('academy.notFound')}</h1>
-      <Link to="/academy" className="vx-kb-link-button">{t('academy.backHome')}</Link>
+      <Link to="/academy/learn" className="vx-kb-link-button">{t('academy.backHome')}</Link>
     </div>
   );
 }
@@ -40,9 +84,9 @@ function SectionTabs({ content, current }: { content: AcademyContent; current: s
   const { t } = useLanguage();
   return (
     <nav className="vx-kb-tabs" aria-label={t('academy.sections')}>
-      <Link to="/academy" aria-current={current === null ? 'page' : undefined}>{t('academy.levelAll')}</Link>
-      {content.sections.map((s) => (
-        <Link key={s.id} to={s.id === GLOSSARY ? '/academy/glossary' : `/academy/${s.id}`} aria-current={current === s.id ? 'page' : undefined}>{s.title}</Link>
+      <Link to="/academy/learn" aria-current={current === null ? 'page' : undefined}>{t('academy.levelAll')}</Link>
+      {content.sections.filter((s) => s.id !== GLOSSARY).map((s) => (
+        <Link key={s.id} to={`/academy/${s.id}`} aria-current={current === s.id ? 'page' : undefined}>{s.title}</Link>
       ))}
     </nav>
   );
@@ -88,7 +132,7 @@ function AcademyIndex({ content, sectionId }: { content: AcademyContent; section
         </nav>
       )}
       <header className="vx-kb-intro">
-        <h1 className="vx-kb-title">{section ? section.title : t('nav.academy')}</h1>
+        <h1 className="vx-kb-title">{section ? section.title : t('academy.hub.learn')}</h1>
         <p className="vx-kb-lead">{section ? section.description : t('academy.subtitle')}</p>
       </header>
       <SectionTabs content={content} current={section ? section.id : null} />
@@ -130,14 +174,14 @@ function AcademyIndex({ content, sectionId }: { content: AcademyContent; section
           <section className="vx-kb-block">
             <h2 className="vx-kb-h2">{t('academy.sections')}</h2>
             <div className="vx-kb-grid">
-              {content.sections.map((s) => {
-                const count = s.id === GLOSSARY ? content.glossary.length : sectionArticles(content, s.id).length;
+              {content.sections.filter((s) => s.id !== GLOSSARY).map((s) => {
+                const count = sectionArticles(content, s.id).length;
                 return (
-                  <Link key={s.id} to={s.id === GLOSSARY ? '/academy/glossary' : `/academy/${s.id}`} className="vx-kb-card" data-section={s.id}>
+                  <Link key={s.id} to={`/academy/${s.id}`} className="vx-kb-card" data-section={s.id}>
                     <span className="vx-kb-card-title">{s.title}</span>
                     <span className="vx-kb-card-text">{s.description}</span>
                     <span className="vx-kb-meta">
-                      <span>{s.id === GLOSSARY ? t('academy.termsCount', { count }) : t('academy.articlesCount', { count })}</span>
+                      <span>{t('academy.articlesCount', { count })}</span>
                       <span className="vx-kb-read">{t('academy.read')} →</span>
                     </span>
                   </Link>

@@ -21,8 +21,8 @@ export function Footer() {
           <Link to="/academy" style={styles.link}>
             {t('nav.academy')}
           </Link>
-          <Link to="/help/faq" style={styles.link}>
-            {t('nav.help')}
+          <Link to="/academy/faq" style={styles.link}>
+            {t('help.tab.faq')}
           </Link>
           <Link to="/legal/about" style={styles.link}>
             {t('footer.about')}

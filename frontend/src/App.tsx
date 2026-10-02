@@ -114,12 +114,16 @@ export function App() {
         <Route path="/trading-bots" element={<RequireAuth><TradingBotsPage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
         <Route path="/legal/:doc" element={<LegalPage />} />
-        {/* Academy and Help: public and static (frontend/content/), no API reads. */}
-        <Route path="/academy" element={<AcademyPage />} />
+        {/* Academy is the public knowledge hub. Legacy Help URLs redirect into it;
+            system status remains a separate service page. */}
+        <Route path="/academy" element={<AcademyPage home />} />
+        <Route path="/academy/learn" element={<AcademyPage />} />
+        <Route path="/academy/knowledge" element={<HelpPage view="knowledge" />} />
+        <Route path="/academy/faq" element={<HelpPage view="faq" />} />
         <Route path="/academy/glossary" element={<AcademyPage glossary />} />
         <Route path="/academy/:section" element={<AcademyPage />} />
         <Route path="/academy/:section/:slug" element={<AcademyPage />} />
-        <Route path="/help" element={<Navigate to="/help/faq" replace />} />
+        <Route path="/help" element={<Navigate to="/academy/faq" replace />} />
         <Route path="/help/:tab" element={<HelpPage />} />
         <Route path="/:code" element={<ReferralRedirectPage />} />
         <Route path="/admin" element={<AdminLayout />}>

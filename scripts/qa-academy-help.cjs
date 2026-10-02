@@ -73,14 +73,17 @@ async function main() {
   const content = { sections: sections.map((id) => ({ id })), firstArticles: sections.map((id) => ({ section: id, slug: fs.readdirSync(path.join(academyDir, id)).filter((n) => n.endsWith('.html')).sort()[0].replace(/\.html$/, '') })) };
   const visits = [
     ['/academy', 'academy-home'],
+    ['/academy/learn', 'academy-learn'],
+    ['/academy/knowledge', 'academy-knowledge'],
+    ['/academy/faq', 'academy-faq'],
     ['/academy/glossary', 'academy-glossary'],
     ...content.sections.map((s) => [`/academy/${s.id}`, `academy-section-${s.id}`]),
     ...content.firstArticles.map((a) => [`/academy/${a.section}/${a.slug}`, `academy-article-${a.section}`]),
-    ['/help/faq', 'help-faq'],
-    ['/help/fees', 'help-fees'],
-    ['/help/rules', 'help-rules'],
+    ['/help/faq', 'legacy-help-faq'],
+    ['/help/fees', 'legacy-help-fees'],
+    ['/help/rules', 'legacy-help-rules'],
   ];
-  const shots = new Set(['academy-home', 'academy-glossary', 'academy-article-osnovy', 'academy-article-futures', 'help-faq', 'help-fees', 'help-rules']);
+  const shots = new Set(['academy-home', 'academy-learn', 'academy-knowledge', 'academy-faq', 'academy-glossary', 'academy-article-osnovy', 'academy-article-futures']);
   try {
     for (const width of [1440, 375]) {
       const { ctx, page } = await context(width);
@@ -206,8 +209,8 @@ async function main() {
       return results;
     });
     const auditVisits = [
-      ['/academy', null], ['/academy/futures', null], ['/academy/futures/perpetual', null], ['/academy/glossary', '[data-glossary-search]'],
-      ['/help/faq', '[data-faq-search]'], ['/help/fees', null], ['/help/rules', null], ['/help/status', null],
+      ['/academy', null], ['/academy/learn', '[data-academy-search]'], ['/academy/futures', null], ['/academy/futures/perpetual', null], ['/academy/glossary', '[data-glossary-search]'],
+      ['/academy/faq', '[data-faq-search]'], ['/academy/knowledge', null], ['/help/faq', '[data-faq-search]'], ['/help/fees', null], ['/help/rules', null], ['/help/status', null],
     ];
     report.contrast = [];
     for (const width of [1440, 375]) {
@@ -215,14 +218,14 @@ async function main() {
       for (const [url, search] of auditVisits) {
         await page.goto(origin + url, { waitUntil: 'networkidle' });
         await page.locator('main.vx-kb').waitFor();
-        if (url === '/help/faq') await page.locator('[data-faq-item] button').first().click();
+        if (url === '/academy/faq' || url === '/help/faq') await page.locator('[data-faq-item] button').first().click();
         if (url === '/help/status') await page.locator('[data-status-probe="api"] [data-status]').waitFor();
         let rows = await audit(page);
         if (search) {
           // Text typed into the search box, and the matches it leaves.
           await page.locator(search).fill(url.includes('faq') ? 'пароль' : 'Bid');
           rows = rows.concat(await audit(page));
-        } else if (url === '/academy') {
+        } else if (url === '/academy/learn') {
           await page.locator('[data-academy-search]').fill('ликвид');
           rows = rows.concat(await audit(page));
         }
@@ -267,7 +270,7 @@ async function main() {
           await ctx.close();
         }
         report.forcedDark = [];
-        for (const [width, url, name] of [[1440, '/academy/futures/perpetual', 'academy-article-forced-dark-1440'], [375, '/help/faq', 'help-faq-forced-dark-375']]) {
+        for (const [width, url, name] of [[1440, '/academy/futures/perpetual', 'academy-article-forced-dark-1440'], [375, '/academy/faq', 'academy-faq-forced-dark-375']]) {
           const { ctx, page } = await context(width, { on: forced });
           await page.goto(origin + url, { waitUntil: 'networkidle' });
           await page.locator('main.vx-kb').waitFor();
@@ -310,7 +313,7 @@ async function main() {
       await page.goto(origin + '/academy/glossary', { waitUntil: 'networkidle' });
       await page.locator('[data-glossary-search]').fill('Bid');
       assert.equal(await page.locator('[data-term]').count(), 1);
-      await page.goto(origin + '/help/faq', { waitUntil: 'networkidle' });
+      await page.goto(origin + '/academy/faq', { waitUntil: 'networkidle' });
       await page.locator('[data-faq-item] button').first().click();
       assert.equal(await page.locator('[data-faq-item] button').first().getAttribute('aria-expanded'), 'true');
       await page.locator('[data-help-support]').click();
@@ -371,9 +374,9 @@ async function main() {
     {
       const { ctx, page } = await context(1440, { lang: 'en', token: 'qa.eyJzdWIiOiJxYSJ9.qa' });
       const before = report.external.length;
-      await page.goto(origin + '/help/fees', { waitUntil: 'networkidle' });
+      await page.goto(origin + '/academy/knowledge', { waitUntil: 'networkidle' });
       assert.equal(await page.locator('[role="note"]').textContent(), 'This section is available in Russian only for now');
-      assert.equal(await page.locator('[data-help-tab="fees"]').textContent(), 'Fees');
+      assert.equal(await page.locator('[data-academy-hub-tab="knowledge"]').textContent(), 'Knowledge Base');
       await page.goto(origin + '/academy/osnovy/stablecoins', { waitUntil: 'networkidle' });
       await page.screenshot({ path: path.join(out, 'academy-article-en-1440.png') });
       assert.equal(report.external.slice(before).filter((u) => u.startsWith(API)).length, 0);
