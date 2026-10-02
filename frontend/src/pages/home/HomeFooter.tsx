@@ -22,7 +22,6 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
       { labelKey: 'trade.spotTab', to: '/trade' },
       { labelKey: 'nav.futures', to: '/futures' },
       { labelKey: 'nav.copyTrading', to: '/copy-trading' },
-      { labelKey: 'nav.arbitrage', to: '/arbitrage' },
       { labelKey: 'nav.card', to: '/card' },
       { labelKey: 'nav.otc', to: '/otc' },
     ],
