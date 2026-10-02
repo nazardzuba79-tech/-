@@ -408,8 +408,8 @@ async function main() {
       }
     }
     check('«Академия» is a lit tab in the site header at 1440/1680/1920, guest and signed in, ≥20 px clear of the right cluster, no API request');
-    // Below 1440 the site folds its sections into the drawer (signed in) —
-    // Academy is in it — and guests get the Academy/Help row under the header.
+    // Below 1440 the site folds its sections into the drawer (signed in).
+    // Academy is the single knowledge entry; Help is no longer a peer section.
     for (const width of [1280, 375]) {
       const guest = await context(width);
       await guest.page.goto(origin + '/academy', { waitUntil: 'networkidle' });
@@ -419,11 +419,11 @@ async function main() {
       await member.page.goto(origin + '/academy', { waitUntil: 'networkidle' });
       await member.page.locator('.global-header .nav-burger').click();
       assert.equal(await member.page.locator('.nav-mobile-menu a[href="/academy"]').isVisible(), true);
-      assert.equal(await member.page.locator('.nav-mobile-menu a[href="/help/faq"]').isVisible(), true);
+      assert.equal(await member.page.locator('.nav-mobile-menu a[href="/help/faq"]').count(), 0);
       if (width === 375) await member.page.screenshot({ path: path.join(out, 'academy-menu-signed-in-375.png') });
       await member.ctx.close();
     }
-    check('below 1440: guests see the Academy/Help row, signed-in visitors find Academy and Help in the site drawer');
+    check('below 1440: Academy is the single knowledge entry for guests and signed-in visitors');
 
     // Static heads for search engines.
     const raw = await (await fetch(`${origin}/academy/osnovy/stablecoins`)).text();

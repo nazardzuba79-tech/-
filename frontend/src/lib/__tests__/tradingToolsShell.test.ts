@@ -162,7 +162,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(links).toHaveLength(1);
     expect(links[0].textContent).toBe('Инструменты');
     expect(links[0].getAttribute('aria-current')).toBe('page');
-    expect(document.querySelector('.nav-dropdown a[href="/arbitrage"]')).not.toBeNull();
+    expect(document.querySelector('.nav-dropdown a[href="/arbitrage"]')).toBeNull();
     await React.act(async () => {
       (links[0] as HTMLElement).focus();
       links[0].dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));

@@ -140,13 +140,21 @@ test('unchanged collateral sources remain exact and the removed prelaunch wrappe
         text = text.replace(current, original);
       }
     }
+    if (file === 'frontend/src/pages/home/HomeFooter.tsx') {
+      // Arbitrage moved under OTC. Restore the former product-link line only
+      // for this historical card-design fingerprint comparison.
+      const current = "      { labelKey: 'nav.copyTrading', to: '/copy-trading' },\n      { labelKey: 'nav.card', to: '/card' },";
+      const original = "      { labelKey: 'nav.copyTrading', to: '/copy-trading' },\n      { labelKey: 'nav.arbitrage', to: '/arbitrage' },\n      { labelKey: 'nav.card', to: '/card' },";
+      expect(text.split(current)).toHaveLength(2);
+      text = text.replace(current, original);
+    }
     if (file === 'frontend/src/components/Footer.tsx' || file === 'frontend/src/pages/home/HomeFooter.tsx') {
       // The knowledge hub adds footer links. Only these exact additions are
       // undone here so the older card-design digest remains comparable; every
       // other byte keeps the original digest.
       const helpLinks: [string, string][] = file === 'frontend/src/components/Footer.tsx'
         ? [["          <Link to=\"/academy\" style={styles.link}>\n            {t('nav.academy')}\n          </Link>\n          <Link to=\"/academy/faq\" style={styles.link}>\n            {t('help.tab.faq')}\n          </Link>\n", '']]
-        : [["    links: [\n      { labelKey: 'home.footer.helpCenter', to: '/help/faq' },\n      { labelKey: 'nav.academy', to: '/academy' },\n    ],", "    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],"]];
+        : [["    links: [\n      { labelKey: 'home.footer.helpCenter', to: '/academy/faq' },\n      { labelKey: 'nav.academy', to: '/academy' },\n    ],", "    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],"]];
       for (const [current, original] of helpLinks) {
         expect(text.split(current)).toHaveLength(2);
         text = text.replace(current, original);
