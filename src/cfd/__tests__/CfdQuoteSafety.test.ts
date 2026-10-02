@@ -68,11 +68,13 @@ function adapter(raw:unknown,options:any={}){
   const service=new CfdMarketDataService('test-key',fetchFn,undefined,{retries:0},{now:()=>Date.now(),creditsPerMinute:100,creditsPerDay:10000,
     entitledSymbols:['XAUUSD'],executionSymbols:['XAUUSD'],...options});return {fetchFn,service};
 }
-test('provider close and Unix timestamp normalize without bid/ask fabrication, concurrent quotes cost one batch',async()=>{
+test('provider close and Unix timestamp normalize without bid/ask fabrication; concurrent execution shares one request and reference refresh uses the remaining budget',async()=>{
   const {service,fetchFn}=adapter({'XAU/USD':{close:'2000.1',timestamp:at/1000,is_market_open:true}});
   const rows=await Promise.all(Array.from({length:30},()=>service.getFreshQuote('XAUUSD')));
   expect(fetchFn).toHaveBeenCalledTimes(1);expect(rows[0]).toMatchObject({last:2000.1,bid:null,ask:null,mid:null,providerTimestamp:at,fetchedAt:at,status:'live'});
-  expect((await service.diagnostics()).credits).toMatchObject({minuteUsed:6,dayUsed:6});
+  const diagnostics=await service.diagnostics();
+  expect(fetchFn).toHaveBeenCalledTimes(2);
+  expect(diagnostics.credits).toMatchObject({minuteUsed:8,dayUsed:8});
 });
 test.each([null,'',true,'NaN','Infinity',{},'0','-5','0x10'])('malformed provider close %p cannot execute',async(close)=>{
   const {service}=adapter({'XAU/USD':{close,timestamp:at/1000}});await expect(service.getFreshQuote('XAUUSD')).rejects.toThrow();
@@ -84,18 +86,25 @@ test('support, entitlement, actual freshness and execution approval remain indep
   const {service}=adapter({'XAU/USD':{close:'2000',timestamp:at/1000}},{entitledSymbols:[],executionSymbols:[]});
   expect(service.catalog()).toHaveLength(13);expect(CFD_REFERENCE_CATALOG.some(i=>/gas/i.test(i.name))).toBe(false);
   expect((await service.getQuotes()).find(q=>q.symbol==='XAUUSD')).toMatchObject({status:'reference_only',executionAllowed:false});
-  expect((await service.getQuotes()).find(q=>q.symbol==='WTIUSD')).toMatchObject({status:'entitlement_required',last:null,bid:null,ask:null});
+  // No quote is a display-availability fact, not an entitlement diagnosis.
+  // Entitlement remains an independent field and still blocks execution.
+  expect((await service.getQuotes()).find(q=>q.symbol==='WTIUSD')).toMatchObject({status:'unavailable',last:null,bid:null,ask:null,entitlementVerified:false,executionAllowed:false});
   await expect(service.getFreshQuote('XAUUSD')).rejects.toThrow();
   expect(()=>adapter({}, {entitledSymbols:['GUESS']})).toThrow('Unverified');
 });
-test('provider outage yields unavailable, never an old execution price',async()=>{
+test('provider outage keeps last-good display price marked stale while execution still fails closed',async()=>{
   const {service,fetchFn}=adapter({'XAU/USD':{close:'2000',timestamp:at/1000}});
   await service.getFreshQuote('XAUUSD');jest.setSystemTime(at+6000);fetchFn.mockRejectedValue(Error('provider down'));
   await expect(service.getFreshQuote('XAUUSD')).rejects.toThrow();
-  expect((await service.getQuotes()).find(q=>q.symbol==='XAUUSD')).toMatchObject({status:'unavailable',executionAllowed:true,last:null});
+  expect((await service.getQuotes()).find(q=>q.symbol==='XAUUSD')).toMatchObject({status:'stale',referenceStatus:'stale',executionAllowed:true,last:2000});
 });
-test('minute/day quota counts actual symbol cost and denies HTTP, including retries',async()=>{
-  const {service,fetchFn}=adapter({}, {creditsPerMinute:5});await service.getQuotes();expect(fetchFn).not.toHaveBeenCalled();
+test('minute/day quota caps a reference batch to available credits and counts actual symbol cost, including retries',async()=>{
+  const {service,fetchFn}=adapter({}, {creditsPerMinute:5});
+  await service.getQuotes();
+  expect(fetchFn).toHaveBeenCalledTimes(1);
+  const requested=new URL(String(fetchFn.mock.calls[0][0])).searchParams.get('symbol')!.split(',');
+  expect(requested).toHaveLength(5);
+  expect((await service.diagnostics()).credits).toMatchObject({minuteUsed:5,dayUsed:5});
   let now=at;const b=new CfdCreditBudget(8,10,()=>now);b.take(6);expect(()=>b.take(3)).toThrow();now+=60001;b.take(4);expect(()=>b.take(1)).toThrow();
   now+=86400001;expect(()=>b.take(8)).not.toThrow();
 });
