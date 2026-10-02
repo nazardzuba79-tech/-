@@ -155,6 +155,12 @@ describe('POST /deposit-address-copies', () => {
 });
 
 describe('GET /admin/deposit-address-copies', () => {
+  it('lists only unresolved operational signals so credited/ignored copies cannot reappear after refresh', () => {
+    const source = require('fs').readFileSync(require('path').resolve(__dirname, '../depositAddressCopies.ts'), 'utf8');
+    expect(source).toContain("const where: Prisma.Sql[] = [unresolvedCopy]");
+    expect(source).toContain("'deposit-copy-resolution:' || e.\"id\"");
+  });
+
   it('is for admins only', async () => {
     const db = fakeDb({ [U2]: 'ADMIN' });
     expect((await request(app(db)).get('/api/v1/admin/deposit-address-copies')).status).toBe(401);
