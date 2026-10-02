@@ -79,7 +79,7 @@ export function DepositCopyBell({ event, failed = false, onIgnore }: {
       <span>Копирование не подтверждает оплату.</span>
       <a href="/admin/deposits#copies" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Открыть журнал</a>
       <a href="/admin/deposits#unattributed" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Проверить поступления</a>
-      {onIgnore && <button type="button" data-ignore-deposit-copy={event.id} style={{ ...button, minHeight: 36, background: 'var(--surface, #fff)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }} disabled={busy} onClick={() => void ignore()} title="Скрыть этот сигнал и более ранние копирования этого же адреса. Баланс не изменится.">{busy ? 'Сохраняем…' : 'Игнорировать'}</button>}
+      {onIgnore && <button type="button" data-ignore-deposit-copy={event.id} style={{ ...button, minHeight: 36, background: 'var(--surface, #fff)', color: 'var(--text-secondary)', borderColor: 'var(--border)' }} disabled={busy} onClick={() => void ignore()} title="Скрыть этот сигнал и более ранние копирования этого же адреса. Баланс не изменится.">{busy ? 'Сохраняем…' : 'Обработано'}</button>}
       {error && <span role="alert" style={{ color: 'var(--sell)' }}>{error}</span>}
     </span>}
   </span>;
