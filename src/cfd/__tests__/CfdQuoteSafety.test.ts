@@ -102,7 +102,8 @@ test('minute/day quota caps a reference batch to available credits and counts ac
   const {service,fetchFn}=adapter({}, {creditsPerMinute:5});
   await service.getQuotes();
   expect(fetchFn).toHaveBeenCalledTimes(1);
-  const requested=new URL(String(fetchFn.mock.calls[0][0])).searchParams.get('symbol')!.split(',');
+  const requestedUrl=String((fetchFn.mock.calls as unknown[][])[0][0]);
+  const requested=new URL(requestedUrl).searchParams.get('symbol')!.split(',');
   expect(requested).toHaveLength(5);
   expect((await service.diagnostics()).credits).toMatchObject({minuteUsed:5,dayUsed:5});
   let now=at;const b=new CfdCreditBudget(8,10,()=>now);b.take(6);expect(()=>b.take(3)).toThrow();now+=60001;b.take(4);expect(()=>b.take(1)).toThrow();
