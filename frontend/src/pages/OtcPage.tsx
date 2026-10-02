@@ -3,6 +3,7 @@ import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import { openSupportWidget } from '../lib/supportWidget';
 import { CountryCombobox } from './otc/CountryCombobox';
+import { OtcProductTabs } from './otc/OtcProductTabs';
 import { CRYPTO_CURRENCIES, FIAT_CURRENCIES, TIERS, countryName, type TierId } from './otc/otcConfig';
 import cities from './otc/cities.json';
 import './otc/otc.css';
@@ -39,6 +40,7 @@ export function OtcPage() {
   return <div className="vx-otc">
     <Nav active="/otc" />
     <main>
+      <OtcProductTabs active="otc" />
       <section className="otc-hero">
         <div className="otc-hero-bg" aria-hidden="true"><img src="/media/otc/hero-skyline.webp" alt="" width="1408" height="768"/></div>
         <div className="otc-wrap otc-hero-inner">
