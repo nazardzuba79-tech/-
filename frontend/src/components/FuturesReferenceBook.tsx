@@ -125,11 +125,6 @@ export function FuturesReferenceBook({ bids: liveBids, asks: liveAsks, pair, onP
    * this line speaks then. Note what is NOT done here: the levels are not
    * hidden, not cleared and not dimmed — only the sentence is withheld.
    */
-  // Feed freshness remains part of the data contract, but the customer UI
-  // stays quiet. Last-good levels remain visible; unavailable data renders
-  // the existing placeholder ladder without transport/status sentences.
-  const feed = null;
-
   useEffect(() => {
     if (!body.current || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => setHeight(entry.contentRect.height));
@@ -206,7 +201,6 @@ export function FuturesReferenceBook({ bids: liveBids, asks: liveAsks, pair, onP
           three units share a ~215px panel, and "Количество(BTC)" simply
           does not fit beside "Сумма(BTC)" — it overlapped its neighbour. */}
       <div className="rb-columns"><span>{t('trade.price')}<small>({quote})</small></span><span>{t('trade.bookQty')}<small>({base})</small></span><span title="Cumulative base quantity">{t('trade.bookTotal')}<small>({base})</small></span></div>
-      {feed && <div className="rb-feed" role="status" data-state={status}>{feed}</div>}
       <div className={`rb-body rb-${mode}`} data-stale={status === 'stale' && !waiting || undefined}
         data-waiting={waiting || undefined} ref={body}>
         {mode !== 'bids' && <div className="rb-stack rb-asks">{waiting ? placeholders('ask') : rows(sell, 'ask')}</div>}
