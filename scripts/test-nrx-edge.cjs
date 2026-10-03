@@ -23,6 +23,21 @@ const get = path => worker.fetch(new Request('https://market.voltextech.net' + p
   }
   assert.equal((await get('/market/display/futures-book/NRXUSDT')).status, 404);
   assert.equal((await (await get('/health')).json()).service, 'voltex-market-edge');
+  // Exercise the scheduled path in the actual browser-targeted Worker bundle.
+  // Fixed instants are fixtures; no query parameter can select a future price.
+  for (const [at, price] of [
+    ['2026-10-04T18:48:00Z', 10.776],
+    ['2026-10-05T11:30:00Z', 58.536],
+    ['2026-10-07T17:30:00Z', 23.4144],
+  ]) {
+    now = Date.parse(at);
+    const state = (await (await get('/market/nrx')).json()).assets[0].state;
+    assert.equal(state.lastPrice, price, at);
+    const tradesResponse = await get('/market/external/trades/NRX-USDT');
+    assert.equal(tradesResponse.status, 200);
+    const trades = await tradesResponse.json();
+    assert.equal(Number(trades.trades[0].price), price, 'trade tape contains the same terminal price');
+  }
   assert.equal(external, 0);
-  console.log('Bundled NRX Worker: 10 checks PASS; zero IO; no Node runtime/DB dependency');
+  console.log('Bundled NRX Worker: base routes and 3 scheduled target/tape checks PASS; zero IO; no Node runtime/DB dependency');
 })().catch(error => { console.error(error); process.exitCode = 1; });

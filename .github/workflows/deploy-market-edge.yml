@@ -109,6 +109,13 @@ jobs:
           exit 1
         env:
           EXPECTED_API_COMMIT: ${{ inputs.expected_api_commit || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.sha) || '' }}
+      - name: NRX prospective schedule release gate
+        # A draft / elapsed schedule must never rewrite public market history.
+        # Set the variable only after the SAME schedule is already verified on
+        # both production consumers; never use it to approve a new activation.
+        run: node ../../scripts/check-nrx-scenario-release.cjs
+        env:
+          NRX_ACTIVE_SCHEDULE_SHA256: ${{ vars.NRX_ACTIVE_SCHEDULE_SHA256 }}
       - name: Deploy Worker
         # Still gated by the existing explicit deploy condition, never a PR.
         # Applies the listings-v1 Durable Object migration (a new, empty SQLite namespace).
