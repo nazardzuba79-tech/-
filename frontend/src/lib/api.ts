@@ -619,12 +619,10 @@ export const api = {
       body: JSON.stringify({ email, password, ref }),
     }),
 
-  /** `remember` = «Запомнить это устройство»: the server keeps this
-   *  device signed in for up to 90 days (30 days without use ends it). */
-  login: (email: string, password: string, remember = false) =>
+  login: (email: string, password: string) =>
     request<{ token: string } | { requires2fa: true; pendingToken: string }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, ...(remember ? { remember: true } : {}) }),
+      body: JSON.stringify({ email, password }),
     }),
 
   /** Ends this session on the server as well; the caller clears the token. */

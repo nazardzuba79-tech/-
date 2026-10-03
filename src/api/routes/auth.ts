@@ -29,10 +29,12 @@ const ADMIN_EMAIL = 'voltex.crypto@gmail.com';
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
 
-// An ordinary sign-in lasts a working day. A sign-in where the person ticked
-// «Запомнить это устройство» lasts up to REMEMBERED_SESSION_MAX instead, and
-// requireAuth ends it sooner if the device goes unused for
-// REMEMBERED_SESSION_IDLE_MS. Either kind stays a real Session row: it shows
+// An ordinary sign-in lasts a working day. An ADMIN sign-in is a remembered
+// device: it lasts up to REMEMBERED_SESSION_MAX, and requireAuth ends it
+// sooner if the device goes unused for REMEMBERED_SESSION_IDLE_MS. Decided
+// by the account's role on the server, never by a form field — the owner
+// wants long sessions for the admin account only, and the login form cannot
+// know whose account it is (nor should it hint which email is the admin's). Either kind stays a real Session row: it shows
 // in Settings → Security, it can be signed out there, logout revokes it and
 // a password change revokes every other one.
 const JWT_EXPIRES_IN = '12h';
@@ -66,8 +68,6 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
-  /** «Запомнить это устройство». Absent means no, as before. */
-  remember: z.boolean().optional(),
 });
 
 const login2faSchema = z.object({
@@ -120,11 +120,13 @@ function issueToken(userId: string, sessionId: string, remembered = false): stri
     { expiresIn: remembered ? REMEMBERED_SESSION_MAX : JWT_EXPIRES_IN });
 }
 
-// The "remember" choice is made on the password step and carried inside the
-// signed pending token, so the 2FA step cannot be used to upgrade it.
-function issuePendingToken(userId: string, remembered: boolean): string {
-  return jwt.sign({ sub: userId, purpose: 'pending_2fa', ...(remembered ? { rem: true } : {}) }, JWT_SECRET!,
-    { expiresIn: PENDING_2FA_EXPIRES_IN });
+function issuePendingToken(userId: string): string {
+  return jwt.sign({ sub: userId, purpose: 'pending_2fa' }, JWT_SECRET!, { expiresIn: PENDING_2FA_EXPIRES_IN });
+}
+
+/** Only the admin account's devices are remembered; read from the role column. */
+function remembersDevice(user: { role: string }): boolean {
+  return user.role === 'ADMIN';
 }
 
 export function authRouter(
@@ -246,7 +248,6 @@ export function authRouter(
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { email, password } = parsed.data;
-    const remembered = parsed.data.remember === true;
 
     const user = await prisma.user.findUnique({ where: { email } });
     // Always run bcrypt.compare even on a missing user (against a dummy hash)
@@ -269,9 +270,10 @@ export function authRouter(
     // logs in exactly like one created before it. 2FA is untouched and still
     // stands between a correct password and a session.
     if (user.twoFactorEnabled) {
-      return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id, remembered) });
+      return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
     }
 
+    const remembered = remembersDevice(user);
     const session = await createSession(prisma, user.id, req, remembered);
     res.json({ token: issueToken(user.id, session.id, remembered) });
 
@@ -285,12 +287,10 @@ export function authRouter(
     const { pendingToken, code } = parsed.data;
 
     let userId: string;
-    let remembered = false;
     try {
-      const payload = jwt.verify(pendingToken, JWT_SECRET!) as { sub: string; purpose?: string; rem?: boolean };
+      const payload = jwt.verify(pendingToken, JWT_SECRET!) as { sub: string; purpose?: string };
       if (payload.purpose !== 'pending_2fa') throw new Error('wrong token type');
       userId = payload.sub;
-      remembered = payload.rem === true;
     } catch {
       return res.status(401).json({ error: 'Login session expired, please sign in again' });
     }
@@ -321,6 +321,7 @@ export function authRouter(
       });
     }
 
+    const remembered = remembersDevice(user);
     const session = await createSession(prisma, user.id, req, remembered);
     res.json({ token: issueToken(user.id, session.id, remembered) });
 

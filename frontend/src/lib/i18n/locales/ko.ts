@@ -187,8 +187,6 @@ export const KO: Record<Key, string> = {
   'auth.loginTitle': 'VOLTEX 로그인',
   'auth.loginSubtitle': '계정 정보를 입력하세요.',
   'auth.forgotPassword': '비밀번호를 잊으셨나요?',
-  'auth.rememberDevice': '이 기기 기억하기',
-  'auth.rememberDeviceHint': '이 기기에서 최대 90일 동안 로그인 상태를 유지합니다. 공용 컴퓨터에서는 선택하지 마세요.',
   'auth.noAccount': '계정이 없으신가요?',
   'auth.createAccount': '계정 만들기',
   'trade.orderBook': '호가창',
