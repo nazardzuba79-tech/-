@@ -88,6 +88,17 @@ function memoryStore(state: MemoryState = { users: new Map(), sessions: new Map(
         Object.assign(session, data);
         return structuredClone(session);
       },
+      // Logout and password change revoke by filter: this session or every other live one.
+      updateMany: async ({ where, data }: {
+        where: { id?: string | { not: string }; userId?: string; revokedAt?: null }; data: Partial<MemorySession>;
+      }) => {
+        const matches = [...state.sessions.values()].filter((session) =>
+          (where.userId === undefined || session.userId === where.userId)
+          && (where.revokedAt !== null || !session.revokedAt)
+          && (where.id === undefined || (typeof where.id === 'string' ? session.id === where.id : session.id !== where.id.not)));
+        for (const session of matches) Object.assign(session, data);
+        return { count: matches.length };
+      },
     },
     auditLog: {
       create: async ({ data }: { data: Pick<MemoryAudit, 'userId' | 'action' | 'metadata'> }) => {
@@ -269,6 +280,8 @@ describe('bcrypt real-route auth/security regression', () => {
     expect(user.passwordHash).not.toBe(initialHash);
     expect(await bcrypt.compare(password, user.passwordHash)).toBe(false);
     expect(await bcrypt.compare('newvalidlowercasepassword', user.passwordHash)).toBe(true);
+    // The device that changed the password stays signed in.
+    expect((await request(app).get('/api/v1/me').auth(token, { type: 'bearer' })).status).toBe(200);
     const restored = memoryStore(structuredClone(store.state));
     const refreshedApp = buildApp(restored);
     expect((await login(refreshedApp, password)).status).toBe(401);

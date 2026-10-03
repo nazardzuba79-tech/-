@@ -877,6 +877,9 @@ model Session {
   /// meaningful instead of frozen at login time.
   lastSeenAt DateTime  @default(now())
   revokedAt  DateTime?
+  /// «Запомнить это устройство» was ticked at sign-in: the token lasts up to
+  /// 90 days, and requireAuth ends it after 30 days without use.
+  remembered Boolean   @default(false)
 
   @@index([userId])
 }

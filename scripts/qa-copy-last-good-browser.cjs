@@ -175,7 +175,12 @@ let server, browser;
   const service = new CopyPerformanceService(fixture.db, () => new Date(`${date}T12:00:00Z`));
   const app = express();
   const writes = [];
+  // Logout also ends the server session (remembered devices, 2026-10-03). It is
+  // a session write, not a financial one: answered here, counted, and allowed
+  // only during the logout phase. Any other write is still a finding.
+  const logouts = [];
   app.use((req, res, next) => {
+    if (req.method === 'POST' && req.path === '/api/v1/auth/logout') { logouts.push(phase); return res.json({ status: 'ok' }); }
     if (!['GET', 'HEAD'].includes(req.method)) { writes.push(`${req.method} ${req.path}`); return res.status(405).json({ error: 'Local QA is read-only' }); }
     res.setHeader('Cache-Control', 'no-store'); next();
   });
@@ -456,6 +461,8 @@ let server, browser;
   if (Object.values(report.keysByPhase).some(entry => entry.keys.some(key => key.startsWith('unknown:')))) finding('A snapshot key belongs to no session this QA created: ' + JSON.stringify(report.keysByPhase));
   await contextA.close();
 
+  report.logoutRequests = logouts;
+  if (logouts.length !== 1 || logouts[0] !== 'logout') finding('Expected exactly one server logout, during logout: ' + JSON.stringify(logouts));
   report.readOnly = writes.length === 0; report.writes = writes;
   if (writes.length) finding('The QA server received write requests: ' + writes.join(', '));
   if (report.pageErrors.length) finding(`Page errors: ${report.pageErrors.join(' | ')}`);

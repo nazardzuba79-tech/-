@@ -191,6 +191,8 @@ export const RU = {
   'auth.loginTitle': 'Войти в VOLTEX',
   'auth.loginSubtitle': 'Введите данные своего аккаунта.',
   'auth.forgotPassword': 'Забыли пароль?',
+  'auth.rememberDevice': 'Запомнить это устройство',
+  'auth.rememberDeviceHint': 'Не спрашивать пароль на этом устройстве до 90 дней. Не отмечайте на чужом компьютере.',
   'auth.noAccount': 'Нет аккаунта?',
   'auth.createAccount': 'Создать аккаунт',
 
@@ -653,6 +655,7 @@ export const RU = {
   'settings.sessionsCount': '{count} активных',
   'settings.review': 'Просмотреть',
   'settings.thisDevice': 'Это устройство',
+  'settings.rememberedDevice': 'Запомнено',
   'settings.lastSeen': 'Последний раз: {date}',
   'settings.signOut': 'Выйти',
   'settings.signOutSelfConfirm': 'Это текущее устройство. Выйти из него сейчас?',
