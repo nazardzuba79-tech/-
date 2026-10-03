@@ -137,6 +137,11 @@ async function main() {
         await page.locator('.admin-main').waitFor();
         await page.screenshot({ path: path.join(out, `${slug.replaceAll('/', '-')}-${width}.png`), fullPage: false });
         report.layouts.push(await page.evaluate(({ slug, width, height }) => ({ route: slug, width, height, documentWidth: document.documentElement.scrollWidth, overflow: document.documentElement.scrollWidth > innerWidth + 1, rows: document.querySelectorAll('[data-user-row], [data-user-card], tbody tr, .otc-cash-list-item, .admin-history-grid').length, bodyText: document.querySelector('.admin-main')?.textContent?.slice(0, 280) }), { slug, width, height }));
+        if (variant === 'after' && slug === 'users' && width >= 1366) {
+          const tops = await page.locator('.admin-attention-grid>a').evaluateAll(cards => cards.map(card => Math.round(card.getBoundingClientRect().top)));
+          assert.equal(tops.length, 6, 'All six separately measured queues remain visible');
+          assert.equal(new Set(tops).size, 1, 'Desktop attention summary stays compact in one row');
+        }
         if (variant === 'after' && slug === 'users' && width === 390) {
           const card = page.locator('[data-user-card]').first();
           await card.waitFor({ state: 'visible' });
@@ -152,6 +157,6 @@ async function main() {
     fs.writeFileSync(path.join(out, 'browser-results.json'), JSON.stringify(report, null, 2));
   }
   console.log(JSON.stringify({ variant, screenshots: report.layouts.length, pageErrors: report.errors, overflows: report.layouts.filter(r => r.overflow).map(r => `${r.route}@${r.width}`), unexpected: state.unexpected, blockedExternal: [...new Set(report.blockedExternal)], evidence: out }, null, 2));
-  if (report.errors.length || state.unexpected.length) process.exitCode = 1;
+  if (report.errors.length || state.unexpected.length || report.blockedExternal.length || (variant === 'after' && report.layouts.some(layout => layout.overflow))) process.exitCode = 1;
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

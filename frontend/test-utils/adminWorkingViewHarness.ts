@@ -3,7 +3,7 @@ import { resolve, dirname } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 
-export const frontend = resolve(__dirname, '../../..');
+export const frontend = resolve(__dirname, '..');
 export const req = createRequire(resolve(frontend, 'package.json'));
 export const React = req('react'), act = React.act;
 export const flush = async () => { for (let i = 0; i < 18; i++) await Promise.resolve(); };

@@ -36,7 +36,7 @@ export function AdminAuditLogPage() {
       {!read.data.items.length && <p>Записей по выбранным условиям нет.</p>}
       <div className="admin-audit-list">{read.data.items.map(entry => <article key={entry.id}>
         <header><strong>{adminAction(entry.action)}</strong><time>{adminDate(entry.createdAt)}</time></header>
-        <dl className="admin-key-values"><dt>Выполнил</dt><dd>{entry.performedByAdminEmail ?? 'Не указан в записи'}</dd><dt>Пользователь</dt><dd>{entry.userId ? <Link to={`/admin/users/${encodeURIComponent(entry.userId)}?returnTo=${encodeURIComponent(returnTo)}`}>{entry.userEmail ?? entry.userId}</Link> : 'Не относится к пользователю'}</dd><dt>Результат</dt><dd>{typeof entry.metadata.status === 'string' ? adminStatus(entry.metadata.status) : entry.metadata.success === false ? 'Ошибка' : 'Действие зарегистрировано'}</dd></dl>
+        <dl className="admin-key-values"><dt>Выполнил</dt><dd>{entry.performedByAdminEmail ?? 'Не указан в записи'}</dd><dt>Пользователь</dt><dd>{entry.userId ? <Link to={`/admin/users/${encodeURIComponent(entry.userId)}?returnTo=${encodeURIComponent(returnTo)}`}>{entry.userEmail ?? entry.userId}</Link> : 'Не относится к пользователю'}</dd><dt>Результат</dt><dd>{typeof entry.metadata?.status === 'string' ? adminStatus(entry.metadata.status) : entry.metadata?.success === false ? 'Ошибка' : 'Действие зарегистрировано'}</dd></dl>
         <details><summary>Детали и изменения</summary><p>Код: {entry.action}</p><CopyValue value={entry.id} label="ID действия" full /><pre>{JSON.stringify(maskAuditMetadata(entry.metadata), null, 2)}</pre></details>
       </article>)}</div></>}
   </div>;

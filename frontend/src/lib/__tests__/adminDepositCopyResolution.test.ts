@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { act, flush, frontend, createAdminWorkingFixture, json, page, user, workSummary } from './adminWorkingViewHarness';
+import { act, flush, frontend, createAdminWorkingFixture, json, page, user, workSummary } from '../../../test-utils/adminWorkingViewHarness';
 
 let f: ReturnType<typeof createAdminWorkingFixture>, users: any[], ignoreFails: boolean, ignoreGate: Promise<void> | null, nextCopy: any;
 const eventId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';

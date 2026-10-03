@@ -62,8 +62,8 @@
 .admin-audit-list details { margin-top: 10px; }
 .admin-audit-list summary { cursor: pointer; color: var(--admin-brand); }
 .admin-page-grid :is(button,a,input,select,textarea,summary):focus-visible { outline: 2px solid var(--admin-brand); outline-offset: 3px; }
-@media(max-width:1440px) { .admin-attention-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } .admin-users-table td,.admin-users-table th { padding: 10px 7px; } .admin-audit-filters { grid-template-columns: repeat(3,minmax(0,1fr)); } }
-@media(max-width:1100px) { .admin-users-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-users-table { min-width: 860px; } .admin-table-desktop { overflow-x: auto; } }
+@media(max-width:1440px) { .admin-users-table td,.admin-users-table th { padding: 10px 7px; } .admin-audit-filters { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+@media(max-width:1100px) { .admin-attention-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } .admin-users-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-users-table { min-width: 860px; } .admin-table-desktop { overflow-x: auto; } }
 @media(max-width:767px) {
   .admin-page-grid .admin-users-workspace .admin-table-desktop { display: none !important; }
   .admin-page-grid .admin-users-workspace .admin-table-mobile { display: block !important; }

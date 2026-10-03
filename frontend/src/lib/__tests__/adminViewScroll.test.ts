@@ -1,4 +1,4 @@
-import { act, flush, createAdminWorkingFixture, page, user } from './adminWorkingViewHarness';
+import { act, flush, createAdminWorkingFixture, page, user } from '../../../test-utils/adminWorkingViewHarness';
 
 let f: ReturnType<typeof createAdminWorkingFixture>;
 const frame = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 25)); await flush(); });

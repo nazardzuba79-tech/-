@@ -54,3 +54,9 @@
 - Backend/isolated PostgreSQL прогони, required CI, PR head SHA, застосування індексів і готовність релізу підтверджуються окремо. Цей документ не дозволяє merge/deploy, міграцію production, зміну DNS або інфраструктури.
 
 Під час read-only review нових блокерів обліку в розглянутих компонентах не виявлено після двох вузьких інтеграційних виправлень вище. Це не повний незалежний аудит backend/усіх legacy маршрутів; перелічені обмеження залишаються явними.
+
+## Фінальний CI follow-up
+
+Незалежний review відтворив падіння журналу на JSON `null` у metadata: 1 failed / 12 passed до виправлення, 13/13 після. Чотири suites з перенесеним test-helper — 48/48. Повний Linux frontend на першому PR-head мав 3703/3703 assertion PASS, але gate правильно впав через helper без тестів у `__tests__`; helper перенесено в `frontend/test-utils` без виключення тестів. На Windows п’ять незмінених source-scanner assertion залежать від розділювача шляху; Linux CI їх проходить. Фінальний exact-head CI — у PR #408.
+
+Після CI звірено змінену поведінку з існуючими browser gates: catalogue11/11 (save Cancel/clear Escape — zero writes, обидва реальні 60s idle windows — zero catalogue requests); browser sleep16/16 + lifecycle53/53 (видима Admin-сводка обмежена, hidden без HTTP/stream, звичайні торгові сторінки сплять); OTC legacy320/390/768/1440 з нульовими external/unexpected запитами. Відсутні fixtures додано явно — request guards не послаблено. Зведена статистика на1920/1440/1366 тримає шість окремих одиниць в одному рядку; overflow/external requests тепер є blocking assertions screenshot CI.

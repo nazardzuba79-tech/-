@@ -1,4 +1,4 @@
-import { act, flush, createAdminWorkingFixture, page } from './adminWorkingViewHarness';
+import { act, flush, createAdminWorkingFixture, page } from '../../../test-utils/adminWorkingViewHarness';
 let f: ReturnType<typeof createAdminWorkingFixture>;
 const entry = (id: string, metadata: any = {}) => ({ id, action: 'KYC_APPROVED', userId: 'u1', userEmail: 'user@example.invalid', performedByAdminEmail: 'admin@example.invalid', createdAt: '2026-10-03T09:00:00Z', metadata });
 const query = () => new URLSearchParams(f.api.getAdminAuditPage.mock.calls.at(-1)[0]);
@@ -46,6 +46,21 @@ test('metadata masks nested secrets without inventing the result of a recorded a
   expect(f.host.textContent).toContain('Одобрено'); expect(f.host.textContent).toContain('Скрыто'); expect(f.host.textContent).not.toContain('fixture-secret-value');
   expect(f.host.textContent).toContain('"before": "PENDING"');
 });
+test.each([
+  { name: 'null', metadata: null, masked: null },
+  { name: 'string', metadata: 'Legacy audit note', masked: 'Legacy audit note' },
+  { name: 'number', metadata: 7, masked: 7 },
+  { name: 'boolean', metadata: false, masked: false },
+  { name: 'array', metadata: [null, { token: 'fixture-array-secret', after: 'APPROVED' }], masked: [null, { token: 'Скрыто', after: 'APPROVED' }] },
+])('$name metadata keeps the journal usable and its masked original details inspectable', async ({ metadata, masked }) => {
+  f.api.getAdminAuditPage.mockResolvedValue(page([entry('legacy-audit', metadata)])); await mount();
+  const row = f.host.querySelector('.admin-audit-list article');
+  expect(row).not.toBeNull();
+  expect(row?.textContent).toContain('Действие зарегистрировано');
+  expect(row?.querySelector('pre')?.textContent).toBe(JSON.stringify(masked, null, 2));
+  expect(f.host.textContent).not.toContain('fixture-array-secret');
+});
+
 test('unmount aborts the journal read; late responses cannot revive the page', async () => {
   let finish!: (value: any) => void; f.api.getAdminAuditPage.mockImplementationOnce(() => new Promise(done => { finish = done; })); await mount();
   const signal = f.api.getAdminAuditPage.mock.calls[0][1]; await act(async () => f.root.render(null));
