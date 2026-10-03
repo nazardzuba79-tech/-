@@ -89,6 +89,8 @@ jobs:
       - name: Install pinned disposable-only PostgreSQL and browser tools
         id: fixture_dependencies
         run: node scripts/otc-ci-evidence.cjs run fixture-dependencies npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - name: Generate Prisma client for standalone admin balance QA
+        run: npx prisma generate
       - name: Admin balance correction idempotency on disposable PostgreSQL
         id: admin_balance_postgres
         env:
