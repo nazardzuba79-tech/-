@@ -39,7 +39,9 @@ test('NRX identity, listing boundary and 0.80 initial price; VTA unchanged', asy
 test('same VTA engine and relative growth rules without copying the math', () => {
   const a = new TestMarketSimulation(NEURIX);
   const b = new TestMarketSimulation({ ...VOLTORA, seed: NEURIX.seed, listingAt: listing, initialPrice: .8 });
-  for (const hours of [0, 1, 24, 48, 72, 120]) expect(a.priceAt(listing + hours * HOUR_MS)).toBe(b.priceAt(listing + hours * HOUR_MS));
+  // NRX's wave structure re-arranges the hours INSIDE each block, so the shared
+  // growth rule is the block and day anchors: the listing, 48h and every day after.
+  for (const hours of [0, 48, 72, 96, 120]) expect(a.priceAt(listing + hours * HOUR_MS)).toBe(b.priceAt(listing + hours * HOUR_MS));
 });
 
 test('before listing there are no candles, book levels or trades', async () => {

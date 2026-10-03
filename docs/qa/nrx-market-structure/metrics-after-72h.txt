@@ -1,0 +1,9 @@
+NRX first 72h: open 0.8 -> close 6406.1455 (x8007.7)
+15m  n= 288 green=51% maxGreenRun=6 doji=27% upperWick p50/p90=0.32/0.66 lowerWick p50/p90=0.25/0.60 pullbacks>5%=25 deepest=35.1% vol~|body| r=0.17 sameBodyAdj=0
+1h   n=  72 green=53% maxGreenRun=7 doji=22% upperWick p50/p90=0.32/0.51 lowerWick p50/p90=0.21/0.48 pullbacks>5%=13 deepest=34.6% vol~|body| r=0.27 sameBodyAdj=0
+4h   n=  19 green=74% maxGreenRun=7 doji=11% upperWick p50/p90=0.30/0.46 lowerWick p50/p90=0.12/0.41 pullbacks>5%=2 deepest=22.3% vol~|body| r=0.01 sameBodyAdj=0
+15m launch:67%/12 correction:25%/72 bounce:75%/12 impulse:75%/76 dip:29%/24 accumulation:50%/84 breakout:63%/8
+1h launch:67%/3 correction:0%/18 bounce:100%/3 impulse:100%/19 dip:0%/6 accumulation:57%/21 breakout:100%/2
+longest 15m green run 6 ending at hour 35.00 accumulation
+phases: launch3 correction1 bounce1 correction2 impulse1 dip1 impulse2 correction6 impulse3 accumulation7 breakout1 impulse1 correction3 bounce1 impulse2 accumulation7 breakout1 impulse2 correction3 impulse1 dip1 impulse2 correction2 bounce1 correction1 impulse2 dip1 impulse1 dip2 impulse1 dip1 impulse1 accumulation7
+1h base volume (median) by phase: launch:461222 correction:132810 bounce:152216 impulse:222696 dip:24265 accumulation:12559 breakout:485485
