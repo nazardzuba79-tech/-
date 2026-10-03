@@ -34,6 +34,8 @@ Browser checks assert exact destinations, SVG counts, computed tile/type sizes, 
 
 The first pushed head passed the full frontend suite, but two older browser harnesses assumed desktop links were visible at 1440px. They were updated to exercise the actual full drawer, not bypass it with a direct URL. Pair-persistence now also runs at 1600px to retain every desktop clipping/slack check, measures shared disclosure wrappers, and hit-tests every product destination in the 1440px drawer including OTC/Arbitrage. Copy/Card round-trip still checks all confirmed cached values, and now clicks visible drawer links in both directions instead of hidden desktop duplicates. No product code or financial assertions changed in this follow-up. The local pair suite passed all three widths; it separately records its pre-existing chart-disposal teardown diagnostic.
 
+The downstream failed-prefetch browser scenarios use the same visible-link approach. Hidden-link hover/click errors are no longer swallowed, and the cold-prefetch scenarios explicitly require a request before asserting recovery. All existing cached-value, privacy, token, balance and failure checks remain. The full Linux frontend gate passed 201 suites / 3,524 tests with none skipped on `25914867`; final exact-head results, including the corrected complete Copy browser chain, are recorded on the PR.
+
 Reproduce after `npm ci`, `npm ci --prefix frontend`, and `npm run build --prefix frontend`:
 
 ```powershell
