@@ -65,7 +65,7 @@ function LabWorkspace() {
   const [seed, setSeed] = useState('');
   const [hours, setHours] = useState(48);
   const [selectedId, setSelectedId] = useState<string | null>(loaded.state.runs[0]?.id ?? null);
-  const [interval, setInterval] = useState<LabInterval>(15);
+  const [interval, setTimeframe] = useState<LabInterval>(15);
   const [elapsed, setElapsed] = useState<number | null>(null);
   const current = state.runs.find(r => r.id === selectedId) ?? null;
   const minutes = current ? Math.min(elapsed ?? current.hours * 60, current.hours * 60) : 0;
@@ -123,7 +123,7 @@ function LabWorkspace() {
       <h3 data-lab-scenario>{scenarioName(current.scenario)}</h3>
       <p className="listing-lab-muted">Код: <code data-lab-saved-seed>{current.seed}</code>. Сценарий и параметры этого примера зафиксированы. Изменения формы создают новый пример, не переписывая старый.</p>
       <div className="listing-lab-intervals" role="group" aria-label="Интервал свечей">
-        {INTERVALS.map(row => <button key={row.value} type="button" aria-pressed={interval === row.value} data-lab-interval={row.value} onClick={() => setInterval(row.value)}>{row.label}</button>)}
+        {INTERVALS.map(row => <button key={row.value} type="button" aria-pressed={interval === row.value} data-lab-interval={row.value} onClick={() => setTimeframe(row.value)}>{row.label}</button>)}
       </div>
       <label className="listing-lab-progress">Показать первые {Math.floor(minutes / 60)} ч {minutes % 60} мин
         <input type="range" min={15} max={current.hours * 60} step={15} value={minutes} onChange={e => setElapsed(Number(e.target.value))} data-lab-progress />
