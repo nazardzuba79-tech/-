@@ -188,8 +188,6 @@ export const EN: Record<Key, string> = {
   'auth.loginTitle': 'Sign in to VOLTEX',
   'auth.loginSubtitle': 'Enter your account details.',
   'auth.forgotPassword': 'Forgot password?',
-  'auth.rememberDevice': 'Remember this device',
-  'auth.rememberDeviceHint': "Stay signed in on this device for up to 90 days. Don't tick this on a shared computer.",
   'auth.noAccount': 'No account?',
   'auth.createAccount': 'Create account',
 

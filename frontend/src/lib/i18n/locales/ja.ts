@@ -187,8 +187,6 @@ export const JA: Record<Key, string> = {
   'auth.loginTitle': 'VOLTEX にログイン',
   'auth.loginSubtitle': 'アカウント情報を入力してください。',
   'auth.forgotPassword': 'パスワードをお忘れですか？',
-  'auth.rememberDevice': 'このデバイスを記憶する',
-  'auth.rememberDeviceHint': 'このデバイスで最大90日間サインインしたままにします。共有パソコンではチェックしないでください。',
   'auth.noAccount': 'アカウントをお持ちでない方',
   'auth.createAccount': 'アカウントを作成',
   'trade.orderBook': '板情報',

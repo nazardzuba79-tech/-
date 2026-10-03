@@ -23,12 +23,14 @@ if (!JWT_SECRET) {
 // on literally every authenticated request.
 const SESSION_TOUCH_INTERVAL_MS = 5 * 60_000;
 
-/** «Запомнить это устройство»: the longest a remembered sign-in can last
- * (the token's own expiry), after which the password is asked again. */
+/** Remembered device (admin accounts only): the longest such a sign-in can
+ * last (the token's own expiry), after which the password is asked again. */
 export const REMEMBERED_SESSION_MAX = '90d';
 /** A remembered device that has not been used for this long is signed out,
  * so a forgotten laptop does not stay signed in for the full 90 days. */
 export const REMEMBERED_SESSION_IDLE_MS = 30 * 24 * 60 * 60_000;
+/** The ordinary sign-in lifetime — the same 12h the login route's token carries. */
+const ORDINARY_SESSION_MS = 12 * 60 * 60_000;
 
 /** Real per-session auth: verifies the JWT, then (for any token carrying a
  * `sid` claim — every token issued since the Session model existed)
@@ -66,8 +68,21 @@ export function requireAuth(prisma: PrismaClient) {
         if (!session || session.userId !== payload.sub || session.revokedAt) {
           return res.status(401).json({ error: 'Session has been signed out' });
         }
-        if (session.remembered && Date.now() - session.lastSeenAt.getTime() > REMEMBERED_SESSION_IDLE_MS) {
-          return res.status(401).json({ error: 'Session expired' });
+        if (session.remembered) {
+          if (Date.now() - session.lastSeenAt.getTime() > REMEMBERED_SESSION_IDLE_MS) {
+            return res.status(401).json({ error: 'Session expired' });
+          }
+          // Remembering is for the admin account only. A remembered session of
+          // any other account (ticked on the short-lived login checkbox, or an
+          // account no longer ADMIN) is held to the ordinary 12h from sign-in.
+          // Only remembered sessions pay for this read.
+          const owner = await prisma.session.findUnique({
+            where: { id: session.id }, select: { createdAt: true, user: { select: { role: true } } },
+          });
+          if (owner?.user?.role !== 'ADMIN'
+            && !(owner?.createdAt && Date.now() - owner.createdAt.getTime() <= ORDINARY_SESSION_MS)) {
+            return res.status(401).json({ error: 'Session expired' });
+          }
         }
         req.sessionId = session.id;
         if (Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {

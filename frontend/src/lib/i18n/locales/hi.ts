@@ -187,8 +187,6 @@ export const HI: Record<Key, string> = {
   'auth.loginTitle': 'VOLTEX में साइन इन करें',
   'auth.loginSubtitle': 'अपने अकाउंट का विवरण दर्ज करें।',
   'auth.forgotPassword': 'पासवर्ड भूल गए?',
-  'auth.rememberDevice': 'इस डिवाइस को याद रखें',
-  'auth.rememberDeviceHint': 'इस डिवाइस पर 90 दिनों तक साइन इन रहें। साझा कंप्यूटर पर इसे न चुनें।',
   'auth.noAccount': 'अकाउंट नहीं है?',
   'auth.createAccount': 'अकाउंट बनाएँ',
   'trade.orderBook': 'ऑर्डर बुक',
