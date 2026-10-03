@@ -5520,3 +5520,42 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
 - Evidence and limitations: docs/qa/futures-proportions/README.md. Five unrelated Windows path-scanner failures reproduced on untouched baseline; exact-head Linux CI remains the publication gate. No merge/deploy authorized for this task.
 - Owner follow-up: corrected Futures header crowding in the existing laptop tier without changing menu structure. Rendered gaps increase from4px to13–16px; all visible dropdowns, text clipping and account overlap checked at1920/1664/1600/1550/1531/1440 plus1366/390 mobile patterns. Zero violations; all six Spot control screenshots remain byte-identical.
 - Header guard run:143 tests/8 suites pass. Evidence includes header crops and additional1531/1550 breakpoint reports. PR #397 remains review-only; the existing Cloudflare integration auto-creates a branch preview, with production unchanged.
+
+## Claude — 2026-10-03 — «Запомнить это устройство» (long sign-in on trusted devices)
+
+- Task: the owner's admin account was signed out and asked for email + password again. Cause: every session token expired after a fixed 12h (`JWT_EXPIRES_IN`), whatever the activity. Owner asked for a long session and remembered laptop/phone.
+- Branch `claude/ecstatic-brahmagupta-cwkvt5-admin-session`, rebased on main `7d9ee6fc`.
+- Material files:
+  - `prisma/schema.prisma` + migration `20261003090000_session_remembered`: additive `Session.remembered BOOLEAN NOT NULL DEFAULT false`.
+  - `src/api/routes/auth.ts`:
+    - `/auth/login` accepts optional `remember: boolean` → remembered Session row + 90-day token. Without it: 12h, unchanged.
+    - The 2FA step takes the choice only from the signed pending token (`rem` claim), so it cannot upgrade a sign-in.
+    - New `POST /auth/logout` (requireAuth) revokes the current session + `SESSION_REVOKED` audit row.
+  - `src/api/middleware/auth.ts`: `REMEMBERED_SESSION_MAX = '90d'`; a remembered session unused for 30 days (`lastSeenAt`) gets 401.
+  - `src/api/routes/account.ts`:
+    - a password change revokes every other live session;
+    - `/me/sessions` includes `remembered`.
+  - Frontend:
+    - `AuthPage.tsx` checkbox (off by default) + `auth-shell.css`;
+    - `api.ts` `login(…, remember)` / `logout()`;
+    - `Nav.tsx` logout also calls the server;
+    - `SecuritySection.tsx` «Запомнено» badge;
+    - 3 i18n keys in all 7 locales.
+  - Tests:
+    - `auth.test.ts` (routes): 12h vs 90d, 2FA carry/no-upgrade, logout;
+    - `auth.test.ts` (middleware): 30-day idle;
+    - `account.test.ts`: password change revokes others.
+  - `docs/qa/remember-device/`: local login screenshots (laptop 1440, phone 390), fixtures only, not production.
+- Preserved:
+  - per-request session check;
+  - Settings → Security revoke;
+  - the 2FA requirement;
+  - the bcrypt/login rate limits;
+  - registration flow and token lifetime;
+  - all non-auth code.
+- Not done / next:
+  - passkeys (Face ID / fingerprint / Windows Hello) proposed as a follow-up;
+  - existing sessions are unaffected until the next sign-in with the box ticked.
+- Release: the migration must run (Dockerfile `prisma migrate deploy` does this on Render).
+- Checks run locally: backend `tsc`; `jest` auth routes + auth middleware + account (all pass); frontend `tsc -b && vite build`; Playwright login screenshots with the request body checked (`remember: true` sent). Full-suite result is reported on the PR.
+- Not merged, not deployed, no production QA.

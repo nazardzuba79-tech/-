@@ -10,6 +10,7 @@ import { generateReferralCode } from '../../services/referralCode';
 import { CountryDetectionService } from '../../services/CountryDetectionService';
 import { notifyUserRegistered } from '../../services/TelegramNotifications';
 import { encryptAdminPassword } from '../../services/AdminPasswordVault';
+import { requireAuth, AuthedRequest, REMEMBERED_SESSION_MAX } from '../middleware/auth';
 
 // Real login metadata for the account's Security Log — never a placeholder.
 // req.ip depends on `trust proxy` being set (see index.ts) to reflect the
@@ -28,6 +29,12 @@ const ADMIN_EMAIL = 'voltex.crypto@gmail.com';
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
 
+// An ordinary sign-in lasts a working day. A sign-in where the person ticked
+// «Запомнить это устройство» lasts up to REMEMBERED_SESSION_MAX instead, and
+// requireAuth ends it sooner if the device goes unused for
+// REMEMBERED_SESSION_IDLE_MS. Either kind stays a real Session row: it shows
+// in Settings → Security, it can be signed out there, logout revokes it and
+// a password change revokes every other one.
 const JWT_EXPIRES_IN = '12h';
 const BCRYPT_ROUNDS = 12;
 
@@ -59,6 +66,8 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  /** «Запомнить это устройство». Absent means no, as before. */
+  remember: z.boolean().optional(),
 });
 
 const login2faSchema = z.object({
@@ -99,17 +108,23 @@ const twoFactorLimiter = rateLimit({
 // requireAuth) — one per register/login/login-2fa, carrying the actual
 // request's IP/UA so Settings → Security's "Active sessions" list and the
 // sign-out-this-device button have real data and real effect, not a mock.
-async function createSession(prisma: PrismaClient, userId: string, req: Request) {
+async function createSession(prisma: PrismaClient, userId: string, req: Request, remembered = false) {
   const meta = loginMetadata(req);
-  return prisma.session.create({ data: { userId, ip: meta.ip, userAgent: meta.userAgent } });
+  return prisma.session.create({
+    data: { userId, ip: meta.ip, userAgent: meta.userAgent, ...(remembered ? { remembered: true } : {}) },
+  });
 }
 
-function issueToken(userId: string, sessionId: string): string {
-  return jwt.sign({ sub: userId, sid: sessionId }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
+function issueToken(userId: string, sessionId: string, remembered = false): string {
+  return jwt.sign({ sub: userId, sid: sessionId }, JWT_SECRET!,
+    { expiresIn: remembered ? REMEMBERED_SESSION_MAX : JWT_EXPIRES_IN });
 }
 
-function issuePendingToken(userId: string): string {
-  return jwt.sign({ sub: userId, purpose: 'pending_2fa' }, JWT_SECRET!, { expiresIn: PENDING_2FA_EXPIRES_IN });
+// The "remember" choice is made on the password step and carried inside the
+// signed pending token, so the 2FA step cannot be used to upgrade it.
+function issuePendingToken(userId: string, remembered: boolean): string {
+  return jwt.sign({ sub: userId, purpose: 'pending_2fa', ...(remembered ? { rem: true } : {}) }, JWT_SECRET!,
+    { expiresIn: PENDING_2FA_EXPIRES_IN });
 }
 
 export function authRouter(
@@ -231,6 +246,7 @@ export function authRouter(
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { email, password } = parsed.data;
+    const remembered = parsed.data.remember === true;
 
     const user = await prisma.user.findUnique({ where: { email } });
     // Always run bcrypt.compare even on a missing user (against a dummy hash)
@@ -253,11 +269,11 @@ export function authRouter(
     // logs in exactly like one created before it. 2FA is untouched and still
     // stands between a correct password and a session.
     if (user.twoFactorEnabled) {
-      return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
+      return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id, remembered) });
     }
 
-    const session = await createSession(prisma, user.id, req);
-    res.json({ token: issueToken(user.id, session.id) });
+    const session = await createSession(prisma, user.id, req, remembered);
+    res.json({ token: issueToken(user.id, session.id, remembered) });
 
     // Accounts that predate country detection get theirs on a later sign-in.
     if (!user.country) backfillCountry(user.id, req);
@@ -269,10 +285,12 @@ export function authRouter(
     const { pendingToken, code } = parsed.data;
 
     let userId: string;
+    let remembered = false;
     try {
-      const payload = jwt.verify(pendingToken, JWT_SECRET!) as { sub: string; purpose?: string };
+      const payload = jwt.verify(pendingToken, JWT_SECRET!) as { sub: string; purpose?: string; rem?: boolean };
       if (payload.purpose !== 'pending_2fa') throw new Error('wrong token type');
       userId = payload.sub;
+      remembered = payload.rem === true;
     } catch {
       return res.status(401).json({ error: 'Login session expired, please sign in again' });
     }
@@ -303,10 +321,27 @@ export function authRouter(
       });
     }
 
-    const session = await createSession(prisma, user.id, req);
-    res.json({ token: issueToken(user.id, session.id) });
+    const session = await createSession(prisma, user.id, req, remembered);
+    res.json({ token: issueToken(user.id, session.id, remembered) });
 
     if (!user.country) backfillCountry(user.id, req);
+  }));
+
+  // Logout ends the session on the server too, not only in this browser:
+  // a remembered token lives for weeks, so dropping it from localStorage
+  // alone would leave a valid copy anywhere it had been read.
+  router.post('/auth/logout', requireAuth(prisma), asyncRoute(async (req: AuthedRequest, res) => {
+    if (req.sessionId) {
+      const { count } = await prisma.session.updateMany({
+        where: { id: req.sessionId, userId: req.userId, revokedAt: null }, data: { revokedAt: new Date() },
+      });
+      if (count) {
+        await prisma.auditLog.create({
+          data: { userId: req.userId!, action: 'SESSION_REVOKED', metadata: { sessionId: req.sessionId, self: true, logout: true } },
+        });
+      }
+    }
+    res.json({ status: 'ok' });
   }));
 
   return router;

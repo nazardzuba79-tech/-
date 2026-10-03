@@ -23,6 +23,13 @@ if (!JWT_SECRET) {
 // on literally every authenticated request.
 const SESSION_TOUCH_INTERVAL_MS = 5 * 60_000;
 
+/** «Запомнить это устройство»: the longest a remembered sign-in can last
+ * (the token's own expiry), after which the password is asked again. */
+export const REMEMBERED_SESSION_MAX = '90d';
+/** A remembered device that has not been used for this long is signed out,
+ * so a forgotten laptop does not stay signed in for the full 90 days. */
+export const REMEMBERED_SESSION_IDLE_MS = 30 * 24 * 60 * 60_000;
+
 /** Real per-session auth: verifies the JWT, then (for any token carrying a
  * `sid` claim — every token issued since the Session model existed)
  * checks that session hasn't been revoked, so "sign out this device" in
@@ -54,10 +61,13 @@ export function requireAuth(prisma: PrismaClient) {
         // metadata that authorization never reads. No auth cache or TTL.
         const session = await prisma.session.findUnique({
           where: { id: payload.sid },
-          select: { id: true, userId: true, revokedAt: true, lastSeenAt: true },
+          select: { id: true, userId: true, revokedAt: true, lastSeenAt: true, remembered: true },
         });
         if (!session || session.userId !== payload.sub || session.revokedAt) {
           return res.status(401).json({ error: 'Session has been signed out' });
+        }
+        if (session.remembered && Date.now() - session.lastSeenAt.getTime() > REMEMBERED_SESSION_IDLE_MS) {
+          return res.status(401).json({ error: 'Session expired' });
         }
         req.sessionId = session.id;
         if (Date.now() - session.lastSeenAt.getTime() > SESSION_TOUCH_INTERVAL_MS) {

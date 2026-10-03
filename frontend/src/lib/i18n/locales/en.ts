@@ -181,6 +181,8 @@ export const EN: Record<Key, string> = {
   'auth.loginTitle': 'Sign in to VOLTEX',
   'auth.loginSubtitle': 'Enter your account details.',
   'auth.forgotPassword': 'Forgot password?',
+  'auth.rememberDevice': 'Remember this device',
+  'auth.rememberDeviceHint': "Stay signed in on this device for up to 90 days. Don't tick this on a shared computer.",
   'auth.noAccount': 'No account?',
   'auth.createAccount': 'Create account',
 
@@ -643,6 +645,7 @@ export const EN: Record<Key, string> = {
   'settings.sessionsCount': '{count} active',
   'settings.review': 'Review',
   'settings.thisDevice': 'This device',
+  'settings.rememberedDevice': 'Remembered',
   'settings.lastSeen': 'Last seen {date}',
   'settings.signOut': 'Sign out',
   'settings.signOutSelfConfirm': 'This is your current device. Sign out now?',

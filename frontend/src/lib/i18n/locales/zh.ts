@@ -181,6 +181,8 @@ export const ZH: Record<Key, string> = {
   'auth.loginTitle': '登录 VOLTEX',
   'auth.loginSubtitle': '请输入您的账户信息。',
   'auth.forgotPassword': '忘记密码？',
+  'auth.rememberDevice': '记住此设备',
+  'auth.rememberDeviceHint': '在此设备上保持登录最长 90 天。请勿在公共电脑上勾选。',
   'auth.noAccount': '还没有账户？',
   'auth.createAccount': '创建账户',
 
@@ -642,6 +644,7 @@ export const ZH: Record<Key, string> = {
   'settings.sessionsCount': '{count} 个活跃',
   'settings.review': '查看',
   'settings.thisDevice': '此设备',
+  'settings.rememberedDevice': '已记住',
   'settings.lastSeen': '最后活动:{date}',
   'settings.signOut': '退出登录',
   'settings.signOutSelfConfirm': '这是你当前使用的设备,确定要退出登录吗?',
