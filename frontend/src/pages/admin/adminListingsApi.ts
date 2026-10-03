@@ -50,6 +50,18 @@ export class ListingApiError extends Error {
   constructor(message: string, readonly status: number, readonly code: string | null, readonly draftRevision: number | null = null) { super(message); }
 }
 
+const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
+const revision = (value: unknown) => Number.isSafeInteger(value) && Number(value) > 0;
+const instant = (value: unknown) => typeof value === 'string' && Number.isFinite(Date.parse(value));
+function configShape(value: unknown): boolean {
+  if (!object(value) || value.schemaVersion !== 1 || !instant(value.listingAt)
+    || !['symbol', 'name', 'initialPrice', 'displayTimeZone', 'ownerAllocation', 'seed'].every(key => typeof value[key] === 'string')
+    || !['auto', 'manual'].includes(String(value.seedMode)) || typeof value.tradable !== 'boolean'
+    || !(value.logo === null || typeof value.logo === 'string')) return false;
+  try { new Intl.DateTimeFormat('en', { timeZone: String(value.displayTimeZone) }); return true; }
+  catch { return false; }
+}
+
 async function call<T>(path: string, init: { method?: string; body?: unknown; ifMatch?: number; signal?: AbortSignal } = {}): Promise<T> {
   const token = getToken();
   if (!token) throw new ListingApiError('Сессия администратора недоступна', 401, null);
@@ -71,6 +83,26 @@ async function call<T>(path: string, init: { method?: string; body?: unknown; if
     const message = typeof body?.message === 'string' ? body.message : `Ошибка запроса (${response.status})`;
     throw new ListingApiError(message, response.status, code, typeof body?.draftRevision === 'number' ? body.draftRevision : null);
   }
+  // A 2xx without a recognizable receipt is an UNKNOWN outcome, not success.
+  // Keep the caller's form/confirmation (and the same publish key) for recovery.
+  let valid = object(body);
+  if (valid && path.endsWith('/publish')) {
+    valid = typeof body!.id === 'string' && path === `/admin/listings/${encodeURIComponent(body!.id)}/publish`
+      && revision(body!.version) && typeof body!.replayed === 'boolean' && instant(body!.publishedAt);
+  } else if (valid && (init.method === 'POST' || init.method === 'PUT')) {
+    valid = typeof body!.id === 'string' && revision(body!.draftRevision) && configShape(body!.draft)
+      && (init.method === 'POST' || path === `/admin/listings/${encodeURIComponent(body!.id)}/draft`);
+  } else if (valid && path === '/admin/listings') {
+    valid = Array.isArray(body!.listings) && body!.listings.every(item => object(item) && typeof item.id === 'string'
+      && revision(item.draftRevision) && configShape(item.draft)
+      && (item.activeVersion === null ? item.active === null : revision(item.activeVersion) && configShape(item.active))
+      && Array.isArray(item.versions) && item.versions.every(version => object(version) && revision(version.version)
+        && instant(version.publishedAt) && typeof version.publishedBy === 'string'));
+  } else if (valid && path.includes('/preview?')) {
+    valid = typeof body!.listingId === 'string' && revision(body!.draftRevision) && object(body!.asset)
+      && object(body!.asset.state) && Array.isArray(body!.candles) && object(body!.book) && Array.isArray(body!.trades);
+  }
+  if (!valid) throw new ListingApiError('Нет подтверждения от сервера. Проверьте результат операции.', 0, 'UNKNOWN_RESPONSE');
   return body as T;
 }
 

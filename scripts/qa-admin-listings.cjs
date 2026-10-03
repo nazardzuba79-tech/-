@@ -427,22 +427,31 @@ async function run() {
     check('a second listing (QDL, +3 days, not tradable) publishes alongside; a ticker already on the venue (BTC) is refused');
 
     /* 9. The opening: pre-listing → live at the configured instant, from the same config. */
+    let launchReloads = 0;
+    markets.on('framenavigated', frame => { if (frame === markets.mainFrame()) launchReloads++; });
     const wait = listingAt - Date.now() + 2500;
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-    await markets.reload();
     await markets.locator('[data-test-market] canvas, [data-test-market] svg').first().waitFor({ timeout: 20000 });
     await markets.locator('.nrx-book-tabs, .orderbook').first().waitFor({ timeout: 20000 });
     const live = (await edgeJson('/market/listings')).body.assets.find((a) => a.symbol === symbol);
     assert.equal(live.state.phase, 'live'); assert.ok(live.state.lastPrice > 0);
     await shot(markets, 'trade-live-1440.png');
-    await mobile.reload();
     await mobile.waitForTimeout(2500);
     await shot(mobile, 'trade-live-390.png');
     await noOverflow(mobile, 'trade-live-390');
     await registry.ensureFresh();
     assert.doesNotThrow(() => assertSpotListing(`${symbol}/USDT`, Date.now()));
+    assert.equal(launchReloads, 0, 'The open terminal must discover launch without a reload');
+    for (const width of [1920, 1440, 1366, 390]) {
+      await admin.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+      await noOverflow(admin, `listings-audit-${width}`);
+      await shot(admin, `listings-audit-${width}.png`);
+      await markets.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
+      await noOverflow(markets, `trade-audit-${width}`);
+      await shot(markets, `trade-audit-${width}.png`);
+    }
     assert.throws(() => assertSpotListing('QDL/USDT', Date.now() + 4 * 86_400_000), /not available/);
-    check(`opening passed: catalogue phase live at ${live.state.lastPrice}; the terminal shows chart and book after reload; Render Spot gate open for QRB, closed for non-tradable QDL`);
+    check(`opening passed without reload: catalogue phase live at ${live.state.lastPrice}; chart/book visible; Render Spot gate open for QRB, closed for non-tradable QDL; admin/trade fit 1920/1440/1366/390`);
 
     /* 10. One canonical history: the public edge, the admin Preview at the same instant, and a restarted Worker agree. */
     const edgeCandles = async () => (await edgeJson(`/market/test-assets/${symbol}-USDT/candles?interval=5m`)).body;
