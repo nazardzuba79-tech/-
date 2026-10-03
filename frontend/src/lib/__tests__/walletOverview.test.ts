@@ -135,8 +135,11 @@ describe('1. the Supreme VIP mark', () => {
 
   it('is decided only by the server tier — no user, e-mail, role or mode inference', () => {
     const source = read(wallet + 'TierBadge.tsx');
-    expect(source).toContain("tier !== 'SUPREME_VIP') return null");
-    expect(source).not.toMatch(/email|role|isAdmin|userId|localStorage|mode\s*!==/i);
+    const executable = source
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    expect(executable).toContain("tier !== 'SUPREME_VIP') return null");
+    expect(executable).not.toMatch(/email|role|isAdmin|userId|localStorage|mode\s*!==/i);
   });
 });
 
