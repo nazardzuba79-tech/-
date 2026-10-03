@@ -112,8 +112,11 @@ export function filterAndSortPairs(
     // across pairs, since 1 BTC and 1 DOGE are not the same amount of
     // trading. Nothing is fabricated and no pair is pinned — BTC and ETH
     // appear at the top only when their real turnover puts them there.
-    sortField?: 'volume' | 'change' | 'price' | 'symbol';
+    sortField?: 'volume' | 'change' | 'change7d' | 'price' | 'symbol';
     sortDir?: 1 | -1;
+    /** 'change7d' only: the row's seven-day return, null when unknown (the
+     *  ticker feed has no week, so the caller supplies it — see lib/change7d). */
+    change7d?: (pair: string) => number | null;
     /** Spot list only: deterministic equal-value order and invalid values last. */
     stableSort?: boolean;
   }
@@ -148,6 +151,14 @@ export function filterAndSortPairs(
         const rankA = rankByBase.get(a.pair.split('/')[0])?.rank ?? Infinity;
         const rankB = rankByBase.get(b.pair.split('/')[0])?.rank ?? Infinity;
         if (rankA !== rankB) return rankA - rankB;
+      }
+      // Seven-day return: its own figure, never the 24h one. Unknown weeks
+      // stay last in both directions; equal ones fall back to the pair name.
+      if (opts.sortField === 'change7d') {
+        const valueA = opts.change7d?.(a.pair) ?? null, valueB = opts.change7d?.(b.pair) ?? null;
+        const validA = valueA !== null && Number.isFinite(valueA), validB = valueB !== null && Number.isFinite(valueB);
+        if (!validA || !validB) return validA ? -1 : validB ? 1 : a.pair.localeCompare(b.pair);
+        return (valueA! - valueB!) * sortDir || a.pair.localeCompare(b.pair);
       }
       if (opts.stableSort && opts.sortField !== 'symbol') {
         const field = opts.sortField === 'price' ? 'lastPrice' : opts.sortField === 'change' ? 'changePercent24h' : 'quoteVolume24h';

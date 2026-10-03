@@ -5469,3 +5469,43 @@ Updated shared Nav and HomeHeader: standalone Futures/Tools, Trading contains on
 Validation: 61 focused Jest tests pass; frontend build passes (existing large-chunk warning); 12 fixture browser cases pass across shared app/home/terminal headers at 1920/1440/1366/390. Windows CSS path normalization fixes header ownership tests without weakening their assertions. Below 1440 the existing hamburger breakpoint remains. No production traffic, merge or deploy. Next: exact-head PR CI and owner review.
 
 PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workflow path coverage and loaded the actual disclosure in the Arbitrage shell fixture. All 70 focused tests now pass; no product behavior changed in this follow-up. The first full frontend run passed 3428 checks and identified only these two test-harness/coverage integration gaps.
+
+## Claude — 2026-10-03 — Spot market list: «7д %» column
+
+- Owner request: in the Spot terminal's left market list (`PairListSidebar`), add a third column after «Цена» and «24ч %». Requirements:
+  - «7д %» from the same verified source as the Futures list, not the old rankings + sparkline payload;
+  - sortable both ways;
+  - unknown = «—»;
+  - green/red, ±0.00%;
+  - 24h, price and Futures unchanged;
+  - 240–340px resize kept.
+- Base: main `7cb2ac05`; branch `claude/peaceful-volta-h5zw7g-spot-7d`.
+- Source: `lib/change7d.ts` (pure) + `lib/useChange7d.ts` (hook).
+  - It is FuturesPairList's rule: the catalogue's `market.changePercent7d`, one ref-counted request per tab, ambiguous or colliding tickers refused.
+  - Futures keeps its own identical copy, untouched. `cryptoCatalogue.test.ts` pins that both apply the same exclusion.
+  - The week is the asset's USD return, so only USD/USDT/USDC pairs show it; EUR/BTC/ETH-quoted rows read «—».
+- Material files:
+  - `PairListSidebar.tsx`: the third header and cell; `change7d_desc`/`_asc` sort modes; `data-compact` on long % values.
+  - `pairList.ts`: `change7d` sort field, unknown last both ways, ties on pair name.
+  - `marketColumnSort.ts`: made generic over the field; CFD usage unchanged.
+  - `SpotMarketControls.css`: shared track variables for header and rows; container bands ≥300 / 250–299 / <250 (no logo); ellipsis instead of overlap.
+  - Tests: new `spotPairList7d.test.ts`, which mounts the real hook in JSDOM: render, null, sort, independence, width math.
+  - `spotPairList.test.ts`: harness allowance.
+  - `cryptoCatalogue.test.ts`: the byte pins of `pairList.ts`/`PairListSidebar.tsx` replaced by a semantic guard — rows still come only from the ticker feed.
+  - New `scripts/qa-spot-market-7d.cjs` + `.github/workflows/spot-market-7d.yml`; `docs/qa/spot-market-7d/`.
+- Preserved:
+  - 24h computation and sort;
+  - price formatting;
+  - the 4s ticker store;
+  - favourites;
+  - resize bounds 240/340 and default 258;
+  - FuturesPairList and its guards;
+  - backend untouched.
+- Checks run:
+  - `tsc -b`, Vite build;
+  - full frontend Jest (`jest frontend/src`): 198 suites, 3,446 passed, 0 failed, 0 skipped;
+  - `scripts/qa-spot-market-7d.cjs`: PASS at 1920/1440/1366 × panel 240/250/258/300/340;
+  - `scripts/qa-spot-cfd-terminal.cjs`: exit 0 (its token notes are pre-existing);
+  - a scratch phone check at 390: three columns, no page overflow.
+- Known: a sub-satoshi price (e.g. 0.000000123456, 77px) cannot fit any price column at these widths. On main it overflowed the 76px column; now it ends in «…» with the full value in its title.
+- The Spot page now subscribes to the shared catalogue: one `/market/assets` request per tab, refreshed every 10 minutes, the same request Markets and the Futures 7d sort use.
