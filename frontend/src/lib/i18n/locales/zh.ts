@@ -1752,6 +1752,8 @@ export const ZH: Record<Key, string> = {
   'withdraw.doneEta': '提现最多可能需要 60 分钟。可在钱包记录中查看状态。',
   'withdraw.done': '完成',
   'withdraw.error': '申请发送失败，请重试。',
+  'nav.tools': '工具',
+  'nav.knowledgeCenter': '知识中心',
   'nav.academy': '学院',
   'nav.help': '帮助',
   'academy.hub.home': '首页',

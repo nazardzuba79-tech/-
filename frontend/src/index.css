@@ -2476,11 +2476,13 @@ a:hover > .nav-card-icon {
 }
 
 /* The new top-level bot tab must fit without clipping OTC or squeezing
-   account controls. Keep the approved type size; reclaim link spacing on laptops. */
+   account controls. Use compact laptop labels and spacing for the expanded product navigation. */
 @media (min-width: 1440px) and (max-width: 1679px) {
   .global-header .main-nav { gap:0; }
-  .global-header .main-nav .nav-item { padding-inline:6px; }
-  .global-header .brand-separator { margin-inline:12px; }
+  .global-header, :is(.futures-reference,.market-reference) > .global-header { padding-inline:12px; }
+  .global-header .main-nav .nav-item { padding-inline:2px; font-size:12.5px; }
+  .global-header .main-nav .header-disclosure-toggle { width:18px; }
+  .global-header .brand-separator { margin-inline:8px; }
 }
 
 /* Bot Studio desktop header: match the approved 68px face; retain mobile density. */

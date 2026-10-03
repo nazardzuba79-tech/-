@@ -1729,6 +1729,8 @@ export const KO: Record<Key, string> = {
   'withdraw.doneEta': '출금에는 최대 60분이 걸릴 수 있습니다. 상태는 지갑 내역에서 확인할 수 있습니다.',
   'withdraw.done': '완료',
   'withdraw.error': '요청을 보내지 못했습니다. 다시 시도해 주세요.',
+  'nav.tools': '도구',
+  'nav.knowledgeCenter': '지식 센터',
   'nav.academy': '아카데미',
   'nav.help': '도움말',
   'academy.hub.home': '홈',

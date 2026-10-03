@@ -1788,6 +1788,8 @@ export const RU = {
   'withdraw.doneEta': 'Вывод может занимать до 60 минут. Статус заявки — в истории кошелька.',
   'withdraw.done': 'Готово',
   'withdraw.error': 'Не удалось отправить заявку. Попробуйте ещё раз.',
+  'nav.tools': 'Инструменты',
+  'nav.knowledgeCenter': 'Центр знаний',
   'nav.academy': 'Академия',
   'nav.help': 'Помощь',
   'academy.hub.home': 'Главная',
