@@ -225,7 +225,9 @@ describe('translation integrity', () => {
           // line and the edge's refusals; the existing KYC copy is unchanged.
           'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed',
           // «Позиция закрыта» card after a market close (2026-10-01, owner chose variant B).
-          'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss'];
+          'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss',
+          // Remembered-device sign-in (2026-10-03): additive auth/session copy.
+          'auth.rememberDevice', 'auth.rememberDeviceHint', 'settings.rememberedDevice'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
@@ -252,6 +254,9 @@ describe('translation integrity', () => {
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
       expect(dicts[code]['nav.tools'].trim()).not.toBe('');
       expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
+      expect(dicts[code]['auth.rememberDevice'].trim()).not.toBe('');
+      expect(dicts[code]['auth.rememberDeviceHint'].trim()).not.toBe('');
+      expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.
