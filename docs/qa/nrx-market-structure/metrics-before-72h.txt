@@ -1,0 +1,4 @@
+NRX first 72h: open 0.8 -> close 6406.1455 (x8007.7)
+15m  n= 288 green=67% maxGreenRun=11 doji=9% upperWick p50/p90=0.15/0.55 lowerWick p50/p90=0.16/0.48 pullbacks>5%=7 deepest=11.3% vol~|body| r=0.42 sameBodyAdj=2
+1h   n=  72 green=69% maxGreenRun=7 doji=10% upperWick p50/p90=0.12/0.39 lowerWick p50/p90=0.08/0.50 pullbacks>5%=4 deepest=8.0% vol~|body| r=0.43 sameBodyAdj=0
+4h   n=  19 green=95% maxGreenRun=18 doji=5% upperWick p50/p90=0.06/0.23 lowerWick p50/p90=0.05/0.15 pullbacks>5%=0 deepest=0.0% vol~|body| r=-0.01 sameBodyAdj=0
