@@ -19,7 +19,7 @@ const { simulationFor, aggregateCandles, getCurrentTestMarketState, TICK_MS, MIN
 const { nrxPublicResponse } = require('../dist/services/testMarkets/nrxPublic');
 const { testMarketCandles } = require('../dist/services/testMarkets/testMarketService');
 const schedule = NEURIX.scheduledScenario;
-assert(schedule && schedule.version === 1, 'Build the candidate with NEURIX.scheduledScenario version1 first.');
+assert(schedule && schedule.version === 2, 'Build the candidate with NEURIX.scheduledScenario version2 first.');
 assert.equal(schedule.endAt - schedule.from, 14 * DAY_MS, 'The review covers exactly14days.');
 
 const intervals = { '1m': MINUTE_MS, '5m': CANDLE_MS, '15m': 15 * MINUTE_MS, '1h': HOUR_MS };
