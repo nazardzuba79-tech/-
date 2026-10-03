@@ -47,7 +47,7 @@ function stylesheets(): string[] {
   const out: string[] = [];
   const walk = (p: string) => {
     if (statSync(p).isDirectory()) for (const e of readdirSync(p)) walk(join(p, e));
-    else if (p.endsWith('.css')) out.push(relative(frontend, p));
+    else if (p.endsWith('.css')) out.push(relative(frontend, p).replace(/\\/g, '/'));
   };
   walk(resolve(frontend, 'src'));
   return out.sort();
@@ -308,7 +308,10 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .deposit-button',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-actions',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-actions .header-icon',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .header-left',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .main-nav',
+      'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .global-header .main-nav .nav-item',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-brand',
       'src/pages/trade-terminal/ArchiveTerminalPreview.css: #archive-terminal-preview .header-extra-action',
       'src/pages/trade-terminal/FuturesMobile.css: #archive-terminal-preview .global-header',

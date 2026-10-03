@@ -619,17 +619,40 @@ async function mobileTicketLayout(width, height) {
         page:document.documentElement.clientWidth, scroll:document.documentElement.scrollWidth,
         brand:rect('.header-brand'), deposit:rect('.header-actions .deposit-button'),
         margin:rect('.fo-mlWrap'), tabs:rect('.order-family-tabs'), price:rect('.fo-priceField'),
-        info:rect('.fo-infoBox'), calculator:rect('.fo-panel > .archive-calculator-slot'),
-        launcher:rect('.fo-panel > .archive-calculator-slot .archive-calculator-trigger'),
+        info:rect('.fo-infoBox'), submit:rect('.fo-submitPair'), heading:rect('.archive-trading-heading'),
+        launcher:rect('.archive-trading-heading .archive-calculator-trigger'),
+        summaryBeforeSubmit:!!(document.querySelector('.fo-infoBox').compareDocumentPosition(document.querySelector('.fo-submitPair')) & Node.DOCUMENT_POSITION_FOLLOWING),
+        submitPosition:getComputedStyle(document.querySelector('.fo-submitPair')).position,
       };
     });
     assert(g.scroll <= g.page + 1, 'Mobile ticket creates page-level horizontal overflow');
     assert(g.brand.right <= g.deposit.left, 'Deposit obscures the brand');
     assert(g.margin.bottom <= g.tabs.top && g.tabs.bottom <= g.price.top, 'Margin/tabs overlap the price input');
-    assert(g.info.bottom <= g.calculator.top, 'Account/footer precedes the order summary');
-    assert(g.launcher.left >= 0 && g.launcher.right <= g.page, 'Text calculator launcher leaves viewport');
-    await p.locator('.fo-panel > .archive-calculator-slot button').click();
-    assert(await p.locator('.fc-panel').isVisible(), 'Footer calculator cannot be opened');
+    assert(g.summaryBeforeSubmit, 'Order actions precede the order summary in the form');
+    // The existing mobile sticky actions follow the summary in document flow,
+    // but may be drawn above it until the trader scrolls down.
+    if (!['sticky', 'fixed'].includes(g.submitPosition)) {
+      assert(g.info.bottom <= g.submit.top, 'Order actions overlap the order summary');
+    }
+    assert(g.launcher.left >= g.heading.left && g.launcher.right <= g.heading.right &&
+      g.launcher.top >= g.heading.top && g.launcher.bottom <= g.heading.bottom, 'Calculator launcher leaves the heading');
+    assert(g.launcher.left >= 0 && g.launcher.right <= g.page, 'Calculator launcher leaves viewport');
+    const launcher = p.locator('.archive-trading-heading .archive-calculator-trigger');
+    assert.equal(await p.locator('.archive-calculator-trigger').count(), 1, 'Calculator must have one entry point');
+    assert(await launcher.getAttribute('title'), 'Calculator tooltip is missing');
+    assert(await launcher.getAttribute('aria-label'), 'Calculator accessible name is missing');
+    for (const side of ['buy', 'sell']) {
+      const action = p.locator('.fo-submitPair .' + side);
+      await action.scrollIntoViewIfNeeded();
+      assert(await action.evaluate(e => {
+        const r = e.getBoundingClientRect();
+        return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight &&
+          e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+      }), 'Order action is clipped or covered');
+      if (!await action.isDisabled()) await action.click({ trial: true });
+    }
+    await launcher.click();
+    assert(await p.locator('.fc-panel').isVisible(), 'Heading calculator cannot be opened');
     const input = p.locator('.fc-input').first();
     await input.fill('50000');
     // Cross a live account/quote refresh while the trader is entering a value.

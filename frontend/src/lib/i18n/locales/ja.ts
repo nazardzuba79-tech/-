@@ -1729,6 +1729,8 @@ export const JA: Record<Key, string> = {
   'withdraw.doneEta': '出金には最大60分かかる場合があります。状況はウォレット履歴で確認できます。',
   'withdraw.done': '完了',
   'withdraw.error': '申請を送信できませんでした。もう一度お試しください。',
+  'nav.tools': 'ツール',
+  'nav.knowledgeCenter': 'ナレッジセンター',
   'nav.academy': 'アカデミー',
   'nav.help': 'ヘルプ',
   'academy.hub.home': 'ホーム',

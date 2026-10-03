@@ -13,6 +13,7 @@ on:
     paths:
       - 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'
       - 'frontend/src/pages/trade-terminal/FuturesOrderPanelRefinement.css'
+      - 'frontend/src/pages/trade-terminal/TerminalGraphite.css'
       - 'frontend/src/pages/FuturesPage.tsx'
       - 'frontend/src/pages/trade-terminal/VoltexTerminalSystem.css'
       - 'frontend/src/pages/trade-terminal/TerminalMobileParity.css'
@@ -31,6 +32,7 @@ on:
       - 'frontend/src/lib/referenceBook.ts'
       - 'frontend/src/lib/__tests__/futuresVisualPolish.test.ts'
       - 'scripts/qa-futures-visual-polish.cjs'
+      - 'scripts/qa-futures-proportions.cjs'
       - 'scripts/qa-spot-cfd-terminal.cjs'
       - 'scripts/qa-vta-presentation.cjs'
       - 'frontend/src/pages/trade-terminal/TerminalPreviewPolish.css'
@@ -75,6 +77,10 @@ jobs:
           sudo ln -s /tmp/visual-polish-browser/node_modules/playwright /opt/node22/lib/node_modules/playwright
       - name: Futures browser QA at desktop and 320, 360, 390, 430 mobile widths
         run: node scripts/qa-futures-visual-polish.cjs --label ci
+      - name: Real Futures proportions, all desktop widths and mobile
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
+        run: node scripts/qa-futures-proportions.cjs --phase after --widths 1920,1664,1600,1550,1531,1440,1366,390 --out docs/qa/futures-proportions-ci
       - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
         run: node scripts/qa-spot-cfd-terminal.cjs
       - name: VTA source-specific connection and readable measurement card
@@ -87,6 +93,7 @@ jobs:
           name: futures-visual-polish-${{ github.sha }}
           path: |
             docs/qa/futures-visual-polish/ci-*
+            docs/qa/futures-proportions-ci/*
             docs/qa/spot-cfd-terminal/*
             output/vta-presentation/*
           retention-days: 7

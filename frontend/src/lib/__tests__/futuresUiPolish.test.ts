@@ -50,7 +50,26 @@ function restoreAccountActions(source) {
 function restoreFormPresentation(source) {
  // Reverse only the approved details wrapper and repeated price-pick signal.
  // The original complete order payload, calculations and controls remain frozen.
- return source.replace(/\r\n/g,'\n')
+ const text = source.replace(/\r\n/g,'\n');
+ // 2026-10-03: remove the duplicate lower calculator entry, while the
+ // page-owned, accessible header icon still opens the same calculator.
+ // Restore ONLY the exact removed destructuring line and JSX block for
+ // this fingerprint; any order, guard or arithmetic change must still fail.
+ const propsAnchor = '  calculatorDraft,\n  lastPrice = null,\n';
+ const renderAnchor = '      </form>\n\n      {/* The compact account summary';
+ const removedCalculator = `      {archive && onOpenCalculator && <div className="archive-calculator-slot">
+        <button type="button" className="archive-calculator-trigger" onClick={onOpenCalculator}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8M8 10h2m4 0h2M8 14h2m4 0h2M8 18h2m4 0h2" /></svg>
+          {t('calc.title')}
+        </button>
+      </div>}
+`;
+ expect(text.split(propsAnchor).length - 1).toBe(1);
+ expect(text.split(renderAnchor).length - 1).toBe(1);
+ expect(text).not.toContain('className="archive-calculator-trigger"');
+ return text
+  .replace(propsAnchor, '  calculatorDraft,\n  onOpenCalculator,\n  lastPrice = null,\n')
+  .replace(renderAnchor, '      </form>\n' + removedCalculator + '\n      {/* The compact account summary')
   .replace('  pickedPriceSequence,\n','')
   .replace('  pickedPriceSequence?: number;\n','')
   .replace('[pickedPrice, pickedPriceSequence]', '[pickedPrice]')

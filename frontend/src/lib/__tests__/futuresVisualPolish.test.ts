@@ -154,11 +154,13 @@ describe('3. the order book takes the reference treatment, and only its paint', 
     expect(book.indexOf('className="rb-arrow"')).toBeLessThan(book.indexOf('className="rb-last"'));
   });
 
-  it('sizes the header last price to the reference proportion, below the pair name', () => {
-    // Owner, 2026-09-24: the 17px price looked «чуть великий» beside Bybit's.
-    // 15px sits under the 16px pair name, as Bybit's price sits under its symbol.
-    expect(rule('#archive-terminal-preview .ticker-bar .value.price')).toContain('font-size:15px');
+  it('leads with an 18px price while keeping the pair and statistics restrained', () => {
+    // Owner, 2026-10-03: price 17–18px, pair 16–17px, statistics 14px.
+    expect(rule('#archive-terminal-preview .ticker-bar .value.price')).toContain('font-size:18px');
+    expect(rule('#archive-terminal-preview .ticker-bar .value.price')).toContain('font-variant-numeric:tabular-nums');
     expect(rule('#archive-terminal-preview .ticker-bar .pair-name')).toContain('font-size:16px');
+    expect(rule('#archive-terminal-preview .ticker-bar .value:not(.price)')).toContain('font-size:14px');
+    expect(rule('#archive-terminal-preview .ticker-bar .label')).toContain('font-size:12px');
   });
 
   it('keeps the pitch the depth window is computed from in one place, per design', () => {
@@ -213,7 +215,22 @@ describe('4. this is polish, not a redesign — and not a mobile redesign', () =
   it('leaves the shared heading band at one height beside the chart', () => {
     // Стакан/Сделки share this band with the chart's own tabs; changing the
     // book's alone would put two different header heights side by side.
-    expect(CSS).toContain('#archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px;');
+    expect(CSS).toContain('#archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:44px;');
+    expect(rule('#archive-terminal-preview .terminal-chart-shell .chart-toolbar')).toContain('height:44px');
+    expect(rule('#archive-terminal-preview .terminal-chart-shell :is(.chart-tab,.chart-tool-btn)')).toContain('height:28px; font-size:12px');
+    expect(rule('#archive-terminal-preview .bottom-tabs .bottom-tab')).toContain('font-size:13px');
+  });
+
+  it('reserves the ticker height in the grid when laptop statistics need a second row', () => {
+    expect(rule('#archive-terminal-preview .terminal')).toContain('--futures-ticker-height:56px');
+    expect(rule('#archive-terminal-preview .terminal')).toContain('grid-template-rows:var(--futures-ticker-height)');
+    expect(rule('#archive-terminal-preview .ticker-bar')).toContain('grid-area:1 / 1 / 2 / 3');
+    const laptop = /@media\(min-width:901px\) and \(max-width:1550px\) \{([\s\S]*?)\n\}/.exec(CSS)?.[1];
+    expect(laptop).toBeDefined();
+    expect(laptop).toContain('--futures-ticker-height:96px');
+    expect(laptop).toContain('grid-template-columns:max-content repeat(3,max-content)');
+    expect(laptop).toContain('grid-row:1 / span 2');
+    expect(laptop).not.toMatch(/overflow:\s*hidden|translateY|z-index|margin[^:]*:\s*-/);
   });
 });
 
@@ -282,7 +299,7 @@ describe('6. the bottom panel as on the reference: darker, seamless, quiet capti
   it('keeps tab titles and headings the reference grey, «Все рынки» bright', () => {
     expect(rule('#archive-terminal-preview .bottom-tabs .bottom-tab')).toContain('color:#71757a');
     expect(rule('#archive-terminal-preview .bottom-tabs .bottom-tab.active')).toContain('color:#fff');
-    expect(rule('#archive-terminal-preview .futures-positions-table th')).toContain('color:#71757a !important');
+    expect(rule('#archive-terminal-preview .futures-positions-table th')).toContain('color:#959ba5 !important');
     expect(rule('#archive-terminal-preview .archive-pair-filter')).toContain('color:#eaecef');
   });
 
@@ -351,18 +368,17 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     expect(rule('#archive-terminal-preview .bottom-panel')).toContain('--panel:#101014');
   });
 
-  it('mutes the header captions and draws the funding line in one orange', () => {
-    // «зроби в нас на біржі цей текст таким же приглушеним, а 0.0100% /
-    // 03:06:32 (8h) таким же кольором» (Bybit screenshot). The chart's own
-    // orange, so § 1's «no Bybit orange» still holds.
+  it('keeps captions readable, the funding rate gold and the countdown neutral', () => {
+    // Owner, 2026-10-03: distinguish the rate from its unchanged timer.
     // The later of the sheet's caption rules is the one that wins.
     const captions = everyRule('#archive-terminal-preview .ticker-bar .label').split(';').map(d => d.trim());
-    expect(captions.filter(d => d.startsWith('color:')).pop()).toBe('color:#71757a');
+    expect(captions.filter(d => d.startsWith('color:')).pop()).toBe('color:#959ba5');
     expect(captions.filter(d => d.startsWith('font-weight:')).pop()).toBe('font-weight:400');
     const funding = rule('#archive-terminal-preview .ticker-bar .futures-funding-values > :is(.value,.label)');
-    expect(funding).toContain('color:#ff9800 !important');
-    expect(funding).toContain('font-size:13px');
-    // Rate, slash and countdown are the three children that rule reaches.
+    expect(funding).toContain('color:var(--text-primary) !important');
+    expect(funding).toContain('font-size:14px');
+    expect(rule('#archive-terminal-preview .ticker-bar .futures-funding-values > .value:first-child')).toContain('color:var(--accent) !important');
+    // Rate, slash and countdown remain the same three children and interval.
     const bar = read('components/FuturesTickerBar.tsx');
     expect(bar).toContain('<span className="label"> / </span>');
     expect(bar).toContain('<NextFundingCountdown intervalHours={fundingIntervalHours} />');
@@ -380,14 +396,12 @@ describe('8. the TradingView surface (owner, 2026-09-25)', () => {
     }
   });
 
-  it('lets the chart show the gradient, with green / red candles and a white axis', () => {
-    // 2026-09-30: the standard green and red by default (owner); the white
-    // and orange they were is the «Белый / оранжевый» preset in the chart's
-    // settings (chartSettings.ts), which paint over these tokens.
+  it('preserves the requested white / gold candles and white axis', () => {
+    // 2026-10-03: preserve white/gold; saved chart preferences still override.
     const shell = everyRule('#archive-terminal-preview .terminal-chart-shell');
     expect(shell).toContain('--voltex-plot-background: rgba(0,0,0,0)');
-    expect(shell).toContain('--voltex-candle-up: #2ebd85');
-    expect(shell).toContain('--voltex-candle-down: #f6465d');
+    expect(shell).toContain('--voltex-candle-up: #f4f6f8');
+    expect(shell).toContain('--voltex-candle-down: #f0b90b');
     expect(shell).toContain('--voltex-axis-text: #ffffff');
     // The chart reads them, with every other chart's values as fallbacks.
     expect(CHART).toContain("const candleUp = token('--voltex-candle-up', '#eaecef');");

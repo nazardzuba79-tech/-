@@ -5459,3 +5459,64 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Remaining release gates: exact-head remote CI, full build, live subscription and collector/API verification on the isolated Hetzner candidate, then owner-authorized merge and post-merge readiness. No DNS cutover or Render/Neon changes authorized.
 - Concurrent main integration: PR #390 merged as b46dae42e7e7af589e1bc5727984ebe3477a3aa8 during validation. Ordinary merge preserves its five admin deposit-copy files; Deriv fix is unchanged. Before integration, backend/collector builds, 24 collector tests, live integer-ID subscriptions (11 symbols), 42 API checks, five stop/start/forced-stop scenarios, financial-copy integrity and HTTPS passed on the isolated candidate. Repeat exact-head CI and candidate validation on the integrated head before merging.
 - Live-stream QA cleanup, code a601d80620ee5df697a2d38fe38e44051022a12c: the fixed subscriptions exposed a pre-existing missing shutdown path in the disposable browser host. CI logged all four browser scenarios passing with zero findings/writes at 16:57:34 UTC, then stayed alive on the WebSocket until explicitly cancelled at 17:07:41. Export a route-owned display-feed stop hook and call it from the QA host's finally block; no provider selection or financial route behavior changes. The host cleanup regression fails before the hook and passes after; 11 request-ID/cleanup/shutdown tests pass. CI must be green on the new head; a cancelled run is not counted as a pass.
+
+## Codex — 2026-10-03 — top-level header navigation (review only)
+
+Implementation commit: `6988109ec0b7dd653f5d0ce348a6c9647da0ac77`, based on freshly fetched main `7cb2ac057beb31d3e934f265e89f3345cdc8865d` as explicitly requested by the owner.
+
+Updated shared Nav and HomeHeader: standalone Futures/Tools, Trading contains only Spot/CFD, Knowledge Center disclosure uses the four existing Academy routes. Added shared disclosure component/styles, seven-language labels, local header fixture and 12 viewport screenshots in `docs/qa/header-navigation/`. Existing Trading Tools, product routes, account controls, OTC/Arbitrage placement, System Status, backend and infrastructure preserved.
+
+Validation: 61 focused Jest tests pass; frontend build passes (existing large-chunk warning); 12 fixture browser cases pass across shared app/home/terminal headers at 1920/1440/1366/390. Windows CSS path normalization fixes header ownership tests without weakening their assertions. Below 1440 the existing hamburger breakpoint remains. No production traffic, merge or deploy. Next: exact-head PR CI and owner review.
+
+PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workflow path coverage and loaded the actual disclosure in the Arbitrage shell fixture. All 70 focused tests now pass; no product behavior changed in this follow-up. The first full frontend run passed 3428 checks and identified only these two test-harness/coverage integration gaps.
+
+## Claude — 2026-10-03 — Spot market list: «7д %» column
+
+- Owner request: in the Spot terminal's left market list (`PairListSidebar`), add a third column after «Цена» and «24ч %». Requirements:
+  - «7д %» from the same verified source as the Futures list, not the old rankings + sparkline payload;
+  - sortable both ways;
+  - unknown = «—»;
+  - green/red, ±0.00%;
+  - 24h, price and Futures unchanged;
+  - 240–340px resize kept.
+- Base: main `7cb2ac05`; branch `claude/peaceful-volta-h5zw7g-spot-7d`.
+- Source: `lib/change7d.ts` (pure) + `lib/useChange7d.ts` (hook).
+  - It is FuturesPairList's rule: the catalogue's `market.changePercent7d`, one ref-counted request per tab, ambiguous or colliding tickers refused.
+  - Futures keeps its own identical copy, untouched. `cryptoCatalogue.test.ts` pins that both apply the same exclusion.
+  - The week is the asset's USD return, so only USD/USDT/USDC pairs show it; EUR/BTC/ETH-quoted rows read «—».
+- Material files:
+  - `PairListSidebar.tsx`: the third header and cell; `change7d_desc`/`_asc` sort modes; `data-compact` on long % values.
+  - `pairList.ts`: `change7d` sort field, unknown last both ways, ties on pair name.
+  - `marketColumnSort.ts`: made generic over the field; CFD usage unchanged.
+  - `SpotMarketControls.css`: shared track variables for header and rows; container bands ≥300 / 250–299 / <250 (no logo); ellipsis instead of overlap.
+  - Tests: new `spotPairList7d.test.ts`, which mounts the real hook in JSDOM: render, null, sort, independence, width math.
+  - `spotPairList.test.ts`: harness allowance.
+  - `cryptoCatalogue.test.ts`: the byte pins of `pairList.ts`/`PairListSidebar.tsx` replaced by a semantic guard — rows still come only from the ticker feed.
+  - New `scripts/qa-spot-market-7d.cjs` + `.github/workflows/spot-market-7d.yml`; `docs/qa/spot-market-7d/`.
+- Preserved:
+  - 24h computation and sort;
+  - price formatting;
+  - the 4s ticker store;
+  - favourites;
+  - resize bounds 240/340 and default 258;
+  - FuturesPairList and its guards;
+  - backend untouched.
+- Checks run:
+  - `tsc -b`, Vite build;
+  - full frontend Jest (`jest frontend/src`): 198 suites, 3,446 passed, 0 failed, 0 skipped;
+  - `scripts/qa-spot-market-7d.cjs`: PASS at 1920/1440/1366 × panel 240/250/258/300/340;
+  - `scripts/qa-spot-cfd-terminal.cjs`: exit 0 (its token notes are pre-existing);
+  - a scratch phone check at 390: three columns, no page overflow.
+- Known: a sub-satoshi price (e.g. 0.000000123456, 77px) cannot fit any price column at these widths. On main it overflowed the 76px column; now it ends in «…» with the full value in its title.
+- The Spot page now subscribes to the shared catalogue: one `/market/assets` request per tab, refreshed every 10 minutes, the same request Markets and the Futures 7d sort use.
+
+## 2026-10-03 — Codex — Futures proportions (review only)
+- Base: current main `e9efc4631fbd1472bef422034f2c035e0a8b6992`, preserving Claude's #395 header/menu work and #396 Spot7d column.
+- Product commit: `ea20d855c0d4d87aaf0533d427ff5f522e76e172`; branch `codex/futures-proportions-20261003`.
+- Material files: ArchiveTerminalPreview.css, TerminalGraphite.css, FuturesOrderPanelRefinement.css, FuturesOrderForm.tsx; scoped regression guards, real-route fixture QA and evidence under docs/qa/futures-proportions.
+- 310px desktop ticket;36px selectors;46px fields;16px input figures;44px toolbar; readable ticker statistics and reserved96px laptop ticker; duplicate lower calculator link removed.
+- Preserved trading arithmetic/guards, providers, subscriptions, cache, auth, financial data, mobile touch targets, shared Spot/CFD styling and chart settings/history. No infrastructure or production changes.
+- Checked: frontend build;355 relevant tests;existing Futures8-width browser suite;new6-width fixture before/after;Spot/CFD browser harness. Spot before/after PNG hashes match at all6widths.
+- Evidence and limitations: docs/qa/futures-proportions/README.md. Five unrelated Windows path-scanner failures reproduced on untouched baseline; exact-head Linux CI remains the publication gate. No merge/deploy authorized for this task.
+- Owner follow-up: corrected Futures header crowding in the existing laptop tier without changing menu structure. Rendered gaps increase from4px to13–16px; all visible dropdowns, text clipping and account overlap checked at1920/1664/1600/1550/1531/1440 plus1366/390 mobile patterns. Zero violations; all six Spot control screenshots remain byte-identical.
+- Header guard run:143 tests/8 suites pass. Evidence includes header crops and additional1531/1550 breakpoint reports. PR #397 remains review-only; the existing Cloudflare integration auto-creates a branch preview, with production unchanged.

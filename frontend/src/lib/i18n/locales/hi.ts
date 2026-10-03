@@ -1729,6 +1729,8 @@ export const HI: Record<Key, string> = {
   'withdraw.doneEta': 'निकासी में 60 मिनट तक लग सकते हैं। स्थिति वॉलेट इतिहास में देखें।',
   'withdraw.done': 'हो गया',
   'withdraw.error': 'अनुरोध नहीं भेजा जा सका। कृपया फिर से प्रयास करें।',
+  'nav.tools': 'टूल्स',
+  'nav.knowledgeCenter': 'ज्ञान केंद्र',
   'nav.academy': 'अकादमी',
   'nav.help': 'सहायता',
   'academy.hub.home': 'मुख्य',

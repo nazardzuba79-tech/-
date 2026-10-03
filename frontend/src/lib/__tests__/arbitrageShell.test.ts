@@ -67,6 +67,12 @@ describe('local arbitrage keeps the real authenticated shell without a market su
       './BottomNav': { BottomNav: empty },
       './DepositModal': { DepositModal: ({ onClose }: any) => React.createElement('button', { 'data-deposit-fixture': true, onClick: onClose }, 'Close deposit') },
     };
+    const dropdown: any = {};
+    const dropdownCode = ts.transpileModule(source('components/HeaderDropdown.tsx'), { compilerOptions: {
+      module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+    } }).outputText;
+    new Function('exports', 'require', dropdownCode)(dropdown, (name: string) => name.endsWith('.css') ? {} : imports[name]);
+    imports['./HeaderDropdown'] = dropdown;
     const output: any = {};
     const code = ts.transpileModule(source('components/Nav.tsx'), { compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
@@ -147,6 +153,7 @@ describe('local arbitrage keeps the real authenticated shell without a market su
     expect(Array.from(document.querySelectorAll('a[href="/banking"]')).map(node => node.textContent)).toEqual(['Banking & Earn', 'Banking & Earn']);
     expect(document.querySelector('a[href="/otc"].nav-active')).not.toBeNull();
     expect(document.querySelector('a[href="/futures"]')).not.toBeNull();
+    await click('.nav-mobile-menu button[aria-label="nav.trade"]');
     expect(document.querySelector('a[href="/trade?market=cfd"]')).not.toBeNull();
     expect(document.querySelector('a[href="/otc"]')).not.toBeNull();
   });
