@@ -12,7 +12,7 @@ node scripts/preview-nrx-two-week.cjs --serve --port=4409
 
 `QA_OUT` can override the default `output/nrx-two-week` artifact directory. `QA_PLAYWRIGHT_MODULE` can point to an installed Playwright module. The HTML embeds the installed Lightweight Charts distribution and canonical datasets, so it also works offline by opening `index.html` directly. The optional server binds only to `127.0.0.1` and accepts only GET/HEAD.
 
-The preview has normal price scale with automatic fitting, 1m/5m/15m/1h controls, six phase windows, a full fourteen-day overview, and a baseline variant with only the new `scheduledScenario` removed. Both variants derive their own candles, volumes and ticker snapshots from the same canonical engine; a baseline ticker is never borrowed from the candidate.
+The preview has normal price scale with automatic fitting, 1m/5m/15m/1h controls, seven phase windows, a full fourteen-day overview, and a baseline variant with only the new `scheduledScenario` removed. Both variants derive their own candles, volumes and ticker snapshots from the same canonical engine; a baseline ticker is never borrowed from the candidate.
 
 ## Approved targets and dates
 
@@ -20,13 +20,14 @@ All percentage targets use the original listing price, **0.80 USDT**, as their r
 
 | Boundary | UTC | Europe/Kyiv | Target |
 | --- | --- | --- | --- |
-| Schedule start | 2026-10-04 16:00 | 2026-10-04 19:00 | Preserved previous canonical price |
-| First target | 2026-10-04 18:48 | 2026-10-04 21:48 | 10.776 USDT, +1,247% from listing |
-| Breakout starts | 2026-10-05 05:00 | 2026-10-05 08:00 | 10.776 USDT |
-| Second target | 2026-10-05 11:30 | 2026-10-05 14:30 | 58.536 USDT, +7,217% from listing |
-| Upper range ends | 2026-10-07 11:30 | 2026-10-07 14:30 | 58.536 USDT |
-| Selloff ends | 2026-10-07 17:30 | 2026-10-07 20:30 | 23.4144 USDT, −60% from second target |
-| Review ends | 2026-10-18 16:00 | 2026-10-18 19:00 | End of the fourteen-day review window |
+| Schedule start | 2026-10-03 18:00 | 2026-10-03 21:00 | Preserve previous canonical price; begin first impulse |
+| First target | 2026-10-03 21:00 | 2026-10-04 00:00 | 7.52 USDT, +840% from listing |
+| Second impulse starts | 2026-10-04 05:00 | 2026-10-04 08:00 | Leave night balance |
+| Second target | 2026-10-04 09:00 | 2026-10-04 12:00 | 14.76 USDT, +1,745% from listing |
+| Third target | 2026-10-04 13:00 | 2026-10-04 16:00 | 58.536 USDT, +7,217% from listing |
+| Upper range ends | 2026-10-06 13:00 | 2026-10-06 16:00 | 58.536 USDT |
+| Selloff ends | 2026-10-06 19:00 | 2026-10-06 22:00 | 23.4144 USDT, −60% from third target |
+| Review ends | 2026-10-17 18:00 | 2026-10-17 21:00 | End of fourteen-day window |
 
 The owner-corrected range is approximate, not a hard ±20% boundary. Volatility varies around 7–20%, the center drifts, and occasional actual tick-price excursions can carry candle bodies or wicks beyond that reference before recovering. OHLC values are not clipped to the reference. The preview axis is explicitly UTC; phase captions use Europe/Kyiv. Phase views use the canonical snapshot as of the phase endpoint, including a partial final candle where the endpoint does not align with the chosen interval.
 
@@ -41,7 +42,7 @@ The current local run passed **100/100** mathematical checks:
 - Ticker, latest completed trade and canonical candle close agree at all phase boundaries.
 - Rolling 24h high/low/base volume/quote volume agree with the canonical rolling candle window.
 - Actual `nrxPublicResponse` ticker and four candle payloads agree with the same local generator.
-- The three price targets pass; canonical 1m history before activation and the activation anchor remain unchanged.
+- The three impulse targets pass; canonical 1m history before activation and the activation anchor remain unchanged.
 - Each range has at least 95% of sampled canonical tick closes within the approximate ±20% reference, with actual overshoots across the ranges. Every excursion recovers within 20 minutes; no repeated closes pile up at an exact ±20% boundary.
 
 The engine stores each candle's base volume at four decimals and quote volume at two decimals. Summing separately rounded 1m and 5m values therefore cannot be claimed to be byte-for-byte identical. The independent check derives the worst-case rounding bound from the number of rounded source components; it does not relax OHLC comparisons.
@@ -52,7 +53,7 @@ The engine stores each candle's base volume at four decimals and quote volume at
 | 1m → 15m | 0.0004 NRX | 0.04 USDT | 0.0009 / 0.09 |
 | 1m → 1h | 0.0007 NRX | 0.07 USDT | 0.0036 / 0.36 |
 
-The browser run covers the full 1h overview and all six phase windows at 1440px and 390px: **14 screenshots**, no horizontal overflow, uncaught browser errors or external requests. Screenshot fixtures perform no orders or balance changes.
+The browser run covers the full 1h overview and all seven phase windows at 1440px and 390px: **14 screenshots**, no horizontal overflow, uncaught browser errors or external requests. Screenshot fixtures perform no orders or balance changes.
 
 ## Observed approximate ranges
 

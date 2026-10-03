@@ -10,17 +10,20 @@ const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
  * applied retroactively to displayed prices or executed orders.
  */
 export const NRX_TWO_WEEK_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
-  version: 2,
-  from: Date.parse('2026-10-04T16:00:00Z'),
-  firstTargetAt: Date.parse('2026-10-04T18:48:00Z'),
-  breakoutAt: Date.parse('2026-10-05T05:00:00Z'),
-  secondTargetAt: Date.parse('2026-10-05T11:30:00Z'),
-  rangeEndAt: Date.parse('2026-10-07T11:30:00Z'),
-  // A staged six-hour selloff, with countertrend rebounds rather than a gap.
-  selloffEndAt: Date.parse('2026-10-07T17:30:00Z'),
-  endAt: Date.parse('2026-10-18T16:00:00Z'),
-  firstGainPercent: 1247,
-  secondGainPercent: 7217,
+  version: 3,
+  // Owner update 2026-10-03: first impulse begins this evening. All targets
+  // remain listing-relative to 0.80 USDT; already shown history stays intact.
+  from: Date.parse('2026-10-03T18:00:00Z'), // 21:00 Kyiv
+  firstTargetAt: Date.parse('2026-10-03T21:00:00Z'), // 00:00 Kyiv
+  breakoutAt: Date.parse('2026-10-04T05:00:00Z'), // 08:00 Kyiv
+  secondTargetAt: Date.parse('2026-10-04T09:00:00Z'), // 12:00 Kyiv
+  thirdTargetAt: Date.parse('2026-10-04T13:00:00Z'), // 16:00 Kyiv
+  rangeEndAt: Date.parse('2026-10-06T13:00:00Z'), // 48h upper range
+  selloffEndAt: Date.parse('2026-10-06T19:00:00Z'), // six-hour selloff
+  endAt: Date.parse('2026-10-17T18:00:00Z'), // fourteen days from activation
+  firstGainPercent: 840,
+  secondGainPercent: 1745,
+  thirdGainPercent: 7217,
   rangeFraction: .20,
   selloffFraction: .60,
 });
@@ -40,4 +43,4 @@ export const NEURIX: TestAssetConfig = Object.freeze({
   scheduledScenario: NRX_TWO_WEEK_SCENARIO,
 });
 
-export const NRX_OWNER_ALLOCATION = '31250';
+export const NRX_OWNER_ALLOCATION = '6250';

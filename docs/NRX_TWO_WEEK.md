@@ -1,10 +1,11 @@
 # NRX two-week scenario — draft review only
 
 **Not approved for production. No merge or deployment was performed for this review.**
-The planned activation, **4 October 2026 at 19:00 Europe/Kyiv (16:00 UTC)**,
-was rescheduled prospectively by 24 hours before merge. It must never be introduced
-retroactively. Preserve all prices, candles and trades already shown by the serving
-version through the new activation boundary, and rerun the boundary/preservation checks.
+Owner updated the live review plan on 3 October. Version 3 activates at
+**3 October 2026 at 21:00 Europe/Kyiv (18:00 UTC)**. It must be installed on BOTH
+the Hetzner API and market-edge before that boundary; otherwise move the activation
+forward rather than introducing it retroactively. All prices, candles and trades
+already shown before the boundary remain canonical and unchanged.
 
 ## Planned review timeline
 
@@ -14,13 +15,14 @@ review instants, not a countdown recalculated on page load.
 | Phase | Kyiv start → end | Reference / constraint |
 | --- | --- | --- |
 | Original listing | 3 Oct, 16:00 | 0.80 USDT; unchanged |
-| First growth | 4 Oct, 19:00 → 21:48 | Join the original raw cutoff price; end at **10.776 USDT**, **+1247% from listing** |
-| First range | 4 Oct, 21:48 → 5 Oct, 08:00 | Adaptive range; initial nominal ±20% guide around 10.776: **8.6208–12.9312** |
-| Second growth | 5 Oct, 08:00 → 14:30 | End at **58.536 USDT**, **+7217% from listing** |
-| Second range | 5 Oct, 14:30 → 7 Oct, 14:30 | Two-day adaptive range; initial nominal ±20% guide around 58.536: **46.8288–70.2432** |
-| Staged selloff | 7 Oct, 14:30 → 20:30 | Assumed **six-hour** descent with rebounds; **−60% from the second reference**, ending at **23.4144** |
-| Final range | 7 Oct, 20:30 → 18 Oct, 19:00 | Adaptive range; initial nominal ±20% guide around 23.4144: **18.73152–28.09728** |
-| Continuing terminal range | After 18 Oct, 19:00 | Same adaptive behavior, varied ticks and positive trade volume; no return to the old growth path |
+| First impulse | 3 Oct, 21:00 → 4 Oct, 00:00 | Join the already shown canonical price; end at **7.52 USDT**, **+840% from listing** |
+| Night balance | 4 Oct, 00:00 → 08:00 | Adaptive range around 7.52; approximate 7–20% volatility, not a hard wall |
+| Second impulse | 4 Oct, 08:00 → 12:00 | End at **14.76 USDT**, **+1745% from listing** |
+| Third impulse | 4 Oct, 12:00 → 16:00 | End at **58.536 USDT**, **+7217% from listing** |
+| Upper range | 4 Oct, 16:00 → 6 Oct, 16:00 | Two-day adaptive range around 58.536; nominal ±20% guide **46.8288–70.2432** |
+| Staged selloff | 6 Oct, 16:00 → 22:00 | Six-hour descent with rebounds; **−60% from 58.536**, ending at **23.4144** |
+| Final range | 6 Oct, 22:00 → 17 Oct, 21:00 | Adaptive range around 23.4144; nominal guide **18.73152–28.09728** |
+| Continuing terminal range | After 17 Oct, 21:00 | Same adaptive behavior; no return to the old exponential path |
 
 The planned program spans exactly **14 days from activation**. **20% is a
 nominal guide, not a guaranteed minimum/maximum or hard clipping boundary.**
@@ -32,7 +34,9 @@ range uses the same behavior. Here, bounded terminal behavior means the former
 growth trajectory never resumes, not that every price stays within a fixed 20%.
 
 Growth percentages are listing-relative:
-`0.80 × 13.47 = 10.776`, `0.80 × 73.17 = 58.536`;
+`0.80 × 9.40 = 7.52` (+840%),
+`0.80 × 18.45 = 14.76` (+1745%),
+`0.80 × 73.17 = 58.536` (+7217%);
 the selloff reference is `58.536 × 0.40 = 23.4144`.
 The terminal's existing **24h change** remains a rolling 24-hour measure and is
 not relabelled or replaced with listing-relative growth.
@@ -41,7 +45,7 @@ not relabelled or replaced with listing-relative growth.
 
 - `neurix.ts` holds the optional NRX schedule; `simulationSchedule.ts` generates
   deterministic future ticks. The listing instant, listing price, original seed
-  and owner allocation are unchanged. **Do not run allocation again.**
+  and listing/seed history are unchanged. The prepared owner allocation is **6,250 NRX = 5,000 USDT at listing price** and still requires the existing explicit maintenance approval/owner verification.
 - `testMarketSimulation.ts` joins at the last completed **raw canonical tick**.
   An independent scenario-disabled baseline retains every tick through the
   cutoff, including a cutoff inside an hour/candle. Later reads cannot rewrite

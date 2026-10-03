@@ -34,10 +34,10 @@ pg('NRX normal Spot ledger on disposable PostgreSQL', () => {
   afterAll(async () => { await db.$disconnect(); }); // whole disposable cluster is removed by the runner
   const place = (side: 'BUY' | 'SELL', userId = owner, type: 'LIMIT' | 'MARKET' = 'LIMIT') => service.placeOrder({ userId, pair: NEURIX.pair, side, type, price: new BigNumber('.8'), quantity: new BigNumber(1) });
 
-  test('exact owner 31,250 NRX, no USDT debit, public airdrop or DemoBalance write', async () => {
+  test('exact owner 6,250 NRX, no USDT debit, public airdrop or DemoBalance write', async () => {
     const usdt = await balance(owner, 'USDT');
-    expect(await allocateNrxOwner(db, owner)).toMatchObject({ applied: true, quantity: '31250' });
-    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('31250');
+    expect(await allocateNrxOwner(db, owner)).toMatchObject({ applied: true, quantity: '6250' });
+    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('6250');
     expect(await balance(owner, 'USDT')).toEqual(usdt);
     expect(await balance(other, 'NRX')).toBeNull();
     expect(await db.demoBalance.count()).toBe(0);
@@ -45,9 +45,9 @@ pg('NRX normal Spot ledger on disposable PostgreSQL', () => {
   test('concurrent/repeated allocation credits once, even after trading reduces inventory', async () => {
     const results = await Promise.all([allocateNrxOwner(db, owner), allocateNrxOwner(db, owner)]);
     expect(results.filter(r => r.applied)).toHaveLength(1);
-    await db.balance.update({ where: { userId_asset: { userId: owner, asset: 'NRX' } }, data: { available: '30000' } });
+    await db.balance.update({ where: { userId_asset: { userId: owner, asset: 'NRX' } }, data: { available: '6000' } });
     expect((await allocateNrxOwner(db, owner)).applied).toBe(false);
-    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('30000');
+    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('6000');
   });
   test('unknown/non-admin owner and unexplained prior inventory fail closed', async () => {
     await expect(allocateNrxOwner(db, other)).rejects.toThrow('ADMIN');
@@ -69,7 +69,7 @@ pg('NRX normal Spot ledger on disposable PostgreSQL', () => {
     await db.balance.create({ data: { userId: other, asset: 'USDT', available: '10' } });
     await place('BUY', other, 'MARKET');
     expect(await db.trade.count({ where: { makerUserId: owner } })).toBe(1);
-    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('31249');
+    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('6249');
     expect((await balance(other, 'NRX'))!.available.toNumber()).toBeGreaterThan(0);
     expect(source.getTicker).not.toHaveBeenCalled();
   });

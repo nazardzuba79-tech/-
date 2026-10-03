@@ -26,9 +26,10 @@ const get = path => worker.fetch(new Request('https://market.voltextech.net' + p
   // Exercise the scheduled path in the actual browser-targeted Worker bundle.
   // Fixed instants are fixtures; no query parameter can select a future price.
   for (const [at, price] of [
-    ['2026-10-04T18:48:00Z', 10.776],
-    ['2026-10-05T11:30:00Z', 58.536],
-    ['2026-10-07T17:30:00Z', 23.4144],
+    ['2026-10-03T21:00:00Z', 7.52],
+    ['2026-10-04T09:00:00Z', 14.76],
+    ['2026-10-04T13:00:00Z', 58.536],
+    ['2026-10-06T19:00:00Z', 23.4144],
   ]) {
     now = Date.parse(at);
     const state = (await (await get('/market/nrx')).json()).assets[0].state;

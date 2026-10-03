@@ -8,11 +8,12 @@ import { scheduledScenarioHour } from '../simulationSchedule';
 
 const L = NEURIX.listingAt;
 const scenario = {
-  version: 1, from: L + 3 * HOUR_MS + 17 * MINUTE_MS + 2 * TICK_MS,
+  version: 3, from: L + 3 * HOUR_MS + 17 * MINUTE_MS + 2 * TICK_MS,
   firstTargetAt: L + 6 * HOUR_MS + 17 * MINUTE_MS + 2 * TICK_MS,
-  breakoutAt: Date.parse('2026-10-05T05:00:00Z'), secondTargetAt: Date.parse('2026-10-05T11:30:00Z'),
-  rangeEndAt: Date.parse('2026-10-07T11:30:00Z'), selloffEndAt: Date.parse('2026-10-07T17:30:00Z'),
-  endAt: Date.parse('2026-10-18T16:00:00Z'), firstGainPercent: 1247, secondGainPercent: 7217,
+  breakoutAt: Date.parse('2026-10-04T05:00:00Z'), secondTargetAt: Date.parse('2026-10-04T09:00:00Z'),
+  thirdTargetAt: Date.parse('2026-10-04T13:00:00Z'),
+  rangeEndAt: Date.parse('2026-10-06T13:00:00Z'), selloffEndAt: Date.parse('2026-10-06T19:00:00Z'),
+  endAt: Date.parse('2026-10-17T18:00:00Z'), firstGainPercent: 840, secondGainPercent: 1745, thirdGainPercent: 7217,
   rangeFraction: .2, selloffFraction: .6,
 };
 const asset = { ...NEURIX, scheduledScenario: scenario };
@@ -22,8 +23,9 @@ const ohlc = (c: { openTime: number; open: number; high: number; low: number; cl
 test('scheduled listing-relative targets replace future growth without moving listing or seed', () => {
   const market = new TestMarketSimulation(asset);
   expect(market.priceAt(L)).toBe(.8);
-  expect(market.priceAt(scenario.firstTargetAt)).toBe(10.776);
-  expect(market.priceAt(scenario.secondTargetAt)).toBe(58.536);
+  expect(market.priceAt(scenario.firstTargetAt)).toBe(7.52);
+  expect(market.priceAt(scenario.secondTargetAt)).toBe(14.76);
+  expect(market.priceAt(scenario.thirdTargetAt)).toBe(58.536);
   expect(asset.listingAt).toBe(NEURIX.listingAt); expect(asset.seed).toBe(NEURIX.seed);
 });
 
@@ -69,7 +71,7 @@ test('schedule fields isolate simulator cache from baseline and other schedules'
   }
 });
 
-test.each([scenario.from + 43 * MINUTE_MS + 17_000, scenario.firstTargetAt, scenario.secondTargetAt, scenario.selloffEndAt])('1m, 5m and higher OHLC stay one canonical stream at %i', at => {
+test.each([scenario.from + 43 * MINUTE_MS + 17_000, scenario.firstTargetAt, scenario.secondTargetAt, scenario.thirdTargetAt, scenario.selloffEndAt])('1m, 5m and higher OHLC stay one canonical stream at %i', at => {
   const market = new TestMarketSimulation(asset), from = at - 3 * HOUR_MS;
   const start = L + Math.floor((from - L) / CANDLE_MS) * CANDLE_MS;
   const minutes = market.candles1m(at, start), fives = market.candles5m(at, start);
@@ -96,7 +98,7 @@ test.each([scenario.from + 43 * MINUTE_MS + 17_000, scenario.firstTargetAt, scen
 test('NRX-only schedule cannot alter VTA candles, trade prices or volumes', () => {
   const foreign = { ...VOLTORA, scheduledScenario: scenario };
   const original = new TestMarketSimulation(VOLTORA), unrelated = new TestMarketSimulation(foreign);
-  const at = scenario.secondTargetAt;
+  const at = scenario.thirdTargetAt;
   expect(unrelated.candles5m(at, at - 2 * HOUR_MS)).toEqual(original.candles5m(at, at - 2 * HOUR_MS));
   expect(unrelated.recentTrades(at)).toEqual(original.recentTrades(at));
 });
@@ -128,7 +130,7 @@ test('far future remains finite in terminal range without computing obsolete leg
 });
 
 test('public edge ticker/trades/candles and backend Spot price use the same future NRX simulation', async () => {
-  const at = scenario.secondTargetAt, source = { getTicker: jest.fn() };
+  const at = scenario.thirdTargetAt, source = { getTicker: jest.fn() };
   const request = async (path: string) => nrxPublicResponse(new Request(`https://market.voltextech.net${path}`), () => at)!.json();
   const ticker = await request('/market/ticker/NRX-USDT');
   const trades = await request('/market/external/trades/NRX-USDT');

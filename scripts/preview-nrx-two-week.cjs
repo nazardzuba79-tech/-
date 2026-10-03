@@ -19,15 +19,16 @@ const { simulationFor, aggregateCandles, getCurrentTestMarketState, TICK_MS, MIN
 const { nrxPublicResponse } = require('../dist/services/testMarkets/nrxPublic');
 const { testMarketCandles } = require('../dist/services/testMarkets/testMarketService');
 const schedule = NEURIX.scheduledScenario;
-assert(schedule && schedule.version === 2, 'Build the candidate with NEURIX.scheduledScenario version2 first.');
+assert(schedule && schedule.version === 3, 'Build the candidate with NEURIX.scheduledScenario version3 first.');
 assert.equal(schedule.endAt - schedule.from, 14 * DAY_MS, 'The review covers exactly14days.');
 
 const intervals = { '1m': MINUTE_MS, '5m': CANDLE_MS, '15m': 15 * MINUTE_MS, '1h': HOUR_MS };
 const phases = [
-  { id: 'growth', label: 'Перший імпульс', from: schedule.from, to: schedule.firstTargetAt },
+  { id: 'growth1', label: 'Перший імпульс', from: schedule.from, to: schedule.firstTargetAt },
   { id: 'pause', label: 'Нічний діапазон', from: schedule.firstTargetAt, to: schedule.breakoutAt },
-  { id: 'breakout', label: 'Другий імпульс', from: schedule.breakoutAt, to: schedule.secondTargetAt },
-  { id: 'range', label: 'Верхній діапазон', from: schedule.secondTargetAt, to: schedule.rangeEndAt },
+  { id: 'growth2', label: 'Другий імпульс', from: schedule.breakoutAt, to: schedule.secondTargetAt },
+  { id: 'growth3', label: 'Третій імпульс', from: schedule.secondTargetAt, to: schedule.thirdTargetAt },
+  { id: 'range', label: 'Верхній діапазон', from: schedule.thirdTargetAt, to: schedule.rangeEndAt },
   { id: 'selloff', label: 'Зниження', from: schedule.rangeEndAt, to: schedule.selloffEndAt },
   { id: 'accumulation', label: 'Подальша консолідація', from: schedule.selloffEndAt, to: schedule.endAt },
 ];
@@ -190,8 +191,8 @@ async function makeVariant(name, asset) {
   }));
   const rangeCenters = {
     pause: asset.initialPrice * (1 + schedule.firstGainPercent / 100),
-    range: asset.initialPrice * (1 + schedule.secondGainPercent / 100),
-    accumulation: asset.initialPrice * (1 + schedule.secondGainPercent / 100) * (1 - schedule.selloffFraction),
+    range: asset.initialPrice * (1 + schedule.thirdGainPercent / 100),
+    accumulation: asset.initialPrice * (1 + schedule.thirdGainPercent / 100) * (1 - schedule.selloffFraction),
   };
   const phaseMetrics = phases.map(phase => ({ ...phase, fromKyiv: kyiv(phase.from), toKyiv: kyiv(phase.to),
     priceAtStart: simulation.priceAt(phase.from), priceAtEnd: simulation.priceAt(phase.to),
@@ -280,7 +281,7 @@ async function screenshots(htmlPath) {
       page.on('console', message => { if (message.type() === 'error') result.consoleErrors.push(message.text()); });
       await page.goto(pathToFileURL(htmlPath).href);
       await page.waitForFunction(() => window.__NRX_PREVIEW_READY__ === true);
-      for (const [phase, interval] of [['all', '1h'], ['growth', '1m'], ['pause', '5m'], ['breakout', '5m'], ['range', '15m'], ['selloff', '5m'], ['accumulation', '1h']]) {
+      for (const [phase, interval] of [['all', '1h'], ['growth1', '1m'], ['pause', '5m'], ['growth2', '5m'], ['growth3', '5m'], ['range', '15m'], ['selloff', '5m'], ['accumulation', '1h']]) {
         await page.locator(`[data-phase="${phase}"]`).click();
         await page.locator(`[data-interval="${interval}"]`).click();
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -309,9 +310,11 @@ async function screenshots(htmlPath) {
   const candidate = simulationFor(NEURIX);
   const firstTarget = NEURIX.initialPrice * (1 + schedule.firstGainPercent / 100);
   const secondTarget = NEURIX.initialPrice * (1 + schedule.secondGainPercent / 100);
+  const thirdTarget = NEURIX.initialPrice * (1 + schedule.thirdGainPercent / 100);
   check('First target gain is relative to listing price', near(candidate.priceAt(schedule.firstTargetAt), firstTarget), { expected: firstTarget, actual: candidate.priceAt(schedule.firstTargetAt) });
   check('Second target gain is relative to listing price', near(candidate.priceAt(schedule.secondTargetAt), secondTarget), { expected: secondTarget, actual: candidate.priceAt(schedule.secondTargetAt) });
-  check('Selloff target is60% below second target', near(candidate.priceAt(schedule.selloffEndAt), secondTarget * (1 - schedule.selloffFraction)), { expected: secondTarget * (1 - schedule.selloffFraction), actual: candidate.priceAt(schedule.selloffEndAt) });
+  check('Third target gain is relative to listing price', near(candidate.priceAt(schedule.thirdTargetAt), thirdTarget), { expected: thirdTarget, actual: candidate.priceAt(schedule.thirdTargetAt) });
+  check('Selloff target is60% below third target', near(candidate.priceAt(schedule.selloffEndAt), thirdTarget * (1 - schedule.selloffFraction)), { expected: thirdTarget * (1 - schedule.selloffFraction), actual: candidate.priceAt(schedule.selloffEndAt) });
   const baseline = simulationFor(variants.before);
   const prior = simulation => simulation.candles1m(schedule.from, NEURIX.listingAt).filter(c => c.openTime + MINUTE_MS <= schedule.from);
   check('Canonical history before scheduled start is unchanged', JSON.stringify(prior(candidate)) === JSON.stringify(prior(baseline)));

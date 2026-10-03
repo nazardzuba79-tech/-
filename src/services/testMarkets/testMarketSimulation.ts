@@ -823,8 +823,9 @@ export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
   const structureKey = asset.marketStructure ? `waves:${asset.marketStructure.from}` : 'no-waves';
   const schedule = asset.symbol === 'NRX' && asset.pair === 'NRX/USDT' ? asset.scheduledScenario : undefined;
   const scheduleKey = schedule ? [schedule.version, schedule.from, schedule.firstTargetAt, schedule.breakoutAt,
-    schedule.secondTargetAt, schedule.rangeEndAt, schedule.selloffEndAt, schedule.endAt, schedule.firstGainPercent,
-    schedule.secondGainPercent, schedule.rangeFraction, schedule.selloffFraction].join(':') : 'no-schedule';
+    schedule.secondTargetAt, schedule.thirdTargetAt, schedule.rangeEndAt, schedule.selloffEndAt, schedule.endAt,
+    schedule.firstGainPercent, schedule.secondGainPercent, schedule.thirdGainPercent,
+    schedule.rangeFraction, schedule.selloffFraction].join(':') : 'no-schedule';
   const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}|${structureKey}|${scheduleKey}`;
   let simulation = simulations.get(key);
   if (!simulation) {

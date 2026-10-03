@@ -16,6 +16,11 @@ export async function allocateNrxOwner(db: PrismaClient, ownerId: string) {
     const prior = await tx.auditLog.findUnique({ where: { id: ALLOCATION_ID } });
     if (prior) {
       if (prior.userId !== ownerId) throw new Error('Allocation belongs to another owner; manual review required');
+      const metadata = prior.metadata && typeof prior.metadata === 'object' && !Array.isArray(prior.metadata)
+        ? prior.metadata as Record<string, unknown> : {};
+      if (metadata.quantity !== NRX_OWNER_ALLOCATION || metadata.initialValueUsdt !== '5000') {
+        throw new Error('Existing NRX allocation receipt uses another amount; manual review required');
+      }
       return { applied: false, userId: ownerId, asset: 'NRX', quantity: NRX_OWNER_ALLOCATION };
     }
     const balance = await tx.balance.findUnique({ where: { userId_asset: { userId: ownerId, asset: 'NRX' } } });
@@ -29,7 +34,7 @@ export async function allocateNrxOwner(db: PrismaClient, ownerId: string) {
     });
     await tx.auditLog.create({ data: {
       id: ALLOCATION_ID, userId: ownerId, action: 'NRX_OWNER_ALLOCATION',
-      metadata: { asset: 'NRX', quantity: NRX_OWNER_ALLOCATION, initialPriceUsdt: '0.80', initialValueUsdt: '25000', usdtDebit: '0' },
+      metadata: { asset: 'NRX', quantity: NRX_OWNER_ALLOCATION, initialPriceUsdt: '0.80', initialValueUsdt: '5000', usdtDebit: '0' },
     } });
     return { applied: true, userId: ownerId, asset: 'NRX', quantity: NRX_OWNER_ALLOCATION };
   });

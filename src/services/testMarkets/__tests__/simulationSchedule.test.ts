@@ -20,16 +20,17 @@ describe('NRX owner schedule math and chronology', () => {
     const kyiv = (at: number) => new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Europe/Kyiv', dateStyle: 'short', timeStyle: 'short',
     }).format(at);
-    expect(kyiv(config.breakoutAt)).toBe('05/10/2026, 08:00');
-    expect(kyiv(config.secondTargetAt)).toBe('05/10/2026, 14:30');
+    expect(kyiv(config.breakoutAt)).toBe('04/10/2026, 08:00');
+    expect(kyiv(config.secondTargetAt)).toBe('04/10/2026, 12:00');
+    expect(kyiv(config.thirdTargetAt)).toBe('04/10/2026, 16:00');
     expect(config.firstTargetAt - config.from).toBeLessThanOrEqual(3 * HOUR);
-    expect(config.rangeEndAt - config.secondTargetAt).toBe(48 * HOUR);
+    expect(config.rangeEndAt - config.thirdTargetAt).toBe(48 * HOUR);
     expect(config.endAt - config.from).toBe(14 * 24 * HOUR);
   });
 
   test.each([
-    [config.firstTargetAt, 10.776], [config.breakoutAt, 10.776],
-    [config.secondTargetAt, 58.536], [config.rangeEndAt, 58.536],
+    [config.firstTargetAt, 7.52], [config.breakoutAt, 7.52],
+    [config.secondTargetAt, 14.76], [config.thirdTargetAt, 58.536], [config.rangeEndAt, 58.536],
     [config.selloffEndAt, 23.4144], [config.endAt, 23.4144],
   ])('hits the listing-relative target at %s', (at, expected) => {
     expect(tickAt(at).price).toBeCloseTo(expected, 11);
@@ -52,9 +53,9 @@ describe('NRX owner schedule math and chronology', () => {
     }
     for (const change of [
       { from: config.from + 1 }, { from: listing - TICK },
-      { secondTargetAt: config.breakoutAt }, { rangeFraction: 1 }, { rangeFraction: -.2 },
+      { secondTargetAt: config.breakoutAt }, { thirdTargetAt: config.secondTargetAt }, { rangeFraction: 1 }, { rangeFraction: -.2 },
       { selloffFraction: 1 }, { selloffFraction: NaN }, { firstGainPercent: Infinity },
-      { secondGainPercent: 100 }, { version: 1.2 },
+      { secondGainPercent: 100 }, { thirdGainPercent: config.secondGainPercent }, { version: 1.2 },
     ]) expect(() => validateScheduledScenario({ ...config, ...change }, listing)).toThrow(RangeError);
   });
 });
@@ -79,8 +80,8 @@ describe('canonical scheduled ticks', () => {
 
   test('sideways ranges vary, permit temporary excursions and recover without clipping wicks', () => {
     const ranges = [
-      [config.firstTargetAt, config.breakoutAt, 10.776],
-      [config.secondTargetAt, config.rangeEndAt, 58.536],
+      [config.firstTargetAt, config.breakoutAt, 7.52],
+      [config.thirdTargetAt, config.rangeEndAt, 58.536],
       [config.selloffEndAt, config.endAt, 23.4144],
     ];
     let checked = 0, totalOutside = 0, wickExcursions = 0, recovered = 0;
