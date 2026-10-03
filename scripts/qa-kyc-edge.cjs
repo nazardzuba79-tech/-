@@ -402,6 +402,7 @@ function attachmentOf(mail) {
       await page.screenshot({ path: path.join(out, `admin-kyc-${width}.png`), fullPage: true });
       if (width === 1440) {
         await card.getByRole('button', { name: 'Проверено' }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить решение' }).click();
         await page.waitForTimeout(800);
         assert.equal((await prisma.user.findUnique({ where: { id: u1.id } })).kycStatus, 'APPROVED');
         const u2Row = await prisma.kycSubmission.findFirst({ where: { userId: u2.id } });
@@ -410,6 +411,7 @@ function attachmentOf(mail) {
         await card2.waitFor({ timeout: 15000 });
         await card2.locator('input[type="text"]').fill('Synthetic QA rejection');
         await card2.getByRole('button', { name: 'Отклонить' }).click();
+        await page.getByRole('dialog').getByRole('button', { name: 'Подтвердить решение' }).click();
         await page.waitForTimeout(800);
         assert.equal((await prisma.user.findUnique({ where: { id: u2.id } })).kycStatus, 'REJECTED');
       }
