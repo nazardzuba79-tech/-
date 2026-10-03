@@ -8,11 +8,13 @@ export interface ScheduledScenarioConfig {
   readonly firstTargetAt: number;
   readonly breakoutAt: number;
   readonly secondTargetAt: number;
+  readonly thirdTargetAt: number;
   readonly rangeEndAt: number;
   readonly selloffEndAt: number;
   readonly endAt: number;
   readonly firstGainPercent: number;
   readonly secondGainPercent: number;
+  readonly thirdGainPercent: number;
   /** Typical sideways amplitude, not a clipping boundary for candles/wicks. */
   readonly rangeFraction: number;
   readonly selloffFraction: number;
@@ -30,11 +32,12 @@ interface Phase {
 interface Context { phases: Phase[]; terminal: number }
 
 export function validateScheduledScenario(c: ScheduledScenarioConfig, listingAt: number): void {
-  const times = [c.from, c.firstTargetAt, c.breakoutAt, c.secondTargetAt, c.rangeEndAt, c.selloffEndAt, c.endAt];
+  const times = [c.from, c.firstTargetAt, c.breakoutAt, c.secondTargetAt, c.thirdTargetAt, c.rangeEndAt, c.selloffEndAt, c.endAt];
   if (!Number.isSafeInteger(c.version) || c.version < 1 || !Number.isFinite(listingAt)
     || times.some((t, i) => !Number.isSafeInteger(t) || t % TICK !== 0 || t < listingAt || (i > 0 && t <= times[i - 1]))
     || !Number.isFinite(c.firstGainPercent) || c.firstGainPercent <= -100
     || !Number.isFinite(c.secondGainPercent) || c.secondGainPercent <= c.firstGainPercent
+    || !Number.isFinite(c.thirdGainPercent) || c.thirdGainPercent <= c.secondGainPercent
     || !Number.isFinite(c.rangeFraction) || c.rangeFraction <= 0 || c.rangeFraction >= 1
     || !Number.isFinite(c.selloffFraction) || c.selloffFraction <= 0 || c.selloffFraction >= 1) {
     throw new RangeError('Invalid scheduled simulation configuration');
@@ -59,14 +62,16 @@ function context(c: ScheduledScenarioConfig, seed: string, listingAt: number, li
   if (cached) return cached;
   const first = listingPrice * (1 + c.firstGainPercent / 100);
   const second = listingPrice * (1 + c.secondGainPercent / 100);
-  const terminal = second * (1 - c.selloffFraction);
-  if (![first, second, terminal].every(p => Number.isFinite(p) && p > 0)) throw new RangeError('Invalid scenario target');
+  const third = listingPrice * (1 + c.thirdGainPercent / 100);
+  const terminal = third * (1 - c.selloffFraction);
+  if (![first, second, third, terminal].every(p => Number.isFinite(p) && p > 0)) throw new RangeError('Invalid scenario target');
   const rows: Array<[string, number, number, number, number, Regime, boolean]> = [
     ['first-rise', c.from, c.firstTargetAt, anchor, first, 'impulse', false],
     ['first-range', c.firstTargetAt, c.breakoutAt, first, first, 'consolidation', true],
     ['second-rise', c.breakoutAt, c.secondTargetAt, first, second, 'impulse', false],
-    ['second-range', c.secondTargetAt, c.rangeEndAt, second, second, 'consolidation', true],
-    ['selloff', c.rangeEndAt, c.selloffEndAt, second, terminal, 'pullback', false],
+    ['third-rise', c.secondTargetAt, c.thirdTargetAt, second, third, 'impulse', false],
+    ['second-range', c.thirdTargetAt, c.rangeEndAt, third, third, 'consolidation', true],
+    ['selloff', c.rangeEndAt, c.selloffEndAt, third, terminal, 'pullback', false],
     ['final-range', c.selloffEndAt, c.endAt, terminal, terminal, 'consolidation', true],
     // The scheduled two-week program is complete; retain the terminal market's
     // bounded range instead of resuming the old model or producing zero trades.
