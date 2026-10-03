@@ -401,8 +401,17 @@ function attachmentOf(mail) {
       assert.ok(overflow <= 1, `admin overflows by ${overflow}px at ${width}`);
       await page.screenshot({ path: path.join(out, `admin-kyc-${width}.png`), fullPage: true });
       if (width === 1440) {
+        const reviewRequests = () => meter.paths.filter((p) => /^POST .*\/kyc\/[^/]+\/review /.test(p)).length;
+        const reviewsBefore = reviewRequests();
         await card.getByRole('button', { name: 'Проверено' }).click();
-        await page.waitForTimeout(800);
+        const approveDialog = page.getByRole('dialog', { name: 'Подтвердить проверку личности' });
+        await approveDialog.waitFor({ state: 'visible' });
+        assert.equal(reviewRequests(), reviewsBefore, 'opening confirmation must not submit a KYC decision');
+        assert.equal((await prisma.user.findUnique({ where: { id: u1.id } })).kycStatus, 'PENDING');
+        const approved = page.waitForResponse((r) => r.request().method() === 'POST' && /\/kyc\/[^/]+\/review$/.test(new URL(r.url()).pathname));
+        await approveDialog.getByRole('button', { name: 'Подтвердить решение', exact: true }).click();
+        assert.equal((await approved).status(), 200);
+        assert.equal(reviewRequests(), reviewsBefore + 1, 'confirmation submits one KYC decision');
         assert.equal((await prisma.user.findUnique({ where: { id: u1.id } })).kycStatus, 'APPROVED');
         const u2Row = await prisma.kycSubmission.findFirst({ where: { userId: u2.id } });
         await page.goto(`${origin}/admin/kyc?user=${u2.id}`, { waitUntil: 'domcontentloaded' });
@@ -410,7 +419,14 @@ function attachmentOf(mail) {
         await card2.waitFor({ timeout: 15000 });
         await card2.locator('input[type="text"]').fill('Synthetic QA rejection');
         await card2.getByRole('button', { name: 'Отклонить' }).click();
-        await page.waitForTimeout(800);
+        const rejectDialog = page.getByRole('dialog', { name: 'Отклонить заявку на проверку' });
+        await rejectDialog.waitFor({ state: 'visible' });
+        assert.equal(reviewRequests(), reviewsBefore + 1, 'opening rejection confirmation must not submit');
+        assert.equal((await prisma.user.findUnique({ where: { id: u2.id } })).kycStatus, 'PENDING');
+        const rejected = page.waitForResponse((r) => r.request().method() === 'POST' && /\/kyc\/[^/]+\/review$/.test(new URL(r.url()).pathname));
+        await rejectDialog.getByRole('button', { name: 'Подтвердить решение', exact: true }).click();
+        assert.equal((await rejected).status(), 200);
+        assert.equal(reviewRequests(), reviewsBefore + 2, 'rejection confirmation submits once');
         assert.equal((await prisma.user.findUnique({ where: { id: u2.id } })).kycStatus, 'REJECTED');
       }
       assert.deepEqual(errors, []);
