@@ -191,8 +191,6 @@ export const RU = {
   'auth.loginTitle': 'Войти в VOLTEX',
   'auth.loginSubtitle': 'Введите данные своего аккаунта.',
   'auth.forgotPassword': 'Забыли пароль?',
-  'auth.rememberDevice': 'Запомнить это устройство',
-  'auth.rememberDeviceHint': 'Не спрашивать пароль на этом устройстве до 90 дней. Не отмечайте на чужом компьютере.',
   'auth.noAccount': 'Нет аккаунта?',
   'auth.createAccount': 'Создать аккаунт',
 

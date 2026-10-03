@@ -327,25 +327,6 @@ test('registration alone renders two intact approved masters and the recovered e
   expect(read('src/pages/register/RegisterPage.tsx')).toContain('cardVisual="registration"');
 });
 
-const REMEMBER_DEVICE_LOGIN = {
-  state: "  // «Запомнить это устройство» — off by default, so a shared computer is\n  // never kept signed in by accident.\n  const [remember, setRemember] = useState(false);\n",
-  call: 'api.login(email, password, remember)',
-  checkbox: [
-    '              <label className="vx-auth-remember" htmlFor="login-remember">',
-    '                <input',
-    '                  id="login-remember"',
-    '                  type="checkbox"',
-    '                  checked={remember}',
-    '                  onChange={(e) => setRemember(e.target.checked)}',
-    '                />',
-    '                <span>',
-    "                  <span className=\"vx-auth-remember-title\">{t('auth.rememberDevice')}</span>",
-    "                  <span className=\"vx-auth-remember-hint\">{t('auth.rememberDeviceHint')}</span>",
-    '                </span>',
-    '              </label>',
-    '', ''].join('\n'),
-};
-
 test('registration visual opt-in leaves Login, auth forms, routes and default shell byte-exact', () => {
   const hash = (value: string) => createHash('sha256').update(value.replace(/\r\n/g, '\n')).digest('hex');
   const shell = read('src/pages/auth-shell/AuthShell.tsx').replace(/\r\n/g, '\n')
@@ -366,18 +347,12 @@ test('registration visual opt-in leaves Login, auth forms, routes and default sh
   // with the same `register.error.*` wording. No field, validation rule,
   // password requirement, referral handling, route, layout, class name or
   // card visual in either file changed.
-  // «Запомнить это устройство» (2026-10-03) adds one checkbox, its state and
-  // the third `api.login` argument — removed here by exact text, so every
-  // other byte of the login form stays pinned to the #144 take.
-  const rememberDevice = REMEMBER_DEVICE_LOGIN;
-  expect(hash(read('src/pages/AuthPage.tsx').replace(/\r\n/g, '\n')
-    .replace(rememberDevice.state, '').replace(rememberDevice.call, 'api.login(email, password)')
-    .replace(rememberDevice.checkbox, '')))
-    .toBe('f50f721e6dc4198b5bb0e61f937ec7de661471c5741a74ec021ad80a4c1e6e2c');
+  // The short-lived login checkbox (2026-10-03) is gone again — devices are
+  // remembered for the admin role on the server — so the form is byte-exact.
+  expect(hash(read('src/pages/AuthPage.tsx'))).toBe('f50f721e6dc4198b5bb0e61f937ec7de661471c5741a74ec021ad80a4c1e6e2c');
   expect(hash(read('src/pages/register/RegisterPanel.tsx'))).toBe('246293253242a8072affe8805d0ee44ecd9d4976e1f4cc25d5a702910af4c7df');
   const css = read('src/pages/auth-shell/auth-shell.css').replace(/\r\n/g, '\n')
     .replace(/\/\* Registration alone[\s\S]*?(?=\.vx-auth-card-kicker)/, '')
-    .replace('  .vx-auth-card-registration .vx-auth-card-art { margin-left: 0; }\n', '')
-    .replace(/\/\* «Запомнить это устройство» \*\/[\s\S]*?(?=\.vx-auth-password \{)/, '');
+    .replace('  .vx-auth-card-registration .vx-auth-card-art { margin-left: 0; }\n', '');
   expect(hash(css)).toBe('dce75cb0add4577d9bc93477f7c4f9a54a524ceb5e2b316cf6e08709b678c3b2');
 });

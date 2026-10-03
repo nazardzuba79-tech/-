@@ -10,11 +10,12 @@ function mockReqRes(header?: string) {
   return { req, res, next };
 }
 
-function makePrismaMock(session: any = null) {
+function makePrismaMock(session: any = null, owner: any = { createdAt: new Date(), user: { role: 'ADMIN' } }) {
   return {
     user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1' }) },
     session: {
-      findUnique: jest.fn().mockResolvedValue(session),
+      // The first read is authorization; a remembered session's second read is its owner.
+      findUnique: jest.fn().mockImplementation(async ({ select }: any) => (select?.user ? owner : session)),
       update: jest.fn().mockResolvedValue({}),
     },
   } as any;
@@ -73,7 +74,7 @@ describe('requireAuth', () => {
     expect(req.sessionId).toBe('session-1');
   });
 
-  describe('remembered device («Запомнить это устройство»)', () => {
+  describe('remembered device (admin account only)', () => {
     const DAY = 24 * 60 * 60_000;
     const token = () => jwt.sign({ sub: 'user-1', sid: 'session-1' }, process.env.JWT_SECRET!);
 
@@ -99,6 +100,33 @@ describe('requireAuth', () => {
       await requireAuth(prisma)(req, res, next);
       expect(res.statusCode).toBe(401);
       expect(next).not.toHaveBeenCalled();
+    });
+
+    it('holds a remembered session of a non-admin account to 12h from sign-in', async () => {
+      const remembered = { id: 'session-1', userId: 'user-1', revokedAt: null, remembered: true, lastSeenAt: new Date() };
+      for (const [hoursAgo, accepted] of [[11, true], [13, false]] as const) {
+        const { req, res, next } = mockReqRes(`Bearer ${token()}`);
+        const prisma = makePrismaMock(remembered, { createdAt: new Date(Date.now() - hoursAgo * 3_600_000), user: { role: 'USER' } });
+        await requireAuth(prisma)(req, res, next);
+        expect({ hoursAgo, accepted: next.mock.calls.length === 1 }).toEqual({ hoursAgo, accepted });
+        if (!accepted) expect(res.statusCode).toBe(401);
+      }
+    });
+
+    it('keeps an admin\'s remembered session past 12h', async () => {
+      const { req, res, next } = mockReqRes(`Bearer ${token()}`);
+      const prisma = makePrismaMock({ id: 'session-1', userId: 'user-1', revokedAt: null, remembered: true, lastSeenAt: new Date() },
+        { createdAt: new Date(Date.now() - 20 * DAY), user: { role: 'ADMIN' } });
+      await requireAuth(prisma)(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+
+    it('does not pay the owner read for an ordinary session', async () => {
+      const { req, res, next } = mockReqRes(`Bearer ${token()}`);
+      const prisma = makePrismaMock({ id: 'session-1', userId: 'user-1', revokedAt: null, remembered: false, lastSeenAt: new Date() });
+      await requireAuth(prisma)(req, res, next);
+      expect(next).toHaveBeenCalled();
+      expect(prisma.session.findUnique).toHaveBeenCalledTimes(1);
     });
 
     it('leaves an ordinary session to its own 12h token expiry', async () => {

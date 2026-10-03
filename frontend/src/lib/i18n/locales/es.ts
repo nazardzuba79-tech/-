@@ -187,8 +187,6 @@ export const ES: Record<Key, string> = {
   'auth.loginTitle': 'Inicia sesión en VOLTEX',
   'auth.loginSubtitle': 'Introduce los datos de tu cuenta.',
   'auth.forgotPassword': '¿Olvidaste tu contraseña?',
-  'auth.rememberDevice': 'Recordar este dispositivo',
-  'auth.rememberDeviceHint': 'Mantener la sesión en este dispositivo hasta 90 días. No lo marques en un ordenador compartido.',
   'auth.noAccount': '¿No tienes cuenta?',
   'auth.createAccount': 'Crear cuenta',
   'trade.orderBook': 'Libro de órdenes',
