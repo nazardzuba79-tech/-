@@ -281,7 +281,7 @@ async function main() {
     state.activity = '503';
     await s.page.mouse.click(8, 8);
     await s.page.waitForSelector('[data-activity-error="stale"]', { timeout: 10_000 });
-    await s.page.waitForSelector('[data-browser-phase="error"]', { timeout: 10_000 });
+    await s.page.waitForSelector('[data-browser-phase="error"]', { state: 'attached', timeout: 10_000 });
     const keptAfterWake = (await s.page.locator('[data-user-card="u-ready"] [data-event="deposit"]').count()) === 1;
     record(`idle defers hourly read → failed wake keeps last good data${w}`,
       keptAfterWake && state.calls.me === beforeSleep.me + 1 && state.calls.activity === beforeSleep.activity + 1,
