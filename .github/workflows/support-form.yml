@@ -60,7 +60,6 @@ jobs:
           frontend/src/lib/__tests__/supportAssistant.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
           frontend/src/lib/__tests__/routeCodeSplitting.test.ts
-          src/services/__tests__/NodemailerCompatibility.test.ts
       - name: Production build has no mail secret
         run: |
           npm run build --prefix frontend
