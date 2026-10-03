@@ -7,7 +7,8 @@
 .admin-users-kpi-link:hover { border-color: var(--admin-brand); }
 .admin-users-kpi-link[data-copy-signal] { border-color: rgba(183,121,31,.45); }
 .admin-user-new { margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
-.admin-user-actions .admin-delete-button { padding: 7px 10px; font-size: 12px; white-space: nowrap; }
+/* Owner: «Удалить» sits a little apart from «Открыть», so a quick click on the row does not land on it. */
+.admin-user-actions .admin-delete-button { padding: 7px 10px; font-size: 12px; white-space: nowrap; margin-left: 24px; }
 .admin-kyc { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .admin-kyc::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 .admin-kyc-approved { color: var(--buy); background: var(--buy-dim); }

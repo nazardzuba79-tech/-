@@ -26,9 +26,9 @@ import { Logo } from '../../components/Logo';
 //     since language switching already works from every other page's
 //     header and leaving the exact same button dead only here would be a
 //     regression, not fidelity.
-// No "AI Bots" item — the archive has one, but this app has no live page
-// behind that label (only a "coming soon" teaser used elsewhere), so
-// there's no real destination to link it to.
+// The archive's former AI Bots placeholder now points to VOLTEX's real
+// Trading Bots catalogue. The route already exists in App.tsx; this header
+// must not hide a product the shared app and homepage navigation expose.
 const NAV_ITEMS = [
   { to: '/markets', key: 'nav.markets' },
   { to: '/trade', key: 'nav.trade' },
@@ -38,6 +38,16 @@ const NAV_ITEMS = [
   { to: '/card', key: 'nav.card' },
   { to: '/otc', key: 'nav.otc' },
 ] as const;
+
+const TRADING_BOTS_LABEL: Record<string, string> = {
+  ru: 'Торговые боты',
+  en: 'Trading bots',
+  es: 'Bots de trading',
+  zh: '交易机器人',
+  ja: '取引ボット',
+  ko: '트레이딩 봇',
+  hi: 'ट्रेडिंग बॉट',
+};
 
 export function ArcticTopNav() {
   const location = useLocation();
@@ -92,6 +102,14 @@ export function ArcticTopNav() {
               {t(item.key)}
             </Link>
           ))}
+          <Link
+            to="/trading-bots"
+            className={`rounded-lg px-3 py-2 text-[13px] font-medium transition-colors duration-150 ${
+              location.pathname === '/trading-bots' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {TRADING_BOTS_LABEL[lang] ?? TRADING_BOTS_LABEL.en}
+          </Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
@@ -184,6 +202,12 @@ export function ArcticTopNav() {
                 {t(item.key)}
               </Link>
             ))}
+            <Link
+              to="/trading-bots"
+              className="rounded-lg px-3 py-2.5 text-[14px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              {TRADING_BOTS_LABEL[lang] ?? TRADING_BOTS_LABEL.en}
+            </Link>
           </div>
           <button
             onClick={handleLogout}

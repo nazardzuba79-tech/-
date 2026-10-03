@@ -5604,10 +5604,7 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Local: frontend TypeScript and Vite build PASS; full frontend Jest 219 suites / 3805 tests PASS; admin browser fixture QA (chromium) layout, interactions and compatibility PASS.
 - Observed, not changed: on production the «Пополнения» card and sidebar counters show «—» because the shared work summary is unavailable there (the Users count comes from the legacy fallback); not verified which backend commit Render runs.
 
+## 2026-10-03 — Claude — Admin Users: «Удалить» set apart
 
-## 2026-10-03 — ChatGPT — compact deposit minimum reconciled to current main
-
-- Reconciled PR #419 onto current main `d89740216f0f9a26cf99392f8fca7abdaad7ede9` without restoring the branch's older handoff snapshot.
-- Scope remains UI-only: neutral «Минимальная сумма пополнения» label/value row, rendered accumulation explanation removed; existing 500 USDT/equivalent rules, quote expiry, address, QR, copy, network cards/warning, backend/API/database/financial behavior unchanged.
-- Existing branch validation before reconciliation: exact-head Linux frontend 3798/3798 tests, 219/219 suites; dedicated deposit catalogue checks and disposable PostgreSQL acceptance passed. Fresh CI must run again on the reconciled head before any merge decision.
-- No merge, deployment, infrastructure or production operation performed by this reconciliation.
+- Owner (production screenshot after #420): move «Удалить» a little away from «Открыть». `adminPracticality.css`: `margin-left: 24px` on `.admin-user-actions .admin-delete-button` (desktop rows and mobile cards); CSS guard added in `adminUsersActivity.test.ts`. Branch `claude/peaceful-volta-h5zw7g-admin-delete-gap` from main `d8974021`; nothing else touched.
+- Local: frontend TypeScript and Vite build PASS; admin Jest 24 suites / 368 tests PASS; admin layout browser QA (chromium) PASS with no overflow at 1920/1440/1366/390.
