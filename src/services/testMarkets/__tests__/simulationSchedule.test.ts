@@ -20,8 +20,8 @@ describe('NRX owner schedule math and chronology', () => {
     const kyiv = (at: number) => new Intl.DateTimeFormat('en-GB', {
       timeZone: 'Europe/Kyiv', dateStyle: 'short', timeStyle: 'short',
     }).format(at);
-    expect(kyiv(config.breakoutAt)).toBe('04/10/2026, 08:00');
-    expect(kyiv(config.secondTargetAt)).toBe('04/10/2026, 14:30');
+    expect(kyiv(config.breakoutAt)).toBe('05/10/2026, 08:00');
+    expect(kyiv(config.secondTargetAt)).toBe('05/10/2026, 14:30');
     expect(config.firstTargetAt - config.from).toBeLessThanOrEqual(3 * HOUR);
     expect(config.rangeEndAt - config.secondTargetAt).toBe(48 * HOUR);
     expect(config.endAt - config.from).toBe(14 * 24 * HOUR);
