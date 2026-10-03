@@ -251,6 +251,8 @@ async function browserChecks(app, prisma, user, header) {
    await dialog.getByRole('button',{name:'Отмена',exact:true}).click();
    assert.ok(await prisma.user.findUnique({where:{id}}));
    await table().waitFor({state:'visible'});
+   // Cancel closes the actions disclosure; reopen it before the second delete attempt.
+   await table().locator('summary').click();
    await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    let deleteRequests=0;
    await page.route('**/api/v1/admin/users/'+id,async route=>{
