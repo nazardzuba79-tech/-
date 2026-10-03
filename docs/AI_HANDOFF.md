@@ -5509,3 +5509,14 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
   - a scratch phone check at 390: three columns, no page overflow.
 - Known: a sub-satoshi price (e.g. 0.000000123456, 77px) cannot fit any price column at these widths. On main it overflowed the 76px column; now it ends in «…» with the full value in its title.
 - The Spot page now subscribes to the shared catalogue: one `/market/assets` request per tab, refreshed every 10 minutes, the same request Markets and the Futures 7d sort use.
+
+## 2026-10-03 — Codex — Futures proportions (review only)
+- Base: current main `e9efc4631fbd1472bef422034f2c035e0a8b6992`, preserving Claude's #395 header/menu work and #396 Spot7d column.
+- Product commit: `ea20d855c0d4d87aaf0533d427ff5f522e76e172`; branch `codex/futures-proportions-20261003`.
+- Material files: ArchiveTerminalPreview.css, TerminalGraphite.css, FuturesOrderPanelRefinement.css, FuturesOrderForm.tsx; scoped regression guards, real-route fixture QA and evidence under docs/qa/futures-proportions.
+- 310px desktop ticket;36px selectors;46px fields;16px input figures;44px toolbar; readable ticker statistics and reserved96px laptop ticker; duplicate lower calculator link removed.
+- Preserved trading arithmetic/guards, providers, subscriptions, cache, auth, financial data, mobile touch targets, shared Spot/CFD styling and chart settings/history. No infrastructure or production changes.
+- Checked: frontend build;355 relevant tests;existing Futures8-width browser suite;new6-width fixture before/after;Spot/CFD browser harness. Spot before/after PNG hashes match at all6widths.
+- Evidence and limitations: docs/qa/futures-proportions/README.md. Five unrelated Windows path-scanner failures reproduced on untouched baseline; exact-head Linux CI remains the publication gate. No merge/deploy authorized for this task.
+- Owner follow-up: corrected Futures header crowding in the existing laptop tier without changing menu structure. Rendered gaps increase from4px to13–16px; all visible dropdowns, text clipping and account overlap checked at1920/1664/1600/1550/1531/1440 plus1366/390 mobile patterns. Zero violations; all six Spot control screenshots remain byte-identical.
+- Header guard run:143 tests/8 suites pass. Evidence includes header crops and additional1531/1550 breakpoint reports. PR #397 remains review-only; the existing Cloudflare integration auto-creates a branch preview, with production unchanged.
