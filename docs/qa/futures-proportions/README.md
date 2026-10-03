@@ -2,12 +2,12 @@
 
 Base: `e9efc4631fbd1472bef422034f2c035e0a8b6992` (current main after #395 and #396).
 Product commit: `ea20d855c0d4d87aaf0533d427ff5f522e76e172`.
-Review only: no merge, deployment, production requests or trading writes.
+Review only: no merge, manual deployment, production requests or trading writes. The repository's existing Cloudflare integration automatically creates a branch preview on push; production is unchanged.
 
 ## Compare
 
 Open `comparison.html` through the fixture server at `/__qa/evidence/comparison.html`.
-It supports 1920 / 1664 / 1600 / 1440 / 1366 / 390, side-by-side or full-width before/after, ticker, toolbar, ticket and Spot crops.
+It supports 1920 / 1664 / 1600 / 1440 / 1366 / 390, side-by-side or full-width before/after, header, ticker, toolbar, ticket and Spot crops.
 
 The screenshots render the actual built application, including the real Futures/Spot routes and complete CSS imports. Both builds use identical synthetic market/account fixtures, a fixed timestamp and deviceScaleFactor 1. External network access is denied. The harness supplies local asset icons; remote font providers are blocked. Browser fallback/local fonts are the same in both builds.
 
@@ -33,6 +33,7 @@ All measurements are CSS px. Heights: 1080 at width1920, 768 at1366, 844 at390, 
 - All ticker statistics remain visible; the laptop layout reserves a second row rather than covering the chart or book.
 - Funding rate uses the brand accent; countdown is neutral. Saved white/gold candle preferences are preserved.
 - The duplicate calculator link below the ticket is removed; the accessible heading button opens the same calculator.
+- Owner-requested header correction: the shared laptop rules left only 4px between rendered labels on Futures. Scoped spacing now provides at least 16px at1664 and13px at1600/1550/1531/1440;1920 retains20px. Menu structure and mobile navigation remain unchanged.
 
 ## Verification
 
@@ -40,6 +41,7 @@ All measurements are CSS px. Heights: 1080 at width1920, 768 at1366, 844 at390, 
 - 355 distinct relevant tests across12 suites pass, including order-form/calculator behavior and unchanged arithmetic fingerprint. The final selector correction was rerun in the18-test Graphite suite.
 - Existing Futures browser QA: PASS at1920/1664/1440/1366 plus320/360/390/430, including local fixture order submission, calculator, book grouping/trades/price-click, clipping and overflow.
 - New real-route before/after QA: six widths; no document/ticket horizontal overflow or page errors.
+- Header regression: rendered text/icon gaps, label clipping, account overlap and every visible dropdown checked at all desktop matrix widths, plus1531/1550 around the existing secondary-menu breakpoint. Zero violations. The related143-test/8-suite guard run also passes.
 - Populated positions: three real rendered fixture rows; empty/loading/error states tested. Unavailable account values stay unavailable and submission stays disabled.
 - Price/quantity focus and long numeric input, TP/SL, reduce-only, margin/leverage menus, all order-type tabs, long pair, small price, mobile expanded ticker and workspace switching are exercised.
 - Wallet → Futures → Spot → Futures uses real SPA navigation. Returning to Futures preserves its layout. Chart settings keep the same canvas identity; selected timeframe and stored drawing persist. Passive resize/style interaction adds zero requests in the measured window.
@@ -63,7 +65,7 @@ The preview binds to127.0.0.1 and serves `/futures?pair=BTC%2FUSDT`, `/trade?pai
 
 - Production authentication, real execution, live network behavior, backend and financial data are deliberately untested and unchanged.
 - This is Chromium fixture QA, not a cross-browser certification. External TradingView and font services are blocked.
-- The existing global header remains dense at smaller desktop widths; this PR does not redesign navigation.
+- Header changes are limited to laptop spacing within the Futures route. The existing shared menu visibility breakpoints remain in force.
 - At laptop widths the second ticker row uses40px of vertical space to keep every statistic visible. Scrollable position tables and the existing mobile support widget remain unchanged.
 
 ## Representative screenshots

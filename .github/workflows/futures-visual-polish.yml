@@ -80,7 +80,7 @@ jobs:
       - name: Real Futures proportions, all desktop widths and mobile
         env:
           QA_PLAYWRIGHT_MODULE: /tmp/visual-polish-browser/node_modules/playwright
-        run: node scripts/qa-futures-proportions.cjs --phase after --out docs/qa/futures-proportions-ci
+        run: node scripts/qa-futures-proportions.cjs --phase after --widths 1920,1664,1600,1550,1531,1440,1366,390 --out docs/qa/futures-proportions-ci
       - name: Spot and CFD mobile browser QA at 320, 360, 390, 430
         run: node scripts/qa-spot-cfd-terminal.cjs
       - name: VTA source-specific connection and readable measurement card

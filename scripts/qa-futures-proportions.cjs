@@ -156,18 +156,46 @@ const measure = page => page.evaluate(() => {
     formScrollX: (() => { const f = document.querySelector('.order-form-area'); return f ? Math.max(0, f.scrollWidth - f.clientWidth) : 0; })(),
     sheetCount: document.styleSheets.length, stylesheets: [...document.styleSheets].map(s => s.href || 'inline'),
     calculators: [...document.querySelectorAll('[data-open-calculator]')].map(el => ({ ...rect(el), title: el.title, name: el.getAttribute('aria-label'), text: el.textContent.trim() })),
-    header: { nav: one('.top-nav'), account: one('.header-right'), items: all('.top-nav > *') },
+    header: {
+      bar:one('.global-header'),brand:one('.header-brand'),nav:one('.main-nav'),account:one('.header-actions'),
+      items:[...document.querySelectorAll('.main-nav > *')].map(el=>{
+        const parts=[];const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;
+        while(node=walker.nextNode()){if(!node.textContent.trim())continue;const range=document.createRange();range.selectNodeContents(node);parts.push(...range.getClientRects());}
+        for(const icon of el.querySelectorAll('svg'))parts.push(icon.getBoundingClientRect());
+        const visible=parts.filter(r=>r.width>0&&r.height>0);
+        return {text:el.textContent.trim(),...rect(el),contentX:visible.length?Math.min(...visible.map(r=>r.x)):null,contentRight:visible.length?Math.max(...visible.map(r=>r.right)):null};
+      }).filter(x=>x.width>0&&x.height>0&&x.contentX!==null),
+      labels:[...document.querySelectorAll('.main-nav .top-nav-link')].map(el=>({text:el.textContent.trim(),scroll:el.scrollWidth,client:el.clientWidth,...rect(el)})).filter(x=>x.width>0&&x.height>0),
+    },
   };
 });
 async function showTrade(page, mobile) { if (mobile) { await page.locator('#mobile-futures-trade').click(); await page.waitForTimeout(150); } }
 async function captures(page, name, mobile) {
   await page.screenshot({ path: path.join(OUT, name + '.png'), animations: 'disabled' });
-  for (const [part, selector] of [['ticker', '.futures-ticker-bar'], ['toolbar', '.chart-toolbar'], ['form', '.order-form-area']]) {
+  for (const [part, selector] of [['header','.global-header'],['ticker', '.futures-ticker-bar'], ['toolbar', '.chart-toolbar'], ['form', '.order-form-area']]) {
     if (part === 'form') await showTrade(page, mobile);
     const el = page.locator(selector).first();
     if (await el.isVisible().catch(() => false)) await el.screenshot({ path: path.join(OUT, `${name}-${part}.png`), animations: 'disabled' });
   }
   if(mobile)await page.screenshot({path:path.join(OUT,`${name}-form-viewport.png`),animations:'disabled'});
+}
+async function headerMenus(page,width,item,report){
+  item.headerMenus=[];
+  const candidates=page.locator('.main-nav > .header-disclosure,.main-nav > .nav-item-wrap');
+  for(let i=0;i<await candidates.count();i++){
+    const target=candidates.nth(i); const bounds=await target.boundingBox();
+    if(!bounds||bounds.width===0||bounds.height===0)continue;
+    const anchor=target.locator('a.top-nav-link').first();
+    if(!await anchor.isVisible())continue;
+    await anchor.hover();
+    const panel=target.locator('.header-disclosure-panel,.nav-dropdown').first();
+    await panel.waitFor({state:'visible'});
+    const b=await panel.boundingBox();
+    item.headerMenus.push({label:await anchor.textContent(),box:b});
+    if(PHASE==='after'&&(b.x<0||b.x+b.width>width+1||b.y<0||b.y+b.height>(await page.viewportSize()).height+1))report.violations.push(`${width}: header menu outside viewport`);
+    await page.screenshot({path:path.join(OUT,`${PHASE}-${width}-header-menu-${i}.png`),animations:'disabled'});
+    await page.mouse.move(width-10,70);await page.waitForTimeout(270);
+  }
 }
 async function interactions(page, width, report) {
   const check = (ok, why) => { if (!ok) report.violations.push(`${width}: ${why}`); };
@@ -303,6 +331,16 @@ async function run() {
         check(initial.tickerText.every(x=>x.width===0||x.scroll<=x.client+1),'ticker text clipped');
         check(initial.toolbarChildren.filter(x=>x.width>0).every(x=>x.x>=initial.toolbar.x-1&&x.right<=initial.toolbar.right+1),'toolbar controls extend into book');
       }
+      const header=initial.header;
+      item.headerGaps=header.items.slice(1).map((x,i)=>({left:header.items[i].text,right:x.text,gap:+(x.contentX-header.items[i].contentRight).toFixed(2)}));
+      if(PHASE==='after'&&width>=1440){
+        check(header.nav.width>0,'desktop main navigation hidden');
+        check(header.nav.right<=header.account.x,'navigation/account overlap');
+        check(header.items.every(x=>x.contentRight<=header.account.x-1),'navigation content/account overlap');
+        check(header.labels.every(x=>x.scroll<=x.client+1&&x.x>=header.nav.x-1&&x.right<=header.nav.right+1),'header label clipped');
+        check(item.headerGaps.every(x=>x.gap>=12),'header adjacent item gap below12px');
+      }
+      if(width>=1440&&!args.includes('--quick'))await headerMenus(page,width,item,report);
       if(width===1440&&!args.includes('--quick')) await interactions(page,width,report);
       if(width===390){
         await page.locator('.futures-mobile-stats-toggle').click();

@@ -18,6 +18,21 @@
 #archive-terminal-preview .global-header { background:var(--h-bg-1); --bg:var(--h-bg-1); height:var(--exchange-header-height); min-height:var(--exchange-header-height); padding-inline:20px; border-bottom:1px solid var(--h-border); }
 #archive-terminal-preview .header-brand { color:#f1f5f9; }
 #archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:600; }
+/* The shared laptop tier used 2px link padding, while this route kept the
+   larger desktop type. Reserve readable spacing instead of joining labels. */
+@media(min-width:1440px) and (max-width:1679px) {
+  #archive-terminal-preview .global-header .main-nav { gap:6px; }
+  #archive-terminal-preview .global-header .main-nav .nav-item { padding-inline:7px; }
+}
+@media(min-width:1440px) and (max-width:1659px) {
+  #archive-terminal-preview .global-header .main-nav { gap:4px; }
+  #archive-terminal-preview .global-header .main-nav .nav-item { padding-inline:6px; font-size:13px; }
+}
+@media(min-width:1440px) and (max-width:1599px) {
+  #archive-terminal-preview .global-header { padding-inline:12px; }
+  #archive-terminal-preview .global-header .header-actions :is(.nav-wallet-link,.deposit-button) { padding-inline:10px; font-size:13px; }
+  #archive-terminal-preview .global-header .header-actions .header-icon { font-size:13px; }
+}
 #archive-terminal-preview .terminal {
   --futures-ticker-height:56px;
   display:grid; grid-template-columns:minmax(0,1fr) 270px 310px;

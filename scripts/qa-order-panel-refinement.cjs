@@ -81,8 +81,8 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
       return { price: rect('.fo-priceField'), quantity: rect('.fo-qtyInputRow'), long: rect('.fo-submitPair .buy'), short: rect('.fo-submitPair .sell'), overflow: document.documentElement.scrollWidth - innerWidth };
     });
     assert.equal(geometry.overflow, 0, 'Horizontal page overflow');
-    // Bybit's 48px field with a floating label, desktop and phone alike (owner, 2026-09-30).
-    const fieldHeight = 48;
+    // Owner, 2026-10-03: compact desktop fields; retain the mobile field size.
+    const fieldHeight = width > 900 ? 46 : 48;
     assert.equal(geometry.price.height, fieldHeight); assert.equal(geometry.quantity.height, fieldHeight);
     assert(Math.abs(geometry.price.width - geometry.quantity.width) < 1);
     assert.equal(geometry.long.height, geometry.short.height);
