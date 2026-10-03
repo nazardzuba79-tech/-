@@ -88,11 +88,12 @@
 .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row :is(.p-price, .p-change) {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* The pair name: the quote gives way first, then the base ends in "…" —
-   never drawn over the price beside it. */
+/* Keep a fitting base ticker intact when search adds the quote. Even 0.1px
+   of flex shrink triggers ellipsis on NRX. Only genuinely overlong bases
+   truncate at the name track boundary, never over the price beside it. */
 .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-name { overflow: hidden; }
 .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-name .p-base {
-  flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  flex-shrink: 0; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
 }
 .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-name .p-quote { flex-shrink: 100; }
 .trade-terminal.trade-terminal.market-reference.spot-terminal .pairs-list .pair-row .p-change[data-compact] { font-size: 10px; letter-spacing: -.2px; }

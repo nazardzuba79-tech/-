@@ -25,6 +25,7 @@ const dist = path.resolve(__dirname, '../frontend/dist');
 const OUT = path.resolve(process.env.QA_OUT || 'docs/qa/spot-market-7d');
 // pair, price, 24h %, quote volume
 const TICKERS = [
+  ['NRX/USDT', '1.4582', '82.28', 4e9], ['VTA/USDT', '0.810005', '1.25', 3.5e9],
   ['BTC/USDT', '84555.10', '0.06', 3.2e9], ['ETH/USDT', '2674.40', '0.24', 1.9e9], ['USDC/USDT', '1.0000', '0.01', 9e8],
   ['XRP/USDT', '1.4855', '0.06', 8e8], ['SOL/USDT', '119.08', '0.39', 7e8], ['PUMP/USDT', '0.005403', '0.32', 6e8],
   ['NEAR/USDT', '4.6398', '-1.13', 5e8], ['MOG/USDT', '0.000000123456', '2.50', 4e8], ['NIGHT/USDT', '0.04992', '2.02', 3e8],
@@ -73,6 +74,13 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
       const page = await browser.newPage({ viewport: { width: w, height: h } });
       const errors = [];
       page.on('pageerror', e => errors.push(String(e).slice(0, 160)));
+      // Fixture QA cannot reach production/providers or submit a financial write.
+      await page.route('**/*', route => {
+        const request = route.request();
+        if (new URL(request.url()).origin !== base || !['GET', 'HEAD'].includes(request.method())) return route.abort();
+        return route.continue();
+      });
+      await page.addInitScript(() => { window.WebSocket = class { close() {} addEventListener() {} removeEventListener() {} }; });
       await page.addInitScript(() => { try { localStorage.setItem('exchange_token', 'local-qa'); localStorage.setItem('exchange_lang', 'ru'); } catch {} });
       await page.goto(`${base}/trade`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => document.querySelector('.spot-terminal .pair-row[data-pair="BTC/USDT"] .p-change-7d')?.textContent?.includes('%'), null, { timeout: 30000 });
@@ -89,7 +97,7 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
           const list = section.querySelector('.pairs-list');
           const head = [...section.querySelectorAll('.pairs-sort button')];
           const rows = [...list.querySelectorAll('.pair-row[data-pair]')];
-          const out = { clipped: [], allowed: [], names: [], broken: [], headerClipped: [] };
+          const out = { clipped: [], allowed: [], names: [], broken: [], headerClipped: [], baseSymbols: [] };
           for (const row of rows) {
             for (const [label, sel] of [['price', '.p-price'], ['24h', '.p-change:not(.p-change-7d)'], ['7d', '.p-change-7d']]) {
               const el = row.querySelector(sel);
@@ -101,6 +109,10 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
               }
             }
             const name = row.querySelector('.p-name').getBoundingClientRect(), price = row.querySelector('.p-price').getBoundingClientRect();
+            const base = row.querySelector('.p-base');
+            out.baseSymbols.push({ pair: row.dataset.pair, text: base.textContent,
+              clipped: base.scrollWidth > base.clientWidth + .5,
+              width: base.clientWidth, naturalWidth: base.scrollWidth });
             if (name.right > price.left + 0.5) out.names.push(row.dataset.pair);
             if (row.querySelector('.p-change-7d').getBoundingClientRect().top >= price.bottom) out.broken.push(row.dataset.pair);
           }
@@ -117,12 +129,35 @@ const VIEWPORTS = [[1920, 1080], [1440, 900], [1366, 768]];
         const tag = `${w}x${h} @${width}px`;
         for (const entry of m.clipped) fail(`${tag}: clipped ${entry}`);
         for (const pair of m.names) fail(`${tag}: name runs into price on ${pair}`);
+        for (const pair of ['NRX/USDT', 'VTA/USDT', 'BTC/USDT', 'ETH/USDT']) {
+          const symbol = m.baseSymbols.find(row => row.pair === pair);
+          if (!symbol || symbol.clipped || symbol.text !== pair.split('/')[0]) fail(`${tag}: base ticker clipped/missing: ${pair}`);
+        }
         for (const pair of m.broken) fail(`${tag}: row wrapped on ${pair}`);
         for (const label of m.headerClipped) fail(`${tag}: header clipped "${label}"`);
         if (m.align.some(delta => Math.abs(delta) > 1)) fail(`${tag}: header misaligned ${m.align}`);
         if (m.listOverflowX > 0 || m.pageOverflowX > 0) fail(`${tag}: horizontal overflow list ${m.listOverflowX} page ${m.pageOverflowX}`);
         if (m.icon !== (width >= 250)) fail(`${tag}: logo ${m.icon ? 'shown' : 'hidden'}`);
         report.viewports.push({ viewport: `${w}x${h}`, panel: width, ...m });
+        // Search restores /USDT beside the base. Even a fractional-pixel flex
+        // shrink can turn NRX into N… while scrollWidth/clientWidth round equal.
+        const search = page.locator('.spot-terminal .pairs-search input');
+        for (const symbol of ['NRX', 'VTA', 'BTC', 'ETH']) {
+          await search.fill(symbol);
+          const row = page.locator(`.spot-terminal .pair-row[data-pair="${symbol}/USDT"]`);
+          const result = await row.evaluate(el => {
+            const base = el.querySelector('.p-base'), quote = el.querySelector('.p-quote');
+            const range = document.createRange(); range.selectNodeContents(base);
+            const textWidth = range.getBoundingClientRect().width;
+            const box = base.getBoundingClientRect();
+            return { text: base.textContent, textWidth, width: box.width, quote: quote?.textContent,
+              overlapsPrice: box.right > el.querySelector('.p-price').getBoundingClientRect().left + .1 };
+          });
+          if (result.text !== symbol || result.textWidth > result.width + .01 || result.overlapsPrice || result.quote !== '/USDT')
+            fail(`${tag}: search ${symbol} truncated/overlaps: ${JSON.stringify(result)}`);
+          if (symbol === 'NRX' && width === 258) await page.locator('.spot-terminal .pairs-section').screenshot({ path: path.join(OUT, `search-nrx-${w}.png`) });
+        }
+        await search.fill('');
         if ([240, 258, 340].includes(width)) {
           await page.waitForTimeout(600);
           const box = await page.locator('.spot-terminal .pairs-section').boundingBox();

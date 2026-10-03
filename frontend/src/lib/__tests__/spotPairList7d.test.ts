@@ -248,4 +248,13 @@ describe('the Spot panel keeps its 240–340px resize without overflow', () => {
     const sidebar = read('src/components/PairListSidebar.tsx');
     expect(sidebar).toContain('aria-valuemin={onResizeBy ? 240 : undefined} aria-valuemax={onResizeBy ? 340 : undefined}');
   });
+
+  it('search cannot fractionally shrink a fitting base ticker, while long names stay bounded', () => {
+    const base = block.match(/\.p-name \.p-base \{([^}]+)\}/)?.[1];
+    expect(base).toContain('flex-shrink: 0');
+    expect(base).toContain('max-width: 100%');
+    expect(base).toContain('overflow: hidden');
+    expect(base).toContain('text-overflow: ellipsis');
+    expect(block).toContain('.p-name .p-quote { flex-shrink: 100; }');
+  });
 });
