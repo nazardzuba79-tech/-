@@ -54,19 +54,34 @@ exports.run = async ({ origin, out, state }) => {
     await page.getByRole('tab', { name: 'Выводы', exact: true }).click();
     await page.waitForTimeout(200);
     check('Selected history fetches one bounded page', state.calls.slice(count).filter(call => /\/history$/.test(call.path)).length === 1 && state.calls.at(-1).query.pageSize === '20');
-    await users(); state.failures['/admin/users/page'] = 500;
+    await users();
+    check('Users list has no refresh line, result count or raw ID under the email', await page.locator('.admin-users-workspace .admin-read-status').count() === 0
+      && await page.locator('.admin-users-workspace .admin-result-count').count() === 0
+      && !(await page.locator('[data-user-row="qa-user-1"]').innerText()).includes('qa-user-1'));
+    // Manual refresh stays on the other Admin pages: a failed refresh keeps the last records and marks them stale.
+    await page.goto(`${origin}/admin/audit-log`); await page.locator('.admin-audit-list article').first().waitFor();
+    const auditRows = await page.locator('.admin-audit-list article').count();
+    state.failures['/admin/audit-log/page'] = 500;
     await page.locator('.admin-read-status').last().getByRole('button').click();
     await page.locator('.admin-read-status').last().getByRole('alert').waitFor();
-    check('500 retains last users, marks stale instead of false empty', await page.locator('[data-user-row]').count() === 20 && await page.getByText('Данные могли устареть.', { exact: false }).count() > 0);
-    delete state.failures['/admin/users/page'];
+    check('500 retains last records, marks stale instead of false empty', await page.locator('.admin-audit-list article').count() === auditRows && await page.getByText('Данные могли устареть.', { exact: false }).count() > 0);
+    delete state.failures['/admin/audit-log/page'];
     await page.getByRole('button', { name: 'Повторить', exact: true }).click();
     await page.locator('.admin-read-status').last().getByRole('alert').waitFor({ state: 'hidden' });
-    check('Retry recovers users', await page.locator('[data-user-row]').count() === 20);
-    await context.setOffline(true); await page.locator('.admin-read-status').last().getByRole('button').click();
-    await page.locator('.admin-read-status').last().getByRole('alert').waitFor();
-    check('Offline read retains snapshot and shows error', await page.locator('[data-user-row]').count() === 20);
+    check('Retry recovers records', await page.locator('.admin-audit-list article').count() === auditRows);
+    // Users: a failed read still shows the error and «Повторить», never an invented empty list.
+    state.failures['/admin/users/page'] = 500;
+    await page.goto(`${origin}/admin/users`); await page.locator('.admin-users-workspace [role="alert"]').waitFor();
+    check('Failed users read shows the error, not a false empty list', await page.locator('[data-user-row]').count() === 0 && await page.getByText('Никого не найдено', { exact: false }).count() === 0);
+    delete state.failures['/admin/users/page'];
+    await page.getByRole('button', { name: 'Повторить', exact: true }).click(); await page.locator('[data-user-row]').first().waitFor();
+    check('Retry recovers users', await page.locator('[data-user-row]').count() === 20 && await page.locator('.admin-users-workspace .admin-read-status').count() === 0);
+    await context.setOffline(true); await page.getByRole('combobox', { name: 'Сортировка пользователей' }).selectOption('lastLoginAt');
+    await page.locator('.admin-users-workspace [role="alert"]').waitFor();
+    check('Offline users read shows the error with a retry', await page.getByRole('button', { name: 'Повторить', exact: true }).count() === 1);
     await context.setOffline(false); await page.getByRole('button', { name: 'Повторить', exact: true }).click();
-    await page.locator('.admin-read-status').last().getByRole('alert').waitFor({ state: 'hidden' });
+    await page.locator('[data-user-row]').first().waitFor();
+    check('Retry after reconnect recovers users', await page.locator('[data-user-row]').count() === 20);
     await page.keyboard.press('Tab');
     check('Keyboard focus remains on an interactive element', await page.evaluate(() => ['A', 'BUTTON', 'INPUT', 'SELECT', 'SUMMARY'].includes(document.activeElement?.tagName)));
     await page.goto(`${origin}/admin/users/absent`); await page.getByRole('alert').first().waitFor();

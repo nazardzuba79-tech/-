@@ -35,6 +35,10 @@ async function adminFixture(route){
       packageCounts:{AWAITING_TOPUP:0,READY:0,NEEDS_REVIEW:0}};
   }else if(url.pathname==='/api/v1/admin/deposit-watch/open'){
     json={ran:false,ok:true,skipped:'NOT_DUE',notDueReason:'FIXTURE',newTransfers:0,error:null};
+  }else if(url.pathname==='/api/v1/admin/deposit-address-copies'){
+    // Users performs one read-only unresolved-copy check on mount; keep the
+    // idle-budget fixture honest instead of letting this new known read 404.
+    json={items:[],nextCursor:null};
   }else return route.fallback();
   return route.fulfill({status:200,json});
 }

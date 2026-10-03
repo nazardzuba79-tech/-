@@ -255,7 +255,6 @@ async function browserChecks(app, prisma, user, header) {
     return rows.length===1&&rows[0].getAttribute(attribute)===id;
    },{width,id});
    await table().waitFor({state:'visible'});
-   await table().locator('summary').click();
    assert.equal(await page.getByRole('button',{name:/^(Заблокировать|Разблокировать)$/}).count(),0);
    await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    const dialog=page.getByRole('dialog');await dialog.waitFor({state:'visible'});
@@ -266,8 +265,6 @@ async function browserChecks(app, prisma, user, header) {
    assert.equal(observedDeletes,0,'opening and cancelling confirmation sends no DELETE');
    assert.ok(await prisma.user.findUnique({where:{id}}));
    await table().waitFor({state:'visible'});
-   // An asynchronous list remount can close details; cancellation itself does not.
-   if(!await table().locator('details').evaluate(element=>element.open))await table().locator('summary').click();
    await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    let deleteRequests=0;
    await page.route('**/api/v1/admin/users/'+id,async route=>{

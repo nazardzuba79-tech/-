@@ -20,3 +20,15 @@ export async function ignoreCopySignal(userId: string, eventId: string): Promise
   }
   return body;
 }
+
+/** Whether any address copy still waits for review: the first page of the same
+ * unresolved queue «Копировали адрес» shows. One read when Users opens; no polling. */
+export async function hasUnresolvedCopies(signal: AbortSignal): Promise<boolean> {
+  const token = getToken();
+  if (!token) throw new Error('Сессия администратора недоступна.');
+  const response = await browserFetch(`${API_BASE}/admin/deposit-address-copies`, { cache: 'no-store', signal, headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error('Не удалось проверить копирования адреса.');
+  const body = await response.json() as { items?: unknown };
+  if (!body || !Array.isArray(body.items)) throw new Error('Не удалось проверить копирования адреса.');
+  return body.items.length > 0;
+}
