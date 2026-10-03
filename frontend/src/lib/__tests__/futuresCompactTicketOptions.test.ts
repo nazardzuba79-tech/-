@@ -38,7 +38,7 @@ beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
 
 async function compactTicket(opts: {
-  entryProtection?: boolean; onTransfer?: () => void; archive?: boolean;
+  entryProtection?: boolean; onTransfer?: () => void; onOpenCalculator?: () => void; archive?: boolean;
   contract?: typeof contractRules | null; lastPrice?: number; price?: string; quantity?: string;
   pickedPrice?: string; execution?: Record<string, unknown>;
 } = {}) {
@@ -53,7 +53,7 @@ async function compactTicket(opts: {
     },
   });
   const props = { symbol: 'BTC/USDT', onPlaced: jest.fn(), executionEnabled: true,
-    archive: opts.archive ?? true, onTransfer: opts.onTransfer, lastPrice: opts.lastPrice, pickedPrice: opts.pickedPrice };
+    archive: opts.archive ?? true, onTransfer: opts.onTransfer, onOpenCalculator: opts.onOpenCalculator, lastPrice: opts.lastPrice, pickedPrice: opts.pickedPrice };
   form.render(props);
   await tick();
   const render = () => form.render(props);
@@ -69,6 +69,17 @@ async function compactTicket(opts: {
 }
 
 describe('«Доступно» above the price', () => {
+  it('leaves calculator access to the trading heading without a duplicate below the order buttons', async () => {
+    const openCalculator = jest.fn();
+    const t = await compactTicket({ onOpenCalculator: openCalculator });
+    const tree = t.render();
+    expect(byClass(tree, 'archive-calculator-slot')).toHaveLength(0);
+    expect(byClass(tree, 'archive-calculator-trigger')).toHaveLength(0);
+    expect(byClass(tree, 'fo-submitPair')[0].props.children.filter(Boolean)).toHaveLength(2);
+    expect(openCalculator).not.toHaveBeenCalled();
+    expect(t.placed).not.toHaveBeenCalled();
+  });
+
   it('prints the margin the ticket sizes with', async () => {
     const t = await compactTicket();
     const row = byClass(t.render(), 'fo-availRow')[0];

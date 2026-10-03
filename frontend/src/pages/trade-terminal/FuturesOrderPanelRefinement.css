@@ -1,7 +1,7 @@
 /* Owner-approved order-panel preview, 2026-09-25. Presentation only;
    contract prices, fees, sizing, protection and submission stay in the form. */
 #archive-terminal-preview .fo-panel {
-  --order-service-label:color-mix(in srgb,var(--archive-label) 87%,var(--panel));
+  --order-service-label:#989da6;
 }
 #archive-terminal-preview .fo-field { --fo-field-height:44px; }
 #archive-terminal-preview .fo-field > .fo-fieldCaption {
@@ -15,7 +15,10 @@
 #archive-terminal-preview .fo-field .fo-input::placeholder { font-weight:400; }
 #archive-terminal-preview .fo-infoRow > :first-child { color:var(--order-service-label) !important; }
 #archive-terminal-preview :is(.fo-reduceOnlyRow,.archive-calculator-slot .archive-calculator-trigger) { color:var(--order-service-label); }
-#archive-terminal-preview .fo-infoBox { padding-top:16px; gap:10px; }
+#archive-terminal-preview .fo-infoBox { padding-top:12px; gap:4px; }
+#archive-terminal-preview .fo-infoBox .fo-infoRow { min-height:24px; align-items:baseline; flex-wrap:wrap; gap:2px 8px; }
+#archive-terminal-preview .fo-infoBox .fo-infoRow > :first-child { min-width:0; }
+#archive-terminal-preview .fo-infoBox .fo-infoRow > .mono { min-width:0; max-width:100%; margin-left:auto; text-align:right; white-space:normal; overflow-wrap:anywhere; }
 #archive-terminal-preview .fo-positionLimits { border-top:1px solid var(--border); padding-top:10px; color:var(--order-service-label); }
 #archive-terminal-preview .fo-positionLimits summary {
   display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:28px;
@@ -47,9 +50,12 @@
 #archive-terminal-preview .archive-protection-fields label { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:12px; color:#d8dbe1; }
 #archive-terminal-preview .archive-protection-fields input { min-height:44px; }
 @media(min-width:901px) {
-  #archive-terminal-preview .fo-form { gap:19px; }
-  #archive-terminal-preview .fo-mlTrigger { height:32px; min-height:32px; }
-  #archive-terminal-preview .order-family-tabs { margin-top:55px; }
+  #archive-terminal-preview .fo-form { gap:12px; padding-top:12px; }
+  #archive-terminal-preview .fo-mlTrigger { height:36px; min-height:36px; }
+  #archive-terminal-preview .order-family-tabs { margin-top:52px; }
+  #archive-terminal-preview .fo-form > :is(.percent-slider-continuous,.fo-optionsRow,.fo-infoBox,.fo-submitPair) { margin-top:4px; }
+  #archive-terminal-preview .fo-form > .fo-availRow { margin-bottom:0; }
+  #archive-terminal-preview .fo-form > .archive-order-protection { margin-top:0; }
   #archive-terminal-preview .fo-submitPair button { height:50px; min-height:50px; }
 }
 @media(max-width:900px) {
@@ -78,12 +84,16 @@
 }
 #archive-terminal-preview .fo-availLabel { flex:1; min-width:0; }
 #archive-terminal-preview .fo-availValue { color:var(--text-primary); font-weight:500; font-variant-numeric:tabular-nums; white-space:nowrap; }
+@media (min-width:901px) {
+  #archive-terminal-preview .fo-availRow { flex-wrap:wrap; }
+  #archive-terminal-preview .fo-availValue { min-width:0; max-width:100%; margin-left:auto; white-space:normal; overflow-wrap:anywhere; text-align:right; }
+}
 #archive-terminal-preview .fo-availPending {
   display:inline-block; width:84px; height:10px; border-radius:3px; vertical-align:middle;
   background:linear-gradient(90deg,#262a31,#30353e,#262a31); background-size:200% 100%; animation:fo-avail-pending 1.2s linear infinite;
 }
 @keyframes fo-avail-pending { to { background-position:-200% 0; } }
-#archive-terminal-preview .fo-optionsRow { display:flex; align-items:center; gap:20px; flex-wrap:wrap; min-height:24px; }
+#archive-terminal-preview .fo-optionsRow { display:flex; align-items:center; gap:8px 16px; flex-wrap:wrap; min-height:24px; }
 #archive-terminal-preview .fo-optionsRow :is(.fo-tpslToggle,.fo-reduceOnlyRow) {
   display:inline-flex; align-items:center; gap:8px; min-height:24px; font-size:13px; cursor:pointer; order:0;
   color:var(--order-service-label);

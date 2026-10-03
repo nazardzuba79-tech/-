@@ -142,7 +142,7 @@ it('the shared sheet styles, and never lays out, the shells it does not own', ()
   expect(layout).toEqual([]);
 });
 
-it('Spot and CFD carry the Futures TradingView surface, value for value', () => {
+it('Spot and CFD retain the shared surface while Futures-only colours stay local', () => {
   // Owner, 2026-09-25: «Внидряй цей дезайн і на спот, і на CFD» — the
   // surface approved on Futures (#258). Pinned against the Futures sheet
   // itself, so the three terminals cannot drift apart in either direction.
@@ -180,11 +180,10 @@ it('Spot and CFD carry the Futures TradingView surface, value for value', () => 
     expect(futuresChart).toContain(token);
     expect(spotCfdChart).toContain(token);
   }
-  // The candles part here on 2026-09-30: Futures takes the standard green /
-  // red with the viewer's chart settings over it (owner's request was for the
-  // Futures terminal); Spot and CFD keep the white / orange until asked.
-  expect(futuresChart).toContain('--voltex-candle-up: #2ebd85');
-  expect(futuresChart).toContain('--voltex-candle-down: #f6465d');
+  // 2026-10-03 Futures presentation brief preserves white / gold, with
+  // the viewer's saved settings over it. Spot and CFD remain unchanged.
+  expect(futuresChart).toContain('--voltex-candle-up: #f4f6f8');
+  expect(futuresChart).toContain('--voltex-candle-down: #f0b90b');
   expect(spotCfdChart).toContain('--voltex-candle-up: #ffffff');
   expect(spotCfdChart).toContain('--voltex-candle-down: #ff9800');
   // «Синій колір ні, обєм залишаємо як і зараз є на біржі»: the CFD volume
@@ -195,12 +194,12 @@ it('Spot and CFD carry the Futures TradingView surface, value for value', () => 
   expect(spotCfdChart).toContain('--voltex-volume-up: rgba(234,236,239,0.5)');
   expect(spotCfdChart).toContain('--voltex-volume-down: rgba(247,166,0,0.5)');
 
-  // The header captions take the Futures caption grey.
-  // The later of the sheet's rules for the captions is the one that wins.
+  // Only Futures gets the brighter caption grey in the 2026-10-03 brief.
+  // The shared Spot/CFD sheet retains its existing colour unchanged.
   const captionRules = archive.split('#archive-terminal-preview .ticker-bar .label {').slice(1).map(r => r.slice(0, r.indexOf('}')));
   const futuresCaption = captionRules[captionRules.length - 1]?.match(/color:\s*(#[0-9a-f]{6})/i)?.[1];
-  expect(futuresCaption).toBe('#71757a');
-  expect(css).toContain(`${P} :is(.ticker-bar .label, .cfd-ticker-metric > span:first-child) { color: ${futuresCaption}; font-weight: 400; }`);
+  expect(futuresCaption).toBe('#959ba5');
+  expect(css).toContain(`${P} :is(.ticker-bar .label, .cfd-ticker-metric > span:first-child) { color: #71757a; font-weight: 400; }`);
 
   // Fields stay visible on the gradient, as on the Futures ticket.
   expect(css).toMatch(/:is\(\.order-form-area \.input-group, \.pairs-section input, \.cfd-input, \.cfd-instruments-area input\) \{\s*background: rgba\(255,255,255,\.06\) !important; border: 1px solid rgba\(255,255,255,\.13\) !important;/);
