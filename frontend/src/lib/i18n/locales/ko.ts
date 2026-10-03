@@ -35,6 +35,8 @@ export const KO: Record<Key, string> = {
   'deposit.ui.memoCopied': "메모 복사됨",
   'deposit.ui.copyMemo': "메모 복사",
   'deposit.ui.asset': "자산",
+  'deposit.ui.minimumLabel': "최소 입금액",
+  'deposit.ui.minimumOtherValue': "{amount} USDT 또는 이에 상응하는 {asset}",
   'deposit.ui.minimumPeggedLine': "최소 입금액 — {amount} {asset}",
   'deposit.ui.minimumOtherLine': "최소 입금액 — {amount} USDT 또는 이에 상응하는 {asset}",
   'deposit.ui.minimumApprox': "(≈ {amount} {asset})",
