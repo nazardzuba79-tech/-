@@ -60,6 +60,8 @@ export interface LedgerRow {
 export interface UnifiedAccount {
   /** 'CROSS' for the authoritative margin account; 'SPOT' for a plain ledger. */
   mode: 'CROSS' | 'SPOT';
+  /** A display tier asserted by the server; never inferred from mode/role/email. */
+  clientTier: 'SUPREME_VIP' | null;
   /**
    * What the account HOLDS, before P&L: the settle ledger plus every priced
    * wallet asset. `totalEquityUsd` is this plus unrealized P&L, which is
@@ -93,7 +95,7 @@ export interface UnifiedAccount {
 
 export type LoadState = 'loading' | 'ok' | 'error';
 
-export const WALLET_STALE_MS = 120_000;
+export const WALLET_STALE_MS = 30_000;
 const RANKINGS_TTL_MS = 30 * 60_000;
 // Public metadata only. Shared across Wallet mounts; never stores account data.
 let rankingCache: { at: number; data: CoinRanking[] } | null = null;
@@ -125,14 +127,15 @@ const finite = (value: string | null | undefined): number | null => {
  * them rather than deriving a second answer here, which is why the Wallet
  * and `/futures` cannot disagree: they are printing the same object.
  *
- * REQUEST COST. The unified account is read ONCE per page load and again
- * only when something happened that could have changed it (a transfer, a
- * withdrawal, the tab coming back to the foreground). It is deliberately
- * NOT on the 8-second balance poll: its valuation fetches a live mark per
- * held asset, so polling it would multiply upstream load by the number of
- * assets the owner holds. It replaces the single `/native/account` request
- * the old futures card made, so the page's steady-state request count is
- * unchanged.
+ * FRESHNESS. Production no longer depends on Render/Neon free-tier read
+ * budgets. While Wallet is visible, the authoritative overview and native
+ * wallet refresh every 30 seconds so remote deposits, fills and P&L do not
+ * sit stale until a route change. The optional native/Cross endpoint is probed
+ * once on ordinary accounts and only starts that cadence after it actually
+ * returns a wallet. Hidden/sleeping tabs still own zero polling timers,
+ * concurrent reads still coalesce, and known mutations still refresh
+ * immediately. Performance history remains event/manual/wake driven because
+ * it does not need account-ticker cadence.
  */
 export function useWalletData() {
   const [overview, setOverview] = useState<WalletOverview | null>(null);
@@ -147,13 +150,16 @@ export function useWalletData() {
   const snapshotRecorded = useRef(false);
 
   const loadOverview = useVisibleAccountRead({
-    load: signal => api.getWalletOverview(signal), staleMs: WALLET_STALE_MS,
+    load: signal => api.getWalletOverview(signal), staleMs: WALLET_STALE_MS, poll: true,
     accept: res => { setOverview(res); setOverviewState('ok'); },
     fail: () => setOverviewState(prev => prev === 'ok' ? 'ok' : 'error'),
     reset: () => { setOverview(null); setOverviewState('loading'); snapshotRecorded.current = false; },
   });
   const loadUnified = useVisibleAccountRead({
-    load: signal => nativeDemoApi.wallet(signal), staleMs: WALLET_STALE_MS,
+    // Probe once for ordinary accounts; only a confirmed native/Cross wallet
+    // earns the 30s visible polling cadence. A 403/initialize result settles
+    // to null and does not become a pointless background probe loop.
+    load: signal => nativeDemoApi.wallet(signal), staleMs: WALLET_STALE_MS, poll: unified !== null && unified !== undefined,
     // An optional engine denial settles the probe, but does not recategorize
     // an established Cross account or replace its last confirmed transcript.
     accept: next => setUnified(prev => next ?? prev ?? null),
@@ -187,6 +193,7 @@ export function useWalletData() {
       const a = unified.account;
       return {
         mode: 'CROSS',
+        clientTier: unified.clientTier === 'SUPREME_VIP' ? 'SUPREME_VIP' : null,
         // Keep the asset total independent from margin eligibility: a BTC
         // holding stays an asset even when the owner disables it as collateral.
         collateralUsd: finite(unified.assetsValue),
@@ -211,6 +218,7 @@ export function useWalletData() {
     if (!overview) return null;
     return {
       mode: 'SPOT',
+      clientTier: null,
       // A plain ledger holds exactly what it is worth: there is no P&L
       // between the two, so they are the same figure rather than a second
       // one derived from it.
