@@ -147,9 +147,9 @@ function authFixture() {
     let accepted=false;await requireAuth(db)(req,res,()=>{accepted=true});return {req,res,accepted};
   }};
 }
-test('session authorization transfers only four used fields, and rechecks on every request', async()=>{
+test('session authorization transfers only the five fields it uses, and rechecks on every request', async()=>{
   const a=authFixture();await a.call();await a.call();assert.equal(a.reads.length,2);
-  assert.deepEqual(JSON.parse(JSON.stringify(a.reads[0])),{where:{id:'session-fixture'},select:{id:true,userId:true,revokedAt:true,lastSeenAt:true}});
+  assert.deepEqual(JSON.parse(JSON.stringify(a.reads[0])),{where:{id:'session-fixture'},select:{id:true,userId:true,revokedAt:true,lastSeenAt:true,remembered:true}});
   assert.equal(a.writes.length,0);
 });
 test('revocation, deletion and mismatched session owner remain immediately rejected',async()=>{

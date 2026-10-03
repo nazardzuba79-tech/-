@@ -73,6 +73,42 @@ describe('requireAuth', () => {
     expect(req.sessionId).toBe('session-1');
   });
 
+  describe('remembered device («Запомнить это устройство»)', () => {
+    const DAY = 24 * 60 * 60_000;
+    const token = () => jwt.sign({ sub: 'user-1', sid: 'session-1' }, process.env.JWT_SECRET!);
+
+    it('keeps a remembered device signed in after 29 days without use', async () => {
+      const { req, res, next } = mockReqRes(`Bearer ${token()}`);
+      const prisma = makePrismaMock({ id: 'session-1', userId: 'user-1', revokedAt: null, remembered: true, lastSeenAt: new Date(Date.now() - 29 * DAY) });
+      await requireAuth(prisma)(req, res, next);
+      expect(next).toHaveBeenCalled();
+      expect(req.sessionId).toBe('session-1');
+    });
+
+    it('signs a remembered device out after 30 days without use', async () => {
+      const { req, res, next } = mockReqRes(`Bearer ${token()}`);
+      const prisma = makePrismaMock({ id: 'session-1', userId: 'user-1', revokedAt: null, remembered: true, lastSeenAt: new Date(Date.now() - 31 * DAY) });
+      await requireAuth(prisma)(req, res, next);
+      expect(res.statusCode).toBe(401);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('still honours a revoked remembered session immediately', async () => {
+      const { req, res, next } = mockReqRes(`Bearer ${token()}`);
+      const prisma = makePrismaMock({ id: 'session-1', userId: 'user-1', revokedAt: new Date(), remembered: true, lastSeenAt: new Date() });
+      await requireAuth(prisma)(req, res, next);
+      expect(res.statusCode).toBe(401);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('leaves an ordinary session to its own 12h token expiry', async () => {
+      const { req, res, next } = mockReqRes(`Bearer ${token()}`);
+      const prisma = makePrismaMock({ id: 'session-1', userId: 'user-1', revokedAt: null, remembered: false, lastSeenAt: new Date(Date.now() - 31 * DAY) });
+      await requireAuth(prisma)(req, res, next);
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
   it('rejects a token whose session has been revoked', async () => {
     const token = jwt.sign({ sub: 'user-1', sid: 'session-1' }, process.env.JWT_SECRET!);
     const { req, res, next } = mockReqRes(`Bearer ${token}`);

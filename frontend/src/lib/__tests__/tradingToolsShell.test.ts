@@ -26,7 +26,7 @@ function findJsx(file: string, tag: string) {
 describe('local trading tools keeps the real authenticated shell without a market subscription', () => {
   let dom: any, root: any, Nav: any, activeTicker: number;
   let getMe: jest.Mock, tickerMount: jest.Mock, tickerRead: jest.Mock;
-  let prefetchDepositConfig: jest.Mock, prefetchCopyMarketplace: jest.Mock, clearToken: jest.Mock, navigate: jest.Mock;
+  let prefetchDepositConfig: jest.Mock, prefetchCopyMarketplace: jest.Mock, clearToken: jest.Mock, navigate: jest.Mock, logout: jest.Mock;
   const nativeFetch = globalThis.fetch;
 
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
     getMe = jest.fn(async () => ({ isAdmin: true, avatarUrl: null }));
     tickerMount = jest.fn(); tickerRead = jest.fn();
     prefetchDepositConfig = jest.fn(); prefetchCopyMarketplace = jest.fn();
-    clearToken = jest.fn(); navigate = jest.fn();
+    clearToken = jest.fn(); navigate = jest.fn(); logout = jest.fn().mockResolvedValue({ status: 'ok' });
     function TopGainersTicker() {
       React.useEffect(() => {
         activeTicker += 1; tickerMount(); tickerRead();
@@ -56,7 +56,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
         useLocation: () => ({ pathname: '/tools' }), useNavigate: () => navigate,
         Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children),
       },
-      '../lib/api': { api: { getMe }, getToken: () => 'fixture-session', clearToken },
+      '../lib/api': { api: { getMe, logout }, getToken: () => 'fixture-session', clearToken },
       '../lib/i18n': { useLanguage: () => ({ t: (key: string) => key, lang: 'ru' }) },
       '../lib/useDepositOptions': { prefetchDepositConfig },
       '../lib/useCopyMarketplace': { prefetchCopyMarketplace },
@@ -242,6 +242,8 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('.top-nav-profile-menu a[href="/settings"]')).not.toBeNull();
     expect(document.querySelector('.top-nav-profile-menu a[href="/admin"]')).not.toBeNull();
     await click('.top-nav-profile-menu button');
+    // Logout also ends the server session (remembered devices), then clears locally.
+    expect(logout).toHaveBeenCalledTimes(1);
     expect(clearToken).toHaveBeenCalledTimes(1); expect(navigate).toHaveBeenCalledWith('/');
   });
 

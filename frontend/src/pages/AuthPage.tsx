@@ -26,6 +26,9 @@ export function AuthPage() {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  // «Запомнить это устройство» — off by default, so a shared computer is
+  // never kept signed in by accident.
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [pendingToken, setPendingToken] = useState<string | null>(null);
@@ -40,7 +43,7 @@ export function AuthPage() {
     setError(null);
     setLoading(true);
     try {
-      const result = await api.login(email, password);
+      const result = await api.login(email, password, remember);
       if ('requires2fa' in result) {
         setPendingToken(result.pendingToken);
       } else {
@@ -163,6 +166,19 @@ export function AuthPage() {
                   </button>
                 }
               />
+
+              <label className="vx-auth-remember" htmlFor="login-remember">
+                <input
+                  id="login-remember"
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                <span>
+                  <span className="vx-auth-remember-title">{t('auth.rememberDevice')}</span>
+                  <span className="vx-auth-remember-hint">{t('auth.rememberDeviceHint')}</span>
+                </span>
+              </label>
 
               {error && (
                 <div role="alert" className="vx-auth-alert">

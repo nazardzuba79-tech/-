@@ -136,8 +136,12 @@ async function run() {
       const pg=createRequire(path.join(root,'node_modules/.cache/deposit-qa/package.json'))('pg');
       const sql=new pg.Client({connectionString:url.toString()});await sql.connect();
       try {
-        const names=fs.readdirSync(path.join(root,'prisma/migrations')).filter(name=>!fs.existsSync(path.join(base,'prisma/migrations',name))).sort();
-        assert.deepEqual(names,['20261001000000_otc_cash_requests']);
+        // The cutover window ends at the OTC migration. Later additive releases
+        // (e.g. 20261003090000_session_remembered) are not part of this
+        // historical OLD/NEW evidence and must not be replayed into it.
+        const otc='20261001000000_otc_cash_requests';
+        const names=fs.readdirSync(path.join(root,'prisma/migrations')).filter(name=>!fs.existsSync(path.join(base,'prisma/migrations',name))&&name<=otc).sort();
+        assert.deepEqual(names,[otc]);
         for(const name of names)await sql.query(fs.readFileSync(path.join(root,'prisma/migrations',name,'migration.sql'),'utf8'));
       } finally {await sql.end();}
       assert.deepEqual(await snapshot(),before);

@@ -170,6 +170,12 @@ export function accountRouter(prisma: PrismaClient): Router {
         } } : {}),
       },
     });
+    // A new password signs every OTHER device out, remembered ones included;
+    // the device that made the change stays signed in.
+    await prisma.session.updateMany({
+      where: { userId: user.id, revokedAt: null, ...(req.sessionId ? { id: { not: req.sessionId } } : {}) },
+      data: { revokedAt: new Date() },
+    });
     await prisma.auditLog.create({
       data: { userId: user.id, action: 'PASSWORD_CHANGED', metadata: {} },
     });
@@ -212,6 +218,7 @@ export function accountRouter(prisma: PrismaClient): Router {
         userAgent: s.userAgent,
         createdAt: s.createdAt,
         lastSeenAt: s.lastSeenAt,
+        remembered: s.remembered,
         current: s.id === req.sessionId,
       }))
     );

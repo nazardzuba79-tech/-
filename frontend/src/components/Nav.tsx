@@ -45,7 +45,9 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
   // readProfile={false}: the menu then shows the plain avatar and no admin link.
   useEffect(()=>{if(!getToken()||!readProfile)return;api.getMe().then(me=>{setIsAdmin(me.isAdmin);setAvatarUrl(me.avatarUrl);}).catch(()=>{});},[]);
   useEffect(()=>{if(!profileMenuOpen)return;function handler(e:MouseEvent){if(profileMenuRef.current&&!profileMenuRef.current.contains(e.target as Node))setProfileMenuOpen(false);}document.addEventListener('mousedown',handler);return()=>document.removeEventListener('mousedown',handler);},[profileMenuOpen]);
-  function handleLogout(){clearToken();navigate('/');}
+  // The server session is ended too (a remembered one would otherwise stay
+  // valid for weeks); the browser is signed out at once either way.
+  function handleLogout(){if(getToken())api.logout().catch(()=>{});clearToken();navigate('/');}
   return <>
     <header className="global-header top-nav-bar">
       <div className="header-left">
