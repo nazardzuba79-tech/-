@@ -1,26 +1,37 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { ArrowLeftRight, BookOpen, BookOpenText, ChartCandlestick, ChevronDown, CircleHelp, GraduationCap, Handshake, Route, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { Key, useLanguage } from '../lib/i18n';
 import './HeaderDropdown.css';
 
-export const TRADING_LINKS: ReadonlyArray<{ to: string; label: Key }> = [
-  { to: '/trade', label: 'trade.spotTab' },
-  { to: '/trade?market=cfd', label: 'trade.cfdTab' },
+export interface HeaderDropdownItem {
+  to: string;
+  label: Key;
+  icon: LucideIcon;
+  description: Key;
+}
+
+export const TRADING_LINKS: readonly HeaderDropdownItem[] = [
+  { to: '/trade', label: 'trade.spotTab', icon: ArrowLeftRight, description: 'nav.tradeSpotDesc' },
+  { to: '/trade?market=cfd', label: 'trade.cfdTab', icon: ChartCandlestick, description: 'nav.tradeCfdDesc' },
 ];
-export const MARKET_LINKS: ReadonlyArray<{ to: string; label: Key }> = [
-  { to: '/tools', label: 'nav.tools' },
+export const MARKET_LINKS: readonly HeaderDropdownItem[] = [
+  { to: '/tools', label: 'nav.tools', icon: SlidersHorizontal, description: 'nav.menuToolsDesc' },
 ];
-export const KNOWLEDGE_LINKS: ReadonlyArray<{ to: string; label: Key }> = [
-  { to: '/academy/learn', label: 'academy.hub.learn' },
-  { to: '/academy/knowledge', label: 'academy.hub.knowledge' },
-  { to: '/academy/faq', label: 'help.tab.faq' },
-  { to: '/academy/glossary', label: 'academy.glossary' },
+export const OTC_LINKS: readonly HeaderDropdownItem[] = [
+  { to: '/otc', label: 'nav.otc', icon: Handshake, description: 'nav.menuOtcDesc' },
+  { to: '/arbitrage', label: 'nav.arbitrage', icon: Route, description: 'nav.menuArbitrageDesc' },
+];
+export const KNOWLEDGE_LINKS: readonly HeaderDropdownItem[] = [
+  { to: '/academy/learn', label: 'academy.hub.learn', icon: GraduationCap, description: 'nav.menuLearnDesc' },
+  { to: '/academy/knowledge', label: 'academy.hub.knowledge', icon: BookOpen, description: 'nav.menuKnowledgeDesc' },
+  { to: '/academy/faq', label: 'help.tab.faq', icon: CircleHelp, description: 'nav.menuFaqDesc' },
+  { to: '/academy/glossary', label: 'academy.glossary', icon: BookOpenText, description: 'nav.menuGlossaryDesc' },
 ];
 
 /** A direct section link and a separate, keyboard/touch accessible disclosure. */
 export function HeaderDropdown({ to, label, links, className, mobile = false, onNavigate }: {
-  to: string; label: string; links: ReadonlyArray<{ to: string; label: Key }>;
+  to: string; label: string; links: readonly HeaderDropdownItem[];
   className: string; mobile?: boolean; onNavigate?: () => void;
 }) {
   const { t } = useLanguage();
@@ -42,7 +53,11 @@ export function HeaderDropdown({ to, label, links, className, mobile = false, on
       </button>
     </div>
     {open && <div id={id} className="header-disclosure-panel" aria-label={label}>
-      {links.map(link => <Link key={link.to} to={link.to} onClick={navigate}>{t(link.label)}</Link>)}
+      {links.map(({ icon: Icon, ...link }) => <Link key={link.to} to={link.to} onClick={navigate} className="header-menu-card">
+        <span className="header-menu-icon" aria-hidden="true"><Icon size={19} strokeWidth={1.7}/></span>
+        <span className="header-menu-copy"><span className="header-menu-title">{t(link.label)}</span>
+          <span className="header-menu-description">{t(link.description)}</span></span>
+      </Link>)}
     </div>}
   </div>;
 }
