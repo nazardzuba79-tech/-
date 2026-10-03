@@ -263,7 +263,12 @@ async function browserChecks(app, prisma, user, header) {
    await page.waitForFunction(()=>document.body.textContent.includes('Никого не найдено.'));
    assert.equal(await prisma.user.findUnique({where:{id}}),null);
    assert.equal(await page.locator('a[href="/admin/audit-log"]').count(),0);
-   await page.goto(origin+'/admin/users/'+id);await page.waitForURL(origin+'/admin/users');
+   await page.goto(origin+'/admin/users/'+id);
+   const missingUser=page.getByRole('alert');
+   await missingUser.getByText('Запись не найдена.',{exact:true}).waitFor({state:'visible'});
+   assert.equal(new URL(page.url()).pathname,'/admin/users/'+id,'missing user keeps the recoverable error view');
+   await missingUser.getByRole('link',{name:'Все пользователи',exact:true}).click();
+   await page.waitForURL(origin+'/admin/users');
    const detailId='detail-'+width;await user(detailId);
    await page.goto(origin+'/admin/users/'+detailId);
    await page.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
