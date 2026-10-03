@@ -201,7 +201,7 @@ export function WalletOverview({
           <div className="wallet-overview-total">
             <span className="num wallet-overview-amount">{hidden ? MASK : total === null ? EM_DASH : formatUsd(total, lang).replace('$', '')}</span>
             <span className="wallet-overview-unit">USD</span>
-            <TierBadge mode={account?.mode} />
+            <TierBadge tier={account?.clientTier} />
           </div>
 
           <p className="wallet-overview-btc num">≈ {hidden ? MASK : total === null ? EM_DASH : btc(total)} BTC</p>

@@ -179,11 +179,23 @@ describe('explicit native test identities, without admin permissions', () => {
     expect((await request(f.app).get(path).auth(f.token(OTHER), { type: 'bearer' })).status).toBe(403);
     expect(f.db.demoBalance.findMany).not.toHaveBeenCalled();
   });
+  test('primary owner wallet gets Supreme VIP from the owner-only server route', async () => {
+    const f = fixture();
+    const auth = (req: request.Test) => req.auth(f.token(OWNER), { type: 'bearer' });
+    const init = await auth(request(f.app).post('/api/v1/private-trading/native/initialize'))
+      .send({ acceptedModel: NATIVE_DEMO_MODEL.version, idempotencyKey: 'owner-tier-initialize' });
+    expect(init.status).toBe(200);
+    const wallet = await auth(request(f.app).get('/api/v1/private-trading/native/wallet'));
+    expect(wallet.status).toBe(200);
+    expect(wallet.body.clientTier).toBe('SUPREME_VIP');
+  });
+
   test('credited holdings visible before initialize; GET never writes or doubles credit', async () => {
     const f = fixture();
     for (let i = 0; i < 2; i++) {
       const r = await request(f.app).get('/api/v1/private-trading/native/wallet').auth(f.token(), { type: 'bearer' });
       expect(r.status).toBe(200); expect(r.body.initialized).toBe(false);
+      expect(r.body.clientTier).toBeNull();
       expect(r.body.account.equity).toBe('110000'); // 10000 USDT + 2 BTC * fixture 50000.
       expect(r.body.rows.find((x: any) => x.asset === 'USDT').total).toBe('10000');
       expect(r.body.rows.find((x: any) => x.asset === 'BTC').total).toBe('2');
@@ -207,7 +219,7 @@ describe('explicit native test identities, without admin permissions', () => {
       expect(r.status).toBe(200); expect(r.body.initialized).toBe(true); expect(r.body.account.equity).toBe('110000');
     }
     const w = await request(f.app).get('/api/v1/private-trading/native/wallet').auth(f.token(), { type: 'bearer' });
-    expect(w.status).toBe(200); expect(w.body.account.equity).toBe('110000');
+    expect(w.status).toBe(200); expect(w.body.clientTier).toBeNull(); expect(w.body.account.equity).toBe('110000');
     expect(w.body.rows.find((x: any) => x.asset === 'USDT').total).toBe('10000');
     expect(f.db.demoBalance.updateMany).toHaveBeenCalledTimes(1); expect(f.db.nativeDemoAccount.create).toHaveBeenCalledTimes(1);
     expect(f.db.nativeDemoRevision.create).toHaveBeenCalledTimes(1); expect(f.users[TESTER].role).toBe('USER');

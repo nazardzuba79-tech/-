@@ -18,7 +18,7 @@ const source = (file: string) => readFileSync(resolve(repository, file), 'utf8')
 // hero markup/composition and CSS. Shared/Homepage output is frozen separately
 // by cryptoCardVisualConsistency; no product data or other sections change.
 const approvedCardSources: Record<string, string> = {
-  "frontend/src/pages/crypto-card-final/CardApplication.tsx": "f4e475d2b609d19e8e12194fb13837b6026a9bfe759248e2a16690f60028d4d9",
+  "frontend/src/pages/crypto-card-final/CardApplication.tsx": "3e7e7df0b2d344e05813f97c7f473fa127d833ed1c59e7cabebb9b72373e85f7",
   "frontend/src/pages/crypto-card-final/cardApplicationState.ts": "526e909eb7b161ee41bffdf474e1412082ce991d20a6b43e9cb54c8ed1913042",
   "frontend/src/pages/crypto-card-final/crypto-card.css": "0d9ef53cf2c5886590c25c42a0463ed346adb9286bb69faeb18668b5fc8a344b",
   "frontend/src/pages/crypto-card-final/useCardCopy.ts": "15c6a83116b08528e6bbd471d655017fa91551bb6a47291269911050f612f015",
@@ -220,6 +220,21 @@ test('Card product branding stays unchanged while only seven navigation labels a
   // all product, Home, Auth and support strings remain fully covered.
   const restored = entries.map(line => shortLabels.includes(line) ? "'nav.card': 'Crypto Card'," : line);
   expect(digest(restored.join('\n'))).toBe('d691d191b62d83a8306b5c82132bde2f9833885d6bbb35a494bee2afc43876ce');
+});
+
+test('Card application shows server-backed eligibility progress without changing eligibility decisions', () => {
+  const application = source('frontend/src/pages/crypto-card-final/CardApplication.tsx');
+  expect(application).toContain('const action = ready ? cardApplicationAction(ready.data) : null;');
+  expect(application).toContain('eligibility.verificationApproved');
+  expect(application).toContain('eligibility.depositEligible');
+  expect(application).toContain('eligibility.tradingVolumeEligible');
+  expect(application).toContain('eligibility.qualifyingDepositUsd, 5000');
+  expect(application).toContain('eligibility.qualifyingTradingVolumeUsd, 50000');
+  expect(application).toContain('eligibility.depositValuationComplete');
+  expect(application).toContain('eligibility.tradingVolumeValuationComplete');
+  expect(application).toContain('const pct = done ? 100');
+  expect(application).toContain("done ? \`≥ \${usd(Math.max(0, current))}\` : '—'");
+  expect(application).toContain('// explain the server result to the customer; they never unlock the CTA.');
 });
 
 test('Card API uses normal authenticated backend requests without review or client eligibility branches', () => {

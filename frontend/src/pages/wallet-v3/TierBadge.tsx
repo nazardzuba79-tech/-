@@ -4,17 +4,16 @@ import { useLanguage } from '../../lib/i18n';
 /**
  * The account's tier mark, beside the headline total.
  *
- * Rendered ONLY for the owner's Cross margin account: that is the one account
- * VOLTEX has actually granted a tier to. An ordinary ledger has no tier and
- * gets nothing here — not a lower badge, not a placeholder — because a tier
- * label is a claim about the account, and the page does not invent one.
+ * Rendered ONLY when the authenticated server response explicitly grants the
+ * owner's tier. Account mode, role, email and browser storage are not enough:
+ * a tier label is a claim about the account, and the page does not invent one.
  *
  * Gold on gold: the approved design's own accent, with a crown rather than a
- * number, since "Super VIP" is a name and not a level in a ladder.
+ * number, since "Supreme VIP" is a name and not a level in a ladder.
  */
-export function TierBadge({ mode }: { mode: 'CROSS' | 'SPOT' | undefined }) {
+export function TierBadge({ tier }: { tier: 'SUPREME_VIP' | null | undefined }) {
   const { t } = useLanguage();
-  if (mode !== 'CROSS') return null;
+  if (tier !== 'SUPREME_VIP') return null;
   return (
     <span className="wallet-tier-badge" title={t('wallet.superVipTitle')} data-tier="super-vip">
       <CrownIcon className="wallet-tier-badge-icon h-3 w-3 shrink-0" strokeWidth={2.2} aria-hidden="true" />
