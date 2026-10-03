@@ -101,13 +101,13 @@ export function HomeHeader() {
               </div>
               <Link
                 to="/login"
-                className="whitespace-nowrap rounded-[6px] px-3 py-[7px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:text-white"
+                className="whitespace-nowrap rounded-[6px] px-1 py-[7px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:text-white sm:px-3"
               >
                 {t('auth.login')}
               </Link>
               <Link
                 to="/register"
-                className="whitespace-nowrap rounded-[6px] bg-gold-500 px-4 py-[8px] text-[12.5px] font-semibold text-ink-950 transition-colors duration-150 hover:bg-gold-400 active:translate-y-[1px]"
+                className="whitespace-nowrap rounded-[6px] bg-gold-500 px-3 py-[8px] text-[12.5px] font-semibold text-ink-950 transition-colors duration-150 hover:bg-gold-400 active:translate-y-[1px] sm:px-4"
               >
                 {t('home.cta.startTrading')}
               </Link>

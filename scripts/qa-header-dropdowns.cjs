@@ -47,7 +47,7 @@ async function run() {
       const burger = page.locator(home ? 'header button[aria-label="Меню"]' : '.nav-burger');
       if (phase === 'after' && await burger.isVisible()) {
         const bounds = await burger.boundingBox();
-        assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, 'drawer trigger must be fully visible');
+        assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, `drawer trigger must be fully visible: ${JSON.stringify({width,bounds})}`);
       }
       const desktop = await page.locator(`${desktopNav} a[href="${href}"]`).first().isVisible();
       if (!desktop && !await burger.isVisible() && phase === 'before') {
