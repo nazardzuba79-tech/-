@@ -97,6 +97,23 @@ function runHook(options: {
     removeEventListener: () => {},
   };
 
+  // This fixture tests request cardinality/data projection, not the browser
+  // scheduler itself. Use a handle-free reader so resolved async reads cannot
+  // schedule a real Node timeout after this synthetic mount restores globals.
+  // The real visibility/timer lifecycle is covered in browserReadBudget.test.ts.
+  const fixtureVisibleRead = (read: (signal: AbortSignal) => Promise<void>, staleMs: number, poll = false) => {
+    let stopped = false;
+    const run = () => {
+      if (stopped) return Promise.resolve();
+      return Promise.resolve()
+        .then(() => read(new AbortController().signal))
+        .catch(() => {});
+    };
+    if (poll) timeouts.push(staleMs);
+    void run();
+    return { refresh: run, stop: () => { stopped = true; } };
+  };
+
   const hooks = {
     ...React,
     useState(initial: any) {
@@ -117,9 +134,9 @@ function runHook(options: {
       '../../lib/useVisibleAccountRead': evaluate('frontend/src/lib/useVisibleAccountRead.ts', {
         react: hooks,
         './api': { getToken: () => 'fixture-session', onSessionChange: () => () => {} },
-        './visibleRead': evaluate('frontend/src/lib/visibleRead.ts'),
+        './visibleRead': { createVisibleRead: fixtureVisibleRead },
       }),
-      '../../lib/visibleRead': evaluate('frontend/src/lib/visibleRead.ts'),
+      '../../lib/visibleRead': { createVisibleRead: fixtureVisibleRead },
       '../../lib/pairList': {},
       '../../lib/nativeDemoApi': { nativeDemoApi },
     });
