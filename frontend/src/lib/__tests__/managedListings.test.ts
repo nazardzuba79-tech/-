@@ -274,6 +274,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
   let previewGate: Promise<void> | null, previewRevision: number | null, publishFailures: number;
   let globals: Map<string, PropertyDescriptor | undefined>;
   const modules = new Map<string, any>();
+  const sessionListeners = new Set<() => void>();
   const json = (body: unknown, status = 200) => ({ ok: status < 400, status, json: async () => structuredClone(body) });
 
   function load(file: string): any {
@@ -282,7 +283,8 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     const output: any = {}; modules.set(file, output);
     new Function('exports', 'require', compile(file))(output, (name: string) => {
       if (name.endsWith('.css')) return {};
-      if (name === '../../lib/api') return { API_BASE: '/api/v1', getToken: () => 'fixture-admin-token' };
+      if (name === '../../lib/api') return { API_BASE: '/api/v1', getToken: () => 'fixture-admin-token',
+        onSessionChange: (listener: () => void) => { sessionListeners.add(listener); return () => { sessionListeners.delete(listener); }; } };
       return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
     });
     return output;
@@ -296,7 +298,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     Object.assign(globalThis, values);
     host = document.getElementById('root')!;
     root = req('react-dom/client').createRoot(host);
-    modules.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = [];
+    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = [];
     listing = {
       id: 'qax-1', symbol: 'QAX', draftRevision: 2, draftUpdatedAt: '2026-09-29T00:00:00Z', draftUpdatedBy: 'fixture-admin',
       activeVersion: null, active: null, versions: [],
@@ -333,6 +335,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
 
   afterEach(async () => {
     await act(async () => root.unmount());
+    expect(sessionListeners.size).toBe(0);
     dom.window.close();
     for (const [key, descriptor] of globals) {
       if (descriptor) Object.defineProperty(globalThis, key, descriptor);
@@ -523,5 +526,20 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(host.querySelector('[data-listing-preview]')).toBeNull();
     expect(button('[data-preview]').disabled).toBe(false);
     expect(button('[data-publish]').disabled).toBe(false);
+  });
+
+  test('the real laboratory makes no admin requests and clears its local examples on session change', async () => {
+    await mount();
+    const before = fetchMock.mock.calls.length;
+    await click('[data-open-scenario-lab]');
+    await click('[data-lab-start]');
+    expect(host.querySelector('[data-lab-scenario]')?.textContent).toBe('Спокойный тренд');
+    expect(window.sessionStorage.getItem('voltex.admin.scenario-lab.v1')).not.toBeNull();
+    await act(async () => { for (const listener of sessionListeners) listener(); await flush(); });
+    expect(host.querySelector('[data-scenario-lab]')).toBeNull();
+    expect(window.sessionStorage.getItem('voltex.admin.scenario-lab.v1')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(before);
+    expect(calls('/draft')).toHaveLength(0);
+    expect(calls('/publish')).toHaveLength(0);
   });
 });
