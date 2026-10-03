@@ -31,7 +31,7 @@ exports.run = async ({ origin, out, state, users, variant }) => {
       if (/stylesheet/i.test(text) && /https:\/\/fonts\.googleapis\.com\//i.test(text) && /Content Security Policy/i.test(text)) { report.blockedFontStyles.push(text); return; }
       if (state.backend === 'legacy' && /Failed to load resource.*404/.test(message.text())) return;
       if (Object.keys(state.failures).length && /Failed to load resource.*50[03]/.test(message.text())) return;
-      report.consoleErrors.push(message.text());
+      report.consoleErrors.push({ text, page: page.url(), location: message.location() });
     });
     page.on('response', response => {
       const url = new URL(response.url()), status = response.status();
