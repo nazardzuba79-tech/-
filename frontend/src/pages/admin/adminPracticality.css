@@ -32,12 +32,18 @@
 .admin-attention-grid small { font-size: 11px; color: var(--text-secondary); }
 .admin-read-status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin: 10px 0; }
 .admin-read-status [role=alert] { width: 100%; color: var(--sell); }
-.admin-users-filters { display: grid; grid-template-columns: minmax(200px,300px) repeat(2,minmax(150px,240px)); justify-content: start; gap: 8px; }
+.admin-users-filters { display: grid; grid-template-columns: minmax(180px,225px) repeat(2,minmax(150px,240px)); justify-content: start; gap: 8px; }
 .admin-users-filters input,.admin-users-filters select { width: 100%; min-width: 0; }
 .admin-users-table,.admin-data-table { border-collapse: collapse; width: 100%; font-size: 13px; text-align: left; }
 .admin-users-table th,.admin-data-table th { color: var(--text-secondary); background: var(--panel-alt); font-size: 12px; font-weight: 600; }
 .admin-users-table td,.admin-users-table th,.admin-data-table td,.admin-data-table th { border-bottom: 1px solid var(--border); padding: 12px 10px; vertical-align: top; }
 .admin-users-table td:first-child { max-width: 250px; overflow-wrap: anywhere; }
+/* Owner: one fine rule between the email and the rest of the row. */
+.admin-users-table th:first-child,.admin-users-table td:first-child { border-right: 1px solid var(--border); padding-right: 14px; }
+.admin-user-email { color: var(--text-primary); user-select: text; cursor: text; }
+.admin-last-login { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.admin-last-login i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary); flex: none; }
+.admin-last-login[data-logged-today] i { background: var(--buy); }
 .admin-users-table td:first-child small { display: block; margin-top: 4px; font-size: 11px; color: var(--text-secondary); }
 .admin-users-table td:nth-child(2) { overflow-wrap: anywhere; max-width: 145px; }
 .admin-users-table a,.admin-shortcuts a,.admin-back { color: var(--text-primary); text-decoration: none; }
