@@ -237,18 +237,21 @@ async function browserChecks(app, prisma, user, header) {
    });
    await page.goto(origin+'/admin/users');
    const search=page.getByRole('textbox',{name:'Поиск пользователей'});await search.fill(id+'@');
-   const table=page.locator(width >= 768 ? `[data-user-row="${id}"]` : `[data-user-card="${id}"]`);
-   await table.waitFor({state:'visible'});
-   await table.locator('summary').click();
+   const table=()=>page.locator(width >= 768 ? `[data-user-row="${id}"]` : `[data-user-card="${id}"]`);
+   await table().waitFor({state:'visible'});
+   await table().locator('summary').click();
    assert.equal(await page.getByRole('button',{name:/^(Заблокировать|Разблокировать)$/}).count(),0);
-   await table.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
+   // The paged Admin row may re-render while summary/read state updates. Re-resolve
+   // the row/button at click time instead of holding a stale locator target.
+   await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    const dialog=page.getByRole('dialog');await dialog.waitFor({state:'visible'});
    assert.ok((await dialog.innerText()).includes(id+'@example.invalid'));
    const bounds=await dialog.boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width);
    await page.screenshot({path:path.join(output,'delete-confirm-'+width+'.png'),fullPage:true});
    await dialog.getByRole('button',{name:'Отмена',exact:true}).click();
    assert.ok(await prisma.user.findUnique({where:{id}}));
-   await table.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
+   await table().waitFor({state:'visible'});
+   await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    let deleteRequests=0;
    await page.route('**/api/v1/admin/users/'+id,async route=>{
     if(route.request().method()!=='DELETE')return route.fallback();
