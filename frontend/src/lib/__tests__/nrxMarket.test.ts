@@ -35,7 +35,7 @@ test('ordinary form/account submission is retained; only VTA uses restricted pri
   expect(read('components/CryptoIcon.tsx')).toContain('NRX: neurixLogo');
   expect(read('lib/testMarketStore.ts')).toContain('new TestMarketStore(`${NRX_EDGE_BASE}/market/nrx`)');
 });
-test('seeded Spot inventory values at $25,000 before listing; live value canonical, never venue NRX', async () => {
+test('seeded Spot inventory values at $5,000 before listing; live value canonical, never venue NRX', async () => {
   const feed = { getTickers: jest.fn().mockResolvedValue([{ pair: 'NRX/USDT', lastPrice: '999' }]) };
   const portfolio = new WalletPortfolioService({} as any, feed as any, { isConfigured: () => false } as any);
   const now = jest.spyOn(Date, 'now').mockReturnValue(NEURIX.listingAt - 1);
