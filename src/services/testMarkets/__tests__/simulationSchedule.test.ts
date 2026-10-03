@@ -118,7 +118,8 @@ describe('canonical scheduled ticks', () => {
   test('finite coherent OHLC/volume, varied candles and genuine intratick flush/recovery', () => {
     let up = 0, down = 0, flushes = 0;
     const lowerWicks: number[] = [];
-    for (let hour = 17; hour < 65; hour++) {
+    const firstScheduledHour = Math.floor((config.from - listing) / HOUR);
+    for (let hour = firstScheduledHour; hour < firstScheduledHour + 48; hour++) {
       const plan = hourAt(hour);
       let previous = plan.open;
       for (let start = 0; start < 360; start += 30) {
