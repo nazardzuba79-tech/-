@@ -15,7 +15,7 @@ const out = path.resolve(root, process.env.QA_OUT || `output/admin-practicality/
 fs.mkdirSync(out, { recursive: true });
 const now = new Date().toISOString();
 const ago = hours => new Date(Date.now() - hours * 3600000).toISOString();
-const state = { failures: {}, calls: [], writes: [], unexpected: [], delays: {}, catalogueRevision: 1, session: 'admin' };
+const state = { failures: {}, calls: [], writes: [], unexpected: [], delays: {}, catalogueRevision: 1, session: 'admin', backend: 'modern' };
 const users = Array.from({ length: Number(process.env.QA_USERS || 40) }, (_, i) => ({
   id: `qa-user-${i + 1}`, email: `client.${String(i + 1).padStart(2, '0')}@example.invalid`, displayName: `Тестовый пользователь ${i + 1}`,
   isAdmin: false, role: 'USER', createdAt: ago(i < 3 ? i + 1 : 48 + i), registrationIp: null, lastLoginAt: ago(i + 1),
@@ -48,8 +48,14 @@ app.use((_req,res,next)=>{ res.set('Content-Security-Policy', "default-src 'self
 app.get('/__qa/state', (_, res) => res.json(state));
 app.post('/__qa/state', (req, res) => { Object.assign(state, req.body); res.json({ ok: true }); });
 app.use('/__qa/evidence', express.static(path.resolve(root, 'output/admin-practicality')));
+app.use('/__qa/compatibility-evidence', express.static(path.resolve(root, 'output/admin-api-compatibility')));
+app.get('/__qa/admin-api-comparison', (_, res) => res.sendFile(path.join(__dirname, 'admin-api-compatibility-comparison.html')));
 app.use('/api/v1', (req, res, next) => {
   state.calls.push({ method: req.method, path: req.path, query: req.query, at: Date.now() });
+  if (state.backend === 'legacy' && req.method === 'GET' && (/^\/admin\/(?:users|withdrawals|clients|audit-log)\/page$/.test(req.path) || /^\/admin\/users\/[^/]+\/(?:profile|history)$/.test(req.path) || req.path === '/admin/work-summary')) {
+    // Production-style legacy routing can mistake "page" for a user ID.
+    return res.status(404).json({ error: req.path === '/admin/users/page' ? 'User not found' : 'Not found' });
+  }
   const fail = state.failures[req.path];
   if (fail === 'hang') return;
   if (fail) return res.status(Number(fail) || 500).json({ error: 'Тестовая недоступность данных' });
@@ -118,6 +124,7 @@ async function main() {
   assert(fs.existsSync(path.join(dist, 'index.html')), `Build missing: ${dist}`);
   const server = await new Promise(resolve => { const value = app.listen(process.env.QA_PREVIEW ? Number(process.env.QA_PORT || 4402) : 0, '127.0.0.1', () => resolve(value)); });
   const origin = `http://127.0.0.1:${server.address().port}`;
+  if (process.env.QA_COMPATIBILITY) { try { await require('./qa-admin-api-compatibility.cjs').run({ origin, out, state, users, variant }); } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); } return; }
   if (process.env.QA_INTERACTIONS) { try { await require('./qa-admin-workflow-interactions.cjs').run({ origin, out, state }); } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); } return; }
   if (process.env.QA_BENCH) { try { await require('./qa-admin-browser-benchmark.cjs').run({ origin, variant, out, state, userCount: users.length }); } finally { await new Promise(resolve => server.close(resolve)); } return; }
   if (process.env.QA_PREVIEW) { console.log(`Synthetic admin preview ${origin}/admin/users; bundle=${variant}`); return; }
@@ -138,9 +145,10 @@ async function main() {
         await page.screenshot({ path: path.join(out, `${slug.replaceAll('/', '-')}-${width}.png`), fullPage: false });
         report.layouts.push(await page.evaluate(({ slug, width, height }) => ({ route: slug, width, height, documentWidth: document.documentElement.scrollWidth, overflow: document.documentElement.scrollWidth > innerWidth + 1, rows: document.querySelectorAll('[data-user-row], [data-user-card], tbody tr, .otc-cash-list-item, .admin-history-grid').length, bodyText: document.querySelector('.admin-main')?.textContent?.slice(0, 280) }), { slug, width, height }));
         if (variant === 'after' && slug === 'users' && width >= 1366) {
-          const tops = await page.locator('.admin-attention-grid>a').evaluateAll(cards => cards.map(card => Math.round(card.getBoundingClientRect().top)));
-          assert.equal(tops.length, 6, 'All six separately measured queues remain visible');
-          assert.equal(new Set(tops).size, 1, 'Desktop attention summary stays compact in one row');
+          const tops = await page.locator('.admin-users-kpi').evaluateAll(cards => cards.map(card => Math.round(card.getBoundingClientRect().top)));
+          assert.equal(tops.length, 3, 'Users keeps three compact supporting indicators');
+          assert.equal(new Set(tops).size, 1, 'Desktop Users indicators stay compact in one row');
+          assert.equal(await page.locator('.admin-attention-grid').count(), 0, 'No duplicate work-queue dashboard above Users');
         }
         if (variant === 'after' && slug === 'users' && width === 390) {
           const card = page.locator('[data-user-card]').first();

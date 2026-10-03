@@ -34,6 +34,7 @@ function load(file: string) {
     if (name.endsWith('/adminDepositApi')) return { adminDepositApi: deposits, AdminDepositApiError: Error, STATE_LABEL: {}, IGNORE_REASON_LABEL: {} };
     if (name.endsWith('/adminWorkSummary')) return { refreshAdminSummary: summary };
     if (name.endsWith('/useAdminRead')) return load('src/pages/admin/useAdminRead.ts');
+    if (name.endsWith('/adminPageSupport')) return load('src/pages/admin/adminPageSupport.tsx');
     throw new Error(`Unexpected import ${name}`);
   });
   return output;

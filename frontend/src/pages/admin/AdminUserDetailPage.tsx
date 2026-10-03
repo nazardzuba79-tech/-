@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { getAdminProfile, getAdminHistory, type AdminProfile, type HistoryKind, type HistoryRow } from '../../lib/adminPagedApi';
+import { getAdminProfile, getAdminProfileBalances, getAdminHistory, type AdminProfile, type HistoryKind, type HistoryRow } from '../../lib/adminPagedApi';
 import { styles } from './adminStyles';
 import { Skeleton } from '../../components/Skeleton';
 import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
@@ -14,6 +14,7 @@ import { adminDate, adminStatus, adminAction, maskAuditMetadata } from './adminP
 import { refreshAdminSummary } from './adminWorkSummary';
 import { AdminBalanceAdjustment } from './AdminBalanceAdjustment';
 import { AdminAccountActions } from './AdminAccountActions';
+import { AdminCompatibilityNotice, adminPageCount, adminPageEmpty } from './adminPageSupport';
 import './adminPracticality.css';
 
 const tabs = ['Общее', 'Балансы', 'Пополнения', 'Выводы', 'Ордера', 'Проверка личности', 'История действий'] as const;
@@ -41,40 +42,54 @@ function AdminUserDetail({ id }: { id: string }) {
   const navigate = useNavigate(), detail = read.data;
   const refreshed = () => { read.reload(); refreshAdminSummary(); };
   if (!detail) return read.error ? <div role="alert" style={styles.card}><p>{read.error}</p><button onClick={read.reload}>Повторить</button><Link to={back}>Все пользователи</Link></div> : <div aria-label="Загрузка пользователя"><Skeleton height={100} /><Skeleton height={200} /></div>;
+  const accountKnown = detail.isBlocked !== null;
+  const canAdjust = detail.compatibility?.mode !== 'legacy' && detail.balances !== null;
   return <div className="admin-detail-view">
     <Link to={back} className="admin-back">← Все пользователи</Link>
-    <div className="admin-list-heading"><div><h1 style={styles.title}>{detail.email}</h1><CopyValue value={detail.id} label="ID пользователя" full /><p className="admin-muted">{detail.isBlocked ? 'Заблокирован' : 'Активен'} · KYC: {adminStatus(detail.kycStatus)}</p></div>
+    <div className="admin-list-heading"><div><h1 style={styles.title}>{detail.email}</h1><CopyValue value={detail.id} label="ID пользователя" full /><p className="admin-muted">{!accountKnown ? 'Статус недоступен' : detail.isBlocked ? 'Заблокирован' : 'Активен'} · KYC: {adminStatus(detail.kycStatus)}</p></div>
       <details className="admin-user-actions"><summary>Дополнительные действия</summary><div>
-        <button onClick={() => setAdjusting(true)}>Корректировка баланса</button>
+        <button disabled={!canAdjust} onClick={() => setAdjusting(true)}>Корректировка баланса</button>
+        {!canAdjust && <p className="admin-muted">Корректировка баланса недоступна на текущей версии сервера.</p>}
         {canDeleteUser(detail) && <button onClick={() => setDeleting(true)}>Удалить аккаунт</button>}
       </div></details>
     </div>
     <AdminReadStatus {...read} hasData />
+    <AdminCompatibilityNotice compatibility={detail.compatibility} />
     <div className="admin-tabs" role="tablist" aria-label="Разделы пользователя">{tabs.map(name => <button key={name} role="tab" aria-selected={tab === name} aria-controls="admin-detail-panel" onClick={() => setTab(name)}>{name}</button>)}</div>
     <div id="admin-detail-panel" role="tabpanel" aria-label={tab}>
       {tab === 'Общее' && <div className="admin-detail-overview">
         <section style={styles.card}><h2>Профиль</h2><dl className="admin-key-values">
           <dt>Роль</dt><dd>{detail.isAdmin ? 'Администратор' : 'Пользователь'}</dd>
           <dt>Регистрация</dt><dd>{adminDate(detail.createdAt)}</dd>
-          <dt>Последний вход</dt><dd>{detail.lastLoginAt ? adminDate(detail.lastLoginAt) : 'Не зафиксирован'}</dd>
+          <dt>Последний вход</dt><dd>{detail.lastLoginAt ? adminDate(detail.lastLoginAt) : !accountKnown ? '—' : 'Не зафиксирован'}</dd>
           <dt>Верификация</dt><dd><button className="admin-link" onClick={() => setTab('Проверка личности')}>{adminStatus(detail.kycStatus)}</button></dd>
-          <dt>Учётная запись</dt><dd>{detail.isBlocked ? `Заблокирована${detail.blockedReason ? `: ${detail.blockedReason}` : ''}` : 'Активна'}</dd>
+          <dt>Учётная запись</dt><dd>{!accountKnown ? 'Статус недоступен' : detail.isBlocked ? `Заблокирована${detail.blockedReason ? `: ${detail.blockedReason}` : ''}` : 'Активна'}</dd>
           <dt>IP регистрации</dt><dd>{detail.registrationIp ?? '—'}</dd>
-        </dl><AdminAccountActions profile={detail} onChanged={refreshed} /></section>
+        </dl>{accountKnown ? <AdminAccountActions profile={detail} onChanged={refreshed} /> : <p className="admin-muted">Действия с учётной записью недоступны, пока её статус неизвестен.</p>}</section>
         <section style={styles.card}><h2>Работа с пользователем</h2><p>История загружается при открытии раздела, по 20 записей.</p>
           <div className="admin-shortcuts"><Link to={`/admin/deposits?userId=${encodeURIComponent(id)}`}>Пополнения пользователя →</Link><Link to={`/admin/withdrawals?search=${encodeURIComponent(id)}`}>Выводы пользователя →</Link><Link to={`/admin/audit-log?userId=${encodeURIComponent(id)}`}>Журнал действий →</Link></div>
           <p className="admin-muted">Время показано в Europe/Kyiv. Последний вход не означает присутствие онлайн.</p>
         </section>
       </div>}
-      {tab === 'Балансы' && <div className="admin-detail-overview"><BalanceTable title="Спотовый счёт" rows={detail.balances} /><BalanceTable title="Тестовый счёт — отдельно" rows={detail.demoBalances} /></div>}
+      {tab === 'Балансы' && <ProfileBalances profile={detail} />}
       {histories[tab] && <AdminUserHistory key={tab} id={id} initialKind={histories[tab]!} onChanged={refreshed} />}
     </div>
-    {adjusting && <AdminBalanceAdjustment key={id} profile={detail} onClose={() => setAdjusting(false)} onChanged={refreshed} />}
+    {adjusting && canAdjust && detail.balances !== null && <AdminBalanceAdjustment key={id} profile={{ ...detail, balances: detail.balances }} onClose={() => setAdjusting(false)} onChanged={refreshed} />}
     {deleting && <DeleteUserDialog user={detail} onClose={() => setDeleting(false)} onDeleted={() => { refreshAdminSummary(); navigate(back, { replace: true }); }} />}
   </div>;
 }
+function ProfileBalances({ profile }: { profile: AdminProfile }) {
+  // Old servers return the test balance only inside the aggregate detail route.
+  // Fetch that payload only while the operator explicitly opens this tab.
+  if (profile.balances === null || profile.demoBalances === null) return <LazyProfileBalances id={profile.id} />;
+  return <div className="admin-detail-overview"><BalanceTable title="Спотовый счёт" rows={profile.balances} /><BalanceTable title="Тестовый счёт — отдельно" rows={profile.demoBalances} /></div>;
+}
+function LazyProfileBalances({ id }: { id: string }) {
+  const read = useAdminRead(`balances:${id}`, signal => getAdminProfileBalances(id, signal));
+  return <><AdminReadStatus {...read} hasData={!!read.data} />{read.data && <><AdminCompatibilityNotice compatibility={read.data.compatibility} /><div className="admin-detail-overview"><BalanceTable title="Спотовый счёт" rows={read.data.balances} /><BalanceTable title="Тестовый счёт — отдельно" rows={read.data.demoBalances} /></div></>}</>;
+}
 function BalanceTable({ title, rows }: { title: string; rows: AdminProfile['balances'] }) {
-  return <section style={styles.card}><h2>{title}</h2>{!rows.length ? <p>Записей баланса нет.</p> : <div className="admin-table-scroll"><table className="admin-data-table"><thead><tr><th>Актив</th><th>Доступно</th><th>В резерве</th></tr></thead><tbody>{rows.map(row => <tr key={row.asset}><th>{row.asset}</th><td className="mono">{row.available}</td><td className="mono">{row.locked}</td></tr>)}</tbody></table></div>}<p className="admin-muted">Значения показаны по активам без пересчёта в общую сумму.</p></section>;
+  return <section style={styles.card}><h2>{title}</h2>{rows === null ? <p>Данные баланса недоступны.</p> : !rows.length ? <p>Записей баланса нет.</p> : <div className="admin-table-scroll"><table className="admin-data-table"><thead><tr><th>Актив</th><th>Доступно</th><th>В резерве</th></tr></thead><tbody>{rows.map(row => <tr key={row.asset}><th>{row.asset}</th><td className="mono">{row.available}</td><td className="mono">{row.locked}</td></tr>)}</tbody></table></div>}<p className="admin-muted">Значения показаны по активам без пересчёта в общую сумму.</p></section>;
 }
 const orderKinds: [HistoryKind, string][] = [['orders', 'Спот'], ['futuresOrders', 'Фьючерсные ордера'], ['futuresPositions', 'Фьючерсные позиции'], ['cfdPositions', 'Позиции CFD'], ['purchases', 'Покупки']];
 function AdminUserHistory({ id, initialKind, onChanged }: { id: string; initialKind: HistoryKind; onChanged: () => void }) {
@@ -83,9 +98,9 @@ function AdminUserHistory({ id, initialKind, onChanged }: { id: string; initialK
   return <section style={styles.card}>
     {initialKind === 'orders' && <label className="admin-history-kind">Раздел <select value={kind} onChange={e => { setKind(e.target.value as HistoryKind); setPage(1); }}>{orderKinds.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>}
     <AdminReadStatus {...read} hasData={!!read.data} />
-    {read.data && <><p className="admin-result-count">Найдено: {read.data.total.toLocaleString('ru-RU')}</p>
-      {!read.data.items.length ? <p>Записей нет.</p> : kind === 'kyc' ? read.data.items.map(row => <KycSubmissionReview key={row.id} submission={row as unknown as Awaited<ReturnType<typeof api.getAdminUserDetail>>['kycSubmissions'][number]} onReviewed={() => { read.reload(); onChanged(); }} />) : <div className="admin-history-list">{read.data.items.map(row => <HistoryItem key={row.id} row={row} kind={kind} />)}</div>}
-      <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={read.data.pageSize} itemLabel="из" onPageChange={setPage} /></>}
+    {read.data && <><AdminCompatibilityNotice compatibility={read.data.compatibility} /><p className="admin-result-count">{adminPageCount(read.data)}</p>
+      {!read.data.items.length ? <p>{adminPageEmpty(read.data, 'Записей нет.')}</p> : kind === 'kyc' ? read.data.items.map(row => <KycSubmissionReview key={row.id} submission={row as unknown as Awaited<ReturnType<typeof api.getAdminUserDetail>>['kycSubmissions'][number]} onReviewed={() => { read.reload(); onChanged(); }} />) : <div className="admin-history-list">{read.data.items.map(row => <HistoryItem key={row.id} row={row} kind={kind} />)}</div>}
+      <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={read.data.pageSize} compatibility={read.data.compatibility} itemLabel="из" onPageChange={setPage} /></>}
   </section>;
 }
 function value(row: HistoryRow, key: string): string { const item = row[key]; return typeof item === 'string' || typeof item === 'number' ? String(item) : '—'; }

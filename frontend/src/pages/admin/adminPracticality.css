@@ -1,4 +1,15 @@
 .admin-page-grid main { min-width: 0; }
+.admin-users-kpis { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 0 0 18px; }
+.admin-users-kpi { display: flex; flex-direction: column; gap: 7px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); min-width: 0; }
+.admin-users-kpi>span { font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+.admin-users-kpi>strong { font-size: 23px; line-height: 1.1; font-weight: 650; font-variant-numeric: tabular-nums; }
+.admin-kpi-note { grid-column: 1/-1; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+.admin-kpi-note button { border: 0; background: none; color: var(--admin-brand); padding: 0; font: inherit; cursor: pointer; }
+.admin-user-balance { display: grid; gap: 2px; font-size: 12px; line-height: 1.45; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; margin-bottom: 4px; }
+.admin-user-balance:last-child { margin-bottom: 0; }
+.admin-user-balance strong { font-weight: 600; }
+.admin-user-balance small { color: var(--text-secondary); font-size: 11px; }
+.admin-state-active { color: var(--text-secondary); font-size: 12px; }
 .admin-attention { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 22px; }
 .admin-section-heading,.admin-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
 .admin-section-heading h2,.admin-list-heading h2,.admin-detail-view h2 { font-size: 15px; font-weight: 650; margin: 0; }
@@ -65,6 +76,10 @@
 @media(max-width:1440px) { .admin-users-table td,.admin-users-table th { padding: 10px 7px; } .admin-audit-filters { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media(max-width:1100px) { .admin-attention-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } .admin-users-filters { grid-template-columns: repeat(2,minmax(0,1fr)); } .admin-users-table { min-width: 860px; } .admin-table-desktop { overflow-x: auto; } }
 @media(max-width:767px) {
+  .admin-users-kpis { gap: 6px; }
+  .admin-users-kpi { padding: 10px 8px; }
+  .admin-users-kpi>span { font-size: 11px; min-height: 30px; }
+  .admin-users-kpi>strong { font-size: 21px; }
   .admin-page-grid .admin-users-workspace .admin-table-desktop { display: none !important; }
   .admin-page-grid .admin-users-workspace .admin-table-mobile { display: block !important; }
 }

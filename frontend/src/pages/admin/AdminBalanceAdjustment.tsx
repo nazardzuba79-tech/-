@@ -8,7 +8,7 @@ import { styles } from './adminStyles';
 // Uncertain operations survive navigation in this tab, never logout or storage.
 const pending = new Map<string, { session: string; intent: AdjustmentIntent }>();
 onSessionChange(() => pending.clear());
-export function AdminBalanceAdjustment({ profile, onClose, onChanged }: { profile: AdminProfile; onClose: () => void; onChanged: () => void }) {
+export function AdminBalanceAdjustment({ profile, onClose, onChanged }: { profile: AdminProfile & { balances: NonNullable<AdminProfile['balances']> }; onClose: () => void; onChanged: () => void }) {
   const session = getToken(), saved = pending.get(profile.id);
   const initial = saved?.session === session ? saved.intent : null;
   const [asset, setAsset] = useState(initial?.asset ?? 'USDT'), [amount, setAmount] = useState(initial?.amount ?? ''), [reason, setReason] = useState(initial?.reason ?? '');

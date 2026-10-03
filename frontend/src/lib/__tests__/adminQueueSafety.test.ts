@@ -97,6 +97,14 @@ function expectNoWrites() {
   expect(api.markWithdrawalSent).not.toHaveBeenCalled();
 }
 
+test('capped legacy withdrawal filter cannot claim an empty full queue or total', async () => {
+  api.getAdminWithdrawalsPage.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0,
+    compatibility: { mode: 'legacy', complete: false, limit: 200, notice: 'Сервер вернул только последние 200 записей.' } });
+  await mount('AdminWithdrawalsPage');
+  expect(host.textContent).toContain('из загруженных 0'); expect(host.textContent).toContain('Полная история недоступна.');
+  expect(host.textContent).not.toContain('Заявок по выбранным условиям нет.'); expectNoWrites();
+});
+
 test.each(['cancel', 'escape', 'close'])('withdrawal rejection %s makes zero financial requests', async method => {
   await mount('AdminWithdrawalsPage');
   await click(button('Отклонить'));

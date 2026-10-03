@@ -9,8 +9,8 @@ export interface WorkSummary {
   widgets: Record<SummaryKey, { value: number | null; unit: string; href: string; status: 'ready' | 'unavailable'; asOf: string | null }>;
   alerts?: { depositId: string | null; withdrawalId: string | null; kycId: string | null } | null;
 }
-type State = { data: WorkSummary | null; loading: boolean; error: string | null; updatedAt: number | null };
-const empty: State = { data: null, loading: false, error: null, updatedAt: null };
+type State = { data: WorkSummary | null; loading: boolean; error: string | null; updatedAt: number | null; unavailable: boolean };
+const empty: State = { data: null, loading: false, error: null, updatedAt: null, unavailable: false };
 let state: State = empty;
 let session: string | null = null;
 const listeners = new Set<() => void>();
@@ -25,7 +25,7 @@ const publish = (next: State) => { state = next; listeners.forEach(fn => fn()); 
 function stopRequest() { controller?.abort(); controller = null; forcedFollowup = false; clearTimeout(timeout); clearTimeout(timer); }
 function schedule() {
   clearTimeout(timer);
-  if (listeners.size && visible() && getToken()) timer = setTimeout(() => refreshAdminSummary(false), Math.max(1, nextReadAt - Date.now()));
+  if (!state.unavailable && listeners.size && visible() && getToken()) timer = setTimeout(() => refreshAdminSummary(false), Math.max(1, nextReadAt - Date.now()));
 }
 function scheduleNext() { nextReadAt = Date.now() + ADMIN_SUMMARY_STALE_MS; schedule(); }
 function completeRead(own: AbortController) {
@@ -38,6 +38,8 @@ function completeRead(own: AbortController) {
 export function refreshAdminSummary(force = true) {
   const token = getToken();
   if (session !== token) { stopRequest(); session = token; nextReadAt = 0; publish(empty); }
+  // Optional on older servers: never poll a missing route or fan out to queues.
+  if (state.unavailable) return;
   // A successful mutation invalidates even a fresh hidden snapshot. It never
   // starts hidden traffic, but the next visible return must read again.
   if (force) nextReadAt = 0;
@@ -61,9 +63,14 @@ export function refreshAdminSummary(force = true) {
         && (widget.value === null || (Number.isSafeInteger(widget.value) && widget.value >= 0))
         && typeof widget.unit === 'string' && typeof widget.href === 'string' && /^\/admin(?:\/|\?|$)/.test(widget.href);
     })) throw new Error('Invalid summary');
-    publish({ data, loading: false, error: null, updatedAt: Date.now() });
+    publish({ data, loading: false, error: null, updatedAt: Date.now(), unavailable: false });
   }).catch(error => {
     if (!owns()) return;
+    if (error?.status === 404) {
+      forcedFollowup = false;
+      publish({ ...empty, unavailable: true });
+      return;
+    }
     const denied = [401, 403].includes(error?.status);
     if (denied) forcedFollowup = false;
     publish({ ...state, ...(denied ? { data: null, updatedAt: null } : {}), loading: false,

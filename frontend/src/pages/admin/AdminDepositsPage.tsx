@@ -5,6 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { api, ApiError, getToken, onSessionChange } from '../../lib/api';
 import { getAdminClientsPage } from '../../lib/adminPagedApi';
 import { useAdminRead } from './useAdminRead';
+import { AdminCompatibilityNotice, adminPageCount, adminPageEmpty } from './adminPageSupport';
 import { refreshAdminSummary } from './adminWorkSummary';
 import { styles } from './adminStyles';
 import { CopyValue, RailLabel } from './AdminPrimitives';
@@ -427,13 +428,14 @@ function ClientSearch({ onChoose }: { onChoose: (client: { id: string; email: st
     {read.loading && <span role="status">Загрузка пользователей…</span>}
     {read.error && <div role="alert">{read.error}<button type="button" style={styles.neutralBtn} onClick={read.reload}>Повторить</button></div>}
     {read.data && <>
-      {!read.data.items.length && !read.error && <span>Пользователи не найдены.</span>}
+      <AdminCompatibilityNotice compatibility={read.data.compatibility} />
+      {!read.data.items.length && !read.error && <span>{adminPageEmpty(read.data, 'Пользователи не найдены.')}</span>}
       <div style={{ maxHeight: 240, overflowY: 'auto', display: 'grid', gap: 4 }}>
         {read.data.items.map(client => <button type="button" data-client-choice={client.id} key={client.id} style={{ ...styles.neutralBtn, textAlign: 'left', overflowWrap: 'anywhere' }} onClick={() => onChoose(client)}>{client.email}<small style={{ display: 'block' }}>{client.id}</small></button>)}
       </div>
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
         <button type="button" aria-label="Предыдущая страница пользователей" style={styles.neutralBtn} disabled={read.loading || page <= 1} onClick={() => setPage(p => p - 1)}>Назад</button>
-        <span>{read.data.page} / {read.data.totalPages} · {read.data.total}</span>
+        <span>{read.data.page} / {Math.max(1, read.data.totalPages)} · {adminPageCount(read.data)}</span>
         <button type="button" aria-label="Следующая страница пользователей" style={styles.neutralBtn} disabled={read.loading || page >= read.data.totalPages} onClick={() => setPage(p => p + 1)}>Далее</button>
       </div>
     </>}

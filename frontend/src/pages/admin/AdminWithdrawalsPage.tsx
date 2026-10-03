@@ -6,6 +6,7 @@ import { browserClearInterval, browserSetInterval } from '../../lib/browserActiv
 import { AdminModal, CopyValue, RailLabel } from './AdminPrimitives';
 import { styles } from './adminStyles';
 import { useAdminRead } from './useAdminRead';
+import { AdminCompatibilityNotice, adminPageEmpty } from './adminPageSupport';
 import { useAdminView } from './useAdminView';
 import { AdminReadStatus } from './AdminReadStatus';
 import { adminDate } from './adminPresentation';
@@ -134,8 +135,9 @@ export function AdminWithdrawalsPage() {
         </select></label>
         {search && <button type="button" style={styles.neutralBtn} onClick={() => view.update({ search: '', page: 1 })}>Сбросить поиск</button>}
       </form>
+      <AdminCompatibilityNotice compatibility={read.data?.compatibility} />
       <div className="admin-queue-pagination" aria-label="Страницы выводов">
-        <span>{read.data ? `Заявки: ${first}–${Math.max(0, last)} из ${read.data.total}` : 'Заявки: —'}</span>
+        <span>{read.data ? `Заявки: ${first}–${Math.max(0, last)} ${read.data.compatibility?.complete === false ? 'из загруженных' : 'из'} ${read.data.total}` : 'Заявки: —'}</span>
         <div><button type="button" style={styles.neutralBtn} disabled={read.loading || view.page <= 1} onClick={() => view.update({ page: view.page - 1 })}>Назад</button>
           <span>Страница {view.page}{read.data ? ` из ${Math.max(1, read.data.totalPages)}` : ''}</span>
           <button type="button" style={styles.neutralBtn} disabled={read.loading || !read.data || view.page >= read.data.totalPages} onClick={() => view.update({ page: view.page + 1 })}>Далее</button></div>
@@ -166,7 +168,7 @@ export function AdminWithdrawalsPage() {
             </div>
           </article>;
         })}
-        {withdrawals?.length === 0 && !read.error && <p className="admin-empty">Заявок по выбранным условиям нет.</p>}
+        {withdrawals?.length === 0 && !read.error && read.data && <p className="admin-empty">{adminPageEmpty(read.data, 'Заявок по выбранным условиям нет.')}</p>}
       </div>
       {action && withdrawals !== null && action.session === getToken() && <AdminModal
         title={action.kind === 'approve' ? 'Одобрить вывод' : action.kind === 'reject' ? 'Отклонить вывод' : 'Отметить отправку'}

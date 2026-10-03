@@ -10,6 +10,7 @@ import { AdminReadStatus } from './AdminReadStatus';
 import { adminDate, adminStatus } from './adminPresentation';
 import { refreshAdminSummary } from './adminWorkSummary';
 import { adminQueueDateBounds } from './adminQueueDates';
+import { AdminCompatibilityNotice, adminPageEmpty } from './adminPageSupport';
 import './adminQueueViews.css';
 
 const KYC_STATUSES = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_STARTED'] as const;
@@ -75,8 +76,9 @@ export function AdminKycPage() {
         </select></label>
         {(search || fromDate || toDate || status !== 'PENDING') && <button type="button" style={styles.neutralBtn} onClick={() => view.update({ search: '', user: '', fromDate: '', toDate: '', status: 'PENDING', page: 1 })}>Сбросить</button>}
       </form>
+      <AdminCompatibilityNotice compatibility={clients?.compatibility} />
       <div className="admin-queue-pagination" aria-label="Страницы заявок KYC">
-        <span>{clients ? `Пользователи: ${first}–${Math.max(0, last)} из ${clients.total}` : 'Пользователи: —'}</span>
+        <span>{clients ? `Пользователи: ${first}–${Math.max(0, last)} ${clients.compatibility?.complete === false ? 'из загруженных' : 'из'} ${clients.total}` : 'Пользователи: —'}</span>
         <div><button type="button" style={styles.neutralBtn} disabled={clientsRead.loading || view.page <= 1} onClick={() => view.update({ page: view.page - 1 })}>Назад</button>
           <span>Страница {view.page}{clients ? ` из ${Math.max(1, clients.totalPages)}` : ''}</span>
           <button type="button" style={styles.neutralBtn} disabled={clientsRead.loading || !clients || view.page >= clients.totalPages} onClick={() => view.update({ page: view.page + 1 })}>Далее</button></div>
@@ -110,7 +112,7 @@ export function AdminKycPage() {
               </span>
             </button>
           ))}
-          {clients !== null && !clientsRead.error && queue.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 13 }}>Заявок нет. По выбранным условиям пользователи не найдены.</p>}
+          {clients !== null && !clientsRead.error && queue.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 13 }}>{adminPageEmpty(clients, 'Заявок нет. По выбранным условиям пользователи не найдены.')}</p>}
         </div>
 
         <div style={styles.card}>
