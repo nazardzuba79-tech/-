@@ -9,7 +9,7 @@ Validated 12 combinations: three header contexts × 1920 / 1440 / 1366 / 390 px.
 - Knowledge Center links directly to `/academy`; its disclosure contains learning, knowledge base, FAQ and glossary. System Status is excluded.
 - Checked keyboard open/Escape/focus return, CFD navigation, mobile drawer closing, dropdown viewport bounds, horizontal overflow and navigation/account-control overlap.
 - Shared/terminal laptop spacing is compact; terminal Knowledge Center text remains visible even where the existing secondary-link rule hides Card/OTC.
-- 61 focused Jest regression tests pass. Frontend TypeScript/Vite production build passes, with the existing >500 kB chunk warning.
+- 70 focused Jest regression tests pass. Frontend TypeScript/Vite production build passes, with the existing >500 kB chunk warning.
 
 Run Vite on `127.0.0.1:4288`, then `node scripts/qa-header-navigation.cjs` with Playwright available (`PLAYWRIGHT_MODULE` can identify a separate QA installation). The fixture HTML is not a production build entry or app route.
 

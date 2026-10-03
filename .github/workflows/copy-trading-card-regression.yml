@@ -19,6 +19,8 @@ on:
       # this workflow unrun; the logout assertion then went unchecked.
       - 'frontend/src/App.tsx'
       - 'frontend/src/components/Nav.tsx'
+      - 'frontend/src/components/HeaderDropdown.tsx'
+      - 'frontend/src/components/HeaderDropdown.css'
       - 'frontend/src/components/TradingBotIcon.tsx'
       - 'frontend/src/lib/__tests__/rootRoute*.test.ts'
       - 'scripts/qa-copy-*.cjs'
@@ -112,6 +114,8 @@ on:
       # this workflow unrun; the logout assertion then went unchecked.
       - 'frontend/src/App.tsx'
       - 'frontend/src/components/Nav.tsx'
+      - 'frontend/src/components/HeaderDropdown.tsx'
+      - 'frontend/src/components/HeaderDropdown.css'
       - 'frontend/src/components/TradingBotIcon.tsx'
       - 'frontend/src/lib/__tests__/rootRoute*.test.ts'
       - 'scripts/qa-copy-*.cjs'
