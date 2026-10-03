@@ -14,7 +14,8 @@ export function AdminDepositCatalogue() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const reload = async (refresh = false) => { const next = await getAdminCatalogue(refresh); setData(next); };
+  const [readWarning, setReadWarning] = useState('');
+  const reload = async (refresh = false) => { const next = await getAdminCatalogue(refresh); setData(next); setReadWarning(''); };
   useEffect(() => { let cancelled = false; getAdminCatalogue().then(value => { if (!cancelled) setData(value); })
     .catch(e => { if (!cancelled) setError(e.message); }); return () => { cancelled = true; }; }, []);
   const assets = (data?.assets ?? []).filter(a => {
@@ -31,7 +32,11 @@ export function AdminDepositCatalogue() {
     try {
       await saveCatalogueEntry(clear ? { ...draft, address: '', memo: '', memoLabel: '', enabled: false } : draft, data.revision);
       setDraft(null); setNotice(clear ? 'Адрес очищен.' : 'Адрес сохранён.');
-      setData(null); await reload();
+      // The write was accepted. A failed follow-up read must not invite a
+      // second mutation or discard the last confirmed catalogue. Its revision
+      // is now stale, so further edits wait for a successful refresh.
+      try { await reload(); }
+      catch { setReadWarning('Список не обновлён. Изменение сохранено; ниже показаны предыдущие данные. Нажмите «Обновить» перед следующим изменением.'); }
     } catch (e) { setError(e instanceof Error ? e.message : 'Не удалось сохранить адрес.'); }
     finally { setBusy(false); }
   }
@@ -41,6 +46,7 @@ export function AdminDepositCatalogue() {
     <div className="catalogue-summary"><strong>{configured} <span>настроенных направлений</span></strong><span>Активы по капитализации · CoinGecko</span>
       <button style={styles.neutralBtn} disabled={busy} onClick={async () => { setError(''); setBusy(true); try { await reload(true); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>Обновить</button></div>
     {error && <p role="alert" style={styles.errorBox}>{error}</p>}
+    {readWarning && <p role="alert" style={styles.errorBox}>{readWarning}</p>}
     {notice && <p role="status" style={styles.successBox}>{notice}</p>}
     {data && !data.rankingAvailable && <p style={styles.hint}>Рейтинг временно недоступен. Сохранённые адреса доступны.</p>}
     <div className="catalogue-filters">
@@ -56,7 +62,7 @@ export function AdminDepositCatalogue() {
       {entries.map(entry => <article className="catalogue-network" key={entry.networkId}>
         <div><h3>{entry.networkName} <small>{entry.standard}</small></h3><span className={`admin-chip ${entry.status === 'configured' ? 'positive' : 'warning'}`}>{statusText[entry.status ?? 'unconfigured']}</span></div>
         <div className="catalogue-address"><CopyValue full value={entry.address} label={entry.networkName} />{entry.memo && <p>{entry.memoLabel}: <CopyValue full value={entry.memo} /></p>}</div>
-        <button style={styles.neutralBtn} disabled={busy} onClick={() => { setDraft({ ...entry }); setError(''); setNotice(''); }}>Изменить</button>
+        <button style={styles.neutralBtn} disabled={busy || !!readWarning} onClick={() => { setDraft({ ...entry }); setError(''); setNotice(''); }}>Изменить</button>
       </article>)}
       {!entries.length && <p className="admin-empty">Для этого актива ещё не добавлена проверенная сеть.</p>}
     </section>}

@@ -5520,3 +5520,8 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
 - Evidence and limitations: docs/qa/futures-proportions/README.md. Five unrelated Windows path-scanner failures reproduced on untouched baseline; exact-head Linux CI remains the publication gate. No merge/deploy authorized for this task.
 - Owner follow-up: corrected Futures header crowding in the existing laptop tier without changing menu structure. Rendered gaps increase from4px to13–16px; all visible dropdowns, text clipping and account overlap checked at1920/1664/1600/1550/1531/1440 plus1366/390 mobile patterns. Zero violations; all six Spot control screenshots remain byte-identical.
 - Header guard run:143 tests/8 suites pass. Evidence includes header crops and additional1531/1550 breakpoint reports. PR #397 remains review-only; the existing Cloudflare integration auto-creates a branch preview, with production unchanged.
+
+## 2026-10-03 — Admin practicality stage 1 (review only)
+- Fresh main 7d9ee6fc6bfe76badaac680313e9728e5abd3550; separate codex/admin-confirmed-defects-20261003. Menu #399, sessions #400, listings #401 untouched.
+- Confirmed cancellation, stale/error/timeout, KYC confirmation/document, catalogue receipt-vs-refresh and OTC back-state defects; 19 baseline failing assertions, 88/88 focused tests and frontend TypeScript pass. Evidence and boundaries: docs/ADMIN_DEFECTS_REVIEW.md.
+- No merge/deploy/production reads or writes. Password column/vault/auth and financial policies unchanged. Further bounded-read and workflow PRs will be stacked explicitly; full task is still in progress.
