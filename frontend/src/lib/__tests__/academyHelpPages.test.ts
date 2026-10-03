@@ -95,7 +95,10 @@ async function open(path: string) {
   const h = React.createElement;
   await act(async () => {
     root.render(h(MemoryRouter, { initialEntries: [path] }, h(Routes, null,
-      h(Route, { path: '/academy', element: h(AcademyPage) }),
+      h(Route, { path: '/academy', element: h(AcademyPage, { home: true }) }),
+      h(Route, { path: '/academy/learn', element: h(AcademyPage) }),
+      h(Route, { path: '/academy/knowledge', element: h(HelpPage, { view: 'knowledge' }) }),
+      h(Route, { path: '/academy/faq', element: h(HelpPage, { view: 'faq' }) }),
       h(Route, { path: '/academy/glossary', element: h(AcademyPage, { glossary: true }) }),
       h(Route, { path: '/academy/:section', element: h(AcademyPage) }),
       h(Route, { path: '/academy/:section/:slug', element: h(AcademyPage) }),
@@ -111,20 +114,31 @@ const type = async (selector: string, value: string) => {
   await act(async () => { setter.call(el, value); el.dispatchEvent(new dom.window.Event('input', { bubbles: true })); await flush(); });
 };
 
-test.each(['/academy', '/academy/futures', '/academy/futures/perpetual', '/academy/glossary', '/help/faq', '/help/fees', '/help/rules'])('%s opens with no request at all', async (path) => {
+test.each(['/academy', '/academy/learn', '/academy/futures', '/academy/futures/perpetual', '/academy/glossary', '/academy/faq', '/academy/knowledge', '/help/faq', '/help/fees', '/help/rules'])('%s opens with no request at all', async (path) => {
   jest.useFakeTimers({ doNotFake: ['setImmediate'] });
   await open(path);
   await act(async () => { jest.advanceTimersByTime(10 * 60_000); await flush(); });
   expect(requests).toEqual([]);
 });
 
-test('Academy home: sections in order with counts, «С чего начать», search and level filter', async () => {
+test('Academy home is the five-tab knowledge hub entry', async () => {
   await open('/academy');
-  const sections = Array.from(host.querySelectorAll('[data-section]')).map((el) => el.getAttribute('data-section'));
-  expect(sections).toEqual(['osnovy', 'futures', 'risk', 'orders', 'ta', 'security', 'glossary']);
-  expect(host.querySelector('[data-section="osnovy"]')!.textContent).toContain('Статей: 4');
+  expect(Array.from(host.querySelectorAll('[data-academy-hub-tab]')).map((el) => el.textContent)).toEqual([
+    'Главная', 'Обучение', 'База знаний', 'Вопросы и ответы', 'Глоссарий',
+  ]);
+  expect(host.querySelector('[data-academy-hub-tab="home"]')?.getAttribute('aria-current')).toBe('page');
+  expect(host.querySelectorAll('[data-academy-home-card]')).toHaveLength(4);
   expect(text()).toContain('С чего начать');
   expect(document.title).toBe('Академия VOLTEX');
+  expect(host.querySelector('[data-academy-search]')).toBeNull();
+});
+
+test('Academy learning keeps sections, counts, search and level filter', async () => {
+  await open('/academy/learn');
+  const sections = Array.from(host.querySelectorAll('[data-section]')).map((el) => el.getAttribute('data-section'));
+  expect(sections).toEqual(['osnovy', 'futures', 'risk', 'orders', 'ta', 'security']);
+  expect(host.querySelector('[data-section="osnovy"]')!.textContent).toContain('Статей: 4');
+  expect(host.querySelector('[data-academy-hub-tab="learn"]')?.getAttribute('aria-current')).toBe('page');
   await type('[data-academy-search]', 'стейбл');
   expect(Array.from(host.querySelectorAll('[data-article]')).map((el) => el.getAttribute('data-article'))).toContain('stablecoins');
   await type('[data-academy-search]', '');
@@ -159,9 +173,12 @@ test('glossary: Latin first, letter index, search, links only to real articles',
   expect(Array.from(host.querySelectorAll('[data-term]')).map((el) => el.getAttribute('data-term'))).toEqual(['Bid']);
 });
 
-test('Help tabs: FAQ, fees, rules, status — and no legal tab', async () => {
-  await open('/help/faq');
-  expect(Array.from(host.querySelectorAll('[data-help-tab]')).map((el) => el.getAttribute('data-help-tab'))).toEqual(['faq', 'fees', 'rules', 'status']);
+test('Academy hub exposes Home, Learn, Knowledge Base, FAQ and Glossary', async () => {
+  await open('/academy/faq');
+  expect(Array.from(host.querySelectorAll('[data-academy-hub-tab]')).map((el) => el.textContent)).toEqual([
+    'Главная', 'Обучение', 'База знаний', 'Вопросы и ответы', 'Глоссарий',
+  ]);
+  expect(host.querySelector('[data-academy-hub-tab="faq"]')?.getAttribute('aria-current')).toBe('page');
   expect(text()).not.toContain('Юридические документы');
   const first = host.querySelector('[data-faq-item] button') as HTMLButtonElement;
   expect(first.getAttribute('aria-expanded')).toBe('false');
@@ -173,8 +190,18 @@ test('Help tabs: FAQ, fees, rules, status — and no legal tab', async () => {
   expect(supportOpened).toHaveBeenCalled();
 });
 
+test.each([
+  ['/help/faq', 'Вопросы и ответы'],
+  ['/help/fees', 'База знаний'],
+  ['/help/rules', 'База знаний'],
+])('legacy %s redirects into the Academy hub', async (path, title) => {
+  await open(path);
+  expect(text()).toContain(title);
+  expect(host.querySelector('[data-academy-hub]')).not.toBeNull();
+});
+
 test('fees page: zero fees, the owner note stays hidden', async () => {
-  await open('/help/fees');
+  await open('/academy/knowledge');
   const rows = Array.from(host.querySelectorAll('[data-fees-trading] tbody tr')).map((tr) => tr.textContent);
   expect(rows).toEqual(['Фьючерсы0%0%', 'Спот0%0%']);
   expect(text()).toContain('500 USD');
@@ -216,9 +243,9 @@ test('status: a request the browser could not complete reads «Не удалос
 
 test('English: labels translate, the Russian text stays with a short note', async () => {
   lang = 'en';
-  await open('/help/faq');
+  await open('/academy/faq');
   expect(host.querySelector('[role="note"]')!.textContent).toBe('This section is available in Russian only for now');
-  expect(host.querySelector('[data-help-tab="faq"]')!.textContent).toBe('FAQ');
+  expect(host.querySelector('[data-academy-hub-tab="faq"]')!.textContent).toBe('FAQ');
   expect(text()).toContain('Как зарегистрироваться?');
 });
 

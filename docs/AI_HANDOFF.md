@@ -5441,19 +5441,103 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Known trade-off, reported to the owner: on 1366–1536 px laptops the card covers «Открыть Лонг/Шорт» while it is shown (6 s, closable).
 - Not run: backend suites (not touched); a real close on any live account.
 
-## Claude — 2026-10-02 — VOLTEX Assistant: deposits are credited within 60 minutes
+### Codex — 2026-10-02 — Hetzner collector shutdown readiness
+- Code commit: 1399a7aa7a3edc2f9f5cfec5ff8adc1143279e6c.
+- Files: DerivPublicStreamQuoteSource.ts and CfdDerivShutdown.test.ts.
+- Reproduced asynchronous ws handshake-abort error after stop removed the error listener (4 failing / 2 passing new tests before fix); preserve guarded error listener through shutdown. Six regression cases pass, including real loopback WebSocket child processes.
+- Preserved current market-data architecture, provider selection, trade execution, accounting and all Claude UI changes.
+- Wider check: 97 passed / 4 failed; all four CfdQuoteSafety failures reproduce on the unchanged production image (84 passed / 4 failed). Existing assumptions about six-symbol batches, entitlement-only display, and dropping stale display data differ from current adapter; execution freshness refusal still passes. No unrelated financial behavior changed.
+- Remote integration/claude-codex is absent after fresh fetch; isolated review branch uses current main 6e2ad9002e8b2b834a3318c11935fba9437465b6. No merge, Render deploy, DNS change or cutover. Hetzner isolated candidate verification continues.
 
-- Owner request: the assistant's minimum-deposit answer ended with «Достижение минимума само по себе не означает мгновенное зачисление». The owner said this reads as if nobody gets credited, and the answer must say the deposit is credited within 60 minutes.
-- Base: main `abb4a2a0`; branch `claude/peaceful-volta-h5zw7g-deposit-60min`.
+### Codex — 2026-10-02 — Deriv integer subscription request IDs
+- Base main: 5df1b144e8c2816f9c361b9cdcee909b4b7aebc8; code commit: 2ec522a57b40b79793b30dffd46292a2750d7468.
+- Public Deriv returned InputValidationFailed / Expected integer - got string for the old tick:SYMBOL request ID; the same public subscription with an integer returned a live tick.
+- Narrow change: numeric subscription IDs distinct from discovery ID 1. Tick routing, provider priority, entitlement/execution guards, CFD accounting and shutdown handling are unchanged.
+- Files: DerivPublicStreamQuoteSource.ts, new CfdDerivRequestId.test.ts, and cfd-display-only.yml (run the new contract tests and existing shutdown tests in CI).
+- Reproduction: all 4 integer-ID regression cases failed before the fix; after the fix, 17 focused request-ID/shutdown/display tests passed. Cases cover initial connection, reconnect and stop/start; accepted reference quotes remain blocked for execution without entitlement.
+- Full CFD suite: 129 passed / 5 failed. The exact same 5 failures reproduce on unchanged main (125 passed / 5 failed): four existing CfdQuoteSafety expectations plus the CfdQuoteRoutes configured-display expectation. No unrelated test expectations or provider behavior changed.
+- Remaining release gates: exact-head remote CI, full build, live subscription and collector/API verification on the isolated Hetzner candidate, then owner-authorized merge and post-merge readiness. No DNS cutover or Render/Neon changes authorized.
+- Concurrent main integration: PR #390 merged as b46dae42e7e7af589e1bc5727984ebe3477a3aa8 during validation. Ordinary merge preserves its five admin deposit-copy files; Deriv fix is unchanged. Before integration, backend/collector builds, 24 collector tests, live integer-ID subscriptions (11 symbols), 42 API checks, five stop/start/forced-stop scenarios, financial-copy integrity and HTTPS passed on the isolated candidate. Repeat exact-head CI and candidate validation on the integrated head before merging.
+- Live-stream QA cleanup, code a601d80620ee5df697a2d38fe38e44051022a12c: the fixed subscriptions exposed a pre-existing missing shutdown path in the disposable browser host. CI logged all four browser scenarios passing with zero findings/writes at 16:57:34 UTC, then stayed alive on the WebSocket until explicitly cancelled at 17:07:41. Export a route-owned display-feed stop hook and call it from the QA host's finally block; no provider selection or financial route behavior changes. The host cleanup regression fails before the hook and passes after; 11 request-ID/cleanup/shutdown tests pass. CI must be green on the new head; a cancelled run is not counted as a pass.
+
+## Codex — 2026-10-03 — top-level header navigation (review only)
+
+Implementation commit: `6988109ec0b7dd653f5d0ce348a6c9647da0ac77`, based on freshly fetched main `7cb2ac057beb31d3e934f265e89f3345cdc8865d` as explicitly requested by the owner.
+
+Updated shared Nav and HomeHeader: standalone Futures/Tools, Trading contains only Spot/CFD, Knowledge Center disclosure uses the four existing Academy routes. Added shared disclosure component/styles, seven-language labels, local header fixture and 12 viewport screenshots in `docs/qa/header-navigation/`. Existing Trading Tools, product routes, account controls, OTC/Arbitrage placement, System Status, backend and infrastructure preserved.
+
+Validation: 61 focused Jest tests pass; frontend build passes (existing large-chunk warning); 12 fixture browser cases pass across shared app/home/terminal headers at 1920/1440/1366/390. Windows CSS path normalization fixes header ownership tests without weakening their assertions. Below 1440 the existing hamburger breakpoint remains. No production traffic, merge or deploy. Next: exact-head PR CI and owner review.
+
+PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workflow path coverage and loaded the actual disclosure in the Arbitrage shell fixture. All 70 focused tests now pass; no product behavior changed in this follow-up. The first full frontend run passed 3428 checks and identified only these two test-harness/coverage integration gaps.
+
+## Claude — 2026-10-03 — Spot market list: «7д %» column
+
+- Owner request: in the Spot terminal's left market list (`PairListSidebar`), add a third column after «Цена» and «24ч %». Requirements:
+  - «7д %» from the same verified source as the Futures list, not the old rankings + sparkline payload;
+  - sortable both ways;
+  - unknown = «—»;
+  - green/red, ±0.00%;
+  - 24h, price and Futures unchanged;
+  - 240–340px resize kept.
+- Base: main `7cb2ac05`; branch `claude/peaceful-volta-h5zw7g-spot-7d`.
+- Source: `lib/change7d.ts` (pure) + `lib/useChange7d.ts` (hook).
+  - It is FuturesPairList's rule: the catalogue's `market.changePercent7d`, one ref-counted request per tab, ambiguous or colliding tickers refused.
+  - Futures keeps its own identical copy, untouched. `cryptoCatalogue.test.ts` pins that both apply the same exclusion.
+  - The week is the asset's USD return, so only USD/USDT/USDC pairs show it; EUR/BTC/ETH-quoted rows read «—».
 - Material files:
-  - `frontend/src/lib/i18n/locales/assistantRu.ts`, two answers:
-    - `deposit_minimum`: the last sentence is now «Депозит от минимальной суммы будет зачислен на баланс в течение 60 минут.»;
-    - `deposit_wait_time` («Когда зачислят пополнение»): it had the same discouraging wording and no time. It now says «…в течение 60 минут. Если прошло больше 60 минут, напишите специалисту…», plus coin, network, amount and TXID.
-  - `frontend/src/lib/__tests__/supportAssistant.test.ts`: one test pins the 60-minute sentence and the absence of the old wording.
+  - `PairListSidebar.tsx`: the third header and cell; `change7d_desc`/`_asc` sort modes; `data-compact` on long % values.
+  - `pairList.ts`: `change7d` sort field, unknown last both ways, ties on pair name.
+  - `marketColumnSort.ts`: made generic over the field; CFD usage unchanged.
+  - `SpotMarketControls.css`: shared track variables for header and rows; container bands ≥300 / 250–299 / <250 (no logo); ellipsis instead of overlap.
+  - Tests: new `spotPairList7d.test.ts`, which mounts the real hook in JSDOM: render, null, sort, independence, width math.
+  - `spotPairList.test.ts`: harness allowance.
+  - `cryptoCatalogue.test.ts`: the byte pins of `pairList.ts`/`PairListSidebar.tsx` replaced by a semantic guard — rows still come only from the ticker feed.
+  - New `scripts/qa-spot-market-7d.cjs` + `.github/workflows/spot-market-7d.yml`; `docs/qa/spot-market-7d/`.
 - Preserved:
-  - the minimum (`DEPOSIT_MINIMUM_USD`), the threshold rules and every other answer;
-  - the deposit dialog's own «Депозит будет зачислен в течение 30-60 минут» (`deposit.manualCreditNote`).
+  - 24h computation and sort;
+  - price formatting;
+  - the 4s ticker store;
+  - favourites;
+  - resize bounds 240/340 and default 258;
+  - FuturesPairList and its guards;
+  - backend untouched.
 - Checks run:
   - `tsc -b`, Vite build;
-  - full frontend Jest (`jest frontend/src`): 197 suites, 3,417 passed and 0 failed. 6 tests were skipped because there was no build yet. Those three build-dependent suites then passed after the build: 36 tests.
-- Noticed, not touched: the owner's screenshot of `/admin/users` shows a «ПАРОЛЬ» column with readable user passwords. Reported to the owner as a security concern; no code was inspected or changed for it in this task.
+  - full frontend Jest (`jest frontend/src`): 198 suites, 3,446 passed, 0 failed, 0 skipped;
+  - `scripts/qa-spot-market-7d.cjs`: PASS at 1920/1440/1366 × panel 240/250/258/300/340;
+  - `scripts/qa-spot-cfd-terminal.cjs`: exit 0 (its token notes are pre-existing);
+  - a scratch phone check at 390: three columns, no page overflow.
+- Known: a sub-satoshi price (e.g. 0.000000123456, 77px) cannot fit any price column at these widths. On main it overflowed the 76px column; now it ends in «…» with the full value in its title.
+- The Spot page now subscribes to the shared catalogue: one `/market/assets` request per tab, refreshed every 10 minutes, the same request Markets and the Futures 7d sort use.
+
+## 2026-10-03 — Codex — Futures proportions (review only)
+- Base: current main `e9efc4631fbd1472bef422034f2c035e0a8b6992`, preserving Claude's #395 header/menu work and #396 Spot7d column.
+- Product commit: `ea20d855c0d4d87aaf0533d427ff5f522e76e172`; branch `codex/futures-proportions-20261003`.
+- Material files: ArchiveTerminalPreview.css, TerminalGraphite.css, FuturesOrderPanelRefinement.css, FuturesOrderForm.tsx; scoped regression guards, real-route fixture QA and evidence under docs/qa/futures-proportions.
+- 310px desktop ticket;36px selectors;46px fields;16px input figures;44px toolbar; readable ticker statistics and reserved96px laptop ticker; duplicate lower calculator link removed.
+- Preserved trading arithmetic/guards, providers, subscriptions, cache, auth, financial data, mobile touch targets, shared Spot/CFD styling and chart settings/history. No infrastructure or production changes.
+- Checked: frontend build;355 relevant tests;existing Futures8-width browser suite;new6-width fixture before/after;Spot/CFD browser harness. Spot before/after PNG hashes match at all6widths.
+- Evidence and limitations: docs/qa/futures-proportions/README.md. Five unrelated Windows path-scanner failures reproduced on untouched baseline; exact-head Linux CI remains the publication gate. No merge/deploy authorized for this task.
+- Owner follow-up: corrected Futures header crowding in the existing laptop tier without changing menu structure. Rendered gaps increase from4px to13–16px; all visible dropdowns, text clipping and account overlap checked at1920/1664/1600/1550/1531/1440 plus1366/390 mobile patterns. Zero violations; all six Spot control screenshots remain byte-identical.
+- Header guard run:143 tests/8 suites pass. Evidence includes header crops and additional1531/1550 breakpoint reports. PR #397 remains review-only; the existing Cloudflare integration auto-creates a branch preview, with production unchanged.
+
+## 2026-10-03 — Codex — short header labels and Futures ticker spacing (review only)
+- Branch: `codex/header-ticker-spacing-20261003`; base refreshed to `7d9ee6fc6bfe76badaac680313e9728e5abd3550`. Earlier proportions PR #397 was already merged externally; this is a separate follow-up.
+- Owner correction: shared header labels now `Карта` / `Академия`; short Card labels in7existing locales. Routes and Academy dropdown content stay unchanged; Crypto Card product branding outside navigation stays intact.
+- Futures ticker uses available width with equal column gaps,20px minimum and1180px cap on wide screens. Pair/main price geometry and every numeric value/format stay unchanged. Compact Futures header now covers the1680–1799 transition that previously overlapped account actions.
+- Frontend-only: no backend/API/DB/accounting/provider/subscription/infrastructure changes, no merge or production deployment. Existing automation may create a branch preview.
+- Evidence: `docs/qa/header-ticker-spacing/README.md`, before/after comparison and screenshots.12-width actual-build fixture QA passed0violations,0JSerrors,0external requests; controls, navigation and unavailable/populated states passed.
+- Frontend build passed; focused137tests plus corrected scoped CSS ownership suite11tests passed. Full Windows suite encountered5unchanged path-scanner failures after correcting the one approved ownership entry.41relevant files match both base SHAs; exact-head Linux CI remains the gate. Full local logs retained under output/header-ticker-spacing.
+- Final mobile menu review reproduced an existing sticky-tab interception and bottom-dock clipping on the untouched baseline. Futures-only header stacking and drawer height now keep every entry accessible; hit-test regression added. Rebuilt preview verified at 390x844, 390x600 and 768x1024; 98 focused mobile/header tests passed. PR #399 contains this follow-up; no merge or production deployment.
+
+## 2026-10-03 — Codex — shared icon/description menus (PR #399, review only)
+- Owner corrected the navigation label to `Crypto-Card` and requested one desktop/mobile dropdown design, shown before production publication. Keep PR #399 open; do not merge/deploy without separate owner approval.
+- Product commits: `387e1ecf6a9bdd314ca8498ae94e043ed97d4bfe`, final UI `aab8384aed30d4460bd99f0e46f5c01ea5d7e128`. Fresh main remained `7d9ee6fc6bfe76badaac680313e9728e5abd3550`; no concurrent changes were overwritten.
+- Files: HeaderDropdown.tsx/css, Nav.tsx, HomeHeader.tsx, seven locale dictionaries, index.css responsive tier; related header/copy tests, fixture QA scripts and docs/qa/header-dropdowns evidence.
+- Shared typed items carry nine distinct Lucide icons and descriptions; 34px tiles, 14px semibold titles, 11.5px muted descriptions, full-card hover/focus. Desktop/mobile use the same arrays. Existing routes and financial/API behavior are unchanged.
+- Preserved earlier ticker spacing, compact Futures spacing and mobile drawer stacking fixes. Existing 1440–1530 hidden secondary links now remain reachable via the full drawer; small home-header gaps/padding keep the 390px close button within the screen.
+- Validation: frontend TypeScript/Vite PASS (existing bundle warning); 96 focused tests/7 suites PASS. New actual-bundle menu matrix covers Futures and signed-out Home at 1920/1600/1440/1366/390; 20 cases per surface, no page errors/external calls/financial writes. Existing five-width ticker/interactions/state/navigation fixture QA has 0 violations. Exact-head Linux CI is recorded on the PR after push.
+- Local limitation: unchanged Card SVG raw-hash test is CRLF-sensitive on Windows; no asset or digest was weakened. Existing React SSR fetchPriority warning remains. Full Linux CI is the final gate, not a prior-head PASS.
+- Before/after gallery is docs/qa/header-dropdowns/comparison.html, served by the loopback-only fixture; not production. No backend, database, balance, trade, credential or infrastructure changes.
+- CI follow-up: first pushed head had 25/27 successful checks; pair-persistence and copy-card browser harnesses still assumed desktop links at1440. Updated only scripts/qa-futures-pair-persistence.cjs and scripts/qa-copy-last-good-browser.cjs to use the actual drawer, retain all financial/cache assertions, add1600desktop coverage and hit-test every compact product link. UI remains aab8384a; rerun CI on the final evidence/test commit, not the earlier head.
+- Downstream Copy prefetch browser scenarios also targeted hidden desktop duplicates and swallowed hover/click failures. Updated qa-copy-cards-trades-avatar, qa-copy-loading-and-ksenia and qa-copy-never-loading to use visible drawer links; added positive prefetch-request evidence where previously absent. No Copy product behavior or financial assertions changed. 25914867 full frontend CI:201suites/3524tests PASS, none skipped; latest exact-head CI must also finish the complete browser chain. Product UI remains aab8384a, screenshot matrix unchanged.

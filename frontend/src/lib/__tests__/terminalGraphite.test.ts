@@ -148,6 +148,19 @@ describe('the Graphite sheet', () => {
     expect(css).toContain('.fo-fieldTrailing .fo-lastPriceBtn { font-size:14px; font-weight:600; color:var(--accent);');
   });
 
+  it('compacts desktop controls without reducing numeric text or mobile touch targets', () => {
+    const desktop = /@media \(min-width:901px\) \{\s*(#archive-terminal-preview \.fo-mlRow[\s\S]*?)\n\}/.exec(css)?.[1];
+    expect(desktop).toBeDefined();
+    expect(desktop).toContain('grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)');
+    expect(desktop).toContain('.fo-mlTrigger { height:36px; min-height:36px;');
+    expect(desktop).toContain('.fo-field { --fo-field-height:46px; }');
+    expect(desktop).not.toMatch(/\.fo-field :is\(\.fo-input,\.fo-markPrice\) \{[^}]*font-size:/);
+    expect(css).toContain('font-size:16px; line-height:20px; font-weight:600; color:#ffffff;');
+    expect(css).toMatch(/@media \(max-width:900px\), \(pointer:coarse\) \{\s*#archive-terminal-preview \.fo-mlTrigger \{ min-height:44px; \}/);
+    expect(css).toContain('.fo-mlTrigger[aria-expanded="true"] { border-color:var(--accent) !important; }');
+    expect(css).toContain(':has(.fo-input[aria-invalid="true"]) { border-color:var(--sell, #f6465d) !important; }');
+  });
+
   it('leaves the TP / SL «+» exactly as the exchange has it', () => {
     expect(css).not.toMatch(/fo-tpsl/);
   });
@@ -158,7 +171,7 @@ describe('the Graphite sheet', () => {
   });
 
   it('keeps the positions panel to two whole rows on desktop so the chart and book take the rest', () => {
-    expect(css).toContain('#archive-terminal-preview .terminal:not([data-account-compact=true]) { grid-template-rows:56px minmax(280px,1fr) 220px; }');
+    expect(css).toContain('#archive-terminal-preview .terminal:not([data-account-compact=true]) { grid-template-rows:var(--futures-ticker-height) minmax(280px,1fr) 220px; }');
   });
 
   it('draws P&L, ROI and «≈… USD» as Bybit does: one size, one weight, one colour, nothing dimmed', () => {

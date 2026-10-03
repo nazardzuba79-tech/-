@@ -26,7 +26,7 @@ function findJsx(file: string, tag: string) {
 describe('local arbitrage keeps the real authenticated shell without a market subscription', () => {
   let dom: any, root: any, Nav: any, activeTicker: number;
   let getMe: jest.Mock, tickerMount: jest.Mock, tickerRead: jest.Mock;
-  let prefetchDepositConfig: jest.Mock, prefetchCopyMarketplace: jest.Mock, clearToken: jest.Mock, navigate: jest.Mock;
+  let prefetchDepositConfig: jest.Mock, prefetchCopyMarketplace: jest.Mock, clearToken: jest.Mock, navigate: jest.Mock, logout: jest.Mock;
   const nativeFetch = globalThis.fetch;
 
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe('local arbitrage keeps the real authenticated shell without a market su
     getMe = jest.fn(async () => ({ isAdmin: true, avatarUrl: null }));
     tickerMount = jest.fn(); tickerRead = jest.fn();
     prefetchDepositConfig = jest.fn(); prefetchCopyMarketplace = jest.fn();
-    clearToken = jest.fn(); navigate = jest.fn();
+    clearToken = jest.fn(); navigate = jest.fn(); logout = jest.fn().mockResolvedValue({ status: 'ok' });
     function TopGainersTicker() {
       React.useEffect(() => {
         activeTicker += 1; tickerMount(); tickerRead();
@@ -56,7 +56,7 @@ describe('local arbitrage keeps the real authenticated shell without a market su
         useLocation: () => ({ pathname: '/arbitrage' }), useNavigate: () => navigate,
         Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children),
       },
-      '../lib/api': { api: { getMe }, getToken: () => 'fixture-session', clearToken },
+      '../lib/api': { api: { getMe, logout }, getToken: () => 'fixture-session', clearToken },
       '../lib/i18n': { useLanguage: () => ({ t: (key: string) => key, lang: 'ru' }) },
       '../lib/useDepositOptions': { prefetchDepositConfig },
       '../lib/useCopyMarketplace': { prefetchCopyMarketplace },
@@ -67,6 +67,12 @@ describe('local arbitrage keeps the real authenticated shell without a market su
       './BottomNav': { BottomNav: empty },
       './DepositModal': { DepositModal: ({ onClose }: any) => React.createElement('button', { 'data-deposit-fixture': true, onClick: onClose }, 'Close deposit') },
     };
+    const dropdown: any = {};
+    const dropdownCode = ts.transpileModule(source('components/HeaderDropdown.tsx'), { compilerOptions: {
+      module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+    } }).outputText;
+    new Function('exports', 'require', dropdownCode)(dropdown, (name: string) => name.endsWith('.css') ? {} : imports[name]);
+    imports['./HeaderDropdown'] = dropdown;
     const output: any = {};
     const code = ts.transpileModule(source('components/Nav.tsx'), { compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
@@ -145,8 +151,9 @@ describe('local arbitrage keeps the real authenticated shell without a market su
     expect(document.querySelector('.header-brand [data-real-logo-slot]')).not.toBeNull();
     expect(document.querySelector('.nav-wallet-link')?.getAttribute('href')).toBe('/wallet');
     expect(Array.from(document.querySelectorAll('a[href="/banking"]')).map(node => node.textContent)).toEqual(['Banking & Earn', 'Banking & Earn']);
-    expect(document.querySelector('a[href="/trade"].nav-active')).not.toBeNull();
+    expect(document.querySelector('a[href="/otc"].nav-active')).not.toBeNull();
     expect(document.querySelector('a[href="/futures"]')).not.toBeNull();
+    await click('.nav-mobile-menu button[aria-label="nav.trade"]');
     expect(document.querySelector('a[href="/trade?market=cfd"]')).not.toBeNull();
     expect(document.querySelector('a[href="/otc"]')).not.toBeNull();
   });
@@ -170,6 +177,8 @@ describe('local arbitrage keeps the real authenticated shell without a market su
     expect(document.querySelector('.top-nav-profile-menu a[href="/settings"]')).not.toBeNull();
     expect(document.querySelector('.top-nav-profile-menu a[href="/admin"]')).not.toBeNull();
     await click('.top-nav-profile-menu button');
+    // Logout also ends the server session (remembered devices), then clears locally.
+    expect(logout).toHaveBeenCalledTimes(1);
     expect(clearToken).toHaveBeenCalledTimes(1); expect(navigate).toHaveBeenCalledWith('/');
   });
 

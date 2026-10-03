@@ -1,3 +1,4 @@
+import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, OTC_LINKS, TRADING_LINKS } from './HeaderDropdown';
 import { TradingBotIcon } from './TradingBotIcon';
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -15,11 +16,13 @@ import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
 
 export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideTicker,staticTicker,tickerSymbols,tickerFitToWidth,futuresReference,quoteAsset,readProfile=true}:{active:string;readProfile?:boolean;middle?:ReactNode;rightExtra?:ReactNode;onTickerSelect?:(pair:string)=>void;tickerHrefFor?:(pair:string)=>string;hideTicker?:boolean;staticTicker?:boolean;tickerSymbols?:string[];tickerFitToWidth?:boolean;futuresReference?:ReadonlyMap<string,LiveQuote>;quoteAsset?:string}) {
   const navigate=useNavigate(),location=useLocation(),{t,lang}=useLanguage();
-  const[mobileOpen,setMobileOpen]=useState(false),[isAdmin,setIsAdmin]=useState(false),[avatarUrl,setAvatarUrl]=useState<string|null>(null),[showDeposit,setShowDeposit]=useState(false),[tradeMenuOpen,setTradeMenuOpen]=useState(false),[profileMenuOpen,setProfileMenuOpen]=useState(false);
-  const tradeMenuCloseTimer=useRef<number|null>(null),profileMenuRef=useRef<HTMLDivElement>(null);
+  const[mobileOpen,setMobileOpen]=useState(false),[isAdmin,setIsAdmin]=useState(false),[avatarUrl,setAvatarUrl]=useState<string|null>(null),[showDeposit,setShowDeposit]=useState(false),[profileMenuOpen,setProfileMenuOpen]=useState(false);
+  const profileMenuRef=useRef<HTMLDivElement>(null);
   const terminalCopy = active === '/trade' || active === '/futures';
   const terminalLabels = terminalNavCopy(lang);
-  const tradeSectionActive = active === '/trade' || active === '/arbitrage' || active === '/tools';
+  const marketSectionActive = active === '/markets' || active === '/tools';
+  const tradeSectionActive = active === '/trade';
+  const otcSectionActive = active === '/otc' || active === '/arbitrage';
   const LINKS=[
     {to:'/markets',label:t('nav.markets')},
     {to:'/trade',label:t('nav.trade')},
@@ -27,8 +30,6 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
     {to:'/banking',label:'Banking & Earn'},
     {to:'/wallet',label:t('nav.wallet')},
     {to:'/copy-trading',label:t('nav.copyTrading')},
-    // Trading Tools v1 uses an explicit Russian fallback, as its local copy does.
-    {to:'/tools',label:'Инструменты'},
   ];
   /**
    * The wallet lives in the right-hand money cluster on desktop, next to the
@@ -38,30 +39,26 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
    * auth; only the desktop position changes.
    */
   const WALLET_LINK=LINKS.find(l=>l.to==='/wallet');
-  // Tools belongs in the existing Trading menu, leaving the desktop row's width unchanged.
-  const TOOLS_LINK=LINKS.find(l=>l.to==='/tools');
-  const DESKTOP_LINKS=LINKS.filter(l=>l.to!=='/wallet'&&l.to!=='/tools');
-  useEffect(()=>()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);},[]);
+  const DESKTOP_LINKS=LINKS.filter(l=>l.to!=='/wallet');
   useEffect(()=>setMobileOpen(false),[location.pathname]);
   // Academy and Help promise no API request on open, so they pass
   // readProfile={false}: the menu then shows the plain avatar and no admin link.
   useEffect(()=>{if(!getToken()||!readProfile)return;api.getMe().then(me=>{setIsAdmin(me.isAdmin);setAvatarUrl(me.avatarUrl);}).catch(()=>{});},[]);
   useEffect(()=>{if(!profileMenuOpen)return;function handler(e:MouseEvent){if(profileMenuRef.current&&!profileMenuRef.current.contains(e.target as Node))setProfileMenuOpen(false);}document.addEventListener('mousedown',handler);return()=>document.removeEventListener('mousedown',handler);},[profileMenuOpen]);
-  function handleLogout(){clearToken();navigate('/');}
+  // The server session is ended too (a remembered one would otherwise stay
+  // valid for weeks); the browser is signed out at once either way.
+  function handleLogout(){if(getToken())api.logout().catch(()=>{});clearToken();navigate('/');}
   return <>
     <header className="global-header top-nav-bar">
       <div className="header-left">
         <button className="mobile-menu nav-burger" onClick={()=>setMobileOpen(v=>!v)} aria-label={t('nav.menu')} aria-expanded={mobileOpen}>{mobileOpen?<X size={18}/>:<Menu size={18}/>}</button>
         <Link to="/trade" className="header-brand" style={styles.logo}><Logo/></Link><span className="brand-separator top-nav-divider" aria-hidden="true"/>
         <nav className="main-nav nav-desktop-links" aria-label={t('nav.menu')}>
-          {DESKTOP_LINKS.map(l=>l.to==='/trade'?<div key={l.to} className="nav-item-wrap" onFocus={()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);setTradeMenuOpen(true);}} onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null))setTradeMenuOpen(false);}} onKeyDown={e=>{if(e.key==='Escape')setTradeMenuOpen(false);}} onMouseEnter={()=>{if(tradeMenuCloseTimer.current)window.clearTimeout(tradeMenuCloseTimer.current);setTradeMenuOpen(true);}} onMouseLeave={()=>{tradeMenuCloseTimer.current=window.setTimeout(()=>setTradeMenuOpen(false),250);}}>
-            <Link to={l.to} className={`nav-item top-nav-link${tradeSectionActive?' nav-active is-active':''}`} aria-haspopup="menu" aria-expanded={tradeMenuOpen}>{l.label}<ChevronDown size={12} className={`nav-chevron${tradeMenuOpen?' nav-chevron-open':''}`}/></Link>
-            {tradeMenuOpen&&<div className="nav-dropdown" role="menu"><Link to="/trade" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span></Link><Link to="/trade?market=cfd" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('trade.cfdTab')}</span><span style={styles.tradeMenuItemDesc}>{t('nav.tradeCfdDesc')}</span></Link><Link to="/arbitrage" style={styles.tradeMenuItem}><span style={styles.tradeMenuItemTitle}>{t('nav.arbitrage')}</span><span style={styles.tradeMenuItemDesc}>{t('arbitrage.title')}</span></Link>{TOOLS_LINK&&<Link to={TOOLS_LINK.to} aria-current={active==='/tools'?'page':undefined} style={{...styles.tradeMenuItem,...(active==='/tools'?styles.linkActive:{})}}><span style={styles.tradeMenuItemTitle}>{TOOLS_LINK.label}</span></Link>}</div>}
-          </div>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}
-          <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
-          <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active==='/otc'?' nav-active is-active':''}`}>{t('nav.otc')}</Link>
+          {DESKTOP_LINKS.map(l=>l.to==='/markets'?<HeaderDropdown key={l.to} to="/markets" label={l.label} links={MARKET_LINKS} className={`nav-item top-nav-link${marketSectionActive?' nav-active is-active':''}`}/>:l.to==='/trade'?<HeaderDropdown key={l.to} to="/trade" label={l.label} links={TRADING_LINKS} className={`nav-item top-nav-link${tradeSectionActive?' nav-active is-active':''}`}/>:<Link key={l.to} to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} className={`nav-item top-nav-link${active===l.to?' nav-active is-active':''}`}>{l.label}</Link>)}
+          <Link to="/card" className={`nav-item nav-secondary top-nav-link${active==='/card'?' nav-active is-active':''}`}><CreditCard size={14}/>{t('nav.card')}</Link>
+          <HeaderDropdown to="/otc" label={t('nav.otc')} links={OTC_LINKS} className={`nav-item nav-secondary top-nav-link${otcSectionActive?' nav-active is-active':''}`}/>
           <Link to="/trading-bots" className={`nav-item top-nav-link${active==='/trading-bots'?' nav-active is-active':''}`}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
-          <Link to="/academy" className={`nav-item nav-secondary top-nav-link${active==='/academy'?' nav-active is-active':''}`}>{t('nav.academy')}</Link>
+          <HeaderDropdown to="/academy" label={t('nav.academy')} links={KNOWLEDGE_LINKS} className={`nav-item top-nav-link${location.pathname.startsWith('/academy')?' nav-active is-active':''}`}/>
           {/* Админка is NOT a product section. It used to sit here, after
               OTC, reading as one more place to trade and getting lost
               between Crypto Card and the wallet. It now renders once, in
@@ -81,12 +78,11 @@ export function Nav({active,middle,rightExtra,onTickerSelect,tickerHrefFor,hideT
       </div>
       <div className={`nav-mobile-menu${mobileOpen?' open':''}`}>
         <button className="deposit-button" onPointerDown={prefetchDepositConfig} onClick={()=>{setShowDeposit(true);setMobileOpen(false);}} style={{justifyContent:'center',marginBottom:4}}>{t('wallet.deposit')}</button>
-        {LINKS.map(l=><Fragment key={l.to}><Link to={l.to} aria-current={l.to==='/tools'&&active===l.to?'page':undefined} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} style={{...styles.mobileLink,...((l.to==='/trade'?tradeSectionActive:active===l.to)?styles.linkActive:{})}}>{l.label}</Link>{l.to==='/trade'&&<><Link to="/trade?market=cfd" style={{...styles.mobileLink,paddingLeft:20,fontSize:13}}>{t('trade.cfdTab')}</Link><Link to="/arbitrage" style={{...styles.mobileLink,paddingLeft:20,fontSize:13,...(active==='/arbitrage'?styles.linkActive:{})}}>{t('nav.arbitrage')}</Link></>}</Fragment>)}
-        <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{terminalCopy?terminalLabels.card:t('nav.card')}</Link>
-        <Link to="/otc" style={{...styles.mobileLink,...(active==='/otc'?styles.linkActive:{})}}>{t('nav.otc')}</Link>
+        {LINKS.map(l=><Fragment key={l.to}>{l.to==='/markets'?<HeaderDropdown mobile to="/markets" label={l.label} links={MARKET_LINKS} className="nav-item" onNavigate={()=>setMobileOpen(false)}/>:l.to==='/trade'?<HeaderDropdown mobile to="/trade" label={l.label} links={TRADING_LINKS} className="nav-item" onNavigate={()=>setMobileOpen(false)}/>:<Link to={l.to} onMouseEnter={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onFocus={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} onPointerDown={l.to==='/copy-trading'?prefetchCopyMarketplace:undefined} style={{...styles.mobileLink,...((l.to==='/markets'?marketSectionActive:l.to==='/trade'?tradeSectionActive:active===l.to)?styles.linkActive:{})}}>{l.label}</Link>}</Fragment>)}
+        <Link to="/card" style={{...styles.mobileLink,...styles.cardLink,...(active==='/card'?styles.linkActive:{})}}><CreditCard size={14}/>{t('nav.card')}</Link>
+        <HeaderDropdown mobile to="/otc" label={t('nav.otc')} links={OTC_LINKS} className="nav-item" onNavigate={()=>setMobileOpen(false)}/>
         <Link to="/trading-bots" style={{...styles.mobileLink,...styles.cardLink,...(active==='/trading-bots'?styles.linkActive:{})}}><TradingBotIcon/>{terminalCopy?terminalLabels.bots:'Торговые боты'}</Link>
-        <Link to="/academy" style={styles.mobileLink}>{t('nav.academy')}</Link>
-        <Link to="/help/faq" style={styles.mobileLink}>{t('nav.help')}</Link>
+        <HeaderDropdown mobile to="/academy" label={t('nav.academy')} links={KNOWLEDGE_LINKS} className="nav-item" onNavigate={()=>setMobileOpen(false)}/>
         {isAdmin&&<Link to="/admin" style={{...styles.mobileLink,...styles.adminBadge,...(active==='/admin'?styles.adminBadgeActive:{})}}><Landmark size={14}/>{t('nav.admin')}</Link>}
         <div style={styles.mobileDivider}/><Link to="/settings" style={{...styles.mobileLink,...styles.cardLink,...(active==='/settings'?styles.linkActive:{})}}><UserRound size={15}/>{t('nav.profile')}</Link>
         {rightExtra&&<div style={styles.mobileRightExtra}>{rightExtra}</div>}<div style={styles.mobileLangRow}><LanguageSwitcher/></div><button onClick={handleLogout} style={{...styles.logoutBtn,width:'100%'}}><LogOut size={14}/>{t('nav.logout')}</button>
@@ -105,44 +101,37 @@ const styles:Record<string,React.CSSProperties>={
 
 // Terminal copy uses the shared active locale, like cfdDisplayCopy.
 // Keep the existing asynchronously loaded dictionary bodies intact.
-const TERMINAL_NAV_COPY: Record<string, readonly [string, string, string]> = {
+const TERMINAL_NAV_COPY: Record<string, readonly [string, string]> = {
   "ru": [
     "Доход",
-    "Криптокарта",
     "Торговые боты"
   ],
   "en": [
     "Earn",
-    "Crypto Card",
     "Trading bots"
   ],
   "es": [
     "Rendimientos",
-    "Tarjeta cripto",
     "Bots de trading"
   ],
   "zh": [
     "理财",
-    "加密卡",
     "交易机器人"
   ],
   "ja": [
     "資産運用",
-    "暗号資産カード",
     "取引ボット"
   ],
   "ko": [
     "자산 운용",
-    "암호화폐 카드",
     "트레이딩 봇"
   ],
   "hi": [
     "कमाई",
-    "क्रिप्टो कार्ड",
     "ट्रेडिंग बॉट"
   ]
 };
 function terminalNavCopy(lang: string) {
-  const [earn, card, bots] = TERMINAL_NAV_COPY[lang] || TERMINAL_NAV_COPY.en;
-  return { earn, card, bots };
+  const [earn, bots] = TERMINAL_NAV_COPY[lang] || TERMINAL_NAV_COPY.en;
+  return { earn, bots };
 }

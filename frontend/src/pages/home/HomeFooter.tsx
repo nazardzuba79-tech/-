@@ -22,7 +22,6 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
       { labelKey: 'trade.spotTab', to: '/trade' },
       { labelKey: 'nav.futures', to: '/futures' },
       { labelKey: 'nav.copyTrading', to: '/copy-trading' },
-      { labelKey: 'nav.arbitrage', to: '/arbitrage' },
       { labelKey: 'nav.card', to: '/card' },
       { labelKey: 'nav.otc', to: '/otc' },
     ],
@@ -39,7 +38,7 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
   {
     titleKey: 'home.footer.support',
     links: [
-      { labelKey: 'home.footer.helpCenter', to: '/help/faq' },
+      { labelKey: 'home.footer.helpCenter', to: '/academy/faq' },
       { labelKey: 'nav.academy', to: '/academy' },
     ],
   },

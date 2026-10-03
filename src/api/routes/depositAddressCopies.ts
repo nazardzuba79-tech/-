@@ -7,6 +7,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { DEPOSIT_RAILS, railKey, validAddress } from '../../services/depositCatalogue/registry';
+import { unresolvedCopy } from '../../services/deposits/depositCopyResolution';
 import { markWriteWithoutBackgroundWork } from '../../services/BackgroundWorkCoordinator';
 import { KNOWN_CHAINS } from './deposits';
 import { mountDepositCopyReview } from './adminDepositCopyReview';
@@ -164,7 +165,10 @@ export function depositAddressCopiesRouter(prisma: PrismaClient): Router {
     const cursor = before ? decodeCursor(before) : null;
     if (before && !cursor) return res.status(400).json({ error: 'Invalid cursor' });
 
-    const where: Prisma.Sql[] = [];
+    // This screen is an operational queue, not the immutable audit history.
+    // Credited/ignored copy events remain in DepositAddressCopyEvent + AuditLog,
+    // but must not return to the admin after refresh.
+    const where: Prisma.Sql[] = [unresolvedCopy];
     if (cursor) where.push(Prisma.sql`(e."receivedAt", e."id") < (${cursor.at.toISOString()}::timestamptz AT TIME ZONE 'UTC', ${cursor.id})`);
     if (asset) where.push(Prisma.sql`e."asset" = ${asset}`);
     if (user) {

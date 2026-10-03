@@ -1,7 +1,7 @@
-export type MarketColumnSort = { field: 'price' | 'change'; dir: 1 | -1 } | null;
+export type MarketColumnSort<F extends string = 'price' | 'change'> = { field: F; dir: 1 | -1 } | null;
 
 /** Third click restores the product's normal listing, without selecting a market. */
-export function nextMarketColumnSort(current: MarketColumnSort, field: 'price' | 'change'): MarketColumnSort {
+export function nextMarketColumnSort<F extends string>(current: MarketColumnSort<F>, field: F): MarketColumnSort<F> {
   return current?.field !== field ? { field, dir: -1 }
     : current.dir === -1 ? { field, dir: 1 } : null;
 }

@@ -1,0 +1,381 @@
+{
+  "status": "PASS",
+  "findings": [],
+  "viewports": [
+    {
+      "viewport": "1920x1080",
+      "panel": 258,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "16px 38px 59px 50px 50px"
+    },
+    {
+      "viewport": "1920x1080",
+      "panel": 240,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": false,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "39px 59px 50px 50px"
+    },
+    {
+      "viewport": "1920x1080",
+      "panel": 250,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "16px 30px 59px 50px 50px"
+    },
+    {
+      "viewport": "1920x1080",
+      "panel": 300,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 78>68"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "20px 52px 68px 54px 54px"
+    },
+    {
+      "viewport": "1920x1080",
+      "panel": 340,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 78>68"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "20px 92px 68px 54px 54px"
+    },
+    {
+      "viewport": "1440x900",
+      "panel": 258,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "16px 38px 59px 50px 50px"
+    },
+    {
+      "viewport": "1440x900",
+      "panel": 240,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": false,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "39px 59px 50px 50px"
+    },
+    {
+      "viewport": "1440x900",
+      "panel": 250,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "16px 30px 59px 50px 50px"
+    },
+    {
+      "viewport": "1440x900",
+      "panel": 300,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 78>68"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "20px 52px 68px 54px 54px"
+    },
+    {
+      "viewport": "1440x900",
+      "panel": 340,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 78>68"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "20px 92px 68px 54px 54px"
+    },
+    {
+      "viewport": "1366x768",
+      "panel": 258,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "16px 38px 59px 50px 50px"
+    },
+    {
+      "viewport": "1366x768",
+      "panel": 240,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": false,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "39px 59px 50px 50px"
+    },
+    {
+      "viewport": "1366x768",
+      "panel": 250,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 77>59"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "16px 30px 59px 50px 50px"
+    },
+    {
+      "viewport": "1366x768",
+      "panel": 300,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 78>68"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "20px 52px 68px 54px 54px"
+    },
+    {
+      "viewport": "1366x768",
+      "panel": 340,
+      "clipped": [],
+      "allowed": [
+        "MOG/USDT price \"0.000000123456\" 78>68"
+      ],
+      "names": [],
+      "broken": [],
+      "headerClipped": [],
+      "align": [
+        0,
+        0,
+        0
+      ],
+      "icon": true,
+      "listOverflowX": 0,
+      "pageOverflowX": 0,
+      "tracks": "20px 92px 68px 54px 54px"
+    }
+  ],
+  "sort": {
+    "before": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "USDC/USDT",
+      "XRP/USDT",
+      "SOL/USDT",
+      "PUMP/USDT",
+      "NEAR/USDT",
+      "MOG/USDT",
+      "NIGHT/USDT",
+      "HYPE/USDT",
+      "FARTCOIN/USDT",
+      "ZEC/USDT",
+      "QNT/USDT",
+      "LTC/USDT",
+      "TAO/USDT"
+    ],
+    "desc": [
+      "PUMP/USDT",
+      "XRP/USDT",
+      "HYPE/USDT",
+      "BTC/USDT",
+      "QNT/USDT",
+      "TAO/USDT",
+      "USDC/USDT",
+      "LTC/USDT",
+      "ETH/USDT",
+      "MOG/USDT",
+      "SOL/USDT",
+      "FARTCOIN/USDT",
+      "NEAR/USDT",
+      "NIGHT/USDT",
+      "ZEC/USDT"
+    ],
+    "asc": [
+      "FARTCOIN/USDT",
+      "SOL/USDT",
+      "MOG/USDT",
+      "ETH/USDT",
+      "LTC/USDT",
+      "USDC/USDT",
+      "TAO/USDT",
+      "QNT/USDT",
+      "BTC/USDT",
+      "HYPE/USDT",
+      "XRP/USDT",
+      "PUMP/USDT",
+      "NEAR/USDT",
+      "NIGHT/USDT",
+      "ZEC/USDT"
+    ],
+    "reset": [
+      "BTC/USDT",
+      "ETH/USDT",
+      "USDC/USDT",
+      "XRP/USDT",
+      "SOL/USDT",
+      "PUMP/USDT",
+      "NEAR/USDT",
+      "MOG/USDT",
+      "NIGHT/USDT",
+      "HYPE/USDT",
+      "FARTCOIN/USDT",
+      "ZEC/USDT",
+      "QNT/USDT",
+      "LTC/USDT",
+      "TAO/USDT"
+    ],
+    "unknown": [
+      "NEAR/USDT —",
+      "NIGHT/USDT —",
+      "ZEC/USDT —"
+    ]
+  }
+}

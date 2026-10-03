@@ -18,30 +18,45 @@
 #archive-terminal-preview .global-header { background:var(--h-bg-1); --bg:var(--h-bg-1); height:var(--exchange-header-height); min-height:var(--exchange-header-height); padding-inline:20px; border-bottom:1px solid var(--h-border); }
 #archive-terminal-preview .header-brand { color:#f1f5f9; }
 #archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:600; }
+/* The shared laptop tier used 2px link padding, while this route kept the
+   larger desktop type. Reserve readable spacing instead of joining labels. */
+@media(min-width:1440px) and (max-width:1799px) {
+  #archive-terminal-preview .global-header .main-nav { gap:6px; }
+  #archive-terminal-preview .global-header .main-nav .nav-item { padding-inline:7px; }
+  #archive-terminal-preview .global-header .main-nav .header-disclosure-toggle { width:18px; }
+  #archive-terminal-preview .global-header .brand-separator { margin-inline:8px; }
+}
+@media(min-width:1440px) and (max-width:1659px) {
+  #archive-terminal-preview .global-header .main-nav { gap:4px; }
+  #archive-terminal-preview .global-header .main-nav .nav-item { padding-inline:6px; font-size:13px; }
+}
+@media(min-width:1440px) and (max-width:1599px) {
+  #archive-terminal-preview .global-header { padding-inline:12px; }
+  #archive-terminal-preview .global-header .header-actions :is(.nav-wallet-link,.deposit-button) { padding-inline:10px; font-size:13px; }
+  #archive-terminal-preview .global-header .header-actions .header-icon { font-size:13px; }
+}
 #archive-terminal-preview .terminal {
-  display:grid; grid-template-columns:minmax(0,1fr) 270px 326px;
-  grid-template-rows:56px minmax(280px,1fr) 230px;
+  --futures-ticker-height:56px;
+  display:grid; grid-template-columns:minmax(0,1fr) 270px 310px;
+  grid-template-rows:var(--futures-ticker-height) minmax(280px,1fr) 230px;
   padding:0; gap:0; background:var(--panel); min-height:0;
 }
-#archive-terminal-preview .terminal[data-account-compact=true] { grid-template-rows:56px minmax(280px,1fr) 43px; }
+#archive-terminal-preview .terminal[data-account-compact=true] { grid-template-rows:var(--futures-ticker-height) minmax(280px,1fr) 43px; }
 #archive-terminal-preview .main-grid { display:contents; }
 #archive-terminal-preview .ticker-bar {
   grid-area:1 / 1 / 2 / 3; display:grid;
   grid-template-columns:max-content minmax(max-content,1fr);
-  align-items:center; gap:24px; height:56px; min-height:56px;
+  align-items:center; gap:20px; height:var(--futures-ticker-height); min-height:var(--futures-ticker-height);
   padding:6px 16px; border:0; border-bottom:1px solid var(--border); border-radius:0;
   background:var(--panel); overflow-x:auto; scrollbar-width:thin; box-shadow:none;
 }
 #archive-terminal-preview .ticker-bar > * { flex:0 0 auto; grid-area:auto; }
-#archive-terminal-preview .archive-ticker-metrics { display:grid; grid-template-columns:repeat(7,max-content); justify-content:start; column-gap:24px; }
+#archive-terminal-preview .archive-ticker-metrics { display:grid; grid-template-columns:repeat(7,max-content); justify-content:space-between; column-gap:20px; }
 #archive-terminal-preview .ticker-bar .ticker-item { grid-area:auto; display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0; padding:0; border:0; }
-#archive-terminal-preview .ticker-bar .label { font-size:11px; line-height:16px; color:var(--archive-label); white-space:nowrap; }
-#archive-terminal-preview .ticker-bar .value:not(.price) { font-size:13px; line-height:19px; font-weight:550; color:var(--text-primary); white-space:nowrap; }
-/* The last price at the reference's proportion (owner, 2026-09-24: «чуть
-   великий»). Read off the owner's Bybit screenshot, its digits stand at 0.94
-   of the symbol's capitals and 1.2 of the stat figures; at 17px ours stood at
-   1.07 and 1.3. 15px puts them at 0.94 and 1.15. */
-#archive-terminal-preview .ticker-bar .value.price { font-size:15px; line-height:20px; font-weight:600; color:var(--text-primary); }
+#archive-terminal-preview .ticker-bar .label { font-size:12px; line-height:16px; color:var(--archive-label); white-space:nowrap; }
+#archive-terminal-preview .ticker-bar .value:not(.price) { font-size:14px; line-height:20px; font-weight:500; color:var(--text-primary); white-space:nowrap; font-variant-numeric:tabular-nums; }
+/* Price leads the two-line statistics without changing their data or precision. */
+#archive-terminal-preview .ticker-bar .value.price { font-size:18px; line-height:20px; font-weight:600; color:var(--text-primary); font-variant-numeric:tabular-nums; }
 #archive-terminal-preview .ticker-bar .pair-name { display:flex; gap:6px; align-items:center; font-size:16px; font-weight:650; }
 #archive-terminal-preview .ticker-bar .value.up { color:var(--buy); }
 #archive-terminal-preview .ticker-bar .value.down { color:var(--sell); }
@@ -77,12 +92,12 @@
 #archive-terminal-preview .futures-positions-scroll:hover::-webkit-scrollbar-thumb { background:rgba(132,142,156,.36); }
 #archive-terminal-preview .futures-positions-scroll::-webkit-scrollbar-corner { background:transparent; }
 #archive-terminal-preview .reference-order-heading { display:none; }
-#archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:40px; min-height:40px; padding-inline:14px; font-size:12px; }
+#archive-terminal-preview :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.terminal-account-header) { background:var(--panel); border-color:var(--border); height:44px; min-height:44px; padding-inline:14px; font-size:13px; }
 #archive-terminal-preview .bottom-panel .terminal-account-header { border-bottom-color:transparent; }
 #archive-terminal-preview .terminal-chart-heading { color:var(--text-primary); }
-#archive-terminal-preview :is(.terminal-chart-heading button,.rb-tab,.bottom-tab) { font-size:12px; font-weight:550; }
-#archive-terminal-preview .terminal-chart-shell .chart-toolbar { background:var(--panel); height:38px; min-height:38px; border-color:var(--border); padding:4px 10px; gap:8px; }
-#archive-terminal-preview .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) { font-size:11px; padding:4px 6px; border-radius:4px; }
+#archive-terminal-preview :is(.terminal-chart-heading button,.rb-tab,.bottom-tab) { font-size:13px; font-weight:500; }
+#archive-terminal-preview .terminal-chart-shell .chart-toolbar { background:var(--panel); height:44px; min-height:44px; border-color:var(--border); padding:7px 10px; gap:8px; }
+#archive-terminal-preview .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) { height:28px; font-size:12px; padding:4px 6px; border-radius:4px; }
 #archive-terminal-preview .terminal-chart-shell :is(.chart-tab.active,.chart-tool-btn.active) { color:var(--accent); background:#f0b90b12; }
 #archive-terminal-preview .drawing-rail { background:var(--panel); border-color:var(--border); }
 #archive-terminal-preview .drawing-rail .tool-btn { color:#a6b2c8; }
@@ -202,6 +217,8 @@
    panel's own 14px. */
 @media (min-width:901px) {
   #archive-terminal-preview .ticker-bar .ticker-item { min-width:0; margin:0; }
+  #archive-terminal-preview .ticker-bar .pair-cluster { padding-right:16px; border-right:1px solid var(--border); }
+  #archive-terminal-preview .ticker-bar .futures-primary-price { padding-right:20px; border-right:1px solid var(--border); }
   #archive-terminal-preview .fo-panel { padding:14px 14px 18px; }
   #archive-terminal-preview .fo-form { gap:14px; }
   #archive-terminal-preview .fo-form > .fo-mlWrap { top:14px; left:14px; right:14px; }
@@ -259,12 +276,12 @@
 #archive-terminal-preview .market-ticker-static { background:#080a0f; border-color:var(--border); }
 #archive-terminal-preview .ticker-bar .ticker-item > :is(.label,.value,.archive-price-change,.futures-funding-values) { line-height:20px; }
 #archive-terminal-preview .ticker-bar .futures-funding-values { display:flex; align-items:baseline; gap:6px; }
-#archive-terminal-preview .ticker-bar .pair-asset { font-size:11px; line-height:15px; }
+#archive-terminal-preview .ticker-bar .pair-asset { font-size:12px; line-height:16px; }
 #archive-terminal-preview .archive-perpetual { font-size:9px; font-weight:500; padding:3px 5px; border:1px solid var(--border); border-radius:4px; color:var(--text-secondary); }
-#archive-terminal-preview .archive-price-change { font-size:11px; line-height:15px; font-weight:600; white-space:nowrap; }
+#archive-terminal-preview .archive-price-change { font-size:12px; line-height:16px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; }
 #archive-terminal-preview .archive-price-change.up { color:var(--buy); }
 #archive-terminal-preview .archive-price-change.down { color:var(--sell); }
-#archive-terminal-preview .archive-index-mark .value { font-size:13px; }
+#archive-terminal-preview .archive-index-mark .value { font-size:14px; }
 #archive-terminal-preview .header-extra-action { display:flex; align-items:center; }
 #archive-terminal-preview .archive-account-activity { position:relative; }
 #archive-terminal-preview .archive-account-activity summary { cursor:pointer; padding:8px; display:flex; color:var(--text-secondary); list-style:none; }
@@ -332,7 +349,7 @@
 /* `height:40px`: the studio sheet pins the heading to `height:30px` with
    `padding:0 !important`; one explicit height keeps the band the same at
    every width the geometry check measures, with room for a two-line title. */
-#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:#71757a !important; height:40px; font-size:11px; font-weight:400; line-height:1.25; vertical-align:middle; border-bottom:0; position:sticky; top:0; z-index:1; }
+#archive-terminal-preview .futures-positions-table th { background:var(--panel); color:#959ba5 !important; height:40px; font-size:12px; font-weight:400; line-height:1.25; vertical-align:middle; border-bottom:0; position:sticky; top:0; z-index:1; }
 /* The heading band reads as its own strip, as on the reference: titles in
    the middle of it, a hairline under it, so the first row's figures start
    clear of the titles and rows scrolling up pass UNDER a ruled band instead
@@ -483,8 +500,17 @@
 #archive-terminal-preview .archive-top-assets button:hover { background:var(--panel-alt); color:var(--text-primary); }
 #archive-terminal-preview .archive-top-assets-status { padding-inline:14px; color:var(--text-tertiary); font-size:11px; }
 @media(min-width:1800px) {
-  #archive-terminal-preview .terminal { grid-template-columns:minmax(0,1fr) 292px 350px; }
+  #archive-terminal-preview .terminal { grid-template-columns:minmax(0,1fr) 292px 310px; }
+  /* Use the available strip without scattering statistics across very wide screens. */
+  #archive-terminal-preview .archive-ticker-metrics { max-width:1180px; }
   #archive-terminal-preview .futures-positions-table th { font-size:12px; }
+}
+/* Keep every statistic visible on laptop widths. The grid reserves the
+   extra row, so neither the chart nor the book can be covered by the strip. */
+@media(min-width:901px) and (max-width:1550px) {
+  #archive-terminal-preview .terminal { --futures-ticker-height:96px; }
+  #archive-terminal-preview .archive-ticker-metrics { grid-template-columns:max-content repeat(3,max-content); gap:8px 20px; }
+  #archive-terminal-preview .ticker-bar .futures-primary-price { grid-column:1; grid-row:1 / span 2; align-self:center; }
 }
 @media(max-width:1400px) { #archive-terminal-preview .ticker-bar { gap:14px; padding-inline:12px; } }
 @media(max-width:1200px) {
@@ -586,14 +612,11 @@
 #archive-terminal-preview :is(.terminal, .ticker-bar, .chart-area, .terminal-chart-shell, .terminal-chart-heading, .chart-toolbar, .drawing-rail-shell, .drawing-rail, .orderbook-area, .reference-book, .rb-tabs, .rb-controls, .rb-columns, .rb-center, .order-form-area, .reference-order-heading, .fo-panel, .futures-account-summary, .archive-top-assets) {
   background: transparent !important;
 }
-/* The chart paints nothing of its own so the gradient shows through it
-   (PriceChart reads these tokens); its axis figures are white with no ruled
-   edge. The candles are the standard green and red, the book's own buy and
-   sell (owner, 2026-09-30); the white and orange they were stays one click
-   away as a preset in the chart's settings, which paint over these. */
+/* Preserve the owner's white/gold candles. Saved chart preferences still
+   take precedence; no series, history or scale behavior is changed. */
 #archive-terminal-preview .terminal-chart-shell {
   --voltex-plot-background: rgba(0,0,0,0);
-  --voltex-candle-up: #2ebd85; --voltex-candle-down: #f6465d;
+  --voltex-candle-up: #f4f6f8; --voltex-candle-down: #f0b90b;
   --voltex-axis-text: #ffffff; --voltex-axis-border: rgba(0,0,0,0);
 }
 /* On a gradient any fixed fill matches the background somewhere, and the
@@ -612,12 +635,7 @@
 #archive-terminal-preview .fo-mlTrigger[aria-expanded="true"] {
   border-color: var(--accent) !important;
 }
-/* The header as on the owner's Bybit screenshot (2026-09-25: «зроби в нас
-   на біржі цей текст таким же приглушеним, а 0.0100% / 03:06:32 (8h) таким
-   же кольором»). The captions take the reference grey the bottom panel
-   already uses, at regular weight; the funding rate, its slash and the
-   countdown read as one orange line — the chart's own orange, which is
-   Bybit's tone to the eye without bringing its brand colour into the
-   sheet (§ 1 of the guards keeps that out). */
-#archive-terminal-preview .ticker-bar .label { color:#71757a; font-weight:400; }
-#archive-terminal-preview .ticker-bar .futures-funding-values > :is(.value,.label) { color:#ff9800 !important; font-size:13px; font-weight:550; }
+/* Separate the rate from the clock; both retain their original values. */
+#archive-terminal-preview .ticker-bar .label { color:#959ba5; font-weight:400; }
+#archive-terminal-preview .ticker-bar .futures-funding-values > :is(.value,.label) { color:var(--text-primary) !important; font-size:14px; font-weight:500; }
+#archive-terminal-preview .ticker-bar .futures-funding-values > .value:first-child { color:var(--accent) !important; }

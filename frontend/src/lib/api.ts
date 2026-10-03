@@ -619,11 +619,16 @@ export const api = {
       body: JSON.stringify({ email, password, ref }),
     }),
 
-  login: (email: string, password: string) =>
+  /** `remember` = «Запомнить это устройство»: the server keeps this
+   *  device signed in for up to 90 days (30 days without use ends it). */
+  login: (email: string, password: string, remember = false) =>
     request<{ token: string } | { requires2fa: true; pendingToken: string }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...(remember ? { remember: true } : {}) }),
     }),
+
+  /** Ends this session on the server as well; the caller clears the token. */
+  logout: () => request<{ status: 'ok' }>('/auth/logout', { method: 'POST' }),
 
   loginWith2FA: (pendingToken: string, code: string) =>
     request<{ token: string }>('/auth/login/2fa', {
@@ -1126,7 +1131,7 @@ export const api = {
   // button.
   getSessions: () =>
     request<
-      { id: string; ip: string | null; userAgent: string | null; createdAt: string; lastSeenAt: string; current: boolean }[]
+      { id: string; ip: string | null; userAgent: string | null; createdAt: string; lastSeenAt: string; current: boolean; remembered?: boolean }[]
     >('/me/sessions'),
 
   revokeSession: (id: string) => request<void>(`/me/sessions/${id}`, { method: 'DELETE' }),

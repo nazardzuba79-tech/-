@@ -640,6 +640,107 @@ describe('auth routes', () => {
     expect(resend.status).toBe(404);
   });
 
+  describe('«Запомнить это устройство»', () => {
+    const HOUR = 3600;
+    async function loginUser(extra: any = {}) {
+      const passwordHash = await bcrypt.hash('Correcthorsebattery', 12);
+      return { id: 'user-1', email: 'alice@team.com', passwordHash, country: 'UA', ...extra };
+    }
+    const lifetime = (token: string) => {
+      const { iat, exp } = jwt.decode(token) as { iat: number; exp: number };
+      return exp - iat;
+    };
+
+    it('keeps an ordinary sign-in to 12 hours and an ordinary Session row', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser()) } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/login')
+        .send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
+      expect(res.status).toBe(200);
+      expect(lifetime(res.body.token)).toBe(12 * HOUR);
+      expect(prisma.session.create.mock.calls[0][0].data.remembered).toBeUndefined();
+    });
+
+    it('gives a remembered sign-in 90 days and marks its Session row', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser()) } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/login')
+        .send({ email: 'alice@team.com', password: 'Correcthorsebattery', remember: true });
+      expect(res.status).toBe(200);
+      expect(lifetime(res.body.token)).toBe(90 * 24 * HOUR);
+      expect(decodeSession(res.body.token).sid).toBe('session-1');
+      expect(prisma.session.create.mock.calls[0][0].data.remembered).toBe(true);
+    });
+
+    it('still refuses a wrong password when remember is ticked', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser()) } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/login')
+        .send({ email: 'alice@team.com', password: 'Wrongpassword1', remember: true });
+      expect(res.status).toBe(401);
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects a non-boolean remember value', async () => {
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(await loginUser()) } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/login')
+        .send({ email: 'alice@team.com', password: 'Correcthorsebattery', remember: 'yes' });
+      expect(res.status).toBe(400);
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it('carries the choice through 2FA inside the signed pending token', async () => {
+      const { base32 } = speakeasy.generateSecret({ length: 20 });
+      const user = await loginUser({ twoFactorEnabled: true, twoFactorSecret: base32, twoFactorBackupCodes: [] });
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(user) } });
+      const app = buildApp(prisma);
+      const first = await request(app).post('/api/v1/auth/login')
+        .send({ email: user.email, password: 'Correcthorsebattery', remember: true });
+      const code = speakeasy.totp({ secret: base32, encoding: 'base32' });
+      const res = await request(app).post('/api/v1/auth/login/2fa').send({ pendingToken: first.body.pendingToken, code });
+      expect(res.status).toBe(200);
+      expect(lifetime(res.body.token)).toBe(90 * 24 * HOUR);
+      expect(prisma.session.create.mock.calls[0][0].data.remembered).toBe(true);
+    });
+
+    it('does not let the 2FA step upgrade an ordinary sign-in', async () => {
+      const { base32 } = speakeasy.generateSecret({ length: 20 });
+      const user = await loginUser({ twoFactorEnabled: true, twoFactorSecret: base32, twoFactorBackupCodes: [] });
+      const prisma = makePrismaMock({ user: { findUnique: jest.fn().mockResolvedValue(user) } });
+      const app = buildApp(prisma);
+      const first = await request(app).post('/api/v1/auth/login')
+        .send({ email: user.email, password: 'Correcthorsebattery' });
+      const code = speakeasy.totp({ secret: base32, encoding: 'base32' });
+      const res = await request(app).post('/api/v1/auth/login/2fa')
+        .send({ pendingToken: first.body.pendingToken, code, remember: true });
+      expect(res.status).toBe(200);
+      expect(lifetime(res.body.token)).toBe(12 * HOUR);
+      expect(prisma.session.create.mock.calls[0][0].data.remembered).toBeUndefined();
+    });
+  });
+
+  describe('POST /auth/logout', () => {
+    const sessionRow = { id: 'session-9', userId: 'user-1', revokedAt: null, lastSeenAt: new Date(), remembered: true };
+    const token = () => jwt.sign({ sub: 'user-1', sid: 'session-9' }, process.env.JWT_SECRET!);
+
+    it('revokes this session on the server, not only in the browser', async () => {
+      const prisma = makePrismaMock({ session: {
+        findUnique: jest.fn().mockResolvedValue(sessionRow),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/logout').set('Authorization', `Bearer ${token()}`);
+      expect(res.status).toBe(200);
+      expect(prisma.session.updateMany).toHaveBeenCalledWith({
+        where: { id: 'session-9', userId: 'user-1', revokedAt: null }, data: { revokedAt: expect.any(Date) },
+      });
+      expect(prisma.auditLog.create.mock.calls[0][0].data.action).toBe('SESSION_REVOKED');
+    });
+
+    it('needs a live session to call', async () => {
+      const prisma = makePrismaMock({ session: { findUnique: jest.fn().mockResolvedValue({ ...sessionRow, revokedAt: new Date() }), updateMany: jest.fn() } });
+      const res = await request(buildApp(prisma)).post('/api/v1/auth/logout').set('Authorization', `Bearer ${token()}`);
+      expect(res.status).toBe(401);
+      expect(prisma.session.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('2FA-enabled login', () => {
     async function makeTwoFactorUser() {
       const bcrypt = require('bcrypt');

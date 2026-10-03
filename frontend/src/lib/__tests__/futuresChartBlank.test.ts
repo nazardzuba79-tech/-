@@ -332,14 +332,23 @@ describe('futures chart never goes blank on a loader or binding change', () => {
 
   // 10
   test('an interval switch wipes first, so only the new interval is shown', async () => {
-    const hourly = jest.fn().mockResolvedValue({ candles: CANDLES });
-    const quarter = jest.fn().mockResolvedValue({ candles: [bar(4), bar(5)] });
-    const chart = mount({ ...FUTURES, candleLoader: hourly });
-    chart.render();
+    const loader = jest.fn((_pair: string, requestedInterval: string) => Promise.resolve({
+      candles: requestedInterval === '15m' ? [bar(4), bar(5)] : CANDLES,
+    }));
+    const chart = mount({ ...FUTURES, candleLoader: loader });
+    const tree = chart.render();
     await flushAll();
     expect(lastPaint(chart)).toHaveLength(3);
-    chart.render({ interval: '15m', candleLoader: quarter });
+
+    // Drive the component's real interval state. Passing an `interval` prop
+    // is not an interval switch: PriceChart owns this state internally.
+    const quarter = nodes(tree).find(node => node.type === 'button' && node.props?.children === '15m');
+    expect(quarter).toBeTruthy();
+    quarter.props.onClick();
+    chart.render();
     await flushAll();
+
+    expect(loader.mock.calls.at(-1)?.[1]).toBe('15m');
     expect(paintedCounts(chart)).toContain(0);
     expect(lastPaint(chart)).toHaveLength(2);
     chart.unmount();
@@ -379,6 +388,44 @@ describe('futures chart never goes blank on a loader or binding change', () => {
     expect(chart.chartHarness.series[0].setData.mock.calls.length).toBe(settled);
     expect(loader).toHaveBeenCalledTimes(1);
     chart.unmount();
+  });
+
+  // 13 — Ordinary Futures must page backward on demand. This used to exist
+  // only in private replay, so a public 4h chart stopped at its initial batch.
+  test('ordinary Futures scroll-back loads older candles and preserves them through tail refreshes', async () => {
+    jest.useFakeTimers();
+    try {
+      const older = [{ ...bar(0), time: CANDLES[0].time - 3600 }];
+      const loader = jest.fn()
+        .mockResolvedValueOnce({ candles: CANDLES })
+        .mockResolvedValueOnce({ candles: older })
+        .mockResolvedValue({ candles: CANDLES });
+      const chart = mount({ ...FUTURES, candleLoader: loader });
+      chart.render();
+      await flushAll();
+      expect(lastPaint(chart)).toHaveLength(3);
+      expect(typeof chart.chartHarness.rangeChange).toBe('function');
+
+      chart.chartHarness.rangeChange({ from: 20, to: 100 });
+      await jest.advanceTimersByTimeAsync(180);
+      await flushAll();
+
+      expect(loader).toHaveBeenCalledTimes(2);
+      expect(loader.mock.calls[1][4]).toBe(CANDLES[0].time * 1000 - 1);
+      expect(lastPaint(chart)).toHaveLength(4);
+      expect(lastPaint(chart)[0].time).toBe(older[0].time);
+
+      // The normal 5s tail refresh must merge the newest batch, not throw
+      // away everything the user loaded by scrolling left.
+      await jest.advanceTimersByTimeAsync(5_000);
+      await flushAll();
+      expect(loader).toHaveBeenCalledTimes(3);
+      expect(lastPaint(chart)).toHaveLength(4);
+      expect(lastPaint(chart)[0].time).toBe(older[0].time);
+      chart.unmount();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   // 14 — A control the customer cannot press is not error recovery. The

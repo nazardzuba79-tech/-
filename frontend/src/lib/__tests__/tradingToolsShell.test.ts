@@ -26,7 +26,7 @@ function findJsx(file: string, tag: string) {
 describe('local trading tools keeps the real authenticated shell without a market subscription', () => {
   let dom: any, root: any, Nav: any, activeTicker: number;
   let getMe: jest.Mock, tickerMount: jest.Mock, tickerRead: jest.Mock;
-  let prefetchDepositConfig: jest.Mock, prefetchCopyMarketplace: jest.Mock, clearToken: jest.Mock, navigate: jest.Mock;
+  let prefetchDepositConfig: jest.Mock, prefetchCopyMarketplace: jest.Mock, clearToken: jest.Mock, navigate: jest.Mock, logout: jest.Mock;
   const nativeFetch = globalThis.fetch;
 
   beforeEach(() => {
@@ -38,7 +38,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
     getMe = jest.fn(async () => ({ isAdmin: true, avatarUrl: null }));
     tickerMount = jest.fn(); tickerRead = jest.fn();
     prefetchDepositConfig = jest.fn(); prefetchCopyMarketplace = jest.fn();
-    clearToken = jest.fn(); navigate = jest.fn();
+    clearToken = jest.fn(); navigate = jest.fn(); logout = jest.fn().mockResolvedValue({ status: 'ok' });
     function TopGainersTicker() {
       React.useEffect(() => {
         activeTicker += 1; tickerMount(); tickerRead();
@@ -56,7 +56,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
         useLocation: () => ({ pathname: '/tools' }), useNavigate: () => navigate,
         Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children),
       },
-      '../lib/api': { api: { getMe }, getToken: () => 'fixture-session', clearToken },
+      '../lib/api': { api: { getMe, logout }, getToken: () => 'fixture-session', clearToken },
       '../lib/i18n': { useLanguage: () => ({ t: (key: string) => key, lang: 'ru' }) },
       '../lib/useDepositOptions': { prefetchDepositConfig },
       '../lib/useCopyMarketplace': { prefetchCopyMarketplace },
@@ -67,6 +67,12 @@ describe('local trading tools keeps the real authenticated shell without a marke
       './BottomNav': { BottomNav: empty },
       './DepositModal': { DepositModal: ({ onClose }: any) => React.createElement('button', { 'data-deposit-fixture': true, onClick: onClose }, 'Close deposit') },
     };
+    const dropdown: any = {};
+    const dropdownCode = ts.transpileModule(source('components/HeaderDropdown.tsx'), { compilerOptions: {
+      module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+    } }).outputText;
+    new Function('exports', 'require', dropdownCode)(dropdown, (name: string) => name.endsWith('.css') ? {} : imports[name]);
+    imports['./HeaderDropdown'] = dropdown;
     const output: any = {};
     const code = ts.transpileModule(source('components/Nav.tsx'), { compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
@@ -145,38 +151,73 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('.header-brand [data-real-logo-slot]')).not.toBeNull();
     expect(document.querySelector('.nav-wallet-link')?.getAttribute('href')).toBe('/wallet');
     expect(Array.from(document.querySelectorAll('a[href="/banking"]')).map(node => node.textContent)).toEqual(['Banking & Earn', 'Banking & Earn']);
-    expect(document.querySelector('.nav-desktop-links a[href="/trade"].nav-active')).not.toBeNull();
+    expect(document.querySelector('.nav-desktop-links a[href="/markets"].nav-active')).not.toBeNull();
     expect(document.querySelector('a[href="/futures"]')).not.toBeNull();
+    await click('.nav-mobile-menu button[aria-label="nav.trade"]');
     expect(document.querySelector('a[href="/trade?market=cfd"]')).not.toBeNull();
     expect(document.querySelector('a[href="/otc"]')).not.toBeNull();
   });
 
-  test('desktop Tools uses the keyboard-accessible Trading dropdown without adding header width', async () => {
+  test('desktop Tools lives under Markets; Futures stays direct; Trading contains only Spot and CFD', async () => {
     await mount();
     expect(document.querySelector('.nav-desktop-links > a[href="/tools"]')).toBeNull();
-    expect(document.querySelector('.nav-dropdown')).toBeNull();
+    expect(document.querySelector('.nav-desktop-links > a[href="/futures"]')).not.toBeNull();
+
+    const marketsToggle = document.querySelector('.nav-desktop-links button[aria-label="nav.markets"]') as HTMLElement;
+    await React.act(async () => marketsToggle.click());
+    expect(Array.from(document.querySelectorAll('.nav-desktop-links .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/tools']);
+    expect(document.querySelector('.nav-desktop-links a[href="/markets"].nav-active')).not.toBeNull();
+    await React.act(async () => marketsToggle.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+
     const trigger = document.querySelector('.nav-desktop-links a[href="/trade"]') as HTMLElement;
-    await React.act(async () => trigger.focus());
-    expect(trigger.getAttribute('aria-expanded')).toBe('true');
-    const links = document.querySelectorAll('.nav-dropdown a[href="/tools"]');
-    expect(links).toHaveLength(1);
-    expect(links[0].textContent).toBe('Инструменты');
-    expect(links[0].getAttribute('aria-current')).toBe('page');
-    expect(document.querySelector('.nav-dropdown a[href="/arbitrage"]')).not.toBeNull();
-    await React.act(async () => {
-      (links[0] as HTMLElement).focus();
-      links[0].dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    });
-    expect(document.querySelector('.nav-dropdown')).toBeNull();
+    expect(trigger.classList.contains('nav-active')).toBe(false);
+    await click('.nav-desktop-links button[aria-label="nav.trade"]');
+    expect(Array.from(document.querySelectorAll('.nav-desktop-links .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/trade', '/trade?market=cfd']);
+    await React.act(async () => trigger.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(document.querySelector('.header-disclosure-panel')).toBeNull();
   });
 
-  test('mobile drawer retains one active Tools entry and the existing Arbitrage entry', async () => {
+  test.each(['.nav-desktop-links', '.nav-mobile-menu'])('knowledge disclosure has four destinations and closes on Escape: %s', async selector => {
+    await mount();
+    const button = selector + ' button[aria-label="nav.academy"]';
+    expect(document.querySelector(selector + ' a[href="/academy"]')).not.toBeNull();
+    await click(button);
+    expect(Array.from(document.querySelectorAll(selector + ' .header-disclosure-panel a')).map(a => a.getAttribute('href')))
+      .toEqual(['/academy/learn', '/academy/knowledge', '/academy/faq', '/academy/glossary']);
+    const last = document.querySelector(selector + ' a[href="/academy/glossary"]') as HTMLElement;
+    await React.act(async () => { last.focus(); last.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+    expect(document.querySelector(selector + ' .header-disclosure-panel')).toBeNull();
+    expect(document.activeElement).toBe(document.querySelector(button));
+  });
+
+  test.each(['/futures', '/trade', '/tools'])('%s shares the short Card and Academy labels in desktop and mobile headers', async active => {
+    await mount({ active, hideTicker: true });
+    for (const selector of ['.nav-desktop-links', '.nav-mobile-menu']) {
+      expect(document.querySelector(selector + ' a[href="/card"]')?.textContent).toBe('nav.card');
+      expect(document.querySelector(selector + ' a[href="/academy"]')?.textContent).toBe('nav.academy');
+      expect(document.querySelector(selector + ' button[aria-label="nav.academy"]')).not.toBeNull();
+    }
+  });
+
+  test('mobile Trading only exposes Spot and CFD, and selecting CFD closes the drawer', async () => {
+    await mount();
+    await click('.nav-burger');
+    await click('.nav-mobile-menu button[aria-label="nav.trade"]');
+    expect(Array.from(document.querySelectorAll('.nav-mobile-menu .header-disclosure-panel a')).map(a => a.getAttribute('href')))
+      .toEqual(['/trade', '/trade?market=cfd']);
+    expect(document.querySelector('.nav-mobile-menu > a[href="/futures"]')).not.toBeNull();
+    await click('.nav-mobile-menu a[href="/trade?market=cfd"]');
+    expect(document.querySelector('.nav-mobile-menu.open')).toBeNull();
+    expect(document.querySelector('.nav-mobile-menu .header-disclosure-panel')).toBeNull();
+  });
+
+  test('mobile drawer keeps Tools under Markets and retains the existing Arbitrage entry', async () => {
     await mount();
     await click('.nav-burger');
     expect(document.querySelector('.nav-mobile-menu.open')).not.toBeNull();
-    const links = document.querySelectorAll('.nav-mobile-menu a[href="/tools"]');
-    expect(links).toHaveLength(1);
-    expect(links[0].getAttribute('aria-current')).toBe('page');
+    await click('.nav-mobile-menu button[aria-label="nav.markets"]');
+    expect(Array.from(document.querySelectorAll('.nav-mobile-menu .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/tools']);
+    await click('.nav-mobile-menu button[aria-label="nav.otc"]');
     expect(document.querySelectorAll('.nav-mobile-menu a[href="/arbitrage"]')).toHaveLength(1);
     await click('.nav-burger');
     expect(document.querySelector('.nav-mobile-menu.open')).toBeNull();
@@ -201,6 +242,8 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('.top-nav-profile-menu a[href="/settings"]')).not.toBeNull();
     expect(document.querySelector('.top-nav-profile-menu a[href="/admin"]')).not.toBeNull();
     await click('.top-nav-profile-menu button');
+    // Logout also ends the server session (remembered devices), then clears locally.
+    expect(logout).toHaveBeenCalledTimes(1);
     expect(clearToken).toHaveBeenCalledTimes(1); expect(navigate).toHaveBeenCalledWith('/');
   });
 

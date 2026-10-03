@@ -46,10 +46,15 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
   'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote'].map(key => `deposit.ui.${key}`);
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
+const shortCardLabels: Record<string, string> = { ru: 'Crypto-Card', en: 'Crypto-Card', zh: 'Crypto-Card', es: 'Crypto-Card', hi: 'Crypto-Card', ja: 'Crypto-Card', ko: 'Crypto-Card' };
+const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('provides every shared menu description in all seven languages', () => {
+    for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();
+  });
   it('localizes each decimal refusal in all seven languages', () => {
     for (const code of LOCALES) {
       expect(Object.keys(dicts[code]).filter(key => key.startsWith('futures.number')).sort()).toEqual([...decimalRefusalKeys].sort());
@@ -225,7 +230,9 @@ describe('translation integrity', () => {
           // line and the edge's refusals; the existing KYC copy is unchanged.
           'settings.kycPreparingFile', 'settings.kycFileReady', 'settings.kycFileTooLarge', 'settings.kycFileType', 'settings.kycDeliveryFailed',
           // «Позиция закрыта» card after a market close (2026-10-01, owner chose variant B).
-          'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss'];
+          'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss',
+          // Remembered-device sign-in (2026-10-03): additive auth/session copy.
+          'auth.rememberDevice', 'auth.rememberDeviceHint', 'settings.rememberedDevice'];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;
@@ -242,16 +249,26 @@ describe('translation integrity', () => {
         // reports `56 0` per language, additions only. No key used either
         // prefix before them.
         if (key?.startsWith('academy.') || key?.startsWith('help.') || key === 'nav.academy' || key === 'nav.help') return false;
+        // Owner-approved header destinations, added without changing existing copy.
+        if (key === 'nav.tools' || key === 'nav.knowledgeCenter' || (key && menuDescriptionKeys.includes(key))) return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       // Added for the approved compact order-panel disclosure; older copy remains frozen.
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
+      expect(dicts[code]['nav.tools'].trim()).not.toBe('');
+      expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
+      expect(dicts[code]['auth.rememberDevice'].trim()).not.toBe('');
+      expect(dicts[code]['auth.rememberDeviceHint'].trim()).not.toBe('');
+      expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
+      expect(dicts[code]['nav.card']).toBe(shortCardLabels[code]);
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.
       const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'")
+        // Reverse only the owner's exact short navigation label; product copy stays frozen.
+        .replace("'nav.card': '" + shortCardLabels[code] + "'", "'nav.card': 'Crypto Card'")
         .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'");
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })

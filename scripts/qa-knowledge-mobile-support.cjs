@@ -12,7 +12,7 @@ const report = { commit: process.env.GITHUB_SHA || null, cases: [], errors: [], 
 const app = express();
 app.use(express.static(dist, { extensions: ['html'], redirect: false }));
 app.use((_req, res) => res.sendFile(path.join(dist, 'index.html')));
-const paths = ['/academy', '/academy/futures', '/academy/futures/perpetual', '/academy/glossary', '/help/faq', '/help/fees', '/help/rules', '/help/status'];
+const paths = ['/academy', '/academy/learn', '/academy/futures', '/academy/futures/perpetual', '/academy/knowledge', '/academy/faq', '/academy/glossary', '/help/faq', '/help/fees', '/help/rules', '/help/status'];
 const launcher = '.support-launcher';
 const inline = '[data-kb-inline-support] button';
 const panel = '#voltex-assistant-panel';

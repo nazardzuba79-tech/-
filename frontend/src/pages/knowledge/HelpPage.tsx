@@ -10,35 +10,45 @@ import { faqGroups, pickLang } from '../../lib/content/academy';
 import { PROBES, apiHealthUrl, edgeHealthUrl, probe, type ProbeId, type ProbeResult } from '../../lib/content/systemStatus';
 import type { FeeRow, HelpContent } from '../../lib/content/types';
 import { usePageMeta } from '../../lib/content/usePageMeta';
+import { AcademyHubNav } from './AcademyHubNav';
 import { KnowledgeShell } from './KnowledgeShell';
 
-/** «Помощь»: FAQ, fees, trading rules and system status. Everything but the
- * status check is static text compiled at build time. There is no «legal»
- * tab: the existing /legal/* pages stay where they are (owner, 2026-10-01). */
-const TABS = ['faq', 'fees', 'rules', 'status'] as const;
-type Tab = (typeof TABS)[number];
-const TITLE = 'Помощь VOLTEX';
+type HelpView = 'faq' | 'knowledge' | 'status';
+const TITLE = 'Академия VOLTEX';
 
-export function HelpPage() {
+export function HelpPage({ view }: { view?: HelpView } = {}) {
   const { tab } = useParams();
   const { t, lang } = useLanguage();
   const { content, fallback } = pickLang(help, lang);
-  if (!TABS.includes(tab as Tab)) return <Navigate to="/help/faq" replace />;
-  const current = tab as Tab;
+
+  const legacyRedirect = !view
+    ? tab === 'faq' ? '/academy/faq'
+      : tab === 'fees' || tab === 'rules' ? '/academy/knowledge'
+        : tab && tab !== 'status' ? '/academy/faq'
+          : null
+    : null;
+  const current: HelpView = view ?? (tab === 'status' ? 'status' : 'faq');
+  const title = current === 'faq' ? t('help.tab.faq')
+    : current === 'knowledge' ? t('academy.hub.knowledge')
+      : t('help.tab.status');
+  usePageMeta(`${title} — ${TITLE}`, current === 'faq'
+    ? 'Ответы на частые вопросы об аккаунте, пополнении, торговле и выводе на VOLTEX.'
+    : current === 'knowledge'
+      ? 'Практическая информация о комиссиях и правилах торговли на VOLTEX.'
+      : 'Отвечают ли сервер VOLTEX и рыночные данные; опубликованные сообщения о сбоях.');
+
+  if (legacyRedirect) return <Navigate to={legacyRedirect} replace />;
+
   return (
-    <KnowledgeShell active="help" fallback={fallback}>
+    <KnowledgeShell active={current === 'status' ? 'help' : 'academy'} fallback={fallback}>
+      {current !== 'status' && <AcademyHubNav active={current === 'faq' ? 'faq' : 'knowledge'} />}
       <header className="vx-kb-intro">
-        <h1 className="vx-kb-title">{t('nav.help')}</h1>
+        <h1 className="vx-kb-title">{title}</h1>
+        {current === 'knowledge' && <p className="vx-kb-lead">{t('help.tab.fees')} · {t('help.tab.rules')}</p>}
       </header>
-      <nav className="vx-kb-tabs" aria-label={t('nav.help')}>
-        {TABS.map((id) => (
-          <Link key={id} to={`/help/${id}`} aria-current={current === id ? 'page' : undefined} data-help-tab={id}>{t(`help.tab.${id}`)}</Link>
-        ))}
-      </nav>
       <div className="vx-kb-panel" data-help-panel={current}>
         {current === 'faq' && <Faq content={content} />}
-        {current === 'fees' && <Fees content={content} lang={lang} />}
-        {current === 'rules' && <Rules content={content} />}
+        {current === 'knowledge' && <KnowledgeBase content={content} lang={lang} />}
         {current === 'status' && <Status content={content} />}
       </div>
       <p className="vx-kb-support">
@@ -51,7 +61,6 @@ export function HelpPage() {
 
 function Faq({ content }: { content: HelpContent }) {
   const { t } = useLanguage();
-  usePageMeta(`${t('help.tab.faq')} — ${TITLE}`, 'Ответы на частые вопросы об аккаунте, пополнении, торговле и выводе на VOLTEX.');
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const groups = faqGroups(content.faq, query);
@@ -129,9 +138,38 @@ function FeeTable({ title, rows }: { title: string; rows: FeeRow[] }) {
   );
 }
 
+function KnowledgeBase({ content, lang }: { content: HelpContent; lang: string }) {
+  const { t } = useLanguage();
+  return (
+    <>
+      <div className="vx-kb-grid vx-kb-grid-tight">
+        <a href="#knowledge-fees" className="vx-kb-card">
+          <span className="vx-kb-card-title">{t('help.tab.fees')}</span>
+          <span className="vx-kb-card-text">{t('help.fees.trading')} · {t('help.fees.deposits')} · {t('help.fees.withdrawals')}</span>
+        </a>
+        <a href="#knowledge-rules" className="vx-kb-card">
+          <span className="vx-kb-card-title">{t('help.tab.rules')}</span>
+          <span className="vx-kb-card-text">{t('help.rules.toc')}</span>
+        </a>
+        <Link to="/academy/faq" className="vx-kb-card">
+          <span className="vx-kb-card-title">{t('help.tab.faq')}</span>
+          <span className="vx-kb-card-text">{t('help.faqSearch')}</span>
+        </Link>
+      </div>
+      <section id="knowledge-fees" className="vx-kb-block">
+        <h2 className="vx-kb-h2">{t('help.tab.fees')}</h2>
+        <Fees content={content} lang={lang} />
+      </section>
+      <section id="knowledge-rules" className="vx-kb-block">
+        <h2 className="vx-kb-h2">{t('help.tab.rules')}</h2>
+        <Rules content={content} />
+      </section>
+    </>
+  );
+}
+
 function Fees({ content, lang }: { content: HelpContent; lang: string }) {
   const { t } = useLanguage();
-  usePageMeta(`${t('help.tab.fees')} — ${TITLE}`, 'Торговые комиссии, пополнение и вывод на VOLTEX.');
   const { fees } = content;
   const markets: [string, { maker: string; taker: string } | undefined][] = [
     [t('help.fees.futures'), fees.futures],
@@ -171,7 +209,6 @@ function Fees({ content, lang }: { content: HelpContent; lang: string }) {
 
 function Rules({ content }: { content: HelpContent }) {
   const { t } = useLanguage();
-  usePageMeta(`${t('help.tab.rules')} — ${TITLE}`, 'Как работают ордера, маржа, ликвидация и ставка финансирования на VOLTEX.');
   return (
     <div className="vx-kb-rules">
       {content.rulesToc.length > 0 && (
@@ -193,7 +230,6 @@ function Rules({ content }: { content: HelpContent }) {
 
 function Status({ content }: { content: HelpContent }) {
   const { t } = useLanguage();
-  usePageMeta(`${t('help.tab.status')} — ${TITLE}`, 'Отвечают ли сервер VOLTEX и рыночные данные; опубликованные сообщения о сбоях.');
   const [results, setResults] = useState<Partial<Record<ProbeId, ProbeResult>>>({});
   useEffect(() => {
     // One check each, only now that the page is open; never repeated on a timer.
