@@ -151,19 +151,24 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('.header-brand [data-real-logo-slot]')).not.toBeNull();
     expect(document.querySelector('.nav-wallet-link')?.getAttribute('href')).toBe('/wallet');
     expect(Array.from(document.querySelectorAll('a[href="/banking"]')).map(node => node.textContent)).toEqual(['Banking & Earn', 'Banking & Earn']);
-    expect(document.querySelector('.nav-desktop-links a[href="/tools"].nav-active')).not.toBeNull();
+    expect(document.querySelector('.nav-desktop-links a[href="/markets"].nav-active')).not.toBeNull();
     expect(document.querySelector('a[href="/futures"]')).not.toBeNull();
     await click('.nav-mobile-menu button[aria-label="nav.trade"]');
     expect(document.querySelector('a[href="/trade?market=cfd"]')).not.toBeNull();
     expect(document.querySelector('a[href="/otc"]')).not.toBeNull();
   });
 
-  test('desktop Tools and Futures are direct links; Trading contains only Spot and CFD', async () => {
+  test('desktop Tools lives under Markets; Futures stays direct; Trading contains only Spot and CFD', async () => {
     await mount();
-    const tools = document.querySelector('.nav-desktop-links > a[href="/tools"]');
-    expect(tools?.textContent).toBe('nav.tools');
-    expect(tools?.classList.contains('nav-active')).toBe(true);
+    expect(document.querySelector('.nav-desktop-links > a[href="/tools"]')).toBeNull();
     expect(document.querySelector('.nav-desktop-links > a[href="/futures"]')).not.toBeNull();
+
+    const marketsToggle = document.querySelector('.nav-desktop-links button[aria-label="nav.markets"]') as HTMLElement;
+    await React.act(async () => marketsToggle.click());
+    expect(Array.from(document.querySelectorAll('.nav-desktop-links .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/tools']);
+    expect(document.querySelector('.nav-desktop-links a[href="/markets"].nav-active')).not.toBeNull();
+    await React.act(async () => marketsToggle.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+
     const trigger = document.querySelector('.nav-desktop-links a[href="/trade"]') as HTMLElement;
     expect(trigger.classList.contains('nav-active')).toBe(false);
     await React.act(async () => trigger.focus());
@@ -197,13 +202,12 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('.nav-mobile-menu .header-disclosure-panel')).toBeNull();
   });
 
-  test('mobile drawer retains one active Tools entry and the existing Arbitrage entry', async () => {
+  test('mobile drawer keeps Tools under Markets and retains the existing Arbitrage entry', async () => {
     await mount();
     await click('.nav-burger');
     expect(document.querySelector('.nav-mobile-menu.open')).not.toBeNull();
-    const links = document.querySelectorAll('.nav-mobile-menu a[href="/tools"]');
-    expect(links).toHaveLength(1);
-    expect(links[0].getAttribute('aria-current')).toBe('page');
+    await click('.nav-mobile-menu button[aria-label="nav.markets"]');
+    expect(Array.from(document.querySelectorAll('.nav-mobile-menu .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/tools']);
     expect(document.querySelectorAll('.nav-mobile-menu a[href="/arbitrage"]')).toHaveLength(1);
     await click('.nav-burger');
     expect(document.querySelector('.nav-mobile-menu.open')).toBeNull();

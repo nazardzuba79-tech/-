@@ -35,8 +35,9 @@ fs.mkdirSync(out, { recursive: true });
       const header = page.locator('header').first();
       if (width < 1440) await header.getByRole('button', { name: 'Меню', exact: true }).click();
       const nav = home ? header.locator('nav:visible') : width < 1440 ? header.locator('.nav-mobile-menu') : header.locator('.main-nav');
-      const tools = nav.getByRole('link', { name: 'Инструменты', exact: true });
       const futures = nav.getByRole('link', { name: 'Фьючерсы', exact: true });
+      const marketsLink = nav.getByRole('link', { name: 'Рынки', exact: true });
+      const marketsToggle = nav.getByRole('button', { name: 'Рынки', exact: true });
       if (width >= 1440) {
         const geometry = await header.evaluate(h => {
           const nav = h.querySelector('nav');
@@ -46,7 +47,15 @@ fs.mkdirSync(out, { recursive: true });
         });
         assert.ok(geometry.end <= geometry.right + 1, `overlap ${home ? 'home' : 'app'} ${width}: ${JSON.stringify(geometry)}`);
       }
-      assert.equal(await tools.getAttribute('href'), '/tools');
+      assert.equal(await marketsLink.getAttribute('href'), '/markets');
+      await marketsToggle.focus();
+      await page.keyboard.press('Enter');
+      let panel = nav.locator('.header-disclosure-panel:visible');
+      assert.deepEqual(await panel.locator('a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), ['/tools']);
+      assert.equal(await panel.getByRole('link', { name: 'Инструменты', exact: true }).isVisible(), true);
+      await page.keyboard.press('Escape');
+      assert.equal(await marketsToggle.getAttribute('aria-expanded'), 'false');
+
       assert.equal(await futures.getAttribute('href'), '/futures');
       assert.equal(await futures.locator('xpath=ancestor::*[contains(@class,"header-disclosure") or contains(@class,"nav-item-wrap")]').count(), 0);
       const knowledge = nav.getByRole('button', { name: 'Центр знаний', exact: true });
@@ -54,7 +63,7 @@ fs.mkdirSync(out, { recursive: true });
       await knowledge.scrollIntoViewIfNeeded();
       await knowledge.focus();
       await page.keyboard.press('Enter');
-      const panel = nav.locator('.header-disclosure-panel:visible');
+      panel = nav.locator('.header-disclosure-panel:visible');
       assert.deepEqual(await panel.locator('a').evaluateAll(nodes => nodes.map(n => n.getAttribute('href'))), ['/academy/learn', '/academy/knowledge', '/academy/faq', '/academy/glossary']);
       assert.equal(await panel.getByText('Статус системы').count(), 0);
       await panel.locator('a').last().scrollIntoViewIfNeeded();
