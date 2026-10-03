@@ -10,7 +10,7 @@ import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { DepositCopyBell, DepositCopyTabBell, hasPendingCopy } from './DepositCopyBell';
 import { hasUnresolvedCopies, ignoreCopySignal } from './depositCopyReviewClient';
 import { adminDate } from './adminPresentation';
-import { formatLastLoginAt } from './lastLoginLabel';
+import { formatLastLoginAt, kyivDayDifference } from './lastLoginLabel';
 import { useAdminWorkSummary, refreshAdminSummary } from './adminWorkSummary';
 import { Skeleton } from '../../components/Skeleton';
 import './adminPracticality.css';
@@ -23,6 +23,14 @@ const kycCell = (status: string) => kycBadge[status] ? <span className={`admin-k
 // «Новые за 24 часа» moved into the list as a НОВЫЙ mark beside the email; the deposits card carries the copy bell.
 const indicators = [['totalUsers', 'Всего пользователей'], ['pendingPackages', 'Пополнения'], ['pendingKyc', 'Ожидают KYC']] as const;
 const NEW_USER_MS = 86_400_000;
+// As in the earlier console: a green dot for a login today (Kyiv calendar day), grey for older ones.
+const lastLogin = (value: string | null | undefined) => {
+  const at = value ? new Date(value) : null;
+  const valid = at !== null && Number.isFinite(at.getTime());
+  const today = valid && kyivDayDifference(at!, new Date()) === 0;
+  return <span className="admin-last-login" data-logged-today={today || undefined} title={today ? 'Заходил сегодня' : undefined}>
+    {valid && <i aria-hidden="true" />}{formatLastLoginAt(value ?? null)}</span>;
+};
 const isNewUser = (createdAt: string) => { const at = Date.parse(createdAt); return Number.isFinite(at) && Date.now() - at < NEW_USER_MS; };
 // Display strings only: no floating-point conversion or rounding of balances.
 const compactAmount = (value: string | null | undefined) => {
@@ -64,6 +72,7 @@ export function AdminUsersPage() {
     {canDeleteUser(user) && <button type="button" className="admin-delete-button" style={styles.rejectBtn} aria-label="Удалить аккаунт" title={`Удалить аккаунт ${user.email}`} onClick={() => setDeleting(user)}>Удалить</button>}
   </div>;
   // Owner (2026-10-03): no «Статус» column and no blocked mark; only НОВЫЙ beside the email.
+  // The email is plain, selectable text so it can be copied; «Открыть» opens the profile.
   const newMark = (user: AdminUser) => isNewUser(user.createdAt) ? <span className="admin-event admin-event-new admin-user-new" data-event="new">НОВЫЙ</span> : null;
   const signals = (user: AdminUser) => <DepositCopyBell key={`${user.id}:${user.lastDepositCopy?.id ?? 'unknown'}`} userId={user.id} event={user.lastDepositCopy} failed={user.depositCopyLookupFailed}
     onIgnore={async () => { if (user.lastDepositCopy) await ignoreCopySignal(user.id, user.lastDepositCopy.id); changed(); }} />;
@@ -90,11 +99,11 @@ export function AdminUsersPage() {
     {notice && <p role="status">{notice}</p>}{!read.data && read.loading && <Skeleton height={240} />}
     {read.data && !users.length && <p>Никого не найдено. Измените условия поиска.</p>}
     {!!users.length && <div className="admin-table-desktop" style={styles.table} ref={scrollRef} onScroll={rememberScroll}><table className="admin-users-table"><thead><tr><th>Email</th><th>Пароль</th><th>Регистрация</th><th>Последний вход</th><th>KYC</th><th>Баланс</th><th>Действия</th></tr></thead><tbody>{users.map(user => <tr key={user.id} data-user-row={user.id}>
-      <td><Link to={open(user)}>{user.email}</Link>{newMark(user)}{signals(user)}</td>
-      <td className="mono" data-user-password={user.id}>{user.password ?? '—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{formatLastLoginAt(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
+      <td className="admin-user-email-cell"><span className="admin-user-email">{user.email}</span>{newMark(user)}{signals(user)}</td>
+      <td className="mono" data-user-password={user.id}>{user.password ?? '—'}</td><td>{adminDate(user.createdAt, true)}</td><td>{lastLogin(user.lastLoginAt)}</td><td>{kycCell(user.kycStatus)}</td><td>{balances(user)}</td><td>{actions(user)}</td>
     </tr>)}</tbody></table></div>}
     <div className="admin-table-mobile">{users.map(user => <article key={user.id} data-user-card={user.id} className="admin-user-mobile" style={styles.card}>
-      <Link to={open(user)}><strong>{user.email}</strong></Link>{newMark(user)}<dl><dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd><dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd><dt>Последний вход</dt><dd>{formatLastLoginAt(user.lastLoginAt)}</dd><dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd><dt>Баланс</dt><dd>{balances(user)}</dd></dl>{signals(user)}{actions(user)}
+      <strong className="admin-user-email">{user.email}</strong>{newMark(user)}<dl><dt>Пароль</dt><dd className="mono">{user.password ?? '—'}</dd><dt>Регистрация</dt><dd>{adminDate(user.createdAt, true)}</dd><dt>Последний вход</dt><dd>{lastLogin(user.lastLoginAt)}</dd><dt>KYC</dt><dd>{kycCell(user.kycStatus)}</dd><dt>Баланс</dt><dd>{balances(user)}</dd></dl>{signals(user)}{actions(user)}
     </article>)}</div>
     {deleting && <DeleteUserDialog user={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setNotice('Аккаунт удалён.'); setDeleting(null); changed(); }} />}
   </div>;

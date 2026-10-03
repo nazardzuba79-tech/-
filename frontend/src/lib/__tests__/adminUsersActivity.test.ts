@@ -122,6 +122,18 @@ test('owner layout: no refresh line, result count or raw ID in the list; search 
   expect(f.host.querySelector(`[data-user-card="${id}"]`)?.textContent).not.toContain(id);
   expect(f.host.querySelector('[aria-label="Поиск пользователей"]')?.getAttribute('placeholder')).toBe('Email или ID пользователя');
 });
+test('the email is plain selectable text; only «Открыть» opens the profile', async () => {
+  f.api.getAdminUsersPage.mockResolvedValue(page([user('plain-email', { email: 'copy.me@example.invalid' })])); await f.mount();
+  const cell = f.host.querySelector('[data-user-row="plain-email"] td')!;
+  expect(cell.querySelector('a')).toBeNull();
+  expect(cell.querySelector('.admin-user-email')?.textContent).toBe('copy.me@example.invalid');
+  expect(f.host.querySelector('[data-user-card="plain-email"] .admin-user-email')?.closest('a')).toBeNull();
+  const links = Array.from(f.host.querySelectorAll('[data-user-row="plain-email"] a')).map(a => a.textContent);
+  expect(links).toEqual(['Открыть']);
+  const css = readFileSync(resolve(frontend, 'src/pages/admin/adminPracticality.css'), 'utf8');
+  expect(css).toMatch(/\.admin-users-table th:first-child,\.admin-users-table td:first-child \{ border-right: 1px solid var\(--border\)/);
+  expect(css).toContain('grid-template-columns: minmax(180px,225px) repeat(2,minmax(150px,240px))');
+});
 test('the filter offers no account-status options (owner, 2026-10-03)', async () => {
   await f.mount();
   const options = Array.from(f.host.querySelectorAll('[aria-label="Фильтр пользователей"] option')).map(o => (o as HTMLOptionElement).value);
@@ -145,6 +157,10 @@ test('owner layout: НОВЫЙ beside the email for 24 hours, short dates, KYC p
   expect(cells('day-old').slice(2, 5)).toEqual(['02.10.2026', 'Вчера, 12:05', '—']);
   expect(cells('older').slice(2, 5)).toEqual(['28.09.2026', '30.09.2026, 10:22', 'На проверке']);
   expect(row('fresh').querySelector('.admin-kyc-approved')).not.toBeNull();
+  expect(row('fresh').querySelector('.admin-last-login[data-logged-today] i')).not.toBeNull();
+  expect(row('day-old').querySelector('.admin-last-login i')).not.toBeNull();
+  expect(row('day-old').querySelector('.admin-last-login[data-logged-today]')).toBeNull();
+  expect(f.host.querySelector('[data-user-card="fresh"] .admin-last-login[data-logged-today]')).not.toBeNull();
   expect(row('day-old').querySelector('.admin-kyc')).toBeNull();
   expect(f.host.querySelector('[aria-label="Порядок сортировки"]')).toBeNull();
   expect(f.host.textContent).not.toContain('По убыванию');
