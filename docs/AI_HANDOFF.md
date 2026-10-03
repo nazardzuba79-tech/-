@@ -5509,3 +5509,48 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
   - a scratch phone check at 390: three columns, no page overflow.
 - Known: a sub-satoshi price (e.g. 0.000000123456, 77px) cannot fit any price column at these widths. On main it overflowed the 76px column; now it ends in «…» with the full value in its title.
 - The Spot page now subscribes to the shared catalogue: one `/market/assets` request per tab, refreshed every 10 minutes, the same request Markets and the Futures 7d sort use.
+
+## Claude — 2026-10-03 — NRX post-listing wave structure (15m / 1h / 4h)
+
+- Base: main `e9efc463`; branch `claude/ecstatic-brahmagupta-cwkvt5-nrx-realism`; commit: the commit containing this entry.
+- Owner ask: NRX must read like a live post-listing market on 15m/1h/4h, from ONE price stream: discovery, impulses, pullbacks, consolidations, varied candles and wicks, logical volume.
+- Root cause:
+  - Every hour of the base engine was an impulse (+30%), a consolidation (±0.9%) or a −4% pullback.
+  - NRX had no realism profile.
+  - First 72h: 4h was 95% green with an 18-candle run and no ≥5% pullback; 1h pullbacks were at most 8%.
+- Changes:
+  - `simulationWaves.ts` (new, opt-in via `TestAssetConfig.marketStructure`):
+    - Inside each base block it re-arranges the hours into legs: launch, impulse (may hold a red hour), correction (30–55% of the prior leg, capped at −15%…−45%, may hold a relief bounce, flushes), pause, accumulation (lower volume, coils into the breakout) and breakout.
+    - At most two impulse legs run before a 3+ hour correction or range. Block openings are random. Extreme hours are capped.
+    - The block total is EXACT, so every block and day anchor is unchanged.
+  - When a later day's base total turns slightly negative (from about day 18), rallies stay rallies and the falling hours deepen to carry the total.
+  - `pauseInsideHour` / `capCandles`:
+    - Most trending hours get one slightly red 15m pause.
+    - No single 5m candle exceeds 35% of its hour's move, and no 15m candle exceeds 50%.
+  - `testMarketSimulation.ts`, for wave hours only:
+    - each phase has its own realism profile;
+    - flush (long lower wick) and exhaustion (long upper wick) accents;
+    - candle noise scales with the move;
+    - turnover grows ≈ price^0.8, at most ×45 on top of the base.
+    - The cache key includes the structure. Hours before `from` are untouched.
+  - `neurix.ts`: `marketStructure: { from: listingAt }`.
+  - Tests:
+    - Four existing NRX golden pins now pin NRX's base engine, which is still byte-identical to main.
+    - `nrxPublic` compares the shared growth rule at block anchors.
+    - New `simulationWaves.test.ts` (16) is wired into `test-markets.yml` and `nrx-market.yml`.
+  - Preview: `scripts/preview-nrx-market-structure.cjs`; evidence in `docs/qa/nrx-market-structure/`.
+- Preserved:
+  - VTA and managed listings are byte-identical (all digests pass).
+  - The NRX base engine and every NRX block/day anchor are unchanged.
+  - Edge/Render/frontend wiring, Spot gates, depth semantics and owner allocation are unchanged.
+- Verified (local):
+  - Backend `tsc`.
+  - NRX + test-market CI jest lists: 261 passed, 8 skipped (PG).
+  - `test-nrx-edge.cjs` 10/10; market-edge worker tests.
+  - `qa-nrx-market.cjs` PASS.
+  - Metric sweep over 6 seeds.
+- Release timing (unresolved, owner):
+  - Render AND the market-edge Worker must both run this code before 2026-10-03 13:00 UTC.
+  - If either is later, move `marketStructure.from` to the next full hour after the release; earlier hours then stay on the base path.
+  - Not merged, not deployed.
+- Open, owner decision: the base engine's long-run growth (×552 by 48h, ×8000 by 72h, ≈×24M by day 10) is unchanged and dominates linear 1h/4h views.

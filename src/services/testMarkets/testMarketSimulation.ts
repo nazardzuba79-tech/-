@@ -41,7 +41,8 @@
  */
 import type { TestAssetConfig } from './testAssetConfig';
 import { normal, seededRandom } from './simulationRandom';
-import { REALISM_PROFILES, isSimulationProfile, realisticHour, realisticTicks, type CandleShape, type RealismParams } from './simulationRealism';
+import { REALISM_PROFILES, isSimulationProfile, realisticHour, realisticTicks, type CandleShape, type RealismParams, type RealisticHour } from './simulationRealism';
+import { pauseInsideHour, waveHours, type WaveHour } from './simulationWaves';
 import { cycleForHour, cycleHourTicks, cycleShockClose } from './simulationCycles';
 import { accumulationFactor, accumulationForHour, flushHourTicks, type AccumulationHour } from './simulationAccumulation';
 import { NATURAL_WICK_WINDOW_MS, naturalWickCandles, naturalWickLimit, naturalWickWindowAllowed, naturalWickWindowSelected,
@@ -273,6 +274,36 @@ interface HourPlan {
   /** Optional hard price envelope for a bounded accumulation phase. */
   rangeFloor?: number;
   rangeCeiling?: number;
+  /** Wave structure only: this hour's intra-hour character and volume multiplier. */
+  params?: RealismParams;
+  volume?: number;
+}
+
+/**
+ * Wave structure only: a sell-off that is partly bought back (a long lower
+ * wick on the hour's heaviest red candle) and buying that exhausts (a long
+ * upper wick on its strongest green one). Excursions start and end inside
+ * their candle, so open, close and every anchor are unchanged.
+ */
+function accentHour(seed: string, hour: number, wave: WaveHour, realistic: RealisticHour, sigma: number, params: RealismParams): RealisticHour {
+  if (!wave.flush && !wave.exhaustion) return realistic;
+  const random = seededRandom(seed, 'waves', 'accent', hour);
+  const shapes = realistic.shapes.map((shape) => ({ ...shape, excursions: shape.excursions.slice() }));
+  const accent = (side: 1 | -1) => {
+    let slot = -1;
+    realistic.steps.forEach((step, k) => {
+      if (Math.sign(step) === side && (slot < 0 || Math.abs(step) > Math.abs(realistic.steps[slot]))) slot = k;
+    });
+    if (slot < 0) slot = 3 + Math.floor(random() * 6);
+    const height = Math.min(params.maxWick, Math.max(2.2 * sigma, 0.6 * Math.abs(realistic.steps[slot])) * (0.8 + 0.6 * random()));
+    const rise = 2 + Math.floor(random() * 4), fall = 4 + Math.floor(random() * 6);
+    const peak = Math.max(rise, Math.min(29 - fall, 8 + Math.floor(random() * 12)));
+    shapes[slot] = { ...shapes[slot], volume: shapes[slot].volume * (side < 0 ? 1.7 : 1.45),
+      excursions: [...shapes[slot].excursions.filter((e) => e.side !== side), { side, height, peak, rise, fall }] };
+  };
+  if (wave.flush) accent(-1);
+  if (wave.exhaustion) accent(1);
+  return { ...realistic, shapes };
 }
 
 /**
@@ -292,17 +323,34 @@ export class TestMarketSimulation {
   private readonly realismOffset: number;
   /** The first hour the profile shapes; every earlier hour takes the legacy path. */
   private readonly realismFromHour: number;
+  /** Wave structure: the first re-arranged hour (null: off), and each re-arranged hour's phase. */
+  private readonly structureFromHour: number | null;
+  private waves = new Map<number, WaveHour>();
 
   constructor(readonly asset: TestAssetConfig) {
     this.realism = isSimulationProfile(asset.simulationProfile) ? REALISM_PROFILES[asset.simulationProfile] : null;
     this.realismOffset = asset.realismSeedOffset ?? 0;
     this.realismFromHour = asset.realismFrom === undefined ? 0 : Math.max(0, Math.ceil((asset.realismFrom - asset.listingAt) / HOUR_MS));
+    const structure = asset.marketStructure;
+    this.structureFromHour = structure && Number.isFinite(structure.from)
+      ? Math.max(0, Math.ceil((structure.from - asset.listingAt) / HOUR_MS)) : null;
   }
 
   private block(index: number): Block {
     let block = this.blocks.get(index);
     if (!block) {
       block = buildBlock(this.asset.seed, index);
+      const from = this.structureFromHour;
+      const first = from === null ? -1 : Math.max(0, from - block.startHour);
+      if (from !== null && first < block.regimes.length) {
+        // Same block total, so every block and day anchor is unchanged; hours before `from` are untouched.
+        const total = block.logReturns.slice(first).reduce((a, b) => a + b, 0);
+        waveHours(this.asset.seed, index, first, block.regimes.length - first, total).forEach((wave, i) => {
+          block!.regimes[first + i] = wave.regime;
+          block!.logReturns[first + i] = wave.logReturn;
+          this.waves.set(block!.startHour + first + i, wave);
+        });
+      }
       this.blocks.set(index, block);
     }
     return block;
@@ -328,16 +376,27 @@ export class TestMarketSimulation {
     const block = this.block(blockIndexOfHour(hour));
     const regime = block.regimes[hour - block.startHour];
     const logReturn = block.logReturns[hour - block.startHour];
-    const cluster = clusterFactor(this.asset.seed, hour);
-    const sigma = candleSigma(regime, logReturn, cluster);
+    const wave = this.waves.get(hour);
+    const cluster = clusterFactor(this.asset.seed, hour) * (wave ? wave.volatility : 1);
+    // A wave hour's candles breathe in proportion to its own move and to the
+    // moves around it, so a pullback after +60% hours has relief candles too.
+    const sigma = wave ? Math.max(candleSigma(regime, logReturn, cluster),
+      (Math.abs(logReturn) / CANDLES_PER_HOUR) * 1.25 * wave.volatility,
+      wave.trendStep * (regime === 'consolidation' ? 0.2 : 0.45) * wave.volatility)
+      : candleSigma(regime, logReturn, cluster);
     const open = this.hourOpen(hour);
+    // A wave hour takes its phase's character; otherwise the asset's profile, if any.
+    const params = wave ? REALISM_PROFILES[wave.profile] : this.realism && hour >= this.realismFromHour ? this.realism : null;
     // Both paths start and end the hour on the same anchors, so switching at an hour is seamless.
-    const realistic = this.realism && hour >= this.realismFromHour ? realisticHour({
-      seed: this.asset.seed, offset: this.realismOffset, hour, regime, logReturn, sigma, params: this.realism,
-      trendStep: Math.log(1 + impulseRate(Math.floor(hour / 24) + 1)) / CANDLES_PER_HOUR,
+    const shaped = params ? realisticHour({
+      seed: this.asset.seed, offset: this.realismOffset, hour, regime, logReturn, sigma, params,
+      trendStep: wave ? wave.trendStep : Math.log(1 + impulseRate(Math.floor(hour / 24) + 1)) / CANDLES_PER_HOUR,
       previousRegime: hour > 0 ? this.regimeOf(hour - 1) : null, nextRegime: this.regimeOf(hour + 1),
     }) : null;
-    const steps = realistic ? realistic.steps : hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+    const realistic = shaped && wave && params ? accentHour(this.asset.seed, hour, wave, shaped, sigma, params) : shaped;
+    const shapedSteps = realistic ? realistic.steps : hourCandleReturns(this.asset.seed, hour, regime, logReturn, sigma);
+    // 15m candles line up with the hour only when the listing is on a quarter hour.
+    const steps = wave ? pauseInsideHour(this.asset.seed, hour, wave, shapedSteps, this.asset.listingAt % (15 * MINUTE_MS) === 0) : shapedSteps;
     const boundaries = [open];
     let logPrice = Math.log(open);
     for (let k = 0; k < CANDLES_PER_HOUR; k++) {
@@ -345,7 +404,8 @@ export class TestMarketSimulation {
       // The hour always closes on the base simulation's anchor, whatever happened inside it.
       boundaries.push(k === CANDLES_PER_HOUR - 1 ? this.hourOpen(hour + 1) : Math.exp(logPrice));
     }
-    return { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}) };
+    return { hour, regime, open, logReturn, sigma, cluster, boundaries, ...(realistic ? { shapes: realistic.shapes } : {}),
+      ...(wave && params ? { params, volume: wave.volume } : {}) };
   }
 
   private accumulationOpen(hour: number, phase: AccumulationHour): number {
@@ -432,10 +492,17 @@ export class TestMarketSimulation {
 
   private baselineTicks(plan: HourPlan, slot: number): Tick[] {
     const open = plan.boundaries[slot], close = plan.boundaries[slot + 1];
-    if (plan.shapes && this.realism) {
-      const volumeBase = BASE_QUOTE_VOLUME * Math.pow(open / this.asset.initialPrice, 0.3) * REGIME_VOLUME[plan.regime];
+    const params = plan.params ?? this.realism;
+    if (plan.shapes && params) {
+      // Wave hours: turnover grows with the market's value (≈ price^0.8 from where the structure
+      // starts, at most ×45 on top of the base), so volume bars stay readable through a large run
+      // instead of shrinking with every new high.
+      const growth = plan.volume !== undefined && this.structureFromHour !== null
+        ? Math.min(45, Math.pow(open / this.hourOpen(this.structureFromHour), 0.5)) : 1;
+      const volumeBase = BASE_QUOTE_VOLUME * Math.pow(open / this.asset.initialPrice, 0.3) * growth
+        * REGIME_VOLUME[plan.regime] * (plan.volume ?? 1);
       return realisticTicks(this.asset.seed, this.realismOffset, plan.hour, slot, open, close, plan.shapes[slot],
-        plan.cluster, volumeBase, this.realism);
+        plan.cluster, volumeBase, params);
     }
     return candleTicks(this.asset.seed, plan.hour, slot, plan.regime, open, close, plan.sigma, plan.cluster, this.asset.initialPrice);
   }
@@ -707,7 +774,8 @@ export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
   const accumulationKey = accumulation
     ? `${accumulation.anchorAt}:${accumulation.flushFraction}:${accumulation.accumulationHours}:${accumulation.minBandFraction}:${accumulation.maxBandFraction}`
     : 'no-accumulation';
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}`;
+  const structureKey = asset.marketStructure ? `waves:${asset.marketStructure.from}` : 'no-waves';
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}|${structureKey}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);
