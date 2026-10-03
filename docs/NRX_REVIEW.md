@@ -22,7 +22,7 @@ The owner clarified that this is a prototype presentation for informed early-sta
 
 The latest owner instruction selected the **ordinary Spot ledger**, not a separate demo balance.
 
-`allocateNrxOwner(db, verifiedOwnerId)` is an explicit maintenance function, not an HTTP endpoint, startup task, registration hook or migration. It prepares **31,250 NRX** in `Balance`; `31,250 × 0.80 = 25,000 USDT` initial valuation. It never debits/credits USDT. The value subsequently follows the canonical NRX price and is not a USDT cash credit or guaranteed redemption value.
+`allocateNrxOwner(db, verifiedOwnerId)` is an explicit maintenance function, not an HTTP endpoint, startup task, registration hook or migration. It prepares **6,250 NRX** in `Balance`; `6,250 × 0.80 = 5,000 USDT` initial valuation. It never debits/credits USDT. The value subsequently follows the canonical NRX price and is not a USDT cash credit or guaranteed redemption value.
 
 The transaction requires an existing ADMIN owner ID, takes an advisory lock, uses a single global allocation receipt, rejects unexplained existing NRX inventory, and is idempotent under concurrent/repeated calls, including after inventory has been traded. An allocation for a different owner requires manual review. No user ID or production connection is guessed.
 
