@@ -684,7 +684,7 @@ test('the wallet hook passes through economic and collateral equity separately a
   expect(view.rows[0]).toMatchObject({ total: 2.25, walletBalance: 2, available: 1.5, locked: .75,
     valueUsd: null, priceUsd: null, priced: false, collateralEnabled: false, collateralToggleable: true });
   expect(reads).toHaveLength(3);
-  expect(reads.every(read => read.staleMs === 120000 && typeof read.reset === 'function')).toBe(true);
+  expect(reads.every(read => read.staleMs === 30000 && typeof read.reset === 'function')).toBe(true);
   expect(JSON.stringify(native)).toBe(before);
 });
 
