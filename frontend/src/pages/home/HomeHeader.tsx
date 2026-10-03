@@ -1,4 +1,4 @@
-import { HeaderDropdown, KNOWLEDGE_LINKS, TRADING_LINKS } from '../../components/HeaderDropdown';
+import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, TRADING_LINKS } from '../../components/HeaderDropdown';
 import { TradingBotIcon } from '../../components/TradingBotIcon';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -27,7 +27,6 @@ const LINKS: { to: string; labelKey: Key }[] = [
   { to: '/markets', labelKey: 'nav.markets' },
   { to: '/trade', labelKey: 'nav.trade' },
   { to: '/futures', labelKey: 'nav.futures' },
-  { to: '/tools', labelKey: 'nav.tools' },
   { to: '/copy-trading', labelKey: 'nav.copyTrading' },
   { to: '/card', labelKey: 'nav.card' },
   { to: '/otc', labelKey: 'nav.otc' },
@@ -62,7 +61,7 @@ export function HomeHeader() {
 
         <nav className="hidden items-center gap-[2px] min-[1440px]:flex" aria-label={t('home.nav.main')}>
           {LINKS.map((l) => (
-            l.to === '/trade' || l.to === '/academy' ? <HeaderDropdown key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/trade' ? TRADING_LINKS : KNOWLEDGE_LINKS} className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted hover:text-white"/> : <Link
+            l.to === '/markets' || l.to === '/trade' || l.to === '/academy' ? <HeaderDropdown key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/markets' ? MARKET_LINKS : l.to === '/trade' ? TRADING_LINKS : KNOWLEDGE_LINKS} className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted hover:text-white"/> : <Link
               key={l.to}
               to={l.to}
               className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"
@@ -130,7 +129,7 @@ export function HomeHeader() {
         <nav className="border-t border-white/6 px-6 py-3 max-h-[calc(100dvh-58px)] overflow-y-auto min-[1440px]:hidden" aria-label={t('home.nav.mobile')}>
           <div className="grid grid-cols-2 gap-1">
             {LINKS.map((l) => (
-              l.to === '/trade' || l.to === '/academy' ? <HeaderDropdown mobile key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/trade' ? TRADING_LINKS : KNOWLEDGE_LINKS} className="rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:text-white" onNavigate={() => setOpen(false)}/> : <Link
+              l.to === '/markets' || l.to === '/trade' || l.to === '/academy' ? <HeaderDropdown mobile key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/markets' ? MARKET_LINKS : l.to === '/trade' ? TRADING_LINKS : KNOWLEDGE_LINKS} className="rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:text-white" onNavigate={() => setOpen(false)}/> : <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
