@@ -1,0 +1,313 @@
+{
+  "violations": [],
+  "cases": [
+    {
+      "width": 2048,
+      "tickerGap": 63.3,
+      "headerGap": 20,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": true,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 0,
+        "maxChannelDelta": 0,
+        "bounds": null
+      }
+    },
+    {
+      "width": 1920,
+      "tickerGap": 63.3,
+      "headerGap": 20,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": true,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 0,
+        "maxChannelDelta": 0,
+        "bounds": null
+      }
+    },
+    {
+      "width": 1728,
+      "tickerGap": 53.44,
+      "headerGap": 16,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": false,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 6,
+        "maxChannelDelta": 2,
+        "bounds": [
+          43,
+          17,
+          43,
+          38
+        ]
+      }
+    },
+    {
+      "width": 1707,
+      "tickerGap": 49.94,
+      "headerGap": 16,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": true,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 0,
+        "maxChannelDelta": 0,
+        "bounds": null
+      }
+    },
+    {
+      "width": 1680,
+      "tickerGap": 45.44,
+      "headerGap": 16,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": false,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 6,
+        "maxChannelDelta": 2,
+        "bounds": [
+          43,
+          17,
+          43,
+          38
+        ]
+      }
+    },
+    {
+      "width": 1664,
+      "tickerGap": 42.77,
+      "headerGap": 16,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": true,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 0,
+        "maxChannelDelta": 0,
+        "bounds": null
+      }
+    },
+    {
+      "width": 1600,
+      "tickerGap": 32.11,
+      "headerGap": 13,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": false,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 6,
+        "maxChannelDelta": 2,
+        "bounds": [
+          43,
+          17,
+          43,
+          38
+        ]
+      }
+    },
+    {
+      "width": 1550,
+      "tickerGap": 133.53,
+      "headerGap": 13,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": true,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 0,
+        "maxChannelDelta": 0,
+        "bounds": null
+      }
+    },
+    {
+      "width": 1531,
+      "tickerGap": 127.19,
+      "headerGap": 13,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": true,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 0,
+        "maxChannelDelta": 0,
+        "bounds": null
+      }
+    },
+    {
+      "width": 1440,
+      "tickerGap": 96.86,
+      "headerGap": 13,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": false,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 6,
+        "maxChannelDelta": 2,
+        "bounds": [
+          43,
+          17,
+          43,
+          38
+        ]
+      }
+    },
+    {
+      "width": 1366,
+      "tickerGap": 76.86,
+      "headerGap": null,
+      "stableInstrument": {
+        "pairSelector": true,
+        "primaryPrice": true
+      },
+      "spotBodyIdentical": false,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 6,
+        "maxChannelDelta": 2,
+        "bounds": [
+          43,
+          17,
+          43,
+          38
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "tickerGap": null,
+      "headerGap": null,
+      "spotBodyIdentical": true,
+      "blockedExternal": 0,
+      "pageErrors": [],
+      "spotBodyDiff": {
+        "changedPixels": 0,
+        "maxChannelDelta": 0,
+        "bounds": null
+      }
+    }
+  ],
+  "interactions": {
+    "dropdowns": [
+      {
+        "x": 1140,
+        "y": 171,
+        "width": 282,
+        "height": 88.9375
+      },
+      {
+        "x": 1284,
+        "y": 171,
+        "width": 138,
+        "height": 295.84375
+      }
+    ],
+    "inputs": {
+      "price": {
+        "value": "123456789.12345678",
+        "focused": true,
+        "box": {
+          "x": 1141,
+          "y": 268,
+          "width": 196.46875,
+          "height": 46
+        }
+      },
+      "quantity": {
+        "value": "0.00000001",
+        "focused": true,
+        "box": {
+          "x": 1141,
+          "y": 326,
+          "width": 237.515625,
+          "height": 46
+        }
+      }
+    },
+    "chart": {
+      "settings": true,
+      "canvasIdentityPreserved": true,
+      "passiveRequests": 0,
+      "timeframe": "4h",
+      "drawings": [
+        {
+          "kind": "horizontal",
+          "points": [
+            {
+              "time": 1791014400,
+              "price": 84750
+            }
+          ],
+          "style": {
+            "color": "#ffffff",
+            "width": 1,
+            "dash": "solid"
+          }
+        }
+      ]
+    },
+    "isolated": {
+      "text": "Изолированная",
+      "scroll": 105,
+      "client": 105
+    },
+    "calculator": true
+  },
+  "states": [
+    {
+      "state": "filled",
+      "positions": 3,
+      "bookRows": 3
+    },
+    {
+      "state": "loading",
+      "positions": 0,
+      "bookRows": 3
+    },
+    {
+      "state": "error",
+      "positions": 0,
+      "bookRows": 3
+    }
+  ]
+}

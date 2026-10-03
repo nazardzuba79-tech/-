@@ -53,7 +53,7 @@ export const RU = {
   'nav.wallet': 'Кошелёк',
   'nav.markets': 'Рынки',
   'nav.products': 'Товары',
-  'nav.card': 'Crypto Card',
+  'nav.card': 'Карта',
   'nav.settings': 'Настройки',
   'nav.profile': 'Профиль',
   'nav.otc': 'OTC',

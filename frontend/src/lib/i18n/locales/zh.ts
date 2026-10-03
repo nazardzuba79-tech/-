@@ -50,7 +50,7 @@ export const ZH: Record<Key, string> = {
   'nav.wallet': '钱包',
   'nav.markets': '行情',
   'nav.products': '商品',
-  'nav.card': 'Crypto Card',
+  'nav.card': '卡',
   'nav.settings': '设置',
   'nav.profile': '个人资料',
   'nav.otc': 'OTC',

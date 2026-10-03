@@ -46,6 +46,7 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
   'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote'].map(key => `deposit.ui.${key}`);
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
+const shortCardLabels: Record<string, string> = { ru: 'Карта', en: 'Card', zh: '卡', es: 'Tarjeta', hi: 'कार्ड', ja: 'カード', ko: '카드' };
 
 // ── Integrity ───────────────────────────────────────────────────────
 
@@ -252,10 +253,13 @@ describe('translation integrity', () => {
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
       expect(dicts[code]['nav.tools'].trim()).not.toBe('');
       expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
+      expect(dicts[code]['nav.card']).toBe(shortCardLabels[code]);
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.
       const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'")
+        // Reverse only the owner's exact short navigation label; product copy stays frozen.
+        .replace("'nav.card': '" + shortCardLabels[code] + "'", "'nav.card': 'Crypto Card'")
         .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'");
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })

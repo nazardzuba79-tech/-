@@ -50,7 +50,7 @@ export const ES: Record<Key, string> = {
   'nav.wallet': 'Billetera',
   'nav.markets': 'Mercados',
   'nav.products': 'Productos',
-  'nav.card': 'Crypto Card',
+  'nav.card': 'Tarjeta',
   'nav.settings': 'Configuración',
   'nav.profile': 'Perfil',
   'nav.otc': 'OTC',

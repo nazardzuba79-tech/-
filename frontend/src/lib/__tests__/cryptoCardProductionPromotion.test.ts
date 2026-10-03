@@ -201,12 +201,11 @@ test('Card remains an authenticated standalone route, independent of Spot termin
   expect(trade).not.toMatch(/(?:getCardApplication|submitCardApplication)\s*\(/);
 });
 
-test('all 196 Card-related shared translations retain owner-approved English product branding', () => {
+test('Card product branding stays unchanged while only seven navigation labels are shortened', () => {
   // The seven dictionaries in language order, exactly as they appeared in
-  // the single file before the split — so the 196 entries below are the
-  // same 196 lines, in the same order, and the digest is UNCHANGED. That
-  // the hash still matches is the proof the split moved bytes without
-  // touching one of them.
+  // the single file before the split. The 196 entries stay in that order;
+  // only the approved short navigation labels are normalized below so the
+  // unchanged digest still protects every other Card-related string.
   const text = readAllLocales();
   expect(text).not.toMatch(/^\s*'card\./m);
   // Snapshot only the reviewed Card/Home/Auth/support entry points, across all
@@ -215,7 +214,12 @@ test('all 196 Card-related shared translations retain owner-approved English pro
   // replacement of a whole-file i18n hash or invalidate these Card guarantees.
   const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:lead|(?:benefit\.)?card\.[^']+)|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
   expect(entries).toHaveLength(196);
-  expect(digest(entries.join('\n'))).toBe('d691d191b62d83a8306b5c82132bde2f9833885d6bbb35a494bee2afc43876ce');
+  const shortLabels = ['Карта', 'Card', '卡', 'Tarjeta', 'कार्ड', 'カード', '카드'].map(label => "'nav.card': '" + label + "',");
+  expect(entries.filter(line => line.startsWith("'nav.card':"))).toEqual(shortLabels);
+  // Restore only the exact owner-approved navigation wording for the old digest;
+  // all product, Home, Auth and support strings remain fully covered.
+  const restored = entries.map(line => shortLabels.includes(line) ? "'nav.card': 'Crypto Card'," : line);
+  expect(digest(restored.join('\n'))).toBe('d691d191b62d83a8306b5c82132bde2f9833885d6bbb35a494bee2afc43876ce');
 });
 
 test('Card API uses normal authenticated backend requests without review or client eligibility branches', () => {

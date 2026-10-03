@@ -179,7 +179,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
 
   test.each(['.nav-desktop-links', '.nav-mobile-menu'])('knowledge disclosure has four destinations and closes on Escape: %s', async selector => {
     await mount();
-    const button = selector + ' button[aria-label="nav.knowledgeCenter"]';
+    const button = selector + ' button[aria-label="nav.academy"]';
     expect(document.querySelector(selector + ' a[href="/academy"]')).not.toBeNull();
     await click(button);
     expect(Array.from(document.querySelectorAll(selector + ' .header-disclosure-panel a')).map(a => a.getAttribute('href')))
@@ -188,6 +188,15 @@ describe('local trading tools keeps the real authenticated shell without a marke
     await React.act(async () => { last.focus(); last.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
     expect(document.querySelector(selector + ' .header-disclosure-panel')).toBeNull();
     expect(document.activeElement).toBe(document.querySelector(button));
+  });
+
+  test.each(['/futures', '/trade', '/tools'])('%s shares the short Card and Academy labels in desktop and mobile headers', async active => {
+    await mount({ active, hideTicker: true });
+    for (const selector of ['.nav-desktop-links', '.nav-mobile-menu']) {
+      expect(document.querySelector(selector + ' a[href="/card"]')?.textContent).toBe('nav.card');
+      expect(document.querySelector(selector + ' a[href="/academy"]')?.textContent).toBe('nav.academy');
+      expect(document.querySelector(selector + ' button[aria-label="nav.academy"]')).not.toBeNull();
+    }
   });
 
   test('mobile Trading only exposes Spot and CFD, and selecting CFD closes the drawer', async () => {

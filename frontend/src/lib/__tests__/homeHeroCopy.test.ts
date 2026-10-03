@@ -28,14 +28,23 @@ test('all seven languages retain the approved headline, institutional positionin
   expect(source).not.toContain('с реальными рыночными данными и единым кошельком');
 });
 
-test('Crypto Card product naming stays English throughout every supported UI language', () => {
-  expect(rows('nav.card')).toEqual(Array(7).fill('Crypto Card'));
+test('header card labels are short and localized while Crypto Card product naming stays unchanged', () => {
+  expect(rows('nav.card')).toEqual(['Карта', 'Card', '卡', 'Tarjeta', 'कार्ड', 'カード', '카드']);
   expect(rows('home.card.name')).toEqual(Array(7).fill('VOLTEX Crypto Card'));
   for (const key of ['marketing.heroPerk2', 'home.hero.description', 'home.faq.q6']) {
     expect(rows(key)).toHaveLength(7);
     for (const text of rows(key)) expect(text).toContain('Crypto Card');
   }
   expect(source).not.toMatch(/крипто[ -]?карт|加密卡|tarjeta cripto|क्रिप्टो कार्ड|暗号資産カード|クリプトカード|크립토 카드/i);
+});
+
+test('homepage desktop and mobile navigation share the existing Card and Academy destinations', () => {
+  const header = read('src/pages/home/HomeHeader.tsx');
+  expect(header).toContain("{ to: '/card', labelKey: 'nav.card' }");
+  expect(header).toContain("{ to: '/academy', labelKey: 'nav.academy' }");
+  expect(header).not.toContain('nav.knowledgeCenter');
+  expect(header.match(/LINKS\.map\(/g)).toHaveLength(2);
+  expect(header).toContain('KNOWLEDGE_LINKS');
 });
 
 test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline and separate supporting copy without changing CTA targets or terminal previews', lang => {

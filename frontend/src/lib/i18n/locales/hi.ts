@@ -50,7 +50,7 @@ export const HI: Record<Key, string> = {
   'nav.wallet': 'वॉलेट',
   'nav.markets': 'मार्केट्स',
   'nav.products': 'प्रोडक्ट्स',
-  'nav.card': 'Crypto Card',
+  'nav.card': 'कार्ड',
   'nav.settings': 'सेटिंग्स',
   'nav.profile': 'प्रोफ़ाइल',
   'nav.otc': 'OTC',

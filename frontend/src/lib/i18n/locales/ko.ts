@@ -50,7 +50,7 @@ export const KO: Record<Key, string> = {
   'nav.wallet': '지갑',
   'nav.markets': '마켓',
   'nav.products': '상품',
-  'nav.card': 'Crypto Card',
+  'nav.card': '카드',
   'nav.settings': '설정',
   'nav.profile': '프로필',
   'nav.otc': 'OTC',

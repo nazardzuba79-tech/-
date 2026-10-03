@@ -16,6 +16,7 @@ const OUT = path.resolve(arg('--out', path.join(ROOT, 'output/futures-proportion
 const PHASE = arg('--phase', 'after');
 const PORT = Number(arg('--port', '4394'));
 const WIDTHS = arg('--widths', '1920,1664,1600,1440,1366,390').split(',').map(Number);
+const MIN_TICKER_GAP = Number(arg('--ticker-gap-min', '0'));
 const NOW = Date.UTC(2026, 9, 3, 10, 0, 0);
 const SYMBOLS = ['BTC/USDT', 'ETH/USDT', '1000PEPE/USDT'];
 const PRICES = { BTCUSDT: 85421.3, ETHUSDT: 3211.42, '1000PEPEUSDT': 0.00001234 };
@@ -140,13 +141,22 @@ const measure = page => page.evaluate(() => {
   const rect = el => { if (!el) return null; const r = el.getBoundingClientRect(); const s = getComputedStyle(el); return { x: +r.x.toFixed(2), y: +r.y.toFixed(2), right: +r.right.toFixed(2), bottom: +r.bottom.toFixed(2), width: +r.width.toFixed(2), height: +r.height.toFixed(2), font: s.fontSize, weight: s.fontWeight, color: s.color, background: s.backgroundColor, padding: s.padding, gap: s.gap, overflowX: s.overflowX, transform: s.transform, margin: s.margin, tabular: s.fontVariantNumeric }; };
   const one = s => rect(document.querySelector(s));
   const all = s => [...document.querySelectorAll(s)].map(rect);
+  const contents=el=>{
+    const parts=[],walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;
+    while(node=walker.nextNode()){if(!node.textContent.trim())continue;const range=document.createRange();range.selectNodeContents(node);parts.push(...range.getClientRects());}
+    for(const icon of el.querySelectorAll('svg'))parts.push(icon.getBoundingClientRect());
+    const visible=parts.filter(r=>r.width>0&&r.height>0);
+    return {contentX:visible.length?Math.min(...visible.map(r=>r.x)):null,contentRight:visible.length?Math.max(...visible.map(r=>r.right)):null};
+  };
   return {
     ticker: one('.futures-ticker-bar, .ticker-bar'), chart: one('.chart-area'), book: one('.orderbook-area'), form: one('.order-form-area'),
     toolbar: one('.chart-toolbar'), grid: one('.main-grid'), bottom: one('.bottom-panel'), pair: one('.pair-name'), price: one('.futures-primary-price .value'),
+    pairSelector:one('.futures-ticker-bar .pair-selector'),primaryPrice:one('.futures-primary-price'),
     tickerScroll: (() => { const el = document.querySelector('.futures-ticker-bar'); return el ? { scroll: el.scrollWidth, client: el.clientWidth, groups: [...el.children].map(rect) } : null; })(),
     toolbarChildren: all('.chart-toolbar > *'),
     labels: all('.futures-ticker-bar .ticker-item > .label'), statistics: all('.futures-ticker-bar .ticker-item > .value'), selectors: all('.fo-mlTrigger'),
     tickerMetrics: all('.futures-ticker-bar .ticker-item'),
+    tickerStats:[...document.querySelectorAll('.futures-ticker-bar .ticker-item:not(.futures-primary-price)')].map(el=>({text:el.textContent.trim(),...rect(el),...contents(el)})),
     tickerText: [...document.querySelectorAll('.futures-ticker-bar .ticker-item > .label,.futures-ticker-bar .ticker-item > .value')].map(el=>({text:el.textContent,scroll:el.scrollWidth,client:el.clientWidth,...rect(el)})),
     fields: all('.fo-priceInputRow, .fo-qtyInputRow'), inputs: all('.fo-priceInputRow input, .fo-qtyInputRow input'),
     infoRows: all('.fo-infoBox > .fo-infoRow'), options: one('.fo-optionsRow'), tabs: all('.order-family-tabs button'),
@@ -158,13 +168,7 @@ const measure = page => page.evaluate(() => {
     calculators: [...document.querySelectorAll('[data-open-calculator]')].map(el => ({ ...rect(el), title: el.title, name: el.getAttribute('aria-label'), text: el.textContent.trim() })),
     header: {
       bar:one('.global-header'),brand:one('.header-brand'),nav:one('.main-nav'),account:one('.header-actions'),
-      items:[...document.querySelectorAll('.main-nav > *')].map(el=>{
-        const parts=[];const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let node;
-        while(node=walker.nextNode()){if(!node.textContent.trim())continue;const range=document.createRange();range.selectNodeContents(node);parts.push(...range.getClientRects());}
-        for(const icon of el.querySelectorAll('svg'))parts.push(icon.getBoundingClientRect());
-        const visible=parts.filter(r=>r.width>0&&r.height>0);
-        return {text:el.textContent.trim(),...rect(el),contentX:visible.length?Math.min(...visible.map(r=>r.x)):null,contentRight:visible.length?Math.max(...visible.map(r=>r.right)):null};
-      }).filter(x=>x.width>0&&x.height>0&&x.contentX!==null),
+      items:[...document.querySelectorAll('.main-nav > *')].map(el=>({text:el.textContent.trim(),...rect(el),...contents(el)})).filter(x=>x.width>0&&x.height>0&&x.contentX!==null),
       labels:[...document.querySelectorAll('.main-nav .top-nav-link')].map(el=>({text:el.textContent.trim(),scroll:el.scrollWidth,client:el.clientWidth,...rect(el)})).filter(x=>x.width>0&&x.height>0),
     },
   };
@@ -299,6 +303,8 @@ async function run() {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch({ args: ['--no-sandbox'] });
   const report = { phase: PHASE, fixedTime: NOW, dist: DIST, cases: [], violations: [], interactions: {} };
+  const baselinePath=path.join(OUT,'before-report.json');
+  const baseline=PHASE==='after'&&fs.existsSync(baselinePath)?JSON.parse(fs.readFileSync(baselinePath,'utf8')):null;
   try {
     for (const width of WIDTHS) {
       const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : width === 1920 ? 1080 : width === 1366 ? 768 : 900 }, deviceScaleFactor: 1, serviceWorkers: 'block', reducedMotion: 'reduce' });
@@ -314,6 +320,8 @@ async function run() {
       await captures(page, `${PHASE}-${width}`, width === 390);
       const ticket = await measure(page);
       const item = { width, initial, ticket, pageErrors, blockedExternal: external.length };
+      const stats=initial.tickerStats.filter(x=>x.width>0).sort((a,b)=>a.y-b.y||a.x-b.x);
+      item.tickerGaps=stats.slice(1).flatMap((x,i)=>Math.abs(x.y-stats[i].y)<1?[{left:stats[i].text,right:x.text,gap:+(x.x-stats[i].right).toFixed(2),contentGap:+(x.contentX-stats[i].contentRight).toFixed(2)}]:[]);
       report.cases.push(item);
       const check = (ok, why) => { if (!ok) report.violations.push(`${width}: ${why}`); };
       check(initial.overflowX === 0, 'document horizontal overflow'); check(ticket.formScrollX === 0, 'ticket horizontal overflow'); check(pageErrors.length === 0, 'page errors: ' + pageErrors.join('; '));
@@ -329,6 +337,19 @@ async function run() {
         check(initial.tickerScroll.scroll<=initial.tickerScroll.client+1,'ticker statistics clipped/requires horizontal scroll');
         check(initial.tickerMetrics.every(x=>x.width===0||(x.x>=initial.ticker.x-1&&x.right<=initial.ticker.right+1&&x.y>=initial.ticker.y-1&&x.bottom<=initial.ticker.bottom+1)),'ticker metric outside visible strip');
         check(initial.tickerText.every(x=>x.width===0||x.scroll<=x.client+1),'ticker text clipped');
+        if(MIN_TICKER_GAP){
+          const minimum=width>=1600?Math.max(28,MIN_TICKER_GAP):MIN_TICKER_GAP;
+          check(item.tickerGaps.every(x=>x.contentGap>=minimum),'ticker statistics content spacing below requested minimum');
+          if(width>=1600)check(Math.max(...item.tickerGaps.map(x=>x.gap))-Math.min(...item.tickerGaps.map(x=>x.gap))<=1,'desktop statistics spacing is uneven');
+          const previous=baseline?.cases.find(c=>c.width===width)?.initial;
+          if(previous){
+            item.stableInstrument={};
+            for(const part of ['pairSelector','primaryPrice']){
+              item.stableInstrument[part]=['x','y','width','height'].every(k=>Math.abs(initial[part][k]-previous[part][k])<=1);
+              check(item.stableInstrument[part],`${part} moved or resized`);
+            }
+          }
+        }
         check(initial.toolbarChildren.filter(x=>x.width>0).every(x=>x.x>=initial.toolbar.x-1&&x.right<=initial.toolbar.right+1),'toolbar controls extend into book');
       }
       const header=initial.header;
@@ -362,6 +383,8 @@ async function run() {
       await page.waitForTimeout(1100); await page.evaluate(() => document.fonts.ready);
       item.spot = await measure(page);
       await page.screenshot({ path: path.join(OUT, `${PHASE}-${width}-spot.png`), animations: 'disabled' });
+      const bodyTop=Math.ceil(item.spot.header.bar.bottom),viewport=page.viewportSize();
+      await page.screenshot({path:path.join(OUT,`${PHASE}-${width}-spot-body.png`),animations:'disabled',clip:{x:0,y:bodyTop,width:viewport.width,height:viewport.height-bodyTop}});
       check(item.spot.overflowX === 0, 'Spot horizontal overflow');
       await context.close();
     }
