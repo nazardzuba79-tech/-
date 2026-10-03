@@ -149,6 +149,8 @@ export interface NativeCollateral{
  */
 export interface NativeWallet{
   initialized?:boolean;
+  /** Server-authoritative presentation tier. Test/ordinary accounts receive null. */
+  clientTier?:'SUPREME_VIP'|null;
   account:NativeAccountAggregate;
   ledger:AccountLedgerView;
   collateral:NativeCollateral;
