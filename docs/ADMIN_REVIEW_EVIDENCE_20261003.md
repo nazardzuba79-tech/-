@@ -1,13 +1,13 @@
 # Admin practicality review evidence
 
-Review only. No production database, user funds, migrations, infrastructure or deployments were used for these checks. The password column, password vault and auth contracts remain in place. PRs #403 and #406 were merged by a concurrent session during this work; this agent did not merge either. The remaining review stack integrates those ancestors without changing production.
+Review only. No production database, user funds, migrations or infrastructure were used for these checks. The password column, password vault and auth contracts remain in place. PRs #403, #406 and #407 were merged by a concurrent session during this work; this agent did not merge them or initiate a deployment. The existing Cloudflare Git integration creates branch previews automatically. PR #408 remains the review candidate against main.
 
 ## Stack
 
 1. Confirmed defects: PR #403, final reviewed head `b1825be1b355482f9124233a574e5f453c3cd77c`; externally merged as `f231431864faef057c1ab586e2c3d93d69bcd1e4`.
-2. Bounded reads: PR #406, reviewed head `52ef08eaeca1b46d1e47ed3cba21756f45abc73d`; externally merged as `fa8535c7` during final validation.
-3. Durable adjustment receipts: PR #407, `codex/admin-balance-recovery-20261003-v2`, dependent on #406.
-4. Working views: PR #408, `codex/admin-workflows-20261003`, dependent on #407. See its GitHub PR for the final exact head and CI.
+2. Bounded reads: PR #406, reviewed head `52ef08eaeca1b46d1e47ed3cba21756f45abc73d`; externally merged as `fa8535c71ec26e2c8b0fbf53b20b69201a057acc` during final validation.
+3. Durable adjustment receipts: PR #407, reviewed head `c7c4134b035af1ebe6099f1e3c6972306d4e0955`, all eight workflows green; externally merged as `13b7685372a763fb9b44365db10cf206aea29ca4`.
+4. Working views: PR #408, `codex/admin-workflows-20261003`, now against main after the earlier merges. See its GitHub PR for the final exact head and CI.
 
 ## Validation performed
 
@@ -16,6 +16,7 @@ Review only. No production database, user funds, migrations, infrastructure or d
 - Adjustment: 21 service/API tests and 10 actual PostgreSQL HTTP checks, including 20 concurrent repeats with one balance change, independent keys, response-loss recovery, rollback on audit failure and subsequent health response.
 - Existing actual-build browser fixtures: access gate 26 checks; deletion 20 checks with a disposable PostgreSQL database and desktop/mobile views; deposit packages 30 scenario groups; copy log 71 checks; KYC 10 scenario groups with both PostgreSQL and memory fallback. Protected-document/Worker/CORS checks use synthetic data and a local mail sink, not a real mailbox.
 - Independent final review reproduced an audit render crash for JSON-null metadata; null-safe result rendering preserves the original masked details. Regression includes null, string, number, boolean and array payloads. The test-only helper was moved out of Jest test discovery, without suppressing tests.
+- Full Linux frontend CI passed 3,708 tests in 215 suites at head `29ce4c8445c0f7118bb8702fb994bfbec75be9d0`; the final head is checked separately on the PR. The deletion browser harness also exposed a debounce race in the test: it opened an existing unfiltered row before the filtered response replaced the list. A delayed-response fixture reproduced the old sequence three times; the corrected harness awaits the exact filtered response and rendered row, and asserts zero DELETE requests through cancellation. No deletion product behavior was changed for this test fix.
 - Additional built workflow fixture: filtered Back navigation, one debounced search, bounded lazy history, 500/offline/retry retaining last data, keyboard focus, explicit 404, adjustment review/cancel with zero writes, and truncated committed-response recovery via GET without a second application POST.
 - Screenshots: Users, detail, Deposits, Withdrawals, KYC, OTC, Wallets and Audit at 1920/1440/1366/390. Added an explicit mobile-card visibility assertion after a real CSS conflict was reproduced by deletion QA; checking page overflow alone did not detect that defect.
 

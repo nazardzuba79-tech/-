@@ -226,33 +226,48 @@ async function browserChecks(app, prisma, user, header) {
    const context=await browser.newContext({viewport:{width,height:1000}});
    await context.addInitScript(token=>localStorage.setItem('exchange_token',token),header('admin').slice(7));
    const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+   let observedDeletes=0;
+   page.on('request',req=>{if(req.method()==='DELETE'&&new URL(req.url()).pathname==='/api/v1/admin/users/'+id)observedDeletes++;});
    await page.route('**/*',async route=>{
     const url=new URL(route.request().url());
     if(url.pathname.startsWith('/api/v1/')){
      if(url.pathname==='/api/v1/admin/deposits/recent-by-user')return route.fulfill({json:[]});
+     // Make the search response slow enough to exercise the debounced list replacement.
+     if(url.pathname==='/api/v1/admin/users/page'&&url.searchParams.get('search')===id+'@')await new Promise(resolve=>setTimeout(resolve,350));
      const response=await route.fetch({url:origin+url.pathname+url.search});return route.fulfill({response});
     }
     if(url.origin===origin)return route.continue();
     return route.abort();
    });
    await page.goto(origin+'/admin/users');
-   const search=page.getByRole('textbox',{name:'Поиск пользователей'});await search.fill(id+'@');
    const table=()=>page.locator(width >= 768 ? `[data-user-row="${id}"]` : `[data-user-card="${id}"]`);
+   await table().waitFor({state:'visible'});
+   // The row already exists in the unfiltered list. Waiting for that row alone
+   // can click it before the 250ms debounce replaces the list and closes details.
+   const filteredRead=page.waitForResponse(res=>{
+    const url=new URL(res.url());return res.request().method()==='GET'&&url.pathname==='/api/v1/admin/users/page'&&url.searchParams.get('search')===id+'@';
+   });
+   const search=page.getByRole('textbox',{name:'Поиск пользователей'});await search.fill(id+'@');
+   const filteredResponse=await filteredRead;assert.equal(filteredResponse.status(),200);
+   assert.deepEqual((await filteredResponse.json()).items.map(item=>item.id),[id]);
+   await page.waitForFunction(({width,id})=>{
+    const attribute=width>=768?'data-user-row':'data-user-card',rows=document.querySelectorAll(`[${attribute}]`);
+    return rows.length===1&&rows[0].getAttribute(attribute)===id;
+   },{width,id});
    await table().waitFor({state:'visible'});
    await table().locator('summary').click();
    assert.equal(await page.getByRole('button',{name:/^(Заблокировать|Разблокировать)$/}).count(),0);
-   // The paged Admin row may re-render while summary/read state updates. Re-resolve
-   // the row/button at click time instead of holding a stale locator target.
    await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    const dialog=page.getByRole('dialog');await dialog.waitFor({state:'visible'});
    assert.ok((await dialog.innerText()).includes(id+'@example.invalid'));
    const bounds=await dialog.boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width);
    await page.screenshot({path:path.join(output,'delete-confirm-'+width+'.png'),fullPage:true});
    await dialog.getByRole('button',{name:'Отмена',exact:true}).click();
+   assert.equal(observedDeletes,0,'opening and cancelling confirmation sends no DELETE');
    assert.ok(await prisma.user.findUnique({where:{id}}));
    await table().waitFor({state:'visible'});
-   // Cancel closes the actions disclosure; reopen it before the second delete attempt.
-   await table().locator('summary').click();
+   // An asynchronous list remount can close details; cancellation itself does not.
+   if(!await table().locator('details').evaluate(element=>element.open))await table().locator('summary').click();
    await table().getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    let deleteRequests=0;
    await page.route('**/api/v1/admin/users/'+id,async route=>{
@@ -268,6 +283,7 @@ async function browserChecks(app, prisma, user, header) {
    await confirm.evaluate(button=>{button.click();button.click();});
    await dialog.waitFor({state:'hidden'});
    assert.equal(deleteRequests,2,'double click submits only one retry');
+   assert.equal(observedDeletes,2,'only the explicit confirmation and explicit retry send DELETE');
    await page.waitForFunction(()=>document.body.textContent.includes('Никого не найдено.'));
    assert.equal(await prisma.user.findUnique({where:{id}}),null);
    assert.equal(await page.locator('a[href="/admin/audit-log"]').count(),1,'authorized operator can open the action journal');
