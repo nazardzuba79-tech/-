@@ -24,9 +24,11 @@ function load(file: string): any {
     if (name.endsWith('/adminReadApi')) return {
       getAdminGateMe: (signal?: AbortSignal) => api.getMe(signal),
       getAdminUsersAbortable: (signal?: AbortSignal) => api.getAdminUsers?.(undefined, signal),
+      adminRead: (path: string, signal?: AbortSignal) => { if (path === '/admin/work-summary') return api.getAdminWorkSummary(signal); throw new Error(`Unexpected read: ${path}`); },
     };
+    if (name.endsWith('/adminPagedApi')) return { getAdminUsersPage: (query: string, signal?: AbortSignal) => api.getAdminUsersPage(query, signal) };
     if (name.endsWith('/api')) return { api, getToken: () => token, onSessionChange: (listener: () => void) => { sessionListeners.add(listener); return () => sessionListeners.delete(listener); }, ApiError: class extends Error {} };
-    if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
+    if (name.endsWith('/useAdminAlerts')) return { useAdminAlertSound: () => {}, useAdminSummaryChime: () => {}, isAdminAlertSoundEnabled: () => false, setAdminAlertSoundEnabled: jest.fn() };
     return name.startsWith('.') ? load(resolve(dirname(file), name)) : req(name);
   });
   return exports;
@@ -34,6 +36,9 @@ function load(file: string): any {
 beforeEach(() => {
   dom = new JSDOM('<!doctype html><div id="root"></div>', { pretendToBeVisual: true, url: 'http://localhost/admin' });
   Object.assign(globalThis, { window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, IS_REACT_ACT_ENVIRONMENT: true });
+  globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+  globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
+  dom.window.scrollTo = jest.fn();
   dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
   dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
   host = document.getElementById('root')!;
@@ -41,23 +46,25 @@ beforeEach(() => {
   wallets = [{ chain: 'ethereum', nativeAsset: 'ETH', nativeDepositsSupported: true, tokens: ['USDT'], address: '0x' + 'a'.repeat(40), defaultAddress: '0x' + 'b'.repeat(40), isOverridden: true, envConfigured: true, updatedAt: null, updatedByAdminId: 'admin-1' }];
   token = 'test-only';
   api = { getAdminWallets: jest.fn(async () => wallets), setAdminWalletAddress: jest.fn(async (chain, address) => { wallets = wallets.map(w => w.chain === chain ? { ...w, address } : w); }), resetAdminWallet: jest.fn(async chain => { wallets = wallets.map(w => w.chain === chain ? { ...w, address: w.defaultAddress, isOverridden: false } : w); }), getMe: jest.fn(async () => ({ isAdmin: true, email: 'qa@example.invalid' })) };
+  api.getAdminWorkSummary = jest.fn(async () => ({ asOf: new Date().toISOString(), widgets: Object.fromEntries(
+    ['readyPackages', 'pendingPackages', 'unlinkedTransfers', 'activeWithdrawals', 'pendingKyc', 'openOtc', 'totalUsers', 'newUsers24h'].map(key => [key, { value: 0, unit: 'заявки', href: '/admin/users', status: 'ready', asOf: new Date().toISOString() }])) }));
   modules.clear();
   sessionListeners.clear();
 });
-afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); });
+afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); delete (globalThis as any).requestAnimationFrame; delete (globalThis as any).cancelAnimationFrame; });
 async function mountWallets() { const { AdminWalletsPage } = load(resolve(frontend, 'src/pages/admin/AdminWalletsPage')); await act(async () => { root.render(React.createElement(AdminWalletsPage)); await flush(); }); }
 
-test('leaving Admin Users aborts both page reads', async () => {
-  api.getAdminUsers = jest.fn(() => new Promise(() => {}));
-  api.getAdminRecentDepositsByUser = jest.fn(() => new Promise(() => {}));
+test('leaving Admin Users aborts the paginated page and shared summary reads', async () => {
+  api.getAdminUsersPage = jest.fn(() => new Promise(() => {}));
+  api.getAdminWorkSummary = jest.fn(() => new Promise(() => {}));
   const { AdminUsersPage } = load(resolve(frontend, 'src/pages/admin/AdminUsersPage'));
   const { MemoryRouter } = req('react-router-dom');
   await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminUsersPage))); await flush(); });
-  const usersSignal = api.getAdminUsers.mock.calls[0][1] as AbortSignal;
-  const depositsSignal = api.getAdminRecentDepositsByUser.mock.calls[0][0] as AbortSignal;
+  const usersSignal = api.getAdminUsersPage.mock.calls[0][1] as AbortSignal;
+  const summarySignal = api.getAdminWorkSummary.mock.calls[0][0] as AbortSignal;
   await act(async () => { root.render(null); await flush(); });
   expect(usersSignal?.aborted).toBe(true);
-  expect(depositsSignal?.aborted).toBe(true);
+  expect(summarySignal?.aborted).toBe(true);
 });
 
 test('leaving Admin Listings cancels its pending list read', async () => {
@@ -128,7 +135,7 @@ function mockDepositApi(q: any) {
 }
 const fetched = (suffix: string) => fetchMock.mock.calls.filter((c: any[]) => String(c[0]).includes(suffix));
 
-test('a late deposit poll cannot restart polling after leaving the page', async () => {
+test('a late explicit deposit refresh cannot restart reads after leaving the page', async () => {
   jest.useFakeTimers({ doNotFake: ['setImmediate'] });
   try {
     const q = queue();
@@ -136,7 +143,7 @@ test('a late deposit poll cannot restart polling after leaving the page', async 
     await mountDeposits();
     let finish!: (value: any) => void;
     fetchMock.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    await act(async () => { jest.advanceTimersByTime(60_000); await flush(); });
+    await click('Обновить');
     const requests = fetched('/admin/deposit-queue').length;
     await act(async () => { root.render(null); await flush(); });
     await act(async () => { finish({ ok: true, json: async () => q }); await flush(); });
@@ -146,17 +153,16 @@ test('a late deposit poll cannot restart polling after leaving the page', async 
   } finally { jest.useRealTimers(); }
 });
 
-test('leaving deposits aborts queue and client directory reads', async () => {
+test('leaving deposits aborts the queue without ever loading the whole client directory', async () => {
   mockDepositApi(queue());
   const delegate = fetchMock.getMockImplementation()!;
   fetchMock.mockImplementation((url: string, init: any) => String(url).endsWith('/admin/deposit-queue') ? new Promise(() => {}) : delegate(url, init));
   api.getAllClients = jest.fn(() => new Promise(() => {}));
   await mountDeposits();
   const queueSignal = fetched('/admin/deposit-queue')[0][1].signal;
-  const clientsSignal = api.getAllClients.mock.calls[0][0];
+  expect(api.getAllClients).not.toHaveBeenCalled();
   await act(async () => { root.render(null); await flush(); });
   expect(queueSignal?.aborted).toBe(true);
-  expect(clientsSignal?.aborted).toBe(true);
 });
 
 test('accumulation cards: 15 + 20 awaits a top-up of 265 with crediting unavailable; a 300 package offers «Проверить и зачислить»', async () => {
@@ -198,11 +204,11 @@ test('opening the page reads the stored queue and asks the server for the day\'s
     expect(fetched('/deposit-watch/run')).toHaveLength(0);
     expect(api.getAdminDeposits).not.toHaveBeenCalled();
     await act(async () => { jest.advanceTimersByTime(60_000); await flush(); await flush(); });
-    expect(fetched('/admin/deposit-queue')).toHaveLength(2);
+    expect(fetched('/admin/deposit-queue')).toHaveLength(1);
     visibility = 'hidden';
     await act(async () => { document.dispatchEvent(new dom.window.Event('visibilitychange')); await flush(); });
     await act(async () => { jest.advanceTimersByTime(60 * 60_000); await flush(); });
-    expect(fetched('/admin/deposit-queue')).toHaveLength(2);
+    expect(fetched('/admin/deposit-queue')).toHaveLength(1);
     expect(fetched('/deposit-watch/run')).toHaveLength(0);
     expect(fetched('/deposit-watch/open')).toHaveLength(1);
     await click('Проверить ленты других сетей');

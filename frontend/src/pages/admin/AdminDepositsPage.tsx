@@ -1,8 +1,11 @@
-import { addBrowserActivityListener, removeBrowserActivityListener, isBrowserInactive, waitUntilActive } from '../../lib/browserActivity';
+import { waitUntilActive } from '../../lib/browserActivity';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEPOSIT_MINIMUM_USD } from '../../lib/depositMinimum';
 import { useLocation } from 'react-router-dom';
-import { api, ApiError } from '../../lib/api';
+import { api, ApiError, getToken, onSessionChange } from '../../lib/api';
+import { getAdminClientsPage } from '../../lib/adminPagedApi';
+import { useAdminRead } from './useAdminRead';
+import { refreshAdminSummary } from './adminWorkSummary';
 import { styles } from './adminStyles';
 import { CopyValue, RailLabel } from './AdminPrimitives';
 import { Skeleton } from '../../components/Skeleton';
@@ -13,7 +16,6 @@ import {
   type CreditedBatch, type DepositPackage, type DepositQueue, type DepositQueueRow, type IgnoreReason, type WatcherStatus,
 } from './adminDepositApi';
 
-type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
 type Tab = 'unattributed' | 'topup' | 'network' | 'ready' | 'review' | 'credited' | 'ignored';
 
 const TABS: { key: Tab; label: string }[] = [
@@ -25,8 +27,9 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'credited', label: 'Зачисленные' },
   { key: 'ignored', label: 'Игнорированные' },
 ];
-/** Queue re-read while the tab is visible. A hidden tab schedules nothing. */
-const REFRESH_MS = 60_000;
+const FOCUS_FRESHNESS_MS = 30_000;
+const READ_TIMEOUT_MS = 15_000;
+const STATE_TAB: Record<string, Tab> = { UNATTRIBUTED: 'unattributed', AWAITING_TOPUP: 'topup', AWAITING_CONFIRMATIONS: 'network', READY: 'ready', NEEDS_REVIEW: 'review', CREDITED: 'credited', IGNORED: 'ignored' };
 const network = (chain: string) => (chain === 'tron' ? 'TRC20' : chain);
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('ru-RU') : '—');
 
@@ -43,11 +46,22 @@ function lagLabel(ms: number): string {
  * steps; the state of every transfer is computed by the server.
  */
 export function AdminDepositsPage() {
-  const { hash } = useLocation();
+  const [session, setSession] = useState(getToken);
+  useEffect(() => onSessionChange(() => setSession(getToken())), []);
+  // A different login never inherits the previous operator's queue or drafts.
+  return session ? <AdminDepositsSession key={session} session={session} /> : <p role="alert">Сессия завершена. Войдите снова.</p>;
+}
+
+function AdminDepositsSession({ session }: { session: string }) {
+  const { hash, search } = useLocation();
+  const params = new URLSearchParams(search);
+  const requestedTab = STATE_TAB[params.get('state') ?? ''];
+  const userFilter = params.get('userId') ?? '';
   const [queue, setQueue] = useState<DepositQueue | null>(null);
-  const [loadError, setLoadError] = useState(false);
-  const [tab, setTab] = useState<Tab>(hash === '#unattributed' ? 'unattributed' : 'ready');
-  const [clients, setClients] = useState<Client[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [readBusy, setReadBusy] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [tab, setTab] = useState<Tab>(requestedTab ?? (hash === '#unattributed' ? 'unattributed' : 'ready'));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [crediting, setCrediting] = useState<DepositPackage | null>(null);
@@ -64,25 +78,55 @@ export function AdminDepositsPage() {
   const again = useRef(false);
   const mounted = useRef(false);
   const queueRequest = useRef<AbortController | null>(null);
+  const lastAttempt = useRef<number | null>(null);
+  const queueVisible = useRef(view === 'queue');
+  queueVisible.current = view === 'queue';
   const reload = useCallback((): Promise<void> => {
-    if (!mounted.current) return Promise.resolve();
+    if (!mounted.current || document.hidden || !queueVisible.current || getToken() !== session) return Promise.resolve();
     if (loading.current) { again.current = true; return loading.current; }
     const controller = new AbortController();
     queueRequest.current = controller;
+    setReadBusy(true);
     const run = (async () => {
       do {
         again.current = false;
+        lastAttempt.current = Date.now();
+        let timedOut = false;
+        const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, READ_TIMEOUT_MS);
+        let cancel: () => void = () => {};
         try {
-          const next = await adminDepositApi.queue(controller.signal);
-          if (controller.signal.aborted) return;
-          setQueue(next); setLoadError(false);
-        } catch { if (!controller.signal.aborted) setLoadError(true); }
-      } while (!controller.signal.aborted && again.current);
+          // The race settles even if the transport ignores AbortSignal.
+          const cancelled = new Promise<never>((_, reject) => {
+            cancel = () => reject(new DOMException('Read cancelled', 'AbortError'));
+            controller.signal.addEventListener('abort', cancel, { once: true });
+          });
+          const next = await Promise.race([adminDepositApi.queue(controller.signal), cancelled]);
+          if (controller.signal.aborted || getToken() !== session || !mounted.current) return;
+          setQueue(next); setLoadError(null); setUpdatedAt(Date.now());
+        } catch (err) {
+          if (getToken() !== session || !mounted.current) return;
+          if (timedOut) setLoadError('Истекло время ожидания. Повторите запрос.');
+          else if (!controller.signal.aborted) {
+            const status = (err as { status?: number })?.status;
+            if (status === 401 || status === 403) { setQueue(null); setUpdatedAt(null); }
+            setLoadError(status === 401 ? 'Сессия завершена. Войдите снова.' : status === 403 ? 'Нет доступа к данным.' : 'Не удалось загрузить очередь пополнений. Повторите запрос.');
+          }
+        } finally { clearTimeout(timeout); controller.signal.removeEventListener('abort', cancel); }
+      } while (!controller.signal.aborted && again.current && !document.hidden && queueVisible.current);
     })().finally(() => {
-      if (queueRequest.current === controller) { loading.current = null; queueRequest.current = null; }
+      if (queueRequest.current === controller) { loading.current = null; queueRequest.current = null; if (mounted.current) setReadBusy(false); }
     });
     loading.current = run;
     return run;
+  }, [session]);
+  const changed = useCallback(async () => {
+    if (!mounted.current || getToken() !== session) return;
+    refreshAdminSummary(); await reload();
+  }, [reload, session]);
+  const cancelRead = useCallback(() => {
+    if (queueRequest.current) { queueRequest.current.abort(); lastAttempt.current = null; }
+    queueRequest.current = null; loading.current = null; again.current = false;
+    if (mounted.current) setReadBusy(false);
   }, []);
 
   useEffect(() => {
@@ -94,36 +138,36 @@ export function AdminDepositsPage() {
     // right after another scan; otherwise it does nothing.
     const pendingOpen = new AbortController();
     void waitUntilActive(pendingOpen.signal).then(() => {
-      if (!pendingOpen.signal.aborted) return adminDepositApi.openTrigger().then((r) => { if (!disposed && r.ran) void reload(); });
+      if (!pendingOpen.signal.aborted && getToken() === session) return adminDepositApi.openTrigger().then((r) => { if (!disposed && r.ran) void changed(); });
     }).catch(() => {});
-    api.getAllClients(pendingOpen.signal).then(next => { if (!disposed) setClients(next); }).catch(() => {});
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const visible = () => !disposed && !isBrowserInactive();
-    const schedule = () => {
-      if (timer !== undefined) clearTimeout(timer);
-      timer = undefined;
-      if (visible()) timer = setTimeout(() => { void reload().then(schedule); }, REFRESH_MS);
+    const onVisibility = () => {
+      if (document.hidden) cancelRead();
+      else if (lastAttempt.current === null || Date.now() - lastAttempt.current >= FOCUS_FRESHNESS_MS) void reload();
     };
-    const onVisibility = () => { if (visible()) void reload().then(schedule); else if (timer !== undefined) { clearTimeout(timer); timer = undefined; } };
-    schedule();
-    addBrowserActivityListener(onVisibility);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', onVisibility);
     return () => {
       disposed = true; mounted.current = false;
-      pendingOpen.abort(); queueRequest.current?.abort(); queueRequest.current = null;
-      loading.current = null; again.current = false;
-      if (timer !== undefined) clearTimeout(timer);
-      removeBrowserActivityListener(onVisibility);
+      pendingOpen.abort(); cancelRead();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onVisibility);
     };
-  }, [reload]);
+  }, [reload, changed, cancelRead, session]);
+
+  useEffect(() => {
+    if (view !== 'queue') cancelRead();
+    else if (lastAttempt.current === null || Date.now() - lastAttempt.current >= FOCUS_FRESHNESS_MS) void reload();
+  }, [view, reload, cancelRead]);
 
   useEffect(() => {
     if (hash === '#unattributed') { setTab('unattributed'); setView('queue'); }
     if (hash === '#copies') { setView('copies'); setCopiesOpened(true); }
-  }, [hash]);
+    if (requestedTab) { setTab(requestedTab); setView('queue'); }
+  }, [hash, requestedTab]);
 
   const lists = useMemo(() => {
-    const rows = queue?.rows ?? [];
-    const packages = queue?.packages ?? [];
+    const rows = (queue?.rows ?? []).filter(r => !userFilter || r.userId === userFilter || r.claims.some(c => c.userId === userFilter));
+    const packages = (queue?.packages ?? []).filter(p => !userFilter || p.userId === userFilter);
     return {
       unattributed: rows.filter((r) => r.state === 'UNATTRIBUTED'),
       network: rows.filter((r) => r.state === 'AWAITING_CONFIRMATIONS'),
@@ -131,16 +175,19 @@ export function AdminDepositsPage() {
       reviewPackages: packages.filter((p) => p.state === 'NEEDS_REVIEW'),
       credited: rows.filter((r) => r.state === 'CREDITED'),
       ignored: rows.filter((r) => r.state === 'IGNORED'),
-      batches: queue?.creditedBatches ?? [],
+      batches: (queue?.creditedBatches ?? []).filter(b => !userFilter || b.userId === userFilter),
       topup: packages.filter((p) => p.state === 'AWAITING_TOPUP'),
       ready: packages.filter((p) => p.state === 'READY'),
     };
-  }, [queue]);
+  }, [queue, userFilter]);
 
   // Transfers for Непривязанные / Ожидают подтверждений / Игнорированные;
   // PACKAGES (one user + asset + network) for Ожидают доплаты / Готовы.
-  const counts: Record<Tab, number> = {
-    unattributed: queue?.counts.UNATTRIBUTED ?? 0,
+  const counts: Record<Tab, number | null> = !queue || queue.counts.truncated ? { unattributed: null, topup: null, network: null, ready: null, review: null, credited: null, ignored: null } : userFilter ? {
+    unattributed: lists.unattributed.length, topup: lists.topup.length, network: lists.network.length, ready: lists.ready.length,
+    review: lists.review.length + lists.reviewPackages.length, credited: lists.credited.length, ignored: lists.ignored.length,
+  } : {
+    unattributed: queue.counts.UNATTRIBUTED,
     topup: queue?.packageCounts?.AWAITING_TOPUP ?? lists.topup.length,
     network: queue?.counts.AWAITING_CONFIRMATIONS ?? 0,
     ready: queue?.packageCounts?.READY ?? lists.ready.length,
@@ -153,7 +200,7 @@ export function AdminDepositsPage() {
   async function restore(row: DepositQueueRow) {
     if (!window.confirm('Вернуть перевод в очередь «Непривязанные»? Баланс не изменится.')) return;
     setMessage(null); setError(null);
-    try { await adminDepositApi.restore(row.id); await reload(); setMessage('Перевод возвращён в очередь. Баланс не изменён.'); }
+    try { await adminDepositApi.restore(row.id); await changed(); setMessage('Перевод возвращён в очередь. Баланс не изменён.'); }
     catch (err) { setError(err instanceof AdminDepositApiError ? err.message : 'Не удалось вернуть перевод.'); }
   }
 
@@ -162,7 +209,7 @@ export function AdminDepositsPage() {
     try {
       await adminDepositApi.attribute(row.id, userId, reassign);
       // Refresh first, then confirm: the message never describes a stale list.
-      await reload();
+      await changed();
       setMessage(userId ? 'Перевод привязан. Баланс не изменён.' : 'Привязка снята. Баланс не изменён.');
     } catch (err) {
       setError(err instanceof AdminDepositApiError ? err.message : 'Не удалось привязать перевод.');
@@ -188,53 +235,58 @@ export function AdminDepositsPage() {
         </div>
       )}
 
-      <div hidden={view !== 'queue'}>
+      {view === 'queue' && <div>
       {error && <div role="alert" style={{ ...styles.errorBox, marginBottom: 12 }}>{error}</div>}
       {message && <p role="status" style={{ ...styles.successBox, marginBottom: 12 }}>{message}</p>}
-      {loadError && <div role="alert" style={{ ...styles.errorBox, marginBottom: 12 }}>Не удалось загрузить очередь пополнений. Сохранённые данные не изменены — повторите позже.</div>}
+      {loadError && <div role="alert" style={{ ...styles.errorBox, marginBottom: 12 }}>{loadError}{queue ? ' Показаны последние загруженные данные; они могут быть устаревшими.' : ''}</div>}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+        <button type="button" data-deposit-refresh disabled={readBusy} style={styles.neutralBtn} onClick={() => void reload()}>{readBusy ? 'Обновление…' : 'Обновить'}</button>
+        <span role="status" style={styles.hint}>{updatedAt ? `Обновлено: ${new Date(updatedAt).toLocaleTimeString('ru-RU')}` : 'Данные ещё не загружены'}</span>
+        {userFilter && <span style={styles.hint}>Пользователь: {userFilter}</span>}
+      </div>
 
-      <WatcherPanel status={queue?.watcher ?? null} onChanged={reload} onError={setError} />
-      <CheckTxForm onChecked={reload} />
+      <WatcherPanel status={queue?.watcher ?? null} onChanged={changed} onError={setError} />
+      <CheckTxForm onChecked={changed} />
 
       <div className="admin-user-tabs" role="tablist" aria-label="Очередь пополнений" style={{ margin: '16px 0 10px' }}>
         {TABS.map((t) => (
           <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} data-deposit-tab={t.key}
             className={tab === t.key ? 'active' : undefined} onClick={() => setTab(t.key)}>
-            {t.label}<span className="admin-user-tab-count">{counts[t.key]}</span>
+            {t.label}<span className="admin-user-tab-count">{counts[t.key] ?? '—'}</span>
           </button>
         ))}
       </div>
-      {queue?.counts.truncated && <p role="alert" style={styles.errorBox}>Показаны первые записи из {queue.counts.uncreditedTotal}. Счётчики вкладок — по загруженным записям.</p>}
+      {queue?.counts.truncated && <p role="alert" style={styles.errorBox}>Загружена только часть очереди из {queue.counts.uncreditedTotal} переводов. Полные количества неизвестны; отсутствие записи в этом списке не означает отсутствие перевода.</p>}
       {queue === null && !loadError && <Skeleton height={120} />}
 
       {queue && tab === 'unattributed' && (
         <section id="unattributed" data-deposit-section="unattributed">
-          {lists.unattributed.length === 0 && <Empty text="Непривязанных переводов нет." />}
-          {lists.unattributed.map((r) => <UnattributedRow key={r.id} row={r} clients={clients} onAttribute={attribute} onIgnore={() => setIgnoring(r)} />)}
+          {lists.unattributed.length === 0 && <Empty partial={queue?.counts.truncated} text="Непривязанных переводов нет." />}
+          {lists.unattributed.map((r) => <UnattributedRow key={r.id} row={r} onAttribute={attribute} onIgnore={() => setIgnoring(r)} />)}
         </section>
       )}
       {queue && (tab === 'topup' || tab === 'ready') && (
         <section data-deposit-section={tab} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
           {(tab === 'topup' ? lists.topup : lists.ready).map((p) => <PackageCard key={p.key} pkg={p} onCredit={() => setCrediting(p)} />)}
-          {(tab === 'topup' ? lists.topup : lists.ready).length === 0 && <Empty text={tab === 'topup' ? 'Нет пакетов, ожидающих доплаты.' : 'Нет пакетов, готовых к проверке.'} />}
+          {(tab === 'topup' ? lists.topup : lists.ready).length === 0 && <Empty partial={queue?.counts.truncated} text={tab === 'topup' ? 'Нет пакетов, ожидающих доплаты.' : 'Нет пакетов, готовых к проверке.'} />}
         </section>
       )}
       {queue && tab === 'network' && (
         <section data-deposit-section="network">
-          {lists.network.length === 0 && <Empty text="Нет переводов, ожидающих подтверждений сети." />}
+          {lists.network.length === 0 && <Empty partial={queue?.counts.truncated} text="Нет переводов, ожидающих подтверждений сети." />}
           {lists.network.map((r) => <TransferRow key={r.id} row={r} />)}
         </section>
       )}
       {queue && tab === 'review' && (
         <section data-deposit-section="review" style={{ display: 'grid', gap: 12 }}>
           {lists.reviewPackages.map((p) => <PackageCard key={p.key} pkg={p} onCredit={() => setCrediting(p)} />)}
-          {lists.review.map((r) => <TransferRow key={r.id} row={r} clients={clients} onAttribute={attribute} />)}
-          {lists.review.length + lists.reviewPackages.length === 0 && <Empty text="Нет переводов, требующих уточнения." />}
+          {lists.review.map((r) => <TransferRow key={r.id} row={r} onAttribute={attribute} />)}
+          {lists.review.length + lists.reviewPackages.length === 0 && <Empty partial={queue?.counts.truncated} text="Нет переводов, требующих уточнения." />}
         </section>
       )}
       {queue && tab === 'credited' && (
         <section data-deposit-section="credited" style={{ display: 'grid', gap: 12 }}>
-          {lists.batches.length === 0 && lists.credited.length === 0 && <Empty text="Зачисленных пополнений пока нет." />}
+          {lists.batches.length === 0 && lists.credited.length === 0 && <Empty partial={queue?.counts.truncated} text="Зачисленных пополнений пока нет." />}
           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))' }}>
             {lists.batches.map((b) => <CreditedBatchCard key={b.id} batch={b} />)}
           </div>
@@ -247,18 +299,18 @@ export function AdminDepositsPage() {
           <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: '0 0 8px' }}>
             Не являются депозитами клиентов. Записи сохранены, в накопления и зачисления не входят.
           </p>
-          {lists.ignored.length === 0 && <Empty text="Игнорированных переводов нет." />}
+          {lists.ignored.length === 0 && <Empty partial={queue?.counts.truncated} text="Игнорированных переводов нет." />}
           {lists.ignored.map((r) => <IgnoredRow key={r.id} row={r} onRestore={() => restore(r)} />)}
         </section>
       )}
       {ignoring && (
         <IgnoreModal row={ignoring} onClose={() => setIgnoring(null)} onDone={async () => {
-          setIgnoring(null); await reload(); setMessage('Перевод перенесён в «Игнорированные». Запись сохранена, баланс не изменён.');
+          setIgnoring(null); await changed(); setMessage('Перевод перенесён в «Игнорированные». Запись сохранена, баланс не изменён.');
         }} />
       )}
 
-      <OtherNetworksFeed onDone={reload} />
-      </div>
+      <OtherNetworksFeed onDone={changed} />
+      </div>}
 
       {crediting && (
         <CreditDepositDrawer
@@ -267,15 +319,15 @@ export function AdminDepositsPage() {
           asset={crediting.asset}
           email={crediting.userEmail ?? crediting.userId}
           onClose={() => setCrediting(null)}
-          onDone={(r) => { setCrediting(null); setMessage(`Зачислено ${r.totalAmount} ${r.asset}.`); void reload(); }}
+          onDone={(r) => { setCrediting(null); setMessage(`Зачислено ${r.totalAmount} ${r.asset}.`); void changed(); }}
         />
       )}
     </div>
   );
 }
 
-function Empty({ text }: { text: string }) {
-  return <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{text}</p>;
+function Empty({ text, partial }: { text: string; partial?: boolean }) {
+  return <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{partial ? 'В загруженной части очереди подходящих записей нет.' : text}</p>;
 }
 
 function Line({ label, children }: { label: string; children: React.ReactNode }) {
@@ -345,17 +397,57 @@ function TransferFacts({ row }: { row: DepositQueueRow }) {
 
 const ROW_GRID = '150px 0.8fr 70px 1fr 1.1fr 1.4fr';
 
-function UnattributedRow({ row, clients, onAttribute, onIgnore }: { row: DepositQueueRow; clients: Client[]; onAttribute: (row: DepositQueueRow, userId: string | null, reassign: boolean) => void; onIgnore: () => void }) {
+function ClientPicker({ label, value, onChange, disabled = false }: { label: string; value: string; onChange: (id: string) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  useEffect(() => {
+    const hide = () => { if (document.hidden) setOpen(false); };
+    document.addEventListener('visibilitychange', hide);
+    return () => document.removeEventListener('visibilitychange', hide);
+  }, []);
+  return <div style={{ display: 'grid', gap: 6 }}>
+    <button type="button" data-client-picker aria-label={label} aria-expanded={open} disabled={disabled} style={styles.neutralBtn} onClick={() => setOpen(v => !v)}>
+      {value ? email || value : 'Выбрать пользователя'}
+    </button>
+    {open && <ClientSearch onChoose={client => { onChange(client.id); setEmail(client.email); setOpen(false); }} />}
+  </div>;
+}
+
+function ClientSearch({ onChoose }: { onChoose: (client: { id: string; email: string }) => void }) {
+  const [draft, setDraft] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const query = new URLSearchParams({ search, page: String(page), pageSize: '20' }).toString();
+  const read = useAdminRead(`deposit-clients:${query}`, signal => getAdminClientsPage(query, signal));
+  return <div style={{ ...styles.card, padding: 10, display: 'grid', gap: 8 }}>
+    <form onSubmit={event => { event.preventDefault(); setSearch(draft.trim()); setPage(1); }} style={{ display: 'flex', gap: 6 }}>
+      <input aria-label="Поиск пользователя" placeholder="Email или ID" value={draft} onChange={event => setDraft(event.target.value)} style={{ ...styles.input, minWidth: 0 }} />
+      <button type="submit" style={styles.neutralBtn}>Найти</button>
+    </form>
+    {read.loading && <span role="status">Загрузка пользователей…</span>}
+    {read.error && <div role="alert">{read.error}<button type="button" style={styles.neutralBtn} onClick={read.reload}>Повторить</button></div>}
+    {read.data && <>
+      {!read.data.items.length && !read.error && <span>Пользователи не найдены.</span>}
+      <div style={{ maxHeight: 240, overflowY: 'auto', display: 'grid', gap: 4 }}>
+        {read.data.items.map(client => <button type="button" data-client-choice={client.id} key={client.id} style={{ ...styles.neutralBtn, textAlign: 'left', overflowWrap: 'anywhere' }} onClick={() => onChoose(client)}>{client.email}<small style={{ display: 'block' }}>{client.id}</small></button>)}
+      </div>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button type="button" aria-label="Предыдущая страница пользователей" style={styles.neutralBtn} disabled={read.loading || page <= 1} onClick={() => setPage(p => p - 1)}>Назад</button>
+        <span>{read.data.page} / {read.data.totalPages} · {read.data.total}</span>
+        <button type="button" aria-label="Следующая страница пользователей" style={styles.neutralBtn} disabled={read.loading || page >= read.data.totalPages} onClick={() => setPage(p => p + 1)}>Далее</button>
+      </div>
+    </>}
+  </div>;
+}
+
+function UnattributedRow({ row, onAttribute, onIgnore }: { row: DepositQueueRow; onAttribute: (row: DepositQueueRow, userId: string | null, reassign: boolean) => Promise<void>; onIgnore: () => void }) {
   const [picked, setPicked] = useState(row.claims.length === 1 ? row.claims[0].userId : '');
   const [busy, setBusy] = useState(false);
   return (
     <div data-deposit-row={row.id} className="row-hover admin-history-grid admin-deposit-row" style={{ ...styles.tableRow, gridTemplateColumns: ROW_GRID, minWidth: 0 }}>
       <TransferFacts row={row} />
       <div style={{ display: 'grid', gap: 6 }}>
-        <select aria-label={`Пользователь для ${row.txHash}`} value={picked} onChange={(e) => setPicked(e.target.value)} style={styles.input}>
-          <option value="">Выберите пользователя</option>
-          {clients.map((c) => <option key={c.id} value={c.id}>{c.email}</option>)}
-        </select>
+        <ClientPicker label={`Пользователь для ${row.txHash}`} value={picked} onChange={setPicked} disabled={busy} />
         <ClaimsHint row={row} />
         <button type="button" data-attribute={row.id} disabled={!picked || busy} style={styles.neutralBtn}
           onClick={async () => { setBusy(true); await onAttribute(row, picked, false); setBusy(false); }}>
@@ -440,8 +532,9 @@ function CreditedBatchCard({ batch: b }: { batch: CreditedBatch }) {
   );
 }
 
-function TransferRow({ row, clients, onAttribute }: { row: DepositQueueRow; clients?: Client[]; onAttribute?: (row: DepositQueueRow, userId: string | null, reassign: boolean) => void }) {
+function TransferRow({ row, onAttribute }: { row: DepositQueueRow; onAttribute?: (row: DepositQueueRow, userId: string | null, reassign: boolean) => Promise<void> }) {
   const [picked, setPicked] = useState('');
+  const [busy, setBusy] = useState(false);
   return (
     <div data-deposit-row={row.id} data-deposit-state={row.state} className="row-hover admin-history-grid admin-deposit-row" style={{ ...styles.tableRow, gridTemplateColumns: ROW_GRID, minWidth: 0 }}>
       <TransferFacts row={row} />
@@ -449,14 +542,11 @@ function TransferRow({ row, clients, onAttribute }: { row: DepositQueueRow; clie
         <span>{row.userEmail ?? 'Не привязан'}</span>
         <span style={{ color: row.state === 'NEEDS_REVIEW' ? 'var(--sell)' : 'var(--text-tertiary)' }}>{STATE_LABEL[row.state]}{row.verifyError ? `: ${row.verifyError}` : ''}</span>
         <ClaimsHint row={row} />
-        {clients && onAttribute && row.state !== 'CREDITED' && (
+        {onAttribute && row.state !== 'CREDITED' && (
           <>
-            <select aria-label={`Перепривязать ${row.txHash}`} value={picked} onChange={(e) => setPicked(e.target.value)} style={styles.input}>
-              <option value="">Перепривязать к…</option>
-              {clients.map((c) => <option key={c.id} value={c.id}>{c.email}</option>)}
-            </select>
-            <button type="button" disabled={!picked} style={styles.neutralBtn}
-              onClick={() => { if (window.confirm('Перепривязать перевод к другому пользователю? Действие записывается в журнал.')) onAttribute(row, picked, true); }}>
+            <ClientPicker label={`Перепривязать ${row.txHash}`} value={picked} onChange={setPicked} disabled={busy} />
+            <button type="button" disabled={!picked || busy} style={styles.neutralBtn}
+              onClick={async () => { if (window.confirm('Перепривязать перевод к другому пользователю? Действие записывается в журнал.')) { setBusy(true); try { await onAttribute(row, picked, true); } finally { setBusy(false); } } }}>
               Перепривязать
             </button>
           </>

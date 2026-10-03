@@ -1,71 +1,43 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../lib/api';
+import { Link } from 'react-router-dom';
+import { getAdminAuditPage } from '../../lib/adminPagedApi';
 import { styles } from './adminStyles';
-import { Skeleton } from '../../components/Skeleton';
+import { useAdminRead } from './useAdminRead';
+import { useAdminView } from './useAdminView';
+import { AdminReadStatus } from './AdminReadStatus';
+import { AdminPagination } from './AdminPagination';
+import { CopyValue } from './AdminPrimitives';
+import { adminDate, adminAction, adminStatus, ADMIN_ACTIONS, maskAuditMetadata } from './adminPresentation';
+import { adminQueueDateBounds } from './adminQueueDates';
+import './adminPracticality.css';
 
-type LogEntry = Awaited<ReturnType<typeof api.getAdminAuditLog>>[number];
-
-const GRID = '1.2fr 1.4fr 1.4fr 1.6fr 2fr';
-
-/** Простой журнал действий — кто одобрил/отклонил/изменил и когда. Читает
- * напрямую из AuditLog, которую уже пишет каждое чувствительное admin-действие
- * (верификация, выводы, кошельки, корректировки баланса). */
 export function AdminAuditLogPage() {
-  const [entries, setEntries] = useState<LogEntry[] | null>(null);
-  const [search, setSearch] = useState('');
-  const [error, setError] = useState(false);
-  const [actionFilter, setActionFilter] = useState('');
-
+  const { params, update, page, returnTo } = useAdminView();
+  const search = params.get('search') ?? '', action = params.get('action') ?? '', userId = params.get('userId') ?? '';
+  const from = params.get('from') ?? '', to = params.get('to') ?? '';
+  const requestedQuery = new URLSearchParams({ page: String(page), pageSize: '20', ...(search ? { search } : {}), ...(action ? { action } : {}), ...(userId ? { userId } : {}), ...adminQueueDateBounds(from, to) }).toString();
+  const [query, setQuery] = useState(requestedQuery);
+  const settledSearch = new URLSearchParams(query).get('search') ?? '';
+  const settledUser = new URLSearchParams(query).get('userId') ?? '';
   useEffect(() => {
-    let active = true;
-    setError(false); setEntries(null);
-    api.getAdminAuditLog(actionFilter ? { action: actionFilter } : undefined).then(rows => { if (active) setEntries(rows); }).catch(() => { if (active) setError(true); });
-    return () => { active = false; };
-  }, [actionFilter]);
-
-  return (
-    <div>
-      <h1 style={styles.title}>Журнал действий</h1>
-
-      <div className="admin-toolbar"><input style={styles.input} aria-label="Поиск в журнале" placeholder="Пользователь, действие, детали" value={search} onChange={e => setSearch(e.target.value)} /><select style={{ ...styles.input, width: 260, marginBottom: 16 }} value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
-        <option value="">Все действия</option>
-        <option value="KYC_APPROVED">KYC_APPROVED</option>
-        <option value="KYC_REJECTED">KYC_REJECTED</option>
-        <option value="WITHDRAWAL_APPROVED">WITHDRAWAL_APPROVED</option>
-        <option value="WITHDRAWAL_SENT">WITHDRAWAL_SENT</option>
-        <option value="WITHDRAWAL_REJECTED">WITHDRAWAL_REJECTED</option>
-        <option value="TREASURY_WALLET_UPDATED">TREASURY_WALLET_UPDATED</option>
-        <option value="TREASURY_WALLET_RESET">TREASURY_WALLET_RESET</option>
-        <option value="BALANCE_ADJUSTED">BALANCE_ADJUSTED</option>
-        <option value="USER_REGISTERED">USER_REGISTERED</option>
-        <option value="USER_BLOCKED">USER_BLOCKED</option>
-        <option value="USER_UNBLOCKED">USER_UNBLOCKED</option>
-        <option value="USER_DELETED">USER_DELETED</option>
-      </select></div>
-      {error && <p role="alert" style={styles.errorBox}>Не удалось загрузить журнал.</p>}
-
-      <div style={styles.table}>
-        <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: 900 }}>
-          <span>Дата</span>
-          <span>Действие</span>
-          <span>Пользователь</span>
-          <span>Выполнил</span>
-          <span>Детали</span>
-        </div>
-        {entries === null && <Skeleton height={80} />}
-        {entries?.filter(e => `${e.action} ${e.userEmail} ${e.performedByAdminEmail} ${JSON.stringify(e.metadata)}`.toLowerCase().includes(search.toLowerCase())).map((e) => (
-          <div key={e.id} className="row-hover admin-history-grid" style={{ ...styles.tableRow, gridTemplateColumns: GRID, minWidth: 900 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(e.createdAt).toLocaleString('ru-RU')}</span>
-            <span className="mono" style={{ fontSize: 12 }}>{e.action}</span>
-            <span style={{ fontSize: 12 }}>{e.userEmail ?? '—'}</span>
-            <span style={{ fontSize: 12 }}>{e.performedByAdminEmail ?? '—'}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }} title={JSON.stringify(e.metadata)}>
-              {JSON.stringify(e.metadata)}
-            </span>
-          </div>
-        ))}
-        {entries?.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Записей нет.</p>}
-      </div>
-    </div>
-  );
+    if (search === settledSearch && userId === settledUser) { setQuery(requestedQuery); return; }
+    const timer = setTimeout(() => setQuery(requestedQuery), 250);
+    return () => clearTimeout(timer);
+  }, [requestedQuery, search, userId, settledSearch, settledUser]);
+  const read = useAdminRead(`audit:${query}`, signal => getAdminAuditPage(query, signal));
+  return <div><h1 style={styles.title}>Журнал действий</h1><p style={styles.subtitle}>Кто изменил данные, для какого пользователя и когда. Время — Europe/Kyiv.</p>
+    <div className="admin-audit-filters"><label>Поиск<input aria-label="Поиск в журнале" placeholder="Email, ID или код действия" value={search} onChange={e => update({ search: e.target.value, page: 1 })} /></label>
+      <label>Действие<select value={action} onChange={e => update({ action: e.target.value, page: 1 })}><option value="">Все действия</option>{Object.entries(ADMIN_ACTIONS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+      <label>ID пользователя<input value={userId} onChange={e => update({ userId: e.target.value, page: 1 })} /></label>
+      <label>Дата от<input type="date" value={from} max={to || undefined} onChange={e => update({ from: e.target.value, page: 1 })} /></label>
+      <label>Дата до<input type="date" value={to} min={from || undefined} onChange={e => update({ to: e.target.value, page: 1 })} /></label>
+    </div><AdminReadStatus {...read} hasData={!!read.data} />
+    {read.data && <><div className="admin-list-heading"><p className="admin-result-count">Найдено: {read.data.total.toLocaleString('ru-RU')}</p><AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" /></div>
+      {!read.data.items.length && <p>Записей по выбранным условиям нет.</p>}
+      <div className="admin-audit-list">{read.data.items.map(entry => <article key={entry.id}>
+        <header><strong>{adminAction(entry.action)}</strong><time>{adminDate(entry.createdAt)}</time></header>
+        <dl className="admin-key-values"><dt>Выполнил</dt><dd>{entry.performedByAdminEmail ?? 'Не указан в записи'}</dd><dt>Пользователь</dt><dd>{entry.userId ? <Link to={`/admin/users/${encodeURIComponent(entry.userId)}?returnTo=${encodeURIComponent(returnTo)}`}>{entry.userEmail ?? entry.userId}</Link> : 'Не относится к пользователю'}</dd><dt>Результат</dt><dd>{typeof entry.metadata.status === 'string' ? adminStatus(entry.metadata.status) : entry.metadata.success === false ? 'Ошибка' : 'Действие зарегистрировано'}</dd></dl>
+        <details><summary>Детали и изменения</summary><p>Код: {entry.action}</p><CopyValue value={entry.id} label="ID действия" full /><pre>{JSON.stringify(maskAuditMetadata(entry.metadata), null, 2)}</pre></details>
+      </article>)}</div></>}
+  </div>;
 }

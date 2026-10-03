@@ -42,9 +42,10 @@ const jwt = require('jsonwebtoken');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const { kycRouter } = require(path.join(root, 'dist/api/routes/kyc.js'));
 const { adminRouter } = require(path.join(root, 'dist/api/routes/admin.js'));
+const { adminPagedReadsRouter } = require(path.join(root, 'dist/api/routes/adminPagedReads.js'));
 const { KycEdgeTrust } = require(path.join(root, 'dist/services/KycEdgeTrust.js'));
 
-const dist = path.join(root, 'frontend/dist');
+const dist = path.resolve(process.env.QA_FRONTEND_DIST || path.join(root, 'frontend/dist'));
 const out = path.resolve(process.env.QA_OUT || path.join(root, 'docs/qa/kyc-edge'));
 const WIDTHS = [320, 360, 390, 430, 1440];
 
@@ -55,13 +56,21 @@ function memoryPrisma() {
   const audit = [];
   let chain = Promise.resolve();
   const pick = (row, select) => (select ? Object.fromEntries(Object.keys(select).map((k) => [k, row[k]])) : { ...row });
-  const matches = (row, where = {}) => Object.entries(where).every(([k, v]) => row[k] === v);
+  const matches = (row, where = {}) => Object.entries(where).every(([k, v]) => {
+    if (k === 'OR') return v.some(child => matches(row, child));
+    if (v && typeof v === 'object') {
+      if (v.in) return v.in.includes(row[k]);
+      if (v.contains !== undefined) return String(row[k] ?? '').toLowerCase().includes(v.contains.toLowerCase());
+    }
+    return row[k] === v;
+  });
   const sortDesc = (rows) => rows.sort((a, b) => b.createdAt - a.createdAt);
   const api = {
     user: {
       findUnique: async ({ where, select }) => { const u = users.get(where.id) || [...users.values()].find((x) => x.email === where.email); return u ? pick(u, select) : null; },
       findUniqueOrThrow: async (a) => { const r = await api.user.findUnique(a); if (!r) throw new Error('not found'); return r; },
-      findMany: async () => sortDesc([...users.values()].map((u) => ({ ...u }))),
+      findMany: async ({ where, skip = 0, take, select } = {}) => sortDesc([...users.values()].filter(u => matches(u, where))).slice(skip, take ? skip + take : undefined).map(u => pick(u, select)),
+      count: async ({ where } = {}) => [...users.values()].filter(u => matches(u, where)).length,
       update: async ({ where, data }) => { const u = users.get(where.id); Object.assign(u, data); return { ...u }; },
       create: async ({ data }) => { const u = { id: randomUUID(), role: 'USER', kycStatus: 'NOT_STARTED', createdAt: new Date(), ...data }; users.set(u.id, u); return { ...u }; },
     },
@@ -79,7 +88,12 @@ function memoryPrisma() {
     auditLog: { create: async ({ data }) => { audit.push(data); return data; } },
     // FOR UPDATE: callers are serialized, like row locks on one user.
     $transaction: (fn) => { const run = chain.then(() => fn(api)); chain = run.catch(() => {}); return run; },
-    $queryRaw: async (strings, ...values) => { const u = users.get(values[0]); return u ? [{ id: u.id, kycStatus: u.kycStatus }] : []; },
+    $queryRaw: async (strings, ...values) => {
+      if (strings?.sql?.includes('CROSS JOIN LATERAL')) return strings.values.flatMap(id => {
+        const latest = sortDesc([...subs.values()].filter(s => s.userId === id))[0]; return latest ? [{ ...latest }] : [];
+      });
+      const u = users.get(values[0]); return u ? [{ id: u.id, kycStatus: u.kycStatus }] : [];
+    },
     $disconnect: async () => {},
   };
   return api;
@@ -158,6 +172,7 @@ function attachmentOf(mail) {
     next();
   });
   app.use('/api/v1', kycRouter(prisma, new KycEdgeTrust()));
+  app.use('/api/v1', adminPagedReadsRouter(prisma));
   app.use('/api/v1', adminRouter(prisma));
   app.get('/api/v1/me', async (req, res) => {
     try {
@@ -167,6 +182,10 @@ function attachmentOf(mail) {
     } catch { res.status(401).json({ error: 'Missing bearer token' }); }
   });
   app.get('/api/v1/admin/overview', (_q, res) => res.json({ totalUsers: 1, pendingKyc: 0, pendingWithdrawals: 0, creditedDepositsToday: 0, unmatchedIncoming: null, unmatchedIncomingReason: 'live_provider_feed', dayStart: new Date().toISOString(), asOf: new Date().toISOString() }));
+  app.get('/api/v1/admin/work-summary', async (_q, res) => {
+    const asOf = new Date().toISOString();
+    res.json({ asOf, alerts: null, widgets: Object.fromEntries(['readyPackages', 'pendingPackages', 'unlinkedTransfers', 'activeWithdrawals', 'pendingKyc', 'openOtc', 'totalUsers', 'newUsers24h'].map(key => [key, { value: 0, unit: 'users', href: '/admin/kyc', status: 'ready', asOf }])) });
+  });
   app.use('/api/v1', (req, res) => (req.method === 'GET' ? res.json([]) : res.status(404).json({ error: 'not in QA' })));
   app.use(express.static(dist, { index: false }));
   app.get('*', (_q, res) => res.sendFile(path.join(dist, 'index.html')));
@@ -201,10 +220,15 @@ function attachmentOf(mail) {
   const uploadsDir = path.join(root, 'uploads', 'kyc');
   const uploadsBefore = fs.existsSync(uploadsDir) ? fs.readdirSync(uploadsDir).length : 0;
 
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  // Deny external hosts while retaining native CORS between the two local servers.
+  const networkGuard = http.createServer((_req, res) => res.writeHead(403).end());
+  networkGuard.on('connect', (_req, socket) => socket.destroy());
+  networkGuard.listen(0, '127.0.0.1'); await once(networkGuard, 'listening');
+  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'], proxy: { server: `http://127.0.0.1:${networkGuard.address().port}`, bypass: '127.0.0.1' }, ...(process.env.QA_CHROMIUM ? { executablePath: process.env.QA_CHROMIUM } : {}) });
   try {
     async function openPage(width, token) {
       const context = await browser.newContext({ viewport: { width, height: width <= 430 ? 844 : 900 }, locale: 'ru-RU' });
+      await context.routeWebSocket('**/*', socket => socket.close());
       await context.addInitScript(([t]) => { localStorage.setItem('exchange_lang', 'ru'); if (t) localStorage.setItem('exchange_token', t); }, [token]);
       const page = await context.newPage();
       const errors = [];
@@ -408,6 +432,10 @@ function attachmentOf(mail) {
         await approveDialog.waitFor({ state: 'visible' });
         assert.equal(reviewRequests(), reviewsBefore, 'opening confirmation must not submit a KYC decision');
         assert.equal((await prisma.user.findUnique({ where: { id: u1.id } })).kycStatus, 'PENDING');
+        await approveDialog.getByRole('button', { name: 'Отмена', exact: true }).click();
+        assert.equal((await prisma.user.findUnique({ where: { id: u1.id } })).kycStatus, 'PENDING', 'cancel causes zero KYC writes');
+        assert.equal(reviewRequests(), reviewsBefore, 'cancel causes zero review requests');
+        await card.getByRole('button', { name: 'Проверено' }).click();
         const approved = page.waitForResponse((r) => r.request().method() === 'POST' && /\/kyc\/[^/]+\/review$/.test(new URL(r.url()).pathname));
         await approveDialog.getByRole('button', { name: 'Подтвердить решение', exact: true }).click();
         assert.equal((await approved).status(), 200);
@@ -464,6 +492,7 @@ function attachmentOf(mail) {
   } finally {
     fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
     await browser.close();
+    networkGuard.close();
     server.close();
     edge.close();
     await prisma.$disconnect();

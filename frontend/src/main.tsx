@@ -20,6 +20,9 @@ startBrowserActivity({
   // Admin's initial gate and every privileged server request still authorize
   // access. A brief tab switch is not a full idle wake; trading stays unchanged.
   briefReturnScope: () => /^\/admin(?:\/|$)/.test(window.location.pathname) ? window.location.pathname : null,
+  // Watching a visible queue is work even without pointer input. Hidden tabs
+  // still pause immediately; this never changes server session expiry/auth.
+  keepVisibleActive: () => /^\/admin(?:\/|$)/.test(window.location.pathname),
 });
 
 // «Копировали адрес»: one more try for a note a closed tab left behind.

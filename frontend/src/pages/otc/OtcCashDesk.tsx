@@ -3,9 +3,24 @@ import { CashDetail, CashMessage, CashSummary, CASH_STATUSES, cashError, cashReq
 import cities from './cities.json';
 import { countryName } from './otcConfig';
 import { invalidateSpendableBalances } from '../../lib/balanceInvalidation';
+import { adminDate, ADMIN_TIME_ZONE } from '../admin/adminPresentation';
 
 const directory = cities as Record<string,{id:string;name:string;timezone:string}[]>;
 export function cashCity(row: Pick<CashSummary,'country'|'cityId'>) { return directory[row.country]?.find(c=>c.id===row.cityId); }
+export function cashAdminNextStep(row: Pick<CashSummary, 'status' | 'cancelRequested'>): string {
+  if (row.status === 'PAYOUT_IN_PROGRESS') return 'Сверить фактическую выдачу с кассой. При неизвестном результате не выдавать повторно и не возвращать резерв.';
+  if (row.cancelRequested && row.status === 'PICKUP_READY') return 'Получить подтверждение кассы об отмене. До этого резерв сохраняется.';
+  const steps: Record<string, string> = {
+    RESERVED: 'Проверить заявку и согласовать условия с клиентом.',
+    OFFERED: 'Дождаться согласия клиента с условиями.',
+    ACCEPTED: 'Подготовить адрес и время выдачи в приватной переписке.',
+    PICKUP_READY: 'Проверить действующие инструкции и готовность кассы к выдаче.',
+    COMPLETED: 'Выдача завершена. При необходимости сверить reference и историю.',
+    CANCELLED: 'Заявка отменена. Проверить подтверждённый результат возврата резерва в истории.',
+    REJECTED: 'Заявка отклонена. Проверить подтверждённый результат возврата резерва в истории.',
+  };
+  return steps[row.status] ?? 'Обновить заявку и проверить подтверждённое состояние.';
+}
 export function CashList({ admin = false, active = true, onOpen }: { admin?: boolean; active?: boolean; onOpen: (id:string)=>void }) {
   const [rows,setRows]=useState<CashSummary[]>([]),[page,setPage]=useState(0),[more,setMore]=useState(false);
   const [filter,setFilter]=useState(''),[applied,setApplied]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(true),[revision,setRevision]=useState(0);
@@ -30,7 +45,8 @@ export function CashList({ admin = false, active = true, onOpen }: { admin?: boo
         <strong>{row.number} · {CASH_STATUSES[row.status]}</strong>
         {row.user&&<span>{row.user.email} · UID {row.user.id}</span>}
         <span>{countryName(row.country,'ru')}, {cashCity(row)?.name} · {row.quantity} {row.asset} → {row.fiat}</span>
-        <span>Резерв: {row.reservedQuantity ?? '—'} {row.asset} · {dateTime(row.createdAt)}</span>
+        <span>Резерв: {row.reservedQuantity ?? '—'} {row.asset} · {admin ? `${adminDate(row.createdAt)} ${ADMIN_TIME_ZONE}` : dateTime(row.createdAt)}</span>
+        {admin && <span>Следующий шаг: {cashAdminNextStep(row)}</span>}
       </button>)}</div>
     </>}
     <div className="otc-cash-row"><button disabled={busy||page===0} onClick={()=>setPage(x=>x-1)}>Назад</button><span>Страница {page+1}</span><button disabled={busy||!more} onClick={()=>setPage(x=>x+1)}>Далее</button></div>
@@ -39,6 +55,7 @@ export function CashList({ admin = false, active = true, onOpen }: { admin?: boo
 
 export function CashDetailPanel({id,admin=false,onClose}:{id:string;admin?:boolean;onClose:()=>void}) {
   const base=admin?'/admin/otc':'/otc/requests';
+  const displayDate = (value: string) => admin ? `${adminDate(value)} ${ADMIN_TIME_ZONE}` : dateTime(value);
   const [detail,setDetail]=useState<CashDetail|null>(null),[messages,setMessages]=useState<CashMessage[]>([]),[more,setMore]=useState(false),[page,setPage]=useState(0);
   const [busy,setBusy]=useState(true),[error,setError]=useState(''),[revision,setRevision]=useState(0),[text,setText]=useState(''),[sending,setSending]=useState(false);
   const alive=useRef(true),messageIntent=useRef<{text:string;idempotencyKey:string}|null>(null);
@@ -63,9 +80,10 @@ export function CashDetailPanel({id,admin=false,onClose}:{id:string;admin?:boole
     {error&&<p role="alert">{error} Денежные действия недоступны до обновления.</p>}
     {detail&&<>
       <h2>{detail.number} · {CASH_STATUSES[detail.status]}</h2>
+      {admin && <p className="otc-cash-notice"><strong>Следующий шаг:</strong> {busy || error ? 'Сначала обновить и подтвердить состояние заявки.' : cashAdminNextStep(detail)}</p>}
       <p>{detail.user&&`${detail.user.email} · UID ${detail.user.id} · `}{countryName(detail.country,'ru')}, {cashCity(detail)?.name}</p>
       <p>Количество: <strong>{detail.quantity} {detail.asset}</strong> · Наличные: {detail.fiat}</p>
-      {detail.completion&&<p>Reference выдачи: {detail.completion.reference} · {dateTime(detail.completion.completedAt)}</p>}
+      {detail.completion&&<p>Reference выдачи: {detail.completion.reference} · {displayDate(detail.completion.completedAt)}</p>}
       <p>Резерв: {detail.reservation.status==='HELD'?detail.reservation.quantity:'0'} {detail.asset} · {detail.reservation.status==='HELD'?'Средства недоступны для торговли и вывода':detail.reservation.status==='CONSUMED'?'Списан после выдачи наличных':'Возвращён в доступный остаток'}</p>
       {detail.pickupRevision>0&&<p className="otc-cash-notice">Адрес и время — в приватной переписке. Актуальная версия инструкции: {detail.pickupRevision}. При изменении используйте последнее сообщение оператора.</p>}
       {detail.cancelRequested&&<p className="otc-cash-notice">Отмена запрошена. Резерв сохраняется, начало выдачи заблокировано до подтверждения кассы.</p>}
@@ -75,14 +93,14 @@ export function CashDetailPanel({id,admin=false,onClose}:{id:string;admin?:boole
       {detail.offers.map(offer=><div key={offer.version} className="otc-cash-offer">
         <strong>Версия {offer.version}{offer.acceptedAt?' · Принята пользователем':''}</strong>
         <p>1 {offer.asset} = {offer.rate} {offer.fiat} · Всего {offer.gross} {offer.fiat}<br/>Комиссия {offer.fee} {offer.fiat} · К выдаче <strong>{offer.net} {offer.fiat}</strong></p>
-        <p>Принять до: {dateTime(offer.expiresAt)}{offer.acceptedAt&&` · Согласие: ${dateTime(offer.acceptedAt)}`}</p>
+        <p>Принять до: {displayDate(offer.expiresAt)}{offer.acceptedAt&&` · Согласие: ${displayDate(offer.acceptedAt)}`}</p>
       </div>)}
       <CashActions key={`${detail.id}:${detail.version}`} row={detail} admin={admin} disabled={busy||!!error} refresh={refresh}/>
     </>}
     <h3>Приватная поддержка по заявке</h3>
     <p>Сообщения обновляются только по вашему действию. Здесь нет статуса «оператор онлайн».</p>
     {!busy&&!error&&<div className="otc-cash-messages">{messages.length?messages.map(message=><article key={message.id} data-sender={message.sender}>
-      <strong>{message.sender==='ADMIN'?'Оператор':'Пользователь'}</strong><time>{dateTime(message.createdAt)}</time><p>{message.text}</p>
+      <strong>{message.sender==='ADMIN'?'Оператор':'Пользователь'}</strong><time>{displayDate(message.createdAt)}</time><p>{message.text}</p>
     </article>):<p>Сообщений пока нет.</p>}</div>}
     <div className="otc-cash-row"><button disabled={busy||page===0} onClick={()=>setPage(x=>x-1)}>Новые сообщения</button><button disabled={busy||!more} onClick={()=>setPage(x=>x+1)}>Предыдущие сообщения</button></div>
     <form onSubmit={e=>{e.preventDefault();void send();}}>

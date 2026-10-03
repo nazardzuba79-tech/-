@@ -28,9 +28,9 @@ beforeEach(() => {
   rowClick = jest.fn(); network = jest.fn(); originalFetch = globalThis.fetch; globalThis.fetch = network;
 });
 afterEach(async () => { await act(async () => root.unmount()); globalThis.fetch = originalFetch; dom.window.close(); });
-async function render(event: any = sample, failed = false, key = 'u1') {
+async function render(event: any = sample, failed = false, key = 'u1', userId?: string) {
   await act(async () => root.render(React.createElement('div', { onClick: rowClick },
-    React.createElement(DepositCopyBell, { key, event, failed }))));
+    React.createElement(DepositCopyBell, { key, event, failed, userId }))));
 }
 
 describe('copy-address bell beside admin user balance', () => {
@@ -61,6 +61,13 @@ describe('copy-address bell beside admin user balance', () => {
     await render(null); expect(document.querySelector('[data-deposit-copy-bell]')).toBeNull();
     await act(async () => root.render(React.createElement(DepositCopyBell, {})));
     expect(document.querySelector('[data-deposit-copy-bell]')).toBeNull();
+  });
+  it('user context follows the deposit link without treating the copy as payment or acknowledging it', async () => {
+    await render(sample, false, 'u1', 'user-42');
+    await act(async () => (document.querySelector('[data-deposit-copy-bell]') as HTMLButtonElement).click());
+    expect(document.querySelector('a[href="/admin/deposits?userId=user-42#unattributed"]')).not.toBeNull();
+    expect(document.querySelector('a[href="/admin/users/user-42?tab=deposits"]')).not.toBeNull();
+    expect(network).not.toHaveBeenCalled();
   });
   it('a failed lookup displays unknown rather than silently reporting no copies', async () => {
     await render(null, true);
@@ -93,9 +100,9 @@ describe('copy-address bell beside admin user balance', () => {
   });
   it('wires both desktop and mobile cells without introducing a transport or timer', () => {
     const page = readFileSync(resolve(frontend, 'src/pages/admin/AdminUsersPage.tsx'), 'utf8');
-    expect(page.match(/<DepositCopyBell /g)).toHaveLength(2);
-    expect(page).toContain('event={u.lastDepositCopy}');
-    expect(page).toContain('failed={u.depositCopyLookupFailed}');
+    expect(page.match(/\{signals\(user\)\}/g)).toHaveLength(2);
+    expect(page).toContain('event={user.lastDepositCopy}');
+    expect(page).toContain('failed={user.depositCopyLookupFailed}');
     expect(source).not.toMatch(/\b(fetch|setInterval|setTimeout|WebSocket|EventSource)\s*\(/);
     expect(source).not.toMatch(/from ['"].*(?:api|browserActivity|adminUserActivity)['"]/);
   });

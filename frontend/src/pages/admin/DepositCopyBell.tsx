@@ -47,8 +47,8 @@ export function DepositCopyTabBell() {
 /** Expand/collapse is local and never acknowledges anything. Only the explicit
  * Ignore callback sends a request. The parent replaces data after server success;
  * rejected/lost replies leave the signal visible and safe to retry. */
-export function DepositCopyBell({ event, failed = false, onIgnore }: {
-  event?: DepositCopyNotice | null; failed?: boolean; onIgnore?: () => Promise<void>;
+export function DepositCopyBell({ event, failed = false, onIgnore, userId }: {
+  event?: DepositCopyNotice | null; failed?: boolean; onIgnore?: () => Promise<void>; userId?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,7 +82,8 @@ export function DepositCopyBell({ event, failed = false, onIgnore }: {
       {label.delayed && <span>Доставлено с задержкой. Время устройства: {label.clientTime} ({label.zone}, не подтверждено).</span>}
       <span>Копирование не подтверждает оплату.</span>
       <a href="/admin/deposits#copies" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Открыть журнал</a>
-      <a href="/admin/deposits#unattributed" style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Проверить поступления</a>
+      <a href={`/admin/deposits${userId ? `?userId=${encodeURIComponent(userId)}` : ''}#unattributed`} style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Проверить поступления</a>
+      {userId && <a href={`/admin/users/${encodeURIComponent(userId)}?tab=deposits`} style={{ color: 'var(--admin-brand)', textDecoration: 'underline' }}>Открыть пользователя</a>}
     </span>}
   </span>;
 }

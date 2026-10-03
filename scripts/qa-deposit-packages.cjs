@@ -22,7 +22,7 @@ const request = require('supertest');
 const { PrismaClient } = require('@prisma/client');
 const BigNumber = require('bignumber.js');
 
-const qaRequire = createRequire(path.resolve('node_modules/.cache/deposit-qa/package.json'));
+const qaRequire = createRequire(path.resolve(process.env.DEPOSIT_QA_DEPS || 'node_modules/.cache/deposit-qa/package.json'));
 const output = path.resolve('output/deposit-packages');
 fs.mkdirSync(output, { recursive: true });
 
@@ -743,6 +743,9 @@ async function browserQa(ctx) {
     ? { id: ADMIN, email: 'admin@deposit.invalid', role: 'ADMIN', isAdmin: true, displayName: 'LOCAL QA' }
     : { id: client, email: 'browser@deposit.invalid', role: 'USER', isAdmin: false, displayName: 'CLIENT QA' }));
   app.get('/api/v1/admin/clients', async (_req, res) => res.json((await prisma.user.findMany({ where: { role: 'USER' }, select: { id: true, email: true } }))));
+  // Use the same bounded client lookup as the mounted admin UI; no eager full list.
+  const { adminPagedReadsRouter } = require('../dist/api/routes/adminPagedReads');
+  app.use('/api/v1', adminPagedReadsRouter(prisma));
   app.get('/api/v1/*', (_req, res) => res.status(503).json({ error: 'No fixture for unrelated API' }));
   app.use(express.static(path.resolve('frontend/dist'), { index: false }));
   app.get('*', (_req, res) => res.type('html').send(fs.readFileSync('frontend/dist/index.html', 'utf8').replace('<head>',
@@ -757,13 +760,19 @@ async function browserQa(ctx) {
       const errors = []; page.on('pageerror', (e) => errors.push(e.message));
       page.on('console', (m) => { if (m.type() === 'error' && !/503|Failed to load resource/.test(m.text())) errors.push(m.text()); });
       const apiCalls = []; page.on('request', (r) => { const u = new URL(r.url()); if (u.pathname.startsWith('/api/v1/admin/deposit')) apiCalls.push(`${r.method()} ${u.pathname}`); });
+      const clientReads = []; page.on('request', r => { const u = new URL(r.url()); if (u.pathname.startsWith('/api/v1/admin/clients')) clientReads.push(u); });
       const n = 5000 + width;
       fixture.send(n, '15'); await scan();
       who.current = ADMIN;
       await page.goto(origin + '/admin/deposits#unattributed');
       const unattributed = page.locator(`[data-deposit-row]`).filter({ hasText: '15' }).filter({ has: page.locator(`[title="${hash(n)}"]`) });
       await unattributed.waitFor();
-      await unattributed.getByRole('combobox').selectOption(client);
+      assert.equal(clientReads.length, 0, 'deposit queue must not eagerly fetch client identities');
+      await unattributed.locator('[data-client-picker]').click();
+      await unattributed.getByRole('textbox', { name: 'Поиск пользователя', exact: true }).fill('browser@deposit.invalid');
+      await unattributed.getByRole('button', { name: 'Найти', exact: true }).click();
+      await unattributed.locator(`[data-client-choice="${client}"]`).click();
+      assert.ok(clientReads.length >= 1 && clientReads.every(u => u.pathname.endsWith('/page') && u.searchParams.get('pageSize') === '20'), 'client selection uses bounded reads only');
       await unattributed.getByRole('button', { name: 'Привязать к пользователю' }).click();
       await page.getByRole('status').filter({ hasText: 'Баланс не изменён' }).waitFor();
       assert.equal(await balance(client), width === 1440 ? '0' : '500');

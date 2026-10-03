@@ -61,13 +61,22 @@ async function startDatabase() {
     fs.chownSync(dir, uid, gid);
   }
   const pg = (bin, args) => {
+    // pg_ctl's daemon must not retain Node's capture pipes on Windows.
+    if (process.platform === 'win32') {
+      const control = path.join(dir, `${bin}-control.log`), fd = fs.openSync(control, 'a');
+      let run;
+      try { run = spawnSync(path.join(PG_BIN, `${bin}.exe`), args, { windowsHide: true, stdio: ['ignore', fd, fd] }); }
+      finally { fs.closeSync(fd); }
+      assert.equal(run.status, 0, `${bin}: ${fs.readFileSync(control, 'utf8')}`);
+      return;
+    }
     const run = asRoot ? spawnSync('runuser', ['-u', 'postgres', '--', path.join(PG_BIN, bin), ...args], { encoding: 'utf8' })
       : spawnSync(path.join(PG_BIN, bin), args, { encoding: 'utf8' });
     assert.equal(run.status, 0, `${bin}: ${run.stderr || run.stdout}`);
   };
   pg('initdb', ['-D', data, '-U', 'postgres', '-A', 'trust', '--encoding=UTF8', '--locale=C']);
   // A non-UTC server zone: receivedAt must still be stored and read as UTC.
-  pg('pg_ctl', ['-D', data, '-l', log, '-o', `-h 127.0.0.1 -p ${port} -k ${dir} -c timezone=Europe/Kyiv`, 'start', '-w']);
+  pg('pg_ctl', ['-D', data, '-l', log, '-o', `-h 127.0.0.1 -p ${port}${process.platform === 'win32' ? '' : ` -k ${dir}`} -c timezone=Europe/Kyiv`, 'start', '-w']);
   return { url: `postgresql://postgres@127.0.0.1:${port}/postgres`, stop: () => pg('pg_ctl', ['-D', data, 'stop', '-m', 'fast', '-w']) };
 }
 
@@ -104,9 +113,9 @@ async function main() {
   process.env.DATABASE_URL = database.url; process.env.DIRECT_URL = database.url;
   const report = { out: OUT, scope: 'Throwaway Postgres + synthetic TronGrid fixture + local build. Not production.', checks: [], sql: {}, http: {}, notes: [] };
   const check = (label, ok, detail) => { assert.ok(ok, `${label}${detail ? ` — ${detail}` : ''}`); report.checks.push(detail ? `${label} — ${detail}` : label); console.log('PASS', label, detail ?? ''); };
-  let browser, apiServer, webServer, chainServer, prisma;
+  let browser, apiServer, webServer, chainServer, networkGuard, prisma;
   try {
-    const migrate = spawnSync('npx', ['prisma', 'migrate', 'deploy'], { cwd: root, encoding: 'utf8', env: process.env });
+    const migrate = spawnSync(process.execPath, [require.resolve('prisma/build/index.js'), 'migrate', 'deploy'], { cwd: root, encoding: 'utf8', env: process.env, windowsHide: true });
     assert.equal(migrate.status, 0, migrate.stderr || migrate.stdout);
     report.migrations = (migrate.stdout.match(/Applying migration/g) || []).length;
 
@@ -130,6 +139,7 @@ async function main() {
     const { depositsRouter } = dist('api/routes/deposits');
     const { balancesRouter } = dist('api/routes/balances');
     const { adminRouter } = dist('api/routes/admin');
+    const { adminPagedReadsRouter } = dist('api/routes/adminPagedReads');
     const { accountRouter } = dist('api/routes/account');
     const { depositCatalogueRouter } = dist('api/routes/depositCatalogue');
     const { DepositCatalogue } = dist('services/depositCatalogue/service');
@@ -202,7 +212,7 @@ async function main() {
     api.use('/api/v1', depositAddressCopiesRouter(prisma));
     api.use('/api/v1', depositCatalogueRouter(prisma, catalogue));
     api.use('/api/v1', adminDepositsRouter(prisma, prices), depositsRouter(prisma, prices), balancesRouter(prisma));
-    api.use('/api/v1', adminRouter(prisma), accountRouter(prisma));
+    api.use('/api/v1', adminPagedReadsRouter(prisma), adminRouter(prisma), accountRouter(prisma));
     // Shell reads the pages ask for, from the same ledger (no market data here).
     const auth = requireAuth(prisma);
     const ledger = async (model, userId) => (await prisma[model].findMany({ where: { userId } }))
@@ -435,7 +445,7 @@ async function main() {
     console.log(`ALL PASS (${report.checks.length}) → ${OUT}`);
   } finally {
     await browser?.close().catch(() => {});
-    for (const s of [apiServer, webServer, chainServer]) s?.close();
+    for (const s of [apiServer, webServer, chainServer, networkGuard]) s?.close();
     await prisma?.$disconnect().catch(() => {});
     database.stop();
   }
@@ -447,9 +457,16 @@ async function main() {
     webServer = web.listen(WEB_PORT, '127.0.0.1'); await once(webServer, 'listening');
     const origin = `http://127.0.0.1:${WEB_PORT}`;
     const { chromium } = require(process.env.PLAYWRIGHT_MODULE || '/opt/node22/lib/node_modules/playwright');
-    browser = await chromium.launch({ executablePath: process.env.QA_CHROMIUM || undefined });
+    // A deny-only proxy blocks every external host without Playwright request
+    // interception (which suppresses Chromium's native CORS preflights).
+    networkGuard = require('node:http').createServer((_req, res) => res.writeHead(403).end());
+    networkGuard.on('connect', (_req, socket) => socket.destroy());
+    networkGuard.listen(0, '127.0.0.1'); await once(networkGuard, 'listening');
+    browser = await chromium.launch({ executablePath: process.env.QA_CHROMIUM || undefined,
+      proxy: { server: `http://127.0.0.1:${networkGuard.address().port}`, bypass: '127.0.0.1' } });
     const open = async (who, { width = 1440, height = 900, clipboard = 'ok' } = {}) => {
       const context = await browser.newContext({ viewport: { width, height }, locale: 'ru-RU', isMobile: width < 500, hasTouch: width < 500 });
+      await context.routeWebSocket('**/*', (socket) => socket.close());
       await context.addInitScript(([token, mode]) => {
         if (token) localStorage.setItem('exchange_token', token);
         localStorage.setItem('exchange_lang', 'ru');

@@ -41,6 +41,7 @@ const { AdminUserDeletionService } = require('../dist/services/AdminUserDeletion
 const { AccountDeletionGate } = require('../dist/services/AccountDeletionGate');
 const { MatchingEngine } = require('../dist/matching-engine/MatchingEngine');
 const { adminUsersRouter } = require('../dist/api/routes/adminUsers');
+const { adminDepositsRouter } = require('../dist/api/routes/adminDeposits');
 const { requireAuth } = require('../dist/api/middleware/auth');
 const { DepositAttributionService } = require('../dist/services/deposits/DepositAttributionService');
 const report = { checks: [], failures: [] };
@@ -60,6 +61,7 @@ async function main() {
   const gate = new AccountDeletionGate(); const books={spot:new MatchingEngine(),futures:new MatchingEngine(),demo:new MatchingEngine()};
   const service = new AdminUserDeletionService(prisma,gate,books);
   const app=express(); app.use(express.json()); app.use('/api/v1',adminUsersRouter(prisma,{},service));
+  app.use('/api/v1',adminDepositsRouter(prisma,{getTicker:async()=>null}));
   app.get('/protected',requireAuth(prisma),(_req,res)=>res.json({ok:true}));
   app.get('/key-protected',requireAuthOrApiKey(prisma),(_req,res)=>res.json({ok:true}));
   const user = (id,extra={})=>prisma.user.create({data:{id,email:id+'@example.invalid',passwordHash:'test-only',referralCode:id,...extra}});
@@ -212,8 +214,9 @@ async function browserChecks(app, prisma, user, header) {
  app.get('/api/v1/me',(_req,res)=>res.json({id:'admin',email:'admin@example.invalid',isAdmin:true,role:'ADMIN',kycStatus:'NOT_STARTED'}));
  app.get('/api/v1/admin/user-activity',async(_req,res)=>res.json({totalUsers:await prisma.user.count(),newUsers24h:0,pendingKyc:0,packages:[],counts:{},awaitingConfirmationsByUser:{}}));
  app.get('/api/v1/admin/deposits/recent-by-user',(_req,res)=>res.json([]));
- app.use(express.static(path.resolve('frontend/dist')));
- app.get('*',(_req,res)=>res.sendFile(path.resolve('frontend/dist/index.html')));
+ const frontendDist = path.resolve(process.env.QA_FRONTEND_DIST || 'frontend/dist');
+ app.use(express.static(frontendDist));
+ app.get('*',(_req,res)=>res.sendFile(path.join(frontendDist, 'index.html')));
  const server=app.listen(0,'127.0.0.1');await once(server,'listening');
  const origin='http://127.0.0.1:'+server.address().port;
  const browser=await chromium.launch({headless:true,...(process.platform==='win32'?{channel:'msedge'}:{})});
@@ -234,8 +237,9 @@ async function browserChecks(app, prisma, user, header) {
    });
    await page.goto(origin+'/admin/users');
    const search=page.getByRole('textbox',{name:'Поиск пользователей'});await search.fill(id+'@');
-   const table=page.locator('.admin-table-desktop');
-   await table.getByRole('button',{name:'Действия',exact:true}).click();
+   const table=page.locator(width >= 768 ? `[data-user-row="${id}"]` : `[data-user-card="${id}"]`);
+   await table.waitFor({state:'visible'});
+   await table.locator('summary').click();
    assert.equal(await page.getByRole('button',{name:/^(Заблокировать|Разблокировать)$/}).count(),0);
    await table.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    const dialog=page.getByRole('dialog');await dialog.waitFor({state:'visible'});
@@ -244,7 +248,6 @@ async function browserChecks(app, prisma, user, header) {
    await page.screenshot({path:path.join(output,'delete-confirm-'+width+'.png'),fullPage:true});
    await dialog.getByRole('button',{name:'Отмена',exact:true}).click();
    assert.ok(await prisma.user.findUnique({where:{id}}));
-   await table.getByRole('button',{name:'Действия',exact:true}).click();
    await table.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    let deleteRequests=0;
    await page.route('**/api/v1/admin/users/'+id,async route=>{
@@ -262,15 +265,14 @@ async function browserChecks(app, prisma, user, header) {
    assert.equal(deleteRequests,2,'double click submits only one retry');
    await page.waitForFunction(()=>document.body.textContent.includes('Никого не найдено.'));
    assert.equal(await prisma.user.findUnique({where:{id}}),null);
-   assert.equal(await page.locator('a[href="/admin/audit-log"]').count(),0);
+   assert.equal(await page.locator('a[href="/admin/audit-log"]').count(),1,'authorized operator can open the action journal');
    await page.goto(origin+'/admin/users/'+id);
-   const missingUser=page.getByRole('alert');
-   await missingUser.getByText('Запись не найдена.',{exact:true}).waitFor({state:'visible'});
+   await page.getByRole('alert').filter({hasText:'Запись не найдена'}).waitFor({state:'visible'});
    assert.equal(new URL(page.url()).pathname,'/admin/users/'+id,'missing user keeps the recoverable error view');
-   await missingUser.getByRole('link',{name:'Все пользователи',exact:true}).click();
-   await page.waitForURL(origin+'/admin/users');
+   await page.getByRole('link',{name:'Все пользователи',exact:true}).click();await page.waitForURL(origin+'/admin/users');
    const detailId='detail-'+width;await user(detailId);
    await page.goto(origin+'/admin/users/'+detailId);
+   await page.getByText('Дополнительные действия',{exact:true}).click();
    await page.getByRole('button',{name:'Удалить аккаунт',exact:true}).click();
    await page.getByRole('button',{name:'Удалить аккаунт безвозвратно',exact:true}).click();
    await page.waitForURL(origin+'/admin/users');
@@ -279,7 +281,7 @@ async function browserChecks(app, prisma, user, header) {
    await page.getByText('voltex.crypto@gmail.com',{exact:true}).first().waitFor({state:'visible'});
    assert.equal(await page.getByRole('button',{name:'Удалить аккаунт',exact:true}).count(),0);
    assert.deepEqual(errors,[]);
-   report.checks.push('browser '+width+'px: confirmation/cancel/conflict/retry/double-click/list/detail/redirect/protected/journal hidden');
+   report.checks.push('browser '+width+'px: confirmation/cancel/conflict/retry/double-click/list/detail/404/back/protected/authorized journal');
    console.log('PASS browser '+width+'px');await context.close();
   }
  } finally {await browser.close();await new Promise(r=>server.close(r));}

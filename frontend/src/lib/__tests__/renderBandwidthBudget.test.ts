@@ -26,21 +26,26 @@ describe('Render free-tier bandwidth guardrails', () => {
 
     expect(nav).not.toContain('useAdminAlertSound');
     expect(layout).not.toContain('setAdminAlertSoundEnabled');
-    expect(users).toContain('getAdminRecentDepositsByUser(controller.signal)');
+    expect(layout).not.toContain('useAdminAlertSound');
+    expect(layout).toContain('useAdminWorkSummary');
+    expect(users).toContain('getAdminUsersPage(query, signal)');
+    expect(users).not.toContain('getAdminRecentDepositsByUser');
     expect(users).not.toContain('getAdminDeposits()');
 
-    // The deposit page reads the stored registry (one DB-only request) and
-    // never the full history. Provider discovery happens only on an explicit
-    // click; the queue re-read is visible-only.
+    // The deposit page reads the stored registry, never the full history.
+    // The existing server-gated daily open trigger is separate from queue
+    // refresh; no provider feed or manual watcher starts from the mount effect.
     expect(deposits).not.toContain('api.getAdminDeposits(');
-    const mountStart = deposits.indexOf('useEffect(() =>');
-    const mountEnd = deposits.indexOf('}, [reload]);', mountStart);
+    const mountStart = deposits.indexOf('mounted.current = true;');
+    const mountEnd = deposits.indexOf('}, [reload, changed, cancelRead, session]);', mountStart);
     expect(mountStart).toBeGreaterThanOrEqual(0);
     expect(mountEnd).toBeGreaterThan(mountStart);
     const mount = deposits.slice(mountStart, mountEnd);
     expect(mount).not.toContain('getAdminIncomingDepositFeed');
     expect(mount).not.toContain('runWatcher');
-    expect(mount).toContain('!isBrowserInactive()');
+    expect(mount).toContain('if (document.hidden) cancelRead()');
+    expect(mount).toContain('Date.now() - lastAttempt.current >= FOCUS_FRESHNESS_MS');
+    expect(mount).toContain('pendingOpen.abort(); cancelRead()');
     expect(deposits).not.toContain('setInterval');
   });
 
