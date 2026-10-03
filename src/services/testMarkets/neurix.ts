@@ -17,4 +17,4 @@ export const NEURIX: TestAssetConfig = Object.freeze({
   marketStructure: { from: NRX_LISTING_AT },
 });
 
-export const NRX_OWNER_ALLOCATION = '31250';
+export const NRX_OWNER_ALLOCATION = '6250';
