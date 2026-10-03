@@ -1,0 +1,85 @@
+/* Adapt the released Futures Graphite/PanelTiles finish to the existing
+ * Spot/CFD DOM. No grid tracks, visibility, data or order controls change.
+ * The ID arm supplies the same cascade weight as Futures; .vx-terminal
+ * deliberately excludes Futures itself, including after client navigation. */
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal {
+  --font-family:'IBM Plex Sans Terminal','Inter Terminal',Inter,system-ui,sans-serif;
+  --tile-ground:#000000;
+  --tile-fill:#101014;
+  --tile-header:#17181f;
+  --tile-bottom:#101014;
+  --border:rgba(255,255,255,.08) !important;
+  font-family:var(--font-family);
+  background:var(--tile-fill) !important;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal .global-header {
+  background:var(--tile-header); --bg:var(--tile-header);
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal .terminal :is(.mono,button,input,select) {
+  font-family:var(--font-family); font-variant-numeric:tabular-nums;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.terminal-chart-shell,.cfd-chart) {
+  --voltex-chart-font:'IBM Plex Sans Terminal','Inter Terminal',Inter,Arial,sans-serif;
+  --voltex-plot-background:#101014;
+  background:var(--tile-fill);
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.ticker-bar .label,.cfd-ticker-metric > span:first-child) {
+  color:#959ba5; font-weight:400;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.chart-toolbar,.terminal-chart-heading,.orderbook-header,.orderbook-col-headers,.pairs-header,.pairs-controls,.cfd-list-header,.cfd-chart-header,.cfd-chart-intervals,.bottom-tabs,.cfd-bottom-tabs,.order-form,.cfd-order-panel,.drawing-rail) {
+  background:var(--tile-fill); border-color:var(--border); box-shadow:none;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.chart-tab,.cfd-chart-intervals button) {
+  color:#8b9098;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.chart-tab,.cfd-chart-intervals button):hover {
+  color:#eaecef;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.chart-tab.active,.cfd-chart-intervals button.active) {
+  color:#eaecef; background:rgba(255,255,255,.09);
+}
+/* Match the flat Futures fields without its floating-label markup. Keep
+ * captions, validation, disabled states and mobile touch sizes as they are. */
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.input-group,.order-family-input,.cfd-input) {
+  background:#232227 !important; border:1px solid transparent !important;
+  border-radius:6px; box-shadow:none;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.input-group,.order-family-input,.cfd-input):hover {
+  background:#28272d !important;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.input-group,.order-family-input):focus-within,
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal .cfd-input:focus {
+  border-color:var(--accent) !important;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.input-group,.order-family-input):has([aria-invalid=true]),
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal .cfd-input[aria-invalid=true] {
+  border-color:var(--sell) !important;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.input-group input,.cfd-input) {
+  font-size:16px; font-weight:600;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.submit-btn,.cfd-submit) {
+  border-radius:999px;
+}
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.submit-btn.buy,.cfd-submit.buy):not(:disabled) { background:#1ead6a; }
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.submit-btn.sell,.cfd-submit.sell):not(:disabled) { background:#ea4151; }
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal .ob-depth-bar.bid { background:rgba(46,189,133,.12); }
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal .ob-depth-bar.ask { background:rgba(246,70,93,.12); }
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.order-form-area,.cfd-form-area) { scrollbar-color:transparent transparent; }
+:is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.order-form-area,.cfd-form-area):hover { scrollbar-color:#2a3038 transparent; }
+
+/* Same 4px ground and 6px corners as Futures. Keep the existing Spot
+ * resizable/collapsible columns and CFD's own three-column composition. */
+@media (min-width:901px) {
+  :is(#archive-terminal-preview, .vx-terminal).vx-terminal .terminal {
+    padding:4px; gap:4px; background:var(--tile-ground) !important;
+  }
+  :is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.main-grid,.cfd-workspace) {
+    gap:4px; background:var(--tile-ground) !important;
+  }
+  :is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.ticker-bar,.cfd-ticker-bar,.left-panel,.pairs-section,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.cfd-instruments-area,.cfd-chart-area,.cfd-form-area,.cfd-bottom-panel) {
+    background:var(--tile-fill) fixed !important; border:0 !important;
+    border-radius:6px; box-shadow:none;
+  }
+  :is(#archive-terminal-preview, .vx-terminal).vx-terminal :is(.bottom-tabs,.cfd-bottom-tabs,.pairs-header,.terminal-chart-heading,.orderbook-header) { border-radius:6px 6px 0 0; }
+}
