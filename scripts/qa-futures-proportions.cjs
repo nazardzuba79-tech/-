@@ -176,6 +176,8 @@ const measure = page => page.evaluate(() => {
 async function showTrade(page, mobile) { if (mobile) { await page.locator('#mobile-futures-trade').click(); await page.waitForTimeout(150); } }
 async function captures(page, name, mobile) {
   await page.screenshot({ path: path.join(OUT, name + '.png'), animations: 'disabled' });
+  const ticker=await page.locator('.futures-ticker-bar').boundingBox();
+  await page.screenshot({path:path.join(OUT,`${name}-top.png`),animations:'disabled',clip:{x:0,y:0,width:page.viewportSize().width,height:Math.ceil(ticker.y+ticker.height)}});
   for (const [part, selector] of [['header','.global-header'],['ticker', '.futures-ticker-bar'], ['toolbar', '.chart-toolbar'], ['form', '.order-form-area']]) {
     if (part === 'form') await showTrade(page, mobile);
     const el = page.locator(selector).first();
@@ -200,6 +202,38 @@ async function headerMenus(page,width,item,report){
     await page.screenshot({path:path.join(OUT,`${PHASE}-${width}-header-menu-${i}.png`),animations:'disabled'});
     await page.mouse.move(width-10,70);await page.waitForTimeout(270);
   }
+}
+async function mobileNavigation(page,item,report){
+  await page.reload({waitUntil:'domcontentloaded'});await page.locator('.futures-ticker-bar').waitFor();
+  await page.evaluate(()=>window.scrollTo(0,0));
+  await page.locator('.nav-burger').click();
+  const menu=page.locator('.nav-mobile-menu.open');await menu.waitFor();
+  item.mobileNavigation=[];
+  for(const href of ['/markets','/trade']){
+    const link=menu.locator(`a[href="${href}"]`).first();
+    const probe=await link.evaluate(el=>{
+      const r=el.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);
+      return {text:el.textContent,point:{x,y},clickable:el.contains(hit),hit:hit?`${hit.tagName}.${hit.className}`:null};
+    });
+    item.mobileNavigation.push({href,...probe});
+    if(!probe.clickable)report.violations.push(`390: mobile drawer ${href} blocked by ${probe.hit}`);
+  }
+  await page.screenshot({path:path.join(OUT,`${PHASE}-390-menu.png`),animations:'disabled'});
+  const academy=menu.locator('.header-disclosure').filter({has:page.locator('a[href="/academy"]')});
+  await academy.locator('.header-disclosure-toggle').click();
+  item.mobileAcademy=await academy.locator('.header-disclosure-panel a').evaluateAll(xs=>xs.map(x=>({text:x.textContent,href:x.getAttribute('href')})));
+  if(JSON.stringify(item.mobileAcademy.map(x=>x.href))!==JSON.stringify(['/academy/learn','/academy/knowledge','/academy/faq','/academy/glossary']))report.violations.push('390: Academy menu destinations changed');
+  await academy.locator('a[href="/academy/glossary"]').scrollIntoViewIfNeeded();await menu.evaluate(el=>{el.scrollTop+=80;});
+  await page.screenshot({path:path.join(OUT,`${PHASE}-390-menu-academy.png`),animations:'disabled'});
+  await menu.evaluate(el=>{el.scrollTop=el.scrollHeight;});
+  item.mobileDrawerEnd=await menu.locator('button').last().evaluate(el=>{
+    const r=el.getBoundingClientRect(),drawer=el.closest('.nav-mobile-menu').getBoundingClientRect();
+    const x=r.x+r.width/2,y=r.y+r.height/2,hit=document.elementFromPoint(x,y);
+    return {text:el.textContent,point:{x,y},clickable:el.contains(hit),fullyVisible:r.top>=drawer.top&&r.bottom<=drawer.bottom&&r.bottom<=innerHeight,top:r.top,bottom:r.bottom,drawerBottom:drawer.bottom,hit:hit?`${hit.tagName}.${hit.className}`:null};
+  });
+  if(!item.mobileDrawerEnd.clickable||!item.mobileDrawerEnd.fullyVisible)report.violations.push(`390: last mobile drawer action clipped/blocked by ${item.mobileDrawerEnd.hit}`);
+  await page.screenshot({path:path.join(OUT,`${PHASE}-390-menu-end.png`),animations:'disabled'});
+  await page.locator('.nav-burger').click();
 }
 async function interactions(page, width, report) {
   const check = (ok, why) => { if (!ok) report.violations.push(`${width}: ${why}`); };
@@ -377,6 +411,7 @@ async function run() {
         await page.locator('#mobile-futures-positions').click();await page.waitForTimeout(100);
         check(await page.locator('.bottom-panel').isVisible(),'mobile Positions workspace missing');
         await page.screenshot({path:path.join(OUT,`${PHASE}-390-positions.png`),animations:'disabled'});
+        await mobileNavigation(page,item,report);
       }
       // The real Spot route is rendered at every matching viewport.
       await page.goto(`http://127.0.0.1:${PORT}/trade?pair=BTC%2FUSDT`, { waitUntil: 'domcontentloaded' });
@@ -391,7 +426,7 @@ async function run() {
     if(!args.includes('--quick')) await stateChecks(browser,report);
   } finally { await browser.close(); report.requests = hits; fs.writeFileSync(path.join(OUT, `${PHASE}-report.json`), JSON.stringify(report, null, 2)); }
   console.log(JSON.stringify({ phase: PHASE, cases: report.cases.length, violations: report.violations, report: path.join(OUT, `${PHASE}-report.json`) }, null, 2));
-  if (PHASE === 'after') assert.deepEqual(report.violations, []);
+  if (PHASE === 'after'||args.includes('--expect-clean')) assert.deepEqual(report.violations, []);
 }
 const server = start();
 if (args.includes('--serve')) console.log(`Read-only fixture preview: http://127.0.0.1:${PORT}/futures?pair=BTC%2FUSDT`);

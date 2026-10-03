@@ -1,0 +1,44 @@
+{
+  "decodedImages": 48,
+  "widths": [
+    "2048",
+    "1920",
+    "1707",
+    "1664",
+    "1600",
+    "1440",
+    "1366",
+    "390"
+  ],
+  "areas": [
+    "-header",
+    "-ticker",
+    ""
+  ],
+  "modesChecked": 3,
+  "futuresLink": true,
+  "mobile": {
+    "card": "Карта",
+    "academy": "Академия",
+    "destinations": [
+      {
+        "text": "Обучение",
+        "href": "/academy/learn"
+      },
+      {
+        "text": "База знаний",
+        "href": "/academy/knowledge"
+      },
+      {
+        "text": "Вопросы и ответы",
+        "href": "/academy/faq"
+      },
+      {
+        "text": "Глоссарий",
+        "href": "/academy/glossary"
+      }
+    ]
+  },
+  "blockedExternal": 0,
+  "pageErrors": []
+}

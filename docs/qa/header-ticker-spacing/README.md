@@ -10,6 +10,7 @@ Before screenshots were built from `f56ca46962a466cb41a6bb1b43507dd475cfffc8`; i
 - Academy navigation uses the existing `nav.academy` translation (`Академия` in Russian). Its destination and all four dropdown entries are unchanged.
 - Futures statistics distribute available horizontal space between their existing columns, with a20px minimum and1180px maximum group width on wide screens. Data, precision, order, pair selector and primary price are unchanged.
 - The compact Futures header tier extends through1799px. This fixes the breakpoint that previously allowed the navigation to overlap account actions at1680/1707px.
+- Mobile Futures navigation now paints above the sticky workspace tabs. The drawer starts directly below the52px header and reserves space for the bottom dock, so its final entries remain reachable when scrolled. Modal and support layers retain their existing priority.
 
 No backend, API, database, accounting, order, provider, subscription or infrastructure changes. No merge or production deployment performed. Existing GitHub/Cloudflare automation may create a branch preview when pushed.
 
@@ -56,3 +57,9 @@ node scripts/qa-futures-proportions.cjs --serve --out docs/qa/header-ticker-spac
 The gap/stable-instrument comparison requires `before-report.json` in the selected output directory. Capture it from the untouched baseline using the same script with `--phase before --dist <baseline-dist> --quick` before checking the changed build.
 
 Limits: synthetic fixtures only; no production auth/trades, physical device or seven-language visual matrix. Routes/localization are covered by focused tests. Unsupported Ukrainian locale was not introduced.
+
+### Mobile drawer regression
+
+The final interactive review found a pre-existing stacking defect that simple rectangle checks missed: the sticky chart/trading/positions tabs intercepted taps on the open navigation. At maximum drawer scroll, the bottom dock also covered logout. The saved untouched baseline fails the new hit-test guard (`/markets` intercepted by the workspace button). Regression coverage now hit-tests visible links, expands Academy, verifies all four destinations, and checks the final item after scrolling. The fix is limited to the Futures mobile header/drawer CSS.
+
+The final rebuilt preview passes at 390x844, 390x600 and 768x1024: drawer links receive taps, logout remains reachable after expanded-menu scrolling, and no horizontal overflow occurs. Mobile/header guard tests pass 98/98 in seven suites with no warnings. Only the exact approved drawer selector was added to the stylesheet-ownership allowlist. Header remains below existing modal/support layers; the bottom dock retains its priority while reserved space prevents it from covering menu entries.
