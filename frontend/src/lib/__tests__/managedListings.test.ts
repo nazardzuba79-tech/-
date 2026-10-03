@@ -272,6 +272,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
   const { Simulate } = req('react-dom/test-utils');
   let dom: any, root: any, host: HTMLElement, listing: any, extraListings: any[], fetchMock: jest.Mock;
   let previewGate: Promise<void> | null, previewRevision: number | null, publishFailures: number;
+  let malformedPublish: boolean;
   let globals: Map<string, PropertyDescriptor | undefined>;
   const modules = new Map<string, any>();
   const sessionListeners = new Set<() => void>();
@@ -298,7 +299,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     Object.assign(globalThis, values);
     host = document.getElementById('root')!;
     root = req('react-dom/client').createRoot(host);
-    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = [];
+    modules.clear(); sessionListeners.clear(); previewGate = null; previewRevision = null; publishFailures = 0; extraListings = []; malformedPublish = false;
     listing = {
       id: 'qax-1', symbol: 'QAX', draftRevision: 2, draftUpdatedAt: '2026-09-29T00:00:00Z', draftUpdatedBy: 'fixture-admin',
       activeVersion: null, active: null, versions: [],
@@ -323,6 +324,7 @@ describe('saved-draft actions in the mounted Listings admin', () => {
           candles: [], book: { available: false, asks: [], bids: [] }, trades: [] });
       }
       if (path.endsWith('/publish') && init.method === 'POST') {
+        if (malformedPublish) return json({ accepted: true });
         if (publishFailures > 0) { publishFailures -= 1; throw new Error('fixture connection lost'); }
         listing = { ...listing, activeVersion: 1, active: structuredClone(listing.draft),
           versions: [{ version: 1, publishedAt: '2026-09-29T01:00:00Z', publishedBy: 'fixture-admin' }] };
@@ -432,6 +434,67 @@ describe('saved-draft actions in the mounted Listings admin', () => {
     expect(requests[1]).toEqual(requests[0]);
     expect(host.querySelector('[data-publish-dialog]')).toBeNull();
     expect(calls('/allocation')).toHaveLength(0);
+  });
+
+  test('ticker and publication filters use current saved listings without network requests', async () => {
+    const active = { ...structuredClone(listing), id: 'qbx-1', symbol: 'QBX' };
+    active.draft.symbol = 'QBX'; active.active = structuredClone(active.draft); active.activeVersion = 1;
+    extraListings = [active];
+    await mount();
+    const before = fetchMock.mock.calls.length;
+    await change('listingSearch', 'qbx');
+    expect(host.querySelectorAll('[data-listing-row]')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-row="QBX"]')).not.toBeNull();
+    await change('listingSearch', '');
+    await change('listingStatus', 'draft');
+    expect(host.querySelectorAll('[data-listing-row]')).toHaveLength(1);
+    expect(host.querySelector('[data-listing-row="QAX"]')).not.toBeNull();
+    await change('listingStatus', 'live');
+    expect(host.querySelector('[data-listing-row="QBX"]')).not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(before);
+  });
+
+  test('unknown publish response retains confirmation and retry key without claiming success', async () => {
+    await mount();
+    await click('[data-publish]');
+    malformedPublish = true;
+    await click('[data-confirm-publish]');
+    expect(host.querySelector('[data-publish-dialog]')).not.toBeNull();
+    expect(host.textContent).not.toContain('Опубликовано:');
+    expect(host.textContent).toContain('Нет подтверждения от сервера');
+    malformedPublish = false;
+    await click('[data-confirm-publish]');
+    const requests = calls('/publish').map(([, init]) => JSON.parse(init.body));
+    expect(requests[1]).toEqual(requests[0]);
+  });
+
+  test('ambiguous preview time is not silently replaced by the default preview', async () => {
+    await mount();
+    await change('previewAt', '2026-10-25T03:30');
+    await click('[data-preview]');
+    expect(calls('/preview?')).toHaveLength(0);
+    expect(host.textContent).toContain('неоднозначно');
+  });
+
+  test('an incomplete save receipt preserves the draft and never reports saved', async () => {
+    await mount();
+    await change('name', 'Unsaved fixture name');
+    fetchMock.mockResolvedValueOnce(json({ id: listing.id, draftRevision: 3, draft: { symbol: 'QAX', seed: 'qax-fixed-seed' } }));
+    await click('[data-save-draft]');
+    expect(host.querySelector('[data-listing-notice]')).toBeNull();
+    expect(host.textContent).toContain('Нет подтверждения от сервера');
+    expect((host.querySelector('[data-field="name"]') as HTMLInputElement).value).toBe('Unsaved fixture name');
+    expect(button('[data-publish]').disabled).toBe(true);
+  });
+
+  test('a publish receipt for a different listing is not confirmation of this listing', async () => {
+    await mount();
+    await click('[data-publish]');
+    fetchMock.mockResolvedValueOnce(json({ id: 'another-listing', version: 1, replayed: false, publishedAt: '2026-10-01T12:00:00Z' }));
+    await click('[data-confirm-publish]');
+    expect(host.querySelector('[data-publish-dialog]')).not.toBeNull();
+    expect(host.textContent).toContain('Нет подтверждения от сервера');
+    expect(host.textContent).not.toContain('Опубликовано:');
   });
 
   test('a preview response arriving after edit and revert stays invalidated', async () => {

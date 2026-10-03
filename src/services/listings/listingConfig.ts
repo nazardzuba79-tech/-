@@ -56,9 +56,16 @@ export const listingConfigSchema = z.object({
     .refine((v) => Number(v) > 0 && Number(v) <= MAX_INITIAL_PRICE, `initial price must be > 0 and ≤ ${MAX_INITIAL_PRICE}`),
   /** UTC instant of the first simulated tick, ISO-8601 with an explicit `Z`. */
   listingAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?Z$/, 'listing time must be an ISO UTC instant')
-    .refine((v) => Number.isFinite(Date.parse(v)), 'invalid listing time'),
+    .refine((v) => {
+      const instant = Date.parse(v);
+      return Number.isFinite(instant) && new Date(instant).toISOString().slice(0, 16) === v.slice(0, 16);
+    }, 'invalid listing time'),
   /** How the admin saw and entered the time. Display only; `listingAt` is the instant. */
-  displayTimeZone: z.string().min(1).max(64).regex(/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+){0,2}$|^UTC$/, 'invalid time zone'),
+  displayTimeZone: z.string().min(1).max(64).regex(/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+){0,2}$|^UTC$/, 'invalid time zone')
+    .refine((timeZone) => {
+      try { new Intl.DateTimeFormat('en', { timeZone }).format(0); return true; }
+      catch { return false; }
+    }, 'invalid time zone'),
   /** Owner inventory to allocate LATER, in a separate audited step. Never credited by create/preview/publish. */
   ownerAllocation: z.string().regex(QUANTITY, 'owner allocation: a plain quantity with at most 8 decimals'),
   seedMode: z.enum(['auto', 'manual']),

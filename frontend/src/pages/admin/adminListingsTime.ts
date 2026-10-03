@@ -13,14 +13,20 @@ export function zoneOffsetMs(instant: number, timeZone: string): number {
   return asUtc - Math.floor(instant / 1000) * 1000;
 }
 
-/** `2026-10-01T15:00` in `timeZone` → `2026-10-01T12:00:00Z`. Handles DST by re-checking the offset. */
+/** Resolve only a unique wall-clock instant. Never normalize gaps or silently choose a DST fold. */
 export function zonedWallTimeToUtc(wall: string, timeZone: string): string | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(wall);
   if (!m) return null;
   const guess = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));
-  let instant = guess - zoneOffsetMs(guess, timeZone);
-  instant = guess - zoneOffsetMs(instant, timeZone);
-  return new Date(instant).toISOString().replace('.000Z', 'Z');
+  if (!Number.isFinite(guess) || new Date(guess).toISOString().slice(0, 16) !== wall) return null;
+  try {
+    // Collect offsets on both sides of a nearby transition, including fractional-hour zones.
+    const offsets = new Set<number>();
+    for (let hours = -48; hours <= 48; hours += 6) offsets.add(zoneOffsetMs(guess + hours * 3_600_000, timeZone));
+    const candidates = [...offsets].map(offset => guess - offset)
+      .filter(instant => utcToZonedWallTime(new Date(instant).toISOString(), timeZone) === wall);
+    return candidates.length === 1 ? new Date(candidates[0]).toISOString().replace('.000Z', 'Z') : null;
+  } catch { return null; } // Invalid IANA zone is a form error, not a render crash.
 }
 
 /** The reverse, for filling the form: UTC instant → wall-clock time in `timeZone`. */
