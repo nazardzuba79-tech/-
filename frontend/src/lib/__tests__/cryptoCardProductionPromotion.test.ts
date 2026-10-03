@@ -214,7 +214,7 @@ test('Card product branding stays unchanged while only seven navigation labels a
   // replacement of a whole-file i18n hash or invalidate these Card guarantees.
   const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:lead|(?:benefit\.)?card\.[^']+)|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
   expect(entries).toHaveLength(196);
-  const shortLabels = ['Карта', 'Card', '卡', 'Tarjeta', 'कार्ड', 'カード', '카드'].map(label => "'nav.card': '" + label + "',");
+  const shortLabels = Array(7).fill("'nav.card': 'Crypto-Card',");
   expect(entries.filter(line => line.startsWith("'nav.card':"))).toEqual(shortLabels);
   // Restore only the exact owner-approved navigation wording for the old digest;
   // all product, Home, Auth and support strings remain fully covered.

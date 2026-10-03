@@ -62,7 +62,7 @@ const state = filled => ({ initialized: true, revision: 1, source: 'PREVIEW_FIXT
 // contact production, including when opened manually without Playwright.
 const bootstrap = `(() => {
   if (location.hostname !== '127.0.0.1') throw new Error('Loopback only');
-  localStorage.setItem('exchange_token','qa-proportions'); localStorage.setItem('exchange_lang','ru');
+  ${args.includes('--signed-out') ? "localStorage.removeItem('exchange_token');" : "localStorage.setItem('exchange_token','qa-proportions');"} localStorage.setItem('exchange_lang','ru');
   if (!localStorage.getItem('voltex.chartSettings.v1')) localStorage.setItem('voltex.chartSettings.v1',JSON.stringify({preset:'classic',bodyUp:'#ffffff',bodyDown:'#ff9800',borderUp:'#ffffff',borderDown:'#ff9800',wickUp:'#ffffff',wickDown:'#ff9800'}));
   Date.now = () => ${NOW};
   const original = window.fetch.bind(window);
@@ -291,9 +291,11 @@ async function interactions(page, width, report) {
   // Use the actual SPA links, not full navigations, to expose CSS import-order effects.
   await page.locator('a[href="/wallet"]').filter({visible:true}).first().click();
   await page.waitForURL('**/wallet'); await page.waitForTimeout(200);
+  if (!await page.locator('a[href="/futures"]:visible').count()) await page.locator('.nav-burger').click();
   await page.locator('a[href="/futures"]').filter({visible:true}).first().click();
   await page.locator('.futures-ticker-bar').waitFor();
   await page.locator('.header-brand').click(); await page.waitForURL('**/trade');
+  if (!await page.locator('a[href="/futures"]:visible').count()) await page.locator('.nav-burger').click();
   await page.locator('a[href="/futures"]').filter({visible:true}).first().click();
   await page.locator('.futures-ticker-bar').waitFor(); await page.waitForTimeout(150);
   record.navigation = await measure(page); check(record.navigation.overflowX===0,'Wallet/Futures/Spot/Futures overflow');
@@ -388,13 +390,14 @@ async function run() {
       }
       const header=initial.header;
       item.headerGaps=header.items.slice(1).map((x,i)=>({left:header.items[i].text,right:x.text,gap:+(x.contentX-header.items[i].contentRight).toFixed(2)}));
-      if(PHASE==='after'&&width>=1440){
+      if(PHASE==='after'&&width>=1531){
         check(header.nav.width>0,'desktop main navigation hidden');
         check(header.nav.right<=header.account.x,'navigation/account overlap');
         check(header.items.every(x=>x.contentRight<=header.account.x-1),'navigation content/account overlap');
         check(header.labels.every(x=>x.scroll<=x.client+1&&x.x>=header.nav.x-1&&x.right<=header.nav.right+1),'header label clipped');
         check(item.headerGaps.every(x=>x.gap>=12),'header adjacent item gap below12px');
       }
+      if(PHASE==='after'&&width<1531) check(await page.locator('.nav-burger').isVisible(),'compact header must provide the full navigation drawer');
       if(width>=1440&&!args.includes('--quick'))await headerMenus(page,width,item,report);
       if(width===1440&&!args.includes('--quick')) await interactions(page,width,report);
       if(width===390){

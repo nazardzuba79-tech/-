@@ -46,11 +46,15 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
   'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote'].map(key => `deposit.ui.${key}`);
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
-const shortCardLabels: Record<string, string> = { ru: 'Карта', en: 'Card', zh: '卡', es: 'Tarjeta', hi: 'कार्ड', ja: 'カード', ko: '카드' };
+const shortCardLabels: Record<string, string> = { ru: 'Crypto-Card', en: 'Crypto-Card', zh: 'Crypto-Card', es: 'Crypto-Card', hi: 'Crypto-Card', ja: 'Crypto-Card', ko: 'Crypto-Card' };
+const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
 describe('translation integrity', () => {
+  it('provides every shared menu description in all seven languages', () => {
+    for (const code of LOCALES) for (const key of menuDescriptionKeys) expect(dicts[code][key]?.trim()).toBeTruthy();
+  });
   it('localizes each decimal refusal in all seven languages', () => {
     for (const code of LOCALES) {
       expect(Object.keys(dicts[code]).filter(key => key.startsWith('futures.number')).sort()).toEqual([...decimalRefusalKeys].sort());
@@ -244,7 +248,7 @@ describe('translation integrity', () => {
         // prefix before them.
         if (key?.startsWith('academy.') || key?.startsWith('help.') || key === 'nav.academy' || key === 'nav.help') return false;
         // Owner-approved header destinations, added without changing existing copy.
-        if (key === 'nav.tools' || key === 'nav.knowledgeCenter') return false;
+        if (key === 'nav.tools' || key === 'nav.knowledgeCenter' || (key && menuDescriptionKeys.includes(key))) return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');

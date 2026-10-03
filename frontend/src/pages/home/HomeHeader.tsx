@@ -1,4 +1,4 @@
-import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, TRADING_LINKS } from '../../components/HeaderDropdown';
+import { HeaderDropdown, KNOWLEDGE_LINKS, MARKET_LINKS, OTC_LINKS, TRADING_LINKS } from '../../components/HeaderDropdown';
 import { TradingBotIcon } from '../../components/TradingBotIcon';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -54,14 +54,14 @@ export function HomeHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/6 bg-[#1a1b20]" style={{fontFamily:'Arial, Helvetica, sans-serif',background:'#1a1b20'}}>
-      <div className="mx-auto flex h-[58px] min-[1025px]:h-[68px] w-full max-w-[1460px] items-center gap-6 px-6">
+      <div className="mx-auto flex h-[58px] min-[1025px]:h-[68px] w-full max-w-[1460px] items-center gap-2 px-4 sm:gap-6 sm:px-6">
         <Link to="/" className="shrink-0" aria-label="VOLTEX">
           <Logo />
         </Link>
 
         <nav className="hidden items-center gap-[2px] min-[1440px]:flex" aria-label={t('home.nav.main')}>
           {LINKS.map((l) => (
-            l.to === '/markets' || l.to === '/trade' || l.to === '/academy' ? <HeaderDropdown key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/markets' ? MARKET_LINKS : l.to === '/trade' ? TRADING_LINKS : KNOWLEDGE_LINKS} className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted hover:text-white"/> : <Link
+            l.to === '/markets' || l.to === '/trade' || l.to === '/otc' || l.to === '/academy' ? <HeaderDropdown key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/markets' ? MARKET_LINKS : l.to === '/trade' ? TRADING_LINKS : l.to === '/otc' ? OTC_LINKS : KNOWLEDGE_LINKS} className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted hover:text-white"/> : <Link
               key={l.to}
               to={l.to}
               className="whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"
@@ -72,7 +72,7 @@ export function HomeHeader() {
           <Link to="/trading-bots" className="inline-flex items-center gap-[6px] whitespace-nowrap rounded-[5px] px-[9px] py-[6px] text-[12.5px] font-medium text-home-muted transition-colors duration-150 hover:bg-white/[0.05] hover:text-white"><TradingBotIcon/>Торговые боты</Link>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
           {authed ? (
             <>
               <div className="hidden sm:block">
@@ -127,9 +127,9 @@ export function HomeHeader() {
 
       {open && (
         <nav className="border-t border-white/6 px-6 py-3 max-h-[calc(100dvh-58px)] overflow-y-auto min-[1440px]:hidden" aria-label={t('home.nav.mobile')}>
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-1 gap-1">
             {LINKS.map((l) => (
-              l.to === '/markets' || l.to === '/trade' || l.to === '/academy' ? <HeaderDropdown mobile key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/markets' ? MARKET_LINKS : l.to === '/trade' ? TRADING_LINKS : KNOWLEDGE_LINKS} className="rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:text-white" onNavigate={() => setOpen(false)}/> : <Link
+              l.to === '/markets' || l.to === '/trade' || l.to === '/otc' || l.to === '/academy' ? <HeaderDropdown mobile key={l.to} to={l.to} label={t(l.labelKey)} links={l.to === '/markets' ? MARKET_LINKS : l.to === '/trade' ? TRADING_LINKS : l.to === '/otc' ? OTC_LINKS : KNOWLEDGE_LINKS} className="rounded-[5px] px-3 py-[9px] text-[13px] font-medium text-home-muted hover:text-white" onNavigate={() => setOpen(false)}/> : <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
