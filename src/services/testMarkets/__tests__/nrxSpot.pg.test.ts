@@ -34,10 +34,10 @@ pg('NRX normal Spot ledger on disposable PostgreSQL', () => {
   afterAll(async () => { await db.$disconnect(); }); // whole disposable cluster is removed by the runner
   const place = (side: 'BUY' | 'SELL', userId = owner, type: 'LIMIT' | 'MARKET' = 'LIMIT') => service.placeOrder({ userId, pair: NEURIX.pair, side, type, price: new BigNumber('.8'), quantity: new BigNumber(1) });
 
-  test('exact owner 31,250 NRX, no USDT debit, public airdrop or DemoBalance write', async () => {
+  test('exact owner 6,250 NRX, no USDT debit, public airdrop or DemoBalance write', async () => {
     const usdt = await balance(owner, 'USDT');
-    expect(await allocateNrxOwner(db, owner)).toMatchObject({ applied: true, quantity: '31250' });
-    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('31250');
+    expect(await allocateNrxOwner(db, owner)).toMatchObject({ applied: true, quantity: '6250' });
+    expect((await balance(owner, 'NRX'))!.available.toString()).toBe('6250');
     expect(await balance(owner, 'USDT')).toEqual(usdt);
     expect(await balance(other, 'NRX')).toBeNull();
     expect(await db.demoBalance.count()).toBe(0);
