@@ -288,7 +288,9 @@ async function browserChecks(app, prisma, user, header) {
    assert.equal(await prisma.user.findUnique({where:{id}}),null);
    assert.equal(await page.locator('a[href="/admin/audit-log"]').count(),1,'authorized operator can open the action journal');
    await page.goto(origin+'/admin/users/'+id);
-   await page.getByRole('alert').filter({hasText:'Запись не найдена'}).waitFor({state:'visible'});
+   // A confirmed deleted identity is a missing USER, not the old generic
+   // "record not found" message that also masked missing API routes.
+   await page.getByRole('alert').filter({hasText:'Пользователь не найден.'}).waitFor({state:'visible'});
    assert.equal(new URL(page.url()).pathname,'/admin/users/'+id,'missing user keeps the recoverable error view');
    await page.getByRole('link',{name:'Все пользователи',exact:true}).click();await page.waitForURL(origin+'/admin/users');
    const detailId='detail-'+width;await user(detailId);
