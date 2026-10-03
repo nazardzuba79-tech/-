@@ -75,6 +75,13 @@ it('uses current numeric configuration instead of divergent FAQ literals', () =>
   expect(assistantAnswer('copy_trading_how')).not.toMatch(/автоматически|гарантирован/i);
 });
 
+it('tells the client a deposit from the minimum is credited within 60 minutes (owner, 2026-10-02)', () => {
+  for (const intent of ['deposit_minimum', 'deposit_wait_time'] as const) {
+    expect(assistantAnswer(intent)).toContain('будет зачислен на баланс в течение 60 минут');
+    expect(assistantAnswer(intent)).not.toMatch(/не означает мгновенное зачисление|ещё не означает зачисление/);
+  }
+});
+
 it('describes the manual OTC support enquiry without promising a reservation', () => {
   const answer = assistantAnswer('otc_how');
   expect(answer).toContain('Продолжить в поддержку');
