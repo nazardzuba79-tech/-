@@ -10,9 +10,9 @@ const L = NEURIX.listingAt;
 const scenario = {
   version: 1, from: L + 3 * HOUR_MS + 17 * MINUTE_MS + 2 * TICK_MS,
   firstTargetAt: L + 6 * HOUR_MS + 17 * MINUTE_MS + 2 * TICK_MS,
-  breakoutAt: Date.parse('2026-10-04T05:00:00Z'), secondTargetAt: Date.parse('2026-10-04T11:30:00Z'),
-  rangeEndAt: Date.parse('2026-10-06T11:30:00Z'), selloffEndAt: Date.parse('2026-10-06T17:30:00Z'),
-  endAt: Date.parse('2026-10-17T16:00:00Z'), firstGainPercent: 1247, secondGainPercent: 7217,
+  breakoutAt: Date.parse('2026-10-05T05:00:00Z'), secondTargetAt: Date.parse('2026-10-05T11:30:00Z'),
+  rangeEndAt: Date.parse('2026-10-07T11:30:00Z'), selloffEndAt: Date.parse('2026-10-07T17:30:00Z'),
+  endAt: Date.parse('2026-10-18T16:00:00Z'), firstGainPercent: 1247, secondGainPercent: 7217,
   rangeFraction: .2, selloffFraction: .6,
 };
 const asset = { ...NEURIX, scheduledScenario: scenario };
