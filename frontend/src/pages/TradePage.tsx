@@ -42,6 +42,7 @@ import './trade-terminal/TerminalPremium.css';
 import './trade-terminal/VoltexTerminalSystem.css';
 import './trade-terminal/TerminalMobileParity.css';
 import './trade-terminal/TerminalPreviewPolish.css';
+import './trade-terminal/SpotCfdGraphite.css';
 import { BOOK_REFRESH_MS } from '../lib/bookFreshness';
 import { isManagedListingPair, isTestMarketPair } from '../lib/testMarkets';
 import { isEdgeMarketPair } from '../lib/nrxMarket';
