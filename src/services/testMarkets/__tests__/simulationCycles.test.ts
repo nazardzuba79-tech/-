@@ -304,7 +304,9 @@ describe('ordinary shadows and unaffected simulations', () => {
       .toBe('68a2cb3d3daac12a65878336dcc11996411f3af0c040dbb896d7bd98d20478af');
     expect(NEURIX.cyclicImpulse).toBeUndefined();
     expect(NEURIX.wickBoostFrom).toBeUndefined();
-    const nrx = new TestMarketSimulation(NEURIX);
+    // NRX's base engine; its post-listing wave structure is pinned in simulationWaves.test.ts.
+    const { marketStructure: _waves, ...nrxBase } = NEURIX;
+    const nrx = new TestMarketSimulation(nrxBase);
     expect(sha(nrx.candles5m(NEURIX.listingAt + 3 * DAY_MS - 1)))
       .toBe('747a97405c9d23e806e5a340ac9e11f729ab3210db7c882160bbcce6f490bba8');
     expect(sha(nrx.recentTrades(NEURIX.listingAt + 26 * HOUR_MS + 37_000, 200)))

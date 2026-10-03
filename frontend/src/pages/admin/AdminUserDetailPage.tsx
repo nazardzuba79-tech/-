@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { railDisplay } from './depositRails';
@@ -8,8 +8,8 @@ import { formatLastLoginAt } from './lastLoginLabel';
 import { Skeleton } from '../../components/Skeleton';
 import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { KycSubmissionReview } from './KycSubmissionReview';
-
-type Detail = Awaited<ReturnType<typeof api.getAdminUserDetail>>;
+import { getAdminUserDetailAbortable } from '../../lib/adminReadApi';
+import { useAdminRead } from './useAdminRead';
 
 const KYC_LABEL: Record<string, { text: string; color: string; bg: string }> = {
   NOT_STARTED: { text: 'Не начата', color: 'var(--text-secondary)', bg: 'var(--neutral-dim)' },
@@ -40,7 +40,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
  * покупки, KYC-заявки, плюс ручная корректировка баланса. */
 export function AdminUserDetailPage() {
   const { id = '' } = useParams();
-  const [detail, setDetail] = useState<Detail | null>(null);
+  // Form drafts and mutation receipts belong to one account, never the next route.
+  return <AdminUserDetail key={id} id={id} />;
+}
+
+function AdminUserDetail({ id }: { id: string }) {
+  const { data: detail, error: readError, loading, reload } = useAdminRead(id, signal => getAdminUserDetailAbortable(id, signal));
 
   const [asset, setAsset] = useState('');
   const [amount, setAmount] = useState('');
@@ -58,17 +63,6 @@ export function AdminUserDetailPage() {
   const [demoError, setDemoError] = useState<string | null>(null);
   const [demoSuccess, setDemoSuccess] = useState<string | null>(null);
   const [demoBusy, setDemoBusy] = useState(false);
-
-  function reload() {
-    api
-      .getAdminUserDetail(id)
-      .then(setDetail)
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 404) navigate('/admin/users', { replace: true });
-      });
-  }
-
-  useEffect(reload, [id]);
 
   async function handleAdjust(e: React.FormEvent) {
     e.preventDefault();
@@ -109,6 +103,7 @@ export function AdminUserDetailPage() {
   }
 
   if (!detail) {
+    if (readError) return <div role="alert" style={styles.card}><p>{readError}</p><button onClick={reload}>Повторить</button><Link to="/admin/users">Все пользователи</Link></div>;
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <Skeleton height={100} />
@@ -125,6 +120,8 @@ export function AdminUserDetailPage() {
         ← Все пользователи
       </Link>
       <h1 style={styles.title}>{detail.email}</h1>
+      <button onClick={reload} disabled={loading}>{loading ? 'Обновление…' : 'Обновить'}</button>
+      {readError && <p role="alert">{readError} Показанные данные могли устареть.</p>}
 
       <div className="admin-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         <Section title="Профиль">

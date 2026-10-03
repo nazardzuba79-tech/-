@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { api } from '../../lib/api';
+import { getAdminKycDeliveryAbortable } from '../../lib/adminReadApi';
 import { styles } from './adminStyles';
 import { KycSubmissionReview } from './KycSubmissionReview';
 import { useSearchParams } from 'react-router-dom';
+import { useAdminRead } from './useAdminRead';
 
 type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
 
@@ -11,23 +13,29 @@ type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
  * администратора через Cloudflare KYC edge и на сервер биржи не попадают. */
 export function AdminKycPage() {
   const [searchParams] = useSearchParams();
-  const [clients, setClients] = useState<Client[]>([]);
+  const clientsRead = useAdminRead<Client[]>('kyc-clients', signal => api.getAllClients(signal));
+  const clients = clientsRead.data;
   const [showAll, setShowAll] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('user'));
-  const [delivery, setDelivery] = useState<{ configured: boolean; recipient: string | null } | null>(null);
-  function reload() {
-    api.getAllClients().then(setClients).catch(() => {});
-  }
+  const deliveryRead = useAdminRead('kyc-delivery', getAdminKycDeliveryAbortable);
+  const delivery = deliveryRead.data;
 
-  useEffect(reload, []);
-  useEffect(() => { api.getKycDelivery().then(setDelivery).catch(() => {}); }, []);
-
-  const queue = clients.filter((c) => c.latestKyc && (showAll || c.latestKyc.status === 'PENDING'));
+  const queue = (clients ?? []).filter((c) => c.latestKyc && (showAll || c.latestKyc.status === 'PENDING'));
   const selected = queue.find((c) => c.id === selectedId) ?? queue[0] ?? null;
 
   return (
     <div>
       <h1 style={styles.title}>Верификация (KYC)</h1>
+      <div className="admin-toolbar">
+        <span role="status" style={styles.hint}>
+          {clientsRead.refreshing ? 'Обновляем…' : clientsRead.loading ? 'Загрузка заявок…' : clientsRead.error && clients ? 'Данные устарели' : clientsRead.updatedAt ? `Обновлено в ${new Date(clientsRead.updatedAt).toLocaleTimeString('ru-RU', { timeZone: 'Europe/Kyiv' })} · Europe/Kyiv` : 'Данные не загружены'}
+        </span>
+        <button type="button" style={styles.neutralBtn} disabled={clientsRead.loading || clientsRead.refreshing} onClick={() => { clientsRead.reload(); deliveryRead.reload(); }}>Обновить</button>
+      </div>
+      {clientsRead.error && <div role="alert" style={{ ...styles.errorBox, marginBottom: 16 }}>
+        Не удалось загрузить заявки. {clients ? 'Показан последний загруженный список; данные могут быть устаревшими.' : 'Проверьте соединение и повторите загрузку.'}
+      </div>}
+      {deliveryRead.error && <p role="status" style={styles.hint}>Не удалось проверить настройку доставки документов.</p>}
 
       {delivery && (
         <div
@@ -39,8 +47,8 @@ export function AdminKycPage() {
         >
           <span style={{ fontSize: 13, color: delivery.configured ? 'var(--text-primary)' : 'var(--sell)' }}>
             {delivery.configured
-              ? <>Документы новых заявок приходят на почту <b>{delivery.recipient}</b> через Cloudflare — через сервер биржи они не проходят и здесь не хранятся.</>
-              : <>KYC-шлюз Cloudflare сейчас недоступен — пока он не заработает, новые заявки не принимаются.</>}
+              ? <>Отправка документов настроена на <b>{delivery.recipient}</b> через Cloudflare. Настройка не подтверждает доставку конкретного письма.</>
+              : <>Отправка документов через Cloudflare не настроена. Состояние доставки конкретной заявки проверяйте отдельно.</>}
           </span>
         </div>
       )}
@@ -72,11 +80,11 @@ export function AdminKycPage() {
             >
               <span style={{ fontWeight: 600, fontSize: 13 }}>{c.email}</span>
               <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-                {c.latestKyc && new Date(c.latestKyc.createdAt).toLocaleString('ru-RU')} · {c.latestKyc?.status}
+                {c.latestKyc && new Date(c.latestKyc.createdAt).toLocaleString('ru-RU', { timeZone: 'Europe/Kyiv' })} · {c.latestKyc?.status === 'PENDING' ? 'Ожидает проверки' : c.latestKyc?.status === 'APPROVED' ? 'Одобрена' : c.latestKyc?.status === 'REJECTED' ? 'Отклонена' : 'Неизвестный статус'}
               </span>
             </button>
           ))}
-          {queue.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Заявок нет.</p>}
+          {clients !== null && !clientsRead.error && queue.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Заявок нет.</p>}
         </div>
 
         <div style={styles.card}>
@@ -86,7 +94,7 @@ export function AdminKycPage() {
             <KycSubmissionReview
               submission={selected.latestKyc}
               email={selected.email}
-              onReviewed={() => { setSelectedId(null); reload(); }}
+              onReviewed={() => { setSelectedId(null); clientsRead.reload(); }}
             />
           )}
         </div>

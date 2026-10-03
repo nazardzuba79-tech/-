@@ -6,17 +6,18 @@ import { invalidateSpendableBalances } from '../../lib/balanceInvalidation';
 
 const directory = cities as Record<string,{id:string;name:string;timezone:string}[]>;
 export function cashCity(row: Pick<CashSummary,'country'|'cityId'>) { return directory[row.country]?.find(c=>c.id===row.cityId); }
-export function CashList({ admin = false, onOpen }: { admin?: boolean; onOpen: (id:string)=>void }) {
+export function CashList({ admin = false, active = true, onOpen }: { admin?: boolean; active?: boolean; onOpen: (id:string)=>void }) {
   const [rows,setRows]=useState<CashSummary[]>([]),[page,setPage]=useState(0),[more,setMore]=useState(false);
   const [filter,setFilter]=useState(''),[applied,setApplied]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(true),[revision,setRevision]=useState(0);
   useEffect(()=>{
-    let active=true;setBusy(true);setError('');
+    if (!active) return;
+    let alive=true;setBusy(true);setError('');
     const base=admin?'/admin/otc':'/otc/requests';
     cashRequest<{rows:CashSummary[];hasMore:boolean}>(`${base}?page=${page}${applied?`&status=${applied}`:''}`)
-      .then(data=>{if(active){setRows(data.rows);setMore(data.hasMore);}})
-      .catch(e=>{if(active)setError(cashError(e));}).finally(()=>{if(active)setBusy(false);});
-    return()=>{active=false;};
-  },[admin,page,applied,revision]);
+      .then(data=>{if(alive){setRows(data.rows);setMore(data.hasMore);}})
+      .catch(e=>{if(alive)setError(cashError(e));}).finally(()=>{if(alive)setBusy(false);});
+    return()=>{alive=false;};
+  },[admin,page,applied,revision,active]);
   return <section className="otc-cash-panel" aria-label={admin?'OTC-заявки':'Мои заявки'}>
     <div className="otc-cash-row"><h2>{admin?'OTC-заявки':'Мои заявки'}</h2><button onClick={()=>setRevision(x=>x+1)} disabled={busy}>Обновить</button></div>
     {admin&&<form className="otc-cash-row" onSubmit={e=>{e.preventDefault();setApplied(filter);setPage(0);setRevision(x=>x+1);}}>
