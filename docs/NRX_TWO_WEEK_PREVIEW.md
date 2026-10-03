@@ -20,13 +20,13 @@ All percentage targets use the original listing price, **0.80 USDT**, as their r
 
 | Boundary | UTC | Europe/Kyiv | Target |
 | --- | --- | --- | --- |
-| Schedule start | 2026-10-03 16:00 | 2026-10-03 19:00 | Preserved previous canonical price |
-| First target | 2026-10-03 18:48 | 2026-10-03 21:48 | 10.776 USDT, +1,247% from listing |
-| Breakout starts | 2026-10-04 05:00 | 2026-10-04 08:00 | 10.776 USDT |
-| Second target | 2026-10-04 11:30 | 2026-10-04 14:30 | 58.536 USDT, +7,217% from listing |
-| Upper range ends | 2026-10-06 11:30 | 2026-10-06 14:30 | 58.536 USDT |
-| Selloff ends | 2026-10-06 17:30 | 2026-10-06 20:30 | 23.4144 USDT, −60% from second target |
-| Review ends | 2026-10-17 16:00 | 2026-10-17 19:00 | End of the fourteen-day review window |
+| Schedule start | 2026-10-04 16:00 | 2026-10-04 19:00 | Preserved previous canonical price |
+| First target | 2026-10-04 18:48 | 2026-10-04 21:48 | 10.776 USDT, +1,247% from listing |
+| Breakout starts | 2026-10-05 05:00 | 2026-10-05 08:00 | 10.776 USDT |
+| Second target | 2026-10-05 11:30 | 2026-10-05 14:30 | 58.536 USDT, +7,217% from listing |
+| Upper range ends | 2026-10-07 11:30 | 2026-10-07 14:30 | 58.536 USDT |
+| Selloff ends | 2026-10-07 17:30 | 2026-10-07 20:30 | 23.4144 USDT, −60% from second target |
+| Review ends | 2026-10-18 16:00 | 2026-10-18 19:00 | End of the fourteen-day review window |
 
 The owner-corrected range is approximate, not a hard ±20% boundary. Volatility varies around 7–20%, the center drifts, and occasional actual tick-price excursions can carry candle bodies or wicks beyond that reference before recovering. OHLC values are not clipped to the reference. The preview axis is explicitly UTC; phase captions use Europe/Kyiv. Phase views use the canonical snapshot as of the phase endpoint, including a partial final candle where the endpoint does not align with the chosen interval.
 
