@@ -7,7 +7,7 @@ import ts from 'typescript';
  * THE OVERVIEW: the approved design, for every account, on that account's
  * own figures.
  *
- *   1. the Super VIP mark belongs to the owner's Cross account and to no
+ *   1. the Supreme VIP mark belongs to the owner's Cross account and to no
  *      other — an ordinary ledger gets no tier badge at all;
  *   2. an empty ordinary account renders the same layout with real zeros
  *      where the server said zero and dashes where it said nothing;
@@ -98,12 +98,12 @@ const period = (available: boolean, absolutePnl: number | null = null, percent: 
 const noHistory = { periods: Object.fromEntries(PERIODS.map((p) => [p, period(false)])), ageDays: 0, startedOn: null };
 
 const CROSS = {
-  mode: 'CROSS', collateralUsd: 1000000, walletEquityUsd: 1000250.5, totalEquityUsd: 800250.5, availableUsd: 900000, unrealizedPnlUsd: 250.5,
+  mode: 'CROSS', clientTier: 'SUPREME_VIP', collateralUsd: 1000000, walletEquityUsd: 1000250.5, totalEquityUsd: 800250.5, availableUsd: 900000, unrealizedPnlUsd: 250.5,
   initialMarginUsd: 356.89, maintenanceMarginUsd: 66.81, orderReserveUsd: 0, initialMarginRatio: 0.0005,
   maintenanceMarginRatio: 0.00006, spotUsd: null, futuresUsd: null, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
 };
 const EMPTY_SPOT = {
-  mode: 'SPOT', collateralUsd: 0, totalEquityUsd: 0, availableUsd: null, unrealizedPnlUsd: null, initialMarginUsd: null,
+  mode: 'SPOT', clientTier: null, collateralUsd: 0, totalEquityUsd: 0, availableUsd: null, unrealizedPnlUsd: null, initialMarginUsd: null,
   maintenanceMarginUsd: null, orderReserveUsd: null, initialMarginRatio: null, maintenanceMarginRatio: null,
   spotUsd: 0, futuresUsd: 0, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
 };
@@ -114,7 +114,7 @@ const plain = (markup: string) => markup.replace(/[  ]/g, ' ');
 const html = (props: Record<string, unknown>) => plain(renderToStaticMarkup(overviewModule().WalletOverview({ ...base, ...props } as any)));
 const headline = (out: string) => /class="num wallet-overview-amount">([^<]*)</.exec(out)![1];
 
-describe('1. the Super VIP mark', () => {
+describe('1. the Supreme VIP mark', () => {
   it('is on the owner Cross account, with its crown', () => {
     const out = html({ account: CROSS, overview: EMPTY_OVERVIEW, performance: noHistory, btcEquivalent: 10.0025 });
     expect(out).toContain('data-tier="super-vip"');
@@ -122,18 +122,21 @@ describe('1. the Super VIP mark', () => {
     expect(out).toContain('data-icon="CrownIcon"');
   });
 
-  it('is on NO other account — an ordinary ledger has no tier and gets no badge', () => {
+  it('is on NO other account — including a Cross test account without a server tier', () => {
     const spot = html({ account: EMPTY_SPOT, overview: EMPTY_OVERVIEW, performance: noHistory, btcEquivalent: 0 });
     expect(spot).not.toContain('data-tier=');
     expect(spot).not.toContain('wallet.superVip');
+    const testCross = html({ account: { ...CROSS, clientTier: null }, overview: EMPTY_OVERVIEW, performance: noHistory, btcEquivalent: 10 });
+    expect(testCross).not.toContain('data-tier=');
+    expect(testCross).not.toContain('wallet.superVip');
     const unknown = html({ account: null, overview: null, performance: null, btcEquivalent: null });
     expect(unknown).not.toContain('data-tier=');
   });
 
-  it('is decided by the account mode alone — no user, e-mail or role is read', () => {
+  it('is decided only by the server tier — no user, e-mail, role or mode inference', () => {
     const source = read(wallet + 'TierBadge.tsx');
-    expect(source).toContain("mode !== 'CROSS') return null");
-    expect(source).not.toMatch(/email|role|isAdmin|userId|localStorage/i);
+    expect(source).toContain("tier !== 'SUPREME_VIP') return null");
+    expect(source).not.toMatch(/email|role|isAdmin|userId|localStorage|mode\s*!==/i);
   });
 });
 
