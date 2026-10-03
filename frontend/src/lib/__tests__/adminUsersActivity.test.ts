@@ -19,8 +19,8 @@ test('the bounded server page controls ordering; no unbounded users/history read
 test('compact user KPIs remain global and never sum different queue units', async () => {
   await f.mount();
   const cards = Array.from(attention().querySelectorAll('.admin-users-kpi'));
-  expect(cards.map(card => card.querySelector('strong')?.textContent)).toEqual(['1000', '7', '5']);
-  expect(cards.map(card => card.querySelector('span')?.textContent)).toEqual(['Всего пользователей', 'Новые за 24 часа', 'Ожидают KYC']);
+  expect(cards.map(card => card.querySelector('strong')?.textContent)).toEqual(['1000', '2', '5']);
+  expect(cards.map(card => card.querySelector('span')?.textContent)).toEqual(['Всего пользователей', 'Пополнения', 'Ожидают KYC']);
   expect(f.host.querySelector('.admin-attention-grid')).toBeNull();
   expect(f.host.querySelector('[data-credit-user]')).toBeNull();
 });
@@ -32,7 +32,9 @@ test('existing password values and unavailable markers remain unchanged in deskt
 });
 test('Users has no duplicated financial queue cards or financial submit actions', async () => {
   await f.mount();
-  expect(attention().querySelector('a[href^="/admin/deposits"]')).toBeNull();
+  // Owner (2026-10-03): one deposits card returns as plain navigation (with the copy bell), never a credit action.
+  expect(attention().querySelectorAll('a[href^="/admin/deposits"]')).toHaveLength(1);
+  expect(attention().querySelector('a[href^="/admin/deposits"] button')).toBeNull();
   expect(attention().querySelector('a[href^="/admin/withdrawals"]')).toBeNull();
   expect(f.host.querySelector('[data-confirm-credit]')).toBeNull();
   expect(f.fetcher.mock.calls.filter((c: any[]) => c[1]?.method === 'POST')).toHaveLength(0);
@@ -55,7 +57,7 @@ test('search is debounced, server filters/sort stay in the URL, and search reset
   expect(query().get('page')).toBe('3');
   await f.setValue(f.host.querySelector('[aria-label="Поиск пользователей"]')!, 'payer');
   await tick(249); expect(f.api.getAdminUsersPage).toHaveBeenCalledTimes(1);
-  await tick(1); expect(Object.fromEntries(query())).toEqual({ page: '1', pageSize: '20', search: 'payer', status: 'blocked', sort: 'lastLoginAt', direction: 'asc' });
+  await tick(1); expect(Object.fromEntries(query())).toEqual({ page: '1', pageSize: '20', search: 'payer', status: 'blocked', sort: 'lastLoginAt', direction: 'desc' });
   expect(f.host.querySelector('[data-location]')?.textContent).toContain('search=payer');
   await f.setValue(f.host.querySelector('[aria-label="Фильтр пользователей"]')!, 'kyc-pending');
   expect(query().get('status')).toBe('kyc-pending');
@@ -73,7 +75,7 @@ test('late page A is aborted and cannot replace page B after filtering', async (
   f.api.getAdminUsersPage.mockImplementationOnce(() => new Promise(done => { finish = done; })); await f.mount();
   const signal = f.api.getAdminUsersPage.mock.calls[0][1];
   f.api.getAdminUsersPage.mockResolvedValue(page([user('current')]));
-  await f.setValue(f.host.querySelector('[aria-label="Фильтр пользователей"]')!, 'blocked');
+  await f.setValue(f.host.querySelector('[aria-label="Фильтр пользователей"]')!, 'kyc-pending');
   await act(async () => { finish(page([user('stale')])); await flush(); });
   expect(signal.aborted).toBe(true); expect(f.rows()).toEqual(['current']);
 });
@@ -108,9 +110,75 @@ test('a hung summary read is aborted at 15 seconds and settles to an error', asy
   expect(signal.aborted).toBe(true); expect(attention().querySelector('[role="status"]')).not.toBeNull();
   expect(attention().textContent).not.toContain('Загрузка…');
 });
+test('owner layout: no refresh line, result count or raw ID in the list; search still accepts an ID', async () => {
+  const id = 'e77f33fa-7e3b-4741-a805-d9a22b5703b7';
+  f.api.getAdminUsersPage.mockResolvedValue(page([user(id, { email: 'purposeful@example.invalid' })])); await f.mount();
+  expect(f.rows()).toEqual([id]);
+  expect(f.host.querySelector('.admin-read-status')).toBeNull();
+  expect(f.host.querySelector('.admin-result-count')).toBeNull();
+  for (const text of ['Обновлено:', 'Найдено:', 'Последний вход показывает', 'Email / ID']) expect(f.host.textContent).not.toContain(text);
+  expect(f.host.querySelector(`[data-user-row="${id}"]`)?.textContent).toContain('purposeful@example.invalid');
+  expect(f.host.querySelector(`[data-user-row="${id}"]`)?.textContent).not.toContain(id);
+  expect(f.host.querySelector(`[data-user-card="${id}"]`)?.textContent).not.toContain(id);
+  expect(f.host.querySelector('[aria-label="Поиск пользователей"]')?.getAttribute('placeholder')).toBe('Email или ID пользователя');
+});
+test('the filter offers no account-status options (owner, 2026-10-03)', async () => {
+  await f.mount();
+  const options = Array.from(f.host.querySelectorAll('[aria-label="Фильтр пользователей"] option')).map(o => (o as HTMLOptionElement).value);
+  expect(options).toEqual(['all', 'new', 'kyc-pending']);
+  expect(f.host.querySelector('details')).toBeNull();
+  expect(f.button('Удалить')?.getAttribute('aria-label')).toBe('Удалить аккаунт');
+});
+test('owner layout: НОВЫЙ beside the email for 24 hours, short dates, KYC pill or dash, no direction control', async () => {
+  jest.useFakeTimers({ now: Date.parse('2026-10-03T16:00:00Z'), doNotFake: ['queueMicrotask'] });
+  f.api.getAdminUsersPage.mockResolvedValue(page([
+    user('fresh', { createdAt: '2026-10-03T09:00:00Z', lastLoginAt: '2026-10-03T14:56:37Z', kycStatus: 'APPROVED' }),
+    user('day-old', { createdAt: '2026-10-02T15:59:00Z', lastLoginAt: '2026-10-02T09:05:00Z', kycStatus: 'NOT_STARTED' }),
+    user('older', { createdAt: '2026-09-28T14:56:27Z', lastLoginAt: '2026-09-30T07:22:28Z', kycStatus: 'PENDING' }),
+  ])); await f.mount();
+  const row = (id: string) => f.host.querySelector(`[data-user-row="${id}"]`)!;
+  const cells = (id: string) => Array.from(row(id).querySelectorAll('td')).map(td => td.textContent);
+  expect(row('fresh').querySelector('[data-event="new"]')?.textContent).toBe('НОВЫЙ');
+  expect(row('day-old').querySelector('[data-event="new"]')).toBeNull();
+  expect(f.host.querySelector('[data-user-card="fresh"] [data-event="new"]')).not.toBeNull();
+  expect(cells('fresh').slice(2, 5)).toEqual(['03.10.2026', 'Сегодня, 17:56', 'Подтверждена']);
+  expect(cells('day-old').slice(2, 5)).toEqual(['02.10.2026', 'Вчера, 12:05', '—']);
+  expect(cells('older').slice(2, 5)).toEqual(['28.09.2026', '30.09.2026, 10:22', 'На проверке']);
+  expect(row('fresh').querySelector('.admin-kyc-approved')).not.toBeNull();
+  expect(row('day-old').querySelector('.admin-kyc')).toBeNull();
+  expect(f.host.querySelector('[aria-label="Порядок сортировки"]')).toBeNull();
+  expect(f.host.textContent).not.toContain('По убыванию');
+  expect(attention().textContent).not.toContain('Новые за 24 часа');
+  expect(query().get('direction')).toBe('desc');
+});
+test('sorting by email reads A→Z without a direction control', async () => {
+  await f.mount('AdminUsersPage', '/admin/users?sort=lastLoginAt&direction=asc');
+  expect(query().get('direction')).toBe('desc');
+  await f.setValue(f.host.querySelector('[aria-label="Сортировка пользователей"]')!, 'email');
+  expect(query().get('sort')).toBe('email'); expect(query().get('direction')).toBe('asc');
+});
+test('the deposits card rings when an address copy waits for review and opens the copy journal', async () => {
+  f.fetcher.mockImplementation(async (url: string) => String(url).endsWith('/admin/work-summary') ? json(workSummary())
+    : String(url).includes('/admin/deposit-address-copies') ? json({ asOf: '2026-10-03T09:00:00Z', items: [{ id: 'copy-1' }], nextCursor: null }) : json({ error: 'unexpected' }, 404));
+  await f.mount();
+  const card = attention().querySelector('a.admin-users-kpi') as HTMLAnchorElement;
+  expect(card.querySelector('span')?.textContent).toBe('Пополнения');
+  expect(card.querySelector('[data-copy-tab-bell]')).not.toBeNull();
+  expect(card.getAttribute('href')).toBe('/admin/deposits#copies');
+  expect(f.calls('/admin/deposit-address-copies')).toHaveLength(1);
+  expect(f.calls('/admin/deposit-address-copies')[0][1]?.method ?? 'GET').toBe('GET');
+});
+test('no bell without a waiting copy, and a failed copy check never invents one', async () => {
+  await f.mount();
+  const card = attention().querySelector('a.admin-users-kpi') as HTMLAnchorElement;
+  expect(card.querySelector('[data-copy-tab-bell]')).toBeNull();
+  expect(card.getAttribute('href')).toBe('/admin/deposits');
+  expect(f.host.querySelector('.admin-users-workspace [role="alert"]')).toBeNull();
+});
 test('user list failure offers retry; a same-turn double click starts one read', async () => {
   f.api.getAdminUsersPage.mockRejectedValueOnce(new Error('unavailable')); await f.mount();
   let answer!: (value: any) => void; f.api.getAdminUsersPage.mockImplementation(() => new Promise(done => { answer = done; }));
+  expect(f.host.querySelector('.admin-read-status [role="alert"]')).not.toBeNull();
   const retry = f.button('Повторить') as HTMLButtonElement;
   await act(async () => { retry.click(); retry.click(); await flush(); }); expect(f.api.getAdminUsersPage).toHaveBeenCalledTimes(2);
   await act(async () => { answer(page([user('recovered')])); await flush(); }); expect(f.rows()).toEqual(['recovered']);
