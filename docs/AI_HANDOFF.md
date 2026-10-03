@@ -5459,3 +5459,43 @@ A Cross trading account's balance is NOT reduced by a request or by «Отпра
 - Remaining release gates: exact-head remote CI, full build, live subscription and collector/API verification on the isolated Hetzner candidate, then owner-authorized merge and post-merge readiness. No DNS cutover or Render/Neon changes authorized.
 - Concurrent main integration: PR #390 merged as b46dae42e7e7af589e1bc5727984ebe3477a3aa8 during validation. Ordinary merge preserves its five admin deposit-copy files; Deriv fix is unchanged. Before integration, backend/collector builds, 24 collector tests, live integer-ID subscriptions (11 symbols), 42 API checks, five stop/start/forced-stop scenarios, financial-copy integrity and HTTPS passed on the isolated candidate. Repeat exact-head CI and candidate validation on the integrated head before merging.
 - Live-stream QA cleanup, code a601d80620ee5df697a2d38fe38e44051022a12c: the fixed subscriptions exposed a pre-existing missing shutdown path in the disposable browser host. CI logged all four browser scenarios passing with zero findings/writes at 16:57:34 UTC, then stayed alive on the WebSocket until explicitly cancelled at 17:07:41. Export a route-owned display-feed stop hook and call it from the QA host's finally block; no provider selection or financial route behavior changes. The host cleanup regression fails before the hook and passes after; 11 request-ID/cleanup/shutdown tests pass. CI must be green on the new head; a cancelled run is not counted as a pass.
+
+## Claude — 2026-10-03 — Spot market list: «7д %» column
+
+- Owner request: in the Spot terminal's left market list (`PairListSidebar`), add a third column after «Цена» and «24ч %». Requirements:
+  - «7д %» from the same verified source as the Futures list, not the old rankings + sparkline payload;
+  - sortable both ways;
+  - unknown = «—»;
+  - green/red, ±0.00%;
+  - 24h, price and Futures unchanged;
+  - 240–340px resize kept.
+- Base: main `7cb2ac05`; branch `claude/peaceful-volta-h5zw7g-spot-7d`.
+- Source: `lib/change7d.ts` (pure) + `lib/useChange7d.ts` (hook).
+  - It is FuturesPairList's rule: the catalogue's `market.changePercent7d`, one ref-counted request per tab, ambiguous or colliding tickers refused.
+  - Futures keeps its own identical copy, untouched. `cryptoCatalogue.test.ts` pins that both apply the same exclusion.
+  - The week is the asset's USD return, so only USD/USDT/USDC pairs show it; EUR/BTC/ETH-quoted rows read «—».
+- Material files:
+  - `PairListSidebar.tsx`: the third header and cell; `change7d_desc`/`_asc` sort modes; `data-compact` on long % values.
+  - `pairList.ts`: `change7d` sort field, unknown last both ways, ties on pair name.
+  - `marketColumnSort.ts`: made generic over the field; CFD usage unchanged.
+  - `SpotMarketControls.css`: shared track variables for header and rows; container bands ≥300 / 250–299 / <250 (no logo); ellipsis instead of overlap.
+  - Tests: new `spotPairList7d.test.ts`, which mounts the real hook in JSDOM: render, null, sort, independence, width math.
+  - `spotPairList.test.ts`: harness allowance.
+  - `cryptoCatalogue.test.ts`: the byte pins of `pairList.ts`/`PairListSidebar.tsx` replaced by a semantic guard — rows still come only from the ticker feed.
+  - New `scripts/qa-spot-market-7d.cjs` + `.github/workflows/spot-market-7d.yml`; `docs/qa/spot-market-7d/`.
+- Preserved:
+  - 24h computation and sort;
+  - price formatting;
+  - the 4s ticker store;
+  - favourites;
+  - resize bounds 240/340 and default 258;
+  - FuturesPairList and its guards;
+  - backend untouched.
+- Checks run:
+  - `tsc -b`, Vite build;
+  - full frontend Jest (`jest frontend/src`): 198 suites, 3,446 passed, 0 failed, 0 skipped;
+  - `scripts/qa-spot-market-7d.cjs`: PASS at 1920/1440/1366 × panel 240/250/258/300/340;
+  - `scripts/qa-spot-cfd-terminal.cjs`: exit 0 (its token notes are pre-existing);
+  - a scratch phone check at 390: three columns, no page overflow.
+- Known: a sub-satoshi price (e.g. 0.000000123456, 77px) cannot fit any price column at these widths. On main it overflowed the 76px column; now it ends in «…» with the full value in its title.
+- The Spot page now subscribes to the shared catalogue: one `/market/assets` request per tab, refreshed every 10 minutes, the same request Markets and the Futures 7d sort use.
