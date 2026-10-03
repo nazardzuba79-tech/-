@@ -15,10 +15,11 @@
 .listing-lab .listing-lab-result h3 { margin:8px 0 0; font-size:16px; }
 .listing-lab .listing-lab-result p { margin:0; }
 .listing-lab .listing-lab-intervals { display:flex; flex-wrap:wrap; gap:8px; }
-.listing-lab .listing-lab-intervals button[aria-pressed=true] { border-color:#d4b249; color:#efd57b; }
+/* Scoped overrides: the shared light-admin theme styles generic buttons with !important. */
+.listing-lab .listing-lab-intervals button[aria-pressed=true] { background:#fff4cd !important; border-color:#b88b12 !important; color:#714f00 !important; font-weight:700; }
 .listing-lab .listing-lab-progress input { width:100%; }
 .listing-lab .listing-lab-chart-scroll { max-width:100%; min-width:0; overflow-x:auto; border-radius:8px; border:1px solid #d9d8d3; }
 .listing-lab .listing-lab-chart-scroll svg { display:block; max-width:none; }
-.listing-lab .listing-lab-error { color:#ffa4a4; line-height:1.5; }
+.listing-lab .listing-lab-error { color:#b42318; line-height:1.5; }
 .listing-lab .listing-lab-reset { font-size:12px; }
 @media(max-width:640px) { .listing-lab { padding:12px; } .listing-lab .listing-lab-form { grid-template-columns:minmax(0,1fr); } }
