@@ -5567,3 +5567,8 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
     - `bcryptAuthRegression` memory store gains `session.updateMany`, plus a check that the changing device stays signed in.
   - Local full `jest`: 9 failed in 5 suites. Four suites fail identically on clean main `7d9ee6fc` here: CfdMarketDataService, CanonicalSourcePreservation, ProviderFailureMatrix, LiveFinancialIsolation. The fifth, `vtaNativeCoexistence.pg`, needs a PG URL.
   - `scripts/qa-admin-gate.cjs` fails at «idle defers hourly read → failed wake» identically on clean main, so it was not changed here.
+- CI follow-up 2:
+  - `scripts/test-otc-cutover-postgres.cjs` (Codex's historical #372 evidence) asserted that the ONLY migration newer than its base is the OTC one, so any later additive migration failed it. The cutover window is now limited to migrations ≤ `20261001000000_otc_cash_requests`; the assertion within that window is unchanged.
+    - Local run with system PostgreSQL 16 (not the embedded binary, which needs libicu60): 21/21 scenarios PASS.
+  - `scripts/qa-copy-last-good-browser.cjs`: the read-only QA server now answers `POST /api/v1/auth/logout` and requires exactly one, during the logout phase. Every other write is still a finding.
+    - Local run: findings `[]`.
