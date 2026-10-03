@@ -24,7 +24,11 @@ exports.run = async ({ origin, out, state, users, variant }) => {
     page.on('pageerror', error => report.errors.push(error.message));
     page.on('console', message => {
       if (message.type() !== 'error') return;
-      if (/^Loading the stylesheet 'https:\/\/fonts\.googleapis\.com\/.+ violates the following Content Security Policy/.test(message.text())) { report.blockedFontStyles.push(message.text()); return; }
+      // Chromium wording varies by platform ("Loading..." vs "Refused to load...").
+      // Ignore only the known Google Fonts stylesheet CSP diagnostic; every
+      // other console error remains a hard failure below.
+      const text = message.text();
+      if (/stylesheet/i.test(text) && /https:\/\/fonts\.googleapis\.com\//i.test(text) && /Content Security Policy/i.test(text)) { report.blockedFontStyles.push(text); return; }
       if (state.backend === 'legacy' && /Failed to load resource.*404/.test(message.text())) return;
       if (Object.keys(state.failures).length && /Failed to load resource.*50[03]/.test(message.text())) return;
       report.consoleErrors.push(message.text());
