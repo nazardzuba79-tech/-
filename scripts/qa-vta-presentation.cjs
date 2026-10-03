@@ -6,6 +6,14 @@ const assert = require('node:assert/strict');
 const { createRequire } = require('node:module');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 const root = path.resolve(__dirname, '..');
+// Spot now uses the released Futures CTA finish; side tabs retain their
+// existing selected-side colour. Read the source of truth, not old RGBs.
+const futuresStyle = fs.readFileSync(path.join(root, 'frontend/src/pages/trade-terminal/ArchiveTerminalPreview.css'), 'utf8');
+const ctaFill = Object.fromEntries(['buy','sell'].map(side => {
+  const fill = [...futuresStyle.matchAll(new RegExp(`\\.fo-submitPair \\.${side} \\{ background:(#[0-9a-f]+);`, 'g'))].at(-1)?.[1];
+  assert(fill, `Missing released Futures ${side} colour`);
+  return [side,fill];
+}));
 const out = process.env.QA_OUT || path.join(root, 'output/vta-presentation');
 fs.mkdirSync(out, { recursive: true });
 const source = fs.readFileSync(path.join(__dirname, 'qa-spot-cfd-terminal.cjs'), 'utf8').split('const DESKTOP =')[0];
@@ -81,21 +89,23 @@ const asset = { pair: 'VTA/USDT', symbol: 'VTA', name: 'VOLTORA', quote: 'USDT',
       if (width === 390) await page.locator('#mobile-trade-trade').click();
       for (const side of ['buy', 'sell']) {
         await page.locator(`.order-form-tab.${side}`).click();
-        await page.waitForFunction(side => {
+        await page.waitForFunction(({side,fill}) => {
           const tab = document.querySelector(`.order-form-tab.${side}.active`);
           if (!tab) return false;
           const probe = document.createElement('span'); probe.style.color = `var(--color-${side})`; tab.append(probe);
-          const standard = getComputedStyle(probe).color; probe.remove();
+          const standard = getComputedStyle(probe).color;
+          probe.style.color = fill; const expectedCta = getComputedStyle(probe).color; probe.remove();
           const cta = document.querySelector(`.submit-btn.${side}`);
-          return getComputedStyle(tab).backgroundColor === standard && cta && getComputedStyle(cta).backgroundColor === standard;
-        }, side);
-        const colours = await page.evaluate(side => {
+          return getComputedStyle(tab).backgroundColor === standard && cta && getComputedStyle(cta).backgroundColor === expectedCta;
+        }, {side,fill:ctaFill[side]});
+        const colours = await page.evaluate(({side,fill}) => {
           const tab = document.querySelector(`.order-form-tab.${side}.active`), cta = document.querySelector(`.submit-btn.${side}`);
           const probe = document.createElement('span'); probe.style.color = `var(--color-${side})`; tab.append(probe);
-          const standard = getComputedStyle(probe).color; probe.remove();
-          return { tab: getComputedStyle(tab).backgroundColor, cta: getComputedStyle(cta).backgroundColor, standard };
-        }, side);
-        assert.equal(colours.tab, colours.standard); assert.equal(colours.cta, colours.standard);
+          const standard = getComputedStyle(probe).color;
+          probe.style.color = fill; const expectedCta = getComputedStyle(probe).color; probe.remove();
+          return { tab: getComputedStyle(tab).backgroundColor, cta: getComputedStyle(cta).backgroundColor, standard, expectedCta };
+        }, {side,fill:ctaFill[side]});
+        assert.equal(colours.tab, colours.standard); assert.equal(colours.cta, colours.expectedCta);
       }
       await page.screenshot({ path: path.join(out, `vta-sell-${width}.png`), fullPage: true });
       assert.deepEqual(writes, []); assert.deepEqual(errors, []);
