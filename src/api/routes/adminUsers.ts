@@ -10,6 +10,7 @@ import { DemoTradingService, DemoTradingError } from '../../services/DemoTrading
 import { decryptAdminPassword } from '../../services/AdminPasswordVault';
 import { latestDepositCopiesForUsers } from '../../services/deposits/latestDepositCopiesForUsers';
 import { adminPagedReadsRouter } from './adminPagedReads';
+import { adminBalanceAdjustmentsRouter } from './adminBalanceAdjustments';
 
 /**
  * Admin's customer list — the registration data,
@@ -20,6 +21,7 @@ import { adminPagedReadsRouter } from './adminPagedReads';
 export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingService, deletion?: AdminUserDeletionService): Router {
   const router = Router();
   router.use(adminPagedReadsRouter(prisma));
+  router.use(adminBalanceAdjustmentsRouter(prisma));
   const balanceAdjustments = new BalanceAdjustmentService(prisma);
 
   router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (req: AuthedRequest, res) => {
