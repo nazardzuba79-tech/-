@@ -63,7 +63,7 @@ async function screenshot(page, name) {
           overview: { available: false, reason: 'fixture' }, sentiment: { available: false, reason: 'fixture' },
         });
         if (p === '/api/v1/me') return json({ id: 'owner-fixture', email: 'owner@example.invalid', role: 'ADMIN', isAdmin: true, kycStatus: 'APPROVED' });
-        if (p === '/api/v1/balances') return json([{ asset: 'NRX', available: '31250', locked: '0' }, { asset: 'USDT', available: '1000', locked: '0' }]);
+        if (p === '/api/v1/balances') return json([{ asset: 'NRX', available: '6250', locked: '0' }, { asset: 'USDT', available: '1000', locked: '0' }]);
         if (p === '/api/v1/market/external/tickers') return json({ tickers: [{ pair: 'BTC/USDT', lastPrice: '65000', bidPrice: '64999', askPrice: '65001', high24h: '66000', low24h: '64000', volume24h: '100', quoteVolume24h: '6500000', changePercent24h: '1.2' }] });
         if (p === '/api/v1/market/external/symbols') return json({ symbols: ['BTC/USDT'] });
         if (p === '/api/v1/market/pairs') return json([{ pair: 'BTC/USDT', base: 'BTC', quote: 'USDT' }]);
