@@ -5520,3 +5520,12 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
 - Evidence and limitations: docs/qa/futures-proportions/README.md. Five unrelated Windows path-scanner failures reproduced on untouched baseline; exact-head Linux CI remains the publication gate. No merge/deploy authorized for this task.
 - Owner follow-up: corrected Futures header crowding in the existing laptop tier without changing menu structure. Rendered gaps increase from4px to13–16px; all visible dropdowns, text clipping and account overlap checked at1920/1664/1600/1550/1531/1440 plus1366/390 mobile patterns. Zero violations; all six Spot control screenshots remain byte-identical.
 - Header guard run:143 tests/8 suites pass. Evidence includes header crops and additional1531/1550 breakpoint reports. PR #397 remains review-only; the existing Cloudflare integration auto-creates a branch preview, with production unchanged.
+
+## Codex — 2026-10-03 — Spot listings audit (review only)
+
+- Code commit: `608b71db778781fa7c031142f4baec6bb2e7b802`; base current main `7d9ee6fc6bfe76badaac680313e9728e5abd3550`; branch `codex/spot-listings-audit`.
+- Corrected ambiguous/nonexistent listing wall time, server calendar/IANA validation, unconfirmed/foreign admin receipts; added local ticker/publication-state filters. Expanded local QA to four viewports and disposable NRX/managed/VTA databases.
+- Preserved financial execution, ledgers, simulation histories, navigation, Spot 7-day column, Futures design, Russian copy and private ten-scenario lab. No production access/writes, merge or deploy.
+- Local bounded test groups: 399 passing tests including 41 disposable PostgreSQL and 13 real workerd tests. Backend/frontend types and production bundle pass (existing large-chunk warning). Browser 20-check lifecycle passes, including no-reload launch and four widths; final receipt hardening is additionally unit-tested and requires exact-head CI.
+- Full trace, reproductions and limitations: `docs/qa/SPOT_LISTINGS_AUDIT.md`. Owner declined a ledger transition plan; none added. Synthetic ordinary-account valuation/trigger behavior unchanged. Cold/stale managed-registry gate and ordinary-order lost-response idempotency remain explicitly unresolved; do not treat admin corrections as complete financial certification.
+- Separate review PR/exact-head CI pending at this handoff; no previous PASS substituted for new-head CI.
