@@ -9,6 +9,9 @@ on:
       - 'src/api/routes/otcCash.ts'
       - 'src/api/routes/futures.ts'
       - 'src/api/routes/__tests__/adminUsers.test.ts'
+      - 'src/api/routes/adminBalanceAdjustments.ts'
+      - 'src/services/__tests__/BalanceAdjustmentIdempotency.test.ts'
+      - 'scripts/test-admin-balance-adjustments-postgres.cjs'
       - 'src/api/routes/__tests__/adminWithdrawals.test.ts'
       - 'src/api/routes/__tests__/withdrawals.test.ts'
       - 'src/index.ts'
@@ -75,6 +78,7 @@ jobs:
           src/services/__tests__/WithdrawalService.test.ts
           src/services/__tests__/PurchaseService.test.ts
           src/services/__tests__/BalanceAdjustmentService.test.ts
+          src/services/__tests__/BalanceAdjustmentIdempotency.test.ts
           src/services/__tests__/idleSweepSafety.test.ts
           frontend/src/pages/otc/__tests__/cashInteractions.test.ts
           frontend/src/lib/__tests__/otcPage.test.ts
@@ -85,6 +89,11 @@ jobs:
       - name: Install pinned disposable-only PostgreSQL and browser tools
         id: fixture_dependencies
         run: node scripts/otc-ci-evidence.cjs run fixture-dependencies npm install --prefix node_modules/.cache/deposit-qa --no-save --ignore-scripts @embedded-postgres/windows-x64@18.4.0-beta.17 pg@8.23.0 playwright@1.56.1
+      - name: Admin balance correction idempotency on disposable PostgreSQL
+        id: admin_balance_postgres
+        env:
+          ADMIN_QA_DEPS: node_modules/.cache/deposit-qa/package.json
+        run: node scripts/otc-ci-evidence.cjs run admin-balance-postgres node scripts/test-admin-balance-adjustments-postgres.cjs
       - id: wallet_postgres
         run: node scripts/otc-ci-evidence.cjs run wallet-postgres node scripts/diagnose-otc-balance-safety.cjs --verify
       - id: otc_postgres
