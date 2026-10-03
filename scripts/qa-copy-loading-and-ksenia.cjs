@@ -224,18 +224,19 @@ let server, browser;
       calls++; if (failFirst) { failFirst = false; return route.abort('failed'); } return route.continue(); });
     await page.goto(`${origin}/wallet`, { waitUntil: 'domcontentloaded' });
     await wait(1200);
-    const link = await page.$('a[href="/copy-trading"]');
-    if (link) await link.hover().catch(() => {});
+    if (!await page.locator('a[href="/copy-trading"]:visible').count()) await page.locator('.nav-burger').click();
+    const link = page.locator('a[href="/copy-trading"]:visible').first();
+    await link.hover();
     await wait(1200);
     const afterPrefetch = calls;
-    if (link) await link.click().catch(() => {});
-    else await page.goto(`${origin}/copy-trading`, { waitUntil: 'domcontentloaded' });
+    await link.click();
     await page.waitForSelector('.trader-card[data-trader-id="VX-001"]', { timeout: 20_000 }).catch(() => {});
     await wait(3500);
     const s = report.scenarios.failedPrefetch = {
       callsAfterPrefetch: afterPrefetch, callsAfterMount: calls,
       cards: await page.evaluate(FACTS), errors: errs };
     await page.screenshot({ path: path.join(OUT, '05-failed-prefetch-then-mount.png') });
+    if (s.callsAfterPrefetch < 1) finding('failed prefetch: no prefetch request was made');
     if (s.callsAfterMount <= s.callsAfterPrefetch) finding('failed prefetch: mounting put no request on the wire');
     if (!live(s.cards.nazar) || !live(s.cards.ksenia)) {
       finding(`failed prefetch: cards did not recover — ${JSON.stringify(s.cards)}`);

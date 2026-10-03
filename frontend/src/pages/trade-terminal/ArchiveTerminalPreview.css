@@ -20,9 +20,11 @@
 #archive-terminal-preview :is(.nav-item,.top-nav-link) { font-size:14px; font-weight:600; }
 /* The shared laptop tier used 2px link padding, while this route kept the
    larger desktop type. Reserve readable spacing instead of joining labels. */
-@media(min-width:1440px) and (max-width:1679px) {
+@media(min-width:1440px) and (max-width:1799px) {
   #archive-terminal-preview .global-header .main-nav { gap:6px; }
   #archive-terminal-preview .global-header .main-nav .nav-item { padding-inline:7px; }
+  #archive-terminal-preview .global-header .main-nav .header-disclosure-toggle { width:18px; }
+  #archive-terminal-preview .global-header .brand-separator { margin-inline:8px; }
 }
 @media(min-width:1440px) and (max-width:1659px) {
   #archive-terminal-preview .global-header .main-nav { gap:4px; }
@@ -49,7 +51,7 @@
   background:var(--panel); overflow-x:auto; scrollbar-width:thin; box-shadow:none;
 }
 #archive-terminal-preview .ticker-bar > * { flex:0 0 auto; grid-area:auto; }
-#archive-terminal-preview .archive-ticker-metrics { display:grid; grid-template-columns:repeat(7,max-content); justify-content:start; column-gap:20px; }
+#archive-terminal-preview .archive-ticker-metrics { display:grid; grid-template-columns:repeat(7,max-content); justify-content:space-between; column-gap:20px; }
 #archive-terminal-preview .ticker-bar .ticker-item { grid-area:auto; display:grid; grid-template-rows:20px 20px; align-items:baseline; gap:0; padding:0; border:0; }
 #archive-terminal-preview .ticker-bar .label { font-size:12px; line-height:16px; color:var(--archive-label); white-space:nowrap; }
 #archive-terminal-preview .ticker-bar .value:not(.price) { font-size:14px; line-height:20px; font-weight:500; color:var(--text-primary); white-space:nowrap; font-variant-numeric:tabular-nums; }
@@ -499,6 +501,8 @@
 #archive-terminal-preview .archive-top-assets-status { padding-inline:14px; color:var(--text-tertiary); font-size:11px; }
 @media(min-width:1800px) {
   #archive-terminal-preview .terminal { grid-template-columns:minmax(0,1fr) 292px 310px; }
+  /* Use the available strip without scattering statistics across very wide screens. */
+  #archive-terminal-preview .archive-ticker-metrics { max-width:1180px; }
   #archive-terminal-preview .futures-positions-table th { font-size:12px; }
 }
 /* Keep every statistic visible on laptop widths. The grid reserves the

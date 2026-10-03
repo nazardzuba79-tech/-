@@ -331,8 +331,10 @@ let server, browser;
   await page.locator('.back-button').click();
   await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor();
   const navigateFrom = await page.evaluate(() => window.__copyQa.timeline.length);
-  const away = page.locator('a[href="/card"]').first();
-  if (await away.count()) await away.click(); else await page.goto(origin + '/card', { waitUntil: 'domcontentloaded' });
+  // Follow the real compact drawer at laptop widths; never target the
+  // hidden desktop duplicate or replace SPA navigation with page.goto.
+  if (!await page.locator('a[href="/card"]:visible').count()) await page.locator('.nav-burger').click();
+  await page.locator('a[href="/card"]:visible').first().click();
   await page.waitForURL('**/card');
   // A history URL changes before a lazy route has committed. Without waiting
   // for departure, the return locators can match the OLD cards and the later
@@ -343,8 +345,8 @@ let server, browser;
   await page.locator('.trader-card[data-trader-id="VX-001"]').waitFor({ state: 'detached', timeout: 30000 });
   await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor({ state: 'detached', timeout: 30000 });
   const departed = { url: page.url(), cards: await page.locator('.trader-card[data-trader-id]').count() };
-  const backLink = page.locator('a[href="/copy-trading"]').first();
-  if (await backLink.count()) await backLink.click(); else await page.goto(origin + '/copy-trading', { waitUntil: 'domcontentloaded' });
+  if (!await page.locator('a[href="/copy-trading"]:visible').count()) await page.locator('.nav-burger').click();
+  await page.locator('a[href="/copy-trading"]:visible').first().click();
   await page.waitForURL('**/copy-trading');
   await page.locator('.trader-card[data-trader-id="VX-001"]').waitFor({ timeout: 30000 });
   await page.locator('.trader-card[data-trader-id="VX-KSENIA"]').waitFor({ timeout: 30000 });
