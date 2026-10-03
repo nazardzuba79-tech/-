@@ -12,6 +12,11 @@ it('only reaches Spot/CFD, never Futures or non-terminal pages', () => {
   const trade = read('frontend/src/pages/TradePage.tsx');
   expect(trade).toContain("import './trade-terminal/SpotCfdGraphite.css';");
   expect(read('frontend/src/pages/FuturesPage.tsx')).not.toContain('SpotCfdGraphite');
+  rules.walkRules(rule => {
+    if (!rule.selector.endsWith('.global-header')) return;
+    // Audited header exception changes colour only, never shared geometry.
+    rule.walkDecls(decl => expect(['background','--bg']).toContain(decl.prop));
+  });
 });
 
 it('copies the released Futures font, tile palette and enabled action colours exactly', () => {
