@@ -44,7 +44,8 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   'yourAddress', 'changeAsset', 'changeNetwork', 'sendOnly', 'inNetwork', 'lossWarning', 'copyAddress',
   'copied', 'copyError', 'showQr', 'hideQr', 'qrLabel', 'memo', 'memoCopied', 'copyMemo',
   // Deposit window, 2026-09-29: the «Актив» field and the minimum stated before the address.
-  'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote'].map(key => `deposit.ui.${key}`);
+  'asset', 'minimumPeggedLine', 'minimumOtherLine', 'minimumApprox', 'minimumNote',
+  'minimumLabel', 'minimumOtherValue'].map(key => `deposit.ui.${key}`);
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
 const shortCardLabels: Record<string, string> = { ru: 'Crypto-Card', en: 'Crypto-Card', zh: 'Crypto-Card', es: 'Crypto-Card', hi: 'Crypto-Card', ja: 'Crypto-Card', ko: 'Crypto-Card' };
 const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
@@ -66,9 +67,11 @@ describe('translation integrity', () => {
     for (const code of LOCALES) {
       expect(Object.keys(dicts[code]).filter(key => key.startsWith('deposit.ui.')).sort()).toEqual([...depositUiKeys].sort());
       for (const key of depositUiKeys) expect(dicts[code][key].trim()).not.toBe('');
-      for (const key of ['yourAddress', 'networkHint', 'qrLabel']) expect(dicts[code][`deposit.ui.${key}`]).toContain('{asset}');
+      for (const key of ['yourAddress', 'networkHint', 'qrLabel', 'minimumOtherValue']) expect(dicts[code][`deposit.ui.${key}`]).toContain('{asset}');
+      expect(dicts[code]['deposit.ui.minimumOtherValue']).toContain('{amount}');
       expect(dicts[code]['deposit.ui.qrLabel']).toContain('{network}');
     }
+    expect(dicts.ru['deposit.ui.minimumLabel']).toBe('Минимальная сумма пополнения');
   });
   it('has all seven dictionaries, and each is non-trivial', () => {
     expect(Object.keys(dicts).sort()).toEqual([...LOCALES].sort());

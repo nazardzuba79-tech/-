@@ -38,6 +38,8 @@ export const RU = {
   'deposit.ui.memoCopied': "Memo скопировано",
   'deposit.ui.copyMemo': "Копировать memo",
   'deposit.ui.asset': "Актив",
+  'deposit.ui.minimumLabel': "Минимальная сумма пополнения",
+  'deposit.ui.minimumOtherValue': "{amount} USDT или эквивалент в {asset}",
   'deposit.ui.minimumPeggedLine': "Минимальное пополнение — {amount} {asset}",
   'deposit.ui.minimumOtherLine': "Минимальное пополнение — {amount} USDT или эквивалент в {asset}",
   'deposit.ui.minimumApprox': "(≈ {amount} {asset})",
