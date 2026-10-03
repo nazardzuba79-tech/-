@@ -5521,54 +5521,23 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
 - Owner follow-up: corrected Futures header crowding in the existing laptop tier without changing menu structure. Rendered gaps increase from4px to13–16px; all visible dropdowns, text clipping and account overlap checked at1920/1664/1600/1550/1531/1440 plus1366/390 mobile patterns. Zero violations; all six Spot control screenshots remain byte-identical.
 - Header guard run:143 tests/8 suites pass. Evidence includes header crops and additional1531/1550 breakpoint reports. PR #397 remains review-only; the existing Cloudflare integration auto-creates a branch preview, with production unchanged.
 
-## Claude — 2026-10-03 — «Запомнить это устройство» (long sign-in on trusted devices)
+## 2026-10-03 — Codex — short header labels and Futures ticker spacing (review only)
+- Branch: `codex/header-ticker-spacing-20261003`; base refreshed to `7d9ee6fc6bfe76badaac680313e9728e5abd3550`. Earlier proportions PR #397 was already merged externally; this is a separate follow-up.
+- Owner correction: shared header labels now `Карта` / `Академия`; short Card labels in7existing locales. Routes and Academy dropdown content stay unchanged; Crypto Card product branding outside navigation stays intact.
+- Futures ticker uses available width with equal column gaps,20px minimum and1180px cap on wide screens. Pair/main price geometry and every numeric value/format stay unchanged. Compact Futures header now covers the1680–1799 transition that previously overlapped account actions.
+- Frontend-only: no backend/API/DB/accounting/provider/subscription/infrastructure changes, no merge or production deployment. Existing automation may create a branch preview.
+- Evidence: `docs/qa/header-ticker-spacing/README.md`, before/after comparison and screenshots.12-width actual-build fixture QA passed0violations,0JSerrors,0external requests; controls, navigation and unavailable/populated states passed.
+- Frontend build passed; focused137tests plus corrected scoped CSS ownership suite11tests passed. Full Windows suite encountered5unchanged path-scanner failures after correcting the one approved ownership entry.41relevant files match both base SHAs; exact-head Linux CI remains the gate. Full local logs retained under output/header-ticker-spacing.
+- Final mobile menu review reproduced an existing sticky-tab interception and bottom-dock clipping on the untouched baseline. Futures-only header stacking and drawer height now keep every entry accessible; hit-test regression added. Rebuilt preview verified at 390x844, 390x600 and 768x1024; 98 focused mobile/header tests passed. PR #399 contains this follow-up; no merge or production deployment.
 
-- Task: the owner's admin account was signed out and asked for email + password again. Cause: every session token expired after a fixed 12h (`JWT_EXPIRES_IN`), whatever the activity. Owner asked for a long session and remembered laptop/phone.
-- Branch `claude/ecstatic-brahmagupta-cwkvt5-admin-session`, rebased on main `7d9ee6fc`.
-- Material files:
-  - `prisma/schema.prisma` + migration `20261003090000_session_remembered`: additive `Session.remembered BOOLEAN NOT NULL DEFAULT false`.
-  - `src/api/routes/auth.ts`:
-    - `/auth/login` accepts optional `remember: boolean` → remembered Session row + 90-day token. Without it: 12h, unchanged.
-    - The 2FA step takes the choice only from the signed pending token (`rem` claim), so it cannot upgrade a sign-in.
-    - New `POST /auth/logout` (requireAuth) revokes the current session + `SESSION_REVOKED` audit row.
-  - `src/api/middleware/auth.ts`: `REMEMBERED_SESSION_MAX = '90d'`; a remembered session unused for 30 days (`lastSeenAt`) gets 401.
-  - `src/api/routes/account.ts`:
-    - a password change revokes every other live session;
-    - `/me/sessions` includes `remembered`.
-  - Frontend:
-    - `AuthPage.tsx` checkbox (off by default) + `auth-shell.css`;
-    - `api.ts` `login(…, remember)` / `logout()`;
-    - `Nav.tsx` logout also calls the server;
-    - `SecuritySection.tsx` «Запомнено» badge;
-    - 3 i18n keys in all 7 locales.
-  - Tests:
-    - `auth.test.ts` (routes): 12h vs 90d, 2FA carry/no-upgrade, logout;
-    - `auth.test.ts` (middleware): 30-day idle;
-    - `account.test.ts`: password change revokes others.
-  - `docs/qa/remember-device/`: local login screenshots (laptop 1440, phone 390), fixtures only, not production.
-- Preserved:
-  - per-request session check;
-  - Settings → Security revoke;
-  - the 2FA requirement;
-  - the bcrypt/login rate limits;
-  - registration flow and token lifetime;
-  - all non-auth code.
-- Not done / next:
-  - passkeys (Face ID / fingerprint / Windows Hello) proposed as a follow-up;
-  - existing sessions are unaffected until the next sign-in with the box ticked.
-- Release: the migration must run (Dockerfile `prisma migrate deploy` does this on Render).
-- Checks run locally: backend `tsc`; `jest` auth routes + auth middleware + account (all pass); frontend `tsc -b && vite build`; Playwright login screenshots with the request body checked (`remember: true` sent). Full-suite result is reported on the PR.
-- Not merged, not deployed, no production QA.
-- CI follow-up (same PR #400):
-  - Three guard commits pushed from the owner's account (`bd487c52`, `ca53fde0`, `25643e46`: i18n digest list, idle-read-budget select, Futures API fingerprint) were kept as-is; my duplicate local edits to the same guards were dropped.
-  - Added on top:
-    - `tradingToolsShell`/`arbitrageShell` api mocks gain `logout` (asserted called once);
-    - `cryptoCardVisualConsistency` strips the exact remember-device additions from AuthPage/auth-shell.css before the unchanged hashes;
-    - `bcryptAuthRegression` memory store gains `session.updateMany`, plus a check that the changing device stays signed in.
-  - Local full `jest`: 9 failed in 5 suites. Four suites fail identically on clean main `7d9ee6fc` here: CfdMarketDataService, CanonicalSourcePreservation, ProviderFailureMatrix, LiveFinancialIsolation. The fifth, `vtaNativeCoexistence.pg`, needs a PG URL.
-  - `scripts/qa-admin-gate.cjs` fails at «idle defers hourly read → failed wake» identically on clean main, so it was not changed here.
-- CI follow-up 2:
-  - `scripts/test-otc-cutover-postgres.cjs` (Codex's historical #372 evidence) asserted that the ONLY migration newer than its base is the OTC one, so any later additive migration failed it. The cutover window is now limited to migrations ≤ `20261001000000_otc_cash_requests`; the assertion within that window is unchanged.
-    - Local run with system PostgreSQL 16 (not the embedded binary, which needs libicu60): 21/21 scenarios PASS.
-  - `scripts/qa-copy-last-good-browser.cjs`: the read-only QA server now answers `POST /api/v1/auth/logout` and requires exactly one, during the logout phase. Every other write is still a finding.
-    - Local run: findings `[]`.
+## 2026-10-03 — Codex — shared icon/description menus (PR #399, review only)
+- Owner corrected the navigation label to `Crypto-Card` and requested one desktop/mobile dropdown design, shown before production publication. Keep PR #399 open; do not merge/deploy without separate owner approval.
+- Product commits: `387e1ecf6a9bdd314ca8498ae94e043ed97d4bfe`, final UI `aab8384aed30d4460bd99f0e46f5c01ea5d7e128`. Fresh main remained `7d9ee6fc6bfe76badaac680313e9728e5abd3550`; no concurrent changes were overwritten.
+- Files: HeaderDropdown.tsx/css, Nav.tsx, HomeHeader.tsx, seven locale dictionaries, index.css responsive tier; related header/copy tests, fixture QA scripts and docs/qa/header-dropdowns evidence.
+- Shared typed items carry nine distinct Lucide icons and descriptions; 34px tiles, 14px semibold titles, 11.5px muted descriptions, full-card hover/focus. Desktop/mobile use the same arrays. Existing routes and financial/API behavior are unchanged.
+- Preserved earlier ticker spacing, compact Futures spacing and mobile drawer stacking fixes. Existing 1440–1530 hidden secondary links now remain reachable via the full drawer; small home-header gaps/padding keep the 390px close button within the screen.
+- Validation: frontend TypeScript/Vite PASS (existing bundle warning); 96 focused tests/7 suites PASS. New actual-bundle menu matrix covers Futures and signed-out Home at 1920/1600/1440/1366/390; 20 cases per surface, no page errors/external calls/financial writes. Existing five-width ticker/interactions/state/navigation fixture QA has 0 violations. Exact-head Linux CI is recorded on the PR after push.
+- Local limitation: unchanged Card SVG raw-hash test is CRLF-sensitive on Windows; no asset or digest was weakened. Existing React SSR fetchPriority warning remains. Full Linux CI is the final gate, not a prior-head PASS.
+- Before/after gallery is docs/qa/header-dropdowns/comparison.html, served by the loopback-only fixture; not production. No backend, database, balance, trade, credential or infrastructure changes.
+- CI follow-up: first pushed head had 25/27 successful checks; pair-persistence and copy-card browser harnesses still assumed desktop links at1440. Updated only scripts/qa-futures-pair-persistence.cjs and scripts/qa-copy-last-good-browser.cjs to use the actual drawer, retain all financial/cache assertions, add1600desktop coverage and hit-test every compact product link. UI remains aab8384a; rerun CI on the final evidence/test commit, not the earlier head.
+- Downstream Copy prefetch browser scenarios also targeted hidden desktop duplicates and swallowed hover/click failures. Updated qa-copy-cards-trades-avatar, qa-copy-loading-and-ksenia and qa-copy-never-loading to use visible drawer links; added positive prefetch-request evidence where previously absent. No Copy product behavior or financial assertions changed. 25914867 full frontend CI:201suites/3524tests PASS, none skipped; latest exact-head CI must also finish the complete browser chain. Product UI remains aab8384a, screenshot matrix unchanged.

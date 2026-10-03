@@ -15,7 +15,10 @@ describe('Arbitrage navigation placement', () => {
   it('belongs to OTC, not Trade or the top-level product row', () => {
     expect(nav).toContain("const otcSectionActive = active === '/otc' || active === '/arbitrage';");
     expect(nav).not.toContain("const tradeSectionActive = active === '/trade' || active === '/arbitrage'");
-    expect(nav).toContain('<Link to="/arbitrage" style={styles.tradeMenuItem}>');
+    expect(nav.match(/links=\{OTC_LINKS\}/g)).toHaveLength(2);
+    const dropdown = read('src/components/HeaderDropdown.tsx');
+    expect(dropdown.split('export const OTC_LINKS')[1].split('export const KNOWLEDGE_LINKS')[0]).toContain("to: '/arbitrage'");
+    expect(dropdown.split('export const TRADING_LINKS')[1].split('export const MARKET_LINKS')[0]).not.toContain('/arbitrage');
     expect(home).not.toContain("{ to: '/arbitrage', labelKey: 'nav.arbitrage' }");
     expect(footer).not.toContain("{ labelKey: 'nav.arbitrage', to: '/arbitrage' }");
     expect(arctic).not.toContain("{ to: '/arbitrage', key: 'nav.arbitrage' }");

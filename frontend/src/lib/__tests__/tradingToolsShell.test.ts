@@ -171,15 +171,15 @@ describe('local trading tools keeps the real authenticated shell without a marke
 
     const trigger = document.querySelector('.nav-desktop-links a[href="/trade"]') as HTMLElement;
     expect(trigger.classList.contains('nav-active')).toBe(false);
-    await React.act(async () => trigger.focus());
-    expect(Array.from(document.querySelectorAll('.nav-dropdown a')).map(a => a.getAttribute('href'))).toEqual(['/trade', '/trade?market=cfd']);
+    await click('.nav-desktop-links button[aria-label="nav.trade"]');
+    expect(Array.from(document.querySelectorAll('.nav-desktop-links .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/trade', '/trade?market=cfd']);
     await React.act(async () => trigger.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
-    expect(document.querySelector('.nav-dropdown')).toBeNull();
+    expect(document.querySelector('.header-disclosure-panel')).toBeNull();
   });
 
   test.each(['.nav-desktop-links', '.nav-mobile-menu'])('knowledge disclosure has four destinations and closes on Escape: %s', async selector => {
     await mount();
-    const button = selector + ' button[aria-label="nav.knowledgeCenter"]';
+    const button = selector + ' button[aria-label="nav.academy"]';
     expect(document.querySelector(selector + ' a[href="/academy"]')).not.toBeNull();
     await click(button);
     expect(Array.from(document.querySelectorAll(selector + ' .header-disclosure-panel a')).map(a => a.getAttribute('href')))
@@ -188,6 +188,15 @@ describe('local trading tools keeps the real authenticated shell without a marke
     await React.act(async () => { last.focus(); last.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
     expect(document.querySelector(selector + ' .header-disclosure-panel')).toBeNull();
     expect(document.activeElement).toBe(document.querySelector(button));
+  });
+
+  test.each(['/futures', '/trade', '/tools'])('%s shares the short Card and Academy labels in desktop and mobile headers', async active => {
+    await mount({ active, hideTicker: true });
+    for (const selector of ['.nav-desktop-links', '.nav-mobile-menu']) {
+      expect(document.querySelector(selector + ' a[href="/card"]')?.textContent).toBe('nav.card');
+      expect(document.querySelector(selector + ' a[href="/academy"]')?.textContent).toBe('nav.academy');
+      expect(document.querySelector(selector + ' button[aria-label="nav.academy"]')).not.toBeNull();
+    }
   });
 
   test('mobile Trading only exposes Spot and CFD, and selecting CFD closes the drawer', async () => {
@@ -208,6 +217,7 @@ describe('local trading tools keeps the real authenticated shell without a marke
     expect(document.querySelector('.nav-mobile-menu.open')).not.toBeNull();
     await click('.nav-mobile-menu button[aria-label="nav.markets"]');
     expect(Array.from(document.querySelectorAll('.nav-mobile-menu .header-disclosure-panel a')).map(a => a.getAttribute('href'))).toEqual(['/tools']);
+    await click('.nav-mobile-menu button[aria-label="nav.otc"]');
     expect(document.querySelectorAll('.nav-mobile-menu a[href="/arbitrage"]')).toHaveLength(1);
     await click('.nav-burger');
     expect(document.querySelector('.nav-mobile-menu.open')).toBeNull();
