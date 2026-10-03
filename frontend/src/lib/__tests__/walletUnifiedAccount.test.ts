@@ -78,10 +78,19 @@ function runHook(options: {
   };
 
   const intervals: number[] = [];
+  const timeouts: number[] = [];
   const oldSetInterval = globalThis.setInterval;
+  const oldClearInterval = globalThis.clearInterval;
+  const oldSetTimeout = globalThis.setTimeout;
+  const oldClearTimeout = globalThis.clearTimeout;
   const oldDocument = (globalThis as any).document;
-  (globalThis as any).setInterval = ((_fn: any, ms: number) => { intervals.push(ms); return 0 as any; }) as any;
+  // This hook harness executes mount effects without a React unmount phase.
+  // Capture schedulers instead of creating real Node handles; lifecycle/timer
+  // behaviour itself is covered by browserReadBudget.test.ts.
+  (globalThis as any).setInterval = ((_fn: any, ms: number) => { intervals.push(ms); return 1 as any; }) as any;
   (globalThis as any).clearInterval = (() => {}) as any;
+  (globalThis as any).setTimeout = ((_fn: any, ms = 0) => { timeouts.push(ms); return 1 as any; }) as any;
+  (globalThis as any).clearTimeout = (() => {}) as any;
   (globalThis as any).document = {
     visibilityState: 'visible',
     addEventListener: () => {},
@@ -118,15 +127,19 @@ function runHook(options: {
     const first = render();
     const mounted = effects.map((e) => e.run);
     for (const run of mounted) run();
-    return { first, render, calls, intervals };
+    return { first, render, calls, intervals, timeouts };
   } finally {
     globalThis.setInterval = oldSetInterval;
+    globalThis.clearInterval = oldClearInterval;
+    globalThis.setTimeout = oldSetTimeout;
+    globalThis.clearTimeout = oldClearTimeout;
     (globalThis as any).document = oldDocument;
   }
 }
 
 const OWNER_WALLET = {
   initialized: true,
+  clientTier: 'SUPREME_VIP',
   account: {
     settleBalance: '4000', walletCollateral: '201000', collateral: '205000',
     unrealizedPnl: '-250.5', equity: '204749.5', initialMargin: '600', orderReserve: '150',
@@ -157,6 +170,7 @@ describe('1. the Wallet consumes the SAME authoritative account as the terminal'
     const { account, rows } = hook.render();
 
     expect(account.mode).toBe('CROSS');
+    expect(account.clientTier).toBe('SUPREME_VIP');
     expect(account.collateralUsd).toBe(205000);
     expect(account.walletEquityUsd).toBe(204749.5);
     expect(account.totalEquityUsd).toBe(204749.5);
@@ -228,6 +242,7 @@ describe('1. the Wallet consumes the SAME authoritative account as the terminal'
     const { account } = hook.render();
 
     expect(account.mode).toBe('SPOT');
+    expect(account.clientTier).toBeNull();
     expect(account.walletEquityUsd).toBe(300);
     expect(account.totalEquityUsd).toBe(300);
     expect(account.spotUsd).toBe(250);
@@ -366,13 +381,15 @@ describe('5. the page does not poll per asset', () => {
     expect(after.account).toEqual(before.account); expect(after.rows).toEqual(before.rows);
     expect(hook.calls.filter(call => call === 'native-wallet')).toHaveLength(2);
   });
-  it('reads the authoritative account once per load, never on an interval', async () => {
+  it('reads the authoritative account as one request, never per asset', async () => {
     const hook = runHook({ wallet: () => Promise.resolve(OWNER_WALLET) });
     await Promise.resolve(); await Promise.resolve();
     // One native request for the whole account AND all its rows.
     expect(hook.calls.filter((c) => c === 'native-wallet')).toHaveLength(1);
-    // Wallet and metadata are event/visibility driven, with no idle timers.
+    // The 30s visible refresh is a shared account-level scheduler, not a
+    // timer/request per held asset. Exact lifecycle is tested separately.
     expect(hook.intervals).toEqual([]);
+    expect(hook.timeouts.some((ms) => ms === 30_000)).toBe(true);
   });
 
   it('makes a fixed number of requests regardless of how many assets are held', async () => {
