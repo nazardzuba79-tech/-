@@ -1758,6 +1758,8 @@ export const EN: Record<Key, string> = {
   'withdraw.doneEta': 'A withdrawal can take up to 60 minutes. You can follow its status in the wallet history.',
   'withdraw.done': 'Done',
   'withdraw.error': 'Could not send the request. Please try again.',
+  'nav.tools': 'Tools',
+  'nav.knowledgeCenter': 'Knowledge Center',
   'nav.academy': 'Academy',
   'nav.help': 'Help',
   'academy.hub.home': 'Home',

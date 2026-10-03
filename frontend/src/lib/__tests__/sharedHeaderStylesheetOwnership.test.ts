@@ -47,7 +47,7 @@ function stylesheets(): string[] {
   const out: string[] = [];
   const walk = (p: string) => {
     if (statSync(p).isDirectory()) for (const e of readdirSync(p)) walk(join(p, e));
-    else if (p.endsWith('.css')) out.push(relative(frontend, p));
+    else if (p.endsWith('.css')) out.push(relative(frontend, p).replace(/\\/g, '/'));
   };
   walk(resolve(frontend, 'src'));
   return out.sort();
