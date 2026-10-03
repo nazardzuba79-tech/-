@@ -39,7 +39,7 @@ export function AdminAccountActions({ profile, onChanged }: { profile: AdminProf
       else { setUnknown(true); setMessage(unknownMessage); }
     } finally { clearTimeout(timer); if (valid() && !expired) { setBusy(false); inFlight.current = false; } }
   }
-  return <><details className="admin-account-actions"><summary>Управление учётной записью</summary><button onClick={() => { setMode(profile.isBlocked ? 'unblock' : 'block'); setConfirm(false); }}>{profile.isBlocked ? 'Разблокировать' : 'Заблокировать'}</button><button onClick={() => { setMode('demo'); setConfirm(false); }}>Тестовое начисление</button></details>
+  return <><details className="admin-account-actions"><summary>Управление учётной записью</summary>{/* Owner (2026-10-03): no new blocks; an account blocked earlier can still be restored. */}{profile.isBlocked && <button onClick={() => { setMode('unblock'); setConfirm(false); }}>Разблокировать</button>}<button onClick={() => { setMode('demo'); setConfirm(false); }}>Тестовое начисление</button></details>
     {message && <p role="status">{message}</p>}
     {mode && <AdminModal title={mode === 'demo' ? 'Тестовое начисление' : mode === 'unblock' ? 'Разблокировка пользователя' : 'Блокировка пользователя'} busy={busy} onClose={() => setMode(null)}>
       <p><strong>{profile.email}</strong><br />ID: {profile.id}</p>

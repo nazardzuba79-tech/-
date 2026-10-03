@@ -72,24 +72,31 @@ exports.run = async ({ origin, out, state, users, variant }) => {
     const first = rendered().first();
     assert.match(await first.innerText(), /USDT/, 'List contains fixture asset balances');
     assert.match(await first.innerText(), /USDT\s+1[\s\u00a0\u202f]500\.25/, 'List shows the exact first fixture balance');
-    assert.match(await first.innerText(), /Активен/, 'Known active account state is displayed');
+    assert.doesNotMatch(await first.innerText(), /Активен/, 'No account status column: an active account carries no mark');
     assert.match(await first.innerText(), /На проверке|Проверяется|PENDING/i, 'Fixture KYC status is displayed');
     if (width >= 768) assert.equal((await first.locator('[data-user-password]').innerText()).trim(), '—', 'Missing password stays a dash');
     else assert.equal((await first.locator('dt').filter({ hasText: /^Пароль$/ }).evaluate(el => el.nextElementSibling.textContent)).trim(), '—');
 
     await page.getByRole('textbox', { name: 'Поиск пользователей' }).fill('client.0');
     await waitRows(9);
-    await page.getByRole('combobox', { name: 'Фильтр пользователей' }).selectOption('blocked');
-    await waitRows(1);
-    assert.match(await rendered().first().innerText(), /client\.08@example\.invalid/);
-    assert.match(await rendered().first().innerText(), /Заблокирован/, 'Blocked filter retains the authoritative account state');
-    await page.getByRole('combobox', { name: 'Фильтр пользователей' }).selectOption('active');
-    await waitRows(8);
+    // No account-status filters (owner, 2026-10-03); the KYC filter exercises the same server filter path.
+    await page.getByRole('combobox', { name: 'Фильтр пользователей' }).selectOption('kyc-pending');
+    await waitRows(4);
+    assert.match(await rendered().first().innerText(), /На проверке/, 'KYC filter keeps the authoritative KYC state');
+    assert.doesNotMatch(await rendered().first().innerText(), /Заблокирован/, 'No blocked mark in the list');
+    await page.getByRole('combobox', { name: 'Фильтр пользователей' }).selectOption('all');
+    await waitRows(9);
     await page.getByRole('textbox', { name: 'Поиск пользователей' }).fill('client.');
     await waitRows(20);
+    // Both pages hold 20 rows, so wait for page two's own first row rather than a row count.
+    const rowAttribute = width < 768 ? 'data-user-card' : 'data-user-row';
+    const pageOneFirst = await rendered().first().getAttribute(rowAttribute);
     await page.getByRole('button', { name: 'Следующая страница', exact: true }).click();
-    await waitRows(19);
     await page.waitForURL(url => url.searchParams.get('page') === '2');
+    await page.waitForFunction(({ attribute, first }) => {
+      const rows = document.querySelectorAll(`[${attribute}]`);
+      return rows.length === 20 && rows[0].getAttribute(attribute) !== first;
+    }, { attribute: rowAttribute, first: pageOneFirst });
     const returnUrl = page.url(), userId = await rendered().first().getAttribute(width < 768 ? 'data-user-card' : 'data-user-row');
     const fixture = users.find(user => user.id === userId);
     const beforeProfile = state.calls.length;
@@ -105,8 +112,11 @@ exports.run = async ({ origin, out, state, users, variant }) => {
     for (const [label, kind] of [['Пополнения', 'deposits'], ['Выводы', 'withdrawals'], ['Ордера', 'orders'], ['Проверка личности', 'kyc'], ['История действий', 'audit']]) {
       const from = state.calls.length;
       await page.getByRole('tab', { name: label, exact: true }).click();
-      await page.getByRole('tabpanel', { name: label, exact: true }).waitFor();
-      await page.waitForLoadState('networkidle');
+      const panel = page.getByRole('tabpanel', { name: label, exact: true });
+      await panel.waitFor();
+      // networkidle has already fired for this SPA page, so it does not wait for the tab's read.
+      // Wait for the tab's own result instead: its request has then been received and answered.
+      await panel.locator('.admin-read-status [role="status"]').filter({ hasText: /^Обновлено:/ }).waitFor();
       assert.equal(state.calls.slice(from).filter(call => call.path.endsWith('/history') && call.query.kind !== kind).length, 0, 'Only the selected history kind is requested');
       if (mode === 'modern') assert(state.calls.slice(from).some(call => call.path.endsWith('/history') && call.query.kind === kind), 'Selected modern history is loaded');
     }
@@ -120,19 +130,17 @@ exports.run = async ({ origin, out, state, users, variant }) => {
     }
     await page.getByRole('link', { name: /Все пользователи/ }).click();
     await page.waitForURL(returnUrl);
-    await waitRows(19);
+    await waitRows(20);
     assert.equal(await page.getByRole('textbox', { name: 'Поиск пользователей' }).inputValue(), 'client.');
-    assert.equal(await page.getByRole('combobox', { name: 'Фильтр пользователей' }).inputValue(), 'active');
+    assert.equal(await page.getByRole('combobox', { name: 'Фильтр пользователей' }).inputValue(), 'all');
     assert.equal(page.url(), returnUrl, 'Back preserves exact search/filter/page URL');
 
     const beforeCancel = financialWrites(state).length;
     const row = rendered().first();
-    await row.locator('summary').click();
     await row.getByRole('button', { name: 'Удалить аккаунт', exact: true }).click();
     const dialog = page.getByRole('dialog'); await dialog.waitFor({ state: 'visible' });
     await dialog.getByRole('button', { name: 'Отмена', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
-    if (!await row.locator('details').evaluate(el => el.open)) await row.locator('summary').click();
     await row.getByRole('button', { name: 'Удалить аккаунт', exact: true }).click();
     await dialog.waitFor({ state: 'visible' }); await page.keyboard.press('Escape');
     await dialog.waitFor({ state: 'hidden' });

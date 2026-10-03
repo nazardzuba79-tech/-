@@ -3,6 +3,16 @@
 .admin-users-kpi { display: flex; flex-direction: column; gap: 7px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); min-width: 0; }
 .admin-users-kpi>span { font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
 .admin-users-kpi>strong { font-size: 23px; line-height: 1.1; font-weight: 650; font-variant-numeric: tabular-nums; }
+.admin-users-kpi-link { color: inherit; text-decoration: none; }
+.admin-users-kpi-link:hover { border-color: var(--admin-brand); }
+.admin-users-kpi-link[data-copy-signal] { border-color: rgba(183,121,31,.45); }
+.admin-user-new { margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
+.admin-user-actions .admin-delete-button { padding: 7px 10px; font-size: 12px; white-space: nowrap; }
+.admin-kyc { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.admin-kyc::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.admin-kyc-approved { color: var(--buy); background: var(--buy-dim); }
+.admin-kyc-pending { color: #b7791f; background: var(--accent-dim); }
+.admin-kyc-rejected { color: var(--sell); background: var(--sell-dim); }
 .admin-kpi-note { grid-column: 1/-1; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-secondary); }
 .admin-kpi-note button { border: 0; background: none; color: var(--admin-brand); padding: 0; font: inherit; cursor: pointer; }
 .admin-user-balance { display: grid; gap: 2px; font-size: 12px; line-height: 1.45; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; margin-bottom: 4px; }
@@ -22,7 +32,7 @@
 .admin-attention-grid small { font-size: 11px; color: var(--text-secondary); }
 .admin-read-status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); margin: 10px 0; }
 .admin-read-status [role=alert] { width: 100%; color: var(--sell); }
-.admin-users-filters { display: grid; grid-template-columns: minmax(180px,2fr) repeat(3,minmax(135px,1fr)); gap: 8px; }
+.admin-users-filters { display: grid; grid-template-columns: minmax(200px,300px) repeat(2,minmax(150px,240px)); justify-content: start; gap: 8px; }
 .admin-users-filters input,.admin-users-filters select { width: 100%; min-width: 0; }
 .admin-users-table,.admin-data-table { border-collapse: collapse; width: 100%; font-size: 13px; text-align: left; }
 .admin-users-table th,.admin-data-table th { color: var(--text-secondary); background: var(--panel-alt); font-size: 12px; font-weight: 600; }

@@ -108,10 +108,11 @@ describe('non-idempotent account actions', () => {
     demoTopUp.mockRejectedValue(Object.assign(new Error('Invalid'), { status: 400 })); await prepareDemo(); await click('Подтвердить');
     await act(async () => root.render(null)); await render(); await click('Тестовое начисление'); expect(host.querySelector('form')).not.toBeNull(); expect(demoTopUp).toHaveBeenCalledTimes(1);
   });
-  test('block review stays a block even if refreshed profile changes its status before confirmation', async () => {
-    await render(); await click('Заблокировать'); await fill(0, 'Fixture block reason'); await click('Проверить действие');
-    await render({ ...profile, isBlocked: true }); await click('Подтвердить');
-    expect(blockUser).toHaveBeenCalledWith(profile.id, 'Fixture block reason'); expect(unblockUser).not.toHaveBeenCalled();
+  test('an active account offers no block action (owner, 2026-10-03); nothing is sent', async () => {
+    await render();
+    expect(Array.from(host.querySelectorAll('button')).some(button => /Заблокировать/.test(button.textContent || ''))).toBe(false);
+    expect(Array.from(host.querySelectorAll('button')).some(button => /Разблокировать/.test(button.textContent || ''))).toBe(false);
+    expect(blockUser).not.toHaveBeenCalled(); expect(unblockUser).not.toHaveBeenCalled();
   });
   test('unblock asks only for explicit target confirmation, not a reason the legacy endpoint cannot record', async () => {
     await render({ ...profile, isBlocked: true }); await click('Разблокировать');
