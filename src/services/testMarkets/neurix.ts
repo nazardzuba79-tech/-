@@ -10,15 +10,15 @@ const NRX_LISTING_AT = Date.parse('2026-10-03T13:00:00Z');
  * applied retroactively to displayed prices or executed orders.
  */
 export const NRX_TWO_WEEK_SCENARIO: Readonly<ScheduledScenarioConfig> = Object.freeze({
-  version: 1,
-  from: Date.parse('2026-10-03T16:00:00Z'),
-  firstTargetAt: Date.parse('2026-10-03T18:48:00Z'),
-  breakoutAt: Date.parse('2026-10-04T05:00:00Z'),
-  secondTargetAt: Date.parse('2026-10-04T11:30:00Z'),
-  rangeEndAt: Date.parse('2026-10-06T11:30:00Z'),
+  version: 2,
+  from: Date.parse('2026-10-04T16:00:00Z'),
+  firstTargetAt: Date.parse('2026-10-04T18:48:00Z'),
+  breakoutAt: Date.parse('2026-10-05T05:00:00Z'),
+  secondTargetAt: Date.parse('2026-10-05T11:30:00Z'),
+  rangeEndAt: Date.parse('2026-10-07T11:30:00Z'),
   // A staged six-hour selloff, with countertrend rebounds rather than a gap.
-  selloffEndAt: Date.parse('2026-10-06T17:30:00Z'),
-  endAt: Date.parse('2026-10-17T16:00:00Z'),
+  selloffEndAt: Date.parse('2026-10-07T17:30:00Z'),
+  endAt: Date.parse('2026-10-18T16:00:00Z'),
   firstGainPercent: 1247,
   secondGainPercent: 7217,
   rangeFraction: .20,
