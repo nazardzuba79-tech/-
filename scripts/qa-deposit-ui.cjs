@@ -38,20 +38,46 @@ const pickAsset = async (page, symbol, method = 'click') => {
   await page.getByRole('heading', exact('Ваш адрес ' + symbol)).waitFor();
 };
 const address = page => page.getByTestId('deposit-address').innerText();
-/** The minimum is on screen for this destination, ABOVE the address, in two
- *  lines (owner, 2026-09-29): «Минимальное пополнение — 500 USDT» for a
- *  USD-pegged coin, «… — 500 USDT или эквивалент в BTC» for any other, then one
- *  short sentence. «(≈ X BTC)» only from a live, current price. */
+/** The compact minimum row keeps the real rule before the address.
+ *  Non-pegged estimates still require a live, current price. */
 async function minimumShown(page, entry, symbol, priced = false) {
   const box = page.getByTestId('deposit-minimum');
   const text = await box.innerText();
   const minY = (await box.boundingBox()).y, addressY = (await page.getByTestId('deposit-address').boundingBox()).y;
   const equivalent = await page.getByTestId('deposit-minimum-equivalent').count();
   const pegged = symbol === 'USDT' || symbol === 'USDC';
-  const line = pegged ? `Минимальное пополнение — 500 ${symbol}` : `Минимальное пополнение — 500 USDT или эквивалент в ${symbol}`;
-  check(`${entry}: ${symbol} minimum in two lines before the address`, text.startsWith(line)
-    && text.includes('Несколько переводов в одном активе и сети суммируются.') && text.split('\n').filter(Boolean).length === 2 && minY < addressY);
+  const value = pegged ? `500 ${symbol}` : `500 USDT или эквивалент в ${symbol}`;
+  check(`${entry}: ${symbol} labelled real minimum before the address`,
+    (await box.locator('.dc-minimum-label').innerText()) === 'Минимальная сумма пополнения'
+    && (await box.locator('.dc-minimum-value').innerText()).startsWith(value) && minY < addressY);
+  check(`${entry}: accumulation explanation is absent`, !text.includes('Несколько переводов в одном активе и сети суммируются.')
+    && await box.locator('.dc-minimum-note').count() === 0);
   check(`${entry}: ${symbol} ${priced ? 'shows' : 'has no'} ≈ estimate`, equivalent === (priced && !pegged ? 1 : 0));
+}
+async function minimumLayout(page, entry, symbol, width, height) {
+  const layout = await page.getByTestId('deposit-minimum').evaluate(box => {
+    const label = box.querySelector('.dc-minimum-label'), value = box.querySelector('.dc-minimum-value');
+    const labelRect = label.getBoundingClientRect(), valueRect = value.getBoundingClientRect(), boxRect = box.getBoundingClientRect();
+    const textFits = element => {
+      const bounds = element.getBoundingClientRect(), walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (!node.textContent.trim()) continue;
+        const range = document.createRange(); range.selectNodeContents(node);
+        if ([...range.getClientRects()].some(rect => rect.left < bounds.left - 1 || rect.right > bounds.right + 1
+          || rect.top < bounds.top - 1 || rect.bottom > bounds.bottom + 1)) return false;
+      }
+      return element.scrollWidth <= element.clientWidth + 1 && element.scrollHeight <= element.clientHeight + 1;
+    };
+    return { labelFits: textFits(label), valueFits: textFits(value),
+      valueOnRight: labelRect.right <= valueRect.left + 1 && valueRect.right <= boxRect.right + 1,
+      fitsViewport: boxRect.left >= 0 && boxRect.right <= innerWidth,
+      label: { x: labelRect.x, y: labelRect.y, width: labelRect.width, height: labelRect.height },
+      value: { x: valueRect.x, y: valueRect.y, width: valueRect.width, height: valueRect.height } };
+  });
+  check(`${entry} ${width}x${height}: ${symbol} label and value do not clip`, layout.labelFits && layout.valueFits && layout.fitsViewport);
+  check(`${entry} ${width}x${height}: ${symbol} minimum value stays right of label`, layout.valueOnRight);
+  report.layouts.push({ entry, width, height, symbol, minimum: layout });
 }
 // Wait for a committed parent render so a negative assertion cannot pass
 // before the component has had a chance to observe the injected quote.
@@ -212,6 +238,23 @@ async function responsive(entry, width, height) {
   const { context, page } = await setup(width, height, width < 500);
   try {
     await open(page, entry); await pickAsset(page, 'USDT', width < 500 ? 'tap' : 'click');
+    await minimumShown(page, entry, 'USDT'); await minimumLayout(page, entry, 'USDT', width, height);
+    const networks = await page.locator('.dc-networks').evaluate(grid => {
+      const bounds = grid.getBoundingClientRect();
+      return { x: bounds.x, right: bounds.right, width: bounds.width, cards: [...grid.children].map(element => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom };
+      }) };
+    });
+    // Preserve the existing auto-fit grid: two 150px cards plus the 8px gap.
+    const sideBySide = networks.width >= 308;
+    check(`${entry} ${width}x${height}: network cards preserve adaptive ${sideBySide ? 'columns' : 'stacking'}`,
+      networks.cards.length === 2 && (sideBySide
+        ? Math.abs(networks.cards[0].y - networks.cards[1].y) <= 1 && networks.cards[0].right <= networks.cards[1].x + 1
+        : Math.abs(networks.cards[0].x - networks.cards[1].x) <= 1 && networks.cards[0].bottom <= networks.cards[1].y + 1));
+    check(`${entry} ${width}x${height}: network cards fit and keep 56px tap targets`,
+      networks.x >= 0 && networks.right <= width && networks.cards.every(rect => rect.height >= 56
+        && rect.width > 0 && rect.x >= networks.x - 1 && rect.right <= networks.right + 1));
     await screenshot(page, `${entry.toLowerCase()}-${width}x${height}`);
     check(`${entry} ${width}: copy target 48px`, (await page.locator('.dc-primary').boundingBox()).height >= 48);
     await assetField(page).click(); await page.getByRole('option').filter({ hasText: 'Toncoin' }).scrollIntoViewIfNeeded();
@@ -229,6 +272,12 @@ async function responsive(entry, width, height) {
     await assetField(page).click();
     if (sheet) await page.locator('.dc-menu-backdrop').click({ position: { x: 4, y: 4 } }); else await page.mouse.click(4, 4);
     check(`${entry} ${width}: press around the window closes the list only`, await page.locator('.dc-menu').count() === 0 && await page.getByTestId('deposit-address').count() === 1);
+    await pickAsset(page, 'BTC');
+    await minimumShown(page, entry, 'BTC'); await minimumLayout(page, entry, 'BTC', width, height);
+    await screenshot(page, `${entry.toLowerCase()}-btc-${width}x${height}`);
+    await setPagePrices(page, { BTC: '100000' });
+    await minimumShown(page, entry, 'BTC', true); await minimumLayout(page, entry, 'BTC priced', width, height);
+    await screenshot(page, `${entry.toLowerCase()}-btc-estimate-${width}x${height}`);
     await page.keyboard.press('Tab'); const first = await page.evaluate(() => document.activeElement.outerHTML);
     await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Tab');
     check(`${entry} ${width}: focus trap wraps`, await page.evaluate(() => document.activeElement.outerHTML) === first);
@@ -246,7 +295,7 @@ async function idle() {
   browser = await chromium.launch({ headless: true, ...(process.platform === 'win32' ? {channel:'msedge'} : {}) });
   try {
     for (const entry of ['Header','Wallet']) await entryChecks(entry);
-    for (const entry of ['Header','Wallet']) for (const [w,h] of [[1920,1080],[1440,1000],[430,932],[390,844],[360,800],[320,568],[1440,480]]) await responsive(entry,w,h);
+    for (const entry of ['Header','Wallet']) for (const [w,h] of [[1920,1080],[1440,900],[1366,768],[430,932],[390,844],[360,800],[1440,1000],[320,568],[1440,480]]) await responsive(entry,w,h);
     console.log('Interaction + responsive checks passed; measuring 60 seconds idle.');
     await idle(); check('No console/page errors or external requests', report.errors.length === 0); report.result = 'PASS';
   } catch (e) { report.result = 'FAIL'; report.failure = e.stack; throw e; }
