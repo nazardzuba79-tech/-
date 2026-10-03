@@ -5,11 +5,12 @@ import {
   adminListingsApi, ListingApiError, LISTING_TIME_ZONES, newPublishKey, utcOffsetLabel, utcToZonedWallTime, zonedWallTimeToUtc,
   type AdminListing, type ListingConfig, type ListingForm, type ListingPreview,
 } from './adminListingsApi';
+import { LISTING_REVISION_CONFLICT, listingProfileLabel, listingRequestError, listingTimeZoneLabel } from './adminListingsCopy';
 import './adminListings.css';
 
 const LOGO_MAX_BYTES = 64 * 1024;
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-const REVISION_CONFLICT_MESSAGE = 'Черновик уже изменён в другом окне или другим администратором. Обновите список и повторите.';
+const REVISION_CONFLICT_MESSAGE = LISTING_REVISION_CONFLICT;
 
 interface FormState {
   name: string; symbol: string; logo: string | null; initialPrice: string;
@@ -38,13 +39,6 @@ const formSignature = (form: FormState): string => JSON.stringify([
   form.ownerAllocation, form.seedMode, form.seedMode === 'manual' ? form.seed : null, form.tradable,
 ]);
 
-const PROFILE_LABELS: Record<NonNullable<ListingConfig['simulationProfile']>, string> = {
-  CALM_TREND: 'Спокойный тренд',
-  IMPULSE_TREND: 'Импульсный тренд',
-  PULLBACK_TREND: 'Тренд с откатами',
-  COMPRESSION_BREAKOUT: 'Сжатие → пробой',
-};
-
 /** The instant in the listing's own zone and in UTC, always both. */
 function listingMoment(iso: string, timeZone: string): string {
   const instant = Date.parse(iso);
@@ -52,22 +46,18 @@ function listingMoment(iso: string, timeZone: string): string {
   const fmt = (zone: string, date: boolean) => new Intl.DateTimeFormat('ru-RU', {
     ...(date ? { day: '2-digit', month: '2-digit', year: 'numeric' } : {}), hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone,
   }).format(new Date(instant)).replace(',', '');
-  return timeZone === 'UTC' ? `${fmt('UTC', true)} UTC` : `${fmt(timeZone, true)} ${timeZone} (${utcOffsetLabel(instant, timeZone)}) · ${fmt('UTC', false)} UTC`;
+  return timeZone === 'UTC' ? `${fmt('UTC', true)} UTC` : `${fmt(timeZone, true)} ${listingTimeZoneLabel(timeZone)} (${utcOffsetLabel(instant, timeZone)}) · ${fmt('UTC', false)} UTC`;
 }
 
 function statusOf(listing: AdminListing): { text: string; tone: 'draft' | 'live' | 'changed' } {
   if (listing.activeVersion === null) return { text: 'Черновик', tone: 'draft' };
   const changed = JSON.stringify(listing.active) !== JSON.stringify(listing.draft);
-  return changed ? { text: `Опубликован v${listing.activeVersion} · есть неопубликованные изменения`, tone: 'changed' } : { text: `Опубликован v${listing.activeVersion}`, tone: 'live' };
+  return changed ? { text: `Опубликован: версия ${listing.activeVersion} · есть неопубликованные изменения`, tone: 'changed' } : { text: `Опубликован: версия ${listing.activeVersion}`, tone: 'live' };
 }
 
 const errorText = (error: unknown) => {
   if (!(error instanceof ListingApiError)) return 'Не удалось выполнить запрос.';
-  if (error.status === 409 && error.code === 'revision_conflict') return REVISION_CONFLICT_MESSAGE;
-  if (error.code === 'STORE_NOT_CONFIGURED') return 'Листинги не подключены: хранилище Cloudflare не настроено на сервере. Создание и публикация недоступны, ничего не сохранено.';
-  if (error.code === 'STORE_AUTH_FAILED') return 'Листинги не подключены: ключ хранилища на сервере и в Cloudflare не совпадает. Создание и публикация недоступны, ничего не сохранено.';
-  if (error.status === 503) return 'Хранилище листингов временно недоступно. Ничего не сохранено — повторите позже.';
-  return error.message;
+  return listingRequestError(error);
 };
 
 /** A tiny close-price line: enough to see that the preview history exists and is stable. */
@@ -187,7 +177,7 @@ export function AdminListingsPage() {
       const saved = editing.id ? await adminListingsApi.saveDraft(editing.id, payload, editing.revision) : await adminListingsApi.create(payload);
       setEditing({ id: saved.id, revision: saved.draftRevision, locked: editing.locked });
       changeForm(fromConfig(saved.draft));
-      setNotice(`Черновик ${saved.draft.symbol}/USDT сохранён (ревизия ${saved.draftRevision}). Seed: ${saved.draft.seed}`);
+      setNotice(`Черновик ${saved.draft.symbol}/USDT сохранён (ревизия ${saved.draftRevision}). Код генерации: ${saved.draft.seed}`);
       await load();
     } catch (error) {
       setFormError(errorText(error));
@@ -238,7 +228,7 @@ export function AdminListingsPage() {
   return (
     <div className="admin-listings">
       <h1 style={styles.title}>Листинги</h1>
-      <p style={styles.subtitle}>Симуляции новых рынков: создание, приватный предпросмотр и публикация — без изменения кода и деплоя.</p>
+      <p style={styles.subtitle}>Симуляции новых рынков: создание, приватный предпросмотр и публикация — без изменения кода и обновления приложения.</p>
       <div className="listing-toolbar">
         <button type="button" className="listing-primary" data-create-listing onClick={openCreate} disabled={notConnected}
           title={notConnected ? 'Листинги не подключены' : undefined}>+ Создать листинг</button>
@@ -278,28 +268,29 @@ export function AdminListingsPage() {
       {editing && (
         <form className="listing-form" onSubmit={save} data-listing-form noValidate>
           <h2>{editing.id ? `Листинг ${form.symbol}/USDT` : 'Новый листинг'}</h2>
-          {editing.locked && <p className="listing-hint">Опубликован: тикер, seed и начальная цена больше не меняются — это защищает историю цен. Время можно перенести только до открытия.</p>}
+          {editing.locked && <p className="listing-hint">Опубликован: тикер, код генерации и начальная цена больше не меняются — это защищает историю цен. Время можно перенести только до открытия.</p>}
           <div className="listing-grid">
             <label>Название<input value={form.name} maxLength={40} onChange={(e) => changeForm({ ...form, name: e.target.value })} data-field="name" required /></label>
             <label>Тикер<input value={form.symbol} maxLength={10} disabled={editing.locked} onChange={(e) => changeForm({ ...form, symbol: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })} data-field="symbol" required /></label>
             <label>Начальная цена, USDT<input value={form.initialPrice} inputMode="decimal" disabled={editing.locked} onChange={(e) => changeForm({ ...form, initialPrice: e.target.value.replace(',', '.') })} data-field="initialPrice" required /></label>
-            <label>Owner allocation, {form.symbol || 'актив'}<input value={form.ownerAllocation} inputMode="decimal" onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
+            <label>Количество токенов для владельца, {form.symbol || 'актив'}<input value={form.ownerAllocation} inputMode="decimal" onChange={(e) => changeForm({ ...form, ownerAllocation: e.target.value.replace(',', '.') })} data-field="ownerAllocation" />
               <small>Только параметр. Создание, предпросмотр и публикация ничего не зачисляют.</small></label>
             <label>Дата и время листинга<input type="datetime-local" value={form.wallTime} onChange={(e) => changeForm({ ...form, wallTime: e.target.value })} data-field="wallTime" required /></label>
             <label>Часовой пояс<select value={form.timeZone} onChange={(e) => changeForm({ ...form, timeZone: e.target.value })} data-field="timeZone">
-              {LISTING_TIME_ZONES.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+              {LISTING_TIME_ZONES.map((zone) => <option key={zone} value={zone}>{listingTimeZoneLabel(zone)}</option>)}
             </select>
               <small data-listing-utc>{listingAtUtc ? `= ${listingMoment(listingAtUtc, form.timeZone)}` : 'Время указывается в выбранном поясе'}</small></label>
             <fieldset className="listing-seed" disabled={editing.locked}>
-              <legend>Seed истории цены</legend>
+              <legend>Код генерации истории цены</legend>
               <label><input type="radio" checked={form.seedMode === 'auto'} onChange={() => changeForm({ ...form, seedMode: 'auto', seed: current?.draft.seed ?? '' })} /> Автоматически</label>
               <label><input type="radio" checked={form.seedMode === 'manual'} onChange={() => changeForm({ ...form, seedMode: 'manual' })} /> Вручную</label>
-              {form.seedMode === 'manual' && <input value={form.seed} onChange={(e) => changeForm({ ...form, seed: e.target.value.toLowerCase() })} placeholder="например qax-launch-0001" data-field="seed" />}
+              {form.seedMode === 'manual' && <input value={form.seed} onChange={(e) => changeForm({ ...form, seed: e.target.value.toLowerCase() })} placeholder="например: qax-0001" data-field="seed" />}
               {form.seedMode === 'auto' && form.seed && <small>Сохранён: <code data-saved-seed>{form.seed}</code> — не меняется при правках.</small>}
+              <small>Код сохраняет повторяемость симуляции; это не пароль и не ключ доступа.</small>
             </fieldset>
             <div className="listing-profile" data-listing-profile={form.simulationProfile ?? (editing.id ? 'original' : 'pending')}>
-              <span>Характер свечей</span>
-              <b>{form.simulationProfile ? PROFILE_LABELS[form.simulationProfile] : editing.id ? 'Исходный' : 'Назначится при создании'}</b>
+              <span>Характер свечей (симуляция)</span>
+              <b>{form.simulationProfile ? listingProfileLabel(form.simulationProfile) : editing.id ? 'Исходный' : 'Назначится при создании'}</b>
               <small>По очереди для новых листингов: спокойный тренд → импульсный → с откатами → сжатие и пробой. Меняет только вид свечей, не траекторию и не итоговую цену; после создания не меняется.</small>
             </div>
             <div className="listing-logo">
@@ -312,7 +303,7 @@ export function AdminListingsPage() {
               <small>PNG, JPEG, WebP или SVG, до 64 КБ.</small>
               {logoReading && <small role="status" data-logo-reading>Загрузка логотипа…</small>}
             </div>
-            <label className="listing-check"><input type="checkbox" checked={form.tradable} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Торговля на Spot после листинга
+            <label className="listing-check"><input type="checkbox" checked={form.tradable} onChange={(e) => changeForm({ ...form, tradable: e.target.checked })} data-field="tradable" /> Спотовая торговля после листинга
               <small>Заявки сводятся только с реальными заявками пользователей; отображаемый стакан — не ликвидность.</small></label>
           </div>
           {formError && <p role="alert" style={styles.errorBox} data-listing-error>{formError}</p>}
@@ -325,22 +316,23 @@ export function AdminListingsPage() {
           </div>
           {editing.id && (
             <div className="listing-preview-controls">
-              <label>Момент предпросмотра ({form.timeZone})<input type="datetime-local" value={previewAt} onChange={(e) => { invalidatePreview(); setPreviewAt(e.target.value); }} data-field="previewAt" /></label>
+              <label>Момент предпросмотра ({listingTimeZoneLabel(form.timeZone)})<input type="datetime-local" value={previewAt} onChange={(e) => { invalidatePreview(); setPreviewAt(e.target.value); }} data-field="previewAt" /></label>
               <small>Пусто = через 2 часа после листинга. Предпросмотр виден только администратору.</small>
             </div>
           )}
           {preview && draftIsSaved && (
-            <section className="listing-preview" data-listing-preview={preview.asset.state.phase} aria-label="Предпросмотр">
+            <section className="listing-preview" data-listing-preview={preview.asset.state.phase} aria-label="Предпросмотр симуляции">
               <header>
                 <b>{preview.asset.pair}</b>
-                <span>{preview.asset.state.phase === 'live' ? 'Торги идут' : 'До листинга'} · {new Date(preview.previewAt).toISOString().replace('.000Z', 'Z')}</span>
+                <span>{preview.asset.state.phase === 'live' ? 'Симуляция после листинга' : 'До листинга'} · {new Date(preview.previewAt).toISOString().replace('.000Z', 'Z')}</span>
                 {preview.asset.state.lastPrice !== null && <span data-preview-price>{preview.asset.state.lastPrice} USDT ({preview.asset.state.change24hPercent?.toFixed(2)}%)</span>}
               </header>
+              <p className="listing-hint">Цены, объёмы, стакан и сделки в этом предпросмотре сгенерированы. Это симуляция, а не реальные рыночные данные.</p>
               <PreviewSpark candles={preview.candles} />
               <div className="listing-preview-grid">
-                <div><h3>Стакан (отображение)</h3>{preview.book.available ? preview.book.asks.slice(0, 5).reverse().concat(preview.book.bids.slice(0, 5)).map((level, i) =>
+                <div><h3>Стакан (симуляция)</h3>{preview.book.available ? preview.book.asks.slice(0, 5).reverse().concat(preview.book.bids.slice(0, 5)).map((level, i) =>
                   <div key={i} className={i < 5 ? 'ask' : 'bid'}><span>{level.price}</span><span>{level.quantity}</span></div>) : <p className="listing-muted">—</p>}</div>
-                <div><h3>Сделки</h3>{preview.trades.slice(0, 10).map((trade) => <div key={trade.id} className={trade.side === 'BUY' ? 'bid' : 'ask'}><span>{trade.price}</span><span>{trade.quantity}</span></div>)}
+                <div><h3>Сделки (симуляция)</h3>{preview.trades.slice(0, 10).map((trade) => <div key={trade.id} className={trade.side === 'BUY' ? 'bid' : 'ask'}><span>{trade.price}</span><span>{trade.quantity}</span></div>)}
                   {!preview.trades.length && <p className="listing-muted">—</p>}</div>
               </div>
             </section>
@@ -348,7 +340,7 @@ export function AdminListingsPage() {
           {current && current.versions.length > 0 && (
             <section className="listing-versions" aria-label="Версии">
               <h3>Опубликованные версии</h3>
-              {current.versions.map((v) => <div key={v.version}>v{v.version} · {new Date(v.publishedAt).toLocaleString('ru-RU')} · {v.publishedBy}{v.version === current.activeVersion ? ' · активна' : ''}</div>)}
+              {current.versions.map((v) => <div key={v.version}>Версия {v.version} · {new Date(v.publishedAt).toLocaleString('ru-RU')} · {v.publishedBy}{v.version === current.activeVersion ? ' · активна' : ''}</div>)}
             </section>
           )}
         </form>
@@ -360,7 +352,7 @@ export function AdminListingsPage() {
             <h2>Опубликовать {publishing.listing.draft.symbol}/USDT?</h2>
             <p>{publishing.listing.draft.name} · начальная цена {publishing.listing.draft.initialPrice} USDT</p>
             <p>Листинг: {listingMoment(publishing.listing.draft.listingAt, publishing.listing.draft.displayTimeZone)}</p>
-            <p className="listing-hint">После публикации рынок виден всем. Тикер, seed и начальная цена фиксируются. Баланс владельца не зачисляется.</p>
+            <p className="listing-hint">После публикации рынок виден всем. Тикер, код генерации и начальная цена фиксируются. Баланс владельца не зачисляется.</p>
             <div className="listing-buttons">
               <button type="button" className="listing-primary" disabled={busy || !draftIsSaved} onClick={() => void confirmPublish()} data-confirm-publish>Опубликовать</button>
               <button type="button" disabled={busy} onClick={() => setPublishing(null)}>Отмена</button>
