@@ -57,7 +57,7 @@ export function CfdChart({symbol}:{symbol:string}){
     const surface=getComputedStyle(host);const token=(name:string,fallback:string)=>surface.getPropertyValue(name).trim()||fallback;
     const up=token('--voltex-candle-up','#12c98d'),down=token('--voltex-candle-down','#ef5350'),axisBorder=token('--voltex-axis-border','#2b2e36');
     volumeUpRef.current=token('--voltex-volume-up','rgba(18,201,141,.28)');volumeDownRef.current=token('--voltex-volume-down','rgba(239,83,80,.28)');
-    const chart=createChart(host,{autoSize:true,layout:{background:{type:ColorType.Solid,color:token('--voltex-plot-background','#101014')},textColor:token('--voltex-axis-text','#aeb9c4'),fontFamily:'Inter, Arial, sans-serif',fontSize:11},grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{borderColor:axisBorder},timeScale:{borderColor:axisBorder,timeVisible:true,secondsVisible:false},crosshair:{mode:0}});
+    const chart=createChart(host,{autoSize:true,layout:{background:{type:ColorType.Solid,color:token('--voltex-plot-background','#101014')},textColor:token('--voltex-axis-text','#aeb9c4'),fontFamily:token('--voltex-chart-font','Inter, Arial, sans-serif'),fontSize:11},grid:{vertLines:{visible:false},horzLines:{visible:false}},rightPriceScale:{borderColor:axisBorder},timeScale:{borderColor:axisBorder,timeVisible:true,secondsVisible:false},crosshair:{mode:0}});
     const candles=chart.addSeries(CandlestickSeries,{upColor:up,downColor:down,borderVisible:false,wickUpColor:up,wickDownColor:down,priceLineVisible:true,priceLineColor:'#d9b95b'});
     const volume=chart.addSeries(HistogramSeries,{priceFormat:{type:'volume'},priceScaleId:'volume',base:0});
     volume.priceScale().applyOptions({scaleMargins:{top:.82,bottom:0},visible:false});

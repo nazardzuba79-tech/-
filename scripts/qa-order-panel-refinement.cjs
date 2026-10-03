@@ -51,6 +51,10 @@ const report = { fixtureOnly: true, errors: [], viewports: [] };
     assert(await toggle.getAttribute('title'), 'Protection explanation must remain available');
     assert.equal(await toggleBox.isChecked(), false);
     const available = page.locator('.fo-availRow');
+    // The ticket chrome can render before the initialized fixture account
+    // response. Wait for that response's positive margin, then keep the
+    // original assertion; a missing/zero account still fails within 10s.
+    await page.waitForFunction(() => Number(document.querySelector('.fo-availRow')?.getAttribute('data-available-margin')) > 0, null, { timeout: 10000 });
     assert(Number(await available.getAttribute('data-available-margin')) > 0, 'Available margin must be printed above the price');
     assert.equal(await available.locator('button').count(), 0, 'No «+» beside «Доступно» (owner, 2026-09-30)');
     assert.equal(await page.locator('.futures-terminal-status').count(), 0);
