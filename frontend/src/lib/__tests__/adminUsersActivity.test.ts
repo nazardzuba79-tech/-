@@ -7,7 +7,7 @@ beforeEach(() => { f = createAdminWorkingFixture(); });
 afterEach(async () => { await f.dispose(); jest.useRealTimers(); });
 const tick = (ms: number) => act(async () => { await jest.advanceTimersByTimeAsync(ms); await flush(); });
 const query = () => new URLSearchParams(f.api.getAdminUsersPage.mock.calls.at(-1)[0]);
-const attention = () => f.host.querySelector('[aria-label="Требует внимания"]')!;
+const attention = () => f.host.querySelector('[aria-label="Показатели пользователей"]')!;
 
 test('the bounded server page controls ordering; no unbounded users/history reads', async () => {
   f.api.getAdminUsersPage.mockResolvedValue(page([user('payer'), user('fresh'), user('old')], 1000));
@@ -16,12 +16,12 @@ test('the bounded server page controls ordering; no unbounded users/history read
   expect(Object.fromEntries(query())).toEqual({ page: '1', pageSize: '20', search: '', status: 'all', sort: 'createdAt', direction: 'desc' });
   expect(f.api.getAdminUsers).not.toHaveBeenCalled(); expect(f.api.getAdminDeposits).not.toHaveBeenCalled();
 });
-test('attention numbers keep their units and distinct backend meanings, independent of visible user rows', async () => {
+test('compact user KPIs remain global and never sum different queue units', async () => {
   await f.mount();
-  const cards = Array.from(attention().querySelectorAll('.admin-attention-grid>a'));
-  expect(cards.map(card => card.querySelector('strong')?.textContent)).toEqual(['1', '2', '3', '4', '5', '6']);
-  expect(cards[0].textContent).toContain('пакетов'); expect(cards[2].textContent).toContain('переводов');
-  expect(attention().textContent).toContain('Пользователей: 1000');
+  const cards = Array.from(attention().querySelectorAll('.admin-users-kpi'));
+  expect(cards.map(card => card.querySelector('strong')?.textContent)).toEqual(['1000', '7', '5']);
+  expect(cards.map(card => card.querySelector('span')?.textContent)).toEqual(['Всего пользователей', 'Новые за 24 часа', 'Ожидают KYC']);
+  expect(f.host.querySelector('.admin-attention-grid')).toBeNull();
   expect(f.host.querySelector('[data-credit-user]')).toBeNull();
 });
 test('existing password values and unavailable markers remain unchanged in desktop and mobile', async () => {
@@ -30,11 +30,10 @@ test('existing password values and unavailable markers remain unchanged in deskt
   expect(f.host.querySelector('[data-user-password="unknown"]')?.textContent).toBe('—');
   expect(f.host.querySelector('[data-user-card="plain"]')?.textContent).toContain('FixturePassword123');
 });
-test('queue cards lead to the specific real working queue, with no financial action on Users', async () => {
+test('Users has no duplicated financial queue cards or financial submit actions', async () => {
   await f.mount();
-  expect(attention().querySelector('a')?.getAttribute('href')).toBe('/admin/deposits?state=READY');
-  expect(attention().querySelector('a[href="/admin/withdrawals?status=active"]')).not.toBeNull();
-  expect(attention().querySelector('a[href="/admin/kyc?status=PENDING"]')).not.toBeNull();
+  expect(attention().querySelector('a[href^="/admin/deposits"]')).toBeNull();
+  expect(attention().querySelector('a[href^="/admin/withdrawals"]')).toBeNull();
   expect(f.host.querySelector('[data-confirm-credit]')).toBeNull();
   expect(f.fetcher.mock.calls.filter((c: any[]) => c[1]?.method === 'POST')).toHaveLength(0);
 });
@@ -80,33 +79,33 @@ test('late page A is aborted and cannot replace page B after filtering', async (
 });
 test('first summary failure ends loading, keeps unknown values and retry recovers exactly once', async () => {
   f.fetcher.mockResolvedValueOnce(json({ error: 'unavailable' }, 503)); await f.mount();
-  expect(attention().querySelector('[role="alert"]')).not.toBeNull();
+  expect(attention().querySelector('[role="status"]')).not.toBeNull();
   expect(attention().textContent).not.toContain('Загрузка…');
-  expect(Array.from(attention().querySelectorAll('.admin-attention-grid strong')).every(el => el.textContent === '—')).toBe(true);
+  expect(Array.from(attention().querySelectorAll('.admin-users-kpi strong')).every(el => el.textContent === '—')).toBe(true);
   await f.click(attention().querySelector('button'));
-  expect(f.calls('/work-summary')).toHaveLength(2); expect(attention().querySelector('[role="alert"]')).toBeNull();
+  expect(f.calls('/work-summary')).toHaveLength(2); expect(attention().querySelector('[role="status"]')).toBeNull();
 });
 test.each(['network', 'malformed', 'incomplete'])('%s summary cannot become a zero or an invented empty queue', async kind => {
   if (kind === 'network') f.fetcher.mockRejectedValueOnce(new TypeError('Failed to fetch'));
   else f.fetcher.mockResolvedValueOnce(json(kind === 'malformed' ? { packages: [] } : { widgets: {} }));
-  await f.mount(); expect(attention().querySelector('[role="alert"]')).not.toBeNull();
+  await f.mount(); expect(attention().querySelector('[role="status"]')).not.toBeNull();
   expect(attention().textContent).not.toContain('Загрузка…');
-  expect(Array.from(attention().querySelectorAll('.admin-attention-grid strong')).every(el => el.textContent === '—')).toBe(true);
+  expect(Array.from(attention().querySelectorAll('.admin-users-kpi strong')).every(el => el.textContent === '—')).toBe(true);
 });
 test('known zero is displayed as zero only after a successful summary answer', async () => {
-  f.fetcher.mockResolvedValueOnce(json(workSummary({ readyPackages: { value: 0 } }))); await f.mount();
-  expect(attention().querySelector('.admin-attention-grid strong')?.textContent).toBe('0');
+  f.fetcher.mockResolvedValueOnce(json(workSummary({ totalUsers: { value: 0 } }))); await f.mount();
+  expect(attention().querySelector('.admin-users-kpi strong')?.textContent).toBe('0');
 });
 test('summary refresh failure retains the prior values and explicitly marks them stale', async () => {
-  await f.mount(); f.fetcher.mockResolvedValueOnce(json({ error: 'unavailable' }, 503));
-  await f.click(attention().querySelector('button'));
-  expect(attention().querySelector('.admin-attention-grid strong')?.textContent).toBe('1');
-  expect(attention().querySelector('[role="alert"]')?.textContent).toContain('устареть');
+  jest.useFakeTimers(); await f.mount(); f.fetcher.mockResolvedValueOnce(json({ error: 'unavailable' }, 503));
+  await tick(30_000);
+  expect(attention().querySelector('.admin-users-kpi strong')?.textContent).toBe('1000');
+  expect(attention().querySelector('[role="status"]')?.textContent).toContain('устареть');
 });
 test('a hung summary read is aborted at 15 seconds and settles to an error', async () => {
   jest.useFakeTimers(); f.fetcher.mockImplementationOnce(() => new Promise(() => {})); await f.mount();
   const signal = f.calls('/work-summary')[0][1].signal; await tick(15_000);
-  expect(signal.aborted).toBe(true); expect(attention().querySelector('[role="alert"]')).not.toBeNull();
+  expect(signal.aborted).toBe(true); expect(attention().querySelector('[role="status"]')).not.toBeNull();
   expect(attention().textContent).not.toContain('Загрузка…');
 });
 test('user list failure offers retry; a same-turn double click starts one read', async () => {

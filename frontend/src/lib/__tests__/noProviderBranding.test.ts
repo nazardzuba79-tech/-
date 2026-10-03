@@ -76,15 +76,15 @@ describe('customer-facing components render no provider branding', () => {
   // not exclude all lib files because formatters can contain customer copy.
   const DATA_MODULES = ['api.ts', 'liveMarketTypes.ts', 'referenceAssets.ts',
     'directFuturesReference.ts', 'futuresCandles.ts', 'futuresDepth.ts', 'spotPublicMarket.ts', 'terminalPresentation.ts'];
-  const EXCLUDED = new Set(DATA_MODULES.map(file => join('src', 'lib', file)));
+  const EXCLUDED = new Set(DATA_MODULES.map(file => `src/lib/${file}`));
 
   function sources(dir: string, out: string[] = []): string[] {
     for (const entry of readdirSync(resolve(frontend, dir))) {
-      const rel = join(dir, entry);
+      const rel = join(dir, entry).replace(/\\/g, '/');
       if (statSync(resolve(frontend, rel)).isDirectory()) {
         // Staff attribution (for example the catalogue's CoinGecko source)
         // is outside the customer presentation policy.
-        if (entry !== '__tests__' && entry !== 'node_modules' && rel !== join('src', 'pages', 'admin')) sources(rel, out);
+        if (entry !== '__tests__' && entry !== 'node_modules' && rel !== 'src/pages/admin') sources(rel, out);
       } else if (/\.(tsx?|css)$/.test(entry) && !EXCLUDED.has(rel)) {
         out.push(rel);
       }

@@ -26,7 +26,7 @@ const code = (text: string) =>
 
 function sources(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(resolve(frontend, dir))) {
-    const rel = join(dir, entry);
+    const rel = join(dir, entry).replace(/\\/g, '/');
     if (statSync(resolve(frontend, rel)).isDirectory()) {
       if (entry !== '__tests__' && entry !== 'node_modules') sources(rel, out);
     } else if (/\.tsx?$/.test(entry)) {

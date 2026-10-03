@@ -1,5 +1,6 @@
 import { styles } from './adminStyles';
 import { ChevronLeftIcon, ChevronRightIcon } from './AdminIcons';
+import type { AdminReadCompatibility } from '../../lib/adminPagedApi';
 
 export function AdminPagination({
   page,
@@ -9,6 +10,7 @@ export function AdminPagination({
   itemLabel,
   onPageChange,
   placement = 'bottom',
+  compatibility,
 }: {
   page: number;
   totalPages: number;
@@ -18,6 +20,7 @@ export function AdminPagination({
   onPageChange: (page: number) => void;
   /** 'top' sits at the right end of a filter row (no top margin, count beside the buttons). */
   placement?: 'top' | 'bottom';
+  compatibility?: AdminReadCompatibility;
 }) {
   // A single-page list has nowhere to paginate. Hiding the entire row also
   // removes redundant copy such as “1–14 из 14”, while 2+ pages keep the
@@ -34,7 +37,7 @@ export function AdminPagination({
       style={placement === 'top' ? { ...styles.paginationRow, marginTop: 0, justifyContent: 'flex-end' } : styles.paginationRow}
     >
       <div style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
-        {from}–{to} {itemLabel} {total.toLocaleString()}
+        {from}–{to} {compatibility?.complete === false ? 'из загруженных' : itemLabel} {total.toLocaleString()}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <button aria-label="Предыдущая страница" onClick={() => onPageChange(page - 1)} disabled={page === 1} style={{ ...styles.pageBtn, opacity: page === 1 ? 0.4 : 1 }}>

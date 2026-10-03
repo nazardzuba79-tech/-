@@ -9,6 +9,7 @@ on:
       - 'frontend/src/main.tsx'
       - 'scripts/qa-admin-practicality.cjs'
       - 'scripts/qa-admin-workflow-interactions.cjs'
+      - 'scripts/qa-admin-api-compatibility.cjs'
       - '.github/workflows/admin-practicality.yml'
 permissions:
   contents: read
@@ -48,6 +49,13 @@ jobs:
           QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
           QA_BROWSER: chromium
           QA_INTERACTIONS: '1'
+        run: node scripts/qa-admin-practicality.cjs
+      - name: Modern and legacy API compatibility at six widths
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
+          QA_BROWSER: chromium
+          QA_COMPATIBILITY: '1'
+          QA_OUT: output/admin-practicality/api-compatibility
         run: node scripts/qa-admin-practicality.cjs
       - uses: actions/upload-artifact@v4
         if: always()

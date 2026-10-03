@@ -10,7 +10,7 @@ const React = req('react');
 const { act } = React;
 const flush = () => new Promise<void>(done => setImmediate(done));
 let dom: any, root: any, host: HTMLElement, id: string, token: string | null, read: jest.Mock;
-let sessions: Set<() => void>, modules: Map<string, any>, historyRead: jest.Mock;
+let sessions: Set<() => void>, modules: Map<string, any>, historyRead: jest.Mock, balancesRead: jest.Mock;
 let params: URLSearchParams, paramWrites: jest.Mock;
 const detail = (value: string) => ({ id: value, email: `${value}@example.invalid`, role: 'USER', isAdmin: false,
   createdAt: '2026-10-01T12:00:00Z', kycStatus: 'NOT_STARTED', balances: [], demoBalances: [],
@@ -29,7 +29,7 @@ function load(file: string): any {
         params = new URLSearchParams(next); paramWrites(params.toString(), options); change((value: number) => value + 1);
       }];
     }, useNavigate: () => jest.fn(), Link: (p: any) => React.createElement('a', { href: p.to, className: p.className }, p.children) };
-    if (name.endsWith('/adminPagedApi')) return { getAdminProfile: (...args: any[]) => read(...args), getAdminHistory: (...args: any[]) => historyRead(...args) };
+    if (name.endsWith('/adminPagedApi')) return { getAdminProfile: (...args: any[]) => read(...args), getAdminHistory: (...args: any[]) => historyRead(...args), getAdminProfileBalances: (...args: any[]) => balancesRead(...args) };
     if (name.endsWith('/adminWorkSummary')) return { refreshAdminSummary: jest.fn() };
     if (name.endsWith('/AdminBalanceAdjustment')) return { AdminBalanceAdjustment: () => null };
     if (name.endsWith('/adminReadApi')) return { getAdminUserDetailAbortable: (...args: any[]) => read(...args) };
@@ -49,6 +49,7 @@ beforeEach(() => {
   host = document.getElementById('root')!; root = req('react-dom/client').createRoot(host);
   id = 'a'; token = 'fixture-session'; sessions = new Set(); modules = new Map(); read = jest.fn(); historyRead = jest.fn().mockResolvedValue({items: [], total: 0, page: 1, pageSize: 20, totalPages: 0});
   params = new URLSearchParams(); paramWrites = jest.fn();
+  balancesRead = jest.fn().mockResolvedValue({ balances: [], demoBalances: [] });
 });
 afterEach(async () => { await act(async () => root.unmount()); dom.window.close(); jest.useRealTimers(); });
 test.each([500, undefined])('%s / offline errors end loading and expose retry without an empty profile', async (status) => {
@@ -149,4 +150,52 @@ test('deep-linked history aborts across users and ignores the previous user late
   await act(async () => { a.resolve({ items: [{ id: 'private-a-history', asset: 'BTC', amount: '123' }], total: 1, page: 1, pageSize: 20, totalPages: 1 }); await flush(); });
   expect(host.textContent).toContain('b@example.invalid'); expect(host.textContent).not.toContain('private-a-history');
   expect(historyRead.mock.calls.map(call => call[0])).toEqual(['a', 'b']);
+});
+
+const legacy = { mode: 'legacy', complete: true, notice: 'Используется совместимый API.' };
+test('legacy profile keeps aggregate balances lazy and aborts the selected read on exit', async () => {
+  const pending = deferred(); balancesRead.mockReturnValue(pending.promise);
+  read.mockResolvedValue({ ...detail('a'), demoBalances: null, compatibility: legacy });
+  await render(); expect(balancesRead).not.toHaveBeenCalled(); expect(historyRead).not.toHaveBeenCalled();
+  await click(/^Балансы$/); expect(balancesRead).toHaveBeenCalledTimes(1);
+  expect(host.textContent).not.toContain('Записей баланса нет.');
+  const signal = balancesRead.mock.calls[0][1]; await click(/^Общее$/); expect(signal.aborted).toBe(true);
+  await act(async () => { pending.resolve({ balances: [{ asset: 'USDT', available: '987.654321', locked: '1' }], demoBalances: [] }); await flush(); });
+  expect(host.textContent).not.toContain('987.654321');
+});
+
+test('legacy balances read shows exact real and demo amounts separately after explicit selection', async () => {
+  read.mockResolvedValue({ ...detail('a'), balances: null, demoBalances: null, compatibility: legacy });
+  balancesRead.mockResolvedValue({ balances: [{ asset: 'USDT', available: '123.456789', locked: '2' }], demoBalances: [{ asset: 'USDT', available: '9876', locked: '0' }], compatibility: legacy });
+  await render(); await click(/^Балансы$/);
+  expect(host.textContent).toContain('123.456789'); expect(host.textContent).toContain('9876');
+  expect(host.textContent).toContain('Тестовый счёт — отдельно'); expect(balancesRead).toHaveBeenCalledTimes(1);
+});
+
+test('legacy profiles cannot offer an incompatible balance adjustment write', async () => {
+  read.mockResolvedValue({ ...detail('a'), demoBalances: null, compatibility: legacy }); await render();
+  const adjustment = Array.from(host.querySelectorAll('button')).find(button => button.textContent === 'Корректировка баланса');
+  expect(adjustment?.disabled).toBe(true); expect(host.textContent).toMatch(/Корректировка.*недоступна.*версии сервера/);
+});
+
+test('unknown legacy account state is not active and cannot expose account-state actions', async () => {
+  read.mockResolvedValue({ ...detail('a'), isBlocked: null, balances: null, demoBalances: null, compatibility: legacy }); await render();
+  expect(host.textContent).toContain('Статус недоступен'); expect(host.textContent).not.toMatch(/Активен|Активна/);
+  expect(Array.from(host.querySelectorAll('button')).some(button => /^(Заблокировать|Разблокировать)/.test(button.textContent || ''))).toBe(false);
+});
+
+test('capped history never claims a complete total or definitive empty history', async () => {
+  read.mockResolvedValue(detail('a'));
+  historyRead.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0, compatibility: { ...legacy, complete: false, limit: 100, notice: 'Сервер вернул только последние 100 записей.' } });
+  await render(); await click(/^Пополнения$/);
+  expect(host.textContent).toContain('Загружено по условиям: 0');
+  expect(host.textContent).toContain('Полная история недоступна.');
+  expect(host.textContent).not.toContain('Найдено: 0'); expect(host.textContent).not.toContain('Записей нет.');
+});
+
+test('unsupported history remains unavailable rather than an empty or missing account', async () => {
+  read.mockResolvedValue(detail('a')); historyRead.mockRejectedValue(Object.assign(new Error('unsupported'), { status: 404, code: 'ENDPOINT_NOT_AVAILABLE' }));
+  await render(); await click(/^Ордера$/);
+  expect(host.querySelector('[role="alert"]')?.textContent).toMatch(/недоступ/i);
+  expect(host.textContent).not.toMatch(/Записей нет|Пользователь не найден/);
 });

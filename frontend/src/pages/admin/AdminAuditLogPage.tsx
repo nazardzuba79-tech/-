@@ -9,6 +9,7 @@ import { AdminPagination } from './AdminPagination';
 import { CopyValue } from './AdminPrimitives';
 import { adminDate, adminAction, adminStatus, ADMIN_ACTIONS, maskAuditMetadata } from './adminPresentation';
 import { adminQueueDateBounds } from './adminQueueDates';
+import { AdminCompatibilityNotice, adminPageCount, adminPageEmpty } from './adminPageSupport';
 import './adminPracticality.css';
 
 export function AdminAuditLogPage() {
@@ -32,8 +33,8 @@ export function AdminAuditLogPage() {
       <label>Дата от<input type="date" value={from} max={to || undefined} onChange={e => update({ from: e.target.value, page: 1 })} /></label>
       <label>Дата до<input type="date" value={to} min={from || undefined} onChange={e => update({ to: e.target.value, page: 1 })} /></label>
     </div><AdminReadStatus {...read} hasData={!!read.data} />
-    {read.data && <><div className="admin-list-heading"><p className="admin-result-count">Найдено: {read.data.total.toLocaleString('ru-RU')}</p><AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" /></div>
-      {!read.data.items.length && <p>Записей по выбранным условиям нет.</p>}
+    {read.data && <><AdminCompatibilityNotice compatibility={read.data.compatibility} /><div className="admin-list-heading"><p className="admin-result-count">{adminPageCount(read.data)}</p><AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={20} compatibility={read.data.compatibility} itemLabel="из" onPageChange={value => update({ page: value })} placement="top" /></div>
+      {!read.data.items.length && <p>{adminPageEmpty(read.data)}</p>}
       <div className="admin-audit-list">{read.data.items.map(entry => <article key={entry.id}>
         <header><strong>{adminAction(entry.action)}</strong><time>{adminDate(entry.createdAt)}</time></header>
         <dl className="admin-key-values"><dt>Выполнил</dt><dd>{entry.performedByAdminEmail ?? 'Не указан в записи'}</dd><dt>Пользователь</dt><dd>{entry.userId ? <Link to={`/admin/users/${encodeURIComponent(entry.userId)}?returnTo=${encodeURIComponent(returnTo)}`}>{entry.userEmail ?? entry.userId}</Link> : 'Не относится к пользователю'}</dd><dt>Результат</dt><dd>{typeof entry.metadata?.status === 'string' ? adminStatus(entry.metadata.status) : entry.metadata?.success === false ? 'Ошибка' : 'Действие зарегистрировано'}</dd></dl>

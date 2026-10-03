@@ -3,10 +3,14 @@ import { getToken, onSessionChange } from '../../lib/api';
 
 type Snapshot<T> = { key: string; session: string | null; data: T | null; error: string | null; loading: boolean; updatedAt: number | null };
 const message = (error: unknown) => {
+  const code = (error as { code?: string })?.code;
   const status = (error as { status?: number })?.status;
   if (status === 401) return 'Сессия завершена. Войдите снова.';
   if (status === 403) return 'Нет доступа к этим данным.';
+  if (code === 'USER_NOT_FOUND') return 'Пользователь не найден.';
+  if (code === 'ENDPOINT_NOT_AVAILABLE') return 'Этот раздел недоступен в текущей версии сервера.';
   if (status === 404) return 'Запись не найдена.';
+  if (code === 'SERVER_ERROR') return 'Сервер не смог загрузить данные. Повторите запрос.';
   return 'Не удалось загрузить данные. Проверьте соединение и повторите запрос.';
 };
 

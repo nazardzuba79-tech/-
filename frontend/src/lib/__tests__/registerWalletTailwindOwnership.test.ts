@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, existsSync, statSync } from 'fs';
-import { resolve, join } from 'path';
+import { resolve, join, relative } from 'path';
 import { jsxClassNames } from '../../../test-utils/sourceContracts';
 
 /**
@@ -157,7 +157,7 @@ describe('the utilities layers in this repo are the three we think they are', ()
         const full = join(dir, entry.name);
         if (entry.isDirectory()) walk(full);
         else if (entry.name.endsWith('.css') && readFileSync(full, 'utf8').includes('@tailwind utilities')) {
-          carriers.push(full.slice(full.indexOf('src/')));
+          carriers.push(relative(frontend, full).replace(/\\/g, '/'));
         }
       }
     };

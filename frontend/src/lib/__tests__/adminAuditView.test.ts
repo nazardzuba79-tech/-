@@ -5,6 +5,20 @@ const query = () => new URLSearchParams(f.api.getAdminAuditPage.mock.calls.at(-1
 beforeEach(() => { f = createAdminWorkingFixture(); });
 afterEach(async () => { await f.dispose(); jest.useRealTimers(); });
 const mount = (url = '/admin/audit-log') => f.mount('AdminAuditLogPage', url);
+
+test('capped legacy journal labels loaded totals and cannot claim complete empty history', async () => {
+  f.api.getAdminAuditPage.mockResolvedValue({ ...page([]), compatibility: { mode: 'legacy', complete: false, limit: 200, notice: 'Сервер вернул только последние 200 записей.' } });
+  await mount();
+  expect(f.host.textContent).toContain('Загружено по условиям: 0');
+  expect(f.host.textContent).toContain('Полная история недоступна.');
+  expect(f.host.textContent).not.toContain('Записей по выбранным условиям нет.');
+});
+
+test('capped legacy journal pagination explicitly describes the loaded sample', async () => {
+  f.api.getAdminAuditPage.mockResolvedValue({ ...page([entry('known')], 200), compatibility: { mode: 'legacy', complete: false, limit: 200, notice: 'Сервер вернул только последние 200 записей.' } });
+  await mount(); expect(f.host.textContent).toContain('из загруженных 200');
+  expect(f.host.textContent).not.toContain('Найдено: 200');
+});
 test('initial error is an error with retry, not an empty journal', async () => {
   f.api.getAdminAuditPage.mockRejectedValueOnce(new Error('unavailable')); await mount();
   expect(f.host.querySelector('[role="alert"]')).not.toBeNull(); expect(f.host.textContent).not.toContain('Записей по выбранным условиям нет.');
