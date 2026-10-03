@@ -1,0 +1,57 @@
+name: Admin operational workflow fixtures
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/admin/**'
+      - 'frontend/src/lib/admin*.ts'
+      - 'frontend/src/lib/useAdmin*.ts'
+      - 'frontend/src/lib/browserActivity.ts'
+      - 'frontend/src/main.tsx'
+      - 'scripts/qa-admin-practicality.cjs'
+      - 'scripts/qa-admin-workflow-interactions.cjs'
+      - '.github/workflows/admin-practicality.yml'
+permissions:
+  contents: read
+concurrency:
+  group: admin-practicality-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - name: Build against local fixture endpoints
+        env:
+          VITE_API_URL: /api/v1
+          VITE_MANUAL_DEPOSIT_CATALOGUE: 'true'
+          VITE_DEPOSIT_CATALOGUE_URL: http://127.0.0.1:4402/api/v1/deposit-catalogue
+        run: npm run build --prefix frontend
+      - name: Disposable browser
+        run: |
+          npm install --prefix /tmp/admin-practicality-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/admin-practicality-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Four-width screenshot and overflow checks
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
+          QA_BROWSER: chromium
+        run: node scripts/qa-admin-practicality.cjs
+      - name: Navigation, failure and uncertain-response recovery
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/admin-practicality-qa/node_modules/playwright
+          QA_BROWSER: chromium
+          QA_INTERACTIONS: '1'
+        run: node scripts/qa-admin-practicality.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-operational-workflow-fixtures
+          path: output/admin-practicality
+          retention-days: 7

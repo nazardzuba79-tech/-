@@ -8,6 +8,10 @@
 | --- | --- | --- |
 | Попередній повний frontend admin/deposit/KYC/bandwidth прогін | **366/366**, 30/30 suites | `output/admin-practicality/frontend-admin-full-regression-green.log` |
 | Після двох фінальних інтеграційних виправлень | **372/372**, 30/30 suites, 44,697 с | `output/admin-practicality/frontend-admin-stage4-final-regression.log` |
+| Фінальна узгоджена база з main `7cc6640d` — Admin + shared lifecycle union | **430/430**, 40/40 suites | `output/admin-practicality/final-rebased-frontend-regression.log` |
+| Фінальна backend bounded reads + balance recovery union | **79/79**, 8/8 suites | `output/admin-practicality/final-rebased-backend-regression.log` |
+| Фінальний built UI | **32 screenshots + 18/18 interactions**, 0 errors/overflow/external calls | `review-capture.log`, `review-interactions.log` |
+| Повтор після rebase: gate / deletion / KYC PG / KYC memory | **26 / 20 / 10 / 10**, усі PASS | `output/admin-practicality/review-*` |
 | TypeScript project build | **PASS**, exit 0 | `node frontend/node_modules/typescript/bin/tsc -b frontend` після останнього прогону |
 | Red-перевірка фінальних інтеграційних дефектів | **3 failed / 22 passed** до змін | `output/admin-practicality/admin-stage4-integration-red.log` |
 | Вузький regression після їх виправлення | **51/51**, 4/4 suites | `output/admin-practicality/admin-stage4-integration-green.log` |
