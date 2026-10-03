@@ -35,6 +35,8 @@ export const EN: Record<Key, string> = {
   'deposit.ui.memoCopied': "Memo copied",
   'deposit.ui.copyMemo': "Copy memo",
   'deposit.ui.asset': "Asset",
+  'deposit.ui.minimumLabel': "Minimum deposit amount",
+  'deposit.ui.minimumOtherValue': "{amount} USDT or the equivalent in {asset}",
   'deposit.ui.minimumPeggedLine': "Minimum deposit — {amount} {asset}",
   'deposit.ui.minimumOtherLine': "Minimum deposit — {amount} USDT or the equivalent in {asset}",
   'deposit.ui.minimumApprox': "(≈ {amount} {asset})",

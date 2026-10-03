@@ -35,6 +35,8 @@ export const JA: Record<Key, string> = {
   'deposit.ui.memoCopied': "メモをコピーしました",
   'deposit.ui.copyMemo': "メモをコピー",
   'deposit.ui.asset': "資産",
+  'deposit.ui.minimumLabel': "最低入金額",
+  'deposit.ui.minimumOtherValue': "{amount} USDT または同等額の {asset}",
   'deposit.ui.minimumPeggedLine': "最低入金額 — {amount} {asset}",
   'deposit.ui.minimumOtherLine': "最低入金額 — {amount} USDT または同等額の {asset}",
   'deposit.ui.minimumApprox': "（≈ {amount} {asset}）",

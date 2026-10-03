@@ -221,14 +221,15 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
             </> : <div className="dc-network"><span><strong>{network}</strong></span><Check size={17} aria-hidden="true"/></div>}
           </div>
           {/* The rule before the address: seen before anything is copied. */}
-          {/* Two lines (owner, 2026-09-29): the minimum in the chosen coin's
-              terms, then one plain sentence. */}
           <section className="dc-minimum" data-testid="deposit-minimum">
-            <p className="dc-minimum-line"><strong>{minimum.pegged
-              ? t('deposit.ui.minimumPeggedLine', { amount: amount(minimum.usd), asset })
-              : t('deposit.ui.minimumOtherLine', { amount: amount(minimum.usd), asset })}</strong>
-              {minimum.estimate !== null && <span className="dc-minimum-estimate" data-testid="deposit-minimum-equivalent">{' '}{t('deposit.ui.minimumApprox', { amount: amount(minimum.estimate), asset })}</span>}</p>
-            <p className="dc-minimum-note">{t('deposit.ui.minimumNote')}</p>
+            <p className="dc-minimum-line">
+              <span className="dc-minimum-label">{t('deposit.ui.minimumLabel')}</span>
+              <span className="dc-minimum-value"><strong>{minimum.pegged
+                ? `${amount(minimum.usd)} ${asset}`
+                : t('deposit.ui.minimumOtherValue', { amount: amount(minimum.usd), asset })}</strong>
+                {minimum.estimate !== null && <span className="dc-minimum-estimate" data-testid="deposit-minimum-equivalent">{t('deposit.ui.minimumApprox', { amount: amount(minimum.estimate), asset })}</span>}
+              </span>
+            </p>
           </section>
           <p className="dc-warning"><Info size={17}/><span>{t('deposit.ui.sendOnly')} <strong>{asset}</strong> {t('deposit.ui.inNetwork')} <strong>{network}</strong>. {t('deposit.ui.lossWarning')}</span></p>
           <div className="dc-address-card">

@@ -35,6 +35,8 @@ export const ZH: Record<Key, string> = {
   'deposit.ui.memoCopied': "备注已复制",
   'deposit.ui.copyMemo': "复制备注",
   'deposit.ui.asset': "资产",
+  'deposit.ui.minimumLabel': "最低充值金额",
+  'deposit.ui.minimumOtherValue': "{amount} USDT 或等值的 {asset}",
   'deposit.ui.minimumPeggedLine': "最低充值 — {amount} {asset}",
   'deposit.ui.minimumOtherLine': "最低充值 — {amount} USDT 或等值的 {asset}",
   'deposit.ui.minimumApprox': "（≈ {amount} {asset}）",

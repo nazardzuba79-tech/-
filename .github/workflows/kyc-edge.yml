@@ -16,7 +16,6 @@ on:
       - 'src/api/routes/__tests__/kyc.test.ts'
       - 'src/api/routes/__tests__/kycEdgePostgres.test.ts'
       - 'src/services/KycEdgeTrust.ts'
-      - 'src/services/KycEmailService.ts'
       - 'src/index.ts'
       - 'prisma/**'
       - 'frontend/src/lib/kycEdge.ts'
@@ -98,8 +97,6 @@ jobs:
           src/api/routes/__tests__/kycEdgePostgres.test.ts
           src/api/routes/__tests__/admin.test.ts
           src/api/routes/__tests__/adminUsers.test.ts
-          src/services/__tests__/KycEmailService.test.ts
-          src/services/__tests__/NodemailerCompatibility.test.ts
           frontend/src/lib/__tests__/kycEdgeClient.test.ts
           frontend/src/lib/__tests__/futuresTickerHeader.test.ts
           frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
