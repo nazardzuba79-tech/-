@@ -34,7 +34,7 @@ export const NEURIX: TestAssetConfig = Object.freeze({
   // discovery, impulse legs, corrections with flushes that are bought back,
   // accumulation ranges — with the same block and day anchors as before.
   // From the listing itself: nothing has been shown or traded before it.
-  // Release MUST be live (Render and the market-edge Worker) before this
+  // Release MUST be live (Hetzner API and the market-edge Worker) before this
   // instant; otherwise move it to the next full hour after the release.
   marketStructure: { from: NRX_LISTING_AT },
   scheduledScenario: NRX_TWO_WEEK_SCENARIO,
