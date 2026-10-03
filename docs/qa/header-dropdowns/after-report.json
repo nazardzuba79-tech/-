@@ -1,0 +1,136 @@
+{
+  "phase": "after",
+  "surface": "futures",
+  "widths": [
+    1920,
+    1600,
+    1440,
+    1366,
+    390
+  ],
+  "cases": [
+    {
+      "width": 1920,
+      "group": "markets",
+      "mobile": false,
+      "screenshot": "after-markets-1920.png"
+    },
+    {
+      "width": 1920,
+      "group": "trading",
+      "mobile": false,
+      "screenshot": "after-trading-1920.png"
+    },
+    {
+      "width": 1920,
+      "group": "otc",
+      "mobile": false,
+      "screenshot": "after-otc-1920.png"
+    },
+    {
+      "width": 1920,
+      "group": "academy",
+      "mobile": false,
+      "screenshot": "after-academy-1920.png"
+    },
+    {
+      "width": 1600,
+      "group": "markets",
+      "mobile": false,
+      "screenshot": "after-markets-1600.png"
+    },
+    {
+      "width": 1600,
+      "group": "trading",
+      "mobile": false,
+      "screenshot": "after-trading-1600.png"
+    },
+    {
+      "width": 1600,
+      "group": "otc",
+      "mobile": false,
+      "screenshot": "after-otc-1600.png"
+    },
+    {
+      "width": 1600,
+      "group": "academy",
+      "mobile": false,
+      "screenshot": "after-academy-1600.png"
+    },
+    {
+      "width": 1440,
+      "group": "markets",
+      "mobile": true,
+      "screenshot": "after-markets-1440.png"
+    },
+    {
+      "width": 1440,
+      "group": "trading",
+      "mobile": true,
+      "screenshot": "after-trading-1440.png"
+    },
+    {
+      "width": 1440,
+      "group": "otc",
+      "mobile": true,
+      "screenshot": "after-otc-1440.png"
+    },
+    {
+      "width": 1440,
+      "group": "academy",
+      "mobile": true,
+      "screenshot": "after-academy-1440.png"
+    },
+    {
+      "width": 1366,
+      "group": "markets",
+      "mobile": true,
+      "screenshot": "after-markets-1366.png"
+    },
+    {
+      "width": 1366,
+      "group": "trading",
+      "mobile": true,
+      "screenshot": "after-trading-1366.png"
+    },
+    {
+      "width": 1366,
+      "group": "otc",
+      "mobile": true,
+      "screenshot": "after-otc-1366.png"
+    },
+    {
+      "width": 1366,
+      "group": "academy",
+      "mobile": true,
+      "screenshot": "after-academy-1366.png"
+    },
+    {
+      "width": 390,
+      "group": "markets",
+      "mobile": true,
+      "screenshot": "after-markets-390.png"
+    },
+    {
+      "width": 390,
+      "group": "trading",
+      "mobile": true,
+      "screenshot": "after-trading-390.png"
+    },
+    {
+      "width": 390,
+      "group": "otc",
+      "mobile": true,
+      "screenshot": "after-otc-390.png"
+    },
+    {
+      "width": 390,
+      "group": "academy",
+      "mobile": true,
+      "screenshot": "after-academy-390.png"
+    }
+  ],
+  "pageErrors": [],
+  "external": [],
+  "financialWrites": []
+}

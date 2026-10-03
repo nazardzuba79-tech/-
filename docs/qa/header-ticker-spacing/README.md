@@ -1,5 +1,7 @@
 # Header labels and Futures statistics spacing
 
+**Owner follow-up:** Card navigation now reads **Crypto-Card**, superseding the short-label choice below. Shared icon/description menus, preserved spacing and new review screenshots are documented in [../header-dropdowns/README.md](../header-dropdowns/README.md). The earlier evidence below remains historical.
+
 Review branch: `codex/header-ticker-spacing-20261003`.
 Base: `7d9ee6fc6bfe76badaac680313e9728e5abd3550`.
 Before screenshots were built from `f56ca46962a466cb41a6bb1b43507dd475cfffc8`; its frontend is byte-identical to the refreshed base. The intervening #393 only changes CFD tests, CI and documentation.
