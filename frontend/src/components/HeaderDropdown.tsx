@@ -8,6 +8,9 @@ export const TRADING_LINKS: ReadonlyArray<{ to: string; label: Key }> = [
   { to: '/trade', label: 'trade.spotTab' },
   { to: '/trade?market=cfd', label: 'trade.cfdTab' },
 ];
+export const MARKET_LINKS: ReadonlyArray<{ to: string; label: Key }> = [
+  { to: '/tools', label: 'nav.tools' },
+];
 export const KNOWLEDGE_LINKS: ReadonlyArray<{ to: string; label: Key }> = [
   { to: '/academy/learn', label: 'academy.hub.learn' },
   { to: '/academy/knowledge', label: 'academy.hub.knowledge' },
