@@ -364,28 +364,6 @@
 }
 .vx-auth-forgot:hover { color: #7b5915; }
 
-/* «Запомнить это устройство» */
-.vx-auth-remember {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 18px;
-  cursor: pointer;
-  user-select: none;
-}
-.vx-auth-remember input {
-  flex: none;
-  width: 17px;
-  height: 17px;
-  margin: 1px 0 0;
-  accent-color: #9c7220;
-  cursor: pointer;
-}
-.vx-auth-remember input:focus-visible { outline: 2px solid #d9a441; outline-offset: 2px; }
-.vx-auth-remember > span { display: flex; flex-direction: column; gap: 3px; }
-.vx-auth-remember-title { font-size: 13.5px; font-weight: 600; color: #22262a; }
-.vx-auth-remember-hint { font-size: 11.5px; line-height: 1.45; color: #73787c; }
-
 .vx-auth-password { position: relative; }
 .vx-auth-password .vx-auth-input { padding-right: 46px; }
 

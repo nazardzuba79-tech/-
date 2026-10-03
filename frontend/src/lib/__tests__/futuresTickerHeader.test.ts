@@ -282,11 +282,10 @@ test.each([
   const source = path === 'frontend/src/lib/api.ts' ? read(path)
     // Reuse the identical authenticated transport in the lazy OTC module.
     .replace('export async function request<T>', 'async function request<T>')
-    // Remembered-device auth (2026-10-03) intentionally adds one login
-    // parameter, logout and a sessions-response flag. Normalize only those
-    // exact auth-only additions so this guard keeps pinning Futures/Spot API.
-    .replace("  /** `remember` = «Запомнить это устройство»: the server keeps this\n   *  device signed in for up to 90 days (30 days without use ends it). */\n  login: (email: string, password: string, remember = false) =>\n    request<{ token: string } | { requires2fa: true; pendingToken: string }>('/auth/login', {\n      method: 'POST',\n      body: JSON.stringify({ email, password, ...(remember ? { remember: true } : {}) }),\n    }),\n\n  /** Ends this session on the server as well; the caller clears the token. */\n  logout: () => request<{ status: 'ok' }>('/auth/logout', { method: 'POST' }),\n",
-      "  login: (email: string, password: string) =>\n    request<{ token: string } | { requires2fa: true; pendingToken: string }>('/auth/login', {\n      method: 'POST',\n      body: JSON.stringify({ email, password }),\n    }),\n")
+    // Remembered-device auth (2026-10-03, admin accounts only) adds logout and
+    // a sessions-response flag. Normalize only those exact auth-only additions
+    // so this guard keeps pinning Futures/Spot API.
+    .replace("  /** Ends this session on the server as well; the caller clears the token. */\n  logout: () => request<{ status: 'ok' }>('/auth/logout', { method: 'POST' }),\n\n", '')
     .replace("current: boolean; remembered?: boolean }[]", "current: boolean }[]")
     // Withdrawal requests (2026-09-30): the POST result names `balanceHeld`,
     // one read of what can be withdrawn, and the admin list's `balanceHeld`.
