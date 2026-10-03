@@ -1,5 +1,10 @@
 # Admin → Listings (managed simulated markets)
 
+Review-only audit and evidence limits: [Spot listings audit](qa/SPOT_LISTINGS_AUDIT.md).
+The `isTestAsset` flag does not isolate NRX/managed ordinary Spot balances.
+The audit records unresolved registry propagation and order-retry limitations;
+do not read the UI corrections as financial-release certification.
+
 A new simulated coin is a **configuration**, not code: the owner creates it in
 Admin → Listings, previews it privately, and publishes it. The exchange then
 shows it (Markets row, countdown, pre-listing → live, candles, order book,

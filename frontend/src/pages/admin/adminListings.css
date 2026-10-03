@@ -1,6 +1,8 @@
 /* Admin → Listings. Light admin theme tokens (see adminStyles). */
 .admin-listings { display: grid; gap: 14px; min-width: 0; }
-.listing-toolbar { display: flex; justify-content: flex-start; }
+.listing-toolbar { display: flex; justify-content: flex-start; flex-wrap: wrap; align-items: end; gap: 10px; }
+.listing-toolbar label { display: grid; gap: 5px; font-size: 12px; min-width: 0; max-width: 100%; }
+.listing-toolbar input, .listing-toolbar select { min-height: 38px; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text-primary); padding: 6px 10px; }
 .listing-primary { min-height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: var(--admin-brand); color: var(--admin-brand-on); font-weight: 700; font-size: 13px; cursor: pointer; }
 .admin-listings button:not(.listing-primary):not(.admin-inline-retry) { min-height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text-primary); font-weight: 600; font-size: 13px; cursor: pointer; }
 .listing-muted { color: var(--text-tertiary); font-size: 13px; margin: 0; }

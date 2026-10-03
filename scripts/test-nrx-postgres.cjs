@@ -16,17 +16,28 @@ async function run() {
   if (start.status !== 0) throw new Error('Disposable PostgreSQL startup failed');
   let sql;
   try {
-    sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres' });
-    await sql.connect(); await sql.query('CREATE DATABASE voltex_nrx_test'); await sql.end();
-    sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'voltex_nrx_test' }); await sql.connect();
-    for (const name of fs.readdirSync('prisma/migrations').sort()) {
-      const file = path.join('prisma/migrations', name, 'migration.sql');
-      if (fs.existsSync(file)) await sql.query(fs.readFileSync(file, 'utf8'));
+    const groups = [{ database: 'voltex_nrx_test', variable: 'VOLTEX_NRX_TEST_URL', tests: ['src/services/testMarkets/__tests__/nrxSpot.pg.test.ts'] }];
+    if (process.argv.includes('--listings-audit')) groups.push(
+      { database: 'voltex_listing_test', variable: 'VOLTEX_LISTING_TEST_URL', tests: ['src/services/listings/__tests__/ownerAllocation.pg.test.ts'] },
+      { database: 'voltex_vta_test', variable: 'VOLTEX_PG_TEST_URL', tests: ['src/services/testMarkets/__tests__/vtaDemoSales.pg.test.ts', 'src/services/testMarkets/__tests__/vtaNativeCoexistence.pg.test.ts'] },
+    );
+    // Separate freshly-created databases keep each suite's ledger fixtures isolated.
+    // Names and connection destinations are fixed here; inherited database URLs are never used.
+    for (const group of groups) {
+      sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: 'postgres' });
+      await sql.connect(); await sql.query(`CREATE DATABASE ${group.database}`); await sql.end();
+      sql = new (qa('pg').Client)({ host: '127.0.0.1', port, user: 'postgres', database: group.database }); await sql.connect();
+      for (const name of fs.readdirSync('prisma/migrations').sort()) {
+        const file = path.join('prisma/migrations', name, 'migration.sql');
+        if (fs.existsSync(file)) await sql.query(fs.readFileSync(file, 'utf8'));
+      }
+      const url = `postgresql://postgres@127.0.0.1:${port}/${group.database}`;
+      const result = spawnSync(process.execPath, ['node_modules/jest/bin/jest.js', '--runInBand', '--silent', '--runTestsByPath', ...group.tests], {
+        windowsHide: true, stdio: 'inherit', env: { ...process.env, DATABASE_URL: url, DIRECT_URL: url, [group.variable]: url },
+      });
+      await sql.end(); sql = null;
+      if (result.status !== 0) { process.exitCode = result.status ?? 1; break; }
     }
-    const result = spawnSync(process.execPath, ['node_modules/jest/bin/jest.js', '--runInBand', '--silent', '--runTestsByPath', 'src/services/testMarkets/__tests__/nrxSpot.pg.test.ts'], {
-      windowsHide: true, stdio: 'inherit', env: { ...process.env, VOLTEX_NRX_TEST_URL: `postgresql://postgres@127.0.0.1:${port}/voltex_nrx_test` },
-    });
-    process.exitCode = result.status ?? 1;
   } finally {
     await sql?.end().catch(() => {});
     spawnSync(bin.pg_ctl, ['-D', data, 'stop', '-m', 'fast', '-w'], { windowsHide: true, stdio: 'ignore' });

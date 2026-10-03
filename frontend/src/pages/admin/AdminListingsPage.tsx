@@ -72,6 +72,8 @@ function PreviewSpark({ candles }: { candles: ListingPreview['candles'] }) {
 
 export function AdminListingsPage() {
   const [listings, setListings] = useState<AdminListing[] | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [loadError, setLoadError] = useState<string | null>(null);
   // A configuration fault, not an outage: nothing can be created until the rollout is finished.
   const [notConnected, setNotConnected] = useState(false);
@@ -112,6 +114,8 @@ export function AdminListingsPage() {
   }, [load]);
 
   const current = useMemo(() => (editing?.id ? listings?.find((item) => item.id === editing.id) ?? null : null), [editing, listings]);
+  const visibleListings = listings?.filter(listing => listing.draft.symbol.includes(search.trim().toUpperCase())
+    && (statusFilter === 'all' || statusOf(listing).tone === statusFilter));
   const listingAtUtc = form.wallTime ? zonedWallTimeToUtc(form.wallTime, form.timeZone) : null;
   const draftIsSaved = Boolean(!logoReading && current && editing?.revision === current.draftRevision
     && formSignature(form) === formSignature(fromConfig(current.draft)));
@@ -167,7 +171,7 @@ export function AdminListingsPage() {
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!editing || busy || logoReading) return;
-    if (!listingAtUtc) return setFormError('Укажите дату и время листинга.');
+    if (!listingAtUtc) return setFormError('Время не существует или неоднозначно в выбранном часовом поясе. Укажите корректное время; при переводе часов можно выбрать UTC.');
     const payload: ListingForm = {
       name: form.name.trim(), symbol: form.symbol.trim().toUpperCase(), logo: form.logo, initialPrice: form.initialPrice.trim(),
       listingAt: listingAtUtc, displayTimeZone: form.timeZone, ownerAllocation: form.ownerAllocation.trim() || '0',
@@ -191,6 +195,10 @@ export function AdminListingsPage() {
     setBusy(true);
     try {
       const at = previewAt ? zonedWallTimeToUtc(previewAt, form.timeZone) : null;
+      if (previewAt && !at) {
+        setFormError('Время предпросмотра не существует или неоднозначно. Выберите другое время или UTC.');
+        return;
+      }
       const result = await adminListingsApi.preview(editing.id, at);
       if (request !== previewRequest.current) return;
       if (result.draftRevision !== editing.revision) {
@@ -233,6 +241,11 @@ export function AdminListingsPage() {
       <div className="listing-toolbar">
         <button type="button" className="listing-primary" data-create-listing onClick={openCreate} disabled={notConnected}
           title={notConnected ? 'Листинги не подключены' : undefined}>+ Создать листинг</button>
+        <label>Поиск по тикеру<input type="search" value={search} onChange={e => setSearch(e.target.value)} data-field="listingSearch" /></label>
+        <label>Статус публикации<select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} data-field="listingStatus">
+          <option value="all">Все</option><option value="draft">Черновики</option>
+          <option value="live">Опубликованы</option><option value="changed">Есть неопубликованные изменения</option>
+        </select></label>
       </div>
       <ListingScenarioLab />
       {notice && <p style={styles.successBox} role="status" data-listing-notice>{notice}</p>}
@@ -245,9 +258,10 @@ export function AdminListingsPage() {
 
       {listings === null && !loadError && <p className="listing-muted">Загрузка…</p>}
       {listings && listings.length === 0 && <p className="listing-muted">Листингов пока нет.</p>}
+      {listings && listings.length > 0 && visibleListings?.length === 0 && <p className="listing-muted" role="status">По выбранным условиям ничего не найдено.</p>}
       {listings && listings.length > 0 && (
         <div className="listing-table" role="table" aria-label="Листинги">
-          {listings.map((listing) => {
+          {visibleListings?.map((listing) => {
             const status = statusOf(listing);
             return (
               <div className="listing-row" role="row" key={listing.id} data-listing-row={listing.draft.symbol}>
