@@ -6,6 +6,7 @@ import {
   type AdminListing, type ListingConfig, type ListingForm, type ListingPreview,
 } from './adminListingsApi';
 import { LISTING_REVISION_CONFLICT, listingProfileLabel, listingRequestError, listingTimeZoneLabel } from './adminListingsCopy';
+import { ListingScenarioLab } from './ListingScenarioLab';
 import './adminListings.css';
 
 const LOGO_MAX_BYTES = 64 * 1024;
@@ -233,6 +234,7 @@ export function AdminListingsPage() {
         <button type="button" className="listing-primary" data-create-listing onClick={openCreate} disabled={notConnected}
           title={notConnected ? 'Листинги не подключены' : undefined}>+ Создать листинг</button>
       </div>
+      <ListingScenarioLab />
       {notice && <p style={styles.successBox} role="status" data-listing-notice>{notice}</p>}
       {loadError && (
         <p role="alert" style={styles.errorBox} className="admin-inline-alert" data-listings-state={notConnected ? 'not-connected' : 'error'}>

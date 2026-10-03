@@ -30,7 +30,7 @@ const ERRORS: Readonly<Record<string, string>> = Object.freeze({
   revision_conflict: LISTING_REVISION_CONFLICT,
   DRAFT_REVISION_REQUIRED: 'Обновите список и снова откройте черновик: не указана его текущая версия.',
   STORE_NOT_CONFIGURED: 'Листинги не подключены: хранилище Cloudflare не настроено на сервере. Создание и публикация недоступны.',
-  STORE_AUTH_FAILED: 'Листинги не подключены: ключи хранилища на сервере и в Cloudflare не совпадают. Создание и публикация недоступны.',
+  STORE_AUTH_FAILED: 'Листинги не подключены: ключ хранилища на сервере и в Cloudflare не совпадает. Создание и публикация недоступны.',
   RESERVED_TICKER: 'Этот тикер зарезервирован. Выберите другой.',
   TICKER_ON_MARKET: 'Такая торговая пара уже существует. Выберите другой тикер.',
   TICKER_LOCKED: 'Тикер опубликованного листинга нельзя изменить.',

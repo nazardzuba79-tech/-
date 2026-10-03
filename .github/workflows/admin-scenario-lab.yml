@@ -1,0 +1,48 @@
+name: Admin scenario laboratory (isolated, no trading)
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/admin/**'
+      - 'frontend/src/lib/__tests__/listingScenarioLab.test.ts'
+      - 'frontend/src/lib/__tests__/adminListingsRussianCopy.test.ts'
+      - 'scripts/qa-listing-scenario-lab.cjs'
+      - '.github/workflows/admin-scenario-lab.yml'
+permissions:
+  contents: read
+concurrency:
+  group: admin-scenario-lab-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Isolation, deterministic OHLC and Russian interface
+        run: npx jest --runInBand --runTestsByPath frontend/src/lib/__tests__/listingScenarioLab.test.ts frontend/src/lib/__tests__/adminListingsRussianCopy.test.ts
+      - name: Build actual frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build --prefix frontend
+      - name: Install isolated Chromium tooling
+        run: |
+          npm install --prefix /tmp/scenario-lab-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          node /tmp/scenario-lab-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual admin page, desktop and mobile, every network write refused
+        env:
+          QA_PLAYWRIGHT_MODULE: /tmp/scenario-lab-qa/node_modules/playwright
+        run: node scripts/qa-listing-scenario-lab.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-scenario-lab-evidence
+          path: docs/qa/admin-scenario-lab/
+          retention-days: 7
