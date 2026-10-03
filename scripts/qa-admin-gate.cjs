@@ -164,7 +164,7 @@ async function main() {
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
-    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
+    await s.page.locator('.admin-users-kpi strong').first().filter({ hasText: /^4$/ }).waitFor();
     await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
     const beforeReturns = { ...state.calls };
     state.me = 'hang';
@@ -244,26 +244,26 @@ async function main() {
     reset({ activity: '503' });
     s = await open(width, height);
     await s.page.goto(`${base}/admin/users`);
-    await s.page.locator('.admin-attention [role="alert"]').waitFor();
-    const unknown = (await s.page.locator('.admin-attention-grid strong').allTextContents()).every(value => value === '—');
+    await s.page.locator('.admin-kpi-note[role="status"]').waitFor();
+    const unknown = (await s.page.locator('.admin-users-kpi strong').allTextContents()).every(value => value === '—');
     await shot(s.page, `activity-failed-${width}`);
     state.activity = 'ok';
     const before = state.calls.activity;
-    await s.page.locator('.admin-attention').getByRole('button', { name: 'Повторить', exact: true }).click();
-    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
-    record(`summary first read fails → unknown → retry${w}`, unknown && state.calls.activity === before + 1 && !(await s.page.locator('.admin-attention [role="alert"]').count()), `summary-calls=${state.calls.activity}`);
+    await s.page.locator('.admin-kpi-note').getByRole('button', { name: 'Обновить показатели', exact: true }).click();
+    await s.page.locator('.admin-users-kpi strong').first().filter({ hasText: /^4$/ }).waitFor();
+    record(`summary first read fails → unknown → retry${w}`, unknown && state.calls.activity === before + 1 && !(await s.page.locator('.admin-kpi-note').count()), `summary-calls=${state.calls.activity}`);
     await s.context.close();
 
     // 8. A failed shared 30-second refresh retains known values and marks them stale.
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
-    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
+    await s.page.locator('.admin-users-kpi strong').first().filter({ hasText: /^4$/ }).waitFor();
     state.activity = '503';
     const reads = state.calls.activity;
     await s.page.clock.fastForward(30_001);
-    await s.page.locator('.admin-attention [role="alert"]').filter({ hasText: 'устареть' }).waitFor();
-    const kept = (await s.page.locator('.admin-attention-grid strong').first().textContent()) === '1';
+    await s.page.locator('.admin-kpi-note[role="status"]').filter({ hasText: /устар/ }).waitFor();
+    const kept = (await s.page.locator('.admin-users-kpi strong').first().textContent()) === '4';
     await shot(s.page, `activity-stale-${width}`);
     record(`summary fails after success → data kept, marked stale${w}`, kept && state.calls.activity === reads + 1, `reads=${state.calls.activity - reads}`);
     await s.context.close();
@@ -273,7 +273,7 @@ async function main() {
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
-    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
+    await s.page.locator('.admin-users-kpi strong').first().filter({ hasText: /^4$/ }).waitFor();
     await s.page.clock.fastForward(5 * 60_000 + 1);
     assert.equal(await s.page.locator('[data-browser-phase="sleeping"]').count(), 0,
       'visible Admin must not suspend the operator queue due to mouse inactivity');
@@ -290,8 +290,8 @@ async function main() {
     state.activity = '503';
     await s.page.evaluate(() => { window.__adminQaHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
     await s.page.clock.runFor(100);
-    await s.page.locator('.admin-attention [role="alert"]').filter({ hasText: 'устареть' }).waitFor();
-    const keptAfterWake = (await s.page.locator('.admin-attention-grid strong').first().textContent()) === '1';
+    await s.page.locator('.admin-kpi-note[role="status"]').filter({ hasText: /устар/ }).waitFor();
+    const keptAfterWake = (await s.page.locator('.admin-users-kpi strong').first().textContent()) === '4';
     record(`visible admin remains active; hidden defers read → failed wake keeps data${w}`,
       keptAfterWake && state.calls.me === beforeSleep.me + 1 && state.calls.activity === beforeSleep.activity + 1,
       `wake-me=${state.calls.me - beforeSleep.me} wake-activity=${state.calls.activity - beforeSleep.activity}`);
