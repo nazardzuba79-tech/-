@@ -29,7 +29,7 @@ export async function allocateNrxOwner(db: PrismaClient, ownerId: string) {
     });
     await tx.auditLog.create({ data: {
       id: ALLOCATION_ID, userId: ownerId, action: 'NRX_OWNER_ALLOCATION',
-      metadata: { asset: 'NRX', quantity: NRX_OWNER_ALLOCATION, initialPriceUsdt: '0.80', initialValueUsdt: '25000', usdtDebit: '0' },
+      metadata: { asset: 'NRX', quantity: NRX_OWNER_ALLOCATION, initialPriceUsdt: '0.80', initialValueUsdt: '5000', usdtDebit: '0' },
     } });
     return { applied: true, userId: ownerId, asset: 'NRX', quantity: NRX_OWNER_ALLOCATION };
   });
