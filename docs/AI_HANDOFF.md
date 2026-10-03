@@ -5559,3 +5559,11 @@ PR #394 CI follow-up: added both new HeaderDropdown files to Copy Trading workfl
 - Release: the migration must run (Dockerfile `prisma migrate deploy` does this on Render).
 - Checks run locally: backend `tsc`; `jest` auth routes + auth middleware + account (all pass); frontend `tsc -b && vite build`; Playwright login screenshots with the request body checked (`remember: true` sent). Full-suite result is reported on the PR.
 - Not merged, not deployed, no production QA.
+- CI follow-up (same PR #400):
+  - Three guard commits pushed from the owner's account (`bd487c52`, `ca53fde0`, `25643e46`: i18n digest list, idle-read-budget select, Futures API fingerprint) were kept as-is; my duplicate local edits to the same guards were dropped.
+  - Added on top:
+    - `tradingToolsShell`/`arbitrageShell` api mocks gain `logout` (asserted called once);
+    - `cryptoCardVisualConsistency` strips the exact remember-device additions from AuthPage/auth-shell.css before the unchanged hashes;
+    - `bcryptAuthRegression` memory store gains `session.updateMany`, plus a check that the changing device stays signed in.
+  - Local full `jest`: 9 failed in 5 suites. Four suites fail identically on clean main `7d9ee6fc` here: CfdMarketDataService, CanonicalSourcePreservation, ProviderFailureMatrix, LiveFinancialIsolation. The fifth, `vtaNativeCoexistence.pg`, needs a PG URL.
+  - `scripts/qa-admin-gate.cjs` fails at «idle defers hourly read → failed wake» identically on clean main, so it was not changed here.
