@@ -35,6 +35,8 @@ export const HI: Record<Key, string> = {
   'deposit.ui.memoCopied': "मेमो कॉपी हो गया",
   'deposit.ui.copyMemo': "मेमो कॉपी करें",
   'deposit.ui.asset': "एसेट",
+  'deposit.ui.minimumLabel': "न्यूनतम जमा राशि",
+  'deposit.ui.minimumOtherValue': "{amount} USDT या {asset} में इसके बराबर",
   'deposit.ui.minimumPeggedLine': "न्यूनतम जमा — {amount} {asset}",
   'deposit.ui.minimumOtherLine': "न्यूनतम जमा — {amount} USDT या {asset} में इसके बराबर",
   'deposit.ui.minimumApprox': "(≈ {amount} {asset})",
