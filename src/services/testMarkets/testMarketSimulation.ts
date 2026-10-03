@@ -41,6 +41,7 @@
  */
 import type { TestAssetConfig } from './testAssetConfig';
 import { normal, seededRandom } from './simulationRandom';
+import { scheduledScenarioHour, type ScheduledScenarioConfig } from './simulationSchedule';
 import { REALISM_PROFILES, isSimulationProfile, realisticHour, realisticTicks, type CandleShape, type RealismParams, type RealisticHour } from './simulationRealism';
 import { pauseInsideHour, waveHours, type WaveHour } from './simulationWaves';
 import { cycleForHour, cycleHourTicks, cycleShockClose } from './simulationCycles';
@@ -204,6 +205,10 @@ function hourCandleReturns(seed: string, hour: number, regime: Regime, hourLogRe
 }
 
 interface Tick { price: number; high: number; low: number; volume: number; quoteVolume: number }
+// The schedule ignores original ticks after activation. Reuse one inert hour
+// instead of constructing an obsolete future trajectory solely to discard it.
+const SCHEDULE_UNUSED_TICKS: readonly Tick[] = Object.freeze(Array.from({ length: 360 }, () =>
+  Object.freeze({ price: 1, high: 1, low: 1, volume: 0, quoteVolume: 0 })));
 
 const REGIME_VOLUME: Record<Regime, number> = { impulse: 1.7, consolidation: 0.5, pullback: 1.35 };
 const BASE_QUOTE_VOLUME = 5200; // USDT per 5m candle at the listing price
@@ -326,6 +331,9 @@ export class TestMarketSimulation {
   /** Wave structure: the first re-arranged hour (null: off), and each re-arranged hour's phase. */
   private readonly structureFromHour: number | null;
   private waves = new Map<number, WaveHour>();
+  private scheduledBase?: TestMarketSimulation;
+  private scheduledAnchor?: number;
+  private scheduledHours = new Map<number, HourPlan>();
 
   constructor(readonly asset: TestAssetConfig) {
     this.realism = isSimulationProfile(asset.simulationProfile) ? REALISM_PROFILES[asset.simulationProfile] : null;
@@ -469,7 +477,45 @@ export class TestMarketSimulation {
     return plan;
   }
 
+  private scheduledHourPlan(hour: number, config: ScheduledScenarioConfig): HourPlan {
+    const cached = this.scheduledHours.get(hour);
+    if (cached) return cached;
+    // The independent original configuration prevents recursion and preserves
+    // every existing wave, shadow and completed tick through a partial hour.
+    const base = this.scheduledBase ??= new TestMarketSimulation({ ...this.asset, scheduledScenario: undefined });
+    if (this.scheduledAnchor === undefined) {
+      const completed = Math.floor((config.from - this.asset.listingAt) / TICK_MS);
+      if (completed <= 0) this.scheduledAnchor = this.asset.initialPrice;
+      else {
+        const tickIndex = completed - 1, candleIndex = Math.floor(tickIndex / TICKS_PER_CANDLE);
+        const anchorPlan = base.hourPlan(Math.floor(candleIndex / CANDLES_PER_HOUR));
+        this.scheduledAnchor = base.ticks(anchorPlan, candleIndex % CANDLES_PER_HOUR)[tickIndex % TICKS_PER_CANDLE].price;
+      }
+    }
+    const anchor = this.scheduledAnchor;
+    const retainsHistory = this.asset.listingAt + hour * HOUR_MS < config.from;
+    const original: HourPlan = retainsHistory ? base.hourPlan(hour)
+      : { hour, open: anchor, regime: 'consolidation', logReturn: 0, sigma: 0, cluster: 1, boundaries: [anchor] };
+    const ticks = retainsHistory
+      ? Array.from({ length: CANDLES_PER_HOUR }, (_, slot) => base.ticks(original, slot)).flat()
+      : SCHEDULE_UNUSED_TICKS;
+    const scheduled = scheduledScenarioHour(config, this.asset.seed, this.asset.listingAt, this.asset.initialPrice,
+      hour, anchor, original.open, ticks);
+    const boundaries = [scheduled.open];
+    for (let slot = 0; slot < CANDLES_PER_HOUR; slot++) boundaries.push(scheduled.ticks[(slot + 1) * TICKS_PER_CANDLE - 1].price);
+    const plan: HourPlan = { ...original, open: scheduled.open, regime: scheduled.regime,
+      logReturn: Math.log(boundaries[CANDLES_PER_HOUR] / scheduled.open), boundaries,
+      cycleTicks: scheduled.ticks, shapes: undefined, rangeFloor: undefined, rangeCeiling: undefined };
+    this.scheduledHours.set(hour, plan);
+    if (this.scheduledHours.size > 96) this.scheduledHours.delete(this.scheduledHours.keys().next().value as number);
+    return plan;
+  }
+
   hourPlan(hour: number): HourPlan {
+    const scheduled = this.asset.symbol === 'NRX' && this.asset.pair === 'NRX/USDT' ? this.asset.scheduledScenario : undefined;
+    if (scheduled && hour >= Math.max(0, Math.floor((scheduled.from - this.asset.listingAt) / HOUR_MS))) {
+      return this.scheduledHourPlan(hour, scheduled);
+    }
     const accumulation = accumulationForHour(this.asset.accumulationPhase, this.asset.listingAt, hour);
     if (accumulation) return this.accumulationHourPlan(hour, accumulation);
     const cycle = cycleForHour(this.asset.cyclicImpulse, this.asset.listingAt, hour);
@@ -775,7 +821,11 @@ export function simulationFor(asset: TestAssetConfig): TestMarketSimulation {
     ? `${accumulation.anchorAt}:${accumulation.flushFraction}:${accumulation.accumulationHours}:${accumulation.minBandFraction}:${accumulation.maxBandFraction}`
     : 'no-accumulation';
   const structureKey = asset.marketStructure ? `waves:${asset.marketStructure.from}` : 'no-waves';
-  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}|${structureKey}`;
+  const schedule = asset.symbol === 'NRX' && asset.pair === 'NRX/USDT' ? asset.scheduledScenario : undefined;
+  const scheduleKey = schedule ? [schedule.version, schedule.from, schedule.firstTargetAt, schedule.breakoutAt,
+    schedule.secondTargetAt, schedule.rangeEndAt, schedule.selloffEndAt, schedule.endAt, schedule.firstGainPercent,
+    schedule.secondGainPercent, schedule.rangeFraction, schedule.selloffFraction].join(':') : 'no-schedule';
+  const key = `${asset.pair}|${asset.seed}|${asset.listingAt}|${asset.initialPrice}|${asset.simulationProfile ?? 'legacy'}|${asset.realismSeedOffset ?? 0}|${asset.realismFrom ?? 0}|${cycleKey}|${asset.wickBoostFrom ?? 'no-wick-boost'}|${naturalKey}|${accumulationKey}|${structureKey}|${scheduleKey}`;
   let simulation = simulations.get(key);
   if (!simulation) {
     simulation = new TestMarketSimulation(asset);
