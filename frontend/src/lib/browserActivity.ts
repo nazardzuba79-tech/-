@@ -15,6 +15,7 @@ let suppressGesture = false;
 let validate: () => Promise<void> = async () => {};
 let identity: () => string | null = () => null;
 let briefReturnScope: () => string | null = () => null;
+let keepVisibleActive: () => boolean = () => false;
 let briefReturn: { scope: string; owner: string; deadline: number } | null = null;
 const listeners = new Set<Listener>();
 const reads = new Map<Promise<unknown>, { generation: number; owner: string | null }>();
@@ -60,7 +61,8 @@ function arm() {
   if (!started || phase !== 'active' || hidden()) return;
   idle = setTimeout(() => {
     if (Date.now() - lastActivity >= BROWSER_IDLE_MS) {
-      if (focusedOwnedChart()) { ownedFrameFocused = true; lastActivity = Date.now(); arm(); }
+      if (keepVisibleActive()) { lastActivity = Date.now(); arm(); }
+      else if (focusedOwnedChart()) { ownedFrameFocused = true; lastActivity = Date.now(); arm(); }
       else sleepBrowser();
     } else arm();
   }, Math.max(1, BROWSER_IDLE_MS - (Date.now() - lastActivity)));
@@ -233,10 +235,11 @@ async function fetchDisplay(input: RequestInfo | URL, init?: RequestInit, report
   });
 }
 
-export function startBrowserActivity(options: { validate: () => Promise<void>; identity: () => string | null; briefReturnScope?: () => string | null }) {
+export function startBrowserActivity(options: { validate: () => Promise<void>; identity: () => string | null; briefReturnScope?: () => string | null; keepVisibleActive?: () => boolean }) {
   if (started) return () => {};
   started = true; validate = options.validate; identity = options.identity;
   briefReturnScope = options.briefReturnScope ?? (() => null);
+  keepVisibleActive = options.keepVisibleActive ?? (() => false);
   lastActivity = Date.now(); phase = hidden() ? 'sleeping' : 'active'; arm();
   const input = (event: Event) => {
     if (!event.isTrusted || hidden()) return;
@@ -303,6 +306,6 @@ export function startBrowserActivity(options: { validate: () => Promise<void>; i
     document.removeEventListener('visibilitychange', visible);
     window.removeEventListener('focus', focus); window.removeEventListener('blur', blur); document.removeEventListener('focusin', focus); window.removeEventListener('pageshow', pageshow);
     window.removeEventListener('pagehide', sleepBrowser);
-    phase = 'active'; briefReturn = null; briefReturnScope = () => null; suppressGesture = false; publish();
+    phase = 'active'; briefReturn = null; briefReturnScope = () => null; keepVisibleActive = () => false; suppressGesture = false; publish();
   };
 }

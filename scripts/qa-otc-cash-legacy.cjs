@@ -28,6 +28,19 @@ const server=http.createServer(async(req,res)=>{
     if(u.pathname==='/api/v1/otc/balances')return json(res,{eligible:true,balances:[{asset:'USDT',available}]});
     if(u.pathname==='/api/v1/admin/notifications')return json(res,{notifications:[],unreadCount:0});
     if(u.pathname==='/api/v1/admin/alerts-summary')return json(res,{depositId:null,withdrawalId:null,kycId:null});
+    if(req.method==='GET'&&admin&&u.pathname==='/api/v1/admin/work-summary'){
+      const widget=(value,unit,href)=>({value,unit,href,status:'ready',asOf:date});
+      return json(res,{asOf:date,alerts:{depositId:null,withdrawalId:null,kycId:null},widgets:{
+        readyPackages:widget(0,'packages','/admin/deposits?state=READY'),
+        pendingPackages:widget(0,'packages','/admin/deposits'),
+        unlinkedTransfers:widget(0,'transfers','/admin/deposits?state=UNATTRIBUTED'),
+        activeWithdrawals:widget(0,'withdrawals','/admin/withdrawals?status=active'),
+        pendingKyc:widget(0,'users','/admin/kyc?status=PENDING'),
+        openOtc:widget(['RESERVED','OFFERED','ACCEPTED','PICKUP_READY','PAYOUT_IN_PROGRESS'].includes(row.status)?1:0,'requests','/admin/otc?status=active'),
+        totalUsers:widget(1,'users','/admin/users'),
+        newUsers24h:widget(0,'users','/admin/users?status=new'),
+      }});
+    }
     const base=admin?'/api/v1/admin/otc':'/api/v1/otc/requests';
     if(req.method==='POST'){
       let raw='';for await(const part of req)raw+=part;if(raw.length>10000)return json(res,{error:'FIXTURE_INPUT_TOO_LARGE'},400);

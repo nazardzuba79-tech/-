@@ -62,11 +62,47 @@ function button(text: string): HTMLButtonElement {
 async function click(text: string) { await act(async () => { button(text).click(); await flush(); }); }
 async function mount(name: string) { const page = load(resolve(frontend, `src/pages/admin/${name}`))[name]; await act(async () => { root.render(React.createElement(page)); await flush(); }); }
 
+describe('catalogue address change review', () => {
+  test.each(['Сохранить', 'Очистить адрес'])('%s requires a separate old/new/network review; cancellation sends nothing', async action => {
+    await mount('AdminDepositCatalogue'); await click('Изменить'); await click(action);
+    expect(saveEntry).not.toHaveBeenCalled();
+    const review = host.querySelector('[role="dialog"]')!;
+    expect(review.textContent).toContain('Текущий адрес');
+    expect(review.textContent).toContain('Новый адрес');
+    expect(review.textContent).toContain('fixture-current-address');
+    expect(review.textContent).toContain('Bitcoin');
+    expect(review.textContent).toContain('всех клиентов');
+    await click('Отмена');
+    expect(saveEntry).not.toHaveBeenCalled();
+  });
+  test('network name search finds the asset even when its ticker and name do not match', async () => {
+    getCatalogue.mockResolvedValueOnce({ ...catalogue, entries: [{ ...entry, networkName: 'Fixture network' }] });
+    await mount('AdminDepositCatalogue');
+    const input = host.querySelector('.catalogue-filters input')!;
+    await act(async () => { Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, 'Fixture network'); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); await flush(); });
+    expect(host.querySelector('.catalogue-network')?.textContent).toContain('Fixture network');
+  });
+  test('confirmation freezes exact address and revision and rapid duplicate clicks submit only once', async () => {
+    let finish!: () => void;
+    saveEntry.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve; }));
+    await mount('AdminDepositCatalogue'); await click('Изменить');
+    const input = host.querySelector('[role="dialog"] input')!;
+    await act(async () => { Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value')!.set!.call(input, 'fixture-new-full-public-address'); input.dispatchEvent(new dom.window.Event('input', { bubbles: true })); await flush(); });
+    await click('Сохранить');
+    expect(host.querySelector('[role="dialog"]')?.textContent).toContain('fixture-new-full-public-address');
+    expect(saveEntry).not.toHaveBeenCalled();
+    await act(async () => { const confirm = button('Подтвердить изменение'); confirm.click(); confirm.click(); await flush(); });
+    expect(saveEntry).toHaveBeenCalledTimes(1);
+    expect(saveEntry).toHaveBeenCalledWith(expect.objectContaining({ address: 'fixture-new-full-public-address', networkId: 'bitcoin' }), 'revision-1');
+    await act(async () => { finish(); await flush(); });
+  });
+});
+
 describe('catalogue accepted save followed by failed read', () => {
   test.each(['Сохранить', 'Очистить адрес'])('%s does not turn an accepted mutation into a failed save or discard the last table', async action => {
     await mount('AdminDepositCatalogue'); await click('Изменить');
     getCatalogue.mockRejectedValueOnce(new Error('fixture reread unavailable'));
-    await click(action);
+    await click(action); await click('Подтвердить изменение');
     expect(saveEntry).toHaveBeenCalledTimes(1);
     expect(host.querySelector('[role="dialog"]')).toBeNull();
     expect(host.textContent).toContain(action === 'Сохранить' ? 'Адрес сохранён.' : 'Адрес очищен.');
@@ -78,17 +114,17 @@ describe('catalogue accepted save followed by failed read', () => {
   });
   test('a confirmed refresh re-enables editing using the latest revision, without replaying the write', async () => {
     await mount('AdminDepositCatalogue'); await click('Изменить');
-    getCatalogue.mockRejectedValueOnce(new Error('fixture reread unavailable')); await click('Сохранить');
+    getCatalogue.mockRejectedValueOnce(new Error('fixture reread unavailable')); await click('Сохранить'); await click('Подтвердить изменение');
     getCatalogue.mockResolvedValueOnce({ ...catalogue, revision: 'revision-2' });
     await click('Обновить');
     expect(saveEntry).toHaveBeenCalledTimes(1);
     expect(button('Изменить').disabled).toBe(false);
-    await click('Изменить'); await click('Сохранить');
+    await click('Изменить'); await click('Сохранить'); await click('Подтвердить изменение');
     expect(saveEntry.mock.calls[1][1]).toBe('revision-2');
   });
   test('a rejected write stays in the editor and does not show success or reread', async () => {
     await mount('AdminDepositCatalogue'); await click('Изменить');
-    saveEntry.mockRejectedValueOnce(new Error('Конфликт версии: обновите каталог.')); await click('Сохранить');
+    saveEntry.mockRejectedValueOnce(new Error('Конфликт версии: обновите каталог.')); await click('Сохранить'); await click('Подтвердить изменение');
     expect(host.querySelector('[role="dialog"]')).not.toBeNull();
     expect(host.textContent).toContain('Конфликт версии');
     expect(host.textContent).not.toContain('Адрес сохранён.');
@@ -103,6 +139,19 @@ async function selectOtcQueue() {
   await click('Применить'); await click('Далее');
 }
 describe('OTC queue context', () => {
+  test('unknown payout outcome and requested cancellation retain manual reconciliation instructions', () => {
+    const { cashAdminNextStep } = load(resolve(frontend, 'src/pages/otc/OtcCashDesk'));
+    expect(cashAdminNextStep({ status: 'PAYOUT_IN_PROGRESS', cancelRequested: false })).toContain('не выдавать повторно и не возвращать резерв');
+    expect(cashAdminNextStep({ status: 'PICKUP_READY', cancelRequested: true })).toContain('резерв сохраняется');
+    expect(cashAdminNextStep({ status: 'UNRECOGNIZED', cancelRequested: false })).toContain('проверить подтверждённое состояние');
+    expect(cashRequest).not.toHaveBeenCalled();
+  });
+  test('admin queue shows confirmed next step and explicit Kyiv timezone', async () => {
+    await mount('AdminOtcCashPage');
+    expect(host.textContent).toContain('Следующий шаг: Дождаться согласия клиента с условиями.');
+    expect(host.textContent).toContain('Europe/Kyiv');
+    expect(host.textContent).toContain('11:00');
+  });
   test('Back retains filter and page, and refreshes exactly that queue instead of page zero', async () => {
     await mount('AdminOtcCashPage'); await selectOtcQueue();
     await act(async () => { (host.querySelector('.otc-cash-list-item') as HTMLButtonElement).click(); await flush(); });

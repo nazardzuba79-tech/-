@@ -37,7 +37,7 @@ export function AdminPagination({
         {from}–{to} {itemLabel} {total.toLocaleString()}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <button onClick={() => onPageChange(page - 1)} disabled={page === 1} style={{ ...styles.pageBtn, opacity: page === 1 ? 0.4 : 1 }}>
+        <button aria-label="Предыдущая страница" onClick={() => onPageChange(page - 1)} disabled={page === 1} style={{ ...styles.pageBtn, opacity: page === 1 ? 0.4 : 1 }}>
           <ChevronLeftIcon size={14} />
         </button>
         {pages.map((p, i) =>
@@ -46,12 +46,13 @@ export function AdminPagination({
               …
             </span>
           ) : (
-            <button key={p} onClick={() => onPageChange(p as number)} style={{ ...styles.pageBtn, ...(p === page ? styles.pageBtnActive : {}) }}>
+            <button key={p} aria-label={`Страница ${p}`} aria-current={p === page ? 'page' : undefined} onClick={() => onPageChange(p as number)} style={{ ...styles.pageBtn, ...(p === page ? styles.pageBtnActive : {}) }}>
               {p}
             </button>
           )
         )}
         <button
+          aria-label="Следующая страница"
           onClick={() => onPageChange(page + 1)}
           disabled={page === totalPages}
           style={{ ...styles.pageBtn, opacity: page === totalPages ? 0.4 : 1 }}

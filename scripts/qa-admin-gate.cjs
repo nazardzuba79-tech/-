@@ -8,8 +8,8 @@
  *
  * Scenarios (each at 390 and 1440 px):
  *   success · 401 · 403 · 503 · network error · hung /me (timeout) · retry ·
- *   activity failing first time · activity failing after a good active hourly
- *   read · idle suspension and failed wake read retaining data · session revoked
+ *   summary failing first time · summary failing after a good active read ·
+ *   visible admin activity, hidden suspension and failed wake read retaining data · session revoked
  *   (401 on a privileged read) · token replaced by a non-admin account.
  *
  * Env: QA_PLAYWRIGHT_MODULE (playwright path), QA_CHROMIUM (optional browser
@@ -24,7 +24,7 @@ const express = require('express');
 const { chromium } = require(process.env.QA_PLAYWRIGHT_MODULE || 'playwright');
 
 const root = path.resolve(__dirname, '..');
-const dist = path.join(root, 'frontend/dist');
+const dist = path.resolve(process.env.QA_FRONTEND_DIST || path.join(root, 'frontend/dist'));
 const out = path.resolve(process.env.QA_OUT || path.join(root, 'docs/qa/admin-gate'));
 const ADMIN_TOKEN = 'qa-admin-token';
 const USER_TOKEN = 'qa-user-token';
@@ -54,6 +54,16 @@ const activity = () => ({
   packages: [pkg('u-ready', '2500', 'READY', 3 * HOUR), pkg('u-topup', '35', 'AWAITING_TOPUP', HOUR / 2)],
   awaitingConfirmationsByUser: {},
 });
+const summary = () => {
+  const asOf = new Date().toISOString();
+  const widgets = Object.fromEntries([
+    ['readyPackages', 1, 'packages', '/admin/deposits?state=READY'], ['pendingPackages', 2, 'packages', '/admin/deposits'],
+    ['unlinkedTransfers', 1, 'transfers', '/admin/deposits?state=UNATTRIBUTED'], ['activeWithdrawals', 0, 'withdrawals', '/admin/withdrawals?status=active'],
+    ['pendingKyc', 0, 'users', '/admin/kyc?status=PENDING'], ['openOtc', 0, 'requests', '/admin/otc?status=active'],
+    ['totalUsers', customers.length, 'users', '/admin/users'], ['newUsers24h', 2, 'users', '/admin/users?status=new'],
+  ].map(([key, value, unit, href]) => [key, { value, unit, href, status: 'ready', asOf }]));
+  return { asOf, widgets, alerts: { depositId: null, withdrawalId: null, kycId: null } };
+};
 
 function api() {
   const r = express.Router();
@@ -82,6 +92,13 @@ function api() {
     next();
   });
   r.get('/admin/users', (req, res) => { state.calls.users++; if (state.users !== 'ok') return fail(res, state.users); res.json(customers); });
+  r.get('/admin/users/page', (req, res) => {
+    state.calls.users++; if (state.users !== 'ok') return fail(res, state.users);
+    const search = String(req.query.search ?? '').toLowerCase(), page = Math.max(1, Number(req.query.page) || 1), pageSize = Math.min(100, Number(req.query.pageSize) || 20);
+    const matches = customers.filter(user => !search || user.email.toLowerCase().includes(search) || user.id.toLowerCase().includes(search));
+    res.json({ items: matches.slice((page - 1) * pageSize, page * pageSize), total: matches.length, page, pageSize, totalPages: Math.max(1, Math.ceil(matches.length / pageSize)), asOf: new Date().toISOString() });
+  });
+  r.get('/admin/work-summary', (req, res) => { state.calls.activity++; if (state.activity !== 'ok') return fail(res, state.activity); res.json(summary()); });
   r.get('/admin/user-activity', (req, res) => { state.calls.activity++; if (state.activity !== 'ok') return fail(res, state.activity); res.json(activity()); });
   r.get('/admin/deposits/recent-by-user', (req, res) => res.json([]));
   r.get('/admin/alerts-summary', (req, res) => { state.calls.alerts++; res.json({ depositId: null, withdrawalId: null, kycId: null }); });
@@ -112,10 +129,11 @@ async function main() {
     await context.addInitScript((t) => { if (t && !sessionStorage.getItem('qa-seeded')) { localStorage.setItem('exchange_token', t); sessionStorage.setItem('qa-seeded', '1'); } }, tokenValue);
     const page = await context.newPage();
     // A real network failure as the page sees it: the request never gets a response.
-    await page.route('**/api/v1/**', (route) => {
+    await page.route('**/*', (route) => {
       const url = new URL(route.request().url());
+      if (url.origin !== base) return route.abort('blockedbyclient');
       const failing = (url.pathname.endsWith('/me') && state.me === 'network')
-        || (url.pathname.endsWith('/admin/user-activity') && state.activity === 'network');
+        || (url.pathname.endsWith('/admin/work-summary') && state.activity === 'network');
       if (!failing) return route.continue();
       if (url.pathname.endsWith('/me')) state.calls.me++; else state.calls.activity++;
       return route.abort('failed');
@@ -128,25 +146,14 @@ async function main() {
   const gate = (page) => page.evaluate(() => document.querySelector('[data-admin-gate]')?.getAttribute('data-admin-gate') ?? null);
   const overflow = (page) => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   const shot = (page, name) => page.screenshot({ path: path.join(out, `${name}.png`) });
-  async function advanceWhileActive(page, milliseconds) {
-    // An hourly poll belongs to an actively used tab. Trusted mouse input
-    // keeps that state real while the unmodified five-minute idle clock runs.
-    for (let elapsed = 0, turn = 0; elapsed < milliseconds; turn++) {
-      await page.mouse.move(8 + turn % 2, 8);
-      const step = Math.min(4 * 60_000, milliseconds - elapsed);
-      await page.clock.fastForward(step);
-      elapsed += step;
-      assert.equal(await page.locator('[data-browser-phase]').count(), 0, 'active hourly fixture unexpectedly slept');
-    }
-  }
-
   for (const [width, height] of [[390, 844], [1440, 900]]) {
     const w = `@${width}`;
+    const readySelector = width <= 767 ? '[data-user-card="u-ready"]' : '[data-user-row="u-ready"]';
     // 1. success
     reset();
     let s = await open(width, height);
     await s.page.goto(`${base}/admin/users`);
-    await s.page.waitForSelector('[data-user-row="u-ready"]');
+    await s.page.waitForSelector(readySelector);
     record(`success${w}`, (await gate(s.page)) === null && state.calls.privilegedBeforeOk === 0 && (await overflow(s.page)) <= 1 && s.errors.length === 0,
       `privileged-before-ok=${state.calls.privilegedBeforeOk} me=${state.calls.me} users=${state.calls.users} activity=${state.calls.activity}`);
     await shot(s.page, `success-${width}`);
@@ -157,7 +164,7 @@ async function main() {
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
-    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
+    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
     await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
     const beforeReturns = { ...state.calls };
     state.me = 'hang';
@@ -175,8 +182,8 @@ async function main() {
       await s.page.waitForFunction(() => !document.querySelector('[data-browser-phase]'));
     }
     const unchanged = state.calls.users === beforeReturns.users && state.calls.activity === beforeReturns.activity && state.calls.alerts === beforeReturns.alerts;
-    await s.page.getByPlaceholder('Email пользователя').fill('ready');
-    assert.equal(await s.page.locator('[data-user-row="u-ready"]').count(), 1, 'Admin input stayed blocked');
+    await s.page.getByRole('textbox', { name: 'Поиск пользователей' }).fill('ready');
+    assert.equal(await s.page.locator(readySelector).count(), 1, 'Admin input stayed blocked');
     record(`three brief tab returns → no requests, notice or blocked input${w}`,
       unchanged && state.calls.me === beforeReturns.me && s.errors.length === 0,
       `me=${state.calls.me - beforeReturns.me} users=${state.calls.users - beforeReturns.users} activity=${state.calls.activity - beforeReturns.activity} alerts=${state.calls.alerts - beforeReturns.alerts}`);
@@ -208,7 +215,7 @@ async function main() {
       await shot(s.page, `error-${how}-${width}`);
       state.me = 'admin';
       await s.page.click('[data-admin-gate-retry]');
-      await s.page.waitForSelector('[data-user-row="u-ready"]', { timeout: 10_000 });
+      await s.page.waitForSelector(readySelector, { timeout: 10_000 });
       record(`${how} → error screen → retry${w}`, stayed && noPrivate && (await overflow(s.page)) <= 1 && s.errors.length === 0, `reason=${reason} me-calls=${state.calls.me}`);
       await s.context.close();
     }
@@ -228,62 +235,64 @@ async function main() {
     await shot(s.page, `error-timeout-${width}`);
     state.me = 'admin';
     await s.page.click('[data-admin-gate-retry]');
-    await s.page.waitForSelector('[data-user-row="u-ready"]', { timeout: 10_000 });
+    await s.page.waitForSelector(readySelector, { timeout: 10_000 });
     record(`hung /me → timeout → retry${w}`, reason === 'TIMEOUT' && waited >= 14_000 && waited < 25_000 && hung.size === 0 && state.calls.users > 0,
       `timeout-after=${Math.round(waited / 1000)}s open-hung-sockets=${hung.size}`);
     await s.context.close();
 
-    // 7. activity fails first time: unknown, not zero; retry recovers with one request
+    // 7. Shared summary fails first time: unknown, not zero; retry is one read.
     reset({ activity: '503' });
     s = await open(width, height);
     await s.page.goto(`${base}/admin/users`);
-    await s.page.waitForSelector('[data-activity-error="empty"]');
-    const text = await s.page.textContent('body');
-    const unknown = !text.includes('Загрузка…') && !text.includes('Нет пополнений в очереди') && (await s.page.locator('[data-event-unknown]').count()) > 0;
+    await s.page.locator('.admin-attention [role="alert"]').waitFor();
+    const unknown = (await s.page.locator('.admin-attention-grid strong').allTextContents()).every(value => value === '—');
     await shot(s.page, `activity-failed-${width}`);
     state.activity = 'ok';
     const before = state.calls.activity;
-    await s.page.click('[data-activity-retry]');
-    // The desktop Event cell is now the owner-only password column; deposit
-    // badges remain on the mobile card, mounted at both viewport widths.
-    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
-    record(`activity first read fails → unknown → retry${w}`, unknown && state.calls.activity === before + 1 && !(await s.page.locator('[data-activity-error]').count()), `activity-calls=${state.calls.activity}`);
+    await s.page.locator('.admin-attention').getByRole('button', { name: 'Повторить', exact: true }).click();
+    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
+    record(`summary first read fails → unknown → retry${w}`, unknown && state.calls.activity === before + 1 && !(await s.page.locator('.admin-attention [role="alert"]').count()), `summary-calls=${state.calls.activity}`);
     await s.context.close();
 
-    // 8. activity fails after a good read in an active tab: data kept, marked stale
+    // 8. A failed shared 30-second refresh retains known values and marks them stale.
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
-    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
+    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
     state.activity = '503';
     const reads = state.calls.activity;
-    await advanceWhileActive(s.page, HOUR + 30_000);
-    await s.page.waitForSelector('[data-activity-error="stale"]', { timeout: 10_000 });
-    const kept = (await s.page.locator('[data-user-card="u-ready"] [data-event="deposit"]').count()) === 1;
+    await s.page.clock.fastForward(30_001);
+    await s.page.locator('.admin-attention [role="alert"]').filter({ hasText: 'устареть' }).waitFor();
+    const kept = (await s.page.locator('.admin-attention-grid strong').first().textContent()) === '1';
     await shot(s.page, `activity-stale-${width}`);
-    record(`activity fails after success → data kept, marked stale${w}`, kept && state.calls.activity === reads + 1, `reads=${state.calls.activity - reads}`);
+    record(`summary fails after success → data kept, marked stale${w}`, kept && state.calls.activity === reads + 1, `reads=${state.calls.activity - reads}`);
     await s.context.close();
 
-    // 8b. An unattended tab sleeps before the hourly poll. Wake revalidates
-    // the session and reads once; a failed read must retain the last good data.
+    // 8b. Visible Admin retains its work queue while an actually hidden tab
+    // suspends reads. Wake revalidates the session and keeps known values on failure.
     reset();
     s = await open(width, height, { clock: true });
     await s.page.goto(`${base}/admin/users`);
-    await s.page.waitForSelector('[data-user-card="u-ready"] [data-event="deposit"]', { state: 'attached' });
-    const activityBeforeSleep = state.calls.activity;
+    await s.page.locator('.admin-attention-grid strong').first().filter({ hasText: /^1$/ }).waitFor();
     await s.page.clock.fastForward(5 * 60_000 + 1);
-    // Since #355 the sleeping phase keeps only a hidden marker, no notice.
+    assert.equal(await s.page.locator('[data-browser-phase="sleeping"]').count(), 0,
+      'visible Admin must not suspend the operator queue due to mouse inactivity');
+    await s.page.evaluate(() => {
+      window.__adminQaHidden = true;
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__adminQaHidden });
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__adminQaHidden ? 'hidden' : 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
     await s.page.waitForSelector('[data-browser-phase="sleeping"]', { state: 'attached' });
     const beforeSleep = { ...state.calls };
     await s.page.clock.fastForward(HOUR);
-    assert.deepEqual(state.calls, beforeSleep, 'idle tab issued a scheduled account read');
-    assert.equal(state.calls.activity, activityBeforeSleep, 'idle tab reached its hourly activity poll');
+    assert.deepEqual(state.calls, beforeSleep, 'hidden tab issued a scheduled account read');
     state.activity = '503';
-    await s.page.mouse.click(8, 8);
-    await s.page.waitForSelector('[data-activity-error="stale"]', { timeout: 10_000 });
-    await s.page.waitForSelector('[data-browser-phase="error"]', { state: 'attached', timeout: 10_000 });
-    const keptAfterWake = (await s.page.locator('[data-user-card="u-ready"] [data-event="deposit"]').count()) === 1;
-    record(`idle defers hourly read → failed wake keeps last good data${w}`,
+    await s.page.evaluate(() => { window.__adminQaHidden = false; document.dispatchEvent(new Event('visibilitychange')); });
+    await s.page.clock.runFor(100);
+    await s.page.locator('.admin-attention [role="alert"]').filter({ hasText: 'устареть' }).waitFor();
+    const keptAfterWake = (await s.page.locator('.admin-attention-grid strong').first().textContent()) === '1';
+    record(`visible admin remains active; hidden defers read → failed wake keeps data${w}`,
       keptAfterWake && state.calls.me === beforeSleep.me + 1 && state.calls.activity === beforeSleep.activity + 1,
       `wake-me=${state.calls.me - beforeSleep.me} wake-activity=${state.calls.activity - beforeSleep.activity}`);
     await shot(s.page, `activity-idle-wake-${width}`);
@@ -302,7 +311,7 @@ async function main() {
     reset();
     s = await open(width, height);
     await s.page.goto(`${base}/admin/users`);
-    await s.page.waitForSelector('[data-user-row="u-ready"]');
+    await s.page.waitForSelector(readySelector);
     await s.page.evaluate((t) => localStorage.setItem('exchange_token', t), USER_TOKEN);
     const usersBefore = state.calls.users;
     state.meAnswered = false;

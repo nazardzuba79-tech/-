@@ -1,301 +1,103 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, ApiError } from '../../lib/api';
-import { railDisplay } from './depositRails';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { api } from '../../lib/api';
+import { getAdminProfile, getAdminHistory, type AdminProfile, type HistoryKind, type HistoryRow } from '../../lib/adminPagedApi';
 import { styles } from './adminStyles';
-import { Badge } from '../../components/Badge';
-import { formatLastLoginAt } from './lastLoginLabel';
 import { Skeleton } from '../../components/Skeleton';
 import { DeleteUserDialog, canDeleteUser } from './DeleteUserDialog';
 import { KycSubmissionReview } from './KycSubmissionReview';
-import { getAdminUserDetailAbortable } from '../../lib/adminReadApi';
 import { useAdminRead } from './useAdminRead';
+import { AdminReadStatus } from './AdminReadStatus';
+import { AdminPagination } from './AdminPagination';
+import { CopyValue } from './AdminPrimitives';
+import { adminDate, adminStatus, adminAction, maskAuditMetadata } from './adminPresentation';
+import { refreshAdminSummary } from './adminWorkSummary';
+import { AdminBalanceAdjustment } from './AdminBalanceAdjustment';
+import { AdminAccountActions } from './AdminAccountActions';
+import './adminPracticality.css';
 
-const KYC_LABEL: Record<string, { text: string; color: string; bg: string }> = {
-  NOT_STARTED: { text: 'Не начата', color: 'var(--text-secondary)', bg: 'var(--neutral-dim)' },
-  PENDING: { text: 'На проверке', color: 'var(--accent)', bg: 'var(--accent-dim)' },
-  APPROVED: { text: 'Подтверждена', color: 'var(--buy)', bg: 'var(--buy-dim)' },
-  REJECTED: { text: 'Отклонена', color: 'var(--sell)', bg: 'var(--sell-dim)' },
-};
-
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div style={styles.row}>
-      <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{label}</span>
-      <span style={{ fontSize: 13 }}>{value}</span>
-    </div>
-  );
+const tabs = ['Общее', 'Балансы', 'Пополнения', 'Выводы', 'Ордера', 'Проверка личности', 'История действий'] as const;
+type Tab = typeof tabs[number];
+const histories: Partial<Record<Tab, HistoryKind>> = { Пополнения: 'deposits', Выводы: 'withdrawals', Ордера: 'orders', 'Проверка личности': 'kyc', 'История действий': 'audit' };
+const tabKeys = ['overview', 'balances', 'deposits', 'withdrawals', 'orders', 'kyc', 'audit'] as const;
+export function adminReturnPath(value: string | null): string {
+  return value && /^\/admin\/(?:users|audit-log|kyc|deposits|withdrawals)(?:\?[^#\u0000-\u001f\u007f]*)?$/.test(value) ? value : '/admin/users';
 }
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={styles.card}>
-      <h3 style={{ fontSize: 14, margin: 0, fontWeight: 700 }}>{title}</h3>
-      {children}
-    </div>
-  );
-}
-
-/** Карточка пользователя — полная история: депозиты, выводы, ордера,
- * покупки, KYC-заявки, плюс ручная корректировка баланса. */
 export function AdminUserDetailPage() {
   const { id = '' } = useParams();
-  // Form drafts and mutation receipts belong to one account, never the next route.
   return <AdminUserDetail key={id} id={id} />;
 }
-
 function AdminUserDetail({ id }: { id: string }) {
-  const { data: detail, error: readError, loading, reload } = useAdminRead(id, signal => getAdminUserDetailAbortable(id, signal));
-
-  const [asset, setAsset] = useState('');
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
-  const [adjustError, setAdjustError] = useState<string | null>(null);
-  const [adjustSuccess, setAdjustSuccess] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const [deleting, setDeleting] = useState(false);
-  const navigate = useNavigate();
-
-  const [demoAsset, setDemoAsset] = useState('');
-  const [demoAmount, setDemoAmount] = useState('');
-  const [demoNote, setDemoNote] = useState('');
-  const [demoError, setDemoError] = useState<string | null>(null);
-  const [demoSuccess, setDemoSuccess] = useState<string | null>(null);
-  const [demoBusy, setDemoBusy] = useState(false);
-
-  async function handleAdjust(e: React.FormEvent) {
-    e.preventDefault();
-    setAdjustError(null);
-    setAdjustSuccess(null);
-    setBusy(true);
-    try {
-      const result = await api.adjustUserBalance(id, asset.trim().toUpperCase(), amount.trim(), reason.trim());
-      setAdjustSuccess(`Новый доступный баланс: ${result.available} ${result.asset}`);
-      setAsset('');
-      setAmount('');
-      setReason('');
-      reload();
-    } catch (err) {
-      setAdjustError(err instanceof ApiError ? err.message : 'Не удалось скорректировать баланс.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleDemoTopUp(e: React.FormEvent) {
-    e.preventDefault();
-    setDemoError(null);
-    setDemoSuccess(null);
-    setDemoBusy(true);
-    try {
-      const result = await api.demoTopUp(id, demoAsset.trim().toUpperCase(), demoAmount.trim(), demoNote.trim() || undefined);
-      setDemoSuccess(`Новый тестовый баланс: ${result.available} ${result.asset}`);
-      setDemoAsset('');
-      setDemoAmount('');
-      setDemoNote('');
-      reload();
-    } catch (err) {
-      setDemoError(err instanceof ApiError ? err.message : 'Не удалось начислить тестовый баланс.');
-    } finally {
-      setDemoBusy(false);
-    }
-  }
-
-  if (!detail) {
-    if (readError) return <div role="alert" style={styles.card}><p>{readError}</p><button onClick={reload}>Повторить</button><Link to="/admin/users">Все пользователи</Link></div>;
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Skeleton height={100} />
-        <Skeleton height={200} />
-      </div>
-    );
-  }
-
-  const kycBadge = KYC_LABEL[detail.kycStatus] ?? KYC_LABEL.NOT_STARTED;
-
-  return (
-    <div>
-      <Link to="/admin/users" style={{ color: 'var(--text-tertiary)', fontSize: 12, textDecoration: 'none' }}>
-        ← Все пользователи
-      </Link>
-      <h1 style={styles.title}>{detail.email}</h1>
-      <button onClick={reload} disabled={loading}>{loading ? 'Обновление…' : 'Обновить'}</button>
-      {readError && <p role="alert">{readError} Показанные данные могли устареть.</p>}
-
-      <div className="admin-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-        <Section title="Профиль">
-          <Row label="Email" value={detail.email} />
-          <Row label="Роль" value={detail.isAdmin ? 'Администратор' : 'Пользователь'} />
-          <Row label="Регистрация" value={new Date(detail.createdAt).toLocaleString('ru-RU')} />
-          <Row
-            label="Верификация"
-            value={
-              detail.kycSubmissions.length ? (
-                <a href="#kyc" title="Открыть заявку" style={{ textDecoration: 'none' }}>
-                  <Badge text={detail.kycStatus === 'PENDING' ? `${kycBadge.text} — открыть заявку` : kycBadge.text} color={kycBadge.color} bg={kycBadge.bg} />
-                </a>
-              ) : (
-                <Badge text={kycBadge.text} color={kycBadge.color} bg={kycBadge.bg} />
-              )
-            }
-          />
-          <Row label="Последний вход" value={detail.lastLoginAt ? formatLastLoginAt(detail.lastLoginAt) : 'Ни разу не входил'} />
-          <Row
-            label="Статус"
-            value={
-              detail.isBlocked ? (
-                <Badge text={`Заблокирован${detail.blockedReason ? `: ${detail.blockedReason}` : ''}`} color="var(--sell)" bg="var(--sell-dim)" />
-              ) : (
-                <Badge text="Активен" color="var(--buy)" bg="var(--buy-dim)" />
-              )
-            }
-          />
-        </Section>
-
-        <Section title="Баланс">
-          {detail.balances.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Баланс пуст.</p>}
-          {detail.balances.map((b) => (
-            <Row key={b.asset} label={b.asset} value={<span className="mono">{b.available} доступно, {b.locked} заблокировано</span>} />
-          ))}
-        </Section>
-      </div>
-
-      <div id="kyc" style={{ marginBottom: 16, scrollMarginTop: 16 }}>
-        <Section title="Заявки на верификацию (KYC)">
-          {detail.kycSubmissions.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Заявок нет.</p>}
-          {detail.kycSubmissions.map((k, i) => (
-            <div key={k.id} style={i > 0 ? { borderTop: '1px solid var(--border)', paddingTop: 12 } : undefined}>
-              <KycSubmissionReview submission={k} onReviewed={reload} />
-            </div>
-          ))}
-        </Section>
-      </div>
-
-      {canDeleteUser(detail) && (
-        <Section title="Учётная запись">
-          <button onClick={() => setDeleting(true)} style={{ ...styles.rejectBtn, borderColor: 'var(--sell)' }}>Удалить аккаунт</button>
-        </Section>
-      )}
-      {deleting && <DeleteUserDialog user={detail} onClose={() => setDeleting(false)} onDeleted={() => navigate('/admin/users', { replace: true })} />}
-      <div style={{ height: 16 }} />
-
-      <Section title="Ручная корректировка баланса">
-        <p style={styles.hint}>
-          Меняет только доступный баланс. Требует причину — она сохраняется в журнале действий.
-        </p>
-        <form className="admin-detail-form" onSubmit={handleAdjust} style={{ ...styles.form, display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 10, alignItems: 'end' }}>
-          <label style={styles.label}>
-            Актив
-            <input style={styles.input} value={asset} onChange={(e) => setAsset(e.target.value)} placeholder="USDT" required />
-          </label>
-          <label style={styles.label}>
-            Сумма (± )
-            <input style={styles.input} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10 или -10" required />
-          </label>
-          <label style={styles.label}>
-            Причина
-            <input style={styles.input} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Причина корректировки" required />
-          </label>
-          <button type="submit" style={styles.primaryBtn} disabled={busy}>
-            Применить
-          </button>
-        </form>
-        {adjustError && <div style={styles.errorBox}>{adjustError}</div>}
-        {adjustSuccess && <div style={styles.successBox}>{adjustSuccess}</div>}
-      </Section>
-
-      <div style={{ height: 16 }} />
-
-      <Section title="Тестовый баланс">
-        <p style={styles.hint}>
-          Тестовые средства, полностью отдельные от реального баланса и резервов — только для проверки торговли. Начисление всегда
-          логируется в журнал действий.
-        </p>
-        {detail.demoBalances.length === 0 ? (
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Тестовый баланс пуст.</p>
-        ) : (
-          detail.demoBalances.map((b) => (
-            <Row
-              key={b.asset}
-              label={`ПЕСОЧНИЦА · ${b.asset}`}
-              value={<span className="mono">{b.available} доступно, {b.locked} заблокировано</span>}
-            />
-          ))
-        )}
-        <form onSubmit={handleDemoTopUp} style={{ ...styles.form, display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 10, alignItems: 'end' }}>
-          <label style={styles.label}>
-            Актив
-            <input style={styles.input} value={demoAsset} onChange={(e) => setDemoAsset(e.target.value)} placeholder="BTC" required />
-          </label>
-          <label style={styles.label}>
-            Сумма (± )
-            <input style={styles.input} value={demoAmount} onChange={(e) => setDemoAmount(e.target.value)} placeholder="272" required />
-          </label>
-          <label style={styles.label}>
-            Заметка (необязательно)
-            <input style={styles.input} value={demoNote} onChange={(e) => setDemoNote(e.target.value)} placeholder="Например: первичное начисление" />
-          </label>
-          <button type="submit" style={styles.primaryBtn} disabled={demoBusy}>
-            Начислить
-          </button>
-        </form>
-        {demoError && <div style={styles.errorBox}>{demoError}</div>}
-        {demoSuccess && <div style={styles.successBox}>{demoSuccess}</div>}
-      </Section>
-
-      <div style={{ height: 16 }} />
-
-      <Section title="Ордера">
-        {detail.orders.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Ордеров нет.</p>}
-        {detail.orders.map((o) => (
-          <Row
-            key={o.id}
-            label={`${o.pair} · ${o.side} · ${o.type}`}
-            value={<span className="mono">{o.remainingQuantity}/{o.originalQuantity} · {o.status} · {new Date(o.createdAt).toLocaleDateString('ru-RU')}</span>}
-          />
-        ))}
-      </Section>
-
-      <div style={{ height: 16 }} />
-
-      <Section title="Депозиты">
-        {detail.deposits.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Депозитов нет.</p>}
-        {detail.deposits.map((d) => (
-          <Row
-            key={d.id}
-            label={railDisplay(d.asset, d.chain).label}
-            value={<span className="mono">{d.amount} · {d.status} · {new Date(d.createdAt).toLocaleDateString('ru-RU')}</span>}
-          />
-        ))}
-      </Section>
-
-      <div style={{ height: 16 }} />
-
-      <Section title="Выводы">
-        {detail.withdrawals.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Выводов нет.</p>}
-        {detail.withdrawals.map((w) => (
-          <Row
-            key={w.id}
-            label={railDisplay(w.asset, w.network).label}
-            value={<span className="mono">{w.amount} · {w.status} · {new Date(w.createdAt).toLocaleDateString('ru-RU')}</span>}
-          />
-        ))}
-      </Section>
-
-      <div style={{ height: 16 }} />
-
-      <Section title="Покупки">
-        {detail.purchases.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Покупок нет.</p>}
-        {detail.purchases.map((p) => (
-          <Row
-            key={p.id}
-            label={p.productName}
-            value={<span className="mono">{p.amount} {p.asset} · {p.status} · {new Date(p.createdAt).toLocaleDateString('ru-RU')}</span>}
-          />
-        ))}
-      </Section>
-
+  const read = useAdminRead(id, signal => getAdminProfile(id, signal));
+  const [params, setParams] = useSearchParams();
+  const back = adminReturnPath(params.get('returnTo'));
+  const tab = tabs[tabKeys.findIndex(key => key === params.get('tab'))] ?? 'Общее';
+  const setTab = (name: Tab) => {
+    const next = new URLSearchParams(params), key = tabKeys[tabs.indexOf(name)];
+    if (key === 'overview') next.delete('tab'); else next.set('tab', key);
+    setParams(next, { replace: true });
+  };
+  const [adjusting, setAdjusting] = useState(false), [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate(), detail = read.data;
+  const refreshed = () => { read.reload(); refreshAdminSummary(); };
+  if (!detail) return read.error ? <div role="alert" style={styles.card}><p>{read.error}</p><button onClick={read.reload}>Повторить</button><Link to={back}>Все пользователи</Link></div> : <div aria-label="Загрузка пользователя"><Skeleton height={100} /><Skeleton height={200} /></div>;
+  return <div className="admin-detail-view">
+    <Link to={back} className="admin-back">← Все пользователи</Link>
+    <div className="admin-list-heading"><div><h1 style={styles.title}>{detail.email}</h1><CopyValue value={detail.id} label="ID пользователя" full /><p className="admin-muted">{detail.isBlocked ? 'Заблокирован' : 'Активен'} · KYC: {adminStatus(detail.kycStatus)}</p></div>
+      <details className="admin-user-actions"><summary>Дополнительные действия</summary><div>
+        <button onClick={() => setAdjusting(true)}>Корректировка баланса</button>
+        {canDeleteUser(detail) && <button onClick={() => setDeleting(true)}>Удалить аккаунт</button>}
+      </div></details>
     </div>
-  );
+    <AdminReadStatus {...read} hasData />
+    <div className="admin-tabs" role="tablist" aria-label="Разделы пользователя">{tabs.map(name => <button key={name} role="tab" aria-selected={tab === name} aria-controls="admin-detail-panel" onClick={() => setTab(name)}>{name}</button>)}</div>
+    <div id="admin-detail-panel" role="tabpanel" aria-label={tab}>
+      {tab === 'Общее' && <div className="admin-detail-overview">
+        <section style={styles.card}><h2>Профиль</h2><dl className="admin-key-values">
+          <dt>Роль</dt><dd>{detail.isAdmin ? 'Администратор' : 'Пользователь'}</dd>
+          <dt>Регистрация</dt><dd>{adminDate(detail.createdAt)}</dd>
+          <dt>Последний вход</dt><dd>{detail.lastLoginAt ? adminDate(detail.lastLoginAt) : 'Не зафиксирован'}</dd>
+          <dt>Верификация</dt><dd><button className="admin-link" onClick={() => setTab('Проверка личности')}>{adminStatus(detail.kycStatus)}</button></dd>
+          <dt>Учётная запись</dt><dd>{detail.isBlocked ? `Заблокирована${detail.blockedReason ? `: ${detail.blockedReason}` : ''}` : 'Активна'}</dd>
+          <dt>IP регистрации</dt><dd>{detail.registrationIp ?? '—'}</dd>
+        </dl><AdminAccountActions profile={detail} onChanged={refreshed} /></section>
+        <section style={styles.card}><h2>Работа с пользователем</h2><p>История загружается при открытии раздела, по 20 записей.</p>
+          <div className="admin-shortcuts"><Link to={`/admin/deposits?userId=${encodeURIComponent(id)}`}>Пополнения пользователя →</Link><Link to={`/admin/withdrawals?search=${encodeURIComponent(id)}`}>Выводы пользователя →</Link><Link to={`/admin/audit-log?userId=${encodeURIComponent(id)}`}>Журнал действий →</Link></div>
+          <p className="admin-muted">Время показано в Europe/Kyiv. Последний вход не означает присутствие онлайн.</p>
+        </section>
+      </div>}
+      {tab === 'Балансы' && <div className="admin-detail-overview"><BalanceTable title="Спотовый счёт" rows={detail.balances} /><BalanceTable title="Тестовый счёт — отдельно" rows={detail.demoBalances} /></div>}
+      {histories[tab] && <AdminUserHistory key={tab} id={id} initialKind={histories[tab]!} onChanged={refreshed} />}
+    </div>
+    {adjusting && <AdminBalanceAdjustment key={id} profile={detail} onClose={() => setAdjusting(false)} onChanged={refreshed} />}
+    {deleting && <DeleteUserDialog user={detail} onClose={() => setDeleting(false)} onDeleted={() => { refreshAdminSummary(); navigate(back, { replace: true }); }} />}
+  </div>;
+}
+function BalanceTable({ title, rows }: { title: string; rows: AdminProfile['balances'] }) {
+  return <section style={styles.card}><h2>{title}</h2>{!rows.length ? <p>Записей баланса нет.</p> : <div className="admin-table-scroll"><table className="admin-data-table"><thead><tr><th>Актив</th><th>Доступно</th><th>В резерве</th></tr></thead><tbody>{rows.map(row => <tr key={row.asset}><th>{row.asset}</th><td className="mono">{row.available}</td><td className="mono">{row.locked}</td></tr>)}</tbody></table></div>}<p className="admin-muted">Значения показаны по активам без пересчёта в общую сумму.</p></section>;
+}
+const orderKinds: [HistoryKind, string][] = [['orders', 'Спот'], ['futuresOrders', 'Фьючерсные ордера'], ['futuresPositions', 'Фьючерсные позиции'], ['cfdPositions', 'Позиции CFD'], ['purchases', 'Покупки']];
+function AdminUserHistory({ id, initialKind, onChanged }: { id: string; initialKind: HistoryKind; onChanged: () => void }) {
+  const [kind, setKind] = useState(initialKind), [page, setPage] = useState(1);
+  const read = useAdminRead(`${id}:${kind}:${page}`, signal => getAdminHistory(id, kind, page, signal));
+  return <section style={styles.card}>
+    {initialKind === 'orders' && <label className="admin-history-kind">Раздел <select value={kind} onChange={e => { setKind(e.target.value as HistoryKind); setPage(1); }}>{orderKinds.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>}
+    <AdminReadStatus {...read} hasData={!!read.data} />
+    {read.data && <><p className="admin-result-count">Найдено: {read.data.total.toLocaleString('ru-RU')}</p>
+      {!read.data.items.length ? <p>Записей нет.</p> : kind === 'kyc' ? read.data.items.map(row => <KycSubmissionReview key={row.id} submission={row as unknown as Awaited<ReturnType<typeof api.getAdminUserDetail>>['kycSubmissions'][number]} onReviewed={() => { read.reload(); onChanged(); }} />) : <div className="admin-history-list">{read.data.items.map(row => <HistoryItem key={row.id} row={row} kind={kind} />)}</div>}
+      <AdminPagination page={read.data.page} totalPages={read.data.totalPages} total={read.data.total} pageSize={read.data.pageSize} itemLabel="из" onPageChange={setPage} /></>}
+  </section>;
+}
+function value(row: HistoryRow, key: string): string { const item = row[key]; return typeof item === 'string' || typeof item === 'number' ? String(item) : '—'; }
+function HistoryItem({ row, kind }: { row: HistoryRow; kind: HistoryKind }) {
+  if (kind === 'audit') return <article className="admin-history-item"><div><strong>{adminAction(value(row, 'action'))}</strong><time>{adminDate(value(row, 'createdAt'))}</time></div><p>Кто: {value(row, 'performedByAdminEmail')} · Пользователь: {value(row, 'userEmail')}</p><details><summary>Детали действия</summary><pre>{JSON.stringify(maskAuditMetadata(row.metadata), null, 2)}</pre></details></article>;
+  const position = kind === 'futuresPositions' || kind === 'cfdPositions';
+  return <article className="admin-history-item"><div><strong>{value(row, 'asset') !== '—' ? value(row, 'asset') : value(row, 'pair') !== '—' ? value(row, 'pair') : value(row, 'symbol')}</strong><span>{adminStatus(value(row, 'status'))}</span><time>{adminDate(value(row, position ? 'openedAt' : 'createdAt'))}</time></div>
+    <CopyValue value={row.id} label="ID записи" full />
+    <dl className="admin-key-values">
+      {(['deposits', 'withdrawals', 'purchases'].includes(kind)) ? <><dt>Сумма</dt><dd className="mono">{value(row, 'amount')} {value(row, 'asset')}</dd><dt>Сеть / продукт</dt><dd>{value(row, kind === 'deposits' ? 'chain' : kind === 'withdrawals' ? 'network' : 'productName')}</dd></> : <><dt>Направление</dt><dd>{adminStatus(value(row, 'side'))}</dd><dt>Количество</dt><dd className="mono">{value(row, position ? 'size' : 'originalQuantity')}</dd><dt>{position ? 'Цена входа' : 'Цена ордера'}</dt><dd className="mono">{value(row, position ? 'entryPrice' : 'price')}</dd>{!position && <><dt>Осталось</dt><dd className="mono">{value(row, 'remainingQuantity')}</dd></>}{position && <><dt>Реализованный P&L</dt><dd className="mono">{value(row, 'realizedPnl')}</dd><dt>Закрыта</dt><dd>{adminDate(value(row, 'closedAt'))}</dd></>}</>}
+      {row.toAddress ? <><dt>Адрес назначения</dt><dd><CopyValue value={value(row, 'toAddress')} label="адрес" full /></dd></> : null}
+      {row.txHash ? <><dt>TXID</dt><dd><CopyValue value={value(row, 'txHash')} label="TXID" full /></dd></> : null}
+    </dl>
+  </article>;
 }

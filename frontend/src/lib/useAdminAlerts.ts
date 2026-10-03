@@ -59,6 +59,22 @@ function changed(previous: AdminAlertSummary | null, next: AdminAlertSummary): b
   );
 }
 
+/** Admin layout consumes the shared work-summary cursor; it owns no extra read. */
+export function useAdminSummaryChime(enabled: boolean, next: AdminAlertSummary | null | undefined) {
+  const cursor = useRef<AdminAlertSummary | null>(null);
+  const owner = useRef<string | null>(null);
+  useEffect(() => onSessionChange(() => { cursor.current = null; owner.current = null; }), []);
+  useEffect(() => {
+    const token = getToken();
+    if (!enabled || !token) { cursor.current = null; owner.current = null; return; }
+    if (owner.current !== token) { cursor.current = null; owner.current = token; }
+    if (!next) return;
+    const hasNew = changed(cursor.current, next);
+    cursor.current = next;
+    if (hasNew && !isBrowserInactive() && isAdminAlertSoundEnabled()) playChime();
+  }, [enabled, next]);
+}
+
 /**
  * Global admin chime. The first successful read establishes a baseline and
  * never replays old items. Hidden tabs make zero polling requests and refresh

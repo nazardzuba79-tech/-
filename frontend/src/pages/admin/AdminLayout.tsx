@@ -1,7 +1,9 @@
 import { Fragment, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAdminGate, type AdminGate } from '../../lib/useAdminGate';
-import { useAdminAlertSound } from '../../lib/useAdminAlerts';
+import { useAdminSummaryChime } from '../../lib/useAdminAlerts';
+import { useAdminWorkSummary, type SummaryKey } from './adminWorkSummary';
+import { adminDate } from './adminPresentation';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
 import './adminConsole.css';
@@ -26,7 +28,12 @@ const SECTIONS = [
   { to: '/admin/otc', label: 'OTC-заявки', icon: ArrowUpCircleIcon, group: 'Средства' },
   { to: '/admin/kyc', label: 'Верификация · KYC', icon: ShieldCheckIcon, group: 'Комплаенс' },
   { to: '/admin/listings', label: 'Листинги', icon: BoxesIcon, group: 'Рынки' },
+  { to: '/admin/audit-log', label: 'Журнал действий', icon: ShieldCheckIcon, group: 'Контроль' },
 ];
+const SECTION_COUNTS: Record<string, SummaryKey> = {
+  '/admin/deposits': 'readyPackages', '/admin/withdrawals': 'activeWithdrawals',
+  '/admin/kyc': 'pendingKyc', '/admin/otc': 'openOtc',
+};
 
 const CHECK_ERROR_TEXT: Record<'TIMEOUT' | 'NETWORK' | 'SERVER', string> = {
   TIMEOUT: 'Сервер не ответил вовремя.',
@@ -79,13 +86,14 @@ export function AdminLayout() {
   const { status, me } = gate;
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-  useAdminAlertSound(status === 'ok');
+  const summary = useAdminWorkSummary(status === 'ok');
+  useAdminSummaryChime(status === 'ok', summary.data?.alerts);
 
   if (gate.status === 'checking' || gate.status === 'error') return <AdminGateScreen gate={gate} />;
   if (status === 'denied') return <Navigate to="/" replace />;
 
   const activeSection = SECTIONS.find((s) => location.pathname.startsWith(s.to));
-  const identity = me?.displayName || me?.email?.split('@')[0] || 'Admin';
+  const identity = me?.displayName || me?.email?.split('@')[0] || 'Администратор';
   const initials = identity
     .split(/[\s._-]+/)
     .map((p) => p[0])
@@ -108,7 +116,7 @@ export function AdminLayout() {
           <LogoMark size={26} />
           <div>
             <div style={styles.sidebarTitle}>VOLTEX</div>
-            <div style={styles.sidebarSubtitle}>Operations</div>
+            <div style={styles.sidebarSubtitle}>Управление</div>
           </div>
           <button
             onClick={() => setMobileOpen(false)}
@@ -126,6 +134,7 @@ export function AdminLayout() {
         <nav style={styles.nav}>
           {SECTIONS.map((s, i) => {
             const Icon = s.icon;
+            const widget = summary.data?.widgets[SECTION_COUNTS[s.to]];
             return (
               <Fragment key={s.to}>
               {(i === 0 || SECTIONS[i - 1].group !== s.group) && <div className="admin-nav-group">{s.group}</div>}
@@ -138,6 +147,11 @@ export function AdminLayout() {
               >
                 <Icon size={17} />
                 <span>{s.label}</span>
+                {SECTION_COUNTS[s.to] && <span style={{ marginLeft: 'auto', fontVariantNumeric: 'tabular-nums', fontSize: 12 }}
+                  title={summary.error ? 'Сводка недоступна или устарела' : `Сводка: ${adminDate(summary.updatedAt)}`}
+                  aria-label={`${s.label}: ${widget?.status === 'ready' && widget.value !== null ? widget.value : 'нет данных'}`}>
+                  {widget?.status === 'ready' && widget.value !== null ? widget.value : '—'}
+                </span>}
                 {activeSection === s && <span style={styles.navItemPip} />}
               </NavLink></Fragment>
             );
@@ -153,7 +167,7 @@ export function AdminLayout() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--buy)' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--buy)' }} />
-                Online
+                Сессия открыта
               </div>
             </div>
           </div>
@@ -201,7 +215,7 @@ export function AdminLayout() {
               <span style={{ ...styles.avatarCircle, width: 28, height: 28, fontSize: 11, background: 'var(--admin-brand)' }}>{initials || 'AD'}</span>
               <div style={{ lineHeight: 1.2 }}>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>{identity}</div>
-                <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Administrator</div>
+                <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Администратор</div>
               </div>
             </div>
           </div>
