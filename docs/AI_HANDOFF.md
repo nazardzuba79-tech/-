@@ -5603,3 +5603,11 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - Branch `claude/peaceful-volta-h5zw7g-admin-users-email` from main `95e4b260`. Files: `AdminUsersPage.tsx`, `adminPracticality.css`, `adminUsersActivity.test.ts`. No backend, data or financial logic touched; Codex/owner work on main preserved.
 - Local: frontend TypeScript and Vite build PASS; full frontend Jest 219 suites / 3805 tests PASS; admin browser fixture QA (chromium) layout, interactions and compatibility PASS.
 - Observed, not changed: on production the «Пополнения» card and sidebar counters show «—» because the shared work summary is unavailable there (the Users count comes from the legacy fallback); not verified which backend commit Render runs.
+
+
+## 2026-10-03 — ChatGPT — compact deposit minimum reconciled to current main
+
+- Reconciled PR #419 onto current main `d89740216f0f9a26cf99392f8fca7abdaad7ede9` without restoring the branch's older handoff snapshot.
+- Scope remains UI-only: neutral «Минимальная сумма пополнения» label/value row, rendered accumulation explanation removed; existing 500 USDT/equivalent rules, quote expiry, address, QR, copy, network cards/warning, backend/API/database/financial behavior unchanged.
+- Existing branch validation before reconciliation: exact-head Linux frontend 3798/3798 tests, 219/219 suites; dedicated deposit catalogue checks and disposable PostgreSQL acceptance passed. Fresh CI must run again on the reconciled head before any merge decision.
+- No merge, deployment, infrastructure or production operation performed by this reconciliation.
