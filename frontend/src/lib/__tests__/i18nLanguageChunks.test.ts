@@ -242,12 +242,16 @@ describe('translation integrity', () => {
         // reports `56 0` per language, additions only. No key used either
         // prefix before them.
         if (key?.startsWith('academy.') || key?.startsWith('help.') || key === 'nav.academy' || key === 'nav.help') return false;
+        // Owner-approved header destinations, added without changing existing copy.
+        if (key === 'nav.tools' || key === 'nav.knowledgeCenter') return false;
         return !key || (!decimalRefusalKeys.includes(key) && !depositUiKeys.includes(key) && !restoredEcosystemKeys.includes(key)
           && !addedSinceDigest.includes(key) && !drawingPanelKeys.includes(key) && !copyPerformanceKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       // Added for the approved compact order-panel disclosure; older copy remains frozen.
       expect(dicts[code]['futures.positionLimits'].trim()).not.toBe('');
+      expect(dicts[code]['nav.tools'].trim()).not.toBe('');
+      expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.

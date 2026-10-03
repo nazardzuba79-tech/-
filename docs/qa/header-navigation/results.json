@@ -1,0 +1,62 @@
+[
+  {
+    "header": "app",
+    "width": 1920,
+    "passed": true
+  },
+  {
+    "header": "app",
+    "width": 1440,
+    "passed": true
+  },
+  {
+    "header": "app",
+    "width": 1366,
+    "passed": true
+  },
+  {
+    "header": "app",
+    "width": 390,
+    "passed": true
+  },
+  {
+    "header": "home",
+    "width": 1920,
+    "passed": true
+  },
+  {
+    "header": "home",
+    "width": 1440,
+    "passed": true
+  },
+  {
+    "header": "home",
+    "width": 1366,
+    "passed": true
+  },
+  {
+    "header": "home",
+    "width": 390,
+    "passed": true
+  },
+  {
+    "header": "terminal",
+    "width": 1920,
+    "passed": true
+  },
+  {
+    "header": "terminal",
+    "width": 1440,
+    "passed": true
+  },
+  {
+    "header": "terminal",
+    "width": 1366,
+    "passed": true
+  },
+  {
+    "header": "terminal",
+    "width": 390,
+    "passed": true
+  }
+]

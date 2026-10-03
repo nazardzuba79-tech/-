@@ -1729,6 +1729,8 @@ export const ES: Record<Key, string> = {
   'withdraw.doneEta': 'Un retiro puede tardar hasta 60 minutos. Puede seguir su estado en el historial del monedero.',
   'withdraw.done': 'Listo',
   'withdraw.error': 'No se pudo enviar la solicitud. Inténtelo de nuevo.',
+  'nav.tools': 'Herramientas',
+  'nav.knowledgeCenter': 'Centro de conocimiento',
   'nav.academy': 'Academia',
   'nav.help': 'Ayuda',
   'academy.hub.home': 'Inicio',
