@@ -199,6 +199,24 @@ describe('translation integrity', () => {
       expect(dicts[code]['copyPerformance.followersPnl']).toContain('P&L');
       expect(dicts[code]['copyPerformance.units']).toContain('USDT');
     }
+    const previousVipCopy: Record<string, { label: string; title: string }> = {
+      ru: { label: 'Super VIP', title: 'Статус Super VIP' },
+      en: { label: 'Super VIP', title: 'Super VIP status' },
+      es: { label: 'Super VIP', title: 'Estado Super VIP' },
+      hi: { label: 'Super VIP', title: 'Super VIP स्थिति' },
+      ja: { label: 'Super VIP', title: 'Super VIP ステータス' },
+      ko: { label: 'Super VIP', title: 'Super VIP 등급' },
+      zh: { label: 'Super VIP', title: 'Super VIP 状态' },
+    };
+    const approvedVipCopy: Record<string, { label: string; title: string }> = {
+      ru: { label: 'Supreme VIP', title: 'Клиент Supreme VIP' },
+      en: { label: 'Supreme VIP', title: 'Supreme VIP status' },
+      es: { label: 'Supreme VIP', title: 'Estado Supreme VIP' },
+      hi: { label: 'Supreme VIP', title: 'Supreme VIP स्थिति' },
+      ja: { label: 'Supreme VIP', title: 'Supreme VIP ステータス' },
+      ko: { label: 'Supreme VIP', title: 'Supreme VIP 등급' },
+      zh: { label: 'Supreme VIP', title: 'Supreme VIP 状态' },
+    };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
@@ -261,12 +279,19 @@ describe('translation integrity', () => {
       expect(dicts[code]['nav.knowledgeCenter'].trim()).not.toBe('');
       expect(dicts[code]['settings.rememberedDevice'].trim()).not.toBe('');
       expect(dicts[code]['nav.card']).toBe(shortCardLabels[code]);
+      expect(dicts[code]['wallet.superVip']).toBe(approvedVipCopy[code].label);
+      expect(dicts[code]['wallet.superVipTitle']).toBe(approvedVipCopy[code].title);
       // Russian `futures.colMark` was shortened to «Цена марк.» (like «Цена
       // ликвид.») so every positions heading fits on one line at 1600; the
       // digest is taken over the original wording, restored here by name.
       const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'")
         // Reverse only the owner's exact short navigation label; product copy stays frozen.
         .replace("'nav.card': '" + shortCardLabels[code] + "'", "'nav.card': 'Crypto Card'")
+        // Supreme VIP is the owner-approved Wallet label. Restore only those
+        // two exact values for the historical dictionary digest so unrelated
+        // translations remain byte-frozen.
+        .replace("'wallet.superVip': '" + approvedVipCopy[code].label + "'", "'wallet.superVip': '" + previousVipCopy[code].label + "'")
+        .replace("'wallet.superVipTitle': '" + approvedVipCopy[code].title + "'", "'wallet.superVipTitle': '" + previousVipCopy[code].title + "'")
         .replace(code === 'ru' ? "'futures.colMark': 'Цена марк.'" : '\u0000', "'futures.colMark': 'Цена маркировки'");
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
