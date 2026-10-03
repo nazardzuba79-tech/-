@@ -40,6 +40,43 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   const ignores = new DepositIgnoreService(prisma);
   const watch = options.watch ?? new DepositWatchService(prisma, resolveChain);
 
+  // Counts only: keep the existing package policy, never return the full registry
+  // to a navigation badge. Each unavailable source remains unknown, not zero.
+  router.get('/admin/work-summary', requireAuth(prisma), requireAdmin(prisma), asyncRoute(async (_req, res) => {
+    const since = new Date(Date.now() - 86_400_000);
+    const [packages, unlinked, withdrawals, kyc, otc, totalUsers, newUsers, cursors] = await Promise.allSettled([
+      queue.load({ customerActivityOnly: true }),
+      prisma.deposit.count({ where: { userId: null, deletedUserId: null, ignoredAt: null, status: { not: 'CREDITED' } } }),
+      prisma.withdrawal.count({ where: { status: { in: ['PENDING', 'APPROVED'] } } }),
+      prisma.user.count({ where: { role: 'USER', kycStatus: 'PENDING' } }),
+      prisma.otcCashRequest.count({ where: { status: { in: ['RESERVED', 'OFFERED', 'ACCEPTED', 'PICKUP_READY', 'PAYOUT_IN_PROGRESS'] } } }),
+      prisma.user.count({ where: { role: 'USER' } }),
+      prisma.user.count({ where: { role: 'USER', createdAt: { gte: since } } }),
+      Promise.all([
+        prisma.deposit.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+        prisma.withdrawal.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+        prisma.kycSubmission.findFirst({ orderBy: { createdAt: 'desc' }, select: { id: true } }),
+      ]),
+    ]);
+    const asOf = new Date().toISOString();
+    const widget = (value: number | null, unit: string, href: string) => ({ value, unit, href,
+      status: value === null ? 'unavailable' : 'ready', asOf: value === null ? null : asOf });
+    const count = (result: PromiseSettledResult<number>) => result.status === 'fulfilled' ? result.value : null;
+    const packageCounts = packages.status === 'fulfilled' && !packages.value.counts.truncated ? packages.value.packageCounts : null;
+    const alerts = cursors.status === 'fulfilled' ? { depositId: cursors.value[0]?.id ?? null,
+      withdrawalId: cursors.value[1]?.id ?? null, kycId: cursors.value[2]?.id ?? null } : null;
+    res.set('Cache-Control', 'private, no-store').json({ asOf, alerts, widgets: {
+      readyPackages: widget(packageCounts?.READY ?? null, 'packages', '/admin/deposits?state=READY'),
+      pendingPackages: widget(packageCounts ? packageCounts.READY + packageCounts.AWAITING_TOPUP + packageCounts.NEEDS_REVIEW : null, 'packages', '/admin/deposits'),
+      unlinkedTransfers: widget(count(unlinked), 'transfers', '/admin/deposits?state=UNATTRIBUTED'),
+      activeWithdrawals: widget(count(withdrawals), 'withdrawals', '/admin/withdrawals?status=active'),
+      pendingKyc: widget(count(kyc), 'users', '/admin/kyc?status=PENDING'),
+      openOtc: widget(count(otc), 'requests', '/admin/otc?status=active'),
+      totalUsers: widget(count(totalUsers), 'users', '/admin/users'),
+      newUsers24h: widget(count(newUsers), 'users', '/admin/users?status=new'),
+    } });
+  }));
+
   // Every unresolved deposit, plus recent credited history. A burst of credited
   // transfers must never push an older BELOW_MINIMUM out of the work queue.
   router.get('/admin/deposits', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
