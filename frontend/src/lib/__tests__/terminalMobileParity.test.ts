@@ -26,6 +26,10 @@ describe('Spot/CFD mobile parity with Futures', () => {
     expect(page).toContain('data-mobile-market="spot"');
     expect(page).toContain("setMobilePane('book')");
     expect(page).toContain("setMobilePane('markets')");
+    expect(page).toContain("const selectSpotPair = useCallback((nextPair: string) => {");
+    expect(page).toContain("setMobileTab('trade')");
+    expect(page).toContain("params.set('pair', nextPair)");
+    expect(page).toContain('onChange={selectSpotPair}');
     expect(page).toContain('<OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced}');
     expect(page).toContain('<OrderBookPanel');
   });
@@ -50,7 +54,13 @@ describe('Spot/CFD mobile parity with Futures', () => {
     expect((page.match(/<OrderBookPanel\b/g) ?? []).length).toBe(1);
 
     const css = read('frontend/src/pages/trade-terminal/TerminalMobileParity.css');
+    const compact = read('frontend/src/pages/trade-terminal/SpotMobileCompact.css');
     expect(css).toContain('.terminal[data-mobile-tab=trade]');
+    expect(compact).toContain('.terminal[data-mobile-tab=trade] .main-grid');
+    expect(compact).toContain('grid-template-columns:minmax(0,1.28fr) minmax(138px,.92fr)');
+    expect(compact).toContain('.orderbook-col-headers .ob-col:last-child');
+    expect(compact).toContain('.info-section');
+    expect(compact).toContain('display:none');
     expect(css).toContain('.terminal[data-mobile-tab=account]');
     expect(css).toContain('[data-mobile-pane=book]');
     expect(css).toContain('[data-mobile-pane=markets]');
