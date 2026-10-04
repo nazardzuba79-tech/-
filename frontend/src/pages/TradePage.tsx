@@ -107,7 +107,7 @@ export function TradePage() {
   const pairResolving = !isTestMarketPair(pair) && !managedCatalogue.loaded && !venueSnapshot.tickers.has(pair.toUpperCase());
   const testMarket = useTestMarket(testPair && searchParams.get('market') !== 'cfd' ? pair : null, TEST_MARKET_TERMINAL_INTERVAL_MS);
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
-  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>(searchParams.get('market') === 'cfd' ? 'chart' : 'trade');
+  const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart');
   const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart');
   const mobileTabsRef = useRef<HTMLDivElement>(null);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
@@ -143,7 +143,7 @@ export function TradePage() {
   const [marketType, setMarketType] = useState<MarketType>(requestedMarketType);
   useEffect(() => {
     setMarketType(requestedMarketType);
-    setMobileTab(requestedMarketType === 'spot' ? 'trade' : 'chart');
+    setMobileTab('chart');
     setMobilePane('chart');
   }, [requestedMarketType]);
   // Landing here is the signal that spot is this user's current trading
