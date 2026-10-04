@@ -133,7 +133,7 @@ test('the email is plain selectable text; only «Открыть» opens the prof
   const css = readFileSync(resolve(frontend, 'src/pages/admin/adminPracticality.css'), 'utf8');
   expect(css).toMatch(/\.admin-users-table th:first-child,\.admin-users-table td:first-child \{ border-right: 1px solid var\(--border\)/);
   expect(css).toContain('grid-template-columns: minmax(180px,225px) repeat(2,minmax(150px,240px))');
-  expect(css).toMatch(/\.admin-user-actions \.admin-delete-button \{[^}]*margin-left: 24px;/);
+  expect(css).toMatch(/\.admin-user-actions \.admin-delete-button \{[^}]*margin-left: 64px;/);
 });
 test('the filter offers no account-status options (owner, 2026-10-03)', async () => {
   await f.mount();
