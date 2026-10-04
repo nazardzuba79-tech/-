@@ -507,22 +507,17 @@ describe('spot and futures pair lists are unchanged', () => {
     }
   });
 
-  it('Spot reads only the safe 7d reference field; its rows still come from the ticker feed', () => {
-    const helper = code('src/lib/change7d.ts') + code('src/lib/useChange7d.ts');
+  it('Spot rows still come from the ticker feed; New uses only shared listing metadata', () => {
     const spot = code('src/components/PairListSidebar.tsx');
     const pairs = code('src/lib/pairList.ts');
-    // The same rule as FuturesPairList: one ref-counted subscription, one
-    // market field, and known ticker collisions refused rather than guessed.
-    expect([...helper.matchAll(/catalogueStore\.subscribe/g)]).toHaveLength(1);
-    expect([...helper.matchAll(/asset\.market\?\.changePercent7d/g)]).toHaveLength(1);
-    expect(helper).toContain('asset.ambiguous || asset.collidingIds.length > 0');
-    expect(code('src/components/FuturesPairList.tsx')).toContain('asset.ambiguous || asset.collidingIds.length > 0');
-    expect(helper).not.toMatch(/tradingPairs|getAssetCatalogue|api\./);
-    // The Spot rows are the ticker feed's rows: nothing from the catalogue
-    // is added, renamed or removed.
+    // The narrow Spot rail no longer reads catalogue 7d data. The only
+    // discovery metadata it uses is listingAt from the already-shared
+    // test-market store, so «Новые» cannot manufacture an executable pair.
     expect(spot).toContain('setTickers(Array.from(tickerMap.values()))');
     expect(spot).toContain('filterAndSortPairs(tickersForSort, {');
-    expect(spot).not.toMatch(/catalogueStore|useCatalogue|getAssetCatalogue|tradingPairs/);
+    expect(spot).toContain('const { assets: listedAssets } = useTestMarkets();');
+    expect(spot).toContain('Date.parse(asset.listingAt)');
+    expect(spot).not.toMatch(/catalogueStore|useCatalogue|getAssetCatalogue|tradingPairs|useChange7d|pairChange7d/);
     expect(pairs).not.toMatch(/catalogueStore|getAssetCatalogue|tradingPairs/);
   });
 

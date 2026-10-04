@@ -750,6 +750,7 @@ export const HI: Record<Key, string> = {
   'markets.price': 'कीमत',
   'markets.change24h': '24घं %',
   'markets.change7d': '7दि %',
+  'markets.new': 'नए',
   'trade.sort7dGainers': '7 दिन में बढ़त',
   'trade.sort7dLosers': '7 दिन में गिरावट',
   'markets.change30d': '30दिन %',

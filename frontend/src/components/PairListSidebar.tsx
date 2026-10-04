@@ -9,8 +9,7 @@ import { CryptoIcon } from './CryptoIcon';
 import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
 import './SpotMarketControls.css';
 import { MarketColumnSort, nextMarketColumnSort } from '../lib/marketColumnSort';
-import { pairChange7d } from '../lib/change7d';
-import { useChange7d } from '../lib/useChange7d';
+import { useTestMarkets } from '../lib/testMarketStore';
 
 // Per-coin logos now come from the Market Data Gateway's asset registry,
 // resolved inside CryptoIcon itself (tier 1 of its fallback chain) via the
@@ -22,8 +21,8 @@ import { useChange7d } from '../lib/useChange7d';
 // returns only id/name/logo for the symbols actually on screen, in one
 // request, keyed by canonical id rather than by ticker.
 
-type SortField = 'volume' | 'price' | 'change' | 'change7d' | 'symbol';
-type ColumnField = 'price' | 'change' | 'change7d';
+type SortField = 'volume' | 'price' | 'change' | 'symbol';
+type ColumnField = 'price' | 'change';
 
 /** The sort states used by the column controls. `volume` descending is the
  * default: "which markets are actually being traded right now" is the
@@ -34,9 +33,6 @@ const SORT_MODES: { id: string; field: SortField; dir: 1 | -1 }[] = [
   { id: 'volume_asc', field: 'volume', dir: 1 },
   { id: 'change_desc', field: 'change', dir: -1 },
   { id: 'change_asc', field: 'change', dir: 1 },
-  // Seven-day return (owner, 2026-10-03): its own column, its own sort.
-  { id: 'change7d_desc', field: 'change7d', dir: -1 },
-  { id: 'change7d_asc', field: 'change7d', dir: 1 },
   { id: 'price_desc', field: 'price', dir: -1 },
   { id: 'price_asc', field: 'price', dir: 1 },
   { id: 'symbol_asc', field: 'symbol', dir: 1 },
@@ -80,6 +76,7 @@ export const PairListSidebar = forwardRef<
     const [search, setSearch] = useState('');
     // Real 24h turnover, descending, until the trader picks otherwise.
     const [columnSort, setColumnSort] = useState<MarketColumnSort<ColumnField>>(null);
+    const [newestFirst, setNewestFirst] = useState(false);
     const sortId = columnSort ? `${columnSort.field}_${columnSort.dir === -1 ? 'desc' : 'asc'}` : 'volume_desc';
     const sortMode = SORT_MODES.find((m) => m.id === sortId) ?? SORT_MODES[0];
     const { field: sortField, dir: sortDir } = sortMode;
@@ -111,9 +108,14 @@ export const PairListSidebar = forwardRef<
     // late-arriving responses cannot land out of order because there is
     // only ever one. Cadence and behaviour are otherwise unchanged.
     const { tickers: tickerMap, loading, error, refresh } = useMarketTickers(4000);
-    // «7д %»: the same verified catalogue week the Futures list reads, one
-    // shared slow request per tab — not the old rankings + sparkline payload.
-    const change7d = useChange7d();
+    // Reuses the same shared test-market store that useMarketTickers already
+    // subscribes to, so this adds no second network poll. Listing timestamps
+    // are used only when the trader explicitly asks for «Новые».
+    const { assets: listedAssets } = useTestMarkets();
+    const listingAtByPair = useMemo(() => new Map(listedAssets.flatMap(asset => {
+      const at = Date.parse(asset.listingAt);
+      return Number.isFinite(at) ? [[asset.pair, at] as const] : [];
+    })), [listedAssets]);
 
     useEffect(() => {
       // The store keeps the last known good snapshot across a failed poll,
@@ -171,6 +173,7 @@ export const PairListSidebar = forwardRef<
     // Every header drives the same single sortId, so the visible arrow and
     // the stable snapshot order can never disagree.
     function toggleSort(field: ColumnField) {
+      setNewestFirst(false);
       setColumnSort(current => nextMarketColumnSort(current, field));
       if (listRef.current) listRef.current.scrollTop = 0;
     }
@@ -201,11 +204,19 @@ export const PairListSidebar = forwardRef<
       sortField,
       sortDir,
       stableSort: true,
-      change7d: (p) => pairChange7d(p, change7d),
     });
+    if (newestFirst) {
+      filtered.sort((a, b) => {
+        const atA = listingAtByPair.get(a.pair), atB = listingAtByPair.get(b.pair);
+        const hasA = atA !== undefined, hasB = atB !== undefined;
+        if (hasA && hasB) return atB! - atA! || a.pair.localeCompare(b.pair);
+        if (hasA !== hasB) return hasA ? -1 : 1;
+        return 0;
+      });
+    }
     // Keep the quote/search/favorites universe intact; default merely promotes
     // its existing BTC row. A column sort never changes the selected market.
-    if (!columnSort) {
+    if (!columnSort && !newestFirst) {
       const btc = filtered.findIndex(tk => tk.pair === `BTC/${quoteFilter ?? 'USDT'}`);
       if (btc > 0) filtered.unshift(...filtered.splice(btc, 1));
     }
@@ -262,15 +273,15 @@ export const PairListSidebar = forwardRef<
         </div>
 
         <div className="pairs-sort">
-          <span aria-hidden />
+          <button type="button" className="pairs-newest-sort" data-sort-field="new" aria-pressed={newestFirst}
+            onClick={() => { setNewestFirst(current => !current); setColumnSort(null); if (listRef.current) listRef.current.scrollTop = 0; }}>
+            {t('markets.new')} {newestFirst && <ChevronDown size={11} />}
+          </button>
           <button type="button" data-sort-field="price" data-sort-dir={sortField === 'price' ? sortDir : undefined} aria-pressed={sortField === 'price'} onClick={() => toggleSort('price')}>
             {t('trade.price')} <SortArrow active={sortField === 'price'} dir={sortDir} />
           </button>
           <button type="button" data-sort-field="change" data-sort-dir={sortField === 'change' ? sortDir : undefined} aria-pressed={sortField === 'change'} onClick={() => toggleSort('change')}>
             {t('markets.change24h')} <SortArrow active={sortField === 'change'} dir={sortDir} />
-          </button>
-          <button type="button" data-sort-field="change7d" data-sort-dir={sortField === 'change7d' ? sortDir : undefined} aria-pressed={sortField === 'change7d'} onClick={() => toggleSort('change7d')}>
-            {t('markets.change7d')} <SortArrow active={sortField === 'change7d'} dir={sortDir} />
           </button>
         </div>
 
@@ -288,15 +299,7 @@ export const PairListSidebar = forwardRef<
             const change = rawChange === null ? null : Number(rawChange.toFixed(2));
             const up = change !== null && change >= 0;
             const priceText = hasPrice ? formatSpotBookNumber(lastPrice) : '—';
-            // The week is the asset's own reference return, independent of
-            // the live 24h cell beside it; rounded before its sign is chosen.
-            const rawWeek = pairChange7d(tk.pair, change7d);
-            const week = rawWeek === null ? null : Number(rawWeek.toFixed(2));
-            const weekUp = week !== null && week >= 0;
-            // Formatting only; a figure wider than its column steps down a
-            // size (data-compact) rather than running into the next one.
             const changeText = change === null ? '—' : `${up ? '+' : ''}${change.toFixed(2)}%`;
-            const weekText = week === null ? '—' : `${weekUp ? '+' : ''}${week.toFixed(2)}%`;
             return (
               <div
                 key={tk.pair}
@@ -305,11 +308,10 @@ export const PairListSidebar = forwardRef<
                 aria-label={tk.pair}
                 className={`pair-row ${tk.pair === pair ? 'active' : ''}`}
               >
-                {/* Six sibling grid cells: the reference's .market-row
-                    template (star | logo | pair | price | change) plus the
-                    seven-day column — nesting the first three inside one flex cell
-                    made the pair column's width depend on the icon's own
-                    layout instead of on the grid. */}
+                {/* Compact five-cell row: star | logo | pair | price | 24h.
+                    Seven-day performance belongs on the full Markets page;
+                    keeping it out of this narrow rail preserves readable
+                    tickers and logos at the default 258px width. */}
                 <button
                   type="button"
                   className={`p-star${favorites.has(tk.pair) ? ' on' : ''}`}
@@ -331,9 +333,6 @@ export const PairListSidebar = forwardRef<
                 <span className="p-price" data-compact={priceText.length > 10 || undefined} title={priceText}>{priceText}</span>
                 <span className={`p-change${change === null ? '' : up ? ' up' : ' down'}`} data-compact={changeText.length > 7 || undefined}>
                   {changeText}
-                </span>
-                <span className={`p-change p-change-7d${week === null ? '' : weekUp ? ' up' : ' down'}`} data-change-period="7d" data-compact={weekText.length > 7 || undefined} title={`${t('markets.change7d')}: ${weekText}`}>
-                  {weekText}
                 </span>
                 </button>
               </div>

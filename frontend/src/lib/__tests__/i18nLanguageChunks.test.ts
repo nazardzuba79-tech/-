@@ -249,6 +249,7 @@ describe('translation integrity', () => {
           'futures.contractDetails', 'futures.contractExpiry', 'futures.contractPerpetual', 'futures.contractSettle', 'futures.contractMaxLeverage', 'futures.contractQtyStep', 'futures.contractMaxQty',
           'futures.hintValue', 'futures.hintMargin', 'futures.hintMark', 'futures.hintLiq', 'futures.hintUnrealized', 'futures.hintRealized',
           'trade.assetPurchaseUnavailable', 'trade.assetOrderTypeUnavailable',
+          'markets.new', // Spot rail newest-listing sorter (2026-10-04), additive only.
           'deposit.transferCreditNote', // New manual-catalogue copy; preserve every existing dictionary byte.
           'trade.assetNotTradingYet', 'listing.untilStart', 'listing.days', 'listing.hours', 'listing.minutes', 'listing.seconds',
           'listing.initialPrice', 'listing.startTime', 'listing.newListing',

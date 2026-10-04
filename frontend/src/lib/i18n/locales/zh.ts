@@ -757,6 +757,7 @@ export const ZH: Record<Key, string> = {
   'markets.price': '价格',
   'markets.change24h': '24小时涨跌幅',
   'markets.change7d': '7日涨跌幅',
+  'markets.new': '新上线',
   'trade.sort7dGainers': '7日涨幅',
   'trade.sort7dLosers': '7日跌幅',
   'markets.change30d': '30天涨跌幅',
