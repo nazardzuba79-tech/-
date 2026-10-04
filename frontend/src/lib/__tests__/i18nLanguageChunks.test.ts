@@ -48,6 +48,9 @@ const depositUiKeys = ['back', 'chooseAsset', 'chooseNetwork', 'retry', 'search'
   'minimumLabel', 'minimumOtherValue'].map(key => `deposit.ui.${key}`);
 const decimalRefusalKeys = ['Exponent', 'Sign', 'Separator', 'Character'].map(reason => `futures.number${reason}`);
 const shortCardLabels: Record<string, string> = { ru: 'Crypto-Card', en: 'Crypto-Card', zh: 'Crypto-Card', es: 'Crypto-Card', hi: 'Crypto-Card', ja: 'Crypto-Card', ko: 'Crypto-Card' };
+const KYC_PROFILE_CARD_KEYS = ['kycStepDocumentShort', 'kycStepReview', 'kycStepFilled', 'kycStepNotFilled', 'kycStepAdded', 'kycStepNotAdded',
+  'kycStepNotSent', 'kycUploadTitle', 'kycUploadHint', 'kycChooseFile', 'kycReplaceFile', 'kycRemoveFile', 'kycPendingNoReupload',
+  'kycRejectedHint', 'kycSubmittedData', 'kycStartCta', 'kycResubmitCta', 'kycOpenStatus', 'cardShortcutTitle'].map(key => `settings.${key}`);
 const menuDescriptionKeys = ['Tools', 'Otc', 'Arbitrage', 'Learn', 'Knowledge', 'Faq', 'Glossary'].map(name => `nav.menu${name}Desc`);
 
 // ── Integrity ───────────────────────────────────────────────────────
@@ -256,7 +259,11 @@ describe('translation integrity', () => {
           // «Позиция закрыта» card after a market close (2026-10-01, owner chose variant B).
           'futures.closedTitle', 'futures.closedPrice', 'futures.closedDismiss',
           // Remembered-device sign-in (2026-10-03): additive auth/session copy.
-          'settings.rememberedDevice'];
+          'settings.rememberedDevice',
+          // Verification form, Profile verification action and VOLTEX Card
+          // shortcut (owner bundle, 2026-10-04): `git diff --numstat` over the
+          // locales reports `19 0` per language, additions only.
+          ...KYC_PROFILE_CARD_KEYS];
         // `chart.settings.*` is the futures chart's settings dialog
         // (2026-09-30); every line before it is unchanged.
         if (key?.startsWith('chart.settings.')) return false;

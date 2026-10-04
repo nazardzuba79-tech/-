@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
+import { readKycReceipt } from '../lib/kycEdge';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import './settings-arctic/tailwind-utilities.css';
@@ -145,8 +146,12 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   }
 
   const displayName = me.displayName || me.email.split('@')[0];
-  const verified = me.kycStatus === 'APPROVED';
-  const statusText = kycStatusText(t, me.kycStatus);
+  // Same rule as the Verification tab: a document already delivered whose
+  // record is still being written reads as under review, so Profile never
+  // invites a second upload.
+  const kycStatus = me.kycStatus !== 'APPROVED' && readKycReceipt() ? 'PENDING' : me.kycStatus;
+  const verified = kycStatus === 'APPROVED';
+  const statusText = kycStatusText(t, kycStatus);
   const roleLabel = me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser');
   const memberSince = new Date(me.createdAt).toLocaleDateString(localeOf(lang));
 
@@ -172,7 +177,19 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <AccountOverview email={me.email} accountId={me.id} roleLabel={roleLabel} verifiedLabel={statusText} verified={verified} memberSince={memberSince} />
+        <AccountOverview
+          email={me.email}
+          accountId={me.id}
+          roleLabel={roleLabel}
+          verifiedLabel={statusText}
+          kycStatus={kycStatus}
+          memberSince={memberSince}
+          onVerify={() => {
+            onNavigate('verification');
+            // The row sits low on a phone; the form starts at the top.
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
         <RecentActivity entries={recentActivity} />
       </div>
 
