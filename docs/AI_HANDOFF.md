@@ -5632,3 +5632,11 @@ Validation: full frontend218 suites /3,787 passed /6existing skipped; mocked bac
 - i18n: 7 `draw.*` keys × 7 locales (`7 0` numstat); listed in `i18nLanguageChunks` drawing keys.
 - Tests: new `rulerMeasure.test.ts` (12). New local browser QA `scripts/qa-chart-ruler-measure.cjs` (fixture candles): hover → 4 handles; settings 95 → live end at 103 (label +8,42%); next 5 s refresh with close 107 → +12,63% by itself; fixed end 101,5 → +6,84%; «0» refused; dragging the end edge: guide shown, label hidden, snaps to 107 with «Текущая цена 107.0000», drops exactly there. PASS at 1440 and 1366. `qa-chart-ruler-sync.cjs` still 0.0 px drift at 1440/1366. Full frontend Jest 221 suites / 3820 tests PASS; TypeScript + Vite build PASS.
 - Not changed: orders, balances, backend. Not merged or deployed; production not checked.
+
+## Claude — 2026-10-04 — Admin Users: «Удалить» further from «Открыть»
+
+- Owner asked to move «Удалить» a bit further right (screenshot of /admin/users).
+- Branch `claude/ecstatic-brahmagupta-cwkvt5-delete-gap` from main `256d60ec`.
+- Change: `frontend/src/pages/admin/adminPracticality.css` — `.admin-user-actions .admin-delete-button` `margin-left` 24px → 64px. The matching guard in `adminUsersActivity.test.ts` was updated. Nothing else touched.
+- Checks run locally: admin users suites (55 tests) pass; frontend build; `scripts/qa-admin-gate.cjs` ALL PASS (26) with screenshots in scratch (1440: no overflow, wider gap).
+- Not merged, not deployed.
