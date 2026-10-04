@@ -1435,6 +1435,10 @@ export function PriceChart({
       height: container.clientHeight,
       lang,
       range: (a, b) => drawingRange(a, b, candlesRef.current, INTERVAL_SECONDS[interval], minMove),
+      // The latest candle, where a live-ended ruler ends; re-read on every
+      // render, and the chart renders on every candle refresh.
+      live: (() => { const last = candlesRef.current[candlesRef.current.length - 1]; return last ? { time: last.time, price: last.close } : null; })(),
+      formatPrice: (value) => series.priceFormatter().format(value),
     };
   })();
 

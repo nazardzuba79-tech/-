@@ -8,7 +8,7 @@
  */
 import {
   dashArray, distanceToPolyline, drawingExtensions, drawingRange, drawingRangeLines, drawingRetracements,
-  drawingStyle, formatDrawingPrice, pointInPolygon, positionMetrics, readableTextOn,
+  drawingStyle, formatDrawingPrice, livePoints, pointInPolygon, positionMetrics, readableTextOn,
   type DrawingPoint, type DrawingRange, type ScreenPoint, type StoredDrawing,
 } from './chartDrawings';
 
@@ -21,6 +21,10 @@ export interface DrawingView {
   height: number;
   lang: string;
   range(a: DrawingPoint, b: DrawingPoint): DrawingRange;
+  /** The latest candle as a point (its close): where a live-ended ruler ends. */
+  live?: DrawingPoint | null;
+  /** The chart's own price formatting, for the drag guide's price tag. */
+  formatPrice?(price: number): string;
 }
 
 export type Primitive =
@@ -30,7 +34,8 @@ export type Primitive =
   | { t: 'text'; x: number; y: number; text: string; color: string; size: number; anchor: 'start' | 'middle' | 'end'; weight?: number }
   | { t: 'label'; x: number; y: number; lines: string[]; bg: string; color: string; place: 'above' | 'below' | 'center' | 'right' | 'left'; size?: number };
 
-export interface DrawingAnchor { id: number | 'target' | 'stop' | 'width'; x: number; y: number }
+/** `edge0` / `edge1`: a ruler's top and bottom edge, moving only that anchor's price. */
+export interface DrawingAnchor { id: number | 'target' | 'stop' | 'width' | 'edge0' | 'edge1'; x: number; y: number }
 
 export interface DrawingGeometry {
   prims: Primitive[];
@@ -76,7 +81,9 @@ const mid = (a: ScreenPoint, b: ScreenPoint) => ({ x: (a.x + b.x) / 2, y: (a.y +
  * Build a drawing's geometry. Returns null when an anchor cannot be placed
  * on screen (a price outside the scale's reach, or no chart yet).
  */
-export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): DrawingGeometry | null {
+export function drawingGeometry(stored: StoredDrawing, view: DrawingView): DrawingGeometry | null {
+  // A live-ended ruler is painted, measured and hit-tested at the latest price.
+  const drawing = stored.followLast ? { ...stored, points: livePoints(stored, view.live) } : stored;
   const style = drawingStyle(drawing);
   const dash = dashArray(style.dash, style.width);
   const { color, width } = style;
@@ -324,6 +331,9 @@ export function drawingGeometry(drawing: StoredDrawing, view: DrawingView): Draw
       }
       label(rangeLabel);
       pointAnchors();
+      // A ruler's edges take a price-only handle each, mid-edge where the
+      // vertical arrow meets them: something to grab without a corner.
+      if (kind === 'ruler') anchors.push({ id: 'edge0', x: cx, y: a.y }, { id: 'edge1', x: cx, y: b.y });
       break;
     }
     case 'brush': case 'highlighter': {
@@ -444,7 +454,10 @@ export function anchorAt(geometry: DrawingGeometry, p: ScreenPoint, radius = 7):
  */
 export function moveAnchor(drawing: StoredDrawing, anchor: DrawingAnchor['id'], to: DrawingPoint): StoredDrawing {
   const points = drawing.points.map((p) => ({ ...p }));
-  if (anchor === 'target') points[1] = { ...points[1], price: to.price };
+  if (anchor === 'edge0' || anchor === 'edge1') {
+    const i = anchor === 'edge0' ? 0 : 1;
+    points[i] = { ...points[i], price: to.price };
+  } else if (anchor === 'target') points[1] = { ...points[1], price: to.price };
   else if (anchor === 'stop') points[2] = { ...points[2], price: to.price };
   else if (anchor === 'width') { points[1] = { ...points[1], time: to.time }; points[2] = { ...points[2], time: to.time }; }
   else if (drawing.kind === 'long' || drawing.kind === 'short') points[0] = { time: to.time, price: to.price };

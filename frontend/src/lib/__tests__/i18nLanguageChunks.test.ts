@@ -185,7 +185,10 @@ describe('translation integrity', () => {
           'draw.section.fib', 'draw.section.pitchforks', 'draw.section.chartPatterns', 'draw.section.elliott', 'draw.section.projection',
           'draw.section.measurers', 'draw.section.brushes', 'draw.section.arrows', 'draw.section.shapes', 'draw.section.text', 'draw.objectToolbar',
           'draw.lineColor', 'draw.fillColor', 'draw.lineWidth', 'draw.lineStyle', 'draw.editText', 'draw.lockObject', 'draw.unlockObject',
-          'draw.clone', 'draw.deleteObject', 'draw.dash.solid', 'draw.dash.dashed', 'draw.dash.dotted'];
+          'draw.clone', 'draw.deleteObject', 'draw.dash.solid', 'draw.dash.dashed', 'draw.dash.dotted',
+          // Ruler exact prices and its drag guide (owner, 2026-10-04): `git diff
+          // --numstat` over the locales reports `7 0` per language, additions only.
+          'draw.measureSettings', 'draw.priceFrom', 'draw.priceTo', 'draw.toCurrentPrice', 'draw.apply', 'draw.priceInvalid', 'draw.currentPrice'];
     for (const code of LOCALES) {
       for (const key of drawingPanelKeys) expect({ code, key, text: String(dicts[code][key] ?? '').trim() !== '' }).toEqual({ code, key, text: true });
     }
