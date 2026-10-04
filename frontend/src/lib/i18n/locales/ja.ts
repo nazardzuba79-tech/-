@@ -750,6 +750,7 @@ export const JA: Record<Key, string> = {
   'markets.price': '価格',
   'markets.change24h': '24時間変動率',
   'markets.change7d': '7日変動率',
+  'markets.new': '新着',
   'trade.sort7dGainers': '7日間の上昇',
   'trade.sort7dLosers': '7日間の下落',
   'markets.change30d': '30日変動率',
