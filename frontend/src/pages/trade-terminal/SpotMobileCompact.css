@@ -51,7 +51,7 @@
     gap:2px;
   }
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-tab {
-    min-height:40px;
+    min-height:44px;
     padding:6px 2px;
     font-size:12px;
   }
@@ -69,8 +69,8 @@
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-type-tab {
     flex:0 0 auto;
     min-width:62px;
-    min-height:40px;
-    height:40px;
+    min-height:44px;
+    height:44px;
     padding:5px 6px;
     font-size:10px;
     white-space:nowrap;
@@ -144,8 +144,8 @@
   .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .ob-group-select {
     min-width:54px;
     max-width:72px;
-    min-height:40px;
-    height:40px;
+    min-height:44px;
+    height:44px;
     padding-inline:4px;
     font-size:10px;
   }
