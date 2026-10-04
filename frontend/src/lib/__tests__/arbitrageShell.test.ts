@@ -59,6 +59,8 @@ describe('local arbitrage keeps the real authenticated shell without a market su
       '../lib/api': { api: { getMe, logout }, getToken: () => 'fixture-session', clearToken },
       '../lib/i18n': { useLanguage: () => ({ t: (key: string) => key, lang: 'ru' }) },
       '../lib/useDepositOptions': { prefetchDepositConfig },
+      // Pure open-request bus (no fetch, no timer): the header's own deposit window.
+      '../lib/depositRequest': require('../depositRequest'),
       '../lib/useCopyMarketplace': { prefetchCopyMarketplace },
       './TopGainersTicker': { TopGainersTicker },
       './Logo': { Logo: () => React.createElement('span', { 'data-real-logo-slot': true }, 'VOLTEX') },

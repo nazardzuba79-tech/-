@@ -34,6 +34,8 @@ export const JA: Record<Key, string> = {
   'deposit.ui.memo': "メモ / タグ",
   'deposit.ui.memoCopied': "メモをコピーしました",
   'deposit.ui.copyMemo': "メモをコピー",
+  'deposit.ui.memoRequired': "必須",
+  'deposit.ui.memoHint': "送金時にアドレスと一緒に入力してください。",
   'deposit.ui.asset': "資産",
   'deposit.ui.minimumLabel': "最低入金額",
   'deposit.ui.minimumOtherValue': "{amount} USDT または同等額の {asset}",
@@ -1827,4 +1829,8 @@ export const JA: Record<Key, string> = {
   'help.status.note': '取引所サーバーと市場データが応答するかだけを示します。取引・入金・出金・ログインの各操作が成功することは確認しません。「確認できませんでした」はネットワークやブラウザの問題の可能性があり、プラットフォームの障害とは限りません。',
   'help.status.incidents': '障害のお知らせ',
   'help.status.noIncidents': '公開中の障害のお知らせはありません',
+  'terminal.marketSwitch': "現物または先物",
+  'terminal.noFuturesContract': "{pair} の先物契約はありません。利用可能な契約を選択してください。",
+  'terminal.noSpotPair': "{pair} は現物に上場していません。利用可能なペアを選択してください。",
+  'trade.orderType': "注文タイプ",
 };

@@ -14,6 +14,7 @@ import { positiveOrderNumber, orderFundingPrice, balancePercentageQuantity } fro
 import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedback';
 import { customerErrorText } from '../lib/customerError';
 import { isManagedTradablePair, isTestMarketPair } from '../lib/testMarkets';
+import { MOBILE_TERMINAL_QUERY, useMediaQuery } from '../lib/useMediaQuery';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -42,6 +43,8 @@ export function OrderForm({
 }) {
   const { t } = useLanguage();
   const toast = useToast();
+  // A phone gets the order families as one native select (see below).
+  const compact = useMediaQuery(MOBILE_TERMINAL_QUERY);
   const [baseAsset, quoteAsset] = pair.split('/');
   const privateVta = pair.toUpperCase() === 'VTA/USDT';
   const vta = useVtaSpotAccount(privateVta);
@@ -407,7 +410,20 @@ export function OrderForm({
         </button>
       </div>
 
-      <div className="order-type-tabs">
+      {compact ? (
+        /* Same five families, same handler — one select instead of five
+           cramped tabs on a phone. Only one of the two is ever rendered. */
+        <label className="order-type-select">
+          <span className="order-type-select-label">{t('trade.orderType')}</span>
+          <select value={family} aria-label={t('trade.orderType')} onChange={(event) => {
+            const next = FAMILY_TABS.find((f) => f.id === event.target.value);
+            if (!next) return;
+            setFamily(next.id); setPercent(0); setError(null);
+          }}>
+            {FAMILY_TABS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </select>
+        </label>
+      ) : <div className="order-type-tabs">
         {FAMILY_TABS.map((f) => (
           <button
             key={f.id}
@@ -419,7 +435,7 @@ export function OrderForm({
             {f.label}
           </button>
         ))}
-      </div>
+      </div>}
 
       <form onSubmit={handleSubmit} className="order-form-content" noValidate={notTradingYet || privateVta}>
         {/* Stop and take-profit orders can execute as either a limit or a

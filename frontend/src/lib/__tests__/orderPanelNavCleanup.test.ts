@@ -98,6 +98,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/api') return { api, ApiError: Error, clearToken: jest.fn(), getToken: () => null };
     if (name === '../lib/futuresExecution') return { useFuturesExecution: () => execution, REAL_FUTURES_EXECUTION: execution };
     if (name === '../lib/useFuturesAccount') return { useFuturesAccount: () => overrides.account ?? accountState(), refreshFuturesAccount: () => {} };
+    // «Депозит» asks the page's header for its window (pure bus, no I/O).
+    if (name === '../lib/depositRequest') return jest.requireActual('../depositRequest');
     if (name === '../lib/useAdminAlerts') return { useAdminAlertSound: () => {} };
     if (name === '../lib/useCopyMarketplace') return { prefetchCopyMarketplace: () => {} };
     if (name === '../lib/useDepositOptions') return { prefetchDepositConfig: () => {} };

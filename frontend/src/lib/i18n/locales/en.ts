@@ -34,6 +34,8 @@ export const EN: Record<Key, string> = {
   'deposit.ui.memo': "Memo / Tag",
   'deposit.ui.memoCopied': "Memo copied",
   'deposit.ui.copyMemo': "Copy memo",
+  'deposit.ui.memoRequired': "Required",
+  'deposit.ui.memoHint': "Enter it in your transfer together with the address.",
   'deposit.ui.asset': "Asset",
   'deposit.ui.minimumLabel': "Minimum deposit amount",
   'deposit.ui.minimumOtherValue': "{amount} USDT or the equivalent in {asset}",
@@ -1856,4 +1858,8 @@ export const EN: Record<Key, string> = {
   'help.status.note': 'This only shows whether the exchange server and market data answer. It does not confirm that each operation — trading, deposits, withdrawals or sign-in — succeeds. «Could not check» may mean a network or browser problem, not a platform outage.',
   'help.status.incidents': 'Incident reports',
   'help.status.noIncidents': 'No incident reports published',
+  'terminal.marketSwitch': "Spot or futures",
+  'terminal.noFuturesContract': "{pair} has no futures contract. Choose an available one.",
+  'terminal.noSpotPair': "{pair} is not listed on spot. Choose an available pair.",
+  'trade.orderType': "Order type",
 };

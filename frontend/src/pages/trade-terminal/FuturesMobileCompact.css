@@ -1,0 +1,156 @@
+/* Futures phone trading workspace (owner reference, 2026-10-04).
+ *
+ * The Trade tab is the default on a phone: the real FuturesReferenceBook on
+ * the left (~40%), the real FuturesOrderForm on the right (~60%), then the
+ * positions, then the account block and contract facts that used to follow
+ * the ticket (moved under the positions by FuturesPage, not copied). Imported
+ * last among the Futures sheets so equal-specificity rules settle here; every
+ * rule is <=900px and inside #archive-terminal-preview, the default design.
+ */
+@media (max-width:900px) {
+  /* Instrument row: pair | price over change | 24h + | calculator. */
+  #archive-terminal-preview .ticker-bar { grid-template-columns:minmax(0,1fr) auto 44px 44px; min-height:56px; padding:6px 10px; gap:6px; }
+  #archive-terminal-preview .ticker-bar[data-mobile-details=true] { grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px 44px; }
+  #archive-terminal-preview .ticker-bar .value.price { font-size:17px; line-height:22px; }
+  #archive-terminal-preview .ticker-bar .ticker-calc-btn { display:flex; grid-column:4; grid-row:1; align-items:center; justify-content:center; width:44px; min-width:44px; min-height:44px; padding:0; border:1px solid var(--border); border-radius:8px; background:var(--panel-alt); color:var(--text-secondary); }
+  #archive-terminal-preview .ticker-bar .ticker-calc-btn .ticker-calc-label { display:none; }
+
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .main-grid {
+    display:grid;
+    order:1;
+    grid-template-columns:minmax(0,40fr) minmax(0,60fr);
+    align-items:stretch;
+    gap:1px;
+    background:var(--tile-ground,#000);
+  }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .main-grid > .orderbook-area {
+    grid-column:1;
+    grid-row:1;
+    height:auto;
+    min-height:0;
+    /* The ticket sets the row; the book fills it and adds no height of its own. */
+    contain:size;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .main-grid > .order-form-area {
+    grid-column:2;
+    grid-row:1;
+    min-width:0;
+  }
+
+  /* The ladder: price and size at 12px on the book's own 28px pitch (the
+     component sizes its levels with the same number), last price between
+     asks and bids, grouping under the ratio bar. */
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .reference-book { display:flex; flex-direction:column; flex:1; min-height:0; height:100%; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-tabs { flex:none; min-height:44px; gap:0; padding:0 4px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-tabs button { flex:1; min-width:0; min-height:44px; padding:0 4px; font-size:12px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-controls { order:5; flex:none; min-height:44px; padding:4px 6px; justify-content:stretch; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-controls .rb-modes { display:none; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-controls select { flex:1; width:100%; min-width:0; min-height:36px; font-size:12px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-columns { flex:none; grid-template-columns:minmax(0,1fr) auto; column-gap:6px; padding:2px 8px; font-size:10px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-columns > span:nth-child(3) { display:none; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-body { flex:1; min-height:0; overflow:hidden; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-row {
+    grid-template-columns:minmax(0,1fr) auto;
+    column-gap:6px;
+    min-height:0;
+    height:var(--book-row-height,28px);
+    padding:0 8px;
+    font-size:12px;
+  }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-row > span:nth-of-type(3) { display:none; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-row > span:nth-of-type(2) { text-align:right; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-center { padding:0 8px; gap:4px; flex-wrap:wrap; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-center strong { font-size:15px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-center .rb-mark { font-size:11px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-ratio { flex:none; margin:4px 8px 0; font-size:11px; }
+
+  /* The ticket, in the narrow column. */
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-panel { padding:8px; gap:8px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-form { gap:8px; }
+  #archive-terminal-preview .fo-panel > .order-family-select { grid-row:2; }
+  #archive-terminal-preview .order-family-select { display:block; }
+  #archive-terminal-preview .order-family-select-label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  #archive-terminal-preview .order-family-select select {
+    width:100%;
+    min-height:44px;
+    padding:0 32px 0 12px;
+    border:1px solid var(--field-line, var(--border));
+    border-radius:8px;
+    background:var(--panel-alt) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa1ad' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+    color:var(--text-primary);
+    font-size:16px !important;
+    font-weight:600;
+    appearance:none;
+  }
+  /* Margin mode and leverage share one 44px row. */
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow { display:flex; flex-wrap:nowrap; gap:6px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow > .fo-mlTrigger { flex:1 1 0; width:auto; min-width:0; height:44px; min-height:44px; padding-inline:8px; gap:4px; font-size:12px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow > .fo-mlTriggerLevBtn { flex:0 0 auto; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlTriggerText { min-width:0; overflow-wrap:anywhere; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-availRow { min-height:0; font-size:12px; line-height:16px; gap:6px; flex-wrap:wrap; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] :is(.fo-priceInputRow,.fo-qtyInputRow) { min-height:44px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-field .fo-input { min-height:0; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-lastPriceBtn { min-height:44px; padding-inline:6px; font-size:12px; white-space:normal; line-height:13px; max-width:70px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .percent-slider-presets button { min-height:32px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .percent-slider-track { min-height:32px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-optionsRow { flex-wrap:wrap; gap:4px 12px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] :is(.fo-tpslToggle,.fo-reduceOnlyRow) { min-height:44px; font-size:13px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .archive-protection-fields { grid-template-columns:minmax(0,1fr); gap:8px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-infoBox { gap:2px; padding-top:0; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-infoBox .fo-infoRow { min-height:20px; gap:0 6px; font-size:12px; line-height:16px; }
+  /* Long over Short, full width, in plain sight under the ticket. */
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-submitPair {
+    position:static;
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:8px;
+    margin:0;
+    padding:0;
+    border:0;
+    background:transparent;
+  }
+  /* 52px: the same height the released phone ticket gives them (≥50, qa-order-panel-refinement). */
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-submitPair button { min-height:52px; padding:10px 6px; font-size:15px; }
+
+  /* Positions follow the buttons; the account block and the contract
+     facts follow the positions. */
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .bottom-panel { order:2; min-height:0; border-top:1px solid var(--border); }
+  #archive-terminal-preview .futures-mobile-extras { order:3; display:flex; flex-direction:column; gap:1px; background:var(--tile-ground,#000); }
+  #archive-terminal-preview .futures-mobile-extras > * { background:var(--panel); }
+  #archive-terminal-preview .futures-mobile-account-slot:empty { display:none; }
+  #archive-terminal-preview .fo-account-slot-content { display:flex; flex-direction:column; gap:8px; padding:12px; }
+  #archive-terminal-preview .fo-account-slot-content .futures-account-actions button { min-height:44px; }
+  /* The positions header's second line («Все рынки», collapse) is in the
+     Trade view now, so its controls get full 44px targets. */
+  #archive-terminal-preview .terminal-account-header > :is(.archive-pair-filter,.terminal-account-toggle) { min-height:44px; }
+  #archive-terminal-preview .terminal-account-header > .terminal-account-toggle { flex:0 0 44px; }
+
+  /* Support docks into the bottom bar's utility slot, as on Spot
+     (TerminalPreviewPolish.css), instead of floating over «Открыть Шорт». */
+  body:has(#archive-terminal-preview) .bottom-nav { padding-right:56px; }
+  body:has(#archive-terminal-preview) .support-launcher {
+    width:44px !important;
+    height:44px !important;
+    right:6px !important;
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
+  }
+}
+
+/* Under 390px «Изолированная» and the leverage no longer share a row
+   without cutting the word: each takes the full width instead. */
+@media (max-width:389px) {
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow { flex-wrap:wrap; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-mlRow > .fo-mlTrigger { flex:1 1 100%; justify-content:space-between; }
+}
+@media (max-width:359px) {
+  #archive-terminal-preview .ticker-bar { padding-inline:8px; gap:4px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-columns small { display:none; }
+  #archive-terminal-preview .ticker-bar .pair-name { font-size:14px; }
+  #archive-terminal-preview .ticker-bar .value.price { font-size:15px; line-height:20px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .main-grid { grid-template-columns:minmax(0,38fr) minmax(0,62fr); }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .rb-row { padding:0 5px; font-size:11px; }
+  #archive-terminal-preview .terminal[data-mobile-tab=trade] .fo-panel { padding:6px; }
+}

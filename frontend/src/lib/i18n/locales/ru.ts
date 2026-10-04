@@ -37,6 +37,8 @@ export const RU = {
   'deposit.ui.memo': "Memo / Tag",
   'deposit.ui.memoCopied': "Memo скопировано",
   'deposit.ui.copyMemo': "Копировать memo",
+  'deposit.ui.memoRequired': "Обязательно",
+  'deposit.ui.memoHint': "Укажите его при переводе вместе с адресом.",
   'deposit.ui.asset': "Актив",
   'deposit.ui.minimumLabel': "Минимальная сумма пополнения",
   'deposit.ui.minimumOtherValue': "{amount} USDT или эквивалент в {asset}",
@@ -1886,4 +1888,8 @@ export const RU = {
   'help.status.note': 'Проверка показывает только, отвечают ли сервер биржи и рыночные данные. Она не подтверждает, что каждая операция — торговля, пополнение, вывод или вход — проходит успешно. «Не удалось проверить» может означать проблему с сетью или браузером, а не сбой платформы.',
   'help.status.incidents': 'Сообщения о сбоях',
   'help.status.noIncidents': 'Опубликованных сообщений о сбоях нет',
+  'terminal.marketSwitch': "Спот или фьючерсы",
+  'terminal.noFuturesContract': "Для {pair} нет фьючерсного контракта. Выберите доступный.",
+  'terminal.noSpotPair': "{pair} нет на споте. Выберите доступную пару.",
+  'trade.orderType': "Тип ордера",
 } as const;

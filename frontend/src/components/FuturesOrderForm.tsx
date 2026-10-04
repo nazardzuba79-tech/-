@@ -1,4 +1,5 @@
 import { useState, useEffect, useId, useRef, FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
@@ -81,8 +82,19 @@ export function FuturesOrderForm({
   calculatorDraft,
   lastPrice = null,
   archive = false,
+  compact = false,
+  accountSlot = null,
 }: {
   archive?: boolean;
+  /** A phone: the order families become one select (OrderFamilyTabs). */
+  compact?: boolean;
+  /**
+   * Where the account block and the leverage tiers render on a phone: under
+   * the positions, so the trade buttons are followed by the positions and
+   * not by a screen of account figures. The SAME elements, moved by a
+   * portal — never a second copy. Null renders them here, as on desktop.
+   */
+  accountSlot?: HTMLElement | null;
   onOpenCalculator?: () => void;
   symbol: string;
   onPlaced: () => void;
@@ -871,7 +883,7 @@ export function FuturesOrderForm({
 
   return (
     <div className="fo-panel">
-      <OrderFamilyTabs value={family} archive={archive} onChange={next => {
+      <OrderFamilyTabs value={family} archive={archive} compact={compact} onChange={next => {
         setFamily(next);
         if (next === 'LIMIT' || next === 'MARKET') setType(next);
         setPercent(0); setError(null);
@@ -1238,6 +1250,8 @@ export function FuturesOrderForm({
           which is why "Доступная маржа" no longer rides along in the
           quantity field's label, where it could stretch that field
           relative to the price field beside it. */}
+      {(() => {
+        const accountBlock = <>
       <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
 
       {config && (
@@ -1269,6 +1283,9 @@ export function FuturesOrderForm({
           </table>
         </details>
       )}
+        </>;
+        return accountSlot ? createPortal(<div className="fo-account-slot-content">{accountBlock}</div>, accountSlot) : accountBlock;
+      })()}
     </div>
   );
 }

@@ -169,6 +169,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return { FuturesAccountSourceContext: { Provider: ({ children }: any) => children } };
     }
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
+    // «Депозит» asks the page's header for its window (pure bus, no I/O).
+    if (name === '../lib/depositRequest') return jest.requireActual('../depositRequest');
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };

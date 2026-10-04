@@ -45,11 +45,15 @@
   #archive-terminal-preview .futures-mobile-chart-tabs { display:flex; order:0; padding:6px 12px; gap:6px; background:var(--panel); }
   #archive-terminal-preview .futures-mobile-chart-tabs button { min-height:44px; padding:0 16px; border:1px solid transparent; border-radius:8px; background:transparent; color:var(--text-secondary); font-size:13px; }
   #archive-terminal-preview .futures-mobile-chart-tabs button[aria-pressed=true] { background:var(--panel-alt); border-color:var(--border); color:var(--text-primary); }
-  #archive-terminal-preview .terminal:not([data-mobile-tab=chart]) :is(.chart-area,.orderbook-area,.futures-mobile-chart-tabs),
-  #archive-terminal-preview .terminal:not([data-mobile-tab=trade]) .order-form-area,
-  #archive-terminal-preview .terminal:not([data-mobile-tab=positions]) .bottom-panel,
-  #archive-terminal-preview .terminal[data-mobile-chart=book] .chart-area,
-  #archive-terminal-preview .terminal[data-mobile-chart=chart] .orderbook-area { display:none; }
+  /* Trade (the phone's default since 2026-10-04): book beside the ticket,
+     positions and the account block under them — FuturesMobileCompact.css.
+     Chart: the chart or the full-height book. Positions: positions alone. */
+  #archive-terminal-preview .terminal:not([data-mobile-tab=chart]) :is(.chart-area,.futures-mobile-chart-tabs),
+  #archive-terminal-preview .terminal[data-mobile-tab=positions] .orderbook-area,
+  #archive-terminal-preview .terminal:not([data-mobile-tab=trade]) :is(.order-form-area,.futures-mobile-extras),
+  #archive-terminal-preview .terminal[data-mobile-tab=chart] .bottom-panel,
+  #archive-terminal-preview .terminal[data-mobile-tab=chart][data-mobile-chart=book] .chart-area,
+  #archive-terminal-preview .terminal[data-mobile-tab=chart][data-mobile-chart=chart] .orderbook-area { display:none; }
   #archive-terminal-preview .chart-area { order:1; height:clamp(360px,59dvh,600px); min-height:360px; flex:none; }
   #archive-terminal-preview :is(.chart-surface,.terminal-chart-shell) { height:100%; min-height:0; }
   #archive-terminal-preview .terminal-chart-heading { height:44px; min-height:44px; padding-inline:12px; }

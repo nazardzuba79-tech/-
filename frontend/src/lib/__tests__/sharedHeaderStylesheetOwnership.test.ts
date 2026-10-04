@@ -330,6 +330,18 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
       // Spot/CFD extension is also colour-only; exact declarations are pinned
       // by spotCfdGraphite.test.ts, not an exemption for header geometry.
       'src/pages/trade-terminal/SpotCfdGraphite.css: :is(#archive-terminal-preview, .vx-terminal).vx-terminal .global-header',
+      // 2026-10-04: the terminals' phone header (<=900px only, and only a
+      // header that carries data-terminal-header, which Nav sets when a
+      // terminal passes its «Спот / Фьючерсы» switch). It sizes the row,
+      // its touch targets and the drawer offset; the burger's `display`
+      // stays index.css's (see the next test).
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header]',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .deposit-button',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-actions',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-brand',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .header-left',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .mobile-menu',
+      'src/pages/trade-terminal/TerminalMobileHeader.css: :is(#archive-terminal-preview,.trade-terminal) .global-header[data-terminal-header] .nav-mobile-menu',
       'src/pages/trade-terminal/TerminalMobileParity.css: .trade-terminal.vx-terminal .global-header',
       // 2026-09-30: the terminal tone paints the header's background (a
       // token) inside the futures root; no geometry, no display.

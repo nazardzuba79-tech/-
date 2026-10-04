@@ -23,8 +23,14 @@ function heldQuote(asset: string): HeldQuote | null {
 
 type Step = 'address' | 'qr';
 
-/** One address-only UI for both entrypoints. No trading/balance API is used. */
-export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header' }: { onClose: () => void; initialAsset?: string; source?: DepositCopySource }) {
+/**
+ * One address-only UI for every entrypoint. No trading/balance API is used.
+ *
+ * `tone` follows the page that opened it: the light Wallet keeps the light
+ * window, the graphite terminals get the same window in their own dark
+ * surface. Only colour tokens differ (DepositCatalogueDialog.css).
+ */
+export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header', tone = 'light' }: { onClose: () => void; initialAsset?: string; source?: DepositCopySource; tone?: 'light' | 'terminal' }) {
   const { t, lang } = useLanguage();
   const [retry, setRetry] = useState(0);
   const { loaded, wallets, error } = useDepositWallets(true, retry);
@@ -138,7 +144,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
       : <span className="dc-fallback" style={{ width: size, height: size }}>{symbol}</span>;
   };
 
-  return createPortal(<div ref={overlay} className="dc-overlay" onClick={event => { if (event.target !== event.currentTarget) return; if (menuOpen) closeMenu(false); else closeRef.current(); }}>
+  return createPortal(<div ref={overlay} className="dc-overlay" data-tone={tone} onClick={event => { if (event.target !== event.currentTarget) return; if (menuOpen) closeMenu(false); else closeRef.current(); }}>
     <div ref={panel} className="dc-dialog" role="dialog" aria-modal="true" aria-label={t('deposit.title')} tabIndex={-1}
       onKeyDown={event => {
         if (event.key === 'Escape') { event.stopPropagation(); event.preventDefault(); if (menuOpen) closeMenu(); else if (step !== 'address') changeStep('address'); else closeRef.current(); }
@@ -150,7 +156,7 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
         }
       }}>
       <header className="dc-header">
-        <h2>{t('deposit.title')}</h2>
+        <h2>{t('wallet.deposit')}</h2>
         <button className="dc-icon-button dc-close" onClick={() => closeRef.current()} aria-label={t('deposit.close')}><X size={20}/></button>
       </header>
       <div className="dc-content">
@@ -241,11 +247,12 @@ export function DepositCatalogueDialog({ onClose, initialAsset, source = 'header
             <div className="dc-copy-row"><button className="dc-primary" onClick={() => void copy('address')}>
               {copyState?.field === 'address' && copyState.ok ? <Check size={19}/> : <Copy size={19}/>}
               {copyState?.field === 'address' && copyState.ok ? t('deposit.ui.copied') : t('deposit.ui.copyAddress')}
-            </button><button className="dc-qr-button" aria-label={t(step === 'qr' ? 'deposit.ui.hideQr' : 'deposit.ui.showQr')} onClick={() => changeStep(step === 'qr' ? 'address' : 'qr')}><QrCode size={22}/></button></div>
+            </button>{/* A secondary, labelled action: the QR is drawn only after this
+                press (owner, 2026-10-04: no half-screen QR on opening). */}<button className="dc-qr-button" aria-expanded={step === 'qr'} onClick={() => changeStep(step === 'qr' ? 'address' : 'qr')}><QrCode size={20} aria-hidden="true"/><span>{t(step === 'qr' ? 'deposit.ui.hideQr' : 'deposit.ui.showQr')}</span></button></div>
             {copyState?.field === 'address' && !copyState.ok && <p className="dc-copy-error" role="alert">{t('deposit.ui.copyError')}</p>}
             {copyState?.field === 'address' && copyState.ok && <span className="dc-sr-only" role="status">{t('deposit.ui.copied')}</span>}
           </div>
-          {wallet.memo?.trim() && <div className="dc-memo"><strong>{wallet.memoLabel || t('deposit.ui.memo')}</strong><p className="dc-address">{wallet.memo}</p><button className="dc-secondary" onClick={() => void copy('memo')}><Copy size={16}/>{t('deposit.ui.copyMemo')}</button>{copyState?.field === 'memo' && <p role={copyState.ok ? 'status' : 'alert'}>{t(copyState.ok ? 'deposit.ui.memoCopied' : 'deposit.ui.copyError')}</p>}</div>}
+          {wallet.memo?.trim() && <div className="dc-memo"><p className="dc-memo-head"><strong>{wallet.memoLabel || t('deposit.ui.memo')}</strong><span className="dc-memo-required">{t('deposit.ui.memoRequired')}</span></p><p className="dc-memo-hint">{t('deposit.ui.memoHint')}</p><p className="dc-address">{wallet.memo}</p><button className="dc-secondary" onClick={() => void copy('memo')}><Copy size={16}/>{t('deposit.ui.copyMemo')}</button>{copyState?.field === 'memo' && <p role={copyState.ok ? 'status' : 'alert'}>{t(copyState.ok ? 'deposit.ui.memoCopied' : 'deposit.ui.copyError')}</p>}</div>}
         </>}
       </div>
     </div>
