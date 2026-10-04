@@ -4,7 +4,6 @@ import { api, ApiError, getToken, onSessionChange } from '../lib/api';
 import { onSpendableBalancesChanged } from '../lib/balanceInvalidation';
 import { readVtaIntent, prepareVtaIntent, clearVtaIntent, withVtaSaleLock } from '../lib/vtaSaleIntent';
 import { useVtaSpotAccount } from '../lib/useVtaSpotAccount';
-import { NrxDemoApiError } from '../lib/nrxDemoApi';
 import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
@@ -270,7 +269,7 @@ export function OrderForm({
             vtaPending.current = null; setVtaUnconfirmed(false);
           } catch (error) {
             // Only a definitive first-attempt refusal may discard the intent.
-            const rejected = privateNrx ? error instanceof NrxDemoApiError && error.rejected
+            const rejected = privateNrx ? vta.definitiveRejection(error)
               : error instanceof ApiError && error.body.vtaOutcome === 'REJECTED';
             if (getToken() === session && !existed && rejected) {
               clearVtaIntent(accountId, pending.requestId); vtaPending.current = null;
@@ -321,7 +320,7 @@ export function OrderForm({
         if (getToken() !== session) return;
         setVtaUnconfirmed(vtaPending.current !== null);
       }
-      const message = err instanceof NrxDemoApiError ? err.message : customerErrorText(err, t, t('trade.placeOrderError'));
+      const message = customerErrorText(err, t, t('trade.placeOrderError'));
       setError(message);
       toast.error(message);
     } finally {

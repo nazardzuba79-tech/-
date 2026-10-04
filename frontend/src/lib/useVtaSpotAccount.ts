@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { api, getToken, onSessionChange, type VtaDemoSnapshot } from './api';
 import { createVisibleRead } from './visibleRead';
-import { nrxDemoApi, type NrxDemoSnapshot } from './nrxDemoApi';
+import { nrxDemoApi, NrxDemoApiError, type NrxDemoSnapshot } from './nrxDemoApi';
 
 type Snapshot = VtaDemoSnapshot | NrxDemoSnapshot;
 type State = { snapshot: Snapshot | null; failed: boolean; loading: boolean };
@@ -64,5 +64,6 @@ export function useVtaSpotAccount(enabled: boolean, pair = 'VTA/USDT') {
   const value = useSyncExternalStore(listen, () => enabled ? store.get() : empty);
   return { ...value, refresh: store.refresh,
     getSale: nrx ? nrxDemoApi.operation : api.getVtaSale,
-    sell: nrx ? nrxDemoApi.sell : api.sellVtaDemo };
+    sell: nrx ? nrxDemoApi.sell : api.sellVtaDemo,
+    definitiveRejection: (error: unknown) => nrx && error instanceof NrxDemoApiError && error.rejected };
 }

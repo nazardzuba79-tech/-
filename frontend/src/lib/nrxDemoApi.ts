@@ -9,7 +9,7 @@ const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}
 const decimal = (v: unknown): v is string => typeof v === 'string' && /^\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i.test(v) && Number.isFinite(Number(v));
 const validReceipt = (v: any): v is VtaSaleReceipt => v && uuid(v.id) && ['price', 'quantity', 'proceeds'].every(k => decimal(v[k]) && Number(v[k]) > 0);
 const normalizedQuantity = (v: string) => v.replace(/^0+(?=\d)/, '').replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
-const malformed = () => new NrxDemoApiError('Не удалось подтвердить ответ сервиса симуляции.', 502, false);
+const malformed = () => new NrxDemoApiError('Не удалось подтвердить операцию.', 502, false);
 
 /** No legacy /orders fallback, automatic POST retry or client execution price.
  * A timeout or malformed success leaves the same request key unresolved. */
@@ -28,7 +28,7 @@ async function request(path: string, body?: { requestId: string; quantity: strin
     const json = await response.json();
     if (getToken() !== token) throw new NrxDemoApiError('Аккаунт изменился.', 409, false);
     if (!response.ok) throw new NrxDemoApiError(
-      response.status === 404 ? 'Сервис симуляции ещё не обновлён. Повторите позже.' :
+      response.status === 404 ? 'Сервис временно недоступен. Повторите позже.' :
         response.status === 400 && typeof json?.error === 'string' ? json.error : 'Не удалось подтвердить операцию.',
       response.status, response.status === 400 && json?.simulationOutcome === 'REJECTED');
     return json;

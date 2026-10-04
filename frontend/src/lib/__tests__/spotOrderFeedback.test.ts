@@ -32,11 +32,17 @@ describe('feedback follows actual order outcome rather than HTTP 201 alone', () 
 
 describe('actual OrderForm submit handler', () => {
   const source = fs.readFileSync(path.resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8');
-  const handler = source.slice(source.indexOf('  async function handleSubmit('), source.indexOf('  // Keep every order family reachable.'));
-  const code = ts.transpileModule(handler, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  // Parse the actual function instead of slicing until an unrelated comment:
+  // editing presentation comments must not feed JSX into new Function().
+  const ast = ts.createSourceFile('OrderForm.tsx', source, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TSX);
+  let handler: ts.FunctionDeclaration | undefined;
+  const visit = (node: ts.Node): void => { if (ts.isFunctionDeclaration(node) && node.name?.text === 'handleSubmit') handler = node; ts.forEachChild(node, visit); };
+  visit(ast);
+  if (!handler) throw new Error('OrderForm handleSubmit not found');
+  const code = ts.transpileModule(handler.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
   function fixture(response: unknown, notTradingYet = false) {
     const toast = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
-    const bindings = { privateVta: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
+    const bindings = { privateVta: false, privateNrx: false, vtaUnconfirmed: false, getToken: () => 'fixture', api: { placeOrder: jest.fn().mockResolvedValue(response) }, toast,
       t: (key: string, values?: unknown) => key + (values ? JSON.stringify(values) : ''),
       spotOrderFeedback, positiveOrderNumber, submittingRef: { current: false },
       setError: jest.fn(), setSubmitting: jest.fn(), resetFields: jest.fn(), onPlaced: jest.fn(), setBalanceVersion: jest.fn(),
