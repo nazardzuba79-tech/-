@@ -21,7 +21,7 @@ describe('Spot/CFD mobile parity with Futures', () => {
 
   test('Spot has Futures-style Chart / Trade / Account workspaces without changing order logic', () => {
     const page = read('frontend/src/pages/TradePage.tsx');
-    expect(page).toContain("const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>(searchParams.get('market') === 'cfd' ? 'chart' : 'trade')");
+    expect(page).toContain("const [mobileTab, setMobileTab] = useState<'chart' | 'trade' | 'account'>('chart')");
     expect(page).toContain("const [mobilePane, setMobilePane] = useState<'chart' | 'book' | 'markets'>('chart')");
     expect(page).toContain('data-mobile-market="spot"');
     expect(page).toContain("setMobilePane('book')");
