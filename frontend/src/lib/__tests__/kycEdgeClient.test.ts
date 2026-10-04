@@ -159,7 +159,10 @@ describe('no document bytes go to the VOLTEX API', () => {
   });
 
   it('the user form keeps its fields and the same submit button', () => {
-    const form = read('src/pages/settings-arctic/VerificationSection.tsx');
+    // The file input lives in the upload zone component the form renders.
+    const section = read('src/pages/settings-arctic/VerificationSection.tsx');
+    expect(section).toMatch(/<KycUpload[\s\S]*?onFile=\{handleFile\}/);
+    const form = section + read('src/pages/settings-arctic/KycUpload.tsx');
     for (const needle of ['<CountrySelect', "t('settings.fullName')", "t('settings.dateOfBirth')", "t('settings.documentType')", 'type="file"', 'accept="image/jpeg,image/png,application/pdf"', "t('settings.sendForReview')"]) {
       expect({ needle, present: form.includes(needle) }).toEqual({ needle, present: true });
     }

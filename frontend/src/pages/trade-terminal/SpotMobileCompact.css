@@ -53,9 +53,13 @@
     display:none;
   }
 
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .order-form-area,
-  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .orderbook-area {
+  /* Match the old .main-grid > :not(.order-form-area) specificity.
+     Without the grid parent the earlier mobile rule hides the book.
+     Pin the shared row: DOM order is book first, form second. */
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > .order-form-area,
+  .trade-terminal.vx-terminal.spot-terminal .terminal[data-mobile-tab=trade] .main-grid > .orderbook-area {
     display:flex;
+    grid-row:1;
     min-width:0;
     min-height:0;
     height:clamp(500px,64dvh,600px);
